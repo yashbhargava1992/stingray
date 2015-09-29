@@ -3,6 +3,14 @@ X-Ray Timing Made Easy
 
 We are writing a general-purpose timing package for X-ray time series. 
 
+Authors
+--------
+Abigail Stevens
+Daniela Huppenkothen
+
+Contents
+--------
+
 The contents will be:
 - make a light curve from event data
 - make periodograms in Leahy and rms normalization
