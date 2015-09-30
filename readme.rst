@@ -12,6 +12,7 @@ Contents
 --------
 
 The contents will be:
+
 - make a light curve from event data
 - make periodograms in Leahy and rms normalization
 - average periodograms
