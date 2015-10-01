@@ -28,8 +28,7 @@ The contents will be:
 Copyright
 ---------
  
-All content |copy| 2015 the authors. The code is distributed under the MIT license.
+All content © 2015 the authors. The code is distributed under the MIT license.
 
 Pull requests are welcome! If you are interested in the further development of 
-stingray, please [get in touch via the issues](https://github.com/dhuppenkothen/stingray/issues)!
-
+stingray, please `get in touch via the issues<https://github.com/dhuppenkothen/stingray/issues>`_!
