@@ -27,3 +27,8 @@ The contents will be:
 - power colours
 - rms spectra
 
+Copyright
+---------
+ 
+All content |copy| 2015 the authors. The code is distributed under the MIT license.
+
