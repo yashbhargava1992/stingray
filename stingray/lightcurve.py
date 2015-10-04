@@ -19,7 +19,7 @@ import numpy as np
 ##dayseconds = 60.*60.*24.
 
 class Lightcurve(object):
-    def __init__(self, time, counts = None, timestep=None, tseg=None, tstart = None):
+    def __init__(self, time, counts = None, dt=None, tseg=None, tstart = None):
         """
         Make a light curve object, either from an array of time stamps and an array of counts,
         or from a list of photon arrival times.
@@ -35,7 +35,7 @@ class Lightcurve(object):
             list or array should contain the corresponding counts in each bin (note:
             **not** the count rate, i.e. counts/second, but the counts/timestep).
 
-        timestep: float, optional, default None
+        dt: float, optional, default None
             If `time` is a list of photon arrival times, `timestep` needs to be set to the time
             resolution of the light curve. If `counts` is set (the input is a light curve and not
             a set of photon arrival times), this keyword will be ignored.
@@ -59,11 +59,11 @@ class Lightcurve(object):
 
         if counts is None:
             ### TOA has a list of photon times of arrival
-            assert timestep is not None, "timestep must have a non-zero value"
+            assert dt is not None, "dt must have a non-zero value"
 
             self.ncounts = np.asarray(time).shape[0]
             self.tstart = tstart
-            self.makeLightcurve(time, timestep, tseg=tseg)
+            self.makeLightcurve(time, dt, tseg=tseg)
             
         else:
             self.time = np.asarray(time)
@@ -72,7 +72,7 @@ class Lightcurve(object):
             self.countrate = self.counts/self.res
             self.tseg = self.time[-1] - self.time[0] + self.res
 
-    def makeLightcurve(self, time, timestep):
+    def makeLightcurve(self, time, dt, tseg=None):
         """
         Make a light curve out of photon arrival times.
 
@@ -81,7 +81,7 @@ class Lightcurve(object):
         time: iterable
             list of photon arrival times
 
-        timestep: float
+        dt: float
             time resolution of the light curve (the bin width)
 
 
@@ -107,21 +107,21 @@ class Lightcurve(object):
         ### number of bins in light curve
 
         ## compute the number of bins in the light curve
-        ## for cases where tseg/timestep are not integer, computer one
+        ## for cases where tseg/dt are not integer, computer one
         ## last time bin more that we have to subtract in the end
-        if not self.tseg:
+        if not tseg:
             tseg = time[-1] - time[0]
 
-        timebin = np.ceil(tseg/timestep)
-        frac = (tseg/timestep) - int(timebin - 1)
+        timebin = np.int(tseg/dt)
 
-        tend = tstart + timebin*timestep
+        frac = (tseg/dt) - int(timebin - 1)
+
+        tend = tstart + timebin*dt
 
         counts, histbins = np.histogram(time, bins=timebin, range = [tstart, tend])
         self.res = histbins[1] - histbins[0]
 
         self.time = np.array([histbins[0] + 0.5*self.res + n*self.res for n in range(int(timebin))])
-        self.countrate = self.counts/self.res
 
         #print("len timebins: " + str(len(timebins)))
         if frac > 0.0:
@@ -132,6 +132,8 @@ class Lightcurve(object):
             self.counts = np.asarray(counts)
             self.time = self.time
 
+        self.countrate = self.counts/self.res
+
     def rebinLightcurve(self, newres, method='sum'):
         ### calculate number of bins in new light curve
         nbins = np.floor(self.tseg/newres)+1
@@ -140,7 +142,7 @@ class Lightcurve(object):
 
         #print("I am here")
         bintime, bincounts, _ = self._rebin_new(self.time, self.counts, newres, method)
-        return Lightcurve(bintime, bincounts)
+        return Lightcurve(bintime, counts=bincounts)
 
     def _rebin_new(self, time, counts, dtnew, method='sum'):
 
@@ -186,12 +188,11 @@ class Lightcurve(object):
 ### a separate light curve object
 ## len [float]: length of segment (in seconds)
 ## overlap [float, < 1.0]: overlap between segments, in seconds
-def moving_bins(time, timestep=1.0, duration=10.0, startdiff=1.0, tstart=None):
+def moving_bins(time, dt=1.0, duration=10.0, startdiff=1.0, tstart=None):
 
     lcs = []
     if tstart is None:
         tstart = time[0]
-
 
     tend = tstart + duration
 
@@ -199,7 +200,7 @@ def moving_bins(time, timestep=1.0, duration=10.0, startdiff=1.0, tstart=None):
         stind = time.searchsorted(tstart)
         eind = time.searchsorted(tend)
         tnew = time[stind:eind]
-        lcs.append(Lightcurve(tnew, timestep=timestep, tseg=duration, tstart=tstart))
+        lcs.append(Lightcurve(tnew, dt=dt, tseg=duration, tstart=tstart))
         tstart += startdiff
         tend += startdiff
 
