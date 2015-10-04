@@ -59,6 +59,8 @@ class Lightcurve(object):
 
         if counts is None:
             ### TOA has a list of photon times of arrival
+            assert timestep is not None, "timestep must have a non-zero value"
+
             self.ncounts = np.asarray(time).shape[0]
             self.tstart = tstart
             self.makeLightcurve(time, timestep, tseg=tseg)
