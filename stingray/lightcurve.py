@@ -5,6 +5,8 @@ Definition of :class:`Lightcurve`.
 or to save existing light curves in a class that's easy to use.
 """
 
+__all__ = ["Lightcurve", "moving_bins"]
+
 import numpy as np
 
 class Lightcurve(object):
