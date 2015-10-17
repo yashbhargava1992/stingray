@@ -7,7 +7,7 @@ def rebin_data(x, y, dx_new, method='sum'):
     the data points in the new bins or average them.
 
     Parameters
-    -----------
+    ----------
     x: iterable
         The dependent variable with some resolution dx_old = x[1]-x[0]
 
@@ -23,7 +23,7 @@ def rebin_data(x, y, dx_new, method='sum'):
 
 
     Returns
-    --------
+    -------
     xbin: numpy.ndarray
         The midpoints of the new bins in x
 
