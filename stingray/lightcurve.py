@@ -14,7 +14,7 @@ class Lightcurve(object):
         or from a list of photon arrival times.
 
         Parameters
-        -----------
+        ----------
         time: iterable
             Either a list or an array of photon arrival times (if counts is None) or a list of
             time stamps for a light curve (if counts is not None)
@@ -64,7 +64,7 @@ class Lightcurve(object):
         Make a light curve out of photon arrival times.
 
         Parameters
-        -----------
+        ----------
         time: iterable
             list of photon arrival times
 
@@ -73,7 +73,7 @@ class Lightcurve(object):
 
 
         Attributes
-        -----------
+        ----------
         self.time: numpy.ndarray
             list with mid-bin time stamps
 
