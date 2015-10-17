@@ -13,8 +13,8 @@ import stingray.utils as utils
 class Lightcurve(object):
     def __init__(self, time, counts):
         """
-        Make a light curve object, either from an array of time stamps and an array of counts,
-        or from a list of photon arrival times.
+        Make a light curve object from an array of time stamps and an
+        array of counts.
 
         Parameters
         ----------
@@ -91,8 +91,8 @@ class Lightcurve(object):
 
         """
 
-        ## tstart is an optional parameter to set a starting time for the light curve
-        ## in case this does not coincide with the first photon
+        ## tstart is an optional parameter to set a starting time for
+        ## the light curve in case this does not coincide with the first photon
         if tstart is None:
             ## if tstart is not set, assume light curve starts with first photon
             tstart = toa[0]
