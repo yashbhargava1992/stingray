@@ -65,4 +65,3 @@ class TestLightcurve(object):
 
         assert lc.counts.all() == ncounts.all()
 
-        
