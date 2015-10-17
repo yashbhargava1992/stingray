@@ -52,4 +52,17 @@ class TestLightcurve(object):
         assert np.isclose(lc.dt, self.dt)
 
 
-    def test_rebinning(self):
+    def test_bin_correctly(self):
+        ncounts = np.array([2, 1, 0, 3])
+        tstart = 0.0
+        tseg = 4.0
+
+        toa = np.hstack([np.random.uniform(i, i+1, size=n) for i,n \
+                          in enumerate(ncounts)])
+
+        dt = 1.0
+        lc = Lightcurve.make_lightcurve(toa, dt, tseg=tseg, tstart=tstart)
+
+        assert lc.counts.all() == ncounts.all()
+
+        

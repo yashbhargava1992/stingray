@@ -36,6 +36,7 @@ def rebin_data(x, y, dx_new, method='sum'):
     assert dx_new >= dx_old, "New frequency resolution must be larger than " \
                              "old frequency resolution."
 
+
     step_size = np.float(dx_new)/np.float(dx_old)
 
     output = []
@@ -55,12 +56,14 @@ def rebin_data(x, y, dx_new, method='sum'):
         total += sum(y[int(i+1):int(i+step_size)])
         output.append(total)
 
-    xbin = np.arange(len(output))*dx_new + x[0]
+    np.asarray(output)
+
+    xbin = np.arange(x[0]-dx_old*0.5, x[-1]+0.5*dx_old, dx_new)
     if method in ['mean', 'avg', 'average', 'arithmetic mean']:
-        ybin = np.array(output)/float(step_size)
+        ybin = output/np.float(step_size)
 
     elif method == "sum":
-        ybin = np.array(output)
+        ybin = output
     else:
         raise Exception("Method for summing or averaging not recognized. "
                         "Please enter either 'sum' or 'mean'.")

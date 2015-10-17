@@ -58,7 +58,7 @@ class Lightcurve(object):
         self.dt = time[1] - time[0]
         self.countrate = self.counts/self.dt
         self.tseg = self.time[-1] - self.time[0] + self.dt
-        self.tstart = self.time[0]
+        self.tstart = self.time[0]-0.5*self.dt
 
     @staticmethod
     def make_lightcurve(toa, dt, tseg=None, tstart=None):
@@ -78,6 +78,10 @@ class Lightcurve(object):
             If this is `None`, then the total duration of the light curve will
             be the interval between the arrival between the first and the last
             photon in `toa`.
+
+                **Note**: If tseg is not divisible by dt (i.e. if tseg/dt is not
+                an integer number), then the last fractional bin will be
+                dropped!
 
         tstart: float, optional, default None
             The start time of the light curve.
@@ -100,28 +104,23 @@ class Lightcurve(object):
         ## compute the number of bins in the light curve
         ## for cases where tseg/dt are not integer, computer one
         ## last time bin more that we have to subtract in the end
-        if not tseg:
+        if tseg is None:
             tseg = toa[-1] - toa[0]
 
-        timebin = np.int(tseg/dt)
+        print("tseg: " + str(tseg))
 
-        frac = (tseg/dt) - int(timebin - 1)
+        timebin = np.int(tseg/dt)
+        print("timebin:  " + str(timebin))
 
         tend = tstart + timebin*dt
 
         counts, histbins = np.histogram(toa, bins=timebin, range=[tstart, tend])
-        res = histbins[1] - histbins[0]
 
-        time = np.array([histbins[0] + 0.5*res + n*res for n \
-                         in range(int(timebin))])
+        dt = histbins[1]-histbins[0]
 
-        if frac > 0.0:
-            counts = np.asarray(counts[:-1])
-            time = time[:-1]
+        time = histbins[:-1]+0.5*dt
 
-        else:
-            counts = np.asarray(counts)
-            time = time
+        counts = np.asarray(counts)
 
         return Lightcurve(time, counts)
 
