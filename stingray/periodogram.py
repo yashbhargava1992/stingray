@@ -154,6 +154,9 @@ class Periodogram(object):
             p = fr[:self.n/2+1]/np.float(self.n**2.)
             ps = p*2.*lc.tseg/(np.mean(lc.counts)**2.0)
 
+        else:
+            raise Exception("Normalization not recognized!")
+
         return ps
 
     def rebin(self, df):
@@ -171,44 +174,23 @@ class Periodogram(object):
             The newly binned periodogram
         
         """
-        ### frequency range of power spectrum
-        flen = (self.freq[-1] - self.freq[0])
-        ### calculate number of new bins in rebinned spectrum
-        bins = np.floor(flen/df)
-        ### rebin power spectrum to new resolution
-        binfreq, binps = utils.rebin_data(self.freq, self.ps, df, method='mean')
+
+        ## rebin power spectrum to new resolution
+        binfreq, binps, step_size = utils.rebin_data(self.freq,
+                                                     self.ps, df,
+                                                     method='mean')
+
+        ## make an empty periodogram object
         bin_ps = Periodogram()
 
-        """
-               norm: {"leahy" | "rms"}
-                    the normalization of the periodogram
-
-                freq: numpy.ndarray
-                    The array of mid-bin frequencies that the Fourier transform samples
-
-                ps: numpy.ndarray
-                    The array of normalized squared absolute values of Fourier
-                    amplitudes
-
-                df: float
-                    The frequency resolution
-
-                m: int
-                    The number of averaged periodograms
-
-                n: int
-                    The number of data points in the light curve
-
-                nphots: float
-                    The total number of photons in the light curve
-
-        """
+        ## store the binned periodogram in the new object
         bin_ps.norm = self.norm
         bin_ps.freq = binfreq
         bin_ps.ps = binps
         bin_ps.df = df
         bin_ps.n = self.n
         bin_ps.nphots = self.nphots
+        bin_ps.m = int(step_size)
 
         return bin_ps
 
@@ -271,6 +253,70 @@ class Periodogram(object):
         
         return binfreq, binps, nsamples
 
+    def compute_rms(self, min_freq, max_freq):
+        """
+        Compute the fractional rms amplitude in the periodgram
+        between two frequencies.
+
+        Parameters:
+        -----------
+        min_freq: float
+            The lower frequency bound for the calculation
+
+        max_freq: float
+            The upper frequency bound for the calculation
+
+
+        Returns:
+        --------
+        rms: float
+            The fractional rms amplitude contained between min_freq and
+            max_freq
+
+        """
+        assert min_freq >= self.freq[0], "Lower frequency bound must be " \
+                                         "larger or equal the minimum " \
+                                         "frequency in the periodogram!"
+
+        assert max_freq <= self.freq[-1], "Upper frequency bound must be " \
+                                         "smaller or equal the maximum " \
+                                         "frequency in the periodogram!"
+
+        minind = self.freq.searchsorted(min_freq)
+        maxind = self.freq.searchsorted(max_freq)
+        powers = self.ps[minind:maxind]
+        if self.norm == "leahy":
+            rms = np.sqrt(np.sum(powers)/(self.nphots))
+        elif self.norm == "rms":
+            rms = np.sqrt(np.sum(powers*self.df))
+        else:
+            raise Exception("Normalization not recognized!")
+
+        return rms
+
+    def _rms_error(self, powers):
+        """
+        Compute the error on the fractional rms amplitude using error
+        propagation.
+        Note: this uses the actual measured powers, which is not
+        strictly correct. We should be using the underlying power spectrum,
+        but in the absence of an estimate of that, this will have to do.
+
+        Parameters:
+        ------------
+        powers: iterable
+            The list of powers used to compute the fractional rms amplitude.
+
+
+        Returns:
+        --------
+        delta_rms: float
+            the error on the fractional rms amplitude
+        """
+        p_err = scipy.stats.chi2(2.*self.m).var()*powers/self.m
+        drms_dp = 1./(2.*np.sqrt(np.sum(powers)*self.df))
+        delta_rms = np.sum(p_err*drms_dp*self.df)
+        return delta_rms
 
 class AveragedPeriodogram(object):
 
