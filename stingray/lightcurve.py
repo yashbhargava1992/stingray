@@ -9,14 +9,13 @@
 
 
 import numpy as np
-from . import utils
-
+import stingray.utils as utils
 
 class Lightcurve(object):
     def __init__(self, time, counts = None, dt=None, tseg=None, tstart = None):
         """
-        Make a light curve object, either from an array of time stamps and an array of counts,
-        or from a list of photon arrival times.
+        Make a light curve object, either from an array of time stamps and an
+        array of counts, or from a list of photon arrival times.
 
         Parameters
         -----------
@@ -62,7 +61,7 @@ class Lightcurve(object):
         else:
             self.time = np.asarray(time)
             self.counts = np.asarray(counts)
-            self.ncounts =
+            self.ncounts = self.counts.shape[0]
             self.res = time[1] - time[0]
             self.countrate = self.counts/self.res
             self.tseg = self.time[-1] - self.time[0] + self.res
@@ -136,7 +135,7 @@ class Lightcurve(object):
         ### calculate number of bins in new light curve
         nbins = np.floor(self.tseg/newres)+1
         self.binres = self.tseg/nbins
-        print "New time resolution is: " + str(self.binres)
+        print("New time resolution is: " + str(self.binres))
 
         #print("I am here")
         bintime, bincounts, _ = utils.rebin_data(self.time, self.counts, newres, method)
