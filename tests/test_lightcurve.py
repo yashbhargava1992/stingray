@@ -34,7 +34,7 @@ class TestLightcurvefromTOA(object):
 
 
     def test_correct_timeresolution(self):
-        assert np.isclose(self.lc.res, self.dt)
+        assert np.isclose(self.lc.dt, self.dt)
 
 
 
