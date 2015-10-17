@@ -36,7 +36,10 @@ def rebin_data(x, y, dx_new, method='sum'):
     assert dx_new >= dx_old, "New frequency resolution must be larger than " \
                              "old frequency resolution."
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> Fixed minor bugs
     step_size = np.float(dx_new)/np.float(dx_old)
 
     output = []

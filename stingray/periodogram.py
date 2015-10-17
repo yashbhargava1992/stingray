@@ -1,11 +1,14 @@
+__all__ = ["Periodogram", "AveragedPeriodogram"]
+
 import numpy as np
 import scipy
 import scipy.stats
 import scipy.fftpack
 import scipy.optimize
 
-from . import lightcurve
-from . import utils
+import stingray.lightcurve as lightcurve
+import stingray.utils as utils
+
 
 class Periodogram(object):
 
@@ -74,6 +77,8 @@ class Periodogram(object):
             self.ps = None
             self.df = None
             self.nphots = None
+            self.m = 1
+            self.n = None
             return
 
         ## total number of photons is the sum of the
