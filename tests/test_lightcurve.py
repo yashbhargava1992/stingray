@@ -11,7 +11,7 @@ class TestLightcurve(object):
         Demonstrate that we can create a trivial Lightcurve object.
         """
         times = [1, 2, 3, 4]
-        lc = Lightcurve(times)
+        lc = Lightcurve(times, dt=1.0)
 
 class TestLightcurvefromTOA(object):
 

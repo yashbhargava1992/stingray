@@ -60,7 +60,7 @@ class Lightcurve(object):
         else:
             self.time = np.asarray(time)
             self.counts = np.asarray(counts)
-            self.ncounts =
+            self.ncounts = self.counts.shape[0]
             self.res = time[1] - time[0]
             self.countrate = self.counts/self.res
             self.tseg = self.time[-1] - self.time[0] + self.res
