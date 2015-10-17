@@ -6,16 +6,7 @@
 #
 #
 
-#import matplotlib.pyplot as plt
-
-import numpy
-#import math
 import numpy as np
-
-#import scipy.optimize
-
-
-##dayseconds = 60.*60.*24.
 
 class Lightcurve(object):
     def __init__(self, time, counts = None, timestep=None, tseg=None, tstart = None):
@@ -147,7 +138,7 @@ class Lightcurve(object):
             step_size = float(dtnew)/float(self.df)
 
         output = []
-        for i in numpy.arange(0, len(counts), step_size):
+        for i in np.arange(0, len(counts), step_size):
             total = 0
             #print "Bin is " + str(i)
 
