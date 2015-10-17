@@ -169,12 +169,11 @@ class Lightcurve(object):
         return tnew, cbin, dtnew
 
 
-### chop up light curve in pieces and save each piece in
-### a separate light curve object
-## len [float]: length of segment (in seconds)
-## overlap [float, < 1.0]: overlap between segments, in seconds
 def moving_bins(time, timestep=1.0, duration=10.0, startdiff=1.0, tstart=None):
-
+    """
+    Chop up light curve in pieces and save each piece in
+    a separate :class:`Lightcurve` object.
+    """
     lcs = []
     if tstart is None:
         tstart = time[0]
