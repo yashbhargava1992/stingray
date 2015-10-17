@@ -36,6 +36,13 @@ Then open ``./doc/_build/index.html`` in the browser of your choice.
 
 .. _Sphinx: http://sphinx-doc.org
 
+Test suite
+----------
+
+Try::
+
+   $ nostests
+
 Copyright
 ---------
 
