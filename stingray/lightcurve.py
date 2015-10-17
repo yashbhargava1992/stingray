@@ -7,16 +7,10 @@
 #
 #
 
-#import matplotlib.pyplot as plt
 
-import numpy
-#import math
 import numpy as np
+from . import utils
 
-#import scipy.optimize
-
-
-##dayseconds = 60.*60.*24.
 
 class Lightcurve(object):
     def __init__(self, time, counts = None, dt=None, tseg=None, tstart = None):
@@ -68,6 +62,7 @@ class Lightcurve(object):
         else:
             self.time = np.asarray(time)
             self.counts = np.asarray(counts)
+            self.ncounts =
             self.res = time[1] - time[0]
             self.countrate = self.counts/self.res
             self.tseg = self.time[-1] - self.time[0] + self.res
@@ -87,6 +82,9 @@ class Lightcurve(object):
 
         Attributes
         -----------
+        self.tstart: np.float
+            the start time of the light curve
+
         self.time: numpy.ndarray
             list with mid-bin time stamps
 
@@ -101,10 +99,7 @@ class Lightcurve(object):
         ## in case this does not coincide with the first photon
         if self.tstart is None:
             ## if tstart is not set, assume light curve starts with first photon
-            tstart = time[0]
-        else:
-            tstart = self.tstart
-        ### number of bins in light curve
+            self.tstart = time[0]
 
         ## compute the number of bins in the light curve
         ## for cases where tseg/dt are not integer, computer one
@@ -116,9 +111,9 @@ class Lightcurve(object):
 
         frac = (tseg/dt) - int(timebin - 1)
 
-        tend = tstart + timebin*dt
+        tend = self.tstart + timebin*dt
 
-        counts, histbins = np.histogram(time, bins=timebin, range = [tstart, tend])
+        counts, histbins = np.histogram(time, bins=timebin, range = [self.tstart, tend])
         self.res = histbins[1] - histbins[0]
 
         self.time = np.array([histbins[0] + 0.5*self.res + n*self.res for n in range(int(timebin))])
@@ -134,74 +129,19 @@ class Lightcurve(object):
 
         self.countrate = self.counts/self.res
 
-    def rebinLightcurve(self, newres, method='sum'):
+    def rebin_lightcurve(self, newres, method='sum'):
+        """
+        Rebin the light curve using the
+        """
         ### calculate number of bins in new light curve
         nbins = np.floor(self.tseg/newres)+1
         self.binres = self.tseg/nbins
         print "New time resolution is: " + str(self.binres)
 
         #print("I am here")
-        bintime, bincounts, _ = self._rebin_new(self.time, self.counts, newres, method)
+        bintime, bincounts, _ = utils.rebin_data(self.time, self.counts, newres, method)
         return Lightcurve(bintime, counts=bincounts)
 
-    def _rebin_new(self, time, counts, dtnew, method='sum'):
-
-        try:
-            step_size = float(dtnew)/float(self.res)
-        except AttributeError:
-            step_size = float(dtnew)/float(self.df)
-
-        output = []
-        for i in numpy.arange(0, len(counts), step_size):
-            total = 0
-            #print "Bin is " + str(i)
-
-            prev_frac = int(i+1) - i
-            prev_bin = int(i)
-            #print "Fractional part of bin %d is %f"  %(prev_bin, prev_frac)
-            total += prev_frac * counts[prev_bin]
-
-            if i + step_size < len(time):
-                # Fractional part of next bin:
-                next_frac = i+step_size - int(i+step_size)
-                next_bin = int(i+step_size)
-                #print "Fractional part of bin %d is %f"  %(next_bin, next_frac)
-                total += next_frac * counts[next_bin]
-
-            #print "Fully included bins: %d to %d" % (int(i+1), int(i+step_size)-1)
-            total += sum(counts[int(i+1):int(i+step_size)])
-            output.append(total)
-
-        tnew = np.arange(len(output))*dtnew + time[0]
-        if method in ['mean', 'avg', 'average', 'arithmetic mean']:
-            cbinnew = output
-            cbin = np.array(cbinnew)/float(step_size)
-        elif method not in ['sum']:
-            raise Exception("Method for summing or averaging not recognized. Please enter either 'sum' or 'mean'.")
-        else:
-            cbin = output
-
-        return tnew, cbin, dtnew
 
 
-### chop up light curve in pieces and save each piece in
-### a separate light curve object
-## len [float]: length of segment (in seconds)
-## overlap [float, < 1.0]: overlap between segments, in seconds
-def moving_bins(time, dt=1.0, duration=10.0, startdiff=1.0, tstart=None):
 
-    lcs = []
-    if tstart is None:
-        tstart = time[0]
-
-    tend = tstart + duration
-
-    while tend <= time[-1] :
-        stind = time.searchsorted(tstart)
-        eind = time.searchsorted(tend)
-        tnew = time[stind:eind]
-        lcs.append(Lightcurve(tnew, dt=dt, tseg=duration, tstart=tstart))
-        tstart += startdiff
-        tend += startdiff
-
-    return lcs
