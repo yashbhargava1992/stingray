@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #####################
 #
 # Class definition for the light curve class. 
