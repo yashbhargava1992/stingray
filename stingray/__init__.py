@@ -1,0 +1,1 @@
+from stingray.lightcurve import *

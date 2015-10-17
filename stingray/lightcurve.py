@@ -1,16 +1,14 @@
-#!/usr/bin/env python
-#####################
-#
-# Class definition for the light curve class. 
-# Used to create light curves out of photon counting data
-# or to save existing light curves in a class that's easy to use.
-#
-#
+"""
+Definition of :class:`Lightcurve`.
 
+:class:`Lightcurve` is used to create light curves out of photon counting data
+or to save existing light curves in a class that's easy to use.
+"""
+
+__all__ = ["Lightcurve"]
 
 import numpy as np
-from . import utils
-
+import stingray.utils as utils
 
 class Lightcurve(object):
     def __init__(self, time, counts = None, dt=None, tseg=None, tstart = None):
@@ -19,7 +17,7 @@ class Lightcurve(object):
         or from a list of photon arrival times.
 
         Parameters
-        -----------
+        ----------
         time: iterable
             Either a list or an array of photon arrival times (if counts is None) or a list of
             time stamps for a light curve (if counts is not None)
@@ -72,7 +70,7 @@ class Lightcurve(object):
         Make a light curve out of photon arrival times.
 
         Parameters
-        -----------
+        ----------
         time: iterable
             list of photon arrival times
 
@@ -81,10 +79,7 @@ class Lightcurve(object):
 
 
         Attributes
-        -----------
-        self.tstart: np.float
-            the start time of the light curve
-
+        ----------
         self.time: numpy.ndarray
             list with mid-bin time stamps
 
@@ -141,7 +136,5 @@ class Lightcurve(object):
         #print("I am here")
         bintime, bincounts, _ = utils.rebin_data(self.time, self.counts, newres, method)
         return Lightcurve(bintime, counts=bincounts)
-
-
 
 
