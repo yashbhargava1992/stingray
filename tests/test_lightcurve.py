@@ -65,3 +65,41 @@ class TestLightcurve(object):
 
         assert np.allclose(lc.counts, ncounts)
 
+    def test_countrate(self):
+        dt = 0.5
+        mean_counts = 2.0
+        times = np.arange(0+dt/2.,5-dt/2., dt)
+        counts = np.zeros_like(times) + mean_counts
+        lc = Lightcurve(times, counts)
+        assert np.allclose(lc.countrate, np.zeros_like(counts)+mean_counts/dt)
+
+class TestLightcurveRebin(object):
+
+    def setUp(self):
+        dt = 1.0
+        n = 10
+        mean_counts = 2.0
+        times = np.arange(dt/2, dt/2+n*dt, dt)
+        counts= np.zeros_like(times)+mean_counts
+        self.lc = Lightcurve(times, counts)
+
+    def test_rebin_even(self):
+        dt_new = 2.0
+        lc_binned = self.lc.rebin_lightcurve(dt_new)
+        assert np.isclose(lc_binned.dt, dt_new)
+        assert np.isclose(self.lc.tseg, lc_binned.tseg)
+        counts_test = np.zeros_like(lc_binned.time) + \
+                      self.lc.counts[0]*dt_new/self.lc.dt
+        assert np.allclose(lc_binned.counts, counts_test)
+
+
+    def test_rebin_odd(self):
+        dt_new = 1.5
+        lc_binned = self.lc.rebin_lightcurve(dt_new)
+        assert np.isclose(lc_binned.dt, dt_new)
+
+        counts_test = np.zeros_like(lc_binned.time) + \
+                      self.lc.counts[0]*dt_new/self.lc.dt
+        print(counts_test)
+        print(lc_binned.counts)
+        assert np.allclose(lc_binned.counts, counts_test)

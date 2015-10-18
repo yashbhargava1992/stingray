@@ -125,17 +125,37 @@ class Lightcurve(object):
         return Lightcurve(time, counts)
 
 
-    def rebin_lightcurve(self, new_dt, method='sum'):
+    def rebin_lightcurve(self, dt_new, method='sum'):
         """
-        Rebin the light curve.
+        Rebin the light curve to a new time resolution. While the new
+        resolution need not be an integer multiple of the previous time
+        resolution, be aware that if it is not, the last bin will be cut
+        off by the fraction left over by the integer division.
+
+        Parameters:
+        -----------
+        dt_new: float
+            The new time resolution of the light curve. Must be larger than
+            the time resolution of the old light curve!
+
+        method: {"sum" | "mean" | "average"}, optional, default "sum"
+            This keyword argument sets whether the counts in the new bins
+            should be summed or averaged.
+
+
+        Returns:
+        --------
+        lc_new: :class:`Lightcurve` object
+            The :class:`Lightcurve` object with the new, binned light curve.
         """
-        ### calculate number of bins in new light curve
-        nbins = np.floor(self.tseg/new_dt)+1
-        bin_dt = self.tseg/nbins
+        assert dt_new >= self.dt, "New time resolution must be larger than " \
+                                  "old time resolution!"
 
         bin_time, bin_counts, _ = utils.rebin_data(self.time,
                                                    self.counts,
-                                                   new_dt, method)
-        return Lightcurve(bin_time, bin_counts)
+                                                   dt_new, method)
+
+        lc_new = Lightcurve(bin_time, bin_counts)
+        return lc_new
 
 

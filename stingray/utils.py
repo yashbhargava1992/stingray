@@ -56,9 +56,9 @@ def rebin_data(x, y, dx_new, method='sum'):
         total += sum(y[int(i+1):int(i+step_size)])
         output.append(total)
 
-    np.asarray(output)
+    output = np.asarray(output)
+    xbin = np.arange(x[0]-dx_old*0.5, x[-1]-0.5*dx_old, dx_new) + dx_new/2.
 
-    xbin = np.arange(x[0]-dx_old*0.5, x[-1]+0.5*dx_old, dx_new)
     if method in ['mean', 'avg', 'average', 'arithmetic mean']:
         ybin = output/np.float(step_size)
 
@@ -67,5 +67,11 @@ def rebin_data(x, y, dx_new, method='sum'):
     else:
         raise Exception("Method for summing or averaging not recognized. "
                         "Please enter either 'sum' or 'mean'.")
+
+    tseg = x[-1]-x[0]+dx_old
+
+    if tseg/dx_new % 1.0 > 0.0:
+        ybin = ybin[:-1]
+
 
     return xbin, ybin, step_size
