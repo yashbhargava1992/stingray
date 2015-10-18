@@ -132,8 +132,8 @@ class Lightcurve(object):
         resolution, be aware that if it is not, the last bin will be cut
         off by the fraction left over by the integer division.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         dt_new: float
             The new time resolution of the light curve. Must be larger than
             the time resolution of the old light curve!
@@ -143,8 +143,8 @@ class Lightcurve(object):
             should be summed or averaged.
 
 
-        Returns:
-        --------
+        Returns
+        -------
         lc_new: :class:`Lightcurve` object
             The :class:`Lightcurve` object with the new, binned light curve.
         """
