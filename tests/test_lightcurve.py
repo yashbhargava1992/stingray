@@ -63,5 +63,5 @@ class TestLightcurve(object):
         dt = 1.0
         lc = Lightcurve.make_lightcurve(toa, dt, tseg=tseg, tstart=tstart)
 
-        assert lc.counts.all() == ncounts.all()
+        assert np.allclose(lc.counts, ncounts)
 
