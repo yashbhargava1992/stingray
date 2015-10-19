@@ -20,8 +20,8 @@ class Powerspectrum(object):
         own fourier-transformed data (this can sometimes be useful when making
         binned periodograms).
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         lc: lightcurve.Lightcurve object, optional, default None
             The light curve data to be Fourier-transformed.
 
@@ -39,7 +39,7 @@ class Powerspectrum(object):
 
 
         Attributes
-        -----------
+        ----------
         norm: {"leahy" | "rms"}
             the normalization of the periodogram
 
@@ -110,13 +110,13 @@ class Powerspectrum(object):
         Fourier transform the light curve, then square the
         absolute value of the Fourier amplitudes.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         lc: lightcurve.Lightcurve object
             The light curve to be Fourier transformed
 
-        Returns:
-        --------
+        Returns
+        -------
         fr: numpy.ndarray
             The squared absolute value of the Fourier amplitudes
 
@@ -147,7 +147,7 @@ class Powerspectrum(object):
 
 
         Returns
-        ----------
+        -------
         ps: numpy.nd.array
             The normalized periodogram
         """
@@ -167,17 +167,16 @@ class Powerspectrum(object):
     def rebin(self, df):
         """
         Rebin the periodogram to a new frequency resolution df.
-        
-        Parameters:
-        ------------
+
+        Parameters
+        ----------
         df: float
             The new frequency resolution
-            
-        Returns:
-        ---------
+
+        Returns
+        -------
         bin_ps = Periodogram object
             The newly binned periodogram
-        
         """
 
         ## rebin power spectrum to new resolution
@@ -208,14 +207,14 @@ class Powerspectrum(object):
 
         dnu_j = dnu_{j-1}*(1+f)
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         f: float, optional, default 0.01
             parameter that steers the frequency resolution
 
 
-        Returns:
-        --------
+        Returns
+        -------
         binfreq: numpy.ndarray
             the binned frequencies
 
@@ -263,8 +262,8 @@ class Powerspectrum(object):
         Compute the fractional rms amplitude in the periodgram
         between two frequencies.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         min_freq: float
             The lower frequency bound for the calculation
 
@@ -272,8 +271,8 @@ class Powerspectrum(object):
             The upper frequency bound for the calculation
 
 
-        Returns:
-        --------
+        Returns
+        -------
         rms: float
             The fractional rms amplitude contained between min_freq and
             max_freq
@@ -307,14 +306,14 @@ class Powerspectrum(object):
         strictly correct. We should be using the underlying power spectrum,
         but in the absence of an estimate of that, this will have to do.
 
-        Parameters:
-        ------------
+        Parameters
+        ----------
         powers: iterable
             The list of powers used to compute the fractional rms amplitude.
 
 
-        Returns:
-        --------
+        Returns
+        -------
         delta_rms: float
             the error on the fractional rms amplitude
         """
