@@ -96,10 +96,10 @@ class Powerspectrum(object):
         self.m = 1
 
         ## make the actual Fourier transform
-        fr = self._fourier_transform(lc)
+        self.unnorm_powers = self._fourier_transform(lc)
 
         ## normalize to either Leahy or rms normalization
-        self.ps = self._normalize_periodogram(fr, lc)
+        self.ps = self._normalize_periodogram(self.unnorm_powers, lc)
 
         ## make a list of frequencies to go with the powers
         self.freq = np.arange(self.ps.shape[0])*self.df + self.df/2.
@@ -122,10 +122,10 @@ class Powerspectrum(object):
 
         """
         fourier= scipy.fftpack.fft(lc.counts) ### do Fourier transform
-        fr = np.abs(fourier)**2.
+        fr = np.abs(fourier[:self.n/2+1])**2.
         return fr
 
-    def _normalize_periodogram(self, fr, lc):
+    def _normalize_periodogram(self, unnorm_powers, lc):
         """
         Normalize the periodogram to either Leahy or RMS normalization.
         In Leahy normalization, the periodogram is normalized in such a way
@@ -139,7 +139,7 @@ class Powerspectrum(object):
 
         Parameters
         ----------
-        fr: numpy.ndarray
+        unnorm_powers: numpy.ndarray
             The squared absolute value of the Fourier amplitudes
 
         lc: lightcurve.Lightcurve object
@@ -152,11 +152,11 @@ class Powerspectrum(object):
             The normalized periodogram
         """
         if self.norm.lower() == 'leahy':
-            p = fr[:self.n/2+1]
+            p = unnorm_powers
             ps =  2.*p/self.nphots
 
         elif self.norm.lower() == 'rms':
-            p = fr[:self.n/2+1]/np.float(self.n**2.)
+            p = unnorm_powers/np.float(self.n**2.)
             ps = p*2.*lc.tseg/(np.mean(lc.counts)**2.0)
 
         else:
@@ -278,25 +278,32 @@ class Powerspectrum(object):
             max_freq
 
         """
-        assert min_freq >= self.freq[0], "Lower frequency bound must be " \
-                                         "larger or equal the minimum " \
-                                         "frequency in the periodogram!"
+        #assert min_freq >= self.freq[0], "Lower frequency bound must be " \
+        #                                 "larger or equal the minimum " \
+        #                                 "frequency in the periodogram!"
 
-        assert max_freq <= self.freq[-1], "Upper frequency bound must be " \
-                                         "smaller or equal the maximum " \
-                                         "frequency in the periodogram!"
+        #assert max_freq <= self.freq[-1], "Upper frequency bound must be " \
+        #                                 "smaller or equal the maximum " \
+        #                                 "frequency in the periodogram!"
 
+        print(len(self.freq))
+        print(min_freq)
         minind = self.freq.searchsorted(min_freq)
+        print(minind)
+        print(max_freq)
         maxind = self.freq.searchsorted(max_freq)
+        print(maxind)
         powers = self.ps[minind:maxind]
-        if self.norm == "leahy":
+        if self.norm.lower() == 'leahy':
             rms = np.sqrt(np.sum(powers)/(self.nphots))
-        elif self.norm == "rms":
+        elif self.norm.lower() == "rms":
             rms = np.sqrt(np.sum(powers*self.df))
         else:
             raise Exception("Normalization not recognized!")
 
-        return rms
+        rms_err = self._rms_error(powers)
+
+        return rms, rms_err
 
     def _rms_error(self, powers):
         """
