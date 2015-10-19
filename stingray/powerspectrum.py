@@ -1,4 +1,4 @@
-__all__ = ["Periodogram", "AveragedPeriodogram"]
+__all__ = ["Powerspectrum", "AveragedPowerspectrum"]
 
 import numpy as np
 import scipy
@@ -10,12 +10,12 @@ import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 
 
-class Periodogram(object):
+class Powerspectrum(object):
 
     def __init__(self, lc = None, time = None, counts = None, norm='rms'):
         """
-        Make a Periodogram from a (binned) light curve. Periodograms can be
-        Leahy normalized or fractional rms normalized.
+        Make a Periodogram (power spectrum) from a (binned) light curve.
+        Periodograms can be Leahy normalized or fractional rms normalized.
         You can also make an empty Periodogram object to populate with your
         own fourier-transformed data (this can sometimes be useful when making
         binned periodograms).
@@ -186,7 +186,7 @@ class Periodogram(object):
                                                      method='mean')
 
         ## make an empty periodogram object
-        bin_ps = Periodogram()
+        bin_ps = Powerspectrum()
 
         ## store the binned periodogram in the new object
         bin_ps.norm = self.norm
@@ -323,7 +323,7 @@ class Periodogram(object):
         delta_rms = np.sum(p_err*drms_dp*self.df)
         return delta_rms
 
-class AveragedPeriodogram(object):
+class AveragedPowerspectrum(object):
 
     def __init__(self, lc=None, time=None, counts=None, segment_size=10.0,
                 norm="leahy"):
