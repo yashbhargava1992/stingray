@@ -149,3 +149,48 @@ class TestPowerspectrum(object):
         rms_lc = np.std(self.lc.counts)/np.mean(self.lc.counts)
         assert np.isclose(rms_ps, rms_lc,atol=0.01)
 
+    def test_fractional_rms_error(self):
+        """
+        TODO: Need to write a test for the fractional rms error.
+        But I don't know how!
+        """
+        pass
+
+    def test_rebin_makes_right_attributes(self):
+        ps = Powerspectrum(lc = self.lc, norm="Leahy")
+        ## replace powers
+        ps.ps[1:] = np.ones_like(ps.ps[1:])*2.0
+        rebin_factor = 2.0
+        bin_ps = ps.rebin(rebin_factor*ps.df)
+
+        assert bin_ps.freq is not None
+        assert bin_ps.ps is not None
+        assert bin_ps.df == rebin_factor*1.0/self.lc.tseg
+        assert bin_ps.norm.lower() == "leahy"
+        assert bin_ps.m == 2
+        assert bin_ps.n == self.lc.time.shape[0]
+        assert bin_ps.nphots == np.sum(self.lc.counts)
+
+    def test_rebin_uses_mean(self):
+        """
+        Make sure the rebin-method uses "mean" to average instead of summing
+        powers by default, and that this is not changed in the future!
+        Note: function defaults come as a tuple, so the first keyword argument
+        had better be 'method'
+        """
+        ps = Powerspectrum(lc = self.lc, norm="Leahy")
+        assert ps.rebin.func_defaults[0] == "mean"
+
+    def rebin_several(self, df):
+        """
+        TODO: Not sure how to write tests for the rebin method!
+        """
+        ps = Powerspectrum(lc = self.lc, norm="Leahy")
+        bin_ps = ps.rebin(df)
+        assert np.isclose(bin_ps.freq[0], bin_ps.df/2.)
+
+    def test_rebin(self):
+        df_all = [2, 3, 5, 1.5, 1,85]
+        for df in df_all:
+            yield self.rebin_several, df
+

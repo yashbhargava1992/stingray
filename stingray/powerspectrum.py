@@ -81,6 +81,9 @@ class Powerspectrum(object):
             self.n = None
             return
 
+        self._make_powerspectrum(lc)
+
+    def _make_powerspectrum(self, lc):
         ## total number of photons is the sum of the
         ## counts in the light curve
         self.nphots = np.sum(lc.counts)
@@ -164,7 +167,7 @@ class Powerspectrum(object):
 
         return ps
 
-    def rebin(self, df):
+    def rebin(self, df, method="mean"):
         """
         Rebin the periodogram to a new frequency resolution df.
 
@@ -180,17 +183,17 @@ class Powerspectrum(object):
         """
 
         ## rebin power spectrum to new resolution
-        binfreq, binps, step_size = utils.rebin_data(self.freq,
-                                                     self.ps, df,
-                                                     method='mean')
+        binfreq, binps, step_size = utils.rebin_data(self.freq[1:],
+                                                     self.ps[1:], df,
+                                                     method=method)
 
         ## make an empty periodogram object
         bin_ps = Powerspectrum()
 
         ## store the binned periodogram in the new object
         bin_ps.norm = self.norm
-        bin_ps.freq = binfreq
-        bin_ps.ps = binps
+        bin_ps.freq = np.hstack([binfreq[0]-self.df, binfreq])
+        bin_ps.ps = np.hstack([self.ps[0], binps])
         bin_ps.df = df
         bin_ps.n = self.n
         bin_ps.nphots = self.nphots
@@ -286,16 +289,11 @@ class Powerspectrum(object):
         #                                 "smaller or equal the maximum " \
         #                                 "frequency in the periodogram!"
 
-        print(len(self.freq))
-        print(min_freq)
         minind = self.freq.searchsorted(min_freq)
-        print(minind)
-        print(max_freq)
         maxind = self.freq.searchsorted(max_freq)
-        print(maxind)
         powers = self.ps[minind:maxind]
         if self.norm.lower() == 'leahy':
-            rms = np.sqrt(np.sum(powers)/(self.nphots))
+            rms = np.sqrt(np.sum(powers)/self.nphots)
         elif self.norm.lower() == "rms":
             rms = np.sqrt(np.sum(powers*self.df))
         else:
@@ -329,7 +327,7 @@ class Powerspectrum(object):
         delta_rms = np.sum(p_err*drms_dp*self.df)
         return delta_rms
 
-class AveragedPowerspectrum(object):
+class AveragedPowerspectrum(Powerspectrum):
 
     def __init__(self, lc=None, time=None, counts=None, segment_size=10.0,
                 norm="leahy"):
@@ -337,9 +335,94 @@ class AveragedPowerspectrum(object):
         Make an averaged periodogram from a light curve by segmenting the light
         curve, Fourier-transforming each segment and then averaging the
         resulting periodograms.
+        Parameters
+        ----------
+        lc: lightcurve.Lightcurve object, optional, default None
+            The light curve data to be Fourier-transformed.
+
+        time: iterable, optional, default None
+            If lc is None, then this argument should contain a list of time
+            stamps of light curve bins
+
+        counts: iterable, optional, default None
+            If lc is None, this argument should contain a list of **counts per
+            bin** corresponding to the timestamps in *time*.
+
+        segment_size: float, optional, default 10
+            The seize of each segment to
+
+        norm: {"leahy" | "rms"}, optional, default "rms"
+            The normaliation of the periodogram to be used. Options are
+            "leahy" or "rms", default is "rms".
+
+
+        Attributes
+        ----------
+        norm: {"leahy" | "rms"}
+            the normalization of the periodogram
+
+        freq: numpy.ndarray
+            The array of mid-bin frequencies that the Fourier transform samples
+
+        ps: numpy.ndarray
+            The array of normalized squared absolute values of Fourier
+            amplitudes
+
+        df: float
+            The frequency resolution
+
+        m: int
+            The number of averaged periodograms
+
+        n: int
+            The number of data points in the light curve
+
+        nphots: float
+            The total number of photons in the light curve
+
 
         """
+
+
+        self.norm = norm
+        self.segment_size = segment_size
+
+        Powerspectrum.__init__(lc, time, counts, norm)
+
         return
 
 
+    def _make_powerspectrum(self, lc):
 
+        ## number of bins per segment
+        nbins = int(self.segment_size/lc.dt)
+
+        start_ind = 0
+        end_ind = nbins
+
+        ps_all = []
+        nphots_all = []
+        while end_ind <= lc.counts.shape[0]:
+            time = lc.time[start_ind:end_ind]
+            counts = lc.counts[start_ind:end_ind]
+            lc_seg = lightcurve.Lightcurve(time, counts)
+            ps = Powerspectrum(lc_seg, norm=self.norm)
+            ps_all.append(ps)
+            nphots_all.append(np.sum(lc_seg.counts))
+            start_ind += nbins
+            end_ind += nbins
+
+        m = len(ps_all)
+        nphots = np.mean(nphots_all)
+        ps_avg = np.zeros_like(ps_all[0].ps)
+        for ps in ps_all:
+            ps_avg += ps.ps
+
+        ps_avg /= np.float(m)
+
+        self.freq = ps_all[0].freq
+        self.ps = ps_avg
+        self.m = m
+        self.df = ps_all[0].df
+        self.n = ps_all[0].n
+        self.nphots = nphots
