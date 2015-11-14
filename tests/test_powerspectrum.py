@@ -20,8 +20,6 @@ class TestPowerspectrum(object):
         poisson_counts = np.random.poisson(mean_counts,
                                            size=time.shape[0])
 
-        self.time = time
-        self.counts = poisson_counts
         self.lc = Lightcurve(time, counts=poisson_counts)
 
 
@@ -34,15 +32,6 @@ class TestPowerspectrum(object):
         assert ps.m == 1
         assert ps.n is None
 
-    def test_make_periodgram_from_arrays(self):
-        ps = Powerspectrum(time=self.time, counts=self.counts)
-        assert ps.freq is not None
-        assert ps.ps is not None
-        assert ps.df == 1.0/self.lc.tseg
-        assert ps.norm == "rms"
-        assert ps.m == 1
-        assert ps.n == self.lc.time.shape[0]
-        assert ps.nphots == np.sum(self.lc.counts)
 
     def test_make_periodogram_from_lightcurve(self):
         ps = Powerspectrum(lc=self.lc)
