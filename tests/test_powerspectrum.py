@@ -1,7 +1,12 @@
 
+
 import numpy as np
+
+from nose.tools import raises
+
+
 from stingray import Lightcurve
-from stingray import Powerspectrum
+from stingray import Powerspectrum, AveragedPowerspectrum
 
 np.random.seed(20150907)
 
@@ -182,4 +187,73 @@ class TestPowerspectrum(object):
         df_all = [2, 3, 5, 1.5, 1,85]
         for df in df_all:
             yield self.rebin_several, df
+
+
+class TestAveragedPowerspectrum(object):
+    def setUp(self):
+        tstart = 0.0
+        tend = 10.0
+        dt = 0.0001
+
+        time = np.linspace(tstart, tend, int((tend-tstart)/dt))
+
+        mean_count_rate = 1000.0
+        mean_counts = mean_count_rate*dt
+
+        poisson_counts = np.random.poisson(mean_counts,
+                                           size=time.shape[0])
+
+        self.lc = Lightcurve(time, counts=poisson_counts)
+
+    def test_one_segment(self):
+        segment_size = self.lc.tseg
+        ps = AveragedPowerspectrum(self.lc, segment_size)
+        assert np.isclose(ps.segment_size, segment_size)
+
+    def test_two_segments(self):
+        segment_size = self.lc.tseg/2.
+        ps = AveragedPowerspectrum(self.lc, segment_size)
+        assert np.isclose(ps.segment_size, segment_size)
+        assert ps.m == 2
+
+    def test_segments_with_leftover(self):
+        segment_size = self.lc.tseg/2. - 1.
+        ps = AveragedPowerspectrum(self.lc, segment_size)
+        assert np.isclose(ps.segment_size, segment_size)
+        assert ps.m == 2
+
+
+    def test_init_with_lightcurve(self):
+        assert AveragedPowerspectrum(self.lc, 10.0)
+
+    @raises(AssertionError)
+    def test_init_without_lightcurve(self):
+        assert AveragedPowerspectrum(self.lc.counts, 10.0)
+
+    @raises(AssertionError)
+    def test_init_with_nonsense_data(self):
+        nonsense_data = [None for i in xrange(100)]
+        assert AveragedPowerspectrum(nonsense_data, 10.0)
+
+
+
+
+    @raises(TypeError)
+    def test_init_without_segment(self):
+        assert AveragedPowerspectrum(self.lc)
+
+    @raises(TypeError)
+    def test_init_with_nonsense_segment(self):
+        segment_size = "foo"
+        assert AveragedPowerspectrum(self.lc, segment_size)
+
+    @raises(TypeError)
+    def test_init_with_none_segment(self):
+        segment_size = None
+        assert AveragedPowerspectrum(self.lc, segment_size)
+
+    @raises(AssertionError)
+    def test_init_with_inf_segment(self):
+        segment_size = np.inf
+        assert AveragedPowerspectrum(self.lc, segment_size)
 

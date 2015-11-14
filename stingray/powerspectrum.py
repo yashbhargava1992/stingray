@@ -331,7 +331,10 @@ class AveragedPowerspectrum(Powerspectrum):
             The light curve data to be Fourier-transformed.
 
         segment_size: float
-            The seize of each segment to
+            The size of each segment to average. Note that if the total duration
+            of each Lightcurve object in lc is not an integer multiple of the
+            segment_size, then any fraction left-over at the end of the
+            time series will be lost.
 
         norm: {"leahy" | "rms"}, optional, default "rms"
             The normaliation of the periodogram to be used. Options are
@@ -366,6 +369,15 @@ class AveragedPowerspectrum(Powerspectrum):
         """
 
 
+        ## make sure my inputs work!
+        assert isinstance(lc, lightcurve.Lightcurve), \
+                        "lc must be a lightcurve.Lightcurve object!"
+
+        assert norm in ["rms", "leahy"], \
+                        "norm must be either 'rms' or 'leahy'!"
+
+        assert np.isfinite(segment_size), "segment_size must be finite!"
+
         self.norm = norm
         self.segment_size = segment_size
 
@@ -388,7 +400,7 @@ class AveragedPowerspectrum(Powerspectrum):
             counts = lc.counts[start_ind:end_ind]
             lc_seg = lightcurve.Lightcurve(time, counts)
             ps_seg = Powerspectrum(lc_seg, norm=self.norm)
-            ps_all.append(ps)
+            ps_all.append(ps_seg)
             nphots_all.append(np.sum(lc_seg.counts))
             start_ind += nbins
             end_ind += nbins
@@ -412,7 +424,7 @@ class AveragedPowerspectrum(Powerspectrum):
 
             ps_all = np.hstack(ps_all)
             nphots_all = np.hstack(nphots_all)
-            
+
         m = len(ps_all)
         nphots = np.mean(nphots_all)
         ps_avg = np.zeros_like(ps_all[0].ps)
