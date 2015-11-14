@@ -210,11 +210,15 @@ class TestAveragedPowerspectrum(object):
         ps = AveragedPowerspectrum(self.lc, segment_size)
         assert np.isclose(ps.segment_size, segment_size)
 
-    def test_two_segments(self):
-        segment_size = self.lc.tseg/2.
+    def test_n_segments(self):
+        nseg_all = [1,2,3,5,10,20,100]
+        for nseg in nseg_all:
+            yield self.check_segment_size, nseg
+
+    def check_segment_size(self, nseg):
+        segment_size = self.lc.tseg/nseg
         ps = AveragedPowerspectrum(self.lc, segment_size)
-        assert np.isclose(ps.segment_size, segment_size)
-        assert ps.m == 2
+        assert ps.m == nseg
 
     def test_segments_with_leftover(self):
         segment_size = self.lc.tseg/2. - 1.
@@ -236,8 +240,6 @@ class TestAveragedPowerspectrum(object):
         assert AveragedPowerspectrum(nonsense_data, 10.0)
 
 
-
-
     @raises(TypeError)
     def test_init_without_segment(self):
         assert AveragedPowerspectrum(self.lc)
@@ -256,4 +258,10 @@ class TestAveragedPowerspectrum(object):
     def test_init_with_inf_segment(self):
         segment_size = np.inf
         assert AveragedPowerspectrum(self.lc, segment_size)
+
+    @raises(AssertionError)
+    def test_init_with_nan_segment(self):
+        segment_size = np.nan
+        assert AveragedPowerspectrum(self.lc, segment_size)
+
 
