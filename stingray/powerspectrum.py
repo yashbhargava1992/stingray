@@ -56,7 +56,13 @@ class Powerspectrum(object):
 
 
         """
-        self.norm = norm
+        print(norm)
+        assert isinstance(norm, str), "norm is not a string!"
+
+        assert norm.lower() in ["rms", "leahy"], \
+                "norm must be either 'rms' or 'leahy'!"
+
+        self.norm = norm.lower()
 
         ## check if input data is a Lightcurve object, if not make one or
         ## make an empty Periodogram object if lc == time == counts == None
@@ -74,6 +80,12 @@ class Powerspectrum(object):
         self._make_powerspectrum(lc)
 
     def _make_powerspectrum(self, lc):
+
+        ## make sure my inputs work!
+        assert isinstance(lc, lightcurve.Lightcurve), \
+                        "lc must be a lightcurve.Lightcurve object!"
+
+
         ## total number of photons is the sum of the
         ## counts in the light curve
         self.nphots = np.sum(lc.counts)
@@ -369,16 +381,9 @@ class AveragedPowerspectrum(Powerspectrum):
         """
 
 
-        ## make sure my inputs work!
-        assert isinstance(lc, lightcurve.Lightcurve), \
-                        "lc must be a lightcurve.Lightcurve object!"
-
-        assert norm in ["rms", "leahy"], \
-                        "norm must be either 'rms' or 'leahy'!"
-
         assert np.isfinite(segment_size), "segment_size must be finite!"
 
-        self.norm = norm
+        self.norm = norm.lower()
         self.segment_size = segment_size
 
         Powerspectrum.__init__(self, lc, norm)
@@ -388,6 +393,7 @@ class AveragedPowerspectrum(Powerspectrum):
 
     def _make_segment_psd(self, lc, segment_size):
         ## number of bins per segment
+        print(lc)
         nbins = int(segment_size/lc.dt)
 
         start_ind = 0
