@@ -56,7 +56,6 @@ class Powerspectrum(object):
 
 
         """
-        print(norm)
         assert isinstance(norm, str), "norm is not a string!"
 
         assert norm.lower() in ["rms", "leahy"], \
@@ -392,8 +391,10 @@ class AveragedPowerspectrum(Powerspectrum):
 
 
     def _make_segment_psd(self, lc, segment_size):
+
+        assert isinstance(lc, lightcurve.Lightcurve)
+
         ## number of bins per segment
-        print(lc)
         nbins = int(segment_size/lc.dt)
 
         start_ind = 0

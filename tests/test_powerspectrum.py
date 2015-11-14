@@ -298,3 +298,28 @@ class TestAveragedPowerspectrum(object):
         segment_size = 0.5
         assert AveragedPowerspectrum(lc_all, segment_size)
 
+    @raises(AssertionError)
+    def test_list_with_nonsense_component(self):
+        n_lcs = 10
+
+        tstart = 0.0
+        tend = 1.0
+        dt = 0.0001
+
+        time = np.linspace(tstart, tend, int((tend-tstart)/dt))
+
+        mean_count_rate = 1000.0
+        mean_counts = mean_count_rate*dt
+
+        lc_all = []
+        for n in xrange(n_lcs):
+            poisson_counts = np.random.poisson(mean_counts,
+                                           size=len(time))
+
+            lc = Lightcurve(time, counts=poisson_counts)
+            lc_all.append(lc)
+
+        lc_all.append(1.0)
+        segment_size = 0.5
+
+        assert AveragedPowerspectrum(lc_all, segment_size)
