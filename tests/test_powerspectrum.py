@@ -53,6 +53,29 @@ class TestPowerspectrum(object):
         assert isinstance(ps.freq, np.ndarray)
         assert isinstance(ps.ps, np.ndarray)
 
+
+    def test_init_with_lightcurve(self):
+        assert Powerspectrum(self.lc)
+
+    @raises(AssertionError)
+    def test_init_without_lightcurve(self):
+        assert Powerspectrum(self.lc.counts)
+
+    @raises(AssertionError)
+    def test_init_with_nonsense_data(self):
+        nonsense_data = [None for i in xrange(100)]
+        assert Powerspectrum(nonsense_data)
+
+    @raises(AssertionError)
+    def test_init_with_nonsense_norm(self):
+        nonsense_norm = "bla"
+        assert Powerspectrum(self.lc, norm=nonsense_norm)
+
+    @raises(AssertionError)
+    def test_init_with_wrong_norm_type(self):
+        nonsense_norm = 1.0
+        assert Powerspectrum(self.lc, norm=nonsense_norm)
+
     def test_fourier_amplitudes(self):
         """
         the integral of powers (or Riemann sum) should be close
@@ -227,19 +250,6 @@ class TestAveragedPowerspectrum(object):
         assert ps.m == 2
 
 
-    def test_init_with_lightcurve(self):
-        assert AveragedPowerspectrum(self.lc, 10.0)
-
-    @raises(AssertionError)
-    def test_init_without_lightcurve(self):
-        assert AveragedPowerspectrum(self.lc.counts, 10.0)
-
-    @raises(AssertionError)
-    def test_init_with_nonsense_data(self):
-        nonsense_data = [None for i in xrange(100)]
-        assert AveragedPowerspectrum(nonsense_data, 10.0)
-
-
     @raises(TypeError)
     def test_init_without_segment(self):
         assert AveragedPowerspectrum(self.lc)
@@ -264,4 +274,27 @@ class TestAveragedPowerspectrum(object):
         segment_size = np.nan
         assert AveragedPowerspectrum(self.lc, segment_size)
 
+
+    def test_list_of_light_curves(self):
+        n_lcs = 10
+
+        tstart = 0.0
+        tend = 1.0
+        dt = 0.0001
+
+        time = np.linspace(tstart, tend, int((tend-tstart)/dt))
+
+        mean_count_rate = 1000.0
+        mean_counts = mean_count_rate*dt
+
+        lc_all = []
+        for n in xrange(n_lcs):
+            poisson_counts = np.random.poisson(mean_counts,
+                                           size=len(time))
+
+            lc = Lightcurve(time, counts=poisson_counts)
+            lc_all.append(lc)
+
+        segment_size = 0.5
+        assert AveragedPowerspectrum(lc_all, segment_size)
 
