@@ -41,7 +41,7 @@ Test suite
 
 Try::
 
-   $ nostests
+   $ nosetests
 
 Copyright
 ---------
