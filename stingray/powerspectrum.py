@@ -12,7 +12,7 @@ import stingray.utils as utils
 
 class Powerspectrum(object):
 
-    def __init__(self, lc = None, time = None, counts = None, norm='rms'):
+    def __init__(self, lc=None, norm='rms'):
         """
         Make a Periodogram (power spectrum) from a (binned) light curve.
         Periodograms can be Leahy normalized or fractional rms normalized.
@@ -24,14 +24,6 @@ class Powerspectrum(object):
         ----------
         lc: lightcurve.Lightcurve object, optional, default None
             The light curve data to be Fourier-transformed.
-
-        time: iterable, optional, default None
-            If lc is None, then this argument should contain a list of time
-            stamps of light curve bins
-
-        counts: iterable, optional, default None
-            If lc is None, this argument should contain a list of **counts per
-            bin** corresponding to the timestamps in *time*.
 
         norm: {"leahy" | "rms"}, optional, default "rms"
             The normaliation of the periodogram to be used. Options are
@@ -68,9 +60,7 @@ class Powerspectrum(object):
 
         ## check if input data is a Lightcurve object, if not make one or
         ## make an empty Periodogram object if lc == time == counts == None
-        if lc is None and time is not None and counts is not None:
-            lc = lightcurve.Lightcurve(time, counts=counts)
-        elif lc is not None:
+        if lc is not None:
             pass
         else:
             self.freq = None
@@ -329,26 +319,18 @@ class Powerspectrum(object):
 
 class AveragedPowerspectrum(Powerspectrum):
 
-    def __init__(self, lc=None, time=None, counts=None, segment_size=10.0,
-                norm="leahy"):
+    def __init__(self, lc, segment_size, norm="rms"):
         """
         Make an averaged periodogram from a light curve by segmenting the light
         curve, Fourier-transforming each segment and then averaging the
         resulting periodograms.
         Parameters
         ----------
-        lc: lightcurve.Lightcurve object, optional, default None
+        lc: lightcurve.Lightcurve object OR
+            iterable of lightcurve.Lightcurve objects
             The light curve data to be Fourier-transformed.
 
-        time: iterable, optional, default None
-            If lc is None, then this argument should contain a list of time
-            stamps of light curve bins
-
-        counts: iterable, optional, default None
-            If lc is None, this argument should contain a list of **counts per
-            bin** corresponding to the timestamps in *time*.
-
-        segment_size: float, optional, default 10
+        segment_size: float
             The seize of each segment to
 
         norm: {"leahy" | "rms"}, optional, default "rms"
@@ -387,15 +369,14 @@ class AveragedPowerspectrum(Powerspectrum):
         self.norm = norm
         self.segment_size = segment_size
 
-        Powerspectrum.__init__(lc, time, counts, norm)
+        Powerspectrum.__init__(self, lc, norm)
 
         return
 
 
-    def _make_powerspectrum(self, lc):
-
+    def _make_segment_psd(self, lc, segment_size):
         ## number of bins per segment
-        nbins = int(self.segment_size/lc.dt)
+        nbins = int(segment_size/lc.dt)
 
         start_ind = 0
         end_ind = nbins
@@ -406,12 +387,32 @@ class AveragedPowerspectrum(Powerspectrum):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
             lc_seg = lightcurve.Lightcurve(time, counts)
-            ps = Powerspectrum(lc_seg, norm=self.norm)
+            ps_seg = Powerspectrum(lc_seg, norm=self.norm)
             ps_all.append(ps)
             nphots_all.append(np.sum(lc_seg.counts))
             start_ind += nbins
             end_ind += nbins
 
+        return ps_all, nphots_all
+
+    def _make_powerspectrum(self, lc):
+
+        ## chop light curves into segments
+        if isinstance(lc, lightcurve.Lightcurve):
+            ps_all, nphots_all = self._make_segment_psd(lc,
+                                                        self.segment_size)
+        else:
+            ps_all, nphots_all = [], []
+            for lc_seg in lc:
+                ps_sep, nphots_sep = self._make_segment_psd(lc_seg,
+                                                            self.segment_size)
+
+                ps_all.append(ps_sep)
+                nphots_all.append(nphots_sep)
+
+            ps_all = np.hstack(ps_all)
+            nphots_all = np.hstack(nphots_all)
+            
         m = len(ps_all)
         nphots = np.mean(nphots_all)
         ps_avg = np.zeros_like(ps_all[0].ps)
