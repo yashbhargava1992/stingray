@@ -72,7 +72,6 @@ def rebin_data(x, y, dx_new, method='sum'):
         ybin = ybin[:-1]
 
     xbin = np.arange(ybin.shape[0])*dx_new + x[0]-dx_old/2.+dx_new/2.
-    #xbin = np.arange(x[0]-dx_old*0.5, x[-1]-0.5*dx_old, dx_new) + dx_new/2.
 
 
     return xbin, ybin, step_size
