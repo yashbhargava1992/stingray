@@ -377,14 +377,19 @@ class Powerspectrum(object):
             lower than the threshold specified in `threshold`.
 
         """
-        pv= np.array([classical_pvalue(power, self.m) for power in self.ps])
+
+        ## calculate p-values for all powers
+        ## leave out zeroth power since it just encodes the number of photons!
+        pv= np.array([classical_pvalue(power, self.m) for power in self.ps[1:]])
 
         ## if trial correction is used, then correct the threshold for
         ## the number of powers in the power spectrum
         if trial_correction:
             threshold /= np.float(self.ps.shape[0])
 
-        indices = np.where(pv < threshold)[0]
+        ## need to add 1 to the indices to make up for the fact that
+        ## we left out the first power above!
+        indices = np.where(pv < threshold)[0]+1
 
         pvals = zip(pv, indices)
 

@@ -211,6 +211,43 @@ class TestPowerspectrum(object):
         for df in df_all:
             yield self.rebin_several, df
 
+    def test_classical_significances_runs(self):
+        ps = Powerspectrum(lc = self.lc, norm="Leahy")
+        ps.classical_significances()
+
+    def test_classical_significances_threshold(self):
+        ps = Powerspectrum(lc = self.lc, norm="leahy")
+
+        ## change the powers so that just one exceeds the threshold
+        ps.ps = np.zeros(ps.ps.shape[0])+2.0
+
+        index = 1
+        ps.ps[index] = 10.0
+
+        threshold = 0.01
+
+        pval = ps.classical_significances(threshold=threshold,
+                                          trial_correction=False)
+
+        assert pval[0][0] < threshold
+        assert pval[0][1] == index
+
+    def test_classical_significances_trial_correction(self):
+        ps = Powerspectrum(lc = self.lc, norm="leahy")
+
+        ## change the powers so that just one exceeds the threshold
+        ps.ps = np.zeros(ps.ps.shape[0])+2.0
+
+        index = 1
+        ps.ps[index] = 10.0
+
+        threshold = 0.01
+
+        pval = ps.classical_significances(threshold=threshold,
+                                          trial_correction=True)
+
+        assert len(pval) == 0
+
 
 class TestAveragedPowerspectrum(object):
     def setUp(self):
