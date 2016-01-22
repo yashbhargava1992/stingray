@@ -463,6 +463,9 @@ class Powerspectrum(object):
             lower than the threshold specified in `threshold`.
 
         """
+        assert self.norm == "leahy", "This method only works on " \
+                                     "Leahy-normalized power spectra!"
+
 
         ## calculate p-values for all powers
         ## leave out zeroth power since it just encodes the number of photons!

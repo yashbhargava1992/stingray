@@ -216,6 +216,11 @@ class TestPowerspectrum(object):
         ps = Powerspectrum(lc = self.lc, norm="Leahy")
         ps.classical_significances()
 
+    @raises(AssertionError)
+    def test_classical_significances_fails_in_rms(self):
+        ps = Powerspectrum(lc = self.lc, norm="rms")
+        ps.classical_significances()
+
     def test_classical_significances_threshold(self):
         ps = Powerspectrum(lc = self.lc, norm="leahy")
 
