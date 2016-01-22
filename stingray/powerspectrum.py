@@ -143,6 +143,9 @@ class Powerspectrum(object):
 
 
         """
+
+        ## TODO: One should be able to convert from rms to Leahy and do this
+        ## anyway!
         assert isinstance(norm, str), "norm is not a string!"
 
         assert norm.lower() in ["rms", "leahy"], \
