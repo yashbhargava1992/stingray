@@ -8,6 +8,7 @@ import scipy.optimize
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
+from stingray.classical_significances import classical_pvalue
 
 
 class Powerspectrum(object):
@@ -46,7 +47,7 @@ class Powerspectrum(object):
             The frequency resolution
 
         m: int
-            The number of averaged periodograms
+            The number of averaged powers in each bin
 
         n: int
             The number of data points in the light curve
@@ -327,6 +328,71 @@ class Powerspectrum(object):
         drms_dp = 1./(2.*np.sqrt(np.sum(powers)*self.df))
         delta_rms = np.sum(p_err*drms_dp*self.df)
         return delta_rms
+
+    def classical_significances(self, threshold=1.0, trial_correction=False):
+        """
+        Compute the classical significances for the powers in the power
+        spectrum, assuming an underlying noise distribution that follows a
+        chi-square distributions with 2M degrees of freedom, where M is the
+        number of powers averaged in each bin.
+
+        Note that this function will *only* produce correct results when the
+        following underlying assumptions are fulfilled:
+        (1) The power spectrum is Leahy-normalized
+        (2) There is no source of variability in the data other than the
+        periodic signal to be determined with this method. This is important!
+        If there are other sources of (aperiodic) variability in the data, this
+        method will *not* produce correct results, but instead produce a large
+        number of spurious false positive detections!
+        (3) There are no significant instrumental effects changing the
+        statistical distribution of the powers (e.g. pile-up or dead time)
+
+        By default, the method produces (index,p-values) for all powers in
+        the power spectrum, where index is the numerical index of the power in
+        question. If a `threshold` is set, then only powers with p-values
+        *below* that threshold with their respective indices. If
+        `trial_correction` is set to True, then the threshold will be corrected
+        for the number of trials (frequencies) in the power spectrum before
+        being used.
+
+        Parameters
+        ----------
+        threshold : float
+            The threshold to be used when reporting p-values of potentially
+            significant powers. Must be between 0 and 1.
+            Default is 1 (all p-values will be reported).
+
+        trial_correction : bool
+            A Boolean flag that sets whether the `threshold` will be correted
+            by the number of frequencies before being applied. This decreases
+            the threshold (p-values need to be lower to count as significant).
+            Default is False (report all powers) though for any application
+            where `threshold` is set to something meaningful, this should also
+            be applied!
+
+        Returns
+        -------
+        pvals : iterable
+            A list of (index, p-value) tuples for all powers that have p-values
+            lower than the threshold specified in `threshold`.
+
+        """
+        pv= np.array([classical_pvalue(power, self.m) for power in self.ps])
+
+        ## if trial correction is used, then correct the threshold for
+        ## the number of powers in the power spectrum
+        if trial_correction:
+            threshold /= np.float(self.ps.shape[0])
+
+        indices = np.where(pv < threshold)[0]
+
+        pvals = zip(pv, indices)
+
+        return pvals
+
+
+
+
 
 class AveragedPowerspectrum(Powerspectrum):
 
