@@ -76,6 +76,13 @@ class TestLightcurve(object):
         lc = Lightcurve(times, counts)
         assert np.allclose(lc.countrate, np.zeros_like(counts)+mean_counts/dt)
 
+    def test_input_countrate(self):
+        dt = 0.5
+        mean_counts = 2.0
+        times = np.arange(0+dt/2.,5-dt/2., dt)
+        countrate = np.zeros_like(times) + mean_counts
+        lc = Lightcurve(times, countrate, input_counts=False)
+        assert np.allclose(lc.counts, np.zeros_like(countrate)+mean_counts*dt)
 
     @raises(TypeError)
     def test_init_with_none_data(self):
