@@ -190,16 +190,13 @@ class Powerspectrum(object):
         self.m = 1
 
         ## make the actual Fourier transform
-        self.unnorm_powers = self._fourier_transform(lc)
+        self.unnorm_powers, self.freq = self._fourier_transform(lc, dt=lc.dt)
 
         ## normalize to either Leahy or rms normalization
         self.ps = self._normalize_periodogram(self.unnorm_powers, lc)
 
-        ## make a list of frequencies to go with the powers
-        self.freq = np.arange(self.ps.shape[0])*self.df + self.df/2.
 
-
-    def _fourier_transform(self, lc):
+    def _fourier_transform(self, lc, dt=1.0):
         """
         Fourier transform the light curve, then square the
         absolute value of the Fourier amplitudes.
@@ -216,8 +213,9 @@ class Powerspectrum(object):
 
         """
         fourier= scipy.fftpack.fft(lc.counts) ### do Fourier transform
-        fr = np.abs(fourier[:self.n/2+1])**2.
-        return fr
+        freqs = scipy.fftpack.fftfreqs(lc.counts.shape[0], dt)
+        fr = np.abs(fourier[freqs > 0])**2.
+        return freqs, fr
 
     def _normalize_periodogram(self, unnorm_powers, lc):
         """
