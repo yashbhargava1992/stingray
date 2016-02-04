@@ -215,7 +215,7 @@ class Powerspectrum(object):
         fourier= scipy.fftpack.fft(lc.counts) ### do Fourier transform
         freqs = scipy.fftpack.fftfreqs(lc.counts.shape[0], dt)
         fr = np.abs(fourier[freqs > 0])**2.
-        return freqs, fr
+        return freqs[freqs > 0], fr
 
     def _normalize_periodogram(self, unnorm_powers, lc):
         """
