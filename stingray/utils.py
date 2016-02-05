@@ -1,4 +1,11 @@
 import numpy as np
+import warnings
+# If numba is installed, import jit. Otherwise, define an empty decorator with the same name.
+try:
+    from numba import jit
+except:
+    def jit(fun):
+        return fun
 
 def simon(message, **kwargs):
     """
