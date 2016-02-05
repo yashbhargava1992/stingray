@@ -5,6 +5,8 @@ import scipy
 import scipy.stats
 import scipy.fftpack
 import scipy.optimize
+import logging
+import warnings
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
@@ -59,7 +61,7 @@ def classical_pvalue(power, nspec):
     ## If the power is really big, it's safe to say it's significant,
     ## and the p-value will be nearly zero
     if power*nspec > 30000:
-        print("Probability of no signal too miniscule to calculate.")
+        warnings.warn("Probability of no signal too miniscule to calculate.")
         return 0.0
 
     else:

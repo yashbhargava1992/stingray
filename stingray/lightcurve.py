@@ -9,6 +9,7 @@ __all__ = ["Lightcurve"]
 
 import numpy as np
 import stingray.utils as utils
+import logging
 
 class Lightcurve(object):
     def __init__(self, time, counts, input_counts=True):
@@ -124,10 +125,10 @@ class Lightcurve(object):
         if tseg is None:
             tseg = toa[-1] - toa[0]
 
-        print("tseg: " + str(tseg))
+        logging.info("make_lightcurve: tseg: " + str(tseg))
 
         timebin = np.int(tseg/dt)
-        print("timebin:  " + str(timebin))
+        logging.info("make_lightcurve: timebin:  " + str(timebin))
 
         tend = tstart + timebin*dt
 
