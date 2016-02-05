@@ -1,5 +1,22 @@
 import numpy as np
 
+def simon(message, **kwargs):
+    """
+    The Statistical Interpretation MONitor.
+    
+    A warning system designed to always remind the user that Simon
+    is watching him/her.
+    
+    Parameters
+    ---------
+    message : string
+        The message that is thrown
+    kwargs : dict
+        The rest of the arguments that are passed to warnings.warn
+    """
+    warnings.warn("SIMON says: {0}".format(message), **kwargs)
+
+
 def rebin_data(x, y, dx_new, method='sum'):
 
     """
