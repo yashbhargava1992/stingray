@@ -5,6 +5,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import collections
 from ..utils import simon, jit
+from scipy.optimize import minimize, basinhopping, curve_fit
 
 
 def _default_value_if_no_key(dictionary, key, default):
@@ -335,7 +336,7 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     ntrial : int
         The number of trials executed to find this profile
     """
-   if ntrial > 1:
+    if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
     return stats.chi2.isf(epsilon / ntrial, 2 * n)
@@ -366,3 +367,196 @@ def z2_2_probability(z2, n=2, ntrial=1):
     from scipy import stats
     return stats.chi2.sf(stat, 2 * n) * ntrial
 
+
+def fftfit_fun(profile, template, amplitude, phase):
+    '''Function to be minimized for the FFTFIT method.
+
+    From Taylor (1992).
+
+    Parameters
+    ----------
+    profile : array
+        The pulse profile
+    template : array
+        A pulse shape template, of the same length as profile.
+    amplitude, phase : float
+        The amplitude and phase of the template w.r.t the real profile.
+
+    Returns
+    -------
+    fftfit_chisq : float
+        The chi square-like statistics of FFTFIT
+    '''
+
+    prof_ft = np.fft.fft(profile)
+    temp_ft = np.fft.fft(template)
+    freq = np.fft.fftfreq(len(profile))
+    good = freq > 0
+    idx = np.arange(0, len(prof_ft), dtype=int)
+    sigma = np.std(prof_ft[good])
+    return np.sum(np.absolute(prof_ft - temp_ft*amplitude*np.exp(-2*np.pi*1.0j*idx*phase))**2 / sigma)
+
+
+def _fft_fun_wrap(pars, data):
+    '''Wrap parameters and input data up in order to be used with minimization
+    algorithms.'''
+    amplitude, phase = pars
+    profile, template = data
+    return fftfit_fun(profile, template, amplitude, phase)
+
+
+def _triple_sinusoid_model(phase, a0, ph, a1, ph1, a2, ph2):
+    twopi = np.pi * 2
+    return a0 * np.cos(twopi * (phase - ph)) + \
+        a1 * np.cos(twopi * (2 * (phase - ph - ph1))) + \
+            a2 * np.cos(twopi * (3 * (phase - ph - ph2)))
+
+
+def _pulse_template(phase, prof):
+    pres, pcov = curve_fit(_triple_sinusoid_model, phase, prof)
+
+    template = _triple_sinusoid_model(phase, *pres)
+
+    fine_phase = np.arange(0, 1, 0.0001)
+    fine_template = _triple_sinusoid_model(fine_phase, *pres)
+    additional_phase = fine_phase[np.argmax(fine_template)]
+    return template, additional_phase
+
+
+def fftfit(prof, template=None, **fftfit_kwargs):
+    """Align a template to a pulse profile.
+
+    Parameters
+    ----------
+    phase : array
+        The phases corresponding to each bin of the profile
+    prof : array
+        The pulse profile
+    template : array, default None
+        The template of the pulse used to perform the TOA calculation. If None,
+        a simple sinusoid is used
+
+    Returns
+    -------
+    mean_amp, std_amp : floats
+        Mean and standard deviation of the amplitude
+    mean_phase, std_phase : floats
+        Mean and standard deviation of the phase
+
+    Other Parameters
+    ----------------
+    fftfit_kwargs : arguments
+        Additional arguments to be passed to error calculation
+    """
+    prof = prof - np.mean(prof)
+
+    nbin = len(prof)
+
+    ph = np.arange(0, 1, 1/nbin)
+    if template is None:
+        template = np.cos(2 * np.pi * ph)
+    template = template - np.mean(template)
+
+    p0 = [np.max(prof), np.float(np.argmax(prof) / nbin)]
+
+    res = basinhopping(_fft_fun_wrap, p0,
+                       minimizer_kwargs={'args':([prof, template],),
+                                         'bounds': [[0, None], [0, None]]},
+                       niter=10000, niter_success=200)
+
+    return fftfit_error(ph, prof, template, res.x, **fftfit_kwargs)
+
+
+def fftfit_error(phase, prof, template, p0, **fftfit_kwargs):
+    """Calculate the error on the fit parameters from FFTFIT.
+
+    Parameters
+    ----------
+    phase : array
+        The phases corresponding to each bin of the profile
+    prof : array
+        The pulse profile
+    template : array
+        The template of the pulse used to perform the TOA calculation
+    p0 : list
+        The initial parameters for the fit
+
+    Returns
+    -------
+    mean_amp, std_amp : floats
+        Mean and standard deviation of the amplitude
+    mean_phase, std_phase : floats
+        Mean and standard deviation of the phase
+
+    Other parameters
+    ----------------
+    nstep : int, optional, default 100
+        Number of steps for the bootstrap method
+    """
+    nstep = _default_value_if_no_key(fftfit_kwargs, "nstep", 100)
+
+    approx, _ = _pulse_template(phase, prof)
+    sigma = np.std(prof - approx)
+    nbin = len(prof)
+
+    ph_fit = np.zeros(nstep)
+    amp_fit = np.zeros(nstep)
+    # use bootstrap method to calculate errors
+    for i in range(nstep):
+        newprof = approx + np.random.normal(0, sigma, nbin)
+        res = minimize(_fft_fun_wrap, p0, args=([newprof, template],),
+                       method='L-BFGS-B',
+                       bounds=[[0, None], [0, None]])
+        amp_fit[i] = res.x[0]
+        ph_fit[i] = res.x[1]
+
+    p0 -= np.floor(p0)
+
+    std_save = 1e32
+    # avoid problems if phase around 0 or 1: shift, calculate std,
+    # if less save new std
+    for shift in np.arange(0, 0.8, 0.1):
+        phs = ph_fit + shift
+        phs -= np.floor(phs)
+        std = np.std(phs)
+        if std <= std_save:
+            std_save = std
+            mean_save = np.mean(phs) - shift
+
+    # But still, never less than half a bin!
+    std_save = np.max([std_save, np.diff(phase)[0] / 2])
+    return np.mean(amp_fit), np.std(amp_fit), mean_save, std_save 
+
+
+def get_TOA(prof, period, tstart, template=None, additional_phase=0,
+            **fftfit_kwargs):
+    """Calculate the Time-Of-Arrival of a pulse.
+
+    Parameters
+    ----------
+    prof : array
+        The pulse profile
+    template : array, default None
+        The template of the pulse used to perform the TOA calculation, if any.
+        Otherwise use the default of fftfit
+    tstart : float
+        The time at the start of the pulse profile
+
+    Returns
+    -------
+    toa, toastd : floats
+        Mean and standard deviation of the TOA
+
+    Other parameters
+    ----------------
+    nstep : int, optional, default 100
+        Number of steps for the bootstrap method
+    """
+    mean_amp, std_amp, phase_res, phase_res_err = \
+        fftfit(prof, template=template, **fftfit_kwargs)
+    phase_res = phase_res + additional_phase
+    phase_res = phase_res - np.floor(phase_res)
+
+    toa = tstart + phase_res * period
+    toaerr = phase_res_err * period
+    return toa, toaerr

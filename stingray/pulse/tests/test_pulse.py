@@ -3,6 +3,10 @@ from ..pulsar import *
 import unittest
 
 
+def _template_fun(phase, ph0, amplitude, baseline=0):
+    return baseline + amplitude * np.cos((phase - ph0) * 2 * np.pi)
+
+
 class TestAll(unittest.TestCase):
 
     """Unit tests for the stingray.pulsar module."""
@@ -81,3 +85,33 @@ class TestAll(unittest.TestCase):
         np.testing.assert_almost_equal(z_n(np.arange(1), n=2, norm=1), 4)
         np.testing.assert_almost_equal(z_n(np.arange(2), n=2, norm=1), 8)
         np.testing.assert_almost_equal(z_n(np.arange(2)+0.5, n=2, norm=1), 8)
+
+    def test_get_TOA1(self):
+        period = 1.2
+        tstart = 122
+        start_phase = 0.2123
+        phases = np.arange(0, 1, 1 / 32)
+        template = _template_fun(phases, start_phase, 10, 20)
+        prof = np.random.poisson(template)
+
+        toa, toaerr = \
+            get_TOA(prof, period, tstart,
+                    template=_template_fun(phases, 0, 1, 0))
+
+        real_toa = tstart + start_phase * period
+        assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
+
+    def test_get_TOA2(self):
+        period = 1.2
+        tstart = 122
+        start_phase = 0.2123
+        phases = np.arange(0, 1, 1 / 32)
+        template = _template_fun(phases, start_phase, 10, 20)
+        prof = np.random.poisson(template)
+
+        toa, toaerr = \
+            get_TOA(prof, period, tstart,
+                    template=_template_fun(phases, 0, 1, 0), nstep=200)
+
+        real_toa = tstart + start_phase * period
+        assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
