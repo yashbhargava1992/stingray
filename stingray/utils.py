@@ -1,19 +1,24 @@
+from __future__ import (absolute_import, unicode_literals, division,
+                        print_function)
 import numpy as np
 import warnings
-# If numba is installed, import jit. Otherwise, define an empty decorator with the same name.
+import sys
+# If numba is installed, import jit. Otherwise, define an empty decorator with
+# the same name.
 try:
     from numba import jit
 except:
     def jit(fun):
         return fun
 
+
 def simon(message, **kwargs):
     """
     The Statistical Interpretation MONitor.
-    
+
     A warning system designed to always remind the user that Simon
     is watching him/her.
-    
+
     Parameters
     ---------
     message : string
@@ -97,5 +102,48 @@ def rebin_data(x, y, dx_new, method='sum'):
 
     xbin = np.arange(ybin.shape[0])*dx_new + x[0]-dx_old/2.+dx_new/2.
 
-
     return xbin, ybin, step_size
+
+
+def _assign_value_if_none(value, default):
+    if value is None:
+        return default
+    else:
+        return value
+
+
+def _look_for_array_in_array(array1, array2):
+    for a1 in array1:
+        if a1 in array2:
+            return a1
+
+
+def is_string(s):
+    """Portable function to answer this question."""
+    PY2 = sys.version_info[0] == 2
+    if PY2:
+        return isinstance(s, basestring)  # NOQA
+    else:
+        return isinstance(s, str)  # NOQA
+
+
+def _order_list_of_arrays(data, order):
+    if hasattr(data, 'items'):
+        data = dict([(i[0], i[1][order])
+                     for i in data.items()])
+    elif hasattr(data, 'index'):
+        data = [i[order] for i in data]
+    else:
+        data = None
+    return data
+
+
+def optimal_bin_time(fftlen, tbin):
+    """Vary slightly the bin time to have a power of two number of bins.
+
+    Given an FFT length and a proposed bin time, return a bin time
+    slightly shorter than the original, that will produce a power-of-two number
+    of FFT bins.
+    """
+    import numpy as np
+    return fftlen / (2 ** np.ceil(np.log2(fftlen / tbin)))

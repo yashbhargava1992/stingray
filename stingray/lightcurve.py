@@ -175,5 +175,3 @@ class Lightcurve(object):
 
         lc_new = Lightcurve(bin_time, bin_counts)
         return lc_new
-
-
