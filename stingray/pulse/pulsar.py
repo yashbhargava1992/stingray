@@ -247,6 +247,8 @@ def fold_profile_probability(stat, nbin, ntrial=1):
     ntrial : int
         The number of trials executed to find this profile
     """
+    if ntrial > 1:
+        simon("fold: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
     return stats.chi2.sf(stat, (nbin - 1)) * ntrial
 
@@ -274,6 +276,8 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     ntrial : int
         The number of trials executed to find this profile
     """
+    if ntrial > 1:
+        simon("fold: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
     return stats.chi2.isf(epsilon, nbin - 1)
 
@@ -307,4 +311,58 @@ def z_n(phase, n=2, norm=1):
                 np.sum(np.sin(k * phase) * norm) ** 2
                 for k in range(1, n + 1)])
 
+
+def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
+    """Return the detection level for the Z^2_n statistics.
+
+    See Buccheri et al. (1983), Bendat and Piersol (1971).
+
+    Parameters
+    ----------
+    n : int, default 2
+        The ``n`` in $Z^2_n$
+    epsilon : float, default 0.01
+        The fractional probability that the signal has been produced by noise
+
+    Returns
+    -------
+    detlev : float
+        The epoch folding statistics corresponding to a probability
+        epsilon * 100 % that the signal has been produced by noise
+
+    Other Parameters
+    ----------------
+    ntrial : int
+        The number of trials executed to find this profile
+    """
+   if ntrial > 1:
+        simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
+    from scipy import stats
+    return stats.chi2.isf(epsilon / ntrial, 2 * n)
+
+
+def z2_2_probability(z2, n=2, ntrial=1):
+    """Calculate the probability of a certain folded profile, due to noise.
+
+    Parameters
+    ----------
+    z2 : float
+        A Z^2_n statistics value
+    n : int, default 2
+        The ``n`` in $Z^2_n$
+
+    Returns
+    -------
+    p : float
+        The probability that the Z^2_n value has been produced by noise
+
+    Other Parameters
+    ----------------
+    ntrial : int
+        The number of trials executed to find this profile
+    """
+    if ntrial > 1:
+        simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
+    from scipy import stats
+    return stats.chi2.sf(stat, 2 * n) * ntrial
 
