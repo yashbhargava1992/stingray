@@ -7,6 +7,7 @@ Authors
 --------
 * Abigail Stevens (UvA)
 * Daniela Huppenkothen (NYU CDS)
+* Matteo Bachetti (INAF/OACa)
 
 Contents
 --------
