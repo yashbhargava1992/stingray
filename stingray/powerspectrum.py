@@ -1,5 +1,4 @@
-__all__ = ["Powerspectrum", "AveragedPowerspectrum"]
-
+from __future__ import division
 import numpy as np
 import scipy
 import scipy.stats
@@ -10,6 +9,8 @@ import logging
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 from stingray.utils import simon
+
+__all__ = ["Powerspectrum", "AveragedPowerspectrum"]
 
 
 def classical_pvalue(power, nspec):
@@ -54,7 +55,7 @@ def classical_pvalue(power, nspec):
     """
 
     assert np.isfinite(power), "power must be a finite floating point number!"
-    assert power > 0.0, "power must be a positive real number!"
+    assert power > 0, "power must be a positive real number!"
     assert np.isfinite(nspec), "nspec must be a finite integer number"
     assert nspec >= 1, "nspec must be larger or equal to 1"
     assert np.isclose(nspec % 1, 0), "nspec must be an integer number!"
@@ -85,7 +86,7 @@ def _pavnosigfun(power, nspec):
         for i in xrange(int(m)-1):
             s += np.log(float(m-i))
 
-        logterm = m*np.log(pn/2.0) - pn/2.0 - s
+        logterm = m*np.log(pn/2) - pn/2 - s
         term = np.exp(logterm)
         ratio = sum/term
 
@@ -183,7 +184,7 @@ class Powerspectrum(object):
         self.n = lc.counts.shape[0]
 
         ## the frequency resolution
-        self.df = 1.0/lc.tseg
+        self.df = 1/lc.tseg
 
         ## the number of averaged periodograms in the final output
         ## This should *always* be 1 here
@@ -244,11 +245,11 @@ class Powerspectrum(object):
         """
         if self.norm.lower() == 'leahy':
             p = unnorm_powers
-            ps = 2.*p/self.nphots
+            ps = 2*p/self.nphots
 
         elif self.norm.lower() == 'rms':
-            p = unnorm_powers/np.float(self.n**2.)
-            ps = p*2.*lc.tseg/(np.mean(lc.counts)**2.0)
+            p = unnorm_powers/np.float(self.n**2)
+            ps = p*2*lc.tseg/(np.mean(lc.counts)**2)
 
         else:
             raise Exception("Normalization not recognized!")
@@ -343,7 +344,7 @@ class Powerspectrum(object):
 
         ## shift the lower bin edges to the middle of the bin and drop the
         ## last right bin edge
-        binfreq = binfreq[:-1]+df/2.
+        binfreq = binfreq[:-1]+df/2
 
         return binfreq, binps, nsamples
 
@@ -410,11 +411,11 @@ class Powerspectrum(object):
             the error on the fractional rms amplitude
         """
         p_err = scipy.stats.chi2(2.*self.m).var()*powers/self.m
-        drms_dp = 1./(2.*np.sqrt(np.sum(powers)*self.df))
+        drms_dp = 1/(2*np.sqrt(np.sum(powers)*self.df))
         delta_rms = np.sum(p_err*drms_dp*self.df)
         return delta_rms
 
-    def classical_significances(self, threshold=1.0, trial_correction=False):
+    def classical_significances(self, threshold=1, trial_correction=False):
         """
         Compute the classical significances for the powers in the power
         spectrum, assuming an underlying noise distribution that follows a
@@ -473,7 +474,7 @@ class Powerspectrum(object):
         ## if trial correction is used, then correct the threshold for
         ## the number of powers in the power spectrum
         if trial_correction:
-            threshold /= np.float(self.ps.shape[0])
+            threshold /= self.ps.shape[0]
 
         ## need to add 1 to the indices to make up for the fact that
         ## we left out the first power above!
