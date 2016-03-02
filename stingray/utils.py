@@ -1,19 +1,22 @@
 import numpy as np
 import warnings
-# If numba is installed, import jit. Otherwise, define an empty decorator with the same name.
+
+# If numba is installed, import jit. Otherwise, define an empty decorator
+# with the same name.
 try:
     from numba import jit
 except:
     def jit(fun):
         return fun
 
+
 def simon(message, **kwargs):
     """
     The Statistical Interpretation MONitor.
-    
+
     A warning system designed to always remind the user that Simon
     is watching him/her.
-    
+
     Parameters
     ---------
     message : string
@@ -96,6 +99,5 @@ def rebin_data(x, y, dx_new, method='sum'):
         ybin = ybin[:-1]
 
     xbin = np.arange(ybin.shape[0])*dx_new + x[0]-dx_old/2.+dx_new/2.
-
 
     return xbin, ybin, step_size
