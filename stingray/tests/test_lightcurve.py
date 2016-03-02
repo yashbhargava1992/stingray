@@ -90,7 +90,7 @@ class TestLightcurve(object):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0+dt/2.,5-dt/2., dt)
-        counts = np.array([None for i in xrange(times.shape[0])])
+        counts = np.array([None for i in range(times.shape[0])])
         lc = Lightcurve(times, counts)
 
     @raises(AssertionError)
@@ -98,7 +98,7 @@ class TestLightcurve(object):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0+dt/2.,5-dt/2., dt)
-        counts = np.array([np.inf for i in xrange(times.shape[0])])
+        counts = np.array([np.inf for i in range(times.shape[0])])
         lc = Lightcurve(times, counts)
 
     @raises(AssertionError)
@@ -106,7 +106,7 @@ class TestLightcurve(object):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0+dt/2.,5-dt/2., dt)
-        counts = np.array([np.nan for i in xrange(times.shape[0])])
+        counts = np.array([np.nan for i in range(times.shape[0])])
         lc = Lightcurve(times, counts)
 
 
