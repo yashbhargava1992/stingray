@@ -8,4 +8,4 @@ dist/
 *.egg-info/
 
 # Sphinx documentation
-doc/_build/
+docs/_build/
