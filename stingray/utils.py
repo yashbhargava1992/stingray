@@ -1,19 +1,23 @@
+from __future__ import division
 import numpy as np
 import warnings
-# If numba is installed, import jit. Otherwise, define an empty decorator with the same name.
+
+# If numba is installed, import jit. Otherwise, define an empty decorator
+# with the same name.
 try:
     from numba import jit
 except:
     def jit(fun):
         return fun
 
+
 def simon(message, **kwargs):
     """
     The Statistical Interpretation MONitor.
-    
+
     A warning system designed to always remind the user that Simon
     is watching him/her.
-    
+
     Parameters
     ---------
     message : string
@@ -60,7 +64,7 @@ def rebin_data(x, y, dx_new, method='sum'):
     assert dx_new >= dx_old, "New frequency resolution must be larger than " \
                              "old frequency resolution."
 
-    step_size = np.float(dx_new)/np.float(dx_old)
+    step_size = dx_new/dx_old
 
     output = []
     for i in np.arange(0, y.shape[0], step_size):
@@ -92,10 +96,9 @@ def rebin_data(x, y, dx_new, method='sum'):
 
     tseg = x[-1]-x[0]+dx_old
 
-    if tseg/dx_new % 1.0 > 0.0:
+    if tseg/dx_new % 1 > 0:
         ybin = ybin[:-1]
 
     xbin = np.arange(ybin.shape[0])*dx_new + x[0]-dx_old/2.+dx_new/2.
-
 
     return xbin, ybin, step_size
