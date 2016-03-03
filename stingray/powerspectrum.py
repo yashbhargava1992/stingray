@@ -215,7 +215,7 @@ class Powerspectrum(object):
 
         """
         fourier= scipy.fftpack.fft(lc.counts) ### do Fourier transform
-        freqs = scipy.fftpack.fftfreqs(lc.counts.shape[0], lc.dt)
+        freqs = scipy.fftpack.fftfreq(lc.counts.shape[0], lc.dt)
         fr = np.abs(fourier[freqs > 0])**2.
         return freqs[freqs > 0], fr
 
