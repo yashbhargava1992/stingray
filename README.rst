@@ -58,5 +58,7 @@ this project, please `get in touch via the issues
 
 .. |Build Status Master| image:: https://travis-ci.org/StingraySoftware/stingray.svg?branch=master
     :target: https://travis-ci.org/StingraySoftware/stingray   
-.. |Coverage Status Master| image:: https://coveralls.io/repos/github/StingraySoftware/stingray/badge.svg?branch=master :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master 
+.. |Coverage Status Master| image:: https://coveralls.io/repos/github/StingraySoftware/stingray/badge.svg?branch=master 
+    :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master 
+
 
