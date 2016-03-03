@@ -59,6 +59,7 @@ matrix:
         - python: 3.4
           env: ASTROPY_VERSION=development
 
+    allow_failures:
         # Try older numpy versions
         - python: 2.7
           env: NUMPY_VERSION=1.8
@@ -73,6 +74,13 @@ matrix:
           env: SCIPY_VERSION=0.15.0
         - python: 2.7
           env: SCIPY_VERSION=0.14.0
+
+        - python: 2.6
+        - python: 3.3
+
+        - python: 2.7
+          env: SETUP_CMD='build_sphinx -w'
+
 
 before_install:
 
