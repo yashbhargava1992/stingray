@@ -119,7 +119,7 @@ def _look_for_array_in_array(array1, array2):
             return a1
 
 
-def is_string(s):
+def is_string(s): # pragma : no cover
     """Portable function to answer this question."""
     PY2 = sys.version_info[0] == 2
     if PY2:
@@ -128,11 +128,19 @@ def is_string(s):
         return isinstance(s, str)  # NOQA
 
 
+def is_iterable(stuff):
+    """Test if stuff is an iterable."""
+    import collections
+
+    return isinstance(stuff, collections.Iterable)
+
+
+
 def _order_list_of_arrays(data, order):
     if hasattr(data, 'items'):
         data = dict([(i[0], i[1][order])
                      for i in data.items()])
-    elif hasattr(data, 'index'):
+    elif is_iterable(data):
         data = [i[order] for i in data]
     else:
         data = None
