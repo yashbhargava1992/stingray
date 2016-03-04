@@ -79,7 +79,6 @@ class TestPowerspectrum(object):
         assert Powerspectrum(self.lc, norm=nonsense_norm)
 
 
-
     def test_total_variance(self):
         """
         the integral of powers (or Riemann sum) should be close
@@ -211,6 +210,7 @@ class TestPowerspectrum(object):
         ps = Powerspectrum(lc = self.lc, norm="rms")
         ps.classical_significances()
 
+
     def test_classical_significances_threshold(self):
         ps = Powerspectrum(lc = self.lc, norm="leahy")
 
@@ -225,8 +225,8 @@ class TestPowerspectrum(object):
         pval = ps.classical_significances(threshold=threshold,
                                           trial_correction=False)
 
-        assert pval[0][0] < threshold
-        assert pval[0][1] == index
+        assert pval[0,0] < threshold
+        assert pval[1,0] == index
 
     def test_classical_significances_trial_correction(self):
         ps = Powerspectrum(lc = self.lc, norm="leahy")
@@ -242,7 +242,26 @@ class TestPowerspectrum(object):
         pval = ps.classical_significances(threshold=threshold,
                                           trial_correction=True)
 
-        assert len(pval) == 0
+        assert np.size(pval) == 0
+
+
+    def test_pvals_is_numpy_array(self):
+
+        ps = Powerspectrum(lc = self.lc, norm="leahy")
+
+        ## change the powers so that just one exceeds the threshold
+        ps.ps = np.zeros(ps.ps.shape[0])+2.0
+
+        index = 1
+        ps.ps[index] = 10.0
+
+        threshold = 1.0
+
+        pval = ps.classical_significances(threshold=threshold,
+                                          trial_correction=True)
+
+        assert isinstance(pval, np.ndarray)
+        assert pval.shape[0] == 2
 
 
 class TestAveragedPowerspectrum(object):
@@ -472,3 +491,4 @@ class TestClassicalSignificances(object):
         nspec = 1
         pval = classical_pvalue(power, nspec)
         assert np.isclose(pval, 0.0)
+
