@@ -477,12 +477,12 @@ class Powerspectrum(object):
         if trial_correction:
             threshold /= self.ps.shape[0]
 
+
         ## need to add 1 to the indices to make up for the fact that
         ## we left out the first power above!
         indices = np.where(pv < threshold)[0]
 
-
-        pvals = zip(pv[indices], indices)
+        pvals = np.vstack([pv[indices], indices])
 
         return pvals
 
@@ -494,6 +494,7 @@ class AveragedPowerspectrum(Powerspectrum):
         Make an averaged periodogram from a light curve by segmenting the light
         curve, Fourier-transforming each segment and then averaging the
         resulting periodograms.
+
         Parameters
         ----------
         lc: lightcurve.Lightcurve object OR
