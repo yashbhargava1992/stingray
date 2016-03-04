@@ -493,6 +493,7 @@ class AveragedPowerspectrum(Powerspectrum):
         Make an averaged periodogram from a light curve by segmenting the light
         curve, Fourier-transforming each segment and then averaging the
         resulting periodograms.
+
         Parameters
         ----------
         lc: lightcurve.Lightcurve object OR
