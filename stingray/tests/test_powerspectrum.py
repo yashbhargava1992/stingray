@@ -13,7 +13,8 @@ np.random.seed(20150907)
 
 class TestPowerspectrum(object):
 
-    def setUp(self):
+    @classmethod
+    def setup_class(cls):
         tstart = 0.0
         tend = 1.0
         dt = 0.0001
@@ -26,7 +27,7 @@ class TestPowerspectrum(object):
         poisson_counts = np.random.poisson(mean_counts,
                                            size=time.shape[0])
 
-        self.lc = Lightcurve(time, counts=poisson_counts)
+        cls.lc = Lightcurve(time, counts=poisson_counts)
 
 
     def test_make_empty_periodogram(self):
@@ -245,7 +246,8 @@ class TestPowerspectrum(object):
 
 
 class TestAveragedPowerspectrum(object):
-    def setUp(self):
+    @classmethod
+    def setup_class(cls):
         tstart = 0.0
         tend = 10.0
         dt = 0.0001
@@ -258,7 +260,7 @@ class TestAveragedPowerspectrum(object):
         poisson_counts = np.random.poisson(mean_counts,
                                            size=time.shape[0])
 
-        self.lc = Lightcurve(time, counts=poisson_counts)
+        cls.lc = Lightcurve(time, counts=poisson_counts)
 
     def test_one_segment(self):
         segment_size = self.lc.tseg
