@@ -469,7 +469,7 @@ class Powerspectrum(object):
         ## calculate p-values for all powers
         ## leave out zeroth power since it just encodes the number of photons!
         pv = np.array([classical_pvalue(power, self.m)
-                      for power in self.ps[1:]])
+                      for power in self.ps])
 
         ## if trial correction is used, then correct the threshold for
         ## the number of powers in the power spectrum
@@ -479,7 +479,7 @@ class Powerspectrum(object):
 
         ## need to add 1 to the indices to make up for the fact that
         ## we left out the first power above!
-        indices = np.where(pv < threshold)[0]+1
+        indices = np.where(pv < threshold)[0]
 
         pvals = np.vstack([pv[indices-1], indices])
 

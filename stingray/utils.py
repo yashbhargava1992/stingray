@@ -99,6 +99,6 @@ def rebin_data(x, y, dx_new, method='sum'):
     if tseg/dx_new % 1 > 0:
         ybin = ybin[:-1]
 
-    xbin = np.arange(ybin.shape[0])*dx_new + x[0]-dx_old/2.+dx_new/2.
+    xbin = np.arange(ybin.shape[0])*dx_new + x[0]-dx_old + dx_new
 
     return xbin, ybin, step_size
