@@ -10,10 +10,11 @@ np.random.seed(20150907)
 
 class TestLightcurve(object):
 
-    def setUp(self):
-        self.times = [1, 2, 3, 4]
-        self.counts = [2, 2, 2, 2]
-        self.dt = 1.0
+    @classmethod
+    def setup_class(cls):
+        cls.times = [1, 2, 3, 4]
+        cls.counts = [2, 2, 2, 2]
+        cls.dt = 1.0
 
     def test_create(self):
         """
@@ -111,15 +112,16 @@ class TestLightcurve(object):
 
 class TestLightcurveRebin(object):
 
-    def setUp(self):
-        #dt = 1.0
+    @classmethod
+    def setup_class(cls):
+       #dt = 1.0
         #n = 10
         dt = 0.0001220703125
         n = 1384132
         mean_counts = 2.0
         times = np.arange(dt/2, dt/2+n*dt, dt)
         counts= np.zeros_like(times)+mean_counts
-        self.lc = Lightcurve(times, counts)
+        cls.lc = Lightcurve(times, counts)
 
     def test_rebin_even(self):
         dt_new = 2.0

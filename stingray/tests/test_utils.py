@@ -6,12 +6,13 @@ np.random.seed(20150907)
 
 class TestRebinData(object):
 
-    def setUp(self):
-        self.dx = 1.0
-        self.n = 10
-        self.counts = 2.0
-        self.x = np.arange(self.dx/2, self.dx/2+self.n*self.dx, self.dx)
-        self.y = np.zeros_like(self.x)+self.counts
+    @classmethod
+    def setup_class(cls):
+        cls.dx = 1.0
+        cls.n = 10
+        cls.counts = 2.0
+        cls.x = np.arange(cls.dx/2, cls.dx/2+cls.n*cls.dx, cls.dx)
+        cls.y = np.zeros_like(cls.x)+cls.counts
 
     def test_new_stepsize(self):
         dx_new = 2.0

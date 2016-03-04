@@ -11,6 +11,7 @@ import numpy as np
 import stingray.utils as utils
 import logging
 
+
 class Lightcurve(object):
     def __init__(self, time, counts, input_counts=True):
         """
@@ -58,7 +59,7 @@ class Lightcurve(object):
         """
 
         assert np.all(np.isfinite(time)), "There are inf or NaN values in " \
-                                            "your time array!"
+                                          "your time array!"
 
         assert np.all(np.isfinite(counts)), "There are inf or NaN values in " \
                                             "your counts array!"
@@ -97,8 +98,8 @@ class Lightcurve(object):
             be the interval between the arrival between the first and the last
             photon in `toa`.
 
-                **Note**: If tseg is not divisible by dt (i.e. if tseg/dt is not
-                an integer number), then the last fractional bin will be
+                **Note**: If tseg is not divisible by dt (i.e. if tseg/dt is
+                not an integer number), then the last fractional bin will be
                 dropped!
 
         tstart: float, optional, default None
@@ -141,7 +142,6 @@ class Lightcurve(object):
         counts = np.asarray(counts)
 
         return Lightcurve(time, counts)
-
 
     def rebin_lightcurve(self, dt_new, method='sum'):
         """
