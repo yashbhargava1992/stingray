@@ -65,7 +65,7 @@ class TestPowerspectrum(object):
 
     @raises(AssertionError)
     def test_init_with_nonsense_data(self):
-        nonsense_data = [None for i in xrange(100)]
+        nonsense_data = [None for i in range(100)]
         assert Powerspectrum(nonsense_data)
 
     @raises(AssertionError)
@@ -224,7 +224,6 @@ class TestPowerspectrum(object):
 
         pval = ps.classical_significances(threshold=threshold,
                                           trial_correction=False)
-
         assert pval[0,0] < threshold
         assert pval[1,0] == index
 
@@ -341,7 +340,7 @@ class TestAveragedPowerspectrum(object):
         mean_counts = mean_count_rate*dt
 
         lc_all = []
-        for n in xrange(n_lcs):
+        for n in range(n_lcs):
             poisson_counts = np.random.poisson(mean_counts,
                                            size=len(time))
 
@@ -365,7 +364,7 @@ class TestAveragedPowerspectrum(object):
         mean_counts = mean_count_rate*dt
 
         lc_all = []
-        for n in xrange(n_lcs):
+        for n in range(n_lcs):
             poisson_counts = np.random.poisson(mean_counts,
                                            size=len(time))
 

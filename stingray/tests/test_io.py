@@ -46,6 +46,24 @@ class TestIO(object):
         assert np.all(bti == [[2, 4], [5, 7], [10, 11], [11.2, 12.2]]), \
             'BTI is wrong!, %s' % repr(bti)
 
+    def test_gti_mask(self):
+        from ..io import create_gti_mask
+        arr = np.array([0, 1, 2, 3, 4, 5, 6])
+        gti = np.array([[0, 2.1], [3.9, 5]])
+        mask = create_gti_mask(arr, gti)
+        print(mask)
+        # NOTE: the time bin has to be fully inside the GTI. That is why the bin at times \
+        # 0, 2, 4 and 5 are not in.
+        assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
+
+    def test_gti_gti_from_condition(self):
+        from ..io import create_gti_from_condition
+        t = np.array([0, 1, 2, 3, 4, 5, 6])
+        condition = np.array([1, 1, 0, 0, 1, 0, 0], dtype=bool)
+        gti = create_gti_from_condition(t, condition)
+        assert np.all(gti == np.array([[-0.5, 1.5], [3.5, 4.5]]))
+
+
     def test_common_name(self):
         """Test the common_name function."""
         from ..io import common_name
