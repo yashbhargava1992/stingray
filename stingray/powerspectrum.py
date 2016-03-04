@@ -481,7 +481,7 @@ class Powerspectrum(object):
         ## we left out the first power above!
         indices = np.where(pv < threshold)[0]
 
-        pvals = np.vstack([pv[indices-1], indices])
+        pvals = np.vstack([pv[indices], indices])
 
         return pvals
 

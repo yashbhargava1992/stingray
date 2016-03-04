@@ -226,7 +226,7 @@ class TestPowerspectrum(object):
                                           trial_correction=False)
 
         assert pval[0,0] < threshold
-
+        assert pval[1,0] == index
 
     def test_classical_significances_trial_correction(self):
         ps = Powerspectrum(lc = self.lc, norm="leahy")
