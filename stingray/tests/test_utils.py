@@ -52,3 +52,10 @@ class TestRebinData(object):
         ybin_test = np.zeros_like(xbin) + self.counts*dx_new/self.dx
         assert np.allclose(ybin_test, ybin)
 
+class TestUtils(object):
+
+    def test_optimal_bin_time(self):
+        assert utils.optimal_bin_time(512, 2.1) == 2
+        assert utils.optimal_bin_time(512, 3.9) == 2
+        assert utils.optimal_bin_time(512, 4.1) == 4
+
