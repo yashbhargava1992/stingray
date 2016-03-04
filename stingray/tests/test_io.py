@@ -55,11 +55,29 @@ class TestIO(object):
                                         "MJDTEST") == np.longdouble(100.5), \
             "Keyword MJDTEST read incorrectly"
         assert \
+            high_precision_keyword_read(hdr,
+                                        "MJDTESTA") == np.longdouble(100.5), \
+            "Keyword MJDTESTA read incorrectly"
+        assert \
             high_precision_keyword_read(hdr, "CIAO") == np.longdouble(0.), \
             "Keyword CIAO read incorrectly"
+        assert high_precision_keyword_read(hdr, "BU") == None, "Inexistent key read incorrectly"
 
     def test_event_file_read(self):
         """Test event file reading."""
         from ..io import load_events_and_gtis
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_events_and_gtis(fname, additional_columns=["PI"])
+
+    def test_load_gtis(self):
+        """Test event file reading."""
+        from ..io import load_gtis
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        load_gtis(fname, gtistring="GTI")
+
+    def test_read_header_key(self):
+        """Test event file reading."""
+        from ..io import read_header_key
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        assert read_header_key(fname, "INSTRUME") == 'FPMA'
+        assert read_header_key(fname, "BU") == ""
