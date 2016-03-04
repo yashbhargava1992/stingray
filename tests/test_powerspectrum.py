@@ -122,6 +122,15 @@ class TestPowerspectrum(object):
         assert np.isclose(rms_ps, rms_lc, atol=0.01)
 
 
+    def test_leahy_norm_correct(self):
+        time = np.arange(0, 10.0, 10./1e6)
+        counts = np.random.poisson(1000, size=time.shape[0])
+
+        lc = Lightcurve(time, counts)
+        ps = Powerspectrum(lc, norm="leahy")
+        assert np.isclose(np.mean(ps.ps), 2.0, atol=0.01, rtol=0.01)
+
+
     def test_leahy_norm_total_variance(self):
         """
         In Leahy normalization, the total variance should be the sum of
