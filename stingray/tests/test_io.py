@@ -1,13 +1,12 @@
 from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 import numpy as np
-import unittest
 import os
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
 
 
-class TestAll(unittest.TestCase):
+class TestIO(object):
 
     """Real unit tests."""
 
