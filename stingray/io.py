@@ -286,12 +286,13 @@ def ref_mjd(fits_file, hdu=1):
         fits_file = fits_file[0]
         logging.info("opening %s" % fits_file)
 
-    try:
-        ref_mjd_int = np.long(read_header_key(fits_file, 'MJDREFI'))
-        ref_mjd_float = np.longdouble(read_header_key(fits_file, 'MJDREFF'))
-        ref_mjd_val = ref_mjd_int + ref_mjd_float
-    except:  # pragma: no cover
-        ref_mjd_val = np.longdouble(read_header_key(fits_file, 'MJDREF'))
+    from astropy.io import fits as pf
+
+    hdulist = pf.open(fits_file)
+
+    ref_mjd_val = high_precision_keyword_read(hdulist[hdu].header, "MJDREF")
+
+    hdulist.close()
     return ref_mjd_val
 
 
