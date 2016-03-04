@@ -29,6 +29,14 @@ class TestIO(object):
         assert np.all(newgti == [[4.0, 5.0], [7.0, 9.0], [12.2, 13.2]]), \
             'GTIs do not coincide!'
 
+    def test_contiguous(self):
+        """A more complicated example of intersection of GTIs."""
+        from ..io import contiguous_regions
+        array = np.array([0, 1, 1, 0, 1, 1, 1], dtype=bool)
+        cont = contiguous_regions(array)
+        assert np.all(cont == np.array([[1, 3], [4, 7]])), \
+            'Contiguous region wrong'
+
     def test_bti(self):
         """Test the inversion of GTIs."""
         from ..io import get_btis
@@ -81,3 +89,10 @@ class TestIO(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         assert read_header_key(fname, "INSTRUME") == 'FPMA'
         assert read_header_key(fname, "BU") == ""
+
+    def test_read_mjdref(self):
+        """Test event file reading."""
+        from ..io import ref_mjd
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        print(ref_mjd(fname))
+        assert ref_mjd(fname) is not None
