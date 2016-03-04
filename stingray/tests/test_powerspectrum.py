@@ -224,7 +224,6 @@ class TestPowerspectrum(object):
 
         pval = ps.classical_significances(threshold=threshold,
                                           trial_correction=False)
-
         assert pval[0,0] < threshold
         assert pval[1,0] == index
 
