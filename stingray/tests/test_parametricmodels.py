@@ -294,12 +294,6 @@ class TestLorentzianModel(object):
         self.lorentzian.set_prior(hyperpars)
         self.lorentzian.logprior(2.0, -1.0, 1.0)
 
-    @raises(AssertionError)
-    def test_func_fails_when_not_finite(self):
-        for gamma in [2.0, np.nan, np.inf]:
-            for amplitude in [np.inf, np.nan]:
-                for x0 in [2.0, np.nan, np.inf]:
-                    self.lorentzian(self.x, x0, gamma, amplitude)
 
     def test_prior_works(self):
         hyperpars = {"x0_min":1.0, "x0_max":5.0,
