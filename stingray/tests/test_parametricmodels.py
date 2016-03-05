@@ -48,9 +48,10 @@ class TestParametricModel(object):
 
 class TestConstModel(object):
 
-    def setUp(self):
-        self.x = np.arange(1000)
-        self.const = Const()
+    @classmethod
+    def setup_class(cls):
+        cls.x = np.arange(1000)
+        cls.const = Const()
 
     def test_shape(self):
         a = 2.0
@@ -106,9 +107,10 @@ class TestConstModel(object):
 
 class TestPowerLawModel(object):
 
-    def setUp(self):
-        self.x = np.linspace(0.1, 10, 100)
-        self.pl = PowerLaw()
+    @classmethod
+    def setup_class(cls):
+        cls.x = np.linspace(0.1, 10, 100)
+        cls.pl = PowerLaw()
 
     def test_shape(self):
         alpha = 2.0
@@ -172,9 +174,10 @@ class TestPowerLawModel(object):
 
 class TestBentPowerLawModel(object):
 
-    def setUp(self):
-        self.x = np.linspace(0.1,10, 100)
-        self.bpl = BrokenPowerLaw()
+    @classmethod
+    def setup_class(cls):
+        cls.x = np.linspace(0.1,10, 100)
+        cls.bpl = BrokenPowerLaw()
 
     def test_shape(self):
         alpha1 = 1.0
@@ -249,10 +252,11 @@ class TestBentPowerLawModel(object):
 
 class TestLorentzianModel(object):
 
-    def setUp(self):
-        self.x = np.linspace(0.1, 10., 100)
+    @classmethod
+    def setup_class(cls):
+        cls.x = np.linspace(0.1, 10., 100)
 
-        self.lorentzian = Lorentzian()
+        cls.lorentzian = Lorentzian()
 
     def test_shape(self):
         x0 = 200.0
@@ -294,7 +298,6 @@ class TestLorentzianModel(object):
         self.lorentzian.set_prior(hyperpars)
         self.lorentzian.logprior(2.0, -1.0, 1.0)
 
-
     def test_prior_works(self):
         hyperpars = {"x0_min":1.0, "x0_max":5.0,
                      "gamma_min":-2.0, "gamma_max":2.0,
@@ -327,10 +330,11 @@ class TestLorentzianModel(object):
 
 class TestFixedCentroidLorentzianModel(object):
 
-    def setUp(self):
-        self.x = np.linspace(0.1, 10., 100)
-        self.x0 = 10.0
-        self.fcl = FixedCentroidLorentzian(x0=self.x0)
+    @classmethod
+    def setup_class(cls):
+        cls.x = np.linspace(0.1, 10., 100)
+        cls.x0 = 10.0
+        cls.fcl = FixedCentroidLorentzian(x0=cls.x0)
 
     @raises(AssertionError)
     def test_x0_is_finite(self):
@@ -403,13 +407,14 @@ class TestFixedCentroidLorentzianModel(object):
 
 class TestCombinedModels(object):
 
-    def setUp(self):
-        self.x = np.arange(1000)
+    @classmethod
+    def setup_class(cls):
+        cls.x = np.arange(1000)
         ## number of parameters for the different models
-        self.npar_const = 1
-        self.npar_powerlaw = 2
-        self.npar_bentpowerlaw = 4
-        self.npar_lorentzian = 3
+        cls.npar_const = 1
+        cls.npar_powerlaw = 2
+        cls.npar_bentpowerlaw = 4
+        cls.npar_lorentzian = 3
 
     def npar_equal(self, model1, model2):
         mod = CombinedModel([model1, model2])
@@ -430,9 +435,10 @@ class TestCombinedModels(object):
 
 class TestConstPrior(object):
 
-    def setUp(self):
-        self.hyperpars = {"a_mean": 2.0, "a_var": 0.1}
-        self.const = Const(self.hyperpars)
+    @classmethod
+    def setup_class(cls):
+        cls.hyperpars = {"a_mean": 2.0, "a_var": 0.1}
+        cls.const = Const(cls.hyperpars)
 
     def test_prior_nonzero(self):
         a = 2.0
@@ -444,17 +450,19 @@ class TestConstPrior(object):
 
 
 class TestPowerlawPrior(object):
-    def setUp(self):
-        self.hyperpars = {"alpha_min":-8.0, "alpha_max":5.0,
+
+    @classmethod
+    def setup_class(cls):
+        cls.hyperpars = {"alpha_min":-8.0, "alpha_max":5.0,
                           "amplitude_min": -10.0, "amplitude_max":10.0}
 
-        alpha_norm = 1.0/(self.hyperpars["alpha_max"]-
-                          self.hyperpars["alpha_min"])
-        amplitude_norm = 1.0/(self.hyperpars["amplitude_max"]-
-                              self.hyperpars["amplitude_min"])
-        self.prior_norm = np.log(alpha_norm*amplitude_norm)
+        alpha_norm = 1.0/(cls.hyperpars["alpha_max"]-
+                          cls.hyperpars["alpha_min"])
+        amplitude_norm = 1.0/(cls.hyperpars["amplitude_max"]-
+                              cls.hyperpars["amplitude_min"])
+        cls.prior_norm = np.log(alpha_norm*amplitude_norm)
 
-        self.pl = parametricmodels.PowerLaw(self.hyperpars)
+        cls.pl = parametricmodels.PowerLaw(self.hyperpars)
 
     def test_prior_nonzero(self):
         alpha = 1.0
@@ -474,29 +482,30 @@ class TestPowerlawPrior(object):
 
 class TestBentPowerLawPrior(object):
 
-    def setUp(self):
+    @classmethod
+    def setup_class(cls):
 
-        self.hyperpars = {"alpha1_min": -8.0, "alpha1_max":5.0,
+        cls.hyperpars = {"alpha1_min": -8.0, "alpha1_max":5.0,
                  "amplitude_min": -10., "amplitude_max":10.0,
                  "alpha2_min":-8.0, "alpha2_max":4.0,
                  "x_break_min":np.log(0.1), "x_break_max":np.log(500)}
 
-        alpha1_norm = 1.0/(self.hyperpars["alpha1_max"]-
-                           self.hyperpars["alpha1_min"])
+        alpha1_norm = 1.0/(cls.hyperpars["alpha1_max"]-
+                           cls.hyperpars["alpha1_min"])
 
-        alpha2_norm = 1.0/(self.hyperpars["alpha2_max"]-
-                           self.hyperpars["alpha2_min"])
+        alpha2_norm = 1.0/(cls.hyperpars["alpha2_max"]-
+                           cls.hyperpars["alpha2_min"])
 
-        amplitude_norm = 1.0/(self.hyperpars["amplitude_max"]-
-                              self.hyperpars["amplitude_min"])
+        amplitude_norm = 1.0/(cls.hyperpars["amplitude_max"]-
+                              cls.hyperpars["amplitude_min"])
 
-        x_break_norm = 1.0/(self.hyperpars["x_break_max"]-
-                            self.hyperpars["x_break_min"])
+        x_break_norm = 1.0/(cls.hyperpars["x_break_max"]-
+                            cls.hyperpars["x_break_min"])
 
-        self.prior_norm = np.log(alpha1_norm*alpha2_norm*
+        cls.prior_norm = np.log(alpha1_norm*alpha2_norm*
                                  amplitude_norm*x_break_norm)
 
-        self.bpl = BrokenPowerLaw(self.hyperpars)
+        cls.bpl = BrokenPowerLaw(cls.hyperpars)
 
 
     def zero_prior(self, alpha1, amplitude, alpha2, x_break):
@@ -526,21 +535,22 @@ class TestBentPowerLawPrior(object):
 
 class TestLorentzianPrior(object):
 
-    def setUp(self):
+    @classmethod
+    def setup_class(cls):
 
-        self.hyperpars = {"gamma_min":-1.0, "gamma_max":5.0,
+        cls.hyperpars = {"gamma_min":-1.0, "gamma_max":5.0,
                      "amplitude_min":-10.0, "amplitude_max":10.0,
                      "x0_min":0.0, "x0_max":100.0}
 
-        gamma_norm = 1.0/(self.hyperpars["gamma_max"]-
-                          self.hyperpars["gamma_min"])
+        gamma_norm = 1.0/(cls.hyperpars["gamma_max"]-
+                          cls.hyperpars["gamma_min"])
 
-        amplitude_norm = 1.0/(self.hyperpars["amplitude_max"]-
-                              self.hyperpars["amplitude_min"])
+        amplitude_norm = 1.0/(cls.hyperpars["amplitude_max"]-
+                              cls.hyperpars["amplitude_min"])
 
-        x0_norm = 1.0/(self.hyperpars["x0_max"]-self.hyperpars["x0_min"])
-        self.prior_norm = np.log(gamma_norm*amplitude_norm*x0_norm)
-        self.lorentzian = Lorentzian(self.hyperpars)
+        x0_norm = 1.0/(cls.hyperpars["x0_max"]-cls.hyperpars["x0_min"])
+        cls.prior_norm = np.log(gamma_norm*amplitude_norm*x0_norm)
+        cls.lorentzian = Lorentzian(cls.hyperpars)
 
     def zero_prior(self, gamma, amplitude, x0):
         assert self.lorentzian.logprior(x0, gamma, amplitude) == logmin
