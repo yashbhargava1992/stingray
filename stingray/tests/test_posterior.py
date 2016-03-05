@@ -10,7 +10,6 @@ from stingray import Const
 np.random.seed(20150907)
 
 
-
 class PosteriorClassDummy(Posterior):
     """
     This is a test class that tests the basic functionality of the
@@ -18,7 +17,6 @@ class PosteriorClassDummy(Posterior):
     """
     def __init__(self, x, y, model):
         Posterior.__init__(self, x, y, model)
-
 
     def  loglikelihood(self, t0, neg=False):
         loglike = 1.0
@@ -31,12 +29,12 @@ class PosteriorClassDummy(Posterior):
 
 class TestPosterior(object):
 
-    def setUp(self):
-        self.x = np.arange(100)
-        self.y = np.ones(self.x.shape[0])
-        self.model = Const(hyperpars={"a_mean":2.0, "a_var":1.0})
-        self.p = PosteriorClassDummy(self.x,self.y,self.model)
-
+    @classmethod
+    def setup_class(cls):
+        cls.x = np.arange(100)
+        cls.y = np.ones(cls.x.shape[0])
+        cls.model = Const(hyperpars={"a_mean":2.0, "a_var":1.0})
+        cls.p = PosteriorClassDummy(cls.x, cls.y, cls.model)
 
     def test_inputs(self):
         assert np.allclose(self.p.x, self.x)
@@ -54,11 +52,10 @@ class TestPosterior(object):
         assert post == -3.0
 
 
-
-
 class TestPSDPosterior(object):
 
-    def setUp(self):
+    @classmethod
+    def setup_class(cls):
         m = 1
         nfreq = 1000000
         freq = np.arange(nfreq)
@@ -72,11 +69,10 @@ class TestPSDPosterior(object):
         ps.df = freq[1]-freq[0]
         ps.norm = "leahy"
 
-        self.ps = ps
-        self.a_mean, self.a_var = 2.0, 1.0
+        cls.ps = ps
+        cls.a_mean, cls.a_var = 2.0, 1.0
 
-        self.model = Const(hyperpars={"a_mean":self.a_mean, "a_var":self.a_var})
-
+        cls.model = Const(hyperpars={"a_mean":cls.a_mean, "a_var":cls.a_var})
 
     @raises(AssertionError)
     def test_logprior_fails_without_prior(self):
@@ -125,8 +121,6 @@ class TestPSDPosterior(object):
 
         assert np.isclose(loglike_test, loglike, atol=1.e-10, rtol=1.e-10)
 
-
-
     def test_negative_loglikelihood(self):
         t0 = [2.0]
         m = self.model(self.ps.freq[1:], t0)
@@ -136,7 +130,6 @@ class TestPSDPosterior(object):
         loglike_test = lpost.loglikelihood(t0, neg=True)
 
         assert np.isclose(loglike, loglike_test)
-
 
     def test_posterior(self):
         t0 = [2.0]
@@ -164,7 +157,9 @@ class TestPSDPosterior(object):
 
 class TestPerPosteriorAveragedPeriodogram(object):
 
-    def setUp(self):
+    @classmethod
+    def setup_class(cls):
+
         m = 10
         nfreq = 1000000
         freq = np.arange(nfreq)
@@ -178,10 +173,10 @@ class TestPerPosteriorAveragedPeriodogram(object):
         ps.df = freq[1]-freq[0]
         ps.norm = "leahy"
 
-        self.ps = ps
-        self.a_mean, self.a_var = 2.0, 1.0
+        cls.ps = ps
+        cls.a_mean, cls.a_var = 2.0, 1.0
 
-        self.model = Const(hyperpars={"a_mean":self.a_mean, "a_var":self.a_var})
+        cls.model = Const(hyperpars={"a_mean":cls.a_mean, "a_var":cls.a_var})
 
     def test_likelihood(self):
         t0 = [2.0]
