@@ -2,12 +2,18 @@ from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 import numpy as np
 import logging
-import pickle
 import warnings
 import os
 
 from .utils import _order_list_of_arrays, is_string
 from .utils import _assign_value_if_none
+
+try:
+    # Python 2
+    import cPickle as pickle
+except:
+    # Python 3
+    import pickle
 
 
 def get_file_extension(fname):
@@ -655,29 +661,65 @@ def gti_len(gti):
     """Return the total good time from a list of GTIs."""
     return np.sum([g[1] - g[0] for g in gti])
 
+def _save_pickle_object(object, filename):
+    pickle.dump(object, open(filename, "wb" ))
 
-def save_object(object, filename):
+def _retrieve_pickle_object(filename):
+    return pickle.load(open(filename, "rb" ) )
+
+def _save_hdf5_object(object, filename):
+    pass
+
+def _retrieve_hdf5_object(object, filename):
+    pass
+
+def _save_ascii_object(object, filename):
+    pass
+
+def _retrieve_ascii_object(object, filename):
+    pass
+
+def save_object(object, filename, format):
     """
     Pickle a class instance.
 
     Parameters
     ----------
     object: a class instance
-    filename: str (name of the file to be created)
+    filename: str
+              name of the file to be created.
+    format: str
+            pickle, hdf5, ascii ...
 
     """
 
-    pickle.dump(object, open(filename, "wb" ) )
+    if format == 'pickle':
+        _save_pickle_object(object, filename)
 
-def retrieve_object(filename):
+    elif format == 'hdf5':
+        _save_hdf5_object(object, filename)
+
+    elif format == 'ascii':
+        _save_ascii_object(object, filename)
+
+
+def retrieve_object(filename, format):
     """
     Return a pickled class instance.
 
     Parameters
     ----------
-    filename: str (name of the file to be retrieved)
-
+    filename: str
+              name of the file to be retrieved.
+    format: str
+            pickle, hdf5, ascii ...
     """
 
-    return pickle.load(open(filename, "rb" ) )
+    if format == 'pickle':
+        return _retrieve_pickle_object(filename)
 
+    elif format == 'hdf5':
+        return _retrieve_hdf5_object(filename)
+
+    elif format == 'ascii':
+        return _retrieve_ascii_object(filename)
