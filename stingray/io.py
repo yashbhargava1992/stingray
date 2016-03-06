@@ -667,7 +667,11 @@ def save_object(object, filename):
 
     """
 
-    filename = "stingray/data/" + filename
+    directory = os.getcwd() + "/data/"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    filename = directory + filename
     pickle.dump(object, open(filename, "wb" ) )
 
 def retrieve_object(filename):
@@ -680,5 +684,9 @@ def retrieve_object(filename):
 
     """
 
-    filename = "stingray/data/" + filename
+    directory = os.getcwd() + "/data/"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    filename = directory + filename
     return pickle.load(open(filename, "rb" ) )
