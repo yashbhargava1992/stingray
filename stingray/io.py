@@ -2,6 +2,7 @@ from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 import numpy as np
 import logging
+import pickle
 import warnings
 import os
 
@@ -653,3 +654,31 @@ def get_btis(gtis, start_time=None, stop_time=None):
 def gti_len(gti):
     """Return the total good time from a list of GTIs."""
     return np.sum([g[1] - g[0] for g in gti])
+
+
+def save_object(object, filename):
+    """
+    Pickle a class instance.
+
+    Parameters
+    ----------
+    object: a class instance
+    filename: str (name of the file to be created)
+
+    """
+
+    filename = "stingray/data/" + filename
+    pickle.dump(object, open(filename, "wb" ) )
+
+def retrieve_object(filename):
+    """
+    Return a pickled class instance.
+
+    Parameters
+    ----------
+    filename: str (name of the file to be retrieved)
+
+    """
+
+    filename = "stingray/data/" + filename
+    return pickle.load(open(filename, "rb" ) )
