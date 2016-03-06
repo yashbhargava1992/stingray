@@ -46,6 +46,7 @@ class TestParametricModel(object):
         name = 2
         p = ParametricModel(npar, name)
 
+
 class TestConstModel(object):
 
     @classmethod
@@ -462,7 +463,7 @@ class TestPowerlawPrior(object):
                               cls.hyperpars["amplitude_min"])
         cls.prior_norm = np.log(alpha_norm*amplitude_norm)
 
-        cls.pl = parametricmodels.PowerLaw(self.hyperpars)
+        cls.pl = parametricmodels.PowerLaw(cls.hyperpars)
 
     def test_prior_nonzero(self):
         alpha = 1.0
