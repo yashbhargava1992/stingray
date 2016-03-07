@@ -66,7 +66,8 @@ class TestAll(unittest.TestCase):
         ph, p, pe = fold_events(times, 1, nbin=nbin)
 
         np.testing.assert_array_almost_equal(p, np.ones(nbin))
-        np.testing.assert_array_almost_equal(ph, np.arange(nbin) / nbin + 0.5/nbin)
+        np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
+                                             0.5/nbin)
         np.testing.assert_array_almost_equal(pe, np.ones(nbin))
 
     def test_pulse_profile2(self):
@@ -76,7 +77,8 @@ class TestAll(unittest.TestCase):
         period = 1
         ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True)
 
-        np.testing.assert_array_almost_equal(ph, np.arange(nbin) / nbin + 0.5/nbin)
+        np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
+                                             0.5/nbin)
         np.testing.assert_array_almost_equal(p, np.ones(nbin))
         np.testing.assert_array_almost_equal(pe, np.ones(nbin))
 
