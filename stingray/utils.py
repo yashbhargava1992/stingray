@@ -66,7 +66,7 @@ def rebin_data(x, y, dx_new, method='sum'):
     assert dx_new >= dx_old, "New frequency resolution must be larger than " \
                              "old frequency resolution."
 
-    step_size = dx_new/dx_old
+    step_size = dx_new / dx_old
 
     output = []
     for i in np.arange(0, y.shape[0], step_size):
@@ -88,7 +88,7 @@ def rebin_data(x, y, dx_new, method='sum'):
     output = np.asarray(output)
 
     if method in ['mean', 'avg', 'average', 'arithmetic mean']:
-        ybin = output/np.float(step_size)
+        ybin = output / np.float(step_size)
 
     elif method == "sum":
         ybin = output
@@ -96,12 +96,12 @@ def rebin_data(x, y, dx_new, method='sum'):
         raise Exception("Method for summing or averaging not recognized. "
                         "Please enter either 'sum' or 'mean'.")
 
-    tseg = x[-1]-x[0]+dx_old
+    tseg = x[-1] - x[0] + dx_old
 
-    if tseg/dx_new % 1 > 0:
+    if (tseg/dx_new % 1) > 0:
         ybin = ybin[:-1]
 
-    xbin = np.arange(ybin.shape[0])*dx_new + x[0]-dx_old + dx_new
+    xbin = np.arange(ybin.shape[0])*dx_new + x[0] - dx_old + dx_new
 
     return xbin, ybin, step_size
 
@@ -119,7 +119,7 @@ def _look_for_array_in_array(array1, array2):
             return a1
 
 
-def is_string(s): # pragma : no cover
+def is_string(s):  # pragma : no cover
     """Portable function to answer this question."""
     PY2 = sys.version_info[0] == 2
     if PY2:
@@ -133,7 +133,6 @@ def is_iterable(stuff):
     import collections
 
     return isinstance(stuff, collections.Iterable)
-
 
 
 def _order_list_of_arrays(data, order):
