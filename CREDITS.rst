@@ -2,7 +2,7 @@
 Authors and Credits
 *******************
 
-Astropy Project Coordinators
+Stingray Project Coordinators
 ============================
 
 * Matteo Bachetti
