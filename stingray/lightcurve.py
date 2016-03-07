@@ -4,12 +4,11 @@ Definition of :class:`Lightcurve`.
 :class:`Lightcurve` is used to create light curves out of photon counting data
 or to save existing light curves in a class that's easy to use.
 """
-
-__all__ = ["Lightcurve"]
-
 import numpy as np
 import stingray.utils as utils
 import logging
+
+__all__ = ["Lightcurve"]
 
 
 class Lightcurve(object):
@@ -69,14 +68,14 @@ class Lightcurve(object):
 
         if input_counts:
             self.counts = np.asarray(counts)
-            self.countrate = self.counts/self.dt
+            self.countrate = self.counts / self.dt
         else:
             self.countrate = np.asarray(counts)
-            self.counts = self.countrate*self.dt
+            self.counts = self.countrate * self.dt
 
         self.ncounts = self.counts.shape[0]
         self.tseg = self.time[-1] - self.time[0] + self.dt
-        self.tstart = self.time[0]-0.5*self.dt
+        self.tstart = self.time[0] - 0.5*self.dt
 
     @staticmethod
     def make_lightcurve(toa, dt, tseg=None, tstart=None):
@@ -114,15 +113,15 @@ class Lightcurve(object):
 
         """
 
-        ## tstart is an optional parameter to set a starting time for
-        ## the light curve in case this does not coincide with the first photon
+        # tstart is an optional parameter to set a starting time for
+        # the light curve in case this does not coincide with the first photon
         if tstart is None:
-            ## if tstart is not set, assume light curve starts with first photon
+            # if tstart is not set, assume light curve starts with first photon
             tstart = toa[0]
 
-        ## compute the number of bins in the light curve
-        ## for cases where tseg/dt are not integer, computer one
-        ## last time bin more that we have to subtract in the end
+        # compute the number of bins in the light curve
+        # for cases where tseg/dt are not integer, computer one
+        # last time bin more that we have to subtract in the end
         if tseg is None:
             tseg = toa[-1] - toa[0]
 
@@ -133,11 +132,12 @@ class Lightcurve(object):
 
         tend = tstart + timebin*dt
 
-        counts, histbins = np.histogram(toa, bins=timebin, range=[tstart, tend])
+        counts, histbins = np.histogram(toa, bins=timebin,
+                                        range=[tstart, tend])
 
-        dt = histbins[1]-histbins[0]
+        dt = histbins[1] - histbins[0]
 
-        time = histbins[:-1]+0.5*dt
+        time = histbins[:-1] + 0.5*dt
 
         counts = np.asarray(counts)
 

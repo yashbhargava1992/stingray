@@ -491,7 +491,7 @@ def create_gti_from_condition(time, condition,
     for idx in idxs:
         logging.debug(idx)
         startidx = idx[0]
-        stopidx = idx[1]-1
+        stopidx = idx[1] - 1
 
         t0 = time[startidx] - dt[startidx] + safe_interval[0]
         t1 = time[stopidx] + dt[stopidx] - safe_interval[1]
