@@ -679,7 +679,7 @@ def _save_ascii_object(object, filename):
 def _retrieve_ascii_object(object, filename):
     pass
 
-def save_object(object, filename, format):
+def write(input, filename, format = 'pickle'):
     """
     Pickle a class instance.
 
@@ -694,16 +694,16 @@ def save_object(object, filename, format):
     """
 
     if format == 'pickle':
-        _save_pickle_object(object, filename)
+        _save_pickle_object(input, filename)
 
     elif format == 'hdf5':
-        _save_hdf5_object(object, filename)
+        _save_hdf5_object(input, filename)
 
     elif format == 'ascii':
-        _save_ascii_object(object, filename)
+        _save_ascii_object(input, filename)
 
 
-def retrieve_object(filename, format):
+def read(filename, format = 'pickle'):
     """
     Return a pickled class instance.
 
@@ -723,3 +723,4 @@ def retrieve_object(filename, format):
 
     elif format == 'ascii':
         return _retrieve_ascii_object(filename)
+

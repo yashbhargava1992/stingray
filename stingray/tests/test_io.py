@@ -114,3 +114,55 @@ class TestIO(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         print(ref_mjd(fname))
         assert ref_mjd(fname) is not None
+
+
+class TestFileFormats(object):
+
+    def test_pickle(self):
+        """Test pickle object writing and reading"""
+        from ..io import read, write
+        class Test(object):
+            pass
+        test_object = Test()
+        write(test_object,'test','pickle')
+        assert read('test','pickle') is not None
+
+    def test_pickle_attributes(self):
+        """Test if pickle maintains class object attributes"""
+        from ..io import read, write
+        class Test(object):
+            def __init__(self):
+                self.x = 10
+        test_object = Test()
+        write(test_object,'test','pickle')
+        assert read('test','pickle').x == 10
+
+    def test_pickle_functions(self):
+        """Test if pickle maintains class object functions"""
+        from ..io import read, write
+        class Test(object):
+            def __init__(self):
+                self.x = 10
+            def test_operation(self):
+                return self.x * 10
+        test_object = Test()
+        write(test_object,'test','pickle')
+        assert read('test','pickle').test_operation == 100
+
+    def test_hdf5(self):
+        pass
+
+    def test_hdf5_attributes(self):
+        pass
+
+    def test_hdf5_functions(self):
+        pass
+
+    def test_ascii(self):
+        pass
+
+    def test_ascii_attributes(self):
+        pass
+
+    def test_ascii_functions(self):
+        pass
