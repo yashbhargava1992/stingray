@@ -116,38 +116,40 @@ class TestIO(object):
         assert ref_mjd(fname) is not None
 
 
+class TestIOReadWrite(object):
+    """A class to test all the read and write functions."""
+    def __init__(self):
+        self.x = 10
+
+    def test_operation(self):
+        return self.x * 10
+
+
 class TestFileFormats(object):
 
     def test_pickle(self):
-        """Test pickle object writing and reading"""
+        """Test pickle object writing and reading."""
         from ..io import read, write
-        class Test(object):
-            pass
-        test_object = Test()
-        write(test_object,'test','pickle')
-        assert read('test','pickle') is not None
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.pickle', 'pickle')
+        assert read('test.pickle', 'pickle') is not None
+        os.remove('test.pickle')
 
     def test_pickle_attributes(self):
-        """Test if pickle maintains class object attributes"""
+        """Test if pickle maintains class object attributes."""
         from ..io import read, write
-        class Test(object):
-            def __init__(self):
-                self.x = 10
-        test_object = Test()
-        write(test_object,'test','pickle')
-        assert read('test','pickle').x == 10
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.pickle', 'pickle')
+        assert read('test.pickle', 'pickle').x == 10
+        os.remove('test.pickle')
 
     def test_pickle_functions(self):
-        """Test if pickle maintains class object functions"""
+        """Test if pickle maintains class methods."""
         from ..io import read, write
-        class Test(object):
-            def __init__(self):
-                self.x = 10
-            def test_operation(self):
-                return self.x * 10
-        test_object = Test()
-        write(test_object,'test','pickle')
-        assert read('test','pickle').test_operation == 100
+        test_object = TestIOReadWrite()
+        write(test_object,'test.pickle', 'pickle')
+        assert read('test.pickle', 'pickle').test_operation() == 100
+        os.remove('test.pickle')
 
     def test_hdf5(self):
         pass
