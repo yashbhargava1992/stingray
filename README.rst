@@ -6,12 +6,6 @@ X-Ray Timing Made Easy
 
 We are writing a general-purpose timing package for X-ray time series.
 
-Authors
---------
-* Abigail Stevens (UvA)
-* Daniela Huppenkothen (NYU CDS)
-* Matteo Bachetti (INAF/OACa)
-
 Contents
 --------
 
