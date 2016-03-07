@@ -132,7 +132,8 @@ class TestFileFormats(object):
         from ..io import read, write
         test_object = TestIOReadWrite()
         write(test_object, 'test.pickle', 'pickle')
-        assert read('test.pickle','pickle') is not None
+        assert read('test.pickle', 'pickle') is not None
+        os.remove('test.pickle')
 
     def test_pickle_attributes(self):
         """Test if pickle maintains class object attributes."""
@@ -140,6 +141,7 @@ class TestFileFormats(object):
         test_object = TestIOReadWrite()
         write(test_object, 'test.pickle', 'pickle')
         assert read('test.pickle', 'pickle').x == 10
+        os.remove('test.pickle')
 
     def test_pickle_functions(self):
         """Test if pickle maintains class methods."""
@@ -147,6 +149,7 @@ class TestFileFormats(object):
         test_object = TestIOReadWrite()
         write(test_object,'test.pickle', 'pickle')
         assert read('test.pickle', 'pickle').test_operation() == 100
+        os.remove('test.pickle')
 
     def test_hdf5(self):
         pass
