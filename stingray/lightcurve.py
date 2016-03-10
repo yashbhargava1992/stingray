@@ -4,10 +4,10 @@ Definition of :class:`Lightcurve`.
 :class:`Lightcurve` is used to create light curves out of photon counting data
 or to save existing light curves in a class that's easy to use.
 """
+import logging
 import numpy as np
 import stingray.utils as utils
-from stingray.utils import simon
-import logging
+
 
 __all__ = ["Lightcurve"]
 
@@ -185,3 +185,51 @@ class Lightcurve(object):
 
         lc_new = Lightcurve(bin_time, bin_counts)
         return lc_new
+
+    def draw(self, labels=None, axis=None, title=None):
+        """
+        Draw the Lightcurve using Matplotlib.
+
+        Draw the Lightcurve object on a graph ``self.time`` on x-axis and
+        ``self.counts`` on y-axis.
+
+        Parameters
+        ----------
+        labels : iterable, default None
+            A list of tuple with xlabel and ylabel as strings.
+
+        axis : list, tuple, string, default None
+            Parameter to set axis properties of Matplotlib figure. For example
+            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
+            acceptable argument for `matplotlib.pyplot.axis()` function.
+
+        title : str, default None
+            The title of the plot.
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise ImportError("Matplotlib required for draw()")
+        except RuntimeError:
+            print("Matplotlib unable to open display.")
+            raise
+
+        fig = plt.figure()
+        fig = plt.plot(self.time, self.counts, 'rx')
+
+        if labels is not None:
+            try:
+                plt.xlabel(labels[0])
+                plt.ylabel(labels[1])
+            except TypeError:
+                utils.simon("``labels`` must be either a list or tuple with "
+                            "x and y labels.")
+                raise
+            except IndexError:
+                utils.simon("``labels`` must have two labels for x and y "
+                            "axes.")
+                # Not raising here because in case of len(labels)==1, only
+                # x-axis will be labelled.
+
+        if axis is not None:
+            plt.axis(axis)
