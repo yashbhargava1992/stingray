@@ -186,6 +186,70 @@ class Lightcurve(object):
         lc_new = Lightcurve(bin_time, bin_counts)
         return lc_new
 
+    def join(self, other):
+        """
+        Join two lightcurves into a single object.
+
+        The new Lightcurve object will contain time stamps from both the
+        objects. The individual count per bin in the resulting object will
+        be the sum total of the count per bin in both lightcurve objects.
+
+        Parameters
+        ----------
+        other : Lightcurve object
+            The other Lightcurve object which is supposed to be joined with.
+
+        Returns
+        -------
+        lc_new : Lightcurve object
+            The resulting lightcurve object.
+
+        Example
+        -------
+        >>> time1 = [5, 10, 15]
+        >>> count1 = [300, 100, 400]
+        >>> time2 = [15, 20, 25]
+        >>> count2 = [600, 1200, 800]
+        >>> lc1 = Lightcurve(time1, count1)
+        >>> lc2 = Lightcurve(time2, count2)
+        >>> lc = lc1.join(lc2)
+        >>> lc.time
+        array([ 5, 10, 15, 20, 25])
+        >>> lc.counts
+        array([ 300,  100, 1000, 1200,  800])
+        """
+        assert self.dt == other.dt, "The bin width of both the lightcurves" \
+                                    " must be same."
+        # TODO : If different, rebin both the lightcurves with
+        # dt_new = LCM(self.dt, other.dt) and raise a warning.
+
+        if self.tstart <= other.tstart:
+            new_time = np.unique(np.concatenate([self.time, other.time]))
+        else:
+            new_time = np.unique(np.concatenate([other.time, self.time]))
+
+        new_counts = []
+
+        # For every time stamp, get the individual time counts and add them.
+        for time in new_time:
+            try:
+                count1 = self.counts[np.where(self.time==time)[0][0]]
+            except IndexError:
+                count1 = 0
+
+            try:
+                count2 = other.counts[np.where(other.time==time)[0][0]]
+            except IndexError:
+                count2 = 0
+
+            new_counts.append(count1 + count2)
+
+        new_counts = np.asarray(new_counts)
+
+        lc_new = Lightcurve(new_time, new_counts)
+
+        return lc_new
+
     def draw(self, labels=None, axis=None, title=None, save=False,
              filename=None):
         """
