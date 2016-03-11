@@ -186,7 +186,8 @@ class Lightcurve(object):
         lc_new = Lightcurve(bin_time, bin_counts)
         return lc_new
 
-    def draw(self, labels=None, axis=None, title=None):
+    def draw(self, labels=None, axis=None, title=None, save=False,
+             filename=None):
         """
         Draw the Lightcurve using Matplotlib.
 
@@ -205,6 +206,12 @@ class Lightcurve(object):
 
         title : str, default None
             The title of the plot.
+
+        save : boolean, optional (default=False)
+            If True, save the figure with specified filename.
+
+        filename : str
+            File name of the image to save. Depends on the boolean ``save``.
         """
         try:
             import matplotlib.pyplot as plt
@@ -235,6 +242,12 @@ class Lightcurve(object):
             plt.axis(axis)
 
         plt.title(title)
+
+        if save:
+            if filename is None:
+                self.savefig('out.png')
+            else:
+                self.savefig(filename)
 
     def savefig(self, filename, **kwargs):
         """
