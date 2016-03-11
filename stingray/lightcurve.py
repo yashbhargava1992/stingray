@@ -234,6 +234,8 @@ class Lightcurve(object):
         if axis is not None:
             plt.axis(axis)
 
+        plt.title(title)
+
     def savefig(self, filename, **kwargs):
         """
         Save the Lightcurve figure plotted by Matplotlib.
