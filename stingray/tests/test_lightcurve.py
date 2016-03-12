@@ -123,6 +123,36 @@ class TestLightcurve(object):
         counts = np.array([np.nan for i in range(times.shape[0])])
         lc = Lightcurve(times, counts)
 
+    @raises(AssertionError)
+    def test_add_with_different_time_arrays(self):
+        _times = [1, 2, 3, 4, 5]
+        _counts = [2, 2, 2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        lc = lc1 + lc2
+
+    @raises(AssertionError)
+    def test_add_with_unequal_time_arrays(self):
+        _times = [1, 3, 5, 7]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, self.counts)
+
+        lc = lc1 + lc2
+
+    def test_add_with_equal_time_arrays(self):
+        _counts = [1, 1, 1, 1]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, _counts)
+
+        lc = lc1 + lc2
+
+        assert np.all(lc.counts == lc1.counts + lc2.counts)
+        assert np.all(lc.countrate == lc1.countrate + lc2.countrate)
+
 
 class TestLightcurveRebin(object):
 
