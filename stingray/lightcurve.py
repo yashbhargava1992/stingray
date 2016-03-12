@@ -87,6 +87,39 @@ class Lightcurve(object):
         self.tseg = self.time[-1] - self.time[0] + self.dt
         self.tstart = self.time[0] - 0.5*self.dt
 
+    def __add__(self, other):
+        """
+        Add two light curves element by element having the same time array.
+
+        This magic method adds two Lightcurve objects having the same time
+        array such that the corresponding counts arrays get summed up.
+
+        Example
+        -------
+        >>> time = [5, 10, 15]
+        >>> count1 = [300, 100, 400]
+        >>> count2 = [600, 1200, 800]
+        >>> lc1 = Lightcurve(time, count1)
+        >>> lc2 = Lightcurve(time, count2)
+        >>> lc = lc1 + lc2
+        >>> lc.counts
+        array([ 900, 1300, 1200])
+        """
+
+        # ValueError is raised by Numpy while asserting np.equal over arrays
+        # with different dimensions.
+        try:
+            assert np.all(np.equal(self.time, other.time))
+        except (ValueError, AssertionError):
+            raise AssertionError("Time arrays of both light curves must be "
+                                 "of same dimension and equal.")
+
+        new_counts = np.add(self.counts, other.counts)
+
+        lc_new = Lightcurve(self.time, new_counts)
+
+        return lc_new
+
     @staticmethod
     def make_lightcurve(toa, dt, tseg=None, tstart=None):
 
@@ -233,12 +266,12 @@ class Lightcurve(object):
         # For every time stamp, get the individual time counts and add them.
         for time in new_time:
             try:
-                count1 = self.counts[np.where(self.time==time)[0][0]]
+                count1 = self.counts[np.where(self.time == time)[0][0]]
             except IndexError:
                 count1 = 0
 
             try:
-                count2 = other.counts[np.where(other.time==time)[0][0]]
+                count2 = other.counts[np.where(other.time == time)[0][0]]
             except IndexError:
                 count2 = 0
 
