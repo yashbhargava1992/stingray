@@ -153,6 +153,51 @@ class TestLightcurve(object):
         assert np.all(lc.counts == lc1.counts + lc2.counts)
         assert np.all(lc.countrate == lc1.countrate + lc2.countrate)
 
+    @raises(AssertionError)
+    def test_join_with_different_dt(self):
+        _times = [5, 5.5, 6]
+        _counts = [2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        lc1.join(lc2)
+
+    def test_join_disjoint_time_arrays(self):
+        _times = [5, 6, 7, 8]
+        _counts = [2, 2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        lc = lc1.join(lc2)
+
+        assert len(lc.counts) == len(lc.time) == 8
+        assert np.all(lc.counts == 2)
+
+    def test_join_merged_time_arrays(self):
+        _times = [3, 4, 5, 6]
+        _counts = [2, 2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        lc = lc1.join(lc2)
+
+        assert len(lc.counts) == len(lc.time) == 6
+        assert len(np.where(lc.counts==4)[0]) == 2
+        assert len(np.where(lc.counts==2)[0]) == 4
+
+    def test_join_equal_arrays(self):
+        """
+        ``lc.join()`` should work like ``lc.__add__()`` if the time
+        arrays are equal.
+        """
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, self.counts)
+
+        assert np.all(lc1.join(lc2).counts == (lc1 + lc2).counts)
+        assert np.all(lc1.join(lc2).time == (lc1 + lc2).time)
 
 class TestLightcurveRebin(object):
 
