@@ -253,8 +253,6 @@ class Lightcurve(object):
         """
         assert self.dt == other.dt, "The bin width of both the lightcurves" \
                                     " must be same."
-        # TODO : If different, rebin both the lightcurves with
-        # dt_new = LCM(self.dt, other.dt) and raise a warning.
 
         if self.tstart <= other.tstart:
             new_time = np.unique(np.concatenate([self.time, other.time]))
