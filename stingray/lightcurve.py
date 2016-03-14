@@ -251,8 +251,9 @@ class Lightcurve(object):
         >>> lc.counts
         array([ 300,  100, 1000, 1200,  800])
         """
-        assert self.dt == other.dt, "The bin width of both the lightcurves" \
-                                    " must be same."
+        if self.dt != other.dt:
+            utils.simon("The bin widths of both the lightcurves are not "
+                        "same.")
 
         if self.tstart <= other.tstart:
             new_time = np.unique(np.concatenate([self.time, other.time]))
