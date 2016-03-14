@@ -125,6 +125,13 @@ class TestLightcurve(object):
         lc = Lightcurve(times, counts)
 
     @raises(AssertionError)
+    def test_init_with_diff_array_lengths(self):
+        time = [1, 2, 3]
+        counts = [2, 2, 2, 2]
+
+        lc = Lightcurve(time, counts)
+
+    @raises(AssertionError)
     def test_add_with_different_time_arrays(self):
         _times = [1, 2, 3, 4, 5]
         _counts = [2, 2, 2, 2, 2]
