@@ -337,45 +337,11 @@ class Lightcurve(object):
         if axis is not None:
             plt.axis(axis)
 
-        plt.title(title)
+        if title is not None:
+            plt.title(title)
 
         if save:
             if filename is None:
-                self.savefig('out.png')
+                plt.savefig('out.png')
             else:
-                self.savefig(filename)
-
-    def savefig(self, filename, **kwargs):
-        """
-        Save the Lightcurve figure plotted by Matplotlib.
-
-        Note : This function is supposed to be used after the ``draw``
-        function. Otherwise it will save a blank image with no plot.
-
-        Parameters
-        ----------
-        filename : str
-            The name of the image file. Extension must be specified in the
-            file name. For example filename with `.png` extension will give a
-            rasterized image while `.pdf` extension will give a vectorized
-            output.
-
-        kwargs : keyword arguments
-            Keyword arguments to be passed to ``savefig`` function of
-            ``matplotlib.pyplot``. For example use `bbox_inches='tight'` to
-            remove the undesirable whitepace around the image.
-        """
-
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for draw()")
-        except RuntimeError:
-            print("Matplotlib unable to open display.")
-            raise
-
-        if not plt.fignum_exists(1):
-            utils.simon("use ``draw`` function to draw the image first and "
-                        "then use ``savefig`` to save the figure.")
-
-        plt.savefig(filename, **kwargs)
+                plt.savefig(filename)
