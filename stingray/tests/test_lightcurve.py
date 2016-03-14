@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import warnings
 from nose.tools import raises
@@ -153,7 +154,6 @@ class TestLightcurve(object):
         assert np.all(lc.counts == lc1.counts + lc2.counts)
         assert np.all(lc.countrate == lc1.countrate + lc2.countrate)
 
-    @raises(AssertionError)
     def test_join_with_different_dt(self):
         _times = [5, 5.5, 6]
         _counts = [2, 2, 2]
@@ -161,7 +161,10 @@ class TestLightcurve(object):
         lc1 = Lightcurve(self.times, self.counts)
         lc2 = Lightcurve(_times, _counts)
 
-        lc1.join(lc2)
+        with warnings.catch_warnings(record=True) as w:
+            lc1.join(lc2)
+            print(w)
+            assert "both the lightcurves are not same" in str(w[0].message)
 
     def test_join_disjoint_time_arrays(self):
         _times = [5, 6, 7, 8]
