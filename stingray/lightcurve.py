@@ -64,6 +64,9 @@ class Lightcurve(object):
         assert np.all(np.isfinite(counts)), "There are inf or NaN values in " \
                                             "your counts array!"
 
+        assert len(time) == len(counts), "time are counts array are not " \
+                                         "of the same length!"
+
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
 
