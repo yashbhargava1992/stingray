@@ -1,6 +1,8 @@
 __all__ = ["Posterior", "PSDPosterior",
            "LightcurvePosterior", "GaussianPosterior"]
 
+import abc
+
 import numpy as np
 from scipy.special import gamma as scipy_gamma
 
@@ -10,6 +12,7 @@ from stingray import Powerspectrum, AveragedPowerspectrum
 from stingray.parametricmodels import logmin
 
 class Posterior(object):
+    __metaclass__ = abc.ABCMeta
 
     def __init__(self,x, y, model):
         """
@@ -46,7 +49,7 @@ class Posterior(object):
         return self.model.logprior(*t0)
 
 
-    ### use standard definition of the likelihood as the product of all
+    @abc.abstractmethod
     def loglikelihood(self, t0, neg=False):
         print("If you're calling this method, something is wrong!")
         return 0.0

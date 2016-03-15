@@ -12,6 +12,8 @@ from stingray import CombinedModel
 logmin = parametricmodels.logmin
 
 
+
+
 class TestParametricModel(object):
     def test_npar_passes_when_int(self):
         npar = int(2)
@@ -136,7 +138,8 @@ class TestPowerLawModel(object):
 
     @raises(AttributeError)
     def test_hyperparameters_not_set(self):
-        self.pl.logprior
+        pl = PowerLaw()
+        pl.logprior
 
     def test_hyperparameters(self):
         #hyperparameters
@@ -150,7 +153,6 @@ class TestPowerLawModel(object):
                      "amplitude_min":-5.0, "amplitude_max":5.0}
         self.pl.set_prior(hyperpars)
         prior_test = self.pl.logprior(2.0, 2.0)
-        print("prior_test: " + str(prior_test))
         assert np.isfinite(prior_test)
         assert prior_test > logmin
 
@@ -203,7 +205,8 @@ class TestBentPowerLawModel(object):
 
     @raises(AttributeError)
     def test_hyperparameters_not_set(self):
-        self.bpl.logprior
+        bpl = BrokenPowerLaw()
+        bpl.logprior
 
     def test_hyperparameters(self):
         #hyperparameters
@@ -221,7 +224,6 @@ class TestBentPowerLawModel(object):
                      "amplitude_min":-5.0, "amplitude_max":5.0}
         self.bpl.set_prior(hyperpars)
         prior_test = self.bpl.logprior(2.0, 2.0, 0.0, 1.0)
-        print("prior_test: " + str(prior_test))
         assert np.isfinite(prior_test)
         assert prior_test > logmin
 
@@ -289,7 +291,8 @@ class TestLorentzianModel(object):
 
     @raises(AttributeError)
     def test_hyperparameters_not_set(self):
-        self.lorentzian.logprior
+        lorentzian = Lorentzian()
+        lorentzian.logprior
 
     def test_hyperparameters(self):
         #hyperparameters
@@ -356,8 +359,6 @@ class TestFixedCentroidLorentzianModel(object):
         qpo_func = lambda x, g, amp, cen: np.exp(amp)/(np.pi*np.exp(g))*0.5/\
                                           ((x-cen)**2.0+(0.5*np.exp(g))**2.0)
         for x in range(1, 20):
-            print(qpo_func(x, gamma, amplitude, self.x0))
-            print(self.fcl(x, gamma, amplitude))
             assert np.allclose(qpo_func(x, gamma, amplitude, self.x0),
                                self.fcl(x, gamma, amplitude),
                                atol=1.e-6)
@@ -370,7 +371,8 @@ class TestFixedCentroidLorentzianModel(object):
 
     @raises(AttributeError)
     def test_hyperparameters_not_set(self):
-        self.fcl.logprior()
+        fcl = FixedCentroidLorentzian(x0=self.x0)
+        fcl.logprior
 
     def test_hyperparameters(self):
         #hyperparameters
@@ -468,7 +470,6 @@ class TestPowerlawPrior(object):
     def test_prior_nonzero(self):
         alpha = 1.0
         amplitude = 2.0
-        print(self.pl)
         assert self.pl.logprior(alpha, amplitude) == self.prior_norm
 
     def prior_zero(self, alpha, amplitude):
