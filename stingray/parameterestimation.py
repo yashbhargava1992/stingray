@@ -2,7 +2,7 @@
 __all__ = ["OptimizationResults", "ParameterEstimation", "PSDParEst"]
 
 
-## check whether matplotlib is installed for easy plotting
+# check whether matplotlib is installed for easy plotting
 try:
     import matplotlib.pyplot as plt
     from matplotlib.ticker import MaxNLocator
@@ -10,7 +10,7 @@ try:
 except ImportError:
     can_plot = False
 
-## check whether emcee is installed for sampling
+# check whether emcee is installed for sampling
 try:
     import emcee
     can_plot = True
@@ -19,12 +19,10 @@ except ImportError:
 
 try:
     import corner
-    use_corner =True
+    use_corner = True
 except ImportError:
-    use_corner=False
+    use_corner = False
 
-
-#### GENERAL IMPORTS ###
 import numpy as np
 import scipy
 import scipy.optimize
@@ -32,20 +30,16 @@ import scipy.stats
 import scipy.signal
 import copy
 
-
 try:
     from statsmodels.tools.numdiff import approx_hess
     comp_hessian = True
 except ImportError:
     comp_hessian = False
 
-
-### own imports
 from . import PSDPosterior
 
 
 class OptimizationResults(object):
-
 
     def __init__(self, lpost, res, neg=True):
         """
@@ -68,7 +62,6 @@ class OptimizationResults(object):
         self.p_opt = res.x
         self.model = lpost.model
 
-
         self._compute_covariance(lpost, res)
         self._compute_model(lpost)
         self._compute_criteria(lpost)
@@ -80,7 +73,7 @@ class OptimizationResults(object):
             self.cov = np.asarray(res.hess_inv)
             self.err = np.sqrt(np.diag(self.cov))
         else:
-            ### calculate Hessian approximating with finite differences
+            # calculate Hessian approximating with finite differences
             print("Approximating Hessian with finite differences ...")
             phess = approx_hess(self.p_opt, lpost, neg=self.neg)
 
@@ -90,19 +83,18 @@ class OptimizationResults(object):
     def _compute_model(self, lpost):
         self.mfit = lpost.model(lpost.x, *self.p_opt)
 
-
     def _compute_criteria(self, lpost):
 
         self.deviance = -2.0*lpost.loglikelihood(self.p_opt, neg=False)
 
-        ## Akaike Information Criterion
+        # Akaike Information Criterion
         self.aic = self.result+2.0*self.p_opt.shape[0]
 
-        ### Bayesian Information Criterion
+        # Bayesian Information Criterion
         self.bic = self.result + self.p_opt.shape[0]*np.log(lpost.x.shape[0])
 
-        ### Deviance Information Criterion
-        ## TODO: Add Deviance Information Criterion
+        # Deviance Information Criterion
+        # TODO: Add Deviance Information Criterion
 
     def _compute_statistics(self, lpost):
         try:
@@ -119,21 +111,22 @@ class OptimizationResults(object):
     def print_summary(self, lpost):
 
         print("The best-fit model parameters plus errors are:")
-        for i,(x,y, p) in enumerate(zip(self.p_opt, self.err,
-                                        lpost.model.parnames)):
-            print("%i) Parameter %s: %.5f +/- %.f5"%(i, p, x, y))
+
+        for i, (x, y, p) in enumerate(zip(self.p_opt, self.err,
+                                          lpost.model.parnames)):
+            print("%i) Parameter {:s}: {:.5f} +/- {:.5f}".format(i, p, x, y))
 
         print("\n")
 
         print("Fitting statistics: ")
-        print(" -- number of data points: " + str(len(lpost.x)))
+        print(" -- number of data points: {:i}".format((len(lpost.x))))
 
         try:
             self.deviance
         except AttributeError:
             self._compute_criteria(lpost)
 
-        print(" -- Deviance [-2 log L] D = " + str(self.deviance))
+        print(" -- Deviance [-2 log L] D = {:.3f}".format(self.deviance))
         print(" -- The Akaike Information Criterion of the model is: " +
               str(self.aic) + ".")
 
@@ -145,16 +138,17 @@ class OptimizationResults(object):
         except AttributeError:
             self._compute_statistics(lpost)
 
-        print(" -- The figure-of-merit function for this model is: " +
-              str(self.merit) +
-              " and the fit for " + str(self.dof) + " dof is " +
-              str(self.merit/self.dof) + ".")
+        print(" -- The figure-of-merit function for this model " +
+              " is: {:.5f}".format(self.merit) +
+              " and the fit for {:i} dof is {:.3f}".format(self.dof,
+                                                           self.merit/self.dof))
 
-        print(" -- Summed Residuals S = " + str(self.sobs))
-        print(" -- Expected S ~ " + str(self.sexp) + " +/- " + str(self.ssd))
-        print(" -- merit function (SSE) M = " + str(self.merit) + "\n\n")
+        print(" -- Summed Residuals S = {:.5f}".format(self.sobs))
+        print(" -- Expected S ~ {:.5f} +/- {:.5f}".format(self.sexp, self.ssd))
+        print(" -- merit function (SSE) M = {:.5f} \n\n".format(self.merit))
 
         return
+
 
 class ParameterEstimation(object):
 
@@ -180,12 +174,10 @@ class ParameterEstimation(object):
         self.fitmethod = fitmethod
         self.max_post = max_post
 
-
     def fit(self, lpost, t0, neg=True):
         """
         Do either a Maximum A Posteriori or Maximum Likelihood
         fit to the data.
-
 
         Parameters:
         -----------
@@ -209,10 +201,8 @@ class ParameterEstimation(object):
         else:
             args = (neg,)
 
-
-        ### different commands for different fitting methods,
-        ### at least until scipy 0.11 is out
-
+        # different commands for different fitting methods,
+        # at least until scipy 0.11 is out
         funcval = 100.0
         i = 0
         while funcval == 100 or funcval == 200 or \
@@ -220,30 +210,27 @@ class ParameterEstimation(object):
 
             if i > 20:
                 raise Exception("Fitting unsuccessful!")
-            ### perturb parameters slightly
+            # perturb parameters slightly
             t0_p = np.random.multivariate_normal(t0, np.diag(np.abs(t0)/100.))
 
-            ## if max_post is True, do the Maximum-A-Posteriori Fit
+            # if max_post is True, do the Maximum-A-Posteriori Fit
             if self.max_post:
                 opt = scipy.optimize.minimize(lpost, t0_p,
                                               method=self.fitmethod,
                                               args=args, tol=1.e-10)
 
-            ## if max_post is False, then do a Maximum Likelihood Fit
+            # if max_post is False, then do a Maximum Likelihood Fit
             else:
                 opt = scipy.optimize.minimize(lpost.loglikelihood, t0_p,
                                               method=self.fitmethod,
                                               args=args, tol=1.e-10)
 
-
             funcval = opt.fun
-            i+= 1
-
+            i += 1
 
         res = OptimizationResults(lpost, opt, neg=neg)
 
         return res
-
 
     def compute_lrt(self, lpost1, t1, lpost2, t2, neg=True):
         """
@@ -256,11 +243,11 @@ class ParameterEstimation(object):
 
         """
 
-        ### fit data with both models
+        # fit data with both models
         res1 = self.fit(lpost1, t1, neg=neg)
         res2 = self.fit(lpost2, t2, neg=neg)
 
-        ### compute log likelihood ratio as difference between the deviances
+        # compute log likelihood ratio as difference between the deviances
         lrt = res1.deviance - res2.deviance
 
         return lrt
@@ -309,8 +296,8 @@ class ParameterEstimation(object):
             be printed to standard output. Default: True
 
         plot : bool
-            Boolean flag setting whether summary plots of the MCMC chains chould be
-            produced. Default: False
+            Boolean flag setting whether summary plots of the MCMC chains
+            should be produced. Default: False
 
         namestr : str
             Optional string for output file names for the plotting.
@@ -325,24 +312,25 @@ class ParameterEstimation(object):
 
         ndim = t0
 
-        ## do a MAP fitting step to find good starting positions for
-        ## the sampler
+        # do a MAP fitting step to find good starting positions for
+        # the sampler
         res = self.fit(lpost, t0, neg=True)
 
-        ## sample random starting positions for each walker from
-        ## a multivariate Gaussian
-        p0 = np.array([np.random.multivariate_normal(res.p_opt, res.cov) for \
-              i in range(nwalkers)])
+        # sample random starting positions for each walker from
+        # a multivariate Gaussian
+        p0 = np.array([np.random.multivariate_normal(res.p_opt, res.cov) for
+                       i in range(nwalkers)])
 
-        ## initialize the sampler
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False])
+        # initialize the sampler
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False],
+                                        threads=threads)
 
-        ## run the burn-in
+        # run the burn-in
         pos, prob, state = sampler.run_mcmc(p0, burnin)
 
         sampler.reset()
 
-        ## do the actual MCMC run
+        # do the actual MCMC run
         sampler.run_mcmc(pos, niter, rstate0=state)
 
         res = SamplingResults(sampler)
@@ -353,8 +341,8 @@ class ParameterEstimation(object):
         if plot:
             res.plot_results(namestr + "_corner.pdf")
 
-
         return res
+
 
 class SamplingResults(object):
 
@@ -379,16 +367,16 @@ class SamplingResults(object):
 
         """
 
-        ## store all the samples
+        # store all the samples
         self.samples = sampler.flatchain
 
         self.nwalkers = np.float(sampler.chain.shape[0])
         self.niter = np.float(sampler.iterations)
 
-        ## store number of dimensions
+        # store number of dimensions
         self.ndim = sampler.dim
 
-        ## compute and store acceptance fraction
+        # compute and store acceptance fraction
         self.acceptance = np.nanmean(sampler.acceptance_fraction)
         self.L = self.acceptance*self.samples.shape[0]
 
@@ -397,35 +385,32 @@ class SamplingResults(object):
 
     def _check_convergence(self, sampler):
 
-        ## compute and store autocorrelation time
+        # compute and store autocorrelation time
         self.acor = sampler.acor
 
         self.rhat = self._compute_rhat(sampler)
 
-
     def _compute_rhat(self, sampler):
 
-        rh = np.zeros(self.ndim)
-
-        #### between-sequence variance
-        #
-        ## mean over iterations:(self.nwalkers, self.ndim)
+        # between-sequence variance
         mean_samples_iter = np.nanmean(sampler.chain, axis=1)
 
-        ## mean over the means over iterations: (self.ndim)
+        # mean over the means over iterations: (self.ndim)
         mean_samples = np.nanmean(sampler.chain, axis=(0,1))
 
-        ## now compute between-sequence variance
-        bb = (self.niter/(self.nwalkers-1))*\
-             np.sum((mean_samples_iter-mean_samples)**2., axis=0)
+        # now compute between-sequence variance
+        bb = (self.niter / (self.nwalkers - 1)) * np.sum((mean_samples_iter -
+                                                          mean_samples)**2.,
+                                                         axis=0)
 
-        ## compute variance of each chain
+        # compute variance of each chain
         var_samples = np.nanvar(sampler.chain, axis=1)
-        ## compute mean of variance
+
+        # compute mean of variance
         ww = np.nanmean(var_samples, axis=0)
 
-        ## compute weighted average of ww and bb:
-        rhat = ((self.niter-1)/self.niter)*ww + (1/self.niter)*bb
+        # compute weighted average of ww and bb:
+        rhat = ((self.niter - 1) / self.niter) * ww + (1 / self.niter) * bb
 
         return rhat
 
@@ -440,20 +425,18 @@ class SamplingResults(object):
 
         """
 
-        print("-- The acceptance fraction is: " + str(self.acceptance))
-        print("-- The autocorrelation time is: " + str(self.acor))
+        print("-- The acceptance fraction is: {:.5f}".format(self.acceptance))
+        print("-- The autocorrelation time is: {:5.f}".format(self.acor))
 
-        print("R_hat for the parameters is: " + str(self.rhat))
+        print("R_hat for the parameters is: {:.5f}".format(self.rhat))
 
-        ### print to screen
         print("-- Posterior Summary of Parameters: \n")
         print("parameter \t mean \t\t sd \t\t 5% \t\t 95% \n")
         print("---------------------------------------------\n")
         for i in range(self.ndim):
             print("theta[" + str(i) + "] \t " +
                   str(self.mean[i]) + "\t" + str(self.std[i]) + "\t" +
-                  str(self.ci[0,i]) + "\t" + str(self.ci[1,i]) + "\n" )
-
+                  str(self.ci[0, i]) + "\t" + str(self.ci[1, i]) + "\n")
 
     def plot_results(self, filename, nsamples=1000):
         """
@@ -475,11 +458,11 @@ class SamplingResults(object):
         assert can_plot, "Need to have matplotlib installed for plotting"
         if use_corner:
             corner.corner(self.samples, labels=[],
-                         quantiles=[0.16, 0.5, 0.84],
-                         show_titles=True, title_args={"fontsize": 12})
+                          quantiles=[0.16, 0.5, 0.84],
+                          show_titles=True, title_args={"fontsize": 12})
 
         else:
-            fig = plt.figure(figsize=(15,15))
+            fig = plt.figure(figsize=(15, 15))
             plt.subplots_adjust(top=0.925, bottom=0.025,
                                 left=0.025, right=0.975,
                                 wspace=0.2, hspace=0.2)
@@ -489,44 +472,38 @@ class SamplingResults(object):
             samples = self.samples[ind_all]
             for i in range(self.ndim):
                 for j in range(self.ndim):
-                    xmin, xmax = samples[:,j].min(), \
-                                 samples[:,j].max()
-                    ymin, ymax = samples[:,i].min(), \
-                                 samples[:,i].max()
-                    ax = fig.add_subplot(self.ndim,self.ndim,i*self.ndim+j+1)
+                    xmin, xmax = samples[:, j].min(), samples[:, j].max()
+                    ymin, ymax = samples[:, i].min(), samples[:, i].max()
+                    ax = fig.add_subplot(self.ndim, self.ndim, i*self.ndim+j+1)
 
                     ax.xaxis.set_major_locator(MaxNLocator(5))
-                    ax.ticklabel_format(style="sci", scilimits=(-2,2))
+                    ax.ticklabel_format(style="sci", scilimits=(-2, 2))
 
                     if i == j:
-                        #pass
                         ntemp, binstemp, patchestemp = \
-                            ax.hist(samples[:,i], 30, normed=True,
+                            ax.hist(samples[:, i], 30, normed=True,
                                     histtype='stepfilled')
-                        #n.append(ntemp)
-                        #bins.append(binstemp)
-                        #patches.append(patchestemp)
                         ax.axis([ymin, ymax, 0, max(ntemp)*1.2])
 
                     else:
 
                         ax.axis([xmin, xmax, ymin, ymax])
 
-                        ### make a scatter plot first
-                        ax.scatter(samples[:,j], samples[:,i], s=7)
-                        ### then add contours
-                        xmin, xmax = samples[:,j].min(), samples[:,j].max()
-                        ymin, ymax = samples[:,i].min(), samples[:,i].max()
+                        # make a scatter plot first
+                        ax.scatter(samples[:, j], samples[:, i], s=7)
+                        # then add contours
+                        xmin, xmax = samples[:, j].min(), samples[:, j].max()
+                        ymin, ymax = samples[:, i].min(), samples[:, i].max()
 
-                        ### Perform Kernel density estimate on data
+                        # Perform Kernel density estimate on data
                         try:
-                            X,Y = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
-                            positions = np.vstack([X.ravel(), Y.ravel()])
-                            values = np.vstack([samples[:,j], samples[:,i]])
+                            xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+                            positions = np.vstack([xx.ravel(), yy.ravel()])
+                            values = np.vstack([samples[:, j], samples[:, i]])
                             kernel = scipy.stats.gaussian_kde(values)
-                            Z = np.reshape(kernel(positions).T, X.shape)
+                            zz = np.reshape(kernel(positions).T, xx.shape)
 
-                            ax.contour(X,Y,Z,7)
+                            ax.contour(xx, yy, zz, 7)
                         except ValueError:
                             print("Not making contours.")
 
@@ -537,15 +514,11 @@ class SamplingResults(object):
 
 class PSDParEst(ParameterEstimation):
 
-    ### ps = PowerSpectrum object with periodogram
-    ### obs= if True, compute covariances and print summary to screen
-    ###    
-
     def __init__(self, ps, fitmethod='BFGS', max_post=True):
 
         self.ps = ps
-        ParameterEstimation.__init__(self, fitmethod=fitmethod, max_post=max_post)
-
+        ParameterEstimation.__init__(self, fitmethod=fitmethod,
+                                     max_post=max_post)
 
     def fit(self, model, t0, neg=True):
 
@@ -557,67 +530,53 @@ class PSDParEst(ParameterEstimation):
 
         return res
 
+    def compute_lrt(self, model1, t1, model2, t2, neg=True):
 
-    def compute_lrt(self, model1, t1, model2, t2):
+        lpost1 = PSDPosterior(self.ps, model1)
+        lpost2 = PSDPosterior(self.ps, model2)
 
-        lpost1 = PSDPosterior(self.ps, model1, m=self.ps.m)
-        lpost2 = PSDPosterior(self.ps, model2, m=self.ps.m)
-
-        lrt = ParameterEstimation.compute_lrt(self, lpost1, t1, lpost2, t2)
+        lrt = ParameterEstimation.compute_lrt(self, lpost1, t1, lpost2, t2,
+                                              neg=neg)
 
         return lrt
 
-
     def _compute_highest_outlier(self, lpost, res, nmax=1):
 
-        residuals = 2.0*lpost.y[1:]/res.mfit[1:]
-
-#        if nmax > 1:
+        residuals = 2.0 * lpost.y[1:] / res.mfit[1:]
 
         ratio_sort = copy.copy(residuals)
         ratio_sort.sort()
         max_y = ratio_sort[-nmax:]
 
-        max_x= np.zeros(max_y.shape[0])
+        max_x = np.zeros(max_y.shape[0])
         max_ind = np.zeros(max_y.shape[0])
 
-        for i,my in enumerate(max_y):
+        for i, my in enumerate(max_y):
             max_x[i], max_ind[i] = self._find_outlier(lpost.x, residuals, my)
-
-#        else:
-#            max_y = np.max(ratio)
-#            max_x, max_ind = self._find_outlier(xdata, ratio, max_y)
 
         return max_y, max_x, max_ind
 
-    def _find_outlier(self, xdata, ratio, max_y):
+    @staticmethod
+    def _find_outlier(xdata, ratio, max_y):
         max_ind = np.where(ratio == max_y)[0][0]+1
-        #if np.size(max_ind) == 0:
-        #    max_ind = None
-        #    max_x = None
-        #else:
-        #if np.size(max_ind) > 1:
-        #    max_ind = max_ind[0]
         max_x = xdata[max_ind]
 
         return max_x, max_ind
 
-
-    ### plot two fits against each other
-    def plotfits(self, res1, res2 = None, namestr='test', log=False):
+    def plotfits(self, res1, res2=None, namestr='test', log=False):
 
         if not can_plot:
             print("No matplotlib imported. Can't plot!")
         else:
-            ### make a figure
-            f = plt.figure(figsize=(12,10))
-            ### adjust subplots such that the space between the top and bottom of each are zero
+            # make a figure
+            f = plt.figure(figsize=(12, 10))
+            # adjust subplots such that the space between the top and bottom
+            # of each are zero
             plt.subplots_adjust(hspace=0.0, wspace=0.4)
 
-
-            ### first subplot of the grid, twice as high as the other two
-            ### This is the periodogram with the two fitted models overplotted
-            s1 = plt.subplot2grid((4,1),(0,0),rowspan=2)
+            # first subplot of the grid, twice as high as the other two
+            # This is the periodogram with the two fitted models overplotted
+            s1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
             if log:
                 logx = np.log10(self.ps.freq[1:])
@@ -669,9 +628,9 @@ class PSDParEst(ParameterEstimation):
             s1.set_title("Periodogram and fits for data set " + namestr,
                          fontsize=18)
 
-            ### second subplot: power/model for Power law and straight line
-            s2 = plt.subplot2grid((4,1),(2,0),rowspan=1)
-            pldif = self.ps.ps[1:]/res1.mfit
+            # second subplot: power/model for Power law and straight line
+            s2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1)
+            pldif = self.ps.ps[1:] / res1.mfit
 
             s2.set_ylabel("Residuals, \n" + res1.model.name + " model",
                           fontsize=18)
@@ -684,8 +643,10 @@ class PSDParEst(ParameterEstimation):
                 s2.set_ylim([min(pldif), max(pldif)])
 
             else:
-                s2.plot(self.ps.freq[1:], pldif, color='black', linestyle='steps-mid')
-                s2.plot(self.ps.ps[1:], np.ones(self.x.shape[0]), color='blue', lw=2)
+                s2.plot(self.ps.freq[1:], pldif, color='black',
+                        linestyle='steps-mid')
+                s2.plot(self.ps.ps[1:], np.ones(self.ps.ps.shape[0]),
+                        color='blue', lw=2)
 
                 s2.set_xscale("log")
                 s2.set_yscale("log")
@@ -695,8 +656,8 @@ class PSDParEst(ParameterEstimation):
             if res2 is not None:
                 bpldif = self.ps.ps[1:]/res2.mfit
 
-            ### third subplot: power/model for bent power law and straight line
-                s3 = plt.subplot2grid((4,1),(3,0),rowspan=1)
+            # third subplot: power/model for bent power law and straight line
+                s3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1)
 
                 if log:
                     s3.plot(logx, bpldif, color='black', linestyle='steps-mid')
@@ -716,7 +677,7 @@ class PSDParEst(ParameterEstimation):
                     s3.set_ylim([min(bpldif), max(bpldif)])
                     s3.set_xlabel("Frequency [Hz]", fontsize=18)
 
-                s3.set_ylabel("Residuals, \n" + res.model.name + " model",
+                s3.set_ylabel("Residuals, \n" + res2.model.name + " model",
                               fontsize=18)
 
             else:
@@ -730,12 +691,12 @@ class PSDParEst(ParameterEstimation):
             for label in ax.get_xticklabels() + ax.get_yticklabels():
                 label.set_fontsize(14)
 
-            ### make sure xticks are taken from first plots, but don't appear there
+            # make sure xticks are taken from first plots, but don't
+            # appear there
             plt.setp(s1.get_xticklabels(), visible=False)
 
-            ### save figure in png file and close plot device
+            # save figure in png file and close plot device
             plt.savefig(namestr + '_ps_fit.png', format='png')
             plt.close()
 
         return
-
