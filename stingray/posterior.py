@@ -1,20 +1,22 @@
-__all__ = ["Posterior", "PSDPosterior",
-           "LightcurvePosterior", "GaussianPosterior"]
+from __future__ import division
 
 import abc
 
 import numpy as np
 from scipy.special import gamma as scipy_gamma
 
-## TODO: Find out whether there is a gamma function in numpy!
+# TODO: Find out whether there is a gamma function in numpy!
 
-from stingray import Powerspectrum, AveragedPowerspectrum
 from stingray.parametricmodels import logmin
+
+__all__ = ["Posterior", "PSDPosterior",
+           "LightcurvePosterior", "GaussianPosterior"]
+
 
 class Posterior(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self,x, y, model):
+    def __init__(self, x, y, model):
         """
 
 
@@ -23,7 +25,7 @@ class Posterior(object):
         self.x = x
         self.y = y
 
-        ### model is a parametric model
+        # model is a parametric model
         self.model = model
 
     def logprior(self, t0):
@@ -48,15 +50,13 @@ class Posterior(object):
 
         return self.model.logprior(*t0)
 
-
     @abc.abstractmethod
     def loglikelihood(self, t0, neg=False):
-        print("If you're calling this method, something is wrong!")
-        return 0.0
+        pass
 
     def logposterior(self, t0, neg=False):
         lpost = self.loglikelihood(t0) + self.logprior(t0)
-        if neg == True:
+        if neg is True:
             return -lpost
         else:
             return lpost
@@ -143,12 +143,10 @@ class PSDPosterior(Posterior):
         else:
             res = -2.0*self.m*(np.sum(np.log(funcval)) +
                                np.sum(self.y[1:]/funcval) +
-                               np.sum((2.0/float(2.*self.m) - 1.0)*
+                               np.sum((2.0 / (2. * self.m) - 1.0) *
                                       np.log(self.y[1:])))
 
-        if np.isnan(res):
-            res = logmin
-        elif res == np.inf or np.isfinite(res) == False:
+        if np.isfinite(res) is False:
             res = logmin
 
         if neg:
@@ -197,8 +195,6 @@ class LightcurvePosterior(Posterior):
         self.lc = lc
         Posterior.__init__(self, lc.time, lc.counts, model)
 
-
-
     def loglikelihood(self, t0, neg=False):
 
         assert np.size(t0) == self.model.npar, "Input parameters must" \
@@ -208,9 +204,7 @@ class LightcurvePosterior(Posterior):
 
         res = -funcval + self.y*np.log(funcval) - scipy_gamma(self.y + 1.)
 
-        if np.isnan(res):
-            res = logmin
-        elif res == np.inf or np.isfinite(res) == False:
+        if np.isfinite(res) is False:
             res = logmin
 
         if neg:
@@ -244,7 +238,6 @@ class GaussianPosterior(Posterior):
         """
         Posterior.__init__(self, x, y, model)
 
-
     def loglikelihood(self, t0, neg=False):
 
         assert np.size(t0) == self.model.npar, "Input parameters must" \
@@ -252,14 +245,10 @@ class GaussianPosterior(Posterior):
 
         funcval = self.model(self.x[1:], *t0)
 
-        #res = -funcval + self.y*np.log(funcval) - scipy_gamma(self.y + 1.)
-        ## TODO: Add Gaussian likelihood
+        # TODO: Add Gaussian likelihood
         res = 1.0
 
-
-        if np.isnan(res):
-            res = logmin
-        elif res == np.inf or np.isfinite(res) == False:
+        if np.isfinite(res) is False:
             res = logmin
 
         if neg:
