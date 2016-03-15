@@ -28,7 +28,7 @@ class PosteriorClassDummy(Posterior):
         return lp
 
 
-class TestMetaClass(object):
+class TestPosteriorABC(object):
 
     @raises(TypeError)
     def test_instantiation_of_abcclass_fails(self):
@@ -47,7 +47,6 @@ class TestMetaClass(object):
                 Posterior.__init__(self, x, y, model)
 
         p = PartialPosterior()
-
 
 
 class TestPosterior(object):

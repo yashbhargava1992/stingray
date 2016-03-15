@@ -5,6 +5,8 @@ __all__ = ["ParametricModel", "Const",
            "Lorentzian", "FixedCentroidLorentzian",
            "CombinedModel"]
 
+from abc import ABCMeta, abstractmethod
+
 import numpy as np
 import scipy.stats
 
@@ -13,6 +15,7 @@ logmin = -10000000000000000.0
 
 
 class ParametricModel(object):
+    __metaclass__ = ABCMeta
 
     def __init__(self, npar, name, parnames=None):
         """
@@ -45,6 +48,7 @@ class ParametricModel(object):
         if parnames is not None:
             self.parnames = parnames
 
+    @abstractmethod
     def func(self, *pars):
         pass
 

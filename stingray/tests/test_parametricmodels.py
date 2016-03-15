@@ -12,41 +12,66 @@ from stingray import CombinedModel
 logmin = parametricmodels.logmin
 
 
+class ParametricModelDummy(ParametricModel):
+
+    def func(self):
+        pass
+
+class TestPosteriorABC(object):
+
+    @raises(TypeError)
+    def test_instantiation_of_abcclass_fails(self):
+        p = ParametricModel()
+
+    @raises(TypeError)
+    def test_failure_without_loglikelihood_method(self):
+        """
+        The abstract base class Posterior requires a method
+        :loglikelihood: to be defined in any of its subclasses.
+        Having a subclass without this method should cause failure.
+
+        """
+        class PartialParametricModel(ParametricModel):
+            def __init__(self, x, y, model):
+                ParametricModel.__init__(self, x, y, model)
+
+        p = PartialParametricModel()
+
 
 
 class TestParametricModel(object):
     def test_npar_passes_when_int(self):
         npar = int(2)
-        p = ParametricModel(npar, "MyModel")
+        p = ParametricModelDummy(npar, "MyModel")
 
     def test_npar_passes_when_numpy_int(self):
         npar = np.int(2)
-        p = ParametricModel(npar, "MyNumpyModel")
+        p = ParametricModelDummy(npar, "MyNumpyModel")
 
     @raises(AssertionError)
     def test_npar_fails_when_not_int(self):
         npar = float(2.0)
-        p = ParametricModel(npar, "MyFailingModel")
+        p = ParametricModelDummy(npar, "MyFailingModel")
 
     @raises(AssertionError)
     def test_npar_fails_when_nan(self):
         npar = np.nan
-        p = ParametricModel(npar, "MyNaNModel")
+        p = ParametricModelDummy(npar, "MyNaNModel")
 
     @raises(AssertionError)
     def test_npar_fails_when_inf(self):
         npar = np.inf
-        p = ParametricModel(npar, "MyInfModel")
+        p = ParametricModelDummy(npar, "MyInfModel")
 
     def test_name_passes_when_string(self):
         npar = 2
         name = "MyModel"
-        p = ParametricModel(npar, name)
+        p = ParametricModelDummy(npar, name)
 
     def test_name_fails_when_number(self):
         npar = 2
         name = 2
-        p = ParametricModel(npar, name)
+        p = ParametricModelDummy(npar, name)
 
 
 class TestConstModel(object):
