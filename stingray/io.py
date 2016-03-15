@@ -5,8 +5,8 @@ import logging
 import warnings
 import os
 
-from .utils import _order_list_of_arrays, is_string
-from .utils import _assign_value_if_none
+from .utils import order_list_of_arrays, is_string
+from .utils import assign_value_if_none
 
 
 def get_file_extension(fname):
@@ -57,7 +57,7 @@ def load_gtis(fits_file, gtistring=None):
     from astropy.io import fits as pf
     import numpy as np
 
-    gtistring = _assign_value_if_none(gtistring, 'GTI')
+    gtistring = assign_value_if_none(gtistring, 'GTI')
     logging.info("Loading GTIS from file %s" % fits_file)
     lchdulist = pf.open(fits_file, checksum=True)
     lchdulist.verify('warn')
@@ -142,7 +142,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     """
     from astropy.io import fits as pf
 
-    gtistring = _assign_value_if_none(gtistring, 'GTI,STDGTI')
+    gtistring = assign_value_if_none(gtistring, 'GTI,STDGTI')
     lchdulist = pf.open(fits_file)
 
     # Load data table
@@ -198,7 +198,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     order = np.argsort(ev_list)
     ev_list = ev_list[order]
 
-    additional_data = _order_list_of_arrays(additional_data, order)
+    additional_data = order_list_of_arrays(additional_data, order)
 
     returns = _empty()
     returns.ev_list = ev_list
@@ -420,8 +420,8 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
 
     check_gtis(gtis)
 
-    dt = _assign_value_if_none(dt,
-                               np.zeros_like(time) + (time[1] - time[0]) / 2)
+    dt = assign_value_if_none(dt,
+                              np.zeros_like(time) + (time[1] - time[0]) / 2)
 
     mask = np.zeros(len(time), dtype=bool)
 
@@ -484,7 +484,7 @@ def create_gti_from_condition(time, condition,
     if not isinstance(safe_interval, collections.Iterable):
         safe_interval = [safe_interval, safe_interval]
 
-    dt = _assign_value_if_none(dt,
+    dt = assign_value_if_none(dt,
                                np.zeros_like(time) + (time[1] - time[0]) / 2)
 
     gtis = []
@@ -632,8 +632,8 @@ def get_btis(gtis, start_time=None, stop_time=None):
         return np.array([[start_time, stop_time]], dtype=np.longdouble)
     check_gtis(gtis)
 
-    start_time = _assign_value_if_none(start_time, gtis[0][0])
-    stop_time = _assign_value_if_none(stop_time, gtis[-1][1])
+    start_time = assign_value_if_none(start_time, gtis[0][0])
+    stop_time = assign_value_if_none(stop_time, gtis[-1][1])
 
     if gtis[0][0] - start_time <= 0:
         btis = []
