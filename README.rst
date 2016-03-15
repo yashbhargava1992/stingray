@@ -23,6 +23,23 @@ The contents will be:
 - power colours
 - rms spectra
 
+Installation
+-------------
+
+1. Clone our project from github (remember about including --recursive flag due to our submodule(s))::
+
+    $ git clone --recursive https://github.com/StingraySoftware/stingray.git
+
+2. Go to directory where you cloned project into and install astropy_helpers submodule::
+
+    $ cd astropy_helpers
+    $ python setup.py install
+
+3. Go back to stingray project directory and execute::
+
+    $ python setup.py install
+
+
 Documentation
 -------------
 
