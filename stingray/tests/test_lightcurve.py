@@ -1,5 +1,6 @@
 import numpy as np
-from nose.tools import raises
+
+import pytest
 from stingray import Lightcurve
 
 np.random.seed(20150907)
@@ -83,29 +84,29 @@ class TestLightcurve(object):
         assert np.allclose(lc.counts, np.zeros_like(countrate) +
                            mean_counts*dt)
 
-    @raises(TypeError)
     def test_init_with_none_data(self):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0 + dt/2, 5 - dt/2, dt)
         counts = np.array([None for i in range(times.shape[0])])
-        lc = Lightcurve(times, counts)
+        with pytest.raises(TypeError):
+            lc = Lightcurve(times, counts)
 
-    @raises(AssertionError)
     def test_init_with_inf_data(self):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0 + dt/2, 5 - dt/2, dt)
         counts = np.array([np.inf for i in range(times.shape[0])])
-        lc = Lightcurve(times, counts)
+        with pytest.raises(AssertionError):
+            lc = Lightcurve(times, counts)
 
-    @raises(AssertionError)
     def test_init_with_nan_data(self):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0 + dt/2, 5 - dt/2, dt)
         counts = np.array([np.nan for i in range(times.shape[0])])
-        lc = Lightcurve(times, counts)
+        with pytest.raises(AssertionError):
+            lc = Lightcurve(times, counts)
 
 
 class TestLightcurveRebin(object):
