@@ -10,7 +10,6 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import scipy.stats
 
-
 logmin = -10000000000000000.0
 
 
@@ -54,8 +53,6 @@ class ParametricModel(object):
 
     def __call__(self, freq, *pars):
         return self.func(freq, *pars)
-
-
 
 
 class Const(ParametricModel):
@@ -108,9 +105,8 @@ class Const(ParametricModel):
 
         ParametricModel.__init__(self, npar, name, parnames)
 
-        if not hyperpars is None:
+        if hyperpars is not None:
             self.set_prior(hyperpars)
-
 
     def set_prior(self, hyperpars):
         """
@@ -139,7 +135,6 @@ class Const(ParametricModel):
 
         self.logprior = logprior
 
-
     def func(self, x, a):
         """
         A constant model of the form
@@ -160,8 +155,6 @@ class Const(ParametricModel):
         """
         assert np.isfinite(a), "A must be finite."
         return np.ones_like(x)*a
-
-
 
 
 class PowerLaw(ParametricModel):
@@ -217,14 +210,13 @@ class PowerLaw(ParametricModel):
 
 
         """
-        npar = 2 ## number of parameters in the model
-        name = "powerlaw" ## model name
+        npar = 2  # number of parameters in the model
+        name = "powerlaw"  # model name
         parnames = ["alpha", "amplitude"]
         ParametricModel.__init__(self, npar, name, parnames)
 
         if hyperpars is not None:
             self.set_prior(hyperpars)
-
 
     def set_prior(self, hyperpars):
         """
@@ -244,18 +236,17 @@ class PowerLaw(ParametricModel):
 
         alpha_min = hyperpars["alpha_min"]
         alpha_max = hyperpars["alpha_max"]
-        amplitude_min =  hyperpars["amplitude_min"]
-        amplitude_max =  hyperpars["amplitude_max"]
+        amplitude_min = hyperpars["amplitude_min"]
+        amplitude_max = hyperpars["amplitude_max"]
 
         def logprior(alpha, amplitude):
 
             assert np.isfinite(alpha), "alpha must be finite!"
             assert np.isfinite(amplitude), "amplitude must be finite"
 
-            p_alpha = (alpha >= alpha_min and alpha <= alpha_max)/\
+            p_alpha = (alpha_min <= alpha <= alpha_max) / \
                       (alpha_max-alpha_min)
-            p_amplitude = (amplitude >= amplitude_min and
-                           amplitude <= amplitude_max)/\
+            p_amplitude = (amplitude_min <= amplitude <= amplitude_max) / \
                           (amplitude_max-amplitude_min)
 
             pp = p_alpha*p_amplitude
@@ -266,7 +257,6 @@ class PowerLaw(ParametricModel):
                 return np.log(pp)
 
         self.logprior = logprior
-
 
     def func(self, x, alpha, amplitude):
         """
@@ -293,7 +283,6 @@ class PowerLaw(ParametricModel):
         assert np.isfinite(alpha), "alpha must be finite!"
         assert np.isfinite(amplitude), "amplitude must be finite"
 
-
         res = -alpha*np.log(x) + amplitude
         return np.exp(res)
 
@@ -304,7 +293,8 @@ class BrokenPowerLaw(ParametricModel):
         """
         A broken power law model of the form
 
-            $y(x) = Ax^{-1}(1 + (x/x_\mathrm{break})^{\alpha_1-alpha_2}^{-alpha_2}$
+            $y(x) = Ax^{-1}(1 + (x/x_\mathrm{break})^{\alpha_1-alpha_2}^
+            {-alpha_2}$
 
         The model has a variable bending parameter (setting the sharpness
         of the bend) a four parameters:
@@ -371,7 +361,6 @@ class BrokenPowerLaw(ParametricModel):
         if hyperpars is not None:
             self.set_prior(hyperpars)
 
-
     def set_prior(self, hyperpars):
 
         alpha1_min = hyperpars["alpha1_min"]
@@ -383,22 +372,20 @@ class BrokenPowerLaw(ParametricModel):
         x_break_min = hyperpars["x_break_min"]
         x_break_max = hyperpars["x_break_max"]
 
-
-
         def logprior(alpha1, alpha2, x_break, amplitude):
 
-            for p,n in zip([alpha1, alpha2, x_break, amplitude], self.parnames):
-                assert np.isfinite(p), "%s must be finite!"%n
+            for p, n in zip([alpha1, alpha2, x_break, amplitude],
+                            self.parnames):
 
+                assert np.isfinite(p), "{s} must be finite!".format(n)
 
-            p_alpha1 = (alpha1 >= alpha1_min and alpha1 <= alpha1_max)/\
+            p_alpha1 = (alpha1_min <= alpha1 <= alpha1_max) / \
                        (alpha1_max-alpha1_min)
-            p_amplitude = (amplitude >= amplitude_min and
-                           amplitude <= amplitude_max)/\
+            p_amplitude = (amplitude_min <= amplitude <= amplitude_max) / \
                           (amplitude_max-amplitude_min)
-            p_alpha2 = (alpha2 >= alpha2_min and alpha2 <= alpha2_max)/\
+            p_alpha2 = (alpha2_min <= alpha2 <= alpha2_max) / \
                        (alpha2_max-alpha2_min)
-            p_x_break = (x_break >= x_break_min and x_break <= x_break_max)/\
+            p_x_break = (x_break_min <= x_break <= x_break_max) / \
                         (x_break_max-x_break_min)
 
             pp = p_alpha1 * p_amplitude * p_alpha2 * p_x_break
@@ -410,12 +397,12 @@ class BrokenPowerLaw(ParametricModel):
 
         self.logprior = logprior
 
-
     def func(self, x, alpha1, alpha2, x_break, amplitude):
         """
         A broken power law of the form
 
-            $y(x) = Ax^{-1}(1 + (x/x_\mathrm{break})^{\alpha_1-alpha_2}^{-alpha_2}$
+            $y(x) = Ax^{-1}(1 + (x/x_\mathrm{break})^{\alpha_1-alpha_2}^
+            {-alpha_2}$
 
 
         Parameters:
@@ -427,19 +414,20 @@ class BrokenPowerLaw(ParametricModel):
         alpha2: float
             The power law index at large x
         x_break: float
-            The log-position in x where the break between alpha1 and alpha2 occurs
+            The log-position in x where the break between alpha1 and alpha2
+            occurs
         amplitude: float
             The log-normalization or log-amplitude of the bent power law
 
         """
-        ### compute bending factor
+        # compute bending factor
 
-        for p,n in zip([alpha1, alpha2, x_break, amplitude], self.parnames):
-            assert np.isfinite(p), "%s must be finite!"%n
+        for p, n in zip([alpha1, alpha2, x_break, amplitude], self.parnames):
+            assert np.isfinite(p), "{s} must be finite!".format(n)
 
         logz = (alpha2 - alpha1)*(np.log(x) - x_break)
 
-        ### be careful with very large or very small values
+        # be careful with very large or very small values
         logqsum = sum(np.where(logz < -100, 1.0, 0.0))
         if logqsum > 0.0:
             logq = np.where(logz < -100, 1.0, logz)
@@ -466,15 +454,15 @@ class Lorentzian(ParametricModel):
             $y(x) = \frac{A\gamma/}{2\pi((x-x_0)^2 + (\gamma/2)^2)}$
 
         The model has three parameters:
-            $x_0$: centroid location of the Lorentzian, i.e. the location of the
-                   peak
+            $x_0$: centroid location of the Lorentzian, i.e. the location of
+                    the peak
             $\gamma$: the width of the Lorentzian (log-width in the function
                       definition)
             $A$: the amplitude (the log-amplitude in the function definition)
 
         By default, this model defines a uniform prior for $x_0$ and Jeffrey's
-        priors (flat prior on log(parameter)) for the the width $\gamma$ and the
-        amplitude $A$.
+        priors (flat prior on log(parameter)) for the the width $\gamma$ and
+        the amplitude $A$.
         The hyperparameters for the priors are to be set in `hyperpars`.
 
         If the user wishes to define their own prior that differs,
@@ -523,36 +511,34 @@ class Lorentzian(ParametricModel):
         if hyperpars is not None:
             self.set_prior(hyperpars)
 
-
     def set_prior(self, hyperpars):
         x0_min = hyperpars["x0_min"]
         x0_max = hyperpars["x0_max"]
         gamma_min = hyperpars["gamma_min"]
         gamma_max = hyperpars["gamma_max"]
-        amplitude_min= hyperpars["amplitude_min"]
+        amplitude_min = hyperpars["amplitude_min"]
         amplitude_max = hyperpars["amplitude_max"]
 
         def logprior(x0, gamma, amplitude):
 
-            for p,n in zip([x0, gamma, amplitude], self.parnames):
-                assert np.isfinite(p), "%s must be finite!"%n
+            for p, n in zip([x0, gamma, amplitude], self.parnames):
+                assert np.isfinite(p), "{s} must be finite!".format(n)
 
-            p_gamma = (gamma >= gamma_min and gamma <= gamma_max)/\
-                      (gamma_max-gamma_min)
-            p_amplitude = (amplitude >= amplitude_min and
-                           amplitude <= amplitude_max)/\
-                          (amplitude_max-amplitude_min)
+            p_gamma = (gamma_min <= gamma <= gamma_max) / \
+                      (gamma_max - gamma_min)
+            p_amplitude = (amplitude_min <= amplitude <= amplitude_max) / \
+                          (amplitude_max - amplitude_min)
 
-            p_x0 = (x0 >= x0_min and x0 <= x0_max)/(x0_max - x0_min)
+            p_x0 = (x0_min <= x0 <= x0_max) / (x0_max - x0_min)
 
-            pp = p_gamma*p_amplitude*p_x0
+            pp = p_gamma * p_amplitude * p_x0
+
             if pp == 0.0:
                 return logmin
             else:
                 return np.log(pp)
 
         self.logprior = logprior
-
 
     def func(self, x, x0, gamma, amplitude):
         """
@@ -570,14 +556,14 @@ class Lorentzian(ParametricModel):
             The height or amplitude of the Lorentzian profile
         """
 
-        for p,n in zip([x0, gamma, amplitude], self.parnames):
-            assert np.isfinite(p), "%s must be finite!"%n
+        for p, n in zip([x0, gamma, amplitude], self.parnames):
+            assert np.isfinite(p), "{s} must be finite!".format(n)
 
         gamma = np.exp(gamma)
         amplitude = np.exp(amplitude)
 
-        alpha = 0.5*amplitude/(gamma*np.pi)
-        y = alpha/((x - x0)**2.0 + (0.5*gamma)**2.0)
+        alpha = 0.5 * amplitude / (gamma * np.pi)
+        y = alpha / ((x - x0)**2.0 + (0.5 * gamma)**2.0)
         return y
 
 
@@ -596,12 +582,11 @@ class FixedCentroidLorentzian(ParametricModel):
         if hyperpars is not None:
             self.set_prior(hyperpars)
 
-
     def set_prior(self, hyperpars):
 
         gamma_min = hyperpars["gamma_min"]
         gamma_max = hyperpars["gamma_max"]
-        amplitude_min= hyperpars["amplitude_min"]
+        amplitude_min = hyperpars["amplitude_min"]
         amplitude_max = hyperpars["amplitude_max"]
 
         def logprior(gamma, amplitude):
@@ -609,17 +594,18 @@ class FixedCentroidLorentzian(ParametricModel):
             assert np.isfinite(gamma), "gamma must be finite"
             assert np.isfinite(amplitude), "amplitude must be finite"
 
-            p_gamma = (gamma >= gamma_min and gamma <= gamma_max)/(gamma_max-gamma_min)
-            p_amplitude = (amplitude >= amplitude_min and amplitude <= amplitude_max)/(amplitude_max-amplitude_min)
+            p_gamma = (gamma_min <= gamma <= gamma_max) / \
+                      (gamma_max-gamma_min)
+            p_amplitude = (amplitude_min <= amplitude <= amplitude_max) / \
+                          (amplitude_max-amplitude_min)
 
-            pp = p_gamma*p_amplitude
+            pp = p_gamma * p_amplitude
             if pp == 0.0:
                 return logmin
             else:
                 return np.log(pp)
 
         self.logprior = logprior
-
 
     def func(self, x, gamma, amplitude):
         """
@@ -645,43 +631,45 @@ class FixedCentroidLorentzian(ParametricModel):
 class Gaussian(ParametricModel):
 
     def __init__(self):
-        ## TODO: make a Gaussian parametric model
-
+        # TODO: make a Gaussian parametric model
         pass
 
+    def func(self):
+        pass
 
 
 class PowerLawConst(ParametricModel):
 
     def __init__(self, hyperpars=None):
+
         self.models = [PowerLaw(hyperpars), Const(hyperpars)]
-        npar = 3 ## number of parameters in the model
-        name = "powerlawconst" ## model name
+
+        npar = 3  # number of parameters in the model
+        name = "powerlawconst"  # model name
         parnames = ["alpha", "amplitude", "const"]
         ParametricModel.__init__(self, npar, name, parnames)
 
         if hyperpars is not None:
             self.set_prior()
 
-
     def set_prior(self):
         """
         Set the prior for the combined power law + constant model.
-        The hyperparameters for each individual model are set in the logprior function
-        of each model itself. All that's left to do here is add them together and make
-        sure the parameters get distributed in the right way.
+        The hyperparameters for each individual model are set in the logprior
+        function of each model itself. All that's left to do here is add them
+        together and make sure the parameters get distributed in the right way.
 
         """
         def logprior(alpha, amplitude, const):
-            for p,n in zip([alpha, amplitude, const], self.parnames):
-                assert np.isfinite(p), "%s must be finite!"%n
+            for p, n in zip([alpha, amplitude, const], self.parnames):
+                assert np.isfinite(p), "{s} must be finite!".format(n)
 
             pp = self.models[0].logprior(alpha, amplitude) + \
                  self.models[1].logprior(const)
+
             return pp
 
         self.logprior = logprior
-
 
     def func(self, x, alpha, amplitude, const):
         """
@@ -704,41 +692,45 @@ class PowerLawConst(ParametricModel):
             The power law model for all values in x.
         """
 
-        for p,n in zip([alpha, amplitude, const], self.parnames):
-            assert np.isfinite(p), "%s must be finite!"%n
+        for p, n in zip([alpha, amplitude, const], self.parnames):
+            assert np.isfinite(p), "{s} must be finite!".format(n)
 
-        res = self.models[0].func(x, alpha, amplitude) + self.models[1].func(x, const)
+        res = self.models[0].func(x, alpha, amplitude) + \
+              self.models[1].func(x, const)
+
         return res
 
 
 class BrokenPowerLawConst(ParametricModel):
 
     def __init__(self, hyperpars=None):
+
         self.models = [BrokenPowerLaw(hyperpars), Const(hyperpars)]
-        npar = 5 ## number of parameters in the model
-        name = "bentpowerlawconst" ## model name
+
+        npar = 5  # number of parameters in the model
+        name = "bentpowerlawconst"  # model name
         parnames = ["alpha1", "amplitude", "alpha2", "x_break", "const"]
+
         ParametricModel.__init__(self, npar, name, parnames)
 
         if hyperpars is not None:
             self.set_prior()
 
-
     def set_prior(self):
         """
         Set the prior for the combined bent power law + constant model.
-        The hyperparameters for each individual model are set in the logprior function
-        of each model itself. All that's left to do here is add them together and make
-        sure the parameters get distributed in the right way.
+        The hyperparameters for each individual model are set in the logprior
+        function of each model itself. All that's left to do here is add them
+        together and make sure the parameters get distributed in the right way.
 
         """
         def logprior(alpha1, amplitude, alpha2, x_break, const):
-                pp = self.models[0].logprior(alpha1, amplitude, alpha2, x_break) + \
+                pp = self.models[0].logprior(alpha1, amplitude, alpha2,
+                                             x_break) + \
                      self.models[1].logprior(const)
                 return pp
 
         self.logprior = logprior
-
 
     def func(self, x, alpha1, amplitude, alpha2, x_break, const):
         """
@@ -762,8 +754,8 @@ class BrokenPowerLawConst(ParametricModel):
         """
         res = self.models[0].func(x, alpha1, amplitude, alpha2, x_break) + \
               self.models[1].func(x, const)
-        return res
 
+        return res
 
 
 class CombinedModel(object):
@@ -791,20 +783,19 @@ class CombinedModel(object):
 
         """
 
-        ## initialize all models
+        # initialize all models
         self.models = [m() for m in models]
 
-        ## set the total number of parameters
+        # set the total number of parameters
         self.npar = np.sum([m.npar for m in self.models])
 
-        ## set the name for the combined model
+        # set the name for the combined model
         self.name = [m.name for m in self.models]
 
-        ## set hyperparameters
+        # set hyperparameters
         if hyperpars is not None:
             for m in self.models:
                 self.set_prior(hyperpars)
-
 
     def set_prior(self, hyperpars):
 
@@ -820,8 +811,6 @@ class CombinedModel(object):
 
         self.logprior = logprior
 
-
-
     def func(self, x, *pars):
         model = np.zeros(x.shape[0])
         counter = 0
@@ -830,7 +819,5 @@ class CombinedModel(object):
             counter += m.npar
         return model
 
-
     def __call__(self, x, *pars):
         return self.func(x, *pars)
-
