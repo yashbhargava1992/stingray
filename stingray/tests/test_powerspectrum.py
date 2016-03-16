@@ -1,6 +1,7 @@
 
 import numpy as np
-import pytest
+
+from astropy.tests.helper import pytest
 
 from stingray import Lightcurve
 from stingray import Powerspectrum, AveragedPowerspectrum
