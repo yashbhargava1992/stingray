@@ -227,8 +227,11 @@ class Lightcurve(object):
         Join two lightcurves into a single object.
 
         The new Lightcurve object will contain time stamps from both the
-        objects. The individual count per bin in the resulting object will
-        be the sum total of the count per bin in both lightcurve objects.
+        objects. The count per bin in the resulting object will be the
+        individual count per bin, or the average in case of overlapping
+        time arrays of both lightcurve objects.
+
+        Note : Time array of both lightcurves should not overlap each other.
 
         Parameters
         ----------
@@ -244,15 +247,15 @@ class Lightcurve(object):
         -------
         >>> time1 = [5, 10, 15]
         >>> count1 = [300, 100, 400]
-        >>> time2 = [15, 20, 25]
+        >>> time2 = [20, 25, 30]
         >>> count2 = [600, 1200, 800]
         >>> lc1 = Lightcurve(time1, count1)
         >>> lc2 = Lightcurve(time2, count2)
         >>> lc = lc1.join(lc2)
         >>> lc.time
-        array([ 5, 10, 15, 20, 25])
+        array([ 5, 10, 15, 20, 25, 30])
         >>> lc.counts
-        array([ 300,  100, 1000, 1200,  800])
+        array([ 300,  100, 400, 600, 1200,  800])
         """
         if self.dt != other.dt:
             utils.simon("The bin widths of both the lightcurves are not "
@@ -263,6 +266,12 @@ class Lightcurve(object):
         else:
             new_time = np.unique(np.concatenate([other.time, self.time]))
 
+        if len(new_time) != len(self.time) + len(other.time):
+            utils.simon("Both the lightcurves have overlapping time ranges. "
+                        "For the common time range, resulting count will be "
+                        "the average of the counts in both lightcurves. If "
+                        "you wish to sum, use `lc_sum = lc1 + lc2`.")
+
         new_counts = []
 
         # For every time stamp, get the individual time counts and add them.
@@ -270,14 +279,21 @@ class Lightcurve(object):
             try:
                 count1 = self.counts[np.where(self.time == time)[0][0]]
             except IndexError:
-                count1 = 0
+                count1 = None
 
             try:
                 count2 = other.counts[np.where(other.time == time)[0][0]]
             except IndexError:
-                count2 = 0
+                count2 = None
 
-            new_counts.append(count1 + count2)
+            if not count1 is None:
+                if not count2 is None:
+                    # Average the overlapping counts
+                    new_counts.append((count1 + count2) / 2)
+                else:
+                    new_counts.append(count1)
+            else:
+                new_counts.append(count2)
 
         new_counts = np.asarray(new_counts)
 

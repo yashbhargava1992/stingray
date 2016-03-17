@@ -170,7 +170,6 @@ class TestLightcurve(object):
 
         with warnings.catch_warnings(record=True) as w:
             lc1.join(lc2)
-            print(w)
             assert "both the lightcurves are not same" in str(w[0].message)
 
     def test_join_disjoint_time_arrays(self):
@@ -185,29 +184,20 @@ class TestLightcurve(object):
         assert len(lc.counts) == len(lc.time) == 8
         assert np.all(lc.counts == 2)
 
-    def test_join_merged_time_arrays(self):
+    def test_join_overlapping_time_arrays(self):
         _times = [3, 4, 5, 6]
-        _counts = [2, 2, 2, 2]
+        _counts = [4, 4, 4, 4]
 
         lc1 = Lightcurve(self.times, self.counts)
         lc2 = Lightcurve(_times, _counts)
 
-        lc = lc1.join(lc2)
+        with warnings.catch_warnings(record=True) as w:
+            lc = lc1.join(lc2)
+            assert "overlapping time ranges" in str(w[0].message)
 
         assert len(lc.counts) == len(lc.time) == 6
-        assert len(np.where(lc.counts==4)[0]) == 2
-        assert len(np.where(lc.counts==2)[0]) == 4
+        assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
 
-    def test_join_equal_arrays(self):
-        """
-        ``lc.join()`` should work like ``lc.__add__()`` if the time
-        arrays are equal.
-        """
-        lc1 = Lightcurve(self.times, self.counts)
-        lc2 = Lightcurve(self.times, self.counts)
-
-        assert np.all(lc1.join(lc2).counts == (lc1 + lc2).counts)
-        assert np.all(lc1.join(lc2).time == (lc1 + lc2).time)
 
 class TestLightcurveRebin(object):
 
