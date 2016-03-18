@@ -19,7 +19,6 @@ class UnrecognizedMethod(Exception):
     pass
 
 
-
 def simon(message, **kwargs):
     """
     The Statistical Interpretation MONitor.
