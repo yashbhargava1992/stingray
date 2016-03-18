@@ -64,13 +64,12 @@ class Crossspectrum(object):
 
         ## check if input data is a Lightcurve object, if not make one or
         ## make an empty Crossspectrum object if lc_1 == None or lc_2 == None
-        ## TODO: handle only one lc input better?
-        if lc_1 is not None and lc_2 is not None:
-            pass
-
-        elif lc_1 is not None and lc_2 is None:
-            print("lc_2 is None. You can't do a cross spectrum with just one "\
-                  "light curve!")
+        if lc_1 is None or lc_2 is None:
+            if lc_1 is not None or lc_2 is not None:
+                 print("You can't do a cross spectrum with just one "
+                         "light curve!")
+            else:
+                 print("Please specify input light curves!")
             self.freq = None
             self.cs = None
             self.df = None
@@ -78,33 +77,7 @@ class Crossspectrum(object):
             self.nphots_2 = None
             self.m = 1
             self.n = None
-
             return
-
-        elif lc_2 is not None and lc_1 is None:
-            print("lc_1 is None. You can't do a cross spectrum with just one "\
-                  "light curve!")
-            self.freq = None
-            self.cs = None
-            self.df = None
-            self.nphots_1 = None
-            self.nphots_2 = None
-            self.m = 1
-            self.n = None
-
-            return
-
-        else:
-            self.freq = None
-            self.cs = None
-            self.df = None
-            self.nphots_1 = None
-            self.nphots_2 = None
-            self.m = 1
-            self.n = None
-
-            return
-
         self._make_crossspectrum(lc_1, lc_2)
 
     def _make_crossspectrum(self, lc_1, lc_2):
@@ -137,26 +110,22 @@ class Crossspectrum(object):
         self.m = 1
 
         ## make the actual Fourier transform and compute cross spectrum
-        self.unnorm_cross = self._fourier_transform(lc_1, lc_2)
+        self.unnorm_cross, self.freq = self._fourier_modulus(lc_1, lc_2)
 
         ## If co-spectrum is desired, normalize here. Otherwise, get raw back
         ## with the imaginary part still intact.
         self.cs = self._normalize_crossspectrum(self.unnorm_cross, lc_1.tseg)
-        
-        ## make a list of frequencies to go with the cross spectrum
-        self.freq = np.arange(self.cs.shape[0])*self.df + self.df/2.
 
-
-    def _fourier_transform(self, lc_1, lc_2):
+    def _fourier_modulus(self, lc_1, lc_2):
         """
         Fourier transform the two light curves, then compute the cross spectrum.
-        computed as CS = lc_1 x lc_2* (where lc_2 is the one that gets 
+        computed as CS = lc_1 x lc_2* (where lc_2 is the one that gets
         complex-conjugated)
 
         Parameters
         ----------
         lc_1: lightcurve.Lightcurve object
-            One light curve to be Fourier transformed. Ths is the band of 
+            One light curve to be Fourier transformed. Ths is the band of
             interest or channel of interest.
 
         lc_2: lightcurve.Lightcurve object
@@ -169,11 +138,16 @@ class Crossspectrum(object):
             The squared absolute value of the Fourier amplitudes
 
         """
-        fourier_1 = scipy.fftpack.fft(lc_1.counts) ### do Fourier transform 1
-        fourier_2 = scipy.fftpack.fft(lc_2.counts) ### do Fourier transform 2
-		
-        cross = fourier_1[:self.n/2+1] * np.conj(fourier_2[:self.n/2+1])
-        return cross
+        fourier_1 = scipy.fftpack.fft(lc_1.counts)  # do Fourier transform 1
+        fourier_2 = scipy.fftpack.fft(lc_2.counts)  # do Fourier transform 2
+
+        assert lc_1.counts.shape[0] == lc_2.counts.shape[0], \
+                "Light curves do not have the same shape."
+        assert lc_1.dt == lc_2.dt, \
+                "Light curves do not have same time binning dt."
+        freqs = scipy.fftpack.fftfreq(lc_1.counts.shape[0], lc_1.dt)
+        cross = fourier_1[freqs > 0] * np.conj(fourier_2[freqs > 0])
+        return freqs[freqs > 0], cross
 
 
     def rebin(self, df, method="mean"):
@@ -328,8 +302,8 @@ class AveragedCrossspectrum(Crossspectrum):
 
 
     def _make_segment_csd(self, lc_1, lc_2, segment_size):
-		
-		
+
+
         ## TODO: need to update this for making cross spectra.
         assert isinstance(lc_1, lightcurve.Lightcurve)
         assert isinstance(lc_2, lightcurve.Lightcurve)
