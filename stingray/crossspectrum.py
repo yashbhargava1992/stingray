@@ -51,7 +51,7 @@ class Crossspectrum(object):
         nphots_1: float
             The total number of photons in light curve 1
             
-		nphots_2: float
+        nphots_2: float
             The total number of photons in light curve 2
         """
 
@@ -97,11 +97,11 @@ class Crossspectrum(object):
 
         ## the number of data points in the light curve
         assert lc_1.counts.shape[0] == lc_2.counts.shape[0], \
-        		"Light curves do not have same number of time bins per segment."
+            "Light curves do not have same number of time bins per segment."
         self.n = lc_1.counts.shape[0]
 
         assert lc_1.tseg == lc_2.tseg, "Light curves do not have same tseg."
-		
+
         ## the frequency resolution
         self.df = 1.0/lc_1.tseg
 
