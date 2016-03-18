@@ -68,8 +68,8 @@ class Crossspectrum(object):
             if lc_1 is not None or lc_2 is not None:
                  print("You can't do a cross spectrum with just one "
                          "light curve!")
-            else:
-                 print("Please specify input light curves!")
+            # else:
+            #      print("Please specify input light curves!")
             self.freq = None
             self.cs = None
             self.df = None
@@ -110,13 +110,13 @@ class Crossspectrum(object):
         self.m = 1
 
         ## make the actual Fourier transform and compute cross spectrum
-        self.unnorm_cross, self.freq = self._fourier_modulus(lc_1, lc_2)
+        self.freq, self.unnorm_cross = self._fourier_cross(lc_1, lc_2)
 
         ## If co-spectrum is desired, normalize here. Otherwise, get raw back
         ## with the imaginary part still intact.
         self.cs = self._normalize_crossspectrum(self.unnorm_cross, lc_1.tseg)
 
-    def _fourier_modulus(self, lc_1, lc_2):
+    def _fourier_cross(self, lc_1, lc_2):
         """
         Fourier transform the two light curves, then compute the cross spectrum.
         computed as CS = lc_1 x lc_2* (where lc_2 is the one that gets
@@ -208,7 +208,9 @@ class Crossspectrum(object):
         ## The "effective" count rate is the geometrical mean of the count rates
         ## of the two light curves; need to divide by tseg to have count rate
         actual_mean = np.sqrt(self.nphots_1 * self.nphots_2 / tseg)
-        # print("Actual mean:", actual_mean)
+
+        assert actual_mean > 0.0, \
+                "Mean count rate is <= 0. Something went wrong."
 
         if self.norm.lower() == 'leahy':
             c = unnorm_cs.real
@@ -251,7 +253,7 @@ class AveragedCrossspectrum(Crossspectrum):
             Second light curve data to be Fourier-transformed. This is the 
             reference band.
             
-        segment_size: float, default 1
+        segment_size: float, default 1 second
             The size of each segment to average. Note that if the total duration
             of each Lightcurve object in lc_1 or lc_2 is not an integer multiple
             of the segment_size, then any fraction left-over at the end of the
@@ -284,7 +286,6 @@ class AveragedCrossspectrum(Crossspectrum):
             The total number of photons in the second (reference) light curve
 
         """
-
         assert isinstance(norm, str), "norm is not a string!"
 
         assert norm.lower() in ["frac", "abs", "leahy", "none"], \
@@ -300,21 +301,18 @@ class AveragedCrossspectrum(Crossspectrum):
 
         return
 
-
     def _make_segment_csd(self, lc_1, lc_2, segment_size):
-
 
         ## TODO: need to update this for making cross spectra.
         assert isinstance(lc_1, lightcurve.Lightcurve)
         assert isinstance(lc_2, lightcurve.Lightcurve)
 
         assert lc_1.dt == lc_2.dt, \
-        		"Light curves do not have same time binning dt."
+            "Light curves do not have same time binning dt."
         assert lc_1.tseg == lc_2.tseg, "Lightcurves do not have same tseg."
 
         ## number of bins per segment
         nbins = int(segment_size/lc_1.dt)
-
         start_ind = 0
         end_ind = nbins
 
@@ -341,9 +339,10 @@ class AveragedCrossspectrum(Crossspectrum):
     def _make_crossspectrum(self, lc_1, lc_2):
 
         ## chop light curves into segments
-        if isinstance(lc_1, lightcurve.Lightcurve) and isinstance(lc_2, lightcurve.Lightcurve):
-            cs_all, nphots_1_all, nphots_2_all = self._make_segment_csd(lc_1, 
-            										lc_2, self.segment_size)
+        if isinstance(lc_1, lightcurve.Lightcurve) and \
+                isinstance(lc_2, lightcurve.Lightcurve):
+            cs_all, nphots_1_all, nphots_2_all = self._make_segment_csd(lc_1,
+                                                        lc_2, self.segment_size)
         else:
             cs_all, nphots_1_all, nphots_2_all = [], [], []
             ## TODO: should be using izip from iterables if lc_1 or lc_2 could
@@ -355,7 +354,6 @@ class AveragedCrossspectrum(Crossspectrum):
                 cs_all.append(cs_sep)
                 nphots_1_all.append(nphots_1_sep)
                 nphots_2_all.append(nphots_2_sep)
-
 
             cs_all = np.hstack(cs_all)
             nphots_1_all = np.hstack(nphots_1_all)
