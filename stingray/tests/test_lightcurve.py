@@ -1,6 +1,6 @@
 import numpy as np
 
-import pytest
+from astropy.tests.helper import pytest
 from stingray import Lightcurve
 
 np.random.seed(20150907)
@@ -84,27 +84,27 @@ class TestLightcurve(object):
         assert np.allclose(lc.counts, np.zeros_like(countrate) +
                            mean_counts*dt)
 
-    def test_init_with_none_data(self):
+    def test_creating_lightcurve_raises_type_error_when_input_is_none(self):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0 + dt/2, 5 - dt/2, dt)
-        counts = np.array([None for i in range(times.shape[0])])
+        counts = np.array([None] * times.shape[0])
         with pytest.raises(TypeError):
             lc = Lightcurve(times, counts)
 
-    def test_init_with_inf_data(self):
+    def test_creating_lightcurve_raises_type_error_when_input_is_inf(self):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0 + dt/2, 5 - dt/2, dt)
-        counts = np.array([np.inf for i in range(times.shape[0])])
+        counts = np.array([np.inf] * times.shape[0])
         with pytest.raises(AssertionError):
             lc = Lightcurve(times, counts)
 
-    def test_init_with_nan_data(self):
+    def test_creating_lightcurve_raises_type_error_when_input_is_nan(self):
         dt = 0.5
         mean_counts = 2.0
         times = np.arange(0 + dt/2, 5 - dt/2, dt)
-        counts = np.array([np.nan for i in range(times.shape[0])])
+        counts = np.array([np.nan] * times.shape[0])
         with pytest.raises(AssertionError):
             lc = Lightcurve(times, counts)
 
