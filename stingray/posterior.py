@@ -18,14 +18,54 @@ class Posterior(object):
 
     def __init__(self, x, y, model):
         """
+        Define a posterior object.
+
+        The posterior describes the Bayesian probability distribution of
+        a set of parameters $\theta$ given some observed data $D$ and
+        some prior assumptions $I$.
+
+        It is defined as
+
+            $p(\theta | D, I) = p(D | \theta, I) p(\theta | I)/p(D| I)
+
+        where $p(D | \theta, I)$ describes the likelihood, i.e. the
+        sampling distribution of the data and the (parametric) model, and
+        $p(\theta | I)$ describes the prior distribution, i.e. our information
+        about the parameters $\theta$ before we gathered the data.
+        The marginal likelihood $p(D| I)$ describes the probability of
+        observing the data given the model assumptions, integrated over the
+        space of all parameters.
+
+        Parameters
+        ----------
+        x : iterable
+            The abscissa or independent variable of the data. This could
+            in principle be a multi-dimensional array.
+
+        y : iterable
+            The ordinate or dependent variable of the data.
+
+        model: ParametricModel subclass instance
+            The parametric model supposed to represent the data. Has to be
+             an instance of a subclass of ParametricModel.
 
 
+        References
+        ----------
+
+        * Sivia, D. S., and J. Skilling. "Data Analysis:
+            A Bayesian Tutorial. 2006."
+        * Gelman, Andrew, et al. Bayesian data analysis. Vol. 2. Boca Raton,
+            FL, USA: Chapman & Hall/CRC, 2014.
+        * von Toussaint, Udo. "Bayesian inference in physics."
+            Reviews of Modern Physics 83.3 (2011): 943.
+        *Hogg, David W. "Probability Calculus for inference".
+            arxiv: 1205.4446
 
         """
         self.x = x
         self.y = y
 
-        # model is a parametric model
         self.model = model
 
     def logprior(self, t0):
@@ -118,8 +158,8 @@ class PSDPosterior(Posterior):
     def loglikelihood(self, t0, neg=False):
         """
         The log-likelihood for the model defined in self.model
-        and the parameters in t0. Uses an exponential model for
-        the errors.
+        and the parameters in t0. Uses a $\Chi^2$ model for
+        the uncertainty.
 
         Parameters:
         ------------
