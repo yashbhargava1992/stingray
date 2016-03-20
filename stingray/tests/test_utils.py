@@ -52,7 +52,7 @@ class TestRebinData(object):
         ybin_test = np.zeros_like(xbin) + self.counts*dx_new/self.dx
         assert np.allclose(ybin_test, ybin)
 
-    def test_rebin_data_should_raises_error_when_method_is_different_than_allowed(self):
+    def test_rebin_data_should_raise_error_when_method_is_different_than_allowed(self):
         dx_new = 2.0
         try:
             utils.rebin_data(self.x, self.y, dx_new, method='not_allowed_method')
