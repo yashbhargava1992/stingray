@@ -1,4 +1,5 @@
 import warnings
+import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 from nose.tools import raises
@@ -197,6 +198,11 @@ class TestLightcurve(object):
 
         assert len(lc.counts) == len(lc.time) == 6
         assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
+
+    def test_draw_method(self):
+        lc = Lightcurve(self.times, self.counts)
+        plt.draw()
+        assert plt.fignum_exists(1)
 
 
 class TestLightcurveRebin(object):

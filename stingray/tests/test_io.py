@@ -168,3 +168,10 @@ class TestFileFormats(object):
 
     def test_ascii_functions(self):
         pass
+
+    def test_savefig(self):
+        import matplotlib.pyplot as plt
+        from ..io import savefig
+        plt.plot([1, 2, 3])
+        savefig("test.png")
+        os.unlink("test.png")

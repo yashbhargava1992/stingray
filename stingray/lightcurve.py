@@ -7,6 +7,7 @@ or to save existing light curves in a class that's easy to use.
 import logging
 import numpy as np
 import stingray.utils as utils
+from stingray.utils import simon
 
 
 __all__ = ["Lightcurve"]
