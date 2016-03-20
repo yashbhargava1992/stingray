@@ -30,10 +30,9 @@ Installation
 
     $ git clone --recursive https://github.com/StingraySoftware/stingray.git
 
-2. Go to directory where you cloned project into and install astropy_helpers submodule::
+2. Go to already created directory and install all dependencies::
 
-    $ cd astropy_helpers
-    $ python setup.py install
+    $ pip install -r requirements.txt
 
 3. Go back to stingray project directory and execute::
 
