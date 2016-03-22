@@ -729,7 +729,7 @@ def savefig(filename, **kwargs):
     """
     Save a figure plotted by Matplotlib.
 
-    Note : This function is supposed to be used after the ``draw``
+    Note : This function is supposed to be used after the ``plot``
     function. Otherwise it will save a blank image with no plot.
 
     Parameters
@@ -749,13 +749,13 @@ def savefig(filename, **kwargs):
     try:
         import matplotlib.pyplot as plt
     except ImportError:
-        raise ImportError("Matplotlib required for draw()")
+        raise ImportError("Matplotlib required for savefig()")
     except RuntimeError:
         print("Matplotlib unable to open display.")
         raise
 
     if not plt.fignum_exists(1):
-        utils.simon("use ``draw`` function to draw the image first and "
+        utils.simon("use ``plot`` function to plot the image first and "
                     "then use ``savefig`` to save the figure.")
 
     plt.savefig(filename, **kwargs)

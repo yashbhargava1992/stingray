@@ -302,12 +302,12 @@ class Lightcurve(object):
 
         return lc_new
 
-    def draw(self, labels=None, axis=None, title=None, save=False,
+    def plot(self, labels=None, axis=None, title=None, save=False,
              filename=None):
         """
-        Draw the Lightcurve using Matplotlib.
+        Plot the Lightcurve using Matplotlib.
 
-        Draw the Lightcurve object on a graph ``self.time`` on x-axis and
+        Plot the Lightcurve object on a graph ``self.time`` on x-axis and
         ``self.counts`` on y-axis.
 
         Parameters
@@ -332,7 +332,7 @@ class Lightcurve(object):
         try:
             import matplotlib.pyplot as plt
         except ImportError:
-            raise ImportError("Matplotlib required for draw()")
+            raise ImportError("Matplotlib required for plot()")
         except RuntimeError:
             print("Matplotlib unable to open display.")
             raise

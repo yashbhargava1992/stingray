@@ -199,9 +199,9 @@ class TestLightcurve(object):
         assert len(lc.counts) == len(lc.time) == 6
         assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
 
-    def test_draw_method(self):
+    def test_plot_method(self):
         lc = Lightcurve(self.times, self.counts)
-        plt.draw()
+        lc.plot()
         assert plt.fignum_exists(1)
 
 
