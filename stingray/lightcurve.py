@@ -196,6 +196,37 @@ class Lightcurve(object):
         """
         return self.ncounts
 
+    def __getitem__(self, index):
+        """
+        Return the corresponding count value at the index.
+
+        This method adds functionality to retrieve the count value at
+        a particular index. This also can be used to slice the count
+        array.
+
+        Parameters
+        ----------
+        index : int or slice instance
+            Index value of the time array or a slice object.
+
+        Example
+        -------
+        >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
+        >>> lc = Lightcurve(time, count)
+        >>> lc[2]
+        33
+        >>> lc[:2]
+        array([11, 22])
+        """
+        if isinstance(index, int):
+            return self.counts[index]
+        elif isinstance(index, slice):
+            return self.counts[index.start:index.stop:index.step]
+        else:
+            raise IndexError("The index must be either an integer or a slice "
+                             "object !")
+
     @staticmethod
     def make_lightcurve(toa, dt, tseg=None, tstart=None):
 
