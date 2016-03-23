@@ -374,6 +374,41 @@ class Lightcurve(object):
 
         return lc_new
 
+    def sort(self, reverse=False):
+        """
+        Sort a Lightcurve object in accordance with its counts array.
+
+        A Lightcurve can be sorted in either increasing or decreasing order
+        using this method. The counts array gets sorted and the time array is
+        changed accordingly.
+
+        Parameters
+        ----------
+        reverse : boolean, default False
+            If True then the object is sorted in reverse order.
+
+        Example
+        -------
+        >>> time = [1, 2, 3]
+        >>> count = [200, 100, 300]
+        >>> lc = Lightcurve(time, count)
+        >>> lc_sorted = lc.sort()
+        >>> lc_sorted.counts
+        array([100, 200, 300])
+        >>> lc_sorted.time
+        array([2, 1, 3])
+        """
+        new_counts = sorted(self.counts, reverse=reverse)
+        new_time = []
+        for count in np.unique(new_counts):
+            for index in np.where(self.counts == count)[0]:
+                new_time.append(self.time[index])
+
+        if reverse:
+            new_time.reverse()
+
+        return Lightcurve(new_time, new_counts)
+
     def plot(self, labels=None, axis=None, title=None, save=False,
              filename=None):
         """
