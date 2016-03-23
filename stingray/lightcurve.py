@@ -405,6 +405,45 @@ class Lightcurve(object):
 
         return lc_new
 
+    def truncate(self, start=0, stop=None):
+        """
+        Truncate a Lightcurve object from points on the time array.
+
+        This method allows the truncation of a Lightcurve object and returns
+        a new light curve.
+
+        Parameters
+        ----------
+        start : int, default 0
+            Index of the starting point of the truncation.
+
+        stop : int, default None
+            Index of the ending point (exclusive) of the truncation. If no
+            value of stop is set, then points including the last point in
+            the counts array are taken in count.
+
+        Example
+        -------
+        >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+        >>> lc = Lightcurve(time, count)
+        >>> lc_new = lc.truncate(start=2, stop=8)
+        >>> lc_new.counts
+        array([30, 40, 50, 60, 70, 80])
+        >>> lc_new.time
+        array([3, 4, 5, 6, 7, 8])
+
+        Returns
+        -------
+        lc_new: :class:`Lightcurve` object
+            The :class:`Lightcurve` object with truncated time and counts
+            arrays.
+        """
+        time_new = self.time[start:stop]
+        counts_new = self.counts[start:stop]
+
+        return Lightcurve(time_new, counts_new)
+
     def sort(self, reverse=False):
         """
         Sort a Lightcurve object in accordance with its counts array.
@@ -428,6 +467,12 @@ class Lightcurve(object):
         array([100, 200, 300])
         >>> lc_sorted.time
         array([2, 1, 3])
+
+        Returns
+        -------
+        lc_new: :class:`Lightcurve` object
+            The :class:`Lightcurve` object with truncated time and counts
+            arrays.
         """
         new_counts = sorted(self.counts, reverse=reverse)
         new_time = []
