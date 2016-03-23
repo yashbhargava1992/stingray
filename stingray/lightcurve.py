@@ -179,6 +179,23 @@ class Lightcurve(object):
         self.counts *= -1
         return self
 
+    def __len__(self):
+        """
+        Return the length of the data array of a light curve.
+
+        This method implements overrides the len function over a Lightcurve
+        object and returns the length of the time and count arrays.
+
+        Example
+        -------
+        >>> time = [1, 2, 3]
+        >>> count = [100, 200, 300]
+        >>> lc = Lightcurve(time, count)
+        >>> len(lc)
+        3
+        """
+        return self.ncounts
+
     @staticmethod
     def make_lightcurve(toa, dt, tseg=None, tstart=None):
 
