@@ -124,6 +124,61 @@ class Lightcurve(object):
 
         return lc_new
 
+    def __sub__(self, other):
+        """
+        Subtract two light curves element by element having the same time array.
+
+        This magic method subtracts two Lightcurve objects having the same
+        time array such that the corresponding counts arrays interferes with
+        each other.
+
+        Example
+        -------
+        >>> time = [10, 20, 30]
+        >>> count1 = [600, 1200, 800]
+        >>> count2 = [300, 100, 400]
+        >>> lc1 = Lightcurve(time, count1)
+        >>> lc2 = Lightcurve(time, count2)
+        >>> lc = lc1 - lc2
+        >>> lc.counts
+        array([ 300, 1100,  400])
+        """
+
+        # ValueError is raised by Numpy while asserting np.equal over arrays
+        # with different dimensions.
+        try:
+            assert np.all(np.equal(self.time, other.time))
+        except (ValueError, AssertionError):
+            raise AssertionError("Time arrays of both light curves must be "
+                                 "of same dimension and equal.")
+
+        new_counts = np.subtract(self.counts, other.counts)
+
+        lc_new = Lightcurve(self.time, new_counts)
+
+        return lc_new
+
+    def __neg__(self):
+        """
+        Implement the behavior of negation of the light curve objects.
+
+        The negation operator ``-`` is supposed to invert the sign of the count
+        values of a light curve object.
+
+        Example
+        -------
+        >>> time = [1, 2, 3]
+        >>> count1 = [100, 200, 300]
+        >>> count2 = [200, 300, 400]
+        >>> lc1 = Lightcurve(time, count1)
+        >>> lc2 = Lightcurve(time, count2)
+        >>> lc_new = -lc1 + lc2
+        >>> lc_new.counts
+        array([100, 100, 100])
+        """
+        self.counts *= -1
+        return self
+
     @staticmethod
     def make_lightcurve(toa, dt, tseg=None, tstart=None):
 
@@ -256,7 +311,7 @@ class Lightcurve(object):
         >>> lc.time
         array([ 5, 10, 15, 20, 25, 30])
         >>> lc.counts
-        array([ 300,  100, 400, 600, 1200,  800])
+        array([ 300,  100,  400,  600, 1200,  800])
         """
         if self.dt != other.dt:
             utils.simon("The bin widths of both the lightcurves are not "
