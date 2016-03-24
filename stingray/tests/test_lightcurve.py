@@ -190,6 +190,31 @@ class TestLightcurve(object):
 
         assert not np.all(_lc.counts)
 
+    def test_len_function(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        assert len(lc) == 4
+
+    @raises(IndexError)
+    def test_indexing_with_unexpected_type(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        count = lc['first']
+
+    def test_indexing(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        assert lc[0] == lc[1] == lc[2] == lc[3] == 2
+
+    def test_slicing(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        assert np.all(lc[1:3] == np.array([2, 2]))
+        assert np.all(lc[1:2] == np.array([2]))
+        assert np.all(lc[:2] == np.array([2, 2]))
+        assert np.all(lc[2:] == np.array([2, 2]))
+        assert np.all(lc[:] == np.array([2, 2, 2, 2]))
+
     def test_join_with_different_dt(self):
         _times = [5, 5.5, 6]
         _counts = [2, 2, 2]
