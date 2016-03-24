@@ -162,6 +162,34 @@ class TestLightcurve(object):
         assert np.all(lc.counts == lc1.counts + lc2.counts)
         assert np.all(lc.countrate == lc1.countrate + lc2.countrate)
 
+    @raises(AssertionError)
+    def test_sub_with_diff_time_arrays(self):
+        _times = [1, 2, 3, 4, 5]
+        _counts = [2, 2, 2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        lc = lc1 - lc2
+
+    def test_subtraction(self):
+        _counts = [3, 4, 5, 6]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, _counts)
+
+        lc = lc2 - lc1
+
+        expected_counts = np.array([1, 2, 3, 4])
+        assert np.all(lc.counts == expected_counts)
+
+    def test_negation(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        _lc = lc + (-lc)
+
+        assert not np.all(_lc.counts)
+
     def test_join_with_different_dt(self):
         _times = [5, 5.5, 6]
         _counts = [2, 2, 2]

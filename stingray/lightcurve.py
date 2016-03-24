@@ -176,8 +176,9 @@ class Lightcurve(object):
         >>> lc_new.counts
         array([100, 100, 100])
         """
-        self.counts *= -1
-        return self
+        lc_new = Lightcurve(self.time, -1*self.counts)
+
+        return lc_new
 
     def __len__(self):
         """
