@@ -263,6 +263,21 @@ class TestLightcurve(object):
         assert np.all(lc2.time == np.array([1, 2]))
         assert np.all(lc2.counts == np.array([2, 2]))
 
+    def test_sort(self):
+        _times = [1, 2, 3, 4]
+        _counts = [40, 10, 20, 5]
+        lc = Lightcurve(_times, _counts)
+
+        lc.sort()
+
+        assert np.all(lc.counts == np.array([ 5, 10, 20, 40]))
+        assert np.all(lc.time == np.array([4, 2, 3, 1]))
+
+        lc.sort(reverse=True)
+
+        assert np.all(lc.counts == np.array([40, 20, 10,  5]))
+        assert np.all(lc.time == np.array([1, 3, 2, 4]))
+
     def test_plot_method(self):
         lc = Lightcurve(self.times, self.counts)
         lc.plot()

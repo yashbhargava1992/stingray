@@ -463,10 +463,10 @@ class Lightcurve(object):
         >>> time = [1, 2, 3]
         >>> count = [200, 100, 300]
         >>> lc = Lightcurve(time, count)
-        >>> lc_sorted = lc.sort()
-        >>> lc_sorted.counts
+        >>> lc.sort()
+        >>> lc.counts
         array([100, 200, 300])
-        >>> lc_sorted.time
+        >>> lc.time
         array([2, 1, 3])
 
         Returns
@@ -484,7 +484,8 @@ class Lightcurve(object):
         if reverse:
             new_time.reverse()
 
-        return Lightcurve(new_time, new_counts)
+        self.time = np.asarray(new_time)
+        self.counts = np.asarray(new_counts)
 
     def plot(self, labels=None, axis=None, title=None, save=False,
              filename=None):
