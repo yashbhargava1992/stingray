@@ -252,6 +252,17 @@ class TestLightcurve(object):
         assert len(lc.counts) == len(lc.time) == 6
         assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
 
+    def test_truncate(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        lc1 = lc.truncate(start=1)
+        assert np.all(lc1.time == np.array([2, 3, 4]))
+        assert np.all(lc1.counts == np.array([2, 2, 2]))
+
+        lc2 = lc.truncate(stop=2)
+        assert np.all(lc2.time == np.array([1, 2]))
+        assert np.all(lc2.counts == np.array([2, 2]))
+
     def test_plot_method(self):
         lc = Lightcurve(self.times, self.counts)
         lc.plot()
