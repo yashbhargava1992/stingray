@@ -406,7 +406,7 @@ class Lightcurve(object):
 
         return lc_new
 
-    def truncate(self, start=0, stop=None):
+    def truncate(self, start=0, stop=None, method="index"):
         """
         Truncate a Lightcurve object from points on the time array.
 
@@ -423,6 +423,11 @@ class Lightcurve(object):
             value of stop is set, then points including the last point in
             the counts array are taken in count.
 
+        method : {"index" | "time"}, optional, default "index"
+            Type of the start and stop values. If set to "index" then
+            the values are treated as indices of the counts array, or
+            if set to "time", the values are treated as actual time values.
+
         Example
         -------
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -434,16 +439,48 @@ class Lightcurve(object):
         >>> lc_new.time
         array([3, 4, 5, 6, 7, 8])
 
+        # Truncation can also be done by time values
+        >>> lc_new = lc.truncate(start=6, method='time')
+        >>> lc_new.time
+        array([6, 7, 8, 9])
+        >>> lc_new.counts
+        array([60, 70, 80, 90])
+
         Returns
         -------
         lc_new: :class:`Lightcurve` object
             The :class:`Lightcurve` object with truncated time and counts
             arrays.
         """
+        assert isinstance(method, str), "method key word argument is not " \
+                                        "a string !"
+
+        assert method.lower() in ['index', 'time'], "Unknown method type " + \
+                                                    method + "."
+        if method.lower() == 'index':
+            return self._truncate_by_index(start, stop)
+        else:
+            return self._truncate_by_time(start, stop)
+
+    def _truncate_by_index(self, start, stop):
+        """Private method for truncation using index values."""
         time_new = self.time[start:stop]
         counts_new = self.counts[start:stop]
 
         return Lightcurve(time_new, counts_new)
+
+    def _truncate_by_time(self, start, stop):
+        """Private method for truncation using time values."""
+        if stop is not None:
+            assert start < stop, "start time must be less than stop time!"
+
+        if not start == 0:
+            start = np.where(self.time == start)[0][0]
+
+        if stop is not None:
+            stop = np.where(self.time == stop)[0][0]
+
+        return self._truncate_by_index(start, stop)
 
     def sort(self, reverse=False):
         """

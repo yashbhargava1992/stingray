@@ -252,7 +252,7 @@ class TestLightcurve(object):
         assert len(lc.counts) == len(lc.time) == 6
         assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
 
-    def test_truncate(self):
+    def test_truncate_by_index(self):
         lc = Lightcurve(self.times, self.counts)
 
         lc1 = lc.truncate(start=1)
@@ -260,6 +260,23 @@ class TestLightcurve(object):
         assert np.all(lc1.counts == np.array([2, 2, 2]))
 
         lc2 = lc.truncate(stop=2)
+        assert np.all(lc2.time == np.array([1, 2]))
+        assert np.all(lc2.counts == np.array([2, 2]))
+
+    @raises(AssertionError)
+    def test_truncate_by_time_stop_less_than_start(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        lc1 = lc.truncate(start=2, stop=1, method='time')
+
+    def test_truncate_by_time(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        lc1 = lc.truncate(start=1, method='time')
+        assert np.all(lc1.time == np.array([1, 2, 3, 4]))
+        assert np.all(lc1.counts == np.array([2, 2, 2, 2]))
+
+        lc2 = lc.truncate(stop=3, method='time')
         assert np.all(lc2.time == np.array([1, 2]))
         assert np.all(lc2.counts == np.array([2, 2]))
 
