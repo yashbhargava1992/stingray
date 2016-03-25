@@ -555,9 +555,6 @@ class Lightcurve(object):
             import matplotlib.pyplot as plt
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
-        except RuntimeError:
-            print("Matplotlib unable to open display.")
-            raise
 
         fig = plt.figure()
         fig = plt.plot(self.time, self.counts, 'rx')

@@ -1,7 +1,7 @@
+import os
 import warnings
 import matplotlib.pyplot as plt
 import numpy as np
-import warnings
 from nose.tools import raises
 from stingray import Lightcurve
 
@@ -295,9 +295,56 @@ class TestLightcurve(object):
         assert np.all(lc.counts == np.array([40, 20, 10,  5]))
         assert np.all(lc.time == np.array([1, 3, 2, 4]))
 
-    def test_plot_method(self):
+    def test_plot_matplotlib_not_installed(self):
+        try:
+            import matplotlib.pyplot as plt
+        except Exception as e:
+
+            lc = Lightcurve(self.times, self.counts)
+            try:
+                lc.plot()
+            except Exception as e:
+                assert type(e) is ImportError
+                assert str(e) == "Matplotlib required for plot()"
+
+    def test_plot_simple(self):
         lc = Lightcurve(self.times, self.counts)
         lc.plot()
+        assert plt.fignum_exists(1)
+
+    @raises(TypeError)
+    def test_plot_wrong_label_type(self):
+        lc = Lightcurve(self.times, self.counts)
+        with warnings.catch_warnings(record=True) as w:
+            lc.plot(labels=123)
+            assert "must be either a list or tuple" in str(w[0].message)
+
+    def test_plot_labels_index_error(self):
+        lc = Lightcurve(self.times, self.counts)
+        with warnings.catch_warnings(record=True) as w:
+            lc.plot(labels=('x'))
+            assert "must have two labels" in str(w[0].message)
+
+    def test_plot_default_filename(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(save=True)
+        assert os.path.isfile('out.png')
+        os.unlink('out.png')
+
+    def test_plot_custom_filename(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(save=True, filename='lc.png')
+        assert os.path.isfile('lc.png')
+        os.unlink('lc.png')
+
+    def test_plot_axis(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(axis=[0, 1, 0, 100])
+        assert plt.fignum_exists(1)
+
+    def test_plot_title(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(title="Test Lightcurve")
         assert plt.fignum_exists(1)
 
 

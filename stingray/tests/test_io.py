@@ -4,6 +4,7 @@ import numpy as np
 import os
 
 from ..io import read, write
+import warnings
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
@@ -118,6 +119,7 @@ class TestIO(object):
         print(ref_mjd(fname))
         assert ref_mjd(fname) is not None
 
+<<<<<<< HEAD
 
 class TestIOReadWrite(object):
     """A class to test all the read and write functions."""
@@ -168,6 +170,28 @@ class TestFileFormats(object):
 
     def test_ascii_functions(self):
         pass
+=======
+    def test_savefig_matplotlib_not_installed(self):
+        from ..io import savefig
+        try:
+            import matplotlib.pyplot as plt
+        except Exception as e:
+            lc = Lightcurve([1, 2, 3], [2, 2, 2])
+            try:
+                savefig("test.png")
+            except Exception as e:
+                assert type(e) is ImportError
+                assert str(e) == "Matplotlib required for savefig()"
+
+    def test_savefig_without_plot(self):
+        import matplotlib.pyplot as plt
+        from ..io import savefig
+        plt.close()
+        with warnings.catch_warnings(record=True) as w:
+            savefig('test.png')
+            assert "plot the image first" in str(w[0].message)
+        os.unlink('test.png')
+>>>>>>> Add more tests for plot and savefig
 
     def test_savefig(self):
         import matplotlib.pyplot as plt

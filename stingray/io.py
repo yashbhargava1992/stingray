@@ -750,9 +750,6 @@ def savefig(filename, **kwargs):
         import matplotlib.pyplot as plt
     except ImportError:
         raise ImportError("Matplotlib required for savefig()")
-    except RuntimeError:
-        print("Matplotlib unable to open display.")
-        raise
 
     if not plt.fignum_exists(1):
         utils.simon("use ``plot`` function to plot the image first and "
