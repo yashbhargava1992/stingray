@@ -209,11 +209,16 @@ class TestLightcurve(object):
     def test_slicing(self):
         lc = Lightcurve(self.times, self.counts)
 
-        assert np.all(lc[1:3] == np.array([2, 2]))
-        assert np.all(lc[1:2] == np.array([2]))
-        assert np.all(lc[:2] == np.array([2, 2]))
-        assert np.all(lc[2:] == np.array([2, 2]))
-        assert np.all(lc[:] == np.array([2, 2, 2, 2]))
+        assert np.all(lc[1:3].counts == np.array([2, 2]))
+        assert np.all(lc[:2].counts == np.array([2, 2]))
+        assert np.all(lc[2:].counts == np.array([2, 2]))
+        assert np.all(lc[:].counts == np.array([2, 2, 2, 2]))
+
+    @raises(IndexError)
+    def test_slicing_index_error(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        lc_new = lc[1:2]
 
     def test_join_with_different_dt(self):
         _times = [5, 5.5, 6]
