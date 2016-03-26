@@ -524,7 +524,7 @@ class Lightcurve(object):
         self.time = np.asarray(new_time)
         self.counts = np.asarray(new_counts)
 
-    def plot(self, labels=None, axis=None, title=None, save=False,
+    def plot(self, labels=None, axis=None, title=None, marker='-', save=False,
              filename=None):
         """
         Plot the Lightcurve using Matplotlib.
@@ -545,6 +545,11 @@ class Lightcurve(object):
         title : str, default None
             The title of the plot.
 
+        marker : str, default '-'
+            Line style and color of the plot. Line styles and colors are
+            combined in a single format string, as in ``'bo'`` for blue
+            circles. See `matplotlib.pyplot.plot` for more options.
+
         save : boolean, optional (default=False)
             If True, save the figure with specified filename.
 
@@ -557,7 +562,7 @@ class Lightcurve(object):
             raise ImportError("Matplotlib required for plot()")
 
         fig = plt.figure()
-        fig = plt.plot(self.time, self.counts, 'rx')
+        fig = plt.plot(self.time, self.counts, marker)
 
         if labels is not None:
             try:
