@@ -119,7 +119,6 @@ class TestIO(object):
         print(ref_mjd(fname))
         assert ref_mjd(fname) is not None
 
-<<<<<<< HEAD
 
 class TestIOReadWrite(object):
     """A class to test all the read and write functions."""
@@ -170,7 +169,7 @@ class TestFileFormats(object):
 
     def test_ascii_functions(self):
         pass
-=======
+
     def test_savefig_matplotlib_not_installed(self):
         from ..io import savefig
         try:
@@ -191,7 +190,6 @@ class TestFileFormats(object):
             savefig('test.png')
             assert "plot the image first" in str(w[0].message)
         os.unlink('test.png')
->>>>>>> Add more tests for plot and savefig
 
     def test_savefig(self):
         import matplotlib.pyplot as plt

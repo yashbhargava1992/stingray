@@ -68,6 +68,9 @@ class Lightcurve(object):
         assert len(time) == len(counts), "time are counts array are not " \
                                          "of the same length!"
 
+        assert len(time) > 1, "A single or no data points can not create " \
+                              "a lightcurve!"
+
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
 
@@ -366,8 +369,7 @@ class Lightcurve(object):
         array([ 300,  100,  400,  600, 1200,  800])
         """
         if self.dt != other.dt:
-            utils.simon("The bin widths of both the lightcurves are not "
-                        "same.")
+            utils.simon("The two light curves have different bin widths.")
 
         if self.tstart <= other.tstart:
             new_time = np.unique(np.concatenate([self.time, other.time]))
@@ -375,10 +377,11 @@ class Lightcurve(object):
             new_time = np.unique(np.concatenate([other.time, self.time]))
 
         if len(new_time) != len(self.time) + len(other.time):
-            utils.simon("Both the lightcurves have overlapping time ranges. "
-                        "For the common time range, resulting count will be "
-                        "the average of the counts in both lightcurves. If "
-                        "you wish to sum, use `lc_sum = lc1 + lc2`.")
+            utils.simon("The two light curves have overlapping time ranges. "
+                        "In the common time range, the resulting count will "
+                        "be the average of the counts in the two light "
+                        "curves. If you wish to sum, use `lc_sum = lc1 + "
+                        "lc2`.")
 
         new_counts = []
 

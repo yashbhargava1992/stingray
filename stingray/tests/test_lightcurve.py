@@ -214,7 +214,7 @@ class TestLightcurve(object):
         assert np.all(lc[2:].counts == np.array([2, 2]))
         assert np.all(lc[:].counts == np.array([2, 2, 2, 2]))
 
-    @raises(IndexError)
+    @raises(AssertionError)
     def test_slicing_index_error(self):
         lc = Lightcurve(self.times, self.counts)
 
@@ -229,7 +229,7 @@ class TestLightcurve(object):
 
         with warnings.catch_warnings(record=True) as w:
             lc1.join(lc2)
-            assert "both the lightcurves are not same" in str(w[0].message)
+            assert "different bin widths" in str(w[0].message)
 
     def test_join_disjoint_time_arrays(self):
         _times = [5, 6, 7, 8]
