@@ -52,6 +52,15 @@ class TestRebinData(object):
         ybin_test = np.zeros_like(xbin) + self.counts*dx_new/self.dx
         assert np.allclose(ybin_test, ybin)
 
+    def test_rebin_data_should_raise_error_when_method_is_different_than_allowed(self):
+        dx_new = 2.0
+        try:
+            utils.rebin_data(self.x, self.y, dx_new, method='not_allowed_method')
+        except utils.UnrecognizedMethod:
+            pass
+        else:
+            raise AssertionError("Expected exception does not occurred")
+
 
 class TestUtils(object):
 
@@ -65,21 +74,21 @@ class TestUtils(object):
 
         order = np.argsort(alist[0])
         assert np.all(np.array([np.array([0, 1]), np.array([3, 2])]) ==
-                      np.array(utils._order_list_of_arrays(alist, order)))
+                      np.array(utils.order_list_of_arrays(alist, order)))
 
         alist = {"a": np.array([1, 0]), "b": np.array([2, 3])}
-        alist_new = utils._order_list_of_arrays(alist, order)
+        alist_new = utils.order_list_of_arrays(alist, order)
         assert np.all(np.array([0, 1]) == alist_new["a"])
         assert np.all(np.array([3, 2]) == alist_new["b"])
 
         alist = 0
-        assert utils._order_list_of_arrays(alist, order) is None
+        assert utils.order_list_of_arrays(alist, order) is None
 
     def test_look_for_array(self):
-        assert utils._look_for_array_in_array(np.arange(2), np.arange(1, 3))
-        assert not utils._look_for_array_in_array(np.arange(2),
+        assert utils.look_for_array_in_array(np.arange(2), np.arange(1, 3))
+        assert not utils.look_for_array_in_array(np.arange(2),
                                                   np.arange(2, 4))
 
     def test_assign_value_if_none(self):
-        assert utils._assign_value_if_none(None, 2) == 2
-        assert utils._assign_value_if_none(1, 2) == 1
+        assert utils.assign_value_if_none(None, 2) == 2
+        assert utils.assign_value_if_none(1, 2) == 1
