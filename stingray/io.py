@@ -8,6 +8,13 @@ import os
 from .utils import order_list_of_arrays, is_string
 from .utils import assign_value_if_none
 
+try:
+    # Python 2
+    import cPickle as pickle
+except:
+    # Python 3
+    import pickle
+
 
 def get_file_extension(fname):
     """Get the extension from the file name."""
@@ -653,3 +660,67 @@ def get_btis(gtis, start_time=None, stop_time=None):
 def gti_len(gti):
     """Return the total good time from a list of GTIs."""
     return np.sum([g[1] - g[0] for g in gti])
+
+def _save_pickle_object(object, filename):
+    pickle.dump(object, open(filename, "wb" ))
+
+def _retrieve_pickle_object(filename):
+    return pickle.load(open(filename, "rb" ) )
+
+def _save_hdf5_object(object, filename):
+    pass
+
+def _retrieve_hdf5_object(object, filename):
+    pass
+
+def _save_ascii_object(object, filename):
+    pass
+
+def _retrieve_ascii_object(object, filename):
+    pass
+
+def write(input, filename, format = 'pickle'):
+    """
+    Pickle a class instance.
+
+    Parameters
+    ----------
+    object: a class instance
+    filename: str
+              name of the file to be created.
+    format: str
+            pickle, hdf5, ascii ...
+
+    """
+
+    if format == 'pickle':
+        _save_pickle_object(input, filename)
+
+    elif format == 'hdf5':
+        _save_hdf5_object(input, filename)
+
+    elif format == 'ascii':
+        _save_ascii_object(input, filename)
+
+
+def read(filename, format = 'pickle'):
+    """
+    Return a pickled class instance.
+
+    Parameters
+    ----------
+    filename: str
+              name of the file to be retrieved.
+    format: str
+            pickle, hdf5, ascii ...
+    """
+
+    if format == 'pickle':
+        return _retrieve_pickle_object(filename)
+
+    elif format == 'hdf5':
+        return _retrieve_hdf5_object(filename)
+
+    elif format == 'ascii':
+        return _retrieve_ascii_object(filename)
+
