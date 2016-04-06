@@ -2,6 +2,9 @@ from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 import numpy as np
 import os
+
+from ..io import read, write
+
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
 
@@ -129,7 +132,6 @@ class TestFileFormats(object):
 
     def test_pickle(self):
         """Test pickle object writing and reading."""
-        from ..io import read, write
         test_object = TestIOReadWrite()
         write(test_object, 'test.pickle', 'pickle')
         assert read('test.pickle', 'pickle') is not None
@@ -137,7 +139,6 @@ class TestFileFormats(object):
 
     def test_pickle_attributes(self):
         """Test if pickle maintains class object attributes."""
-        from ..io import read, write
         test_object = TestIOReadWrite()
         write(test_object, 'test.pickle', 'pickle')
         assert read('test.pickle', 'pickle').x == 10
@@ -145,7 +146,6 @@ class TestFileFormats(object):
 
     def test_pickle_functions(self):
         """Test if pickle maintains class methods."""
-        from ..io import read, write
         test_object = TestIOReadWrite()
         write(test_object,'test.pickle', 'pickle')
         assert read('test.pickle', 'pickle').test_operation() == 100
