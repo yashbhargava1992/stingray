@@ -5,6 +5,7 @@ import logging
 import warnings
 import os
 
+import stingray.utils as utils
 from .utils import order_list_of_arrays, is_string
 from .utils import assign_value_if_none
 
@@ -724,3 +725,34 @@ def read(filename, format = 'pickle'):
     elif format == 'ascii':
         return _retrieve_ascii_object(filename)
 
+def savefig(filename, **kwargs):
+    """
+    Save a figure plotted by Matplotlib.
+
+    Note : This function is supposed to be used after the ``plot``
+    function. Otherwise it will save a blank image with no plot.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the image file. Extension must be specified in the
+        file name. For example filename with `.png` extension will give a
+        rasterized image while `.pdf` extension will give a vectorized
+        output.
+
+    kwargs : keyword arguments
+        Keyword arguments to be passed to ``savefig`` function of
+        ``matplotlib.pyplot``. For example use `bbox_inches='tight'` to
+        remove the undesirable whitepace around the image.
+    """
+
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise ImportError("Matplotlib required for savefig()")
+
+    if not plt.fignum_exists(1):
+        utils.simon("use ``plot`` function to plot the image first and "
+                    "then use ``savefig`` to save the figure.")
+
+    plt.savefig(filename, **kwargs)
