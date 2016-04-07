@@ -377,7 +377,7 @@ class BrokenPowerLaw(ParametricModel):
             for p, n in zip([alpha1, alpha2, x_break, amplitude],
                             self.parnames):
 
-                assert np.isfinite(p), "{s} must be finite!".format(n)
+                assert np.isfinite(p), "{:d} must be finite!".format(n)
 
             p_alpha1 = (alpha1_min <= alpha1 <= alpha1_max) / \
                        (alpha1_max-alpha1_min)
@@ -423,7 +423,7 @@ class BrokenPowerLaw(ParametricModel):
         # compute bending factor
 
         for p, n in zip([alpha1, alpha2, x_break, amplitude], self.parnames):
-            assert np.isfinite(p), "{s} must be finite!".format(n)
+            assert np.isfinite(p), "{:d} must be finite!".format(n)
 
         logz = (alpha2 - alpha1)*(np.log(x) - x_break)
 
@@ -522,7 +522,7 @@ class Lorentzian(ParametricModel):
         def logprior(x0, gamma, amplitude):
 
             for p, n in zip([x0, gamma, amplitude], self.parnames):
-                assert np.isfinite(p), "{s} must be finite!".format(n)
+                assert np.isfinite(p), "{:d} must be finite!".format(n)
 
             p_gamma = (gamma_min <= gamma <= gamma_max) / \
                       (gamma_max - gamma_min)
@@ -557,7 +557,7 @@ class Lorentzian(ParametricModel):
         """
 
         for p, n in zip([x0, gamma, amplitude], self.parnames):
-            assert np.isfinite(p), "{s} must be finite!".format(n)
+            assert np.isfinite(p), "{:d} must be finite!".format(n)
 
         gamma = np.exp(gamma)
         amplitude = np.exp(amplitude)
@@ -662,7 +662,7 @@ class PowerLawConst(ParametricModel):
         """
         def logprior(alpha, amplitude, const):
             for p, n in zip([alpha, amplitude, const], self.parnames):
-                assert np.isfinite(p), "{s} must be finite!".format(n)
+                assert np.isfinite(p), "{:d} must be finite!".format(n)
 
             pp = self.models[0].logprior(alpha, amplitude) + \
                  self.models[1].logprior(const)
@@ -693,7 +693,7 @@ class PowerLawConst(ParametricModel):
         """
 
         for p, n in zip([alpha, amplitude, const], self.parnames):
-            assert np.isfinite(p), "{s} must be finite!".format(n)
+            assert np.isfinite(p), "{:d} must be finite!".format(n)
 
         res = self.models[0].func(x, alpha, amplitude) + \
               self.models[1].func(x, const)

@@ -114,7 +114,7 @@ class OptimizationResults(object):
 
         for i, (x, y, p) in enumerate(zip(self.p_opt, self.err,
                                           lpost.model.parnames)):
-            print("%i) Parameter {:s}: {:.5f} +/- {:.5f}".format(i, p, x, y))
+            print("{:d}) Parameter {:s}: {:.5f} +/- {:.5f}".format(i, p, x, y))
 
         print("\n")
 

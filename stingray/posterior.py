@@ -242,6 +242,7 @@ class LightcurvePosterior(Posterior):
 
         funcval = self.model(self.x[1:], *t0)
 
+        # THIS IS WRONG! FIX THIS!
         res = -funcval + self.y*np.log(funcval) - scipy_gamma(self.y + 1.)
 
         if np.isfinite(res) is False:
