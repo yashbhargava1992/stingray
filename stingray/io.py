@@ -662,11 +662,18 @@ def gti_len(gti):
     """Return the total good time from a list of GTIs."""
     return np.sum([g[1] - g[0] for g in gti])
 
-def _save_pickle_object(object, filename):
-    pickle.dump(object, open(filename, "wb" ))
+def _save_pickle_object(object, filename, save_as_dict = True):
+
+    if save_as_dict:
+        # Get all object's attributes and its values in a dictionary format
+        items = vars(object)
+        pickle.dump(items, open(filename, "wb" ))
+
+    else:
+        pickle.dump(object, open(filename, "wb" ))
 
 def _retrieve_pickle_object(filename):
-    return pickle.load(open(filename, "rb" ) )
+    return pickle.load(open(filename, "rb" ))
 
 def _save_hdf5_object(object, filename):
     pass
@@ -680,7 +687,7 @@ def _save_ascii_object(object, filename):
 def _retrieve_ascii_object(object, filename):
     pass
 
-def write(input, filename, format = 'pickle'):
+def write(input, filename, format = 'pickle', save_as_dict = True):
     """
     Pickle a class instance.
 
@@ -692,10 +699,13 @@ def write(input, filename, format = 'pickle'):
     format: str
             pickle, hdf5, ascii ...
 
+    save_as_dict: boolean
+            For compatibility with MaLTpyNT, save_as_dict should be true. Set
+            it to 'False' if intention is to store input as class object.
     """
 
     if format == 'pickle':
-        _save_pickle_object(input, filename)
+        _save_pickle_object(input, filename, save_as_dict)
 
     elif format == 'hdf5':
         _save_hdf5_object(input, filename)
