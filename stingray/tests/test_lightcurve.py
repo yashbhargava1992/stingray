@@ -356,6 +356,11 @@ class TestLightcurve(object):
         lc.plot(title="Test Lightcurve")
         assert plt.fignum_exists(1)
 
+    def test_save_load_data(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.save('lc.pickle')
+        lc.load('lc.pickle')
+        assert np.all(lc.time == self.times)
 
 class TestLightcurveRebin(object):
 
@@ -396,3 +401,4 @@ class TestLightcurveRebin(object):
         dt_all = [2, 3, np.pi, 5]
         for dt in dt_all:
             yield self.rebin_several, dt
+

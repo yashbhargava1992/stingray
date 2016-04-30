@@ -6,6 +6,7 @@ or to save existing light curves in a class that's easy to use.
 """
 import logging
 import numpy as np
+import stingray.io as io
 import stingray.utils as utils
 from stingray.utils import simon
 
@@ -595,3 +596,37 @@ class Lightcurve(object):
                 plt.savefig('out.png')
             else:
                 plt.savefig(filename)
+
+    def save(self, filename = 'lc.pickle', format = 'pickle', save_as_dict = False):
+        """
+        Exports LightCurve object.
+
+        Parameters
+        ----------
+        filename: str
+                  name of the LightCurve object to be created.
+
+        format: str
+                pickle, hdf5, ascii ...
+
+        save_as_dict: boolean, default 'False'
+                For compatibility with MaLTpyNT, save_as_dict should be true.
+                Otherwise, set it to 'False'
+        """
+
+        io.write(self, filename, format, save_as_dict)
+
+    def load(self, filename, format = 'pickle'):
+        """
+        Imports LightCurve object.
+
+        Parameters
+        ----------
+        filename: str
+                  name of the LightCurve object to be retrieved.
+
+        format: str
+                pickle, hdf5, ascii ...
+        """
+
+        self = io.read(filename, format)
