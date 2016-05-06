@@ -687,7 +687,7 @@ def _save_ascii_object(object, filename):
 def _retrieve_ascii_object(object, filename):
     pass
 
-def write(input, filename, format = 'pickle', save_as_dict = True):
+def write(input_, filename, format_='pickle', save_as_dict=True):
     """
     Pickle a class instance.
 
@@ -696,7 +696,7 @@ def write(input, filename, format = 'pickle', save_as_dict = True):
     object: a class instance
     filename: str
               name of the file to be created.
-    format: str
+    format_: str
             pickle, hdf5, ascii ...
 
     save_as_dict: boolean
@@ -704,17 +704,17 @@ def write(input, filename, format = 'pickle', save_as_dict = True):
             it to 'False' if intention is to store input as class object.
     """
 
-    if format == 'pickle':
-        _save_pickle_object(input, filename, save_as_dict)
+    if format_ == 'pickle':
+        _save_pickle_object(input_, filename, save_as_dict)
 
-    elif format == 'hdf5':
-        _save_hdf5_object(input, filename)
+    elif format_ == 'hdf5':
+        _save_hdf5_object(input_, filename)
 
-    elif format == 'ascii':
-        _save_ascii_object(input, filename)
+    elif format_ == 'ascii':
+        _save_ascii_object(input_, filename)
 
 
-def read(filename, format = 'pickle'):
+def read(filename, format_ = 'pickle'):
     """
     Return a pickled class instance.
 
@@ -722,17 +722,17 @@ def read(filename, format = 'pickle'):
     ----------
     filename: str
               name of the file to be retrieved.
-    format: str
+    format_: str
             pickle, hdf5, ascii ...
     """
 
-    if format == 'pickle':
+    if format_ == 'pickle':
         return _retrieve_pickle_object(filename)
 
-    elif format == 'hdf5':
+    elif format_ == 'hdf5':
         return _retrieve_hdf5_object(filename)
 
-    elif format == 'ascii':
+    elif format_ == 'ascii':
         return _retrieve_ascii_object(filename)
 
 def savefig(filename, **kwargs):
