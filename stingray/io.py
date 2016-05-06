@@ -695,13 +695,13 @@ def write(input_, filename, format_='pickle', **kwargs):
     ----------
     object: a class instance
     filename: str
-              name of the file to be created.
+        name of the file to be created.
     format_: str
-            pickle, hdf5, ascii ...
+        pickle, hdf5, ascii ...
 
     save_as_dict: boolean
-            For compatibility with MaLTpyNT, save_as_dict should be true. Set
-            it to 'False' if intention is to store input as class object.
+        For compatibility with MaLTpyNT, save_as_dict should be true. Set
+        it to 'False' if intention is to store input as class object.
     """
 
     if format_ == 'pickle':
@@ -721,9 +721,9 @@ def read(filename, format_='pickle'):
     Parameters
     ----------
     filename: str
-              name of the file to be retrieved.
+        name of the file to be retrieved.
     format_: str
-            pickle, hdf5, ascii ...
+        pickle, hdf5, ascii ...
     """
 
     if format_ == 'pickle':
