@@ -597,36 +597,36 @@ class Lightcurve(object):
             else:
                 plt.savefig(filename)
 
-    def save(self, filename = 'lc.pickle', format = 'pickle', save_as_dict = False):
+    def write(self, filename, format='pickle', save_as_dict=False):
         """
         Exports LightCurve object.
 
         Parameters
         ----------
         filename: str
-                  name of the LightCurve object to be created.
+            Name of the LightCurve object to be created.
 
         format: str
-                pickle, hdf5, ascii ...
+            Available options are 'pickle', 'hdf5', 'ascii'
 
         save_as_dict: boolean, default 'False'
-                For compatibility with MaLTpyNT, save_as_dict should be true.
-                Otherwise, set it to 'False'
+            For compatibility with MaLTpyNT, save_as_dict should be true.
+            Otherwise, set it to 'False'
         """
 
         io.write(self, filename, format, save_as_dict)
 
-    def load(self, filename, format = 'pickle'):
+    def read(self, filename, format='pickle'):
         """
         Imports LightCurve object.
 
         Parameters
         ----------
         filename: str
-                  name of the LightCurve object to be retrieved.
+            Name of the LightCurve object to be read.
 
         format: str
-                pickle, hdf5, ascii ...
+            Available options are 'pickle', 'hdf5', 'ascii'
         """
 
         self = io.read(filename, format)
