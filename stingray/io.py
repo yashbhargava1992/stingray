@@ -662,9 +662,9 @@ def gti_len(gti):
     """Return the total good time from a list of GTIs."""
     return np.sum([g[1] - g[0] for g in gti])
 
-def _save_pickle_object(object, filename, save_as_dict = True):
+def _save_pickle_object(object, filename, **kwargs):
 
-    if save_as_dict:
+    if 'save_as_dict' in locals():
         # Get all object's attributes and its values in a dictionary format
         items = vars(object)
         pickle.dump(items, open(filename, "wb" ))
@@ -687,7 +687,7 @@ def _save_ascii_object(object, filename):
 def _retrieve_ascii_object(object, filename):
     pass
 
-def write(input_, filename, format_='pickle', save_as_dict=True):
+def write(input_, filename, format_='pickle', **kwargs):
     """
     Pickle a class instance.
 
@@ -705,7 +705,7 @@ def write(input_, filename, format_='pickle', save_as_dict=True):
     """
 
     if format_ == 'pickle':
-        _save_pickle_object(input_, filename, save_as_dict)
+        _save_pickle_object(input_, filename, **kwargs)
 
     elif format_ == 'hdf5':
         _save_hdf5_object(input_, filename)
@@ -714,7 +714,7 @@ def write(input_, filename, format_='pickle', save_as_dict=True):
         _save_ascii_object(input_, filename)
 
 
-def read(filename, format_ = 'pickle'):
+def read(filename, format_='pickle'):
     """
     Return a pickled class instance.
 

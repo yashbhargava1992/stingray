@@ -134,35 +134,35 @@ class TestFileFormats(object):
     def test_pickle_with_class_objects(self):
         """Test pickle object writing and reading."""
         test_object = TestIOReadWrite()
-        write(test_object, 'test.pickle', 'pickle', False)
+        write(test_object, filename='test.pickle', format_='pickle')
         assert read('test.pickle', 'pickle') is not None
         os.remove('test.pickle')
 
     def test_pickle_with_dict_objects(self):
         """Test pickle object writing and reading."""
         test_object = TestIOReadWrite()
-        write(test_object, 'test.pickle', 'pickle', True)
+        write(test_object, filename='test.pickle', format_='pickle', save_as_dict=True)
         assert read('test.pickle', 'pickle') is not None
         os.remove('test.pickle')
 
     def test_pickle_attributes_with_class_objects(self):
         """Test if pickle maintains class object attributes."""
         test_object = TestIOReadWrite()
-        write(test_object, 'test.pickle', 'pickle', False)
+        write(test_object, filename='test.pickle', format_='pickle')
         assert read('test.pickle', 'pickle').x == 10
         os.remove('test.pickle')
 
     def test_pickle_attributes_with_dict_objects(self):
         """Test if pickle maintains class object attributes."""
         test_object = TestIOReadWrite()
-        write(test_object, 'test.pickle', 'pickle', True)
-        assert read('test.pickle', 'pickle')['x'] == 10
+        write(test_object, 'test.pickle', 'pickle', save_as_dict=True)
+        assert read('test.pickle', 'pickle').x == 10
         os.remove('test.pickle')
 
     def test_pickle_functions(self):
         """Test if pickle maintains class methods."""
         test_object = TestIOReadWrite()
-        write(test_object,'test.pickle', 'pickle', False)
+        write(test_object,'test.pickle', 'pickle')
         assert read('test.pickle', 'pickle').test_operation() == 100
         os.remove('test.pickle')
 

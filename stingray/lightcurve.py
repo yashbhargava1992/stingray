@@ -597,7 +597,7 @@ class Lightcurve(object):
             else:
                 plt.savefig(filename)
 
-    def write(self, filename, format_='pickle', save_as_dict=False):
+    def write(self, filename, format_='pickle', **kwargs):
         """
         Exports LightCurve object.
 
@@ -614,7 +614,7 @@ class Lightcurve(object):
             Otherwise, set it to 'False'
         """
 
-        io.write(self, filename, format_, save_as_dict)
+        io.write(self, filename, format_, **kwargs)
 
     def read(self, filename, format_='pickle'):
         """
