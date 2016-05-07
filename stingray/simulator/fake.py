@@ -32,6 +32,10 @@ def fake_events_from_lc(
                           "use_spline option cannot be used.")
             use_spline = False
 
+    # Cast as numpy arrays in case inputs are in list format
+    times = np.asarray(times)
+    lc = np.asarray(lc)
+
     bin_time = _assign_value_if_none(bin_time, times[1] - times[0])
     n_bin = len(lc)
 
@@ -89,7 +93,8 @@ def fake_events_from_lc(
             rough_bins = np.rint((random_ts - t0) / bin_time)
             rough_bins = rough_bins.astype(int)
 
-            pts = [lc_filt[bin] for bin in rough_bins]
+            pts = lc_filt[rough_bins]
+            #pts = [lc_filt[bin] for bin in rough_bins]
 
         good = random_amps < pts
         len1 = len(random_ts)
