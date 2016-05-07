@@ -3,7 +3,7 @@
 
 import numpy as np
 import numpy.random as ra
-from utils import _assign_value_if_none
+from stingray.simulator.utils import _assign_value_if_none
 import logging
 import warnings
 
@@ -89,7 +89,7 @@ def fake_events_from_lc(
             rough_bins = np.rint((random_ts - t0) / bin_time)
             rough_bins = rough_bins.astype(int)
 
-            pts = lc_filt[rough_bins]
+            pts = [lc_filt[bin] for bin in rough_bins]
 
         good = random_amps < pts
         len1 = len(random_ts)
