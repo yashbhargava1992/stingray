@@ -7,7 +7,7 @@ from stingray.simulator.utils import _assign_value_if_none
 import logging
 import warnings
 
-def fake_events_from_lc(
+def gen_events_from_lc(
         times, lc, use_spline=False, bin_time=None):
 
     """Create events from a light curve.
@@ -118,3 +118,59 @@ def fake_events_from_lc(
     ev_list = ev_list[:nev]
     ev_list.sort()
     return ev_list
+
+
+def gen_lc_from_events(event_list, bin_time, start_time=None,
+           stop_time=None, center_time=True):
+
+    """From a list of event times, estract a lightcurve.
+
+    Parameters
+    ----------
+    event_list : array-like
+        Times of arrival of events
+    bin_time : float
+        Binning time of the light curve
+
+    Returns
+    -------
+    time : array-like
+        The time bins of the light curve
+    lc : array-like
+        The light curve
+
+    Other Parameters
+    ----------------
+    start_time : float
+        Initial time of the light curve
+    stop_time : float
+        Stop time of the light curve
+    center_time: bool
+        If False, time is the start of the bin. Otherwise, the center
+    """
+
+    start_time = _assign_value_if_none(start_time, np.floor(event_list[0]))
+    stop_time = _assign_value_if_none(stop_time, np.floor(event_list[-1]))
+
+    logging.debug("lcurve: Time limits: %g -- %g" %
+                  (start_time, stop_time))
+
+    new_event_list = event_list[event_list >= start_time]
+    new_event_list = new_event_list[new_event_list <= stop_time]
+
+    # To compute the histogram, the times array must specify the bin edges.
+    # therefore, if nbin is the length of the lightcurve, times will have
+    # nbin + 1 elements
+
+    new_event_list = ((new_event_list - start_time) / bin_time).astype(int)
+    times = np.arange(start_time, stop_time, bin_time)
+    lc = np.bincount(new_event_list, minlength=len(times))
+    logging.debug("lcurve: Length of the lightcurve: %g" % len(times))
+    logging.debug("Times, kind: %s, %s" % (repr(times), type(times[0])))
+    logging.debug("Lc, kind: %s, %s" % (repr(lc), type(lc[0])))
+    logging.debug("bin_time, kind: %s, %s" % (repr(bin_time), type(bin_time)))
+
+    if center_time:
+        times = times + bin_time / 2.
+
+    return times, lc.astype(np.float)
