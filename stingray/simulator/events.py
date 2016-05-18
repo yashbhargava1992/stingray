@@ -3,6 +3,7 @@
 
 import numpy as np
 import numpy.random as ra
+from scipy.stats import norm, truncnorm
 from stingray.simulator.utils import _assign_value_if_none
 import logging
 import warnings
@@ -10,7 +11,8 @@ import warnings
 def gen_events_from_lc(
         times, lc, use_spline=False, bin_time=None):
 
-    """Create events from a light curve.
+    """
+    Create events from a light curve.
 
     Parameters
     ----------
@@ -123,7 +125,8 @@ def gen_events_from_lc(
 def gen_lc_from_events(event_list, bin_time, start_time=None,
            stop_time=None, center_time=True):
 
-    """From a list of event times, estract a lightcurve.
+    """
+    From a list of event times, extract a lightcurve.
 
     Parameters
     ----------
@@ -174,3 +177,48 @@ def gen_lc_from_events(event_list, bin_time, start_time=None,
         times = times + bin_time / 2.
 
     return times, lc.astype(np.float)
+
+def assign_energies(event_list, spectrum):
+
+    '''
+    Assign energies to event lists.
+
+    Parameters
+    ----------
+    event_list: array-like
+        Times of arrival of events
+    spectrum: 2-d array
+        Energies versus corresponding fluxes
+
+    Returns
+    -------
+    assigned_energies: array-like
+        Energies assigned to all events in event list
+    '''
+
+    assert spectrum.shape[0] != 2, "Spectrum must be a 2-d array."
+
+    assert np.all(np.isfinite(event_list)), "There are inf or NaN values in " \
+                                          "your event list!"
+
+    # Cast inputs as numpy arrays
+    event_list = np.array(event_list)
+
+    # Normalize spectrum by calculating cumulative density
+    fluxes = norm.cdf(np.array(spectrum[0]))
+    energies = np.array(spectrum[1])
+
+    lower, upper, mu, sigma = 0, 1, 0, 1
+
+    # Create a truncated normal distribution
+    X = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+
+    # Generate N random numbers between 0 and 1, where N is the size of event list
+    N = X.norm(size = len(event_list))
+
+    assigned_energies = np.array([])
+
+    for n in N:
+        assigned_energies = np.append(assigned_energies, energies[max(np.where([fluxes==n]))])
+
+    return assigned_energies
