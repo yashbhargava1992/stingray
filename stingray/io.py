@@ -320,7 +320,24 @@ def _save_hdf5_object(object, filename):
 def _retrieve_hdf5_object(filename, **kwargs):
     pass
 
-def _save_ascii_object(object, filename):
+def _save_ascii_object(object, filename, **kwargs):
+    """
+    Save an array to a text file.
+
+    Parameters
+    ----------
+    object : numpy.ndarray
+        An array with the data to be saved
+
+    filename : str
+        The file name to save to
+
+    Other Parameters
+    ----------------
+    kwargs : any keyword argument taken by `numpy.loadtxt`
+
+    """
+    np.savetxt(object, filename, **kwargs)
     pass
 
 def _retrieve_ascii_object(filename, **kwargs):
@@ -391,7 +408,8 @@ def _retrieve_ascii_object(filename, **kwargs):
 
 def write(input_, filename, format_='pickle', **kwargs):
     """
-    Pickle a class instance.
+    Pickle a class instance. For parameters depending on
+    `format_`, see individual function definitions.
 
     Parameters
     ----------
