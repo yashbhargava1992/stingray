@@ -2,7 +2,9 @@ import numpy as np
 import logging
 
 from astropy.io import fits
-from .io import assign_value_if_none, contiguous_regions
+from .io import assign_value_if_none
+from .utils import contiguous_regions
+
 
 def load_gtis(fits_file, gtistring=None):
     """Load GTI from HDU EVENTS of file fits_file."""

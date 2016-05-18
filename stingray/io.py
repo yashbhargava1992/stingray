@@ -298,9 +298,6 @@ def common_name(str1, str2, default='common'):
     logging.debug('common_name: %s %s -> %s' % (str1, str2, common_str))
     return common_str
 
-
-
-
 def _save_pickle_object(object, filename, **kwargs):
 
     if 'save_as_dict' in locals():
