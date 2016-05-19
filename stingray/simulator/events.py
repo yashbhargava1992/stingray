@@ -3,7 +3,7 @@
 
 import numpy as np
 import numpy.random as ra
-from scipy.stats import norm, truncnorm
+from scipy.stats import norm
 from stingray.simulator.utils import _assign_value_if_none
 import logging
 import warnings
@@ -202,12 +202,7 @@ def assign_energies(N, spectrum):
     fluxes = norm.cdf(np.array(spectrum[0]))
     energies = np.array(spectrum[1])
 
-    lower, upper, mu, sigma = 0, 1, 0, 1
-
-    # Create a truncated normal distribution
-    X = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
-
     # Generate N random numbers between 0 and 1, where N is the size of event list
-    R = X.norm(size = N)
+    R = ra.uniform(0, 1, N)
 
     return [energies(max(np.where([fluxes==r]))) for r in R]
