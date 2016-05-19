@@ -178,15 +178,15 @@ def gen_lc_from_events(event_list, bin_time, start_time=None,
 
     return times, lc.astype(np.float)
 
-def assign_energies(event_list, spectrum):
+def assign_energies(N, spectrum):
 
     '''
     Assign energies to event lists.
 
     Parameters
     ----------
-    event_list: array-like
-        Times of arrival of events
+    N: int
+        Length of event list
     spectrum: 2-d array
         Energies versus corresponding fluxes
 
@@ -196,15 +196,9 @@ def assign_energies(event_list, spectrum):
         Energies assigned to all events in event list
     '''
 
-    assert spectrum.shape[0] != 2, "Spectrum must be a 2-d array."
+    assert spectrum.shape[0] != 2, "Spectrum must be a 2-d array!"
 
-    assert np.all(np.isfinite(event_list)), "There are inf or NaN values in " \
-                                          "your event list!"
-
-    # Cast inputs as numpy arrays
-    event_list = np.array(event_list)
-
-    # Normalize spectrum by calculating cumulative density
+    # Cast spectrum as numpy arrays and normalize by calculating cumulative density
     fluxes = norm.cdf(np.array(spectrum[0]))
     energies = np.array(spectrum[1])
 
@@ -214,11 +208,6 @@ def assign_energies(event_list, spectrum):
     X = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
     # Generate N random numbers between 0 and 1, where N is the size of event list
-    N = X.norm(size = len(event_list))
+    R = X.norm(size = N)
 
-    assigned_energies = np.array([])
-
-    for n in N:
-        assigned_energies = np.append(assigned_energies, energies[max(np.where([fluxes==n]))])
-
-    return assigned_energies
+    return [energies(max(np.where([fluxes==r]))) for r in R]
