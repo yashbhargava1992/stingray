@@ -181,14 +181,16 @@ def gen_lc_from_events(event_list, bin_time, start_time=None,
 def assign_energies(N, spectrum):
 
     '''
-    Assign energies to event lists.
+    Assign energies to an event list.
 
     Parameters
     ----------
     N: int
         Length of event list
-    spectrum: 2-d array
-        Energies versus corresponding fluxes
+    spectrum: 2-d array or list
+        Energies versus corresponding fluxes. The 2-d array or list must
+        have energies across the first dimension and fluxes across the
+        second one.
 
     Returns
     -------
@@ -196,13 +198,30 @@ def assign_energies(N, spectrum):
         Energies assigned to all events in event list
     '''
 
-    assert spectrum.shape[0] != 2, "Spectrum must be a 2-d array!"
+    # Cast spectrum as numpy arrays
+    if isinstance(spectrum, list):
+        try:
+            energies = np.array(spectrum[0])
+            fluxes = np.array(spectrum[1])
+        except:
+            assert False, "Spectrum must be a 2-d array or list"
 
-    # Cast spectrum as numpy arrays and normalize by calculating cumulative density
-    fluxes = norm.cdf(np.array(spectrum[0]))
-    energies = np.array(spectrum[1])
+    else:
+        assert spectrum.shape[0] != 2, "Spectrum must be a 2-d array or list"
+        energies = spectrum[0]
+        fluxes = spectrum[1]
+
+    # Calculate cumulative probabilities for unique values of flux
+    u_fluxes = np.unique(fluxes)
+    prob = [len((np.where(fluxes==u))[0])/float(len(fluxes)) for u in u_fluxes]
+    cum_prob = np.cumsum(prob)
+
+    # Calculate cdf for all values of flux
+    key_values = dict(zip(u_fluxes, cum_prob))
+    cdf = np.array([key_values[flux] for flux in fluxes])
 
     # Generate N random numbers between 0 and 1, where N is the size of event list
     R = ra.uniform(0, 1, N)
 
-    return [energies(max(np.where([fluxes==r]))) for r in R]
+    # Return energy for which flux is closest to a value in random distribution
+    return [energies[np.argmin(np.abs(cdf - r))] for r in R]

@@ -52,3 +52,11 @@ class TestFakeSimulator(object):
         #TODO: Sigma needs to be 4 in order to pass test. Should it be 3?
         assert np.all(np.abs(new_counts - new_lc.counts) < 4 * np.sqrt(new_lc.counts))
         np.testing.assert_almost_equal(new_times, new_lc.time)
+
+    def test_assign_energies(self):
+        """
+        Assign energies to an event list given its spectrum.
+        """
+
+        spectrum = [[1, 2, 3, 4, 5, 6],[1000, 2040, 1000, 3000, 4020, 2070]]
+        assert len(events.assign_energies(10, spectrum)) == 10
