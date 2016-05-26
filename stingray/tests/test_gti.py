@@ -49,7 +49,6 @@ class TestGTI(object):
         arr = np.array([0, 1, 2, 3, 4, 5, 6])
         gti = np.array([[0, 2.1], [3.9, 5]])
         mask = create_gti_mask(arr, gti)
-        print(mask)
         # NOTE: the time bin has to be fully inside the GTI. That is why the
         # bin at times 0, 2, 4 and 5 are not in.
         assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
@@ -58,6 +57,7 @@ class TestGTI(object):
         t = np.array([0, 1, 2, 3, 4, 5, 6])
         condition = np.array([1, 1, 0, 0, 1, 0, 0], dtype=bool)
         gti = create_gti_from_condition(t, condition)
+        print("gti: " + str(gti))
         assert np.all(gti == np.array([[-0.5, 1.5], [3.5, 4.5]]))
 
     def test_load_gtis(self):
