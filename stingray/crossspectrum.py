@@ -98,6 +98,8 @@ class Crossspectrum(object):
         ## the number of data points in the light curve
         assert lc1.counts.shape[0] == lc2.counts.shape[0], \
             "Light curves do not have same number of time bins per segment."
+        assert lc1.dt == lc2.dt, \
+                "Light curves do not have same time binning dt."
         self.n = lc1.counts.shape[0]
 
         assert lc1.tseg == lc2.tseg, "Light curves do not have same tseg."
@@ -141,10 +143,6 @@ class Crossspectrum(object):
         fourier_1 = scipy.fftpack.fft(lc1.counts)  # do Fourier transform 1
         fourier_2 = scipy.fftpack.fft(lc2.counts)  # do Fourier transform 2
 
-        assert lc1.counts.shape[0] == lc2.counts.shape[0], \
-                "Light curves do not have the same shape."
-        assert lc1.dt == lc2.dt, \
-                "Light curves do not have same time binning dt."
         freqs = scipy.fftpack.fftfreq(lc1.counts.shape[0], lc1.dt)
         cross = fourier_1[freqs > 0] * np.conj(fourier_2[freqs > 0])
         return freqs[freqs > 0], cross
