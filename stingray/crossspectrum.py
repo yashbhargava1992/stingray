@@ -45,12 +45,12 @@ class Crossspectrum(object):
             The number of averaged cross-spectra amplitudes in each bin.
 
         n: int
-            The number of data points/time bins in one segment of the light 
+            The number of data points/time bins in one segment of the light
             curves.
 
         nphots1: float
             The total number of photons in light curve 1
-            
+
         nphots2: float
             The total number of photons in light curve 2
         """
@@ -235,10 +235,10 @@ class AveragedCrossspectrum(Crossspectrum):
 
     def __init__(self, lc1, lc2, segment_size=1, norm='none'):
         """
-        Make an averaged cross spectrum from a light curve by segmenting two 
+        Make an averaged cross spectrum from a light curve by segmenting two
         light curves, Fourier-transforming each segment and then averaging the
         resulting cross spectra.
-        
+
         Parameters
         ----------
         lc1: lightcurve.Lightcurve object OR
@@ -248,9 +248,9 @@ class AveragedCrossspectrum(Crossspectrum):
 
         lc2: lightcurve.Lightcurve object OR
             iterable of lightcurve.Lightcurve objects
-            Second light curve data to be Fourier-transformed. This is the 
+            Second light curve data to be Fourier-transformed. This is the
             reference band.
-            
+
         segment_size: float, default 1 second
             The size of each segment to average. Note that if the total duration
             of each Lightcurve object in lc1 or lc2 is not an integer multiple
@@ -276,10 +276,10 @@ class AveragedCrossspectrum(Crossspectrum):
 
         n: int
             The number of time bins per segment of light curve?
-            
+
         nphots1: float
             The total number of photons in the first (interest) light curve
-        
+
         nphots2: float
             The total number of photons in the second (reference) light curve
 
