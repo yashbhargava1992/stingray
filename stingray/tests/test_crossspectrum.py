@@ -32,3 +32,7 @@ class TestCrossspectrum(object):
         assert cs.nphots2 is None
         assert cs.m == 1
         assert cs.n is None
+
+    @raises(TypeError)
+    def test_make_crossspectrum_with_one_lc_none(self):
+        cs = Crossspectrum(self.lc1)

@@ -66,7 +66,7 @@ class Crossspectrum(object):
         ## make an empty Crossspectrum object if lc1 == None or lc2 == None
         if lc1 is None or lc2 is None:
             if lc1 is not None or lc2 is not None:
-                 print("You can't do a cross spectrum with just one "
+                 raise TypeError("You can't do a cross spectrum with just one "
                          "light curve!")
             # else:
             #      print("Please specify input light curves!")
