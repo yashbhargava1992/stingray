@@ -8,7 +8,7 @@ np.random.seed(20160528)
 
 class TestCrossspectrum(object):
 
-    def setUp(self):
+    def setup_class(self):
         tstart = 0.0
         tend = 1.0
         dt = 0.0001
@@ -34,5 +34,38 @@ class TestCrossspectrum(object):
         assert cs.n is None
 
     @raises(TypeError)
-    def test_make_crossspectrum_with_one_lc_none(self):
+    def test_init_with_one_lc_none(self):
         cs = Crossspectrum(self.lc1)
+
+    @raises(AssertionError)
+    def test_init_with_norm_not_str(self):
+        cs = Crossspectrum(norm=1)
+
+    @raises(AssertionError)
+    def test_init_with_invalid_norm(self):
+        cs = Crossspectrum(norm='frabs')
+
+    @raises(AssertionError)
+    def test_init_with_wrong_lc1_instance(self):
+        lc_ = Crossspectrum()
+        cs = Crossspectrum(lc_, self.lc2)
+
+    @raises(AssertionError)
+    def test_init_with_wrong_lc2_instance(self):
+        lc_ = Crossspectrum()
+        cs = Crossspectrum(self.lc1, lc_)
+
+    @raises(AssertionError)
+    def test_make_crossspectrum_diff_lc_counts_shape(self):
+        counts = np.array([1]*10001)
+        time = np.linspace(0.0, 1.0001, 10001)
+        lc_ = Lightcurve(time, counts)
+        cs = Crossspectrum(self.lc1, lc_)
+
+    @raises(AssertionError)
+    def test_make_crossspectrum_diff_dt(self):
+        counts = np.array([1]*10000)
+        time = np.linspace(0.0, 2.0, 10000)
+        lc_ = Lightcurve(time, counts)
+        cs = Crossspectrum(self.lc1, lc_)
+
