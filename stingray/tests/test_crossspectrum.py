@@ -92,3 +92,33 @@ class TestCrossspectrum(object):
         cs = Crossspectrum(self.lc1, self.lc2, norm='abs')
         assert len(cs.cs) == 4999
         assert cs.norm == 'abs'
+
+
+class TestAveragedCrossspectrum(object):
+
+    def setup_class(self):
+        tstart = 0.0
+        tend = 1.0
+        dt = 0.0001
+
+        time = np.linspace(tstart, tend, int((tend - tstart)/dt))
+
+        counts1 = np.random.poisson(0.01, size=time.shape[0])
+        counts2 = np.random.negative_binomial(1, 0.09, size=time.shape[0])
+
+        self.lc1 = Lightcurve(time, counts1)
+        self.lc2 = Lightcurve(time, counts2)
+
+        self.cs = AveragedCrossspectrum(self.lc1, self.lc2)
+
+    @raises(AssertionError)
+    def test_init_with_norm_not_str(self):
+        cs = AveragedCrossspectrum(self.lc1, self.lc2, norm=1)
+
+    @raises(AssertionError)
+    def test_init_with_invalid_norm(self):
+        cs = AveragedCrossspectrum(self.lc1, self.lc2, norm='frabs')
+
+    @raises(AssertionError)
+    def test_init_with_inifite_segment_size(self):
+        cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
