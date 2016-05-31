@@ -102,8 +102,6 @@ class Crossspectrum(object):
                 "Light curves do not have same time binning dt."
         self.n = lc1.counts.shape[0]
 
-        assert lc1.tseg == lc2.tseg, "Light curves do not have same tseg."
-
         ## the frequency resolution
         self.df = 1.0/lc1.tseg
 

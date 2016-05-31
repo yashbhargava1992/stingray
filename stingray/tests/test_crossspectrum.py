@@ -69,3 +69,11 @@ class TestCrossspectrum(object):
         lc_ = Lightcurve(time, counts)
         cs = Crossspectrum(self.lc1, lc_)
 
+    @raises(AssertionError)
+    def test_rebin_smaller_resolution(self):
+        # Original df is between 0.9 and 1.0
+        new_cs = self.cs.rebin(df=0.1)
+
+    def test_rebin(self):
+        new_cs = self.cs.rebin(df=1.5)
+        assert new_cs.df == 1.5
