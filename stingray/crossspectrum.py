@@ -223,9 +223,6 @@ class Crossspectrum(object):
         elif self.norm.lower() == 'none':
             cs = unnorm_cs
 
-        else:
-            raise Exception("Normalization not recognized!")
-
         return cs
 
 

@@ -77,3 +77,18 @@ class TestCrossspectrum(object):
     def test_rebin(self):
         new_cs = self.cs.rebin(df=1.5)
         assert new_cs.df == 1.5
+
+    def test_norm_leahy(self):
+        cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
+        assert len(cs.cs) == 4999
+        assert cs.norm == 'leahy'
+
+    def test_norm_frac(self):
+        cs = Crossspectrum(self.lc1, self.lc2, norm='frac')
+        assert len(cs.cs) == 4999
+        assert cs.norm == 'frac'
+
+    def test_norm_abs(self):
+        cs = Crossspectrum(self.lc1, self.lc2, norm='abs')
+        assert len(cs.cs) == 4999
+        assert cs.norm == 'abs'
