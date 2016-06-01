@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-from nose.tools import raises
+import pytest
 from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum
 
@@ -33,46 +33,46 @@ class TestCrossspectrum(object):
         assert cs.m == 1
         assert cs.n is None
 
-    @raises(TypeError)
     def test_init_with_one_lc_none(self):
-        cs = Crossspectrum(self.lc1)
+        with pytest.raises(TypeError):
+            cs = Crossspectrum(self.lc1)
 
-    @raises(AssertionError)
     def test_init_with_norm_not_str(self):
-        cs = Crossspectrum(norm=1)
+        with pytest.raises(AssertionError):
+            cs = Crossspectrum(norm=1)
 
-    @raises(AssertionError)
     def test_init_with_invalid_norm(self):
-        cs = Crossspectrum(norm='frabs')
+        with pytest.raises(AssertionError):
+            cs = Crossspectrum(norm='frabs')
 
-    @raises(AssertionError)
     def test_init_with_wrong_lc1_instance(self):
         lc_ = Crossspectrum()
-        cs = Crossspectrum(lc_, self.lc2)
+        with pytest.raises(AssertionError):
+            cs = Crossspectrum(lc_, self.lc2)
 
-    @raises(AssertionError)
     def test_init_with_wrong_lc2_instance(self):
         lc_ = Crossspectrum()
-        cs = Crossspectrum(self.lc1, lc_)
+        with pytest.raises(AssertionError):
+            cs = Crossspectrum(self.lc1, lc_)
 
-    @raises(AssertionError)
     def test_make_crossspectrum_diff_lc_counts_shape(self):
         counts = np.array([1]*10001)
         time = np.linspace(0.0, 1.0001, 10001)
         lc_ = Lightcurve(time, counts)
-        cs = Crossspectrum(self.lc1, lc_)
+        with pytest.raises(AssertionError):
+            cs = Crossspectrum(self.lc1, lc_)
 
-    @raises(AssertionError)
     def test_make_crossspectrum_diff_dt(self):
         counts = np.array([1]*10000)
         time = np.linspace(0.0, 2.0, 10000)
         lc_ = Lightcurve(time, counts)
-        cs = Crossspectrum(self.lc1, lc_)
+        with pytest.raises(AssertionError):
+            cs = Crossspectrum(self.lc1, lc_)
 
-    @raises(AssertionError)
     def test_rebin_smaller_resolution(self):
         # Original df is between 0.9 and 1.0
-        new_cs = self.cs.rebin(df=0.1)
+        with pytest.raises(AssertionError):
+            new_cs = self.cs.rebin(df=0.1)
 
     def test_rebin(self):
         new_cs = self.cs.rebin(df=1.5)
@@ -111,14 +111,14 @@ class TestAveragedCrossspectrum(object):
 
         self.cs = AveragedCrossspectrum(self.lc1, self.lc2)
 
-    @raises(AssertionError)
     def test_init_with_norm_not_str(self):
-        cs = AveragedCrossspectrum(self.lc1, self.lc2, norm=1)
+        with pytest.raises(AssertionError):
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, norm=1)
 
-    @raises(AssertionError)
     def test_init_with_invalid_norm(self):
-        cs = AveragedCrossspectrum(self.lc1, self.lc2, norm='frabs')
+        with pytest.raises(AssertionError):
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, norm='frabs')
 
-    @raises(AssertionError)
     def test_init_with_inifite_segment_size(self):
-        cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
+        with pytest.raises(AssertionError):
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
