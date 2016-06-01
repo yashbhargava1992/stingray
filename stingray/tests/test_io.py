@@ -2,6 +2,10 @@ from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 import numpy as np
 import os
+
+from ..io import read, write
+import warnings
+
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
 
@@ -114,3 +118,82 @@ class TestIO(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         print(ref_mjd(fname))
         assert ref_mjd(fname) is not None
+
+
+class TestIOReadWrite(object):
+    """A class to test all the read and write functions."""
+    def __init__(self):
+        self.x = 10
+
+    def test_operation(self):
+        return self.x * 10
+
+
+class TestFileFormats(object):
+
+    def test_pickle(self):
+        """Test pickle object writing and reading."""
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.pickle', 'pickle')
+        assert read('test.pickle', 'pickle') is not None
+        os.remove('test.pickle')
+
+    def test_pickle_attributes(self):
+        """Test if pickle maintains class object attributes."""
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.pickle', 'pickle')
+        assert read('test.pickle', 'pickle').x == 10
+        os.remove('test.pickle')
+
+    def test_pickle_functions(self):
+        """Test if pickle maintains class methods."""
+        test_object = TestIOReadWrite()
+        write(test_object,'test.pickle', 'pickle')
+        assert read('test.pickle', 'pickle').test_operation() == 100
+        os.remove('test.pickle')
+
+    def test_hdf5(self):
+        pass
+
+    def test_hdf5_attributes(self):
+        pass
+
+    def test_hdf5_functions(self):
+        pass
+
+    def test_ascii(self):
+        pass
+
+    def test_ascii_attributes(self):
+        pass
+
+    def test_ascii_functions(self):
+        pass
+
+    def test_savefig_matplotlib_not_installed(self):
+        from ..io import savefig
+        try:
+            import matplotlib.pyplot as plt
+        except Exception as e:
+            lc = Lightcurve([1, 2, 3], [2, 2, 2])
+            try:
+                savefig("test.png")
+            except Exception as e:
+                assert type(e) is ImportError
+                assert str(e) == "Matplotlib required for savefig()"
+
+    def test_savefig_without_plot(self):
+        import matplotlib.pyplot as plt
+        from ..io import savefig
+        plt.close()
+        with warnings.catch_warnings(record=True) as w:
+            savefig('test.png')
+            assert "plot the image first" in str(w[0].message)
+        os.unlink('test.png')
+
+    def test_savefig(self):
+        import matplotlib.pyplot as plt
+        from ..io import savefig
+        plt.plot([1, 2, 3])
+        savefig("test.png")
+        os.unlink("test.png")

@@ -125,6 +125,233 @@ class TestLightcurve(object):
         with pytest.raises(AssertionError):
             lc = Lightcurve(times, counts)
 
+    @raises(AssertionError)
+    def test_init_with_diff_array_lengths(self):
+        time = [1, 2, 3]
+        counts = [2, 2, 2, 2]
+
+        lc = Lightcurve(time, counts)
+
+    @raises(AssertionError)
+    def test_add_with_different_time_arrays(self):
+        _times = [1, 2, 3, 4, 5]
+        _counts = [2, 2, 2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        lc = lc1 + lc2
+
+    @raises(AssertionError)
+    def test_add_with_unequal_time_arrays(self):
+        _times = [1, 3, 5, 7]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, self.counts)
+
+        lc = lc1 + lc2
+
+    def test_add_with_equal_time_arrays(self):
+        _counts = [1, 1, 1, 1]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, _counts)
+
+        lc = lc1 + lc2
+
+        assert np.all(lc.counts == lc1.counts + lc2.counts)
+        assert np.all(lc.countrate == lc1.countrate + lc2.countrate)
+
+    @raises(AssertionError)
+    def test_sub_with_diff_time_arrays(self):
+        _times = [1, 2, 3, 4, 5]
+        _counts = [2, 2, 2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        lc = lc1 - lc2
+
+    def test_subtraction(self):
+        _counts = [3, 4, 5, 6]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, _counts)
+
+        lc = lc2 - lc1
+
+        expected_counts = np.array([1, 2, 3, 4])
+        assert np.all(lc.counts == expected_counts)
+
+    def test_negation(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        _lc = lc + (-lc)
+
+        assert not np.all(_lc.counts)
+
+    def test_len_function(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        assert len(lc) == 4
+
+    @raises(IndexError)
+    def test_indexing_with_unexpected_type(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        count = lc['first']
+
+    def test_indexing(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        assert lc[0] == lc[1] == lc[2] == lc[3] == 2
+
+    def test_slicing(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        assert np.all(lc[1:3].counts == np.array([2, 2]))
+        assert np.all(lc[:2].counts == np.array([2, 2]))
+        assert np.all(lc[2:].counts == np.array([2, 2]))
+        assert np.all(lc[:].counts == np.array([2, 2, 2, 2]))
+
+    @raises(AssertionError)
+    def test_slicing_index_error(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        lc_new = lc[1:2]
+
+    def test_join_with_different_dt(self):
+        _times = [5, 5.5, 6]
+        _counts = [2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        with warnings.catch_warnings(record=True) as w:
+            lc1.join(lc2)
+            assert "different bin widths" in str(w[0].message)
+
+    def test_join_disjoint_time_arrays(self):
+        _times = [5, 6, 7, 8]
+        _counts = [2, 2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        lc = lc1.join(lc2)
+
+        assert len(lc.counts) == len(lc.time) == 8
+        assert np.all(lc.counts == 2)
+
+    def test_join_overlapping_time_arrays(self):
+        _times = [3, 4, 5, 6]
+        _counts = [4, 4, 4, 4]
+
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
+
+        with warnings.catch_warnings(record=True) as w:
+            lc = lc1.join(lc2)
+            assert "overlapping time ranges" in str(w[0].message)
+
+        assert len(lc.counts) == len(lc.time) == 6
+        assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
+
+    def test_truncate_by_index(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        lc1 = lc.truncate(start=1)
+        assert np.all(lc1.time == np.array([2, 3, 4]))
+        assert np.all(lc1.counts == np.array([2, 2, 2]))
+
+        lc2 = lc.truncate(stop=2)
+        assert np.all(lc2.time == np.array([1, 2]))
+        assert np.all(lc2.counts == np.array([2, 2]))
+
+    @raises(AssertionError)
+    def test_truncate_by_time_stop_less_than_start(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        lc1 = lc.truncate(start=2, stop=1, method='time')
+
+    def test_truncate_by_time(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        lc1 = lc.truncate(start=1, method='time')
+        assert np.all(lc1.time == np.array([1, 2, 3, 4]))
+        assert np.all(lc1.counts == np.array([2, 2, 2, 2]))
+
+        lc2 = lc.truncate(stop=3, method='time')
+        assert np.all(lc2.time == np.array([1, 2]))
+        assert np.all(lc2.counts == np.array([2, 2]))
+
+    def test_sort(self):
+        _times = [1, 2, 3, 4]
+        _counts = [40, 10, 20, 5]
+        lc = Lightcurve(_times, _counts)
+
+        lc.sort()
+
+        assert np.all(lc.counts == np.array([ 5, 10, 20, 40]))
+        assert np.all(lc.time == np.array([4, 2, 3, 1]))
+
+        lc.sort(reverse=True)
+
+        assert np.all(lc.counts == np.array([40, 20, 10,  5]))
+        assert np.all(lc.time == np.array([1, 3, 2, 4]))
+
+    def test_plot_matplotlib_not_installed(self):
+        try:
+            import matplotlib.pyplot as plt
+        except Exception as e:
+
+            lc = Lightcurve(self.times, self.counts)
+            try:
+                lc.plot()
+            except Exception as e:
+                assert type(e) is ImportError
+                assert str(e) == "Matplotlib required for plot()"
+
+    def test_plot_simple(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot()
+        assert plt.fignum_exists(1)
+
+    @raises(TypeError)
+    def test_plot_wrong_label_type(self):
+        lc = Lightcurve(self.times, self.counts)
+        with warnings.catch_warnings(record=True) as w:
+            lc.plot(labels=123)
+            assert "must be either a list or tuple" in str(w[0].message)
+
+    def test_plot_labels_index_error(self):
+        lc = Lightcurve(self.times, self.counts)
+        with warnings.catch_warnings(record=True) as w:
+            lc.plot(labels=('x'))
+            assert "must have two labels" in str(w[0].message)
+
+    def test_plot_default_filename(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(save=True)
+        assert os.path.isfile('out.png')
+        os.unlink('out.png')
+
+    def test_plot_custom_filename(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(save=True, filename='lc.png')
+        assert os.path.isfile('lc.png')
+        os.unlink('lc.png')
+
+    def test_plot_axis(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(axis=[0, 1, 0, 100])
+        assert plt.fignum_exists(1)
+
+    def test_plot_title(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(title="Test Lightcurve")
+        assert plt.fignum_exists(1)
+
 
 class TestLightcurveRebin(object):
 
