@@ -2,6 +2,8 @@ import numpy as np
 
 from astropy.tests.helper import pytest
 import warnings
+import os
+import matplotlib.pyplot as plt
 
 from stingray import Lightcurve
 
