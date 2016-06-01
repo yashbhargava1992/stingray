@@ -334,10 +334,10 @@ def _save_ascii_object(object, filename, **kwargs):
 
     Other Parameters
     ----------------
-    kwargs : any keyword argument taken by `numpy.loadtxt`
+    kwargs : any keyword argument taken by `numpy.savetxt`
 
     """
-    np.savetxt(object, filename, **kwargs)
+    np.savetxt(filename, object, **kwargs)
     pass
 
 def _retrieve_ascii_object(filename, **kwargs):
