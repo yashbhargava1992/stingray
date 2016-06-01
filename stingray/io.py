@@ -1,9 +1,11 @@
-from __future__ import (absolute_import, unicode_literals, division,
+from __future__ import (absolute_import, division,
                         print_function)
+
 import numpy as np
 import logging
 import warnings
 import os
+import six
 
 from astropy.io import fits
 from astropy.table import Table
@@ -17,6 +19,7 @@ from .gti import  _get_gti_from_extension, load_gtis
 try:
     # Python 2
     import cPickle as pickle
+
 except:
     # Python 3
     import pickle
@@ -320,7 +323,7 @@ def _save_hdf5_object(object, filename):
 def _retrieve_hdf5_object(filename, **kwargs):
     pass
 
-def _save_ascii_object(object, filename, **kwargs):
+def _save_ascii_object(object, filename, fmt="%.18e", **kwargs):
     """
     Save an array to a text file.
 
@@ -332,12 +335,22 @@ def _save_ascii_object(object, filename, **kwargs):
     filename : str
         The file name to save to
 
+    fmt : str or sequence of strs, optional
+        Use for formatting of columns. See `numpy.savetxt` documentation
+        for details.
+
     Other Parameters
     ----------------
     kwargs : any keyword argument taken by `numpy.savetxt`
 
     """
-    np.savetxt(filename, object, **kwargs)
+
+    try:
+        np.savetxt(filename, object, fmt=fmt, **kwargs)
+    except TypeError:
+        raise Exception("Formatting of columns not recognized! Use 'fmt' option to "
+              "format columns including strings or mixed types!")
+
     pass
 
 def _retrieve_ascii_object(filename, **kwargs):
@@ -372,9 +385,12 @@ def _retrieve_ascii_object(filename, **kwargs):
         An astropy.Table object with the data from the file
 
 
-    TODO: Add example
+    Example
+    -------
     """
-    assert isinstance(filename, str), "filename must be string!"
+
+    assert isinstance(filename, six.string_types), \
+        "filename must be string!"
 
     if 'usecols' in list(kwargs.keys()):
         assert np.size(kwargs['usecols']) == 2, "Need to define two columns"
@@ -394,7 +410,7 @@ def _retrieve_ascii_object(filename, **kwargs):
         names = None
 
     data = Table.read(filename, data_start=skiprows,
-                      names=names)
+                      names=names, format="ascii")
 
     if usecols is None:
         return data
@@ -431,7 +447,7 @@ def write(input_, filename, format_='pickle', **kwargs):
         _save_hdf5_object(input_, filename)
 
     elif format_ == 'ascii':
-        _save_ascii_object(input_, filename)
+        _save_ascii_object(input_, filename, **kwargs)
 
 
 def read(filename, format_='pickle', **kwargs):

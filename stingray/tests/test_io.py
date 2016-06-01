@@ -3,12 +3,14 @@ from __future__ import (absolute_import, unicode_literals, division,
 import numpy as np
 import os
 
+from astropy.tests.helper import pytest
+
+
 from ..io import read, write
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
 from ..io import load_events_and_gtis
 from ..io import read_header_key
-
 
 import warnings
 
@@ -120,8 +122,37 @@ class TestFileFormats(object):
     def test_hdf5_functions(self):
         pass
 
-    def test_ascii(self):
-        pass
+    def test_save_ascii(self):
+        time = [1, 2, 3, 4]
+        counts = [2, 3, 41, 4]
+
+        write(np.array([time, counts]).T, "ascii_test.txt",
+              "ascii")
+
+        os.remove("ascii_test.txt")
+
+    def test_save_ascii_with_mixed_types(self):
+        time = ["bla", 1, 2, 3]
+        counts = [2,3,41,4]
+        with pytest.raises(Exception):
+             write(np.array([time, counts]).T,
+                   "ascii_test.txt", "ascii")
+
+    def test_save_ascii_with_format(self):
+        time = ["bla", 1, 2, 3]
+        counts = [2,3,41,4]
+        write(np.array([time, counts]).T,
+              filename="ascii_test.txt", format_="ascii",
+              fmt=["%s", "%s"])
+
+
+    def test_read_ascii(self):
+        time = [1,2,3,4,5]
+        counts = [5,7,8,2,3]
+        np.savetxt("ascii_test.txt", np.array([time, counts]).T)
+        read("ascii_test.txt", "ascii")
+        os.remove("ascii_test.txt")
+
 
     def test_ascii_attributes(self):
         pass
