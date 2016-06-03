@@ -9,7 +9,6 @@ import scipy.optimize
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 
-
 class Crossspectrum(object):
 
     def __init__(self, lc1=None, lc2=None, norm='none'):
@@ -35,7 +34,7 @@ class Crossspectrum(object):
         freq: numpy.ndarray
             The array of mid-bin frequencies that the Fourier transform samples
 
-        cs: numpy.ndarray
+        power: numpy.ndarray
             The array of cross spectra (complex numbers)
 
         df: float
@@ -71,13 +70,14 @@ class Crossspectrum(object):
             # else:
             #      print("Please specify input light curves!")
             self.freq = None
-            self.cs = None
+            self.power = None
             self.df = None
             self.nphots1 = None
             self.nphots2 = None
             self.m = 1
             self.n = None
             return
+
         self._make_crossspectrum(lc1, lc2)
 
     def _make_crossspectrum(self, lc1, lc2):
@@ -94,6 +94,8 @@ class Crossspectrum(object):
         self.nphots1 = np.sum(lc1.counts)
         self.nphots2 = np.sum(lc2.counts)
 
+        self.meancounts1 = np.mean(lc1.counts)
+        self.meancounts2 = np.mean(lc2.counts)
 
         ## the number of data points in the light curve
         assert lc1.counts.shape[0] == lc2.counts.shape[0], \
@@ -110,11 +112,11 @@ class Crossspectrum(object):
         self.m = 1
 
         ## make the actual Fourier transform and compute cross spectrum
-        self.freq, self.unnorm_cross = self._fourier_cross(lc1, lc2)
+        self.freq, self.unnorm_power = self._fourier_cross(lc1, lc2)
 
         ## If co-spectrum is desired, normalize here. Otherwise, get raw back
         ## with the imaginary part still intact.
-        self.cs = self._normalize_crossspectrum(self.unnorm_cross, lc1.tseg)
+        self.power = self._normalize_crossspectrum(self.unnorm_power, lc1.tseg)
 
     def _fourier_cross(self, lc1, lc2):
         """
@@ -161,17 +163,18 @@ class Crossspectrum(object):
             The newly binned cross spectrum
         """
 
-        ## rebin cross spectrum to new resolution
+        # rebin cross spectrum to new resolution
         binfreq, bincs, step_size = utils.rebin_data(self.freq[1:],
-                                                     self.cs[1:], df,
+                                                     self.power[1:], df,
                                                      method=method)
 
-        ## make an empty cross spectrum object
-        bin_cs = Crossspectrum()
+        # make an empty cross spectrum object
+        # note: syntax deliberate to work with subclass Powerspectrum
+        bin_cs = self.__class__()
 
-        ## store the binned periodogram in the new object
+        # store the binned periodogram in the new object
         bin_cs.freq = np.hstack([binfreq[0]-self.df, binfreq])
-        bin_cs.cs = np.hstack([self.cs[0], bincs])
+        bin_cs.power = np.hstack([self.power[0], bincs])
         bin_cs.df = df
         bin_cs.n = self.n
         bin_cs.norm = self.norm
@@ -181,14 +184,14 @@ class Crossspectrum(object):
 
         return bin_cs
 
-    def _normalize_crossspectrum(self, unnorm_cs, tseg):
+    def _normalize_crossspectrum(self, unnorm_power, tseg):
         """
         Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
         fractional rms^2 normalization, or not at all.
 
         Parameters
         ----------
-        unnorm_cs: numpy.ndarray
+        unnorm_power: numpy.ndarray
             The unnormalized cross spectrum.
 
         tseg: int
@@ -196,34 +199,93 @@ class Crossspectrum(object):
 
         Returns
         -------
-        cs: numpy.nd.array
+        power: numpy.nd.array
             The normalized co-spectrum (real part of the cross spectrum). For
             'none' normalization, imaginary part is returned as well.
         """
 
-        ## The "effective" count rate is the geometrical mean of the count rates
-        ## of the two light curves; need to divide by tseg to have count rate
-        actual_mean = np.sqrt(self.nphots1 * self.nphots2 / tseg)
+        # The "effective" counst/bin is the geometrical mean of the counts/bin
+        # of the two light curves
+        actual_nphots = np.sqrt(self.nphots1 * self.nphots2)
+        actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
 
         assert actual_mean > 0.0, \
                 "Mean count rate is <= 0. Something went wrong."
 
         if self.norm.lower() == 'leahy':
-            c = unnorm_cs.real
-            cs = c * 2. / actual_mean
+            c = unnorm_power.real
+            power = c * 2. / actual_nphots
 
         elif self.norm.lower() == 'frac':
-            c = unnorm_cs.real / np.float(self.n**2.)
-            cs = c * 2. * tseg / (actual_mean**2.0)
+            c = unnorm_power.real / np.float(self.n**2.)
+            power = c * 2. * tseg / (actual_mean**2.0)
 
         elif self.norm.lower() == 'abs':
-            c = unnorm_cs.real / np.float(self.n**2.)
-            cs = c * (2. * tseg)
+            c = unnorm_power.real / np.float(self.n**2.)
+            power = c * (2. * tseg)
 
         elif self.norm.lower() == 'none':
-            cs = unnorm_cs
+            power = unnorm_power
 
-        return cs
+        else:
+            raise Exception("Normalization not recognized!")
+
+        return power
+
+    def rebin_log(self, f=0.01):
+        """
+        Logarithmic rebin of the periodogram.
+        The new frequency depends on the previous frequency
+        modified by a factor f:
+
+        dnu_j = dnu_{j-1}*(1+f)
+
+        Parameters
+        ----------
+        f: float, optional, default 0.01
+            parameter that steers the frequency resolution
+
+
+        Returns
+        -------
+        binfreq: numpy.ndarray
+            the binned frequencies
+
+        binpower: numpy.ndarray
+            the binned powers
+
+        nsamples: numpy.ndarray
+            the samples of the original periodogramincluded in each
+            frequency bin
+        """
+
+        minfreq = self.freq[1] * 0.5  # frequency to start from
+        maxfreq = self.freq[-1]  # maximum frequency to end
+        binfreq = [minfreq, minfreq + self.df]  # first
+        df = self.freq[1]  # the frequency resolution of the first bin
+
+        # until we reach the maximum frequency, increase the width of each
+        # frequency bin by f
+        while binfreq[-1] <= maxfreq:
+            binfreq.append(binfreq[-1] + df*(1.0+f))
+            df = binfreq[-1] - binfreq[-2]
+
+        # compute the mean of the powers that fall into each new frequency bin
+        binpower, bin_edges, binno = scipy.stats.binned_statistic(
+            self.freq, self.power, statistic="mean", bins=binfreq)
+
+        # compute the number of powers in each frequency bin
+        nsamples = np.array([len(binno[np.where(binno == i)[0]])
+                             for i in range(np.max(binno))])
+
+        # the frequency resolution
+        df = np.diff(binfreq)
+
+        # shift the lower bin edges to the middle of the bin and drop the
+        # last right bin edge
+        binfreq = binfreq[:-1] + df/2
+
+        return binfreq, binpower, nsamples
 
 
 class AveragedCrossspectrum(Crossspectrum):
@@ -260,7 +322,7 @@ class AveragedCrossspectrum(Crossspectrum):
         freq: numpy.ndarray
             The array of mid-bin frequencies that the Fourier transform samples
 
-        cs: numpy.ndarray
+        power: numpy.ndarray
             The array of cross spectra
 
         df: float
@@ -279,6 +341,10 @@ class AveragedCrossspectrum(Crossspectrum):
             The total number of photons in the second (reference) light curve
 
         """
+        self.type = "crossspectrum"
+
+        print(self.type)
+
         assert isinstance(norm, str), "norm is not a string!"
 
         assert norm.lower() in ["frac", "abs", "leahy", "none"], \
@@ -294,17 +360,18 @@ class AveragedCrossspectrum(Crossspectrum):
 
         return
 
-    def _make_segment_csd(self, lc1, lc2, segment_size):
+    def _make_segment_spectrum(self, lc1, lc2, segment_size):
 
-        ## TODO: need to update this for making cross spectra.
+        # TODO: need to update this for making cross spectra.
         assert isinstance(lc1, lightcurve.Lightcurve)
         assert isinstance(lc2, lightcurve.Lightcurve)
 
         assert lc1.dt == lc2.dt, \
             "Light curves do not have same time binning dt."
+
         assert lc1.tseg == lc2.tseg, "Lightcurves do not have same tseg."
 
-        ## number of bins per segment
+        # number of bins per segment
         nbins = int(segment_size/lc1.dt)
         start_ind = 0
         end_ind = nbins
@@ -331,43 +398,63 @@ class AveragedCrossspectrum(Crossspectrum):
 
     def _make_crossspectrum(self, lc1, lc2):
 
-        ## chop light curves into segments
+        # chop light curves into segments
         if isinstance(lc1, lightcurve.Lightcurve) and \
                 isinstance(lc2, lightcurve.Lightcurve):
-            cs_all, nphots1_all, nphots2_all = self._make_segment_csd(lc1,
-                                                        lc2, self.segment_size)
+            if self.type == "crossspectrum":
+                cs_all, nphots1_all, nphots2_all = \
+                    self._make_segment_spectrum(lc1, lc2, self.segment_size)
+
+            elif self.type == "powerspectrum":
+                cs_all, nphots1_all = \
+                    self._make_segment_spectrum(lc1, self.segment_size)
+
         else:
             cs_all, nphots1_all, nphots2_all = [], [], []
             ## TODO: should be using izip from iterables if lc1 or lc2 could
             ## be long
             for lc1_seg, lc2_seg in zip(lc1, lc2):
-                cs_sep, nphots1_sep, nphots2_sep = self._make_segment_csd(lc1_seg, lc2_seg,
+
+                print("self.type: " + str(self.type))
+                if self.type == "crossspectrum":
+                    print("I am here!")
+                    cs_sep, nphots1_sep, nphots2_sep = \
+                        self._make_segment_spectrum(lc1_seg, lc2_seg,
                                                             self.segment_size)
+                    nphots2_all.append(nphots2_sep)
+                elif self.type == "powerspectrum":
+                    cs_sep, nphots1_sep = \
+                        self._make_segment_spectrum(lc1_seg, self.segment_size)
 
                 cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
-                nphots2_all.append(nphots2_sep)
 
             cs_all = np.hstack(cs_all)
             nphots1_all = np.hstack(nphots1_all)
-            nphots2_all = np.hstack(nphots2_all)
+
+            if self.type == "crossspectrum":
+                nphots2_all = np.hstack(nphots2_all)
 
 
         m = len(cs_all)
         nphots1 = np.mean(nphots1_all)
-        nphots2 = np.mean(nphots2_all)
 
-        cs_avg = np.zeros_like(cs_all[0].cs)
+        power_avg = np.zeros_like(cs_all[0].power)
         for cs in cs_all:
-            cs_avg += cs.cs
+            power_avg += cs.power
 
-        cs_avg /= np.float(m)
+        power_avg /= np.float(m)
 
         self.freq = cs_all[0].freq
-        self.cs = cs_avg
+        self.power = power_avg
         self.m = m
         self.df = cs_all[0].df
         self.n = cs_all[0].n
         self.nphots1 = nphots1
-        self.nphots2 = nphots2
+
+        if self.type == "crossspectrum":
+            self.nphots1 = nphots1
+            nphots2 = np.mean(nphots2_all)
+
+            self.nphots2 = nphots2
 

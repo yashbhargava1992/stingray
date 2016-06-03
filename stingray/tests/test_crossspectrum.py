@@ -26,7 +26,7 @@ class TestCrossspectrum(object):
     def test_make_empty_crossspectrum(self):
         cs = Crossspectrum()
         assert cs.freq is None
-        assert cs.cs is None
+        assert cs.power is None
         assert cs.df is None
         assert cs.nphots1 is None
         assert cs.nphots2 is None
@@ -80,17 +80,17 @@ class TestCrossspectrum(object):
 
     def test_norm_leahy(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
-        assert len(cs.cs) == 4999
+        assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
 
     def test_norm_frac(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='frac')
-        assert len(cs.cs) == 4999
+        assert len(cs.power) == 4999
         assert cs.norm == 'frac'
 
     def test_norm_abs(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='abs')
-        assert len(cs.cs) == 4999
+        assert len(cs.power) == 4999
         assert cs.norm == 'abs'
 
 
