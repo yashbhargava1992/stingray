@@ -67,8 +67,6 @@ class Crossspectrum(object):
             if lc1 is not None or lc2 is not None:
                  raise TypeError("You can't do a cross spectrum with just one "
                          "light curve!")
-            # else:
-            #      print("Please specify input light curves!")
             self.freq = None
             self.power = None
             self.df = None
@@ -88,11 +86,10 @@ class Crossspectrum(object):
         assert isinstance(lc2, lightcurve.Lightcurve), \
                         "lc2 must be a lightcurve.Lightcurve object!"
 
-
         ## total number of photons is the sum of the
         ## counts in the light curve
-        self.nphots1 = np.sum(lc1.counts)
-        self.nphots2 = np.sum(lc2.counts)
+        self.nphots1 = np.float64(np.sum(lc1.counts))
+        self.nphots2 = np.float64(np.sum(lc2.counts))
 
         self.meancounts1 = np.mean(lc1.counts)
         self.meancounts2 = np.mean(lc2.counts)
@@ -145,6 +142,7 @@ class Crossspectrum(object):
 
         freqs = scipy.fftpack.fftfreq(lc1.counts.shape[0], lc1.dt)
         cross = fourier_1[freqs > 0] * np.conj(fourier_2[freqs > 0])
+
         return freqs[freqs > 0], cross
 
 
@@ -206,7 +204,11 @@ class Crossspectrum(object):
 
         # The "effective" counst/bin is the geometrical mean of the counts/bin
         # of the two light curves
-        actual_nphots = np.sqrt(self.nphots1 * self.nphots2)
+
+        log_nphots1 = np.log(self.nphots1)
+        log_nphots2 = np.log(self.nphots2)
+
+        actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
         actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
 
         assert actual_mean > 0.0, \
@@ -343,8 +345,6 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         self.type = "crossspectrum"
 
-        print(self.type)
-
         assert isinstance(norm, str), "norm is not a string!"
 
         assert norm.lower() in ["frac", "abs", "leahy", "none"], \
@@ -415,9 +415,7 @@ class AveragedCrossspectrum(Crossspectrum):
             ## be long
             for lc1_seg, lc2_seg in zip(lc1, lc2):
 
-                print("self.type: " + str(self.type))
                 if self.type == "crossspectrum":
-                    print("I am here!")
                     cs_sep, nphots1_sep, nphots2_sep = \
                         self._make_segment_spectrum(lc1_seg, lc2_seg,
                                                             self.segment_size)

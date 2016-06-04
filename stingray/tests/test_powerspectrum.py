@@ -374,8 +374,6 @@ class TestAveragedPowerspectrum(object):
 
         ps = AveragedPowerspectrum(lc_all, 10.0, norm="leahy")
 
-        print(np.mean(ps.power))
-
         assert np.isclose(np.mean(ps.power), 2.0, atol=1e-3, rtol=1e-3)
         assert np.isclose(np.std(ps.power), 2.0/np.sqrt(n), atol=0.1, rtol=0.1)
 
