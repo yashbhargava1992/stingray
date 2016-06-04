@@ -57,6 +57,25 @@ class TestFakeSimulator(object):
         """
         Assign energies to an event list given its spectrum.
         """
-
         spectrum = [[1, 2, 3, 4, 5, 6],[1000, 2040, 1000, 3000, 4020, 2070]]
         assert len(events.assign_energies(10, spectrum)) == 10
+
+    def test_compare_energies(self):
+        """
+        Compare the simulated energy distribution to actual distribution.
+        """
+        spectrum = [[1, 2, 3, 4, 5, 6],[1000, 2040, 1000, 3000, 4020, 2070]]
+        fluxes = np.array(spectrum[1])
+        energies = events.assign_energies(1000, spectrum)
+
+        # Histogram energies to get shape approximation
+        gen_energies = ((np.array(energies) - 1) / 1).astype(int)
+        lc = np.bincount(energies)
+
+        # Remove first entry as it contains occurences of '0' element
+        lc = lc[1:7]
+
+        # Calculate probabilities and compare
+        lc_prob = (lc/float(sum(lc)))
+        fluxes_prob = fluxes/float(sum(fluxes))
+        assert np.all(np.abs(lc_prob - fluxes_prob) < 3 * np.sqrt(fluxes_prob))
