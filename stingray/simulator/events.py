@@ -3,7 +3,6 @@
 
 import numpy as np
 import numpy.random as ra
-from scipy.stats import norm
 from stingray.simulator.utils import _assign_value_if_none
 import logging
 import warnings
@@ -186,7 +185,8 @@ def assign_energies(N, spectrum):
     Parameters
     ----------
     N: int
-        Length of event list
+        Length/size of event list
+
     spectrum: 2-d array or list
         Energies versus corresponding fluxes. The 2-d array or list must
         have energies across the first dimension and fluxes across the
@@ -211,17 +211,14 @@ def assign_energies(N, spectrum):
         energies = spectrum[0]
         fluxes = spectrum[1]
 
-    # Calculate cumulative probabilities for unique values of flux
-    u_fluxes = np.unique(fluxes)
-    prob = [len((np.where(fluxes==u))[0])/float(len(fluxes)) for u in u_fluxes]
+    # Create a set of probability values
+    prob = fluxes/float(sum(fluxes))
+
+    # Calculate cumulative probability
     cum_prob = np.cumsum(prob)
 
-    # Calculate cdf for all values of flux
-    key_values = dict(zip(u_fluxes, cum_prob))
-    cdf = np.array([key_values[flux] for flux in fluxes])
-
-    # Generate N random numbers between 0 and 1, where N is the size of event list
+    # Draw N random numbers between 0 and 1, where N is the size of event list
     R = ra.uniform(0, 1, N)
 
-    # Return energy for which flux is closest to a value in random distribution
-    return [energies[np.argmin(np.abs(cdf - r))] for r in R]
+    # Assign energies to events corresponding to the random numbers drawn
+    return [int(energies[np.argwhere(cum_prob == min(cum_prob[(cum_prob - r) > 0]))]) for r in R]
