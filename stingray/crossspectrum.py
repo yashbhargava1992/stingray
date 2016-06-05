@@ -1,3 +1,4 @@
+from __future__ import division
 __all__ = ["Crossspectrum", "AveragedCrossspectrum"]
 
 import numpy as np
@@ -6,9 +7,35 @@ import scipy.stats
 import scipy.fftpack
 import scipy.optimize
 
+from stingray import Powerspectrum
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 
+
+def coherence(lc1, lc2):
+    """
+    Estimate coherence function of two light curves.
+
+    Parameters
+    ----------
+    lc1: lightcurve.Lightcurve object
+        The first light curve data for the channel of interest.
+
+    lc2: lightcurve.Lightcurve object
+        The light curve data for reference band
+
+    Returns
+    -------
+    coh : np.ndarray
+        Coherence function
+    """
+
+    assert isinstance(lc1, lightcurve.Lightcurve)
+    assert isinstance(lc2, lightcurve.Lightcurve)
+
+    cs = Crossspectrum(lc1, lc2, norm='none')
+
+    return cs.coherence()
 
 class Crossspectrum(object):
 
@@ -78,6 +105,8 @@ class Crossspectrum(object):
             self.m = 1
             self.n = None
             return
+        self.lc1 = lc1
+        self.lc2 = lc2
         self._make_crossspectrum(lc1, lc2)
 
     def _make_crossspectrum(self, lc1, lc2):
@@ -224,6 +253,27 @@ class Crossspectrum(object):
             cs = unnorm_cs
 
         return cs
+
+    def coherence(self):
+        """
+        Compute Coherence function of the cross spectrum. Coherence is a
+        Fourier frequency dependent measure of the linear correlation
+        between time series measured simultaneously in two energy channels.
+
+        Returns
+        -------
+        coh : numpy.ndarray
+            Coherence function
+
+        References
+        ----------
+        .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
+
+        """
+        ps1 = Powerspectrum(self.lc1)
+        ps2 = Powerspectrum(self.lc2)
+
+        return self.unnorm_cross/(ps1.unnorm_powers * ps2.unnorm_powers)
 
 
 class AveragedCrossspectrum(Crossspectrum):
