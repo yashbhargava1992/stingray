@@ -10,6 +10,7 @@ class TestFakeSimulator(object):
     def setup_class(self):
         self.times = [0.5, 1.5, 2.5, 3.5]
         self.counts = [3000, 2000, 2200, 3600]
+        self.spectrum = [[1, 2, 3, 4, 5, 6],[1000, 2040, 1000, 3000, 4020, 2070]]
 
     def test_fake_event_create(self):
         """
@@ -61,20 +62,25 @@ class TestFakeSimulator(object):
         assert np.all(np.abs(new_counts - new_lc.counts) < 4 * np.sqrt(new_lc.counts))
         np.testing.assert_almost_equal(new_times, new_lc.time)
 
-    def test_assign_energies(self):
+    def test_assign_energies_from_arrays(self):
         """
-        Assign energies to an event list given its spectrum.
+        Assign energies to an event list given its spectrum from array input.
         """
-        spectrum = [[1, 2, 3, 4, 5, 6],[1000, 2040, 1000, 3000, 4020, 2070]]
+        spectrum = np.array(self.spectrum)
         assert len(events.assign_energies(10, spectrum)) == 10
+
+    def test_assign_energies_from_lists(self):
+        """
+        Assign energies to an event list given its spectrum from list input.
+        """
+        assert len(events.assign_energies(10, self.spectrum)) == 10
 
     def test_compare_energies(self):
         """
         Compare the simulated energy distribution to actual distribution.
         """
-        spectrum = [[1, 2, 3, 4, 5, 6],[1000, 2040, 1000, 3000, 4020, 2070]]
-        fluxes = np.array(spectrum[1])
-        energies = events.assign_energies(1000, spectrum)
+        fluxes = np.array(self.spectrum[1])
+        energies = events.assign_energies(1000, self.spectrum)
 
         # Histogram energies to get shape approximation
         gen_energies = ((np.array(energies) - 1) / 1).astype(int)

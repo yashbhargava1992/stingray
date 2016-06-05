@@ -207,7 +207,7 @@ def assign_energies(N, spectrum):
             assert False, "Spectrum must be a 2-d array or list"
 
     else:
-        assert spectrum.shape[0] != 2, "Spectrum must be a 2-d array or list"
+        assert spectrum.shape[0] == 2, "Spectrum must be a 2-d array or list"
         energies = spectrum[0]
         fluxes = spectrum[1]
 
