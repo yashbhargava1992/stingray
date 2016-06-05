@@ -25,6 +25,14 @@ class TestFakeSimulator(object):
         new_lc = lc[0:100]
         events.gen_events_from_lc(new_lc.time, new_lc.counts)
 
+    def test_event_create_with_spline(self):
+        """
+        Simulate an event list from actual light curve with use_spline = True.
+        """
+        lc = sample_data()
+        new_lc = lc[0:100]
+        events.gen_events_from_lc(new_lc.time, new_lc.counts, use_spline=True)
+
     def test_fake_recover_lcurve(self):
         """
         Recover a lightcurve from a fake event list.
