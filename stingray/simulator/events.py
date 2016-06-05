@@ -10,7 +10,8 @@ import warnings
 def gen_events_from_lc(
         times, lc, use_spline=False, bin_time=None):
 
-    """Create events from a light curve.
+    """
+    Create events from a light curve.
 
     Parameters
     ----------
@@ -123,7 +124,8 @@ def gen_events_from_lc(
 def gen_lc_from_events(event_list, bin_time, start_time=None,
            stop_time=None, center_time=True):
 
-    """From a list of event times, estract a lightcurve.
+    """
+    From a list of event times, extract a lightcurve.
 
     Parameters
     ----------
@@ -174,3 +176,49 @@ def gen_lc_from_events(event_list, bin_time, start_time=None,
         times = times + bin_time / 2.
 
     return times, lc.astype(np.float)
+
+def assign_energies(N, spectrum):
+
+    '''
+    Assign energies to an event list.
+
+    Parameters
+    ----------
+    N: int
+        Length/size of event list
+
+    spectrum: 2-d array or list
+        Energies versus corresponding fluxes. The 2-d array or list must
+        have energies across the first dimension and fluxes across the
+        second one.
+
+    Returns
+    -------
+    assigned_energies: array-like
+        Energies assigned to all events in event list
+    '''
+
+    # Cast spectrum as numpy arrays
+    if isinstance(spectrum, list):
+        try:
+            energies = np.array(spectrum[0])
+            fluxes = np.array(spectrum[1])
+        except:
+            assert False, "Spectrum must be a 2-d array or list"
+
+    else:
+        assert spectrum.shape[0] == 2, "Spectrum must be a 2-d array or list"
+        energies = spectrum[0]
+        fluxes = spectrum[1]
+
+    # Create a set of probability values
+    prob = fluxes/float(sum(fluxes))
+
+    # Calculate cumulative probability
+    cum_prob = np.cumsum(prob)
+
+    # Draw N random numbers between 0 and 1, where N is the size of event list
+    R = ra.uniform(0, 1, N)
+
+    # Assign energies to events corresponding to the random numbers drawn
+    return [int(energies[np.argwhere(cum_prob == min(cum_prob[(cum_prob - r) > 0]))]) for r in R]
