@@ -50,7 +50,7 @@ class Simulator(object):
             return self._simulate_impulse_response(args[0], args[1])
 
         else:
-            raise AssertionError("Length of arguments must be 1 or 2.")
+            raise AssertionError("Length of arguments must be 2.")
 
 
     def _simulate_power_law(self, B, N):
@@ -69,8 +69,6 @@ class Simulator(object):
         -------
         lightCurve: array-like
         """
-
-        N = 1024
 
         # Define frequencies from 0 to 2*pi
         w = np.linspace(0.001,2*np.pi,N)
