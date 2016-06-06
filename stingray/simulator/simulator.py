@@ -20,7 +20,9 @@ class Simulator(object):
             Parameters:
             -----------
             Beta: int
-                Defines the shape of spectrum.
+                Defines the shape of spectrum
+            N: int
+                Number of samples
 
             Returns:
             --------
@@ -41,17 +43,17 @@ class Simulator(object):
             lightCurve: `LightCurve` object
         """
 
-        if (len(args) == 1):
-            return  self._simulate_power_law(args[0])
+        if type(args[0]) == int:
+            return  self._simulate_power_law(args[0], args[1])
 
-        elif (len(args) == 2):
+        elif len(args) == 2:
             return self._simulate_impulse_response(args[0], args[1])
 
         else:
             raise AssertionError("Length of arguments must be 1 or 2.")
 
 
-    def _simulate_power_law(self, B):
+    def _simulate_power_law(self, B, N):
 
         """
         Generate LightCurve given a power spectrum.
@@ -60,6 +62,8 @@ class Simulator(object):
         ----------
         B: int
             Defines the shape of spectrum.
+        N: int
+            Number of samples
 
         Returns
         -------
@@ -86,7 +90,7 @@ class Simulator(object):
         f_conj = np.conjugate(np.array(f))
 
         # Obtain time series
-        return np.fft.ifft(f_conj)
+        return np.real(np.fft.ifft(f_conj))
 
-    def _simulate_impulse_response(self):
+    def _simulate_impulse_response(self, s, h):
         pass

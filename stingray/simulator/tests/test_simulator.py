@@ -1,5 +1,4 @@
-import numpy as np
-
+import pytest
 from stingray.simulator import simulator
 class TestSimulator(object):
 
@@ -9,6 +8,7 @@ class TestSimulator(object):
 
     def test_simulate_create(self):
         """
-        Simulate an event list from fake times and counts.
+        Simulate from power law spectrum.
         """
-        self.simulator.simulate(2,3)
+        assert len(self.simulator.simulate(2, 1024)), 1024
+
