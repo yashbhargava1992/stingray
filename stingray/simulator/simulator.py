@@ -1,10 +1,14 @@
 
 import numpy as np
+import logging
+
 from ..lightcurve import Lightcurve
+from ..powerspectrum import Powerspectrum
 
 class Simulator(object):
 
     def __init__(self, dt=1, N=1024):
+        
         """
         Methods to simulate and visualize light curves.
 
@@ -19,6 +23,7 @@ class Simulator(object):
         self.dt = dt
         self.N = N
         self.time = dt*np.arange(N)
+        self.lc = None
 
     def simulate(self, *args):
         
@@ -97,7 +102,9 @@ class Simulator(object):
         rate = self._find_inverse(real, imaginary)
         counts = self._scale(rate)
 
-        return Lightcurve(self.time, counts)
+        self.lc = Lightcurve(self.time, counts)
+
+        return self.lc
 
     def _simulate_impulse_response(self, s, h):
         
@@ -118,6 +125,7 @@ class Simulator(object):
         pass
 
     def _find_inverse(self, real, imaginary):
+    
         """
         Forms complex numbers corresponding to real and imaginary
         parts and finds inverse series.
@@ -133,6 +141,7 @@ class Simulator(object):
         return np.real(np.fft.ifft(f_conj))
 
     def _scale(self, rate):
+        
         """
         Rescale light curve to 'mean' value provided by 
         useer and standard devidation of 'mean' times 'rms'.
@@ -142,3 +151,12 @@ class Simulator(object):
         std = np.std(rate)
 
         return (rate-avg)/std
+
+    def periodogram(self):
+        """
+        Make a periodogram of the simulated light curve.
+        """
+        if self.lc is None:
+            logging.warn("Drawing periodogram without a simulated light curve.")
+        else:
+            return Powerspectrum(self.lc)
