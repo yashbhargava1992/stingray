@@ -107,7 +107,7 @@ def _pavnosigfun(power, nspec):
     return sum
 
 
-class Powerspectrum(Crossspectrum, object):
+class Powerspectrum(Crossspectrum):
 
     def __init__(self, lc=None, norm='frac'):
         """
@@ -297,7 +297,7 @@ class Powerspectrum(Crossspectrum, object):
         return pvals
 
 
-class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum, object):
+class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     def __init__(self, lc, segment_size, norm="frac"):
         """

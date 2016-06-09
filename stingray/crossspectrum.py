@@ -145,7 +145,6 @@ class Crossspectrum(object):
 
         return freqs[freqs > 0], cross
 
-
     def rebin(self, df, method="mean"):
         """
         Rebin the cross spectrum to a new frequency resolution df.
