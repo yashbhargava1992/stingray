@@ -1,5 +1,6 @@
 import pytest
 from stingray.simulator import simulator
+
 class TestSimulator(object):
 
     @classmethod
@@ -10,5 +11,5 @@ class TestSimulator(object):
         """
         Simulate from power law spectrum.
         """
-        assert len(self.simulator.simulate(2)), 1024
+        assert len(self.simulator.simulate(2).counts), 1024
 

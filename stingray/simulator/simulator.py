@@ -1,5 +1,6 @@
 
 import numpy as np
+from ..lightcurve import Lightcurve
 
 class Simulator(object):
 
@@ -12,12 +13,15 @@ class Simulator(object):
         dt: int
             time resolution of simulated light curve
         N: int
-            bins of simulated light curve
+            bins count of simulated light curve
         """
+
         self.dt = dt
         self.N = N
+        self.time = dt*np.arange(N)
 
     def simulate(self, *args):
+        
         """
         Simulate light curve generation using power spectrum or
         impulse response.
@@ -90,9 +94,27 @@ class Simulator(object):
         imaginary = a2 * np.power((1/w),B/2)
 
         # Obtain time series
-        return self._find_inverse(real, imaginary)
+        rate = self._find_inverse(real, imaginary)
+        counts = self._scale(rate)
+
+        return Lightcurve(self.time, counts)
 
     def _simulate_impulse_response(self, s, h):
+        
+        """
+        Generate LightCurve from a power law spectrum.
+
+        Parameters:
+        ----------
+        s: array-like
+                Underlying variability signal
+        h: array-like
+                Impulse response
+
+        Returns
+        -------
+        lightCurve: array-like
+        """
         pass
 
     def _find_inverse(self, real, imaginary):
@@ -109,3 +131,14 @@ class Simulator(object):
 
         # Obtain time series
         return np.real(np.fft.ifft(f_conj))
+
+    def _scale(self, rate):
+        """
+        Rescale light curve to 'mean' value provided by 
+        useer and standard devidation of 'mean' times 'rms'.
+        """
+
+        avg = np.mean(rate)
+        std = np.std(rate)
+
+        return (rate-avg)/std
