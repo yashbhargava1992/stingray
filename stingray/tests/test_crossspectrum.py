@@ -109,15 +109,17 @@ class TestAveragedCrossspectrum(object):
         self.lc1 = Lightcurve(time, counts1)
         self.lc2 = Lightcurve(time, counts2)
 
-        self.cs = AveragedCrossspectrum(self.lc1, self.lc2)
+        self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
 
     def test_init_with_norm_not_str(self):
         with pytest.raises(AssertionError):
-            cs = AveragedCrossspectrum(self.lc1, self.lc2, norm=1)
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                       norm=1)
 
     def test_init_with_invalid_norm(self):
         with pytest.raises(AssertionError):
-            cs = AveragedCrossspectrum(self.lc1, self.lc2, norm='frabs')
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                       norm='frabs')
 
     def test_init_with_inifite_segment_size(self):
         with pytest.raises(AssertionError):

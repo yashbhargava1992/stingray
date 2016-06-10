@@ -278,7 +278,7 @@ class Crossspectrum(object):
 
 class AveragedCrossspectrum(Crossspectrum):
 
-    def __init__(self, lc1, lc2, segment_size=1, norm='none'):
+    def __init__(self, lc1, lc2, segment_size, norm='none'):
         """
         Make an averaged cross spectrum from a light curve by segmenting two
         light curves, Fourier-transforming each segment and then averaging the
@@ -296,7 +296,7 @@ class AveragedCrossspectrum(Crossspectrum):
             Second light curve data to be Fourier-transformed. This is the
             reference band.
 
-        segment_size: float, default 1 second
+        segment_size: float
             The size of each segment to average. Note that if the total duration
             of each Lightcurve object in lc1 or lc2 is not an integer multiple
             of the segment_size, then any fraction left-over at the end of the
