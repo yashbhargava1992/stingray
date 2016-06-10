@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, division,
                         print_function)
 
+import h5py
 import numpy as np
 import logging
 import warnings
@@ -318,10 +319,33 @@ def _retrieve_pickle_object(filename):
         return pickle.load(f)
 
 def _save_hdf5_object(object, filename):
-    pass
+    items = vars(object)
+    attrs = [name for name in items]
 
-def _retrieve_hdf5_object(filename, **kwargs):
-    pass
+    with h5py.File(filename, 'w') as hf:   
+        for attr in attrs:
+            data = items[attr]
+            if _isattribute(data):
+                hf.attrs[attr] = data
+            else:
+                hf.create_dataset(attr, data=data) 
+
+def _retrieve_hdf5_object(filename):
+
+    with h5py.File(filename, 'r') as hf:
+        dset_keys = hf.keys()
+        attr_keys = hf.attrs.keys()
+        data = []
+
+        for key in dset_keys:
+            data.append(hf[key][:])
+
+        for key in attr_keys:
+            data.append([hf.attrs[key]])
+
+        keys = dset_keys + attr_keys
+    
+    return [data, keys]
 
 def _save_ascii_object(object, filename, fmt="%.18e", **kwargs):
     """
@@ -420,7 +444,10 @@ def _retrieve_ascii_object(filename, **kwargs):
 
         return data[cols]
 
+def _isattribute(data):
 
+    return isinstance(data, int) or isinstance(data, float) \
+        or isinstance(data, str)
 
 def write(input_, filename, format_='pickle', **kwargs):
     """
@@ -449,6 +476,8 @@ def write(input_, filename, format_='pickle', **kwargs):
     elif format_ == 'ascii':
         _save_ascii_object(input_, filename, **kwargs)
 
+    else:
+        logging.warn('Format not found! Object not saved.')
 
 def read(filename, format_='pickle', **kwargs):
     """
@@ -470,7 +499,10 @@ def read(filename, format_='pickle', **kwargs):
 
     elif format_ == 'ascii':
         return _retrieve_ascii_object(filename, **kwargs)
-
+    
+    else:
+        logging.warn('Format not found!')
+        
 def savefig(filename, **kwargs):
     """
     Save a figure plotted by Matplotlib.

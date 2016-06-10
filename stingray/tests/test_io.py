@@ -71,6 +71,7 @@ class TestIOReadWrite(object):
     """A class to test all the read and write functions."""
     def __init__(self):
         self.x = 10
+        self.y = [1,2,3]
 
     def test_operation(self):
         return self.x * 10
@@ -97,6 +98,7 @@ class TestFileFormats(object):
         test_object = TestIOReadWrite()
         write(test_object, filename='test.pickle', format_='pickle')
         assert read('test.pickle', 'pickle').x == 10
+        assert read('test.pickle', 'pickle').y == [1,2,3]
         os.remove('test.pickle')
 
     def test_pickle_attributes_with_dict_objects(self):
@@ -104,6 +106,7 @@ class TestFileFormats(object):
         test_object = TestIOReadWrite()
         write(test_object, 'test.pickle', 'pickle', save_as_dict=True)
         assert read('test.pickle', 'pickle').x == 10
+        assert read('test.pickle', 'pickle').y == [1,2,3]
         os.remove('test.pickle')
 
     def test_pickle_functions(self):
@@ -113,8 +116,17 @@ class TestFileFormats(object):
         assert read('test.pickle', 'pickle').test_operation() == 100
         os.remove('test.pickle')
 
-    def test_hdf5(self):
-        pass
+    def test_hdf5_write(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.hdf5', 'hdf5')
+        os.remove('test.hdf5')
+
+    def test_hdf5_read(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.hdf5', 'hdf5')
+        [data, keys] = read('test.hdf5','hdf5')
+        os.remove('test.hdf5')
+
 
     def test_hdf5_attributes(self):
         pass
