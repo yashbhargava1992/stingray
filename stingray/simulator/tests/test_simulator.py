@@ -15,20 +15,20 @@ class TestSimulator(object):
 
     def test_simulate_impulse(self):
     	"""
-        Simulate light curve from power law spectrum.
-        """
-        self.simulator.simulate([],[])
+    	Simulate light curve from impulse response.
+    	"""
+    	self.simulator.simulate([],[])
 
     def test_periodogram_with_lc(self):
     	"""
-		Create a peridogram from light curve.
+    	Create a periodogram from light curve.
     	"""
     	self.simulator.simulate(2)
     	self.simulator.periodogram()
 
     def test_periodogram_without_lc(self):
     	"""
-		Create a peridogram without light curve.
+    	Create a periodogram without light curve.
     	"""
     	self.simulator.periodogram()   
     	 	
