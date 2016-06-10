@@ -492,7 +492,8 @@ def _retrieve_ascii_object(filename, **kwargs):
 def _isattribute(data):
 
     return isinstance(data, int) or isinstance(data, float) \
-        or isinstance(data, str)
+        or isinstance(data, str) or isinstance(data, bool) \
+        or isinstance(data, long)
 
 def write(input_, filename, format_='pickle', **kwargs):
     """

@@ -74,7 +74,7 @@ class Lightcurve(object):
 
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
-
+        
         if input_counts:
             self.counts = np.asarray(counts)
             self.countrate = self.counts / self.dt
@@ -610,11 +610,20 @@ class Lightcurve(object):
             Available options are 'pickle', 'hdf5', 'ascii'
 
         save_as_dict: boolean, default 'False'
-            For compatibility with MaLTpyNT, save_as_dict should be true.
-            Otherwise, set it to 'False'
         """
 
-        io.write(self, filename, format_, **kwargs)
+        if format_ == 'ascii':
+            io.write(np.array([self.time, self.counts]).T,
+              filename, format_, fmt=["%s", "%s"])
+
+        elif format_ == 'pickle':
+            io.write(self, filename, format_, **kwargs)
+
+        elif format_ == 'hdf5':
+            io.write(self, filename, format_)
+
+        else:
+            logging.warn("Format not understood.")
 
     def read(self, filename, format_='pickle'):
         """
@@ -629,4 +638,11 @@ class Lightcurve(object):
             Available options are 'pickle', 'hdf5', 'ascii'
         """
 
-        self = io.read(filename, format_)
+        if format_ == 'ascii' or format_ == 'hdf5':
+            return io.read(filename, format_)
+
+        elif format_ == 'pickle':
+            self = io.read(filename, format_)
+
+        else:
+            logging.warn("Format not understood.")
