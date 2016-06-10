@@ -384,10 +384,10 @@ class AveragedCrossspectrum(Crossspectrum):
         ## chop light curves into segments
         if isinstance(lc1, lightcurve.Lightcurve) and \
                 isinstance(lc2, lightcurve.Lightcurve):
-            cs_all, nphots1_all, nphots2_all = self._make_segment_csd(lc1,
+            self.cs_all, nphots1_all, nphots2_all = self._make_segment_csd(lc1,
                                                         lc2, self.segment_size)
         else:
-            cs_all, nphots1_all, nphots2_all = [], [], []
+            self.cs_all, nphots1_all, nphots2_all = [], [], []
             ## TODO: should be using izip from iterables if lc1 or lc2 could
             ## be long
             for lc1_seg, lc2_seg in zip(lc1, lc2):
@@ -398,26 +398,63 @@ class AveragedCrossspectrum(Crossspectrum):
                 nphots1_all.append(nphots1_sep)
                 nphots2_all.append(nphots2_sep)
 
-            cs_all = np.hstack(cs_all)
+            self.cs_all = np.hstack(self.cs_all)
             nphots1_all = np.hstack(nphots1_all)
             nphots2_all = np.hstack(nphots2_all)
 
 
-        m = len(cs_all)
+        m = len(self.cs_all)
         nphots1 = np.mean(nphots1_all)
         nphots2 = np.mean(nphots2_all)
 
-        cs_avg = np.zeros_like(cs_all[0].cs)
-        for cs in cs_all:
+        cs_avg = np.zeros_like(self.cs_all[0].cs)
+        for cs in self.cs_all:
             cs_avg += cs.cs
 
         cs_avg /= np.float(m)
 
-        self.freq = cs_all[0].freq
+        self.freq = self.cs_all[0].freq
         self.cs = cs_avg
         self.m = m
-        self.df = cs_all[0].df
-        self.n = cs_all[0].n
+        self.df = self.cs_all[0].df
+        self.n = self.cs_all[0].n
         self.nphots1 = nphots1
         self.nphots2 = nphots2
+
+    def coherence(self):
+        """
+        Compute an averaged Coherence function of cross spectrum by computing
+        coherence function of each segment and averaging them. The return type
+        is a tuple with first element as the coherence function and the second
+        element as the corresponding uncertainty[1] associated with it.
+
+        Note : The uncertainty in coherence function is strictly valid for
+               Gaussian statistics only.
+
+        Returns
+        -------
+        tuple : tuple of np.ndarray
+            Tuple of coherence function and uncertainty.
+
+        References
+        ----------
+        .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
+
+        """
+        if self.m < 50:
+            utils.simon("Number of segments used in averaging is "
+                        "significantly low. The result might not follow the "
+                        "expected statistical distributions.")
+
+        # Calculate average coherence
+        coh = np.zeros_like(self.cs_all[0].coherence())
+        for acs in self.cs_all:
+            coh += acs.coherence()
+
+        coh /= self.m
+
+        # Calculate uncertainty
+        uncertainty = (2**0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m**0.5)
+
+        return (coh, uncertainty)
 
