@@ -306,8 +306,8 @@ def _save_pickle_object(object, filename, **kwargs):
     """
     Save a class object in pickle format.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     object: class instance
         A class object whose attributes would be saved in a dictionary format.
 
@@ -328,13 +328,13 @@ def _retrieve_pickle_object(filename):
     """
     Retrieves a pickled class object.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     filename: str
         The name of file with which object was saved
 
-    Returns:
-    --------
+    Returns
+    -------
     data: class object or dictionary
         Depends on the value of `save_as_dict`
     """
@@ -345,8 +345,8 @@ def _save_hdf5_object(object, filename):
     """
     Save a class object in hdf5 format.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     object: class instance
         A class object whose attributes would be saved in a dictionary format.
 
@@ -370,13 +370,13 @@ def _retrieve_hdf5_object(filename):
     """
     Retrieves an hdf5 format class object.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     filename: str
         The name of file with which object was saved
 
-    Returns:
-    --------
+    Returns
+    -------
     data: dictionary
         Loads the data from an hdf5 object file and returns
         in dictionary format.
@@ -524,7 +524,7 @@ def write(input_, filename, format_='pickle', **kwargs):
         _save_ascii_object(input_, filename, **kwargs)
 
     else:
-        logging.warn('Format not found! Object not saved.')
+        utils.simon('Format not understood.')
 
 def read(filename, format_='pickle', **kwargs):
     """
@@ -548,7 +548,7 @@ def read(filename, format_='pickle', **kwargs):
         return _retrieve_ascii_object(filename, **kwargs)
     
     else:
-        logging.warn('Format not found!')
+        utils.simon('Format not understood.')
         
 def savefig(filename, **kwargs):
     """

@@ -624,7 +624,7 @@ class Lightcurve(object):
             io.write(self, filename, format_)
 
         else:
-            logging.warn("Format not understood.")
+            utils.simon("Format not understood.")
 
     def read(self, filename, format_='pickle'):
         """
@@ -638,7 +638,7 @@ class Lightcurve(object):
         format_: str
             Available options are 'pickle', 'hdf5', 'ascii'
 
-        Returns:
+        Returns
         --------
         If format_ is 'ascii': astropy.table is returned.
         If format_ is 'hdf5': dictionary with key-value pairs is returned.
@@ -652,4 +652,4 @@ class Lightcurve(object):
             self = io.read(filename, format_)
 
         else:
-            logging.warn("Format not understood.")
+            utils.simon("Format not understood.")
