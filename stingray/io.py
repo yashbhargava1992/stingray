@@ -335,17 +335,15 @@ def _retrieve_hdf5_object(filename):
     with h5py.File(filename, 'r') as hf:
         dset_keys = hf.keys()
         attr_keys = hf.attrs.keys()
-        data = []
+        data = {}
 
         for key in dset_keys:
-            data.append(hf[key][:])
+            data[key] = hf[key][:]
 
         for key in attr_keys:
-            data.append([hf.attrs[key]])
-
-        keys = dset_keys + attr_keys
+            data[key] = hf.attrs[key]
     
-    return [data, keys]
+    return data
 
 def _save_ascii_object(object, filename, fmt="%.18e", **kwargs):
     """

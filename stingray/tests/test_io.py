@@ -71,7 +71,7 @@ class TestIOReadWrite(object):
     """A class to test all the read and write functions."""
     def __init__(self):
         self.x = 10
-        self.y = [1,2,3]
+        self.y = np.array([1,2,3])
 
     def test_operation(self):
         return self.x * 10
@@ -97,42 +97,46 @@ class TestFileFormats(object):
         """Test if pickle maintains class object attributes."""
         test_object = TestIOReadWrite()
         write(test_object, filename='test.pickle', format_='pickle')
-        assert read('test.pickle', 'pickle').x == 10
-        assert read('test.pickle', 'pickle').y == [1,2,3]
+        assert read('test.pickle', 'pickle').x == test_object.x
+        assert (read('test.pickle', 'pickle').y == test_object.y).all()
         os.remove('test.pickle')
 
     def test_pickle_attributes_with_dict_objects(self):
         """Test if pickle maintains class object attributes."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.pickle', 'pickle', save_as_dict=True)
-        assert read('test.pickle', 'pickle').x == 10
-        assert read('test.pickle', 'pickle').y == [1,2,3]
+        assert read('test.pickle', 'pickle').x == test_object.x
+        assert (read('test.pickle', 'pickle').y == test_object.y).all()
         os.remove('test.pickle')
 
     def test_pickle_functions(self):
         """Test if pickle maintains class methods."""
         test_object = TestIOReadWrite()
         write(test_object,'test.pickle', 'pickle')
-        assert read('test.pickle', 'pickle').test_operation() == 100
+        assert read('test.pickle', 'pickle').test_operation() == test_object.x * 10
         os.remove('test.pickle')
 
     def test_hdf5_write(self):
+        """Test write functionality of hdf5."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         os.remove('test.hdf5')
 
     def test_hdf5_read(self):
+        """Test read functionality of hdf5."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
-        [data, keys] = read('test.hdf5','hdf5')
+        read('test.hdf5','hdf5')
         os.remove('test.hdf5')
 
-
-    def test_hdf5_attributes(self):
-        pass
-
-    def test_hdf5_functions(self):
-        pass
+    def test_hdf5_data_recovery(self):
+        """Test if hdf5 stored data is properly recovered."""
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.hdf5', 'hdf5')
+        data = read('test.hdf5','hdf5')
+        assert data['x'] == test_object.x
+        assert (data['y'] == np.array(test_object.y)).all()
+        os.remove('test.hdf5')
 
     def test_save_ascii(self):
         time = [1, 2, 3, 4]
@@ -157,20 +161,12 @@ class TestFileFormats(object):
               filename="ascii_test.txt", format_="ascii",
               fmt=["%s", "%s"])
 
-
     def test_read_ascii(self):
         time = [1,2,3,4,5]
         counts = [5,7,8,2,3]
         np.savetxt("ascii_test.txt", np.array([time, counts]).T)
         read("ascii_test.txt", "ascii")
         os.remove("ascii_test.txt")
-
-
-    def test_ascii_attributes(self):
-        pass
-
-    def test_ascii_functions(self):
-        pass
 
     def test_savefig_matplotlib_not_installed(self):
         from ..io import savefig
