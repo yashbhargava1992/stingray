@@ -74,7 +74,7 @@ class Lightcurve(object):
 
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
-        
+
         if input_counts:
             self.counts = np.asarray(counts)
             self.countrate = self.counts / self.dt
@@ -610,6 +610,7 @@ class Lightcurve(object):
             Available options are 'pickle', 'hdf5', 'ascii'
 
         save_as_dict: boolean, default 'False'
+            Applies only when the format_ is pickle.
         """
 
         if format_ == 'ascii':
@@ -636,6 +637,12 @@ class Lightcurve(object):
 
         format_: str
             Available options are 'pickle', 'hdf5', 'ascii'
+
+        Returns:
+        --------
+        If format_ is 'ascii': astropy.table is returned.
+        If format_ is 'hdf5': dictionary with key-value pairs is returned.
+        If format_ is 'pickle': class object is set.
         """
 
         if format_ == 'ascii' or format_ == 'hdf5':

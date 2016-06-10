@@ -359,8 +359,10 @@ def _save_hdf5_object(object, filename):
     with h5py.File(filename, 'w') as hf:   
         for attr in attrs:
             data = items[attr]
+            # If data is a single number, store as an attribute.
             if _isattribute(data):
                 hf.attrs[attr] = data
+            # If data is a numpy array, create a dataset.
             else:
                 hf.create_dataset(attr, data=data) 
 
