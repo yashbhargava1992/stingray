@@ -303,7 +303,17 @@ def common_name(str1, str2, default='common'):
     return common_str
 
 def _save_pickle_object(object, filename, **kwargs):
+    """
+    Save a class object in pickle format.
 
+    Parameters:
+    -----------
+    object: class instance
+        A class object whose attributes would be saved in a dictionary format.
+
+    filename: str
+        The file name to save to
+    """
     if 'save_as_dict' in locals():
         # Get all object's attributes and its values in a dictionary format
         items = vars(object)
@@ -315,10 +325,34 @@ def _save_pickle_object(object, filename, **kwargs):
             pickle.dump(object, f)
 
 def _retrieve_pickle_object(filename):
+    """
+    Retrieves a pickled class object.
+
+    Parameters:
+    -----------
+    filename: str
+        The name of file with which object was saved
+
+    Returns:
+    --------
+    data: class object or dictionary
+        Depends on the value of `save_as_dict`
+    """
     with open(filename, "rb" ) as f:
         return pickle.load(f)
 
 def _save_hdf5_object(object, filename):
+    """
+    Save a class object in hdf5 format.
+
+    Parameters:
+    -----------
+    object: class instance
+        A class object whose attributes would be saved in a dictionary format.
+
+    filename: str
+        The file name to save to
+    """
     items = vars(object)
     attrs = [name for name in items]
 
@@ -331,7 +365,20 @@ def _save_hdf5_object(object, filename):
                 hf.create_dataset(attr, data=data) 
 
 def _retrieve_hdf5_object(filename):
+    """
+    Retrieves an hdf5 format class object.
 
+    Parameters:
+    -----------
+    filename: str
+        The name of file with which object was saved
+
+    Returns:
+    --------
+    data: dictionary
+        Loads the data from an hdf5 object file and returns
+        in dictionary format.
+    """
     with h5py.File(filename, 'r') as hf:
         dset_keys = hf.keys()
         attr_keys = hf.attrs.keys()
@@ -461,8 +508,7 @@ def write(input_, filename, format_='pickle', **kwargs):
         pickle, hdf5, ascii ...
 
     save_as_dict: boolean
-        For compatibility with MaLTpyNT, save_as_dict should be true. Set
-        it to 'False' if intention is to store input as class object.
+        Set to 'False' if intention is to store input as class object.
     """
 
     if format_ == 'pickle':
