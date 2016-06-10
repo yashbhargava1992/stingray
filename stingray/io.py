@@ -387,7 +387,7 @@ def _retrieve_hdf5_object(filename):
         data = {}
 
         for key in dset_keys:
-            data[key] = hf[key][:]
+            data[key] = hf[key].value
 
         for key in attr_keys:
             data[key] = hf.attrs[key]
