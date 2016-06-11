@@ -7,7 +7,7 @@ import scipy.stats
 import scipy.fftpack
 import scipy.optimize
 
-from stingray import Powerspectrum
+from stingray import Powerspectrum, AveragedPowerspectrum
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 
@@ -394,7 +394,7 @@ class AveragedCrossspectrum(Crossspectrum):
                 cs_sep, nphots1_sep, nphots2_sep = self._make_segment_csd(lc1_seg, lc2_seg,
                                                             self.segment_size)
 
-                cs_all.append(cs_sep)
+                self.cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
                 nphots2_all.append(nphots2_sep)
 
@@ -447,11 +447,25 @@ class AveragedCrossspectrum(Crossspectrum):
                         "expected statistical distributions.")
 
         # Calculate average coherence
-        coh = np.zeros_like(self.cs_all[0].coherence())
-        for acs in self.cs_all:
-            coh += acs.coherence()
+        unnorm_cross_avg = np.zeros_like(self.cs_all[0].unnorm_cross)
+        for cs in self.cs_all:
+            unnorm_cross_avg += cs.unnorm_cross
 
-        coh /= self.m
+        unnorm_cross_avg /= self.m
+        num = np.abs(unnorm_cross_avg)**2
+
+        aps1 = AveragedPowerspectrum(self.lc1, segment_size=self.segment_size)
+        aps2 = AveragedPowerspectrum(self.lc2, segment_size=self.segment_size)
+
+        unnorm_powers_avg_1 = np.zeros_like(aps1.ps_all[0].unnorm_powers)
+        for ps in aps1.ps_all:
+            unnorm_powers_avg_1 += ps.unnorm_powers
+
+        unnorm_powers_avg_2 = np.zeros_like(aps2.ps_all[0].unnorm_powers)
+        for ps in aps2.ps_all:
+            unnorm_powers_avg_2 += ps.unnorm_powers
+
+        coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
 
         # Calculate uncertainty
         uncertainty = (2**0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m**0.5)
