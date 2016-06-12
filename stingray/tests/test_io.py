@@ -5,7 +5,6 @@ import os
 
 from astropy.tests.helper import pytest
 
-
 from ..io import read, write
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
@@ -79,14 +78,14 @@ class TestIOReadWrite(object):
     def test_operation(self):
         return self.number * 10
 
-H5PY_INSTALLED = True
+_H5PY_INSTALLED = True
 
 try:
     import h5py
 except ImportError:
-    H5PY_INSTALLED = False
+    _H5PY_INSTALLED = False
 
-skip_condition = pytest.mark.skipif(not H5PY_INSTALLED,
+skip_condition = pytest.mark.skipif(not _H5PY_INSTALLED,
     reason = "H5PY not installed.")
 
 class TestFileFormats(object):

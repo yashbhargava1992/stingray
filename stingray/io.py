@@ -19,11 +19,16 @@ from .gti import  _get_gti_from_extension, load_gtis
 try:
     # Python 2
     import cPickle as pickle
-
 except:
     # Python 3
     import pickle
 
+_H5PY_INSTALLED = True
+
+try:
+    import h5py 
+except:
+    _H5PY_INSTALLED = False
 
 def get_file_extension(fname):
     """Get the extension from the file name."""
@@ -507,11 +512,10 @@ def write(input_, filename, format_='pickle', **kwargs):
         _save_pickle_object(input_, filename)
 
     elif format_ == 'hdf5':
-        try:
-            import h5py
+        if _H5PY_INSTALLED:
             _save_hdf5_object(input_, filename)
 
-        except ImportError:
+        else:
             utils.simon('h5py not installed, using pickle instead to save object.')
             _save_pickle_object(input_, filename)
 
@@ -537,7 +541,10 @@ def read(filename, format_='pickle', **kwargs):
         return _retrieve_pickle_object(filename)
 
     elif format_ == 'hdf5':
-        return _retrieve_hdf5_object(filename, **kwargs)
+        if _H5PY_INSTALLED:
+            return _retrieve_hdf5_object(filename)
+        else:
+            utils.simon('h5py not installed, cannot read an hdf5 object.')
 
     elif format_ == 'ascii':
         return _retrieve_ascii_object(filename, **kwargs)
