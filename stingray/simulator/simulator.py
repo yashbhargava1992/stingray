@@ -7,12 +7,12 @@ from ..powerspectrum import Powerspectrum
 
 class Simulator(object):
 
-    def __init__(self, dt=1, N=1024):
+    def __init__(self, dt=1, N=1024, seed=None):
         
         """
         Methods to simulate and visualize light curves.
 
-        Parameters:
+        Parameters
         ----------
         dt: int
             time resolution of simulated light curve
@@ -25,45 +25,63 @@ class Simulator(object):
         self.time = dt*np.arange(N)
         self.lc = None
 
+        if seed is not None:
+            np.random.seed(seed)
+
     def simulate(self, *args):
         
         """
         Simulate light curve generation using power spectrum or
         impulse response.
 
-        Examples:
+        Examples
         --------
         - x = simulate(2)
             For generating a light curve using power law spectrum.
 
-            Parameters:
-            -----------
+            Parameters
+            ----------
             Beta: int
                 Defines the shape of spectrum
             N: int
                 Number of samples
 
-            Returns:
-            --------
+            Returns
+            -------
+            lightCurve: `LightCurve` object
+
+        - x = simulate(s)
+            For generating a light curve from user-provided spectrum.
+
+            Parameters
+            ----------
+            s: array-like
+                power spectrum
+
+            Returns
+            -------
             lightCurve: `LightCurve` object
 
         - x = simulate(s,h)
             For generating a light curve using impulse response.
 
-            Parameters:
-            -----------
+            Parameters
+            ----------
             s: array-like
                 Underlying variability signal
             h: array-like
                 Impulse response
 
-            Returns:
+            Returns
             -------
             lightCurve: `LightCurve` object
         """
 
         if type(args[0]) == int:
             return  self._simulate_power_law(args[0])
+
+        elif len(args) == 1:
+            return self._simulate_power_spectrum(args[0])
 
         elif len(args) == 2:
             return self._simulate_impulse_response(args[0], args[1])
@@ -77,7 +95,7 @@ class Simulator(object):
         """
         Generate LightCurve from a power law spectrum.
 
-        Parameters:
+        Parameters
         ----------
         B: int
             Defines the shape of power law spectrum.
@@ -106,12 +124,37 @@ class Simulator(object):
 
         return self.lc
 
+    def _simulate_power_spectrum(self, s):
+        """
+        Generate a light curve from user-provided spectrum.
+
+        Parameters
+        ----------
+        s: array-like
+            power spectrum
+
+        Returns
+        -------
+        lightCurve: `LightCurve` object
+        """
+        # Cast spectrum as numpy array
+        s = np.array(s)
+
+        # Draw two set of 'N' guassian distributed numbers
+        a1 = np.random.normal(size=self.N)
+        a2 = np.random.normal(size=self.N)
+
+        rate = self._find_inverse(a1*s, a2*s)
+        self.lc = Lightcurve(self.time, self._scale(rate))
+
+        return self.lc
+
     def _simulate_impulse_response(self, s, h):
         
         """
         Generate LightCurve from a power law spectrum.
 
-        Parameters:
+        Parameters
         ----------
         s: array-like
                 Underlying variability signal
@@ -143,8 +186,8 @@ class Simulator(object):
     def _scale(self, rate):
         
         """
-        Rescale light curve to 'mean' value provided by 
-        useer and standard devidation of 'mean' times 'rms'.
+        Rescale light curve with zero mean and unit standard
+        deviation.
         """
 
         avg = np.mean(rate)
