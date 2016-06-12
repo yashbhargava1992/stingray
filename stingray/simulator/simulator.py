@@ -14,17 +14,19 @@ class Simulator(object):
 
         Parameters
         ----------
-        dt: int
+        dt: int, default 1
             time resolution of simulated light curve
-        N: int
+        N: int, default 1024
             bins count of simulated light curve
+        seed: int, default None
+            seed value for random processes
         """
 
         self.dt = dt
         self.N = N
         self.time = dt*np.arange(N)
         self.lc = None
-
+        
         if seed is not None:
             np.random.seed(seed)
 
@@ -176,7 +178,7 @@ class Simulator(object):
 
         # Form complex numbers corresponding to each frequency
         f = [complex(r, i) for r,i in zip(real,imaginary)]
-
+        
         # Obtain real valued time series
         f_conj = np.conjugate(np.array(f))
 
