@@ -302,7 +302,7 @@ def common_name(str1, str2, default='common'):
     logging.debug('common_name: %s %s -> %s' % (str1, str2, common_str))
     return common_str
 
-def _save_pickle_object(object, filename, **kwargs):
+def _save_pickle_object(object, filename):
     """
     Save a class object in pickle format.
 
@@ -314,15 +314,9 @@ def _save_pickle_object(object, filename, **kwargs):
     filename: str
         The file name to save to
     """
-    if 'save_as_dict' in locals():
-        # Get all object's attributes and its values in a dictionary format
-        items = vars(object)
-        with open(filename, "wb" ) as f:
-            pickle.dump(items, f)
 
-    else:
-        with open(filename, "wb" ) as f:
-            pickle.dump(object, f)
+    with open(filename, "wb" ) as f:
+        pickle.dump(object, f)
 
 def _retrieve_pickle_object(filename):
     """
@@ -335,8 +329,7 @@ def _retrieve_pickle_object(filename):
 
     Returns
     -------
-    data: class object or dictionary
-        Depends on the value of `save_as_dict`
+    data: class object
     """
     with open(filename, "rb" ) as f:
         return pickle.load(f)
@@ -509,13 +502,10 @@ def write(input_, filename, format_='pickle', **kwargs):
         name of the file to be created.
     format_: str
         pickle, hdf5, ascii ...
-
-    save_as_dict: boolean
-        Set to 'False' if intention is to store input as class object.
     """
 
     if format_ == 'pickle':
-        _save_pickle_object(input_, filename, **kwargs)
+        _save_pickle_object(input_, filename)
 
     elif format_ == 'hdf5':
         _save_hdf5_object(input_, filename)
