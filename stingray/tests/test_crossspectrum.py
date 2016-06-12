@@ -1,10 +1,24 @@
 from __future__ import division
 import numpy as np
 import pytest
+import warnings
 from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum
 
 np.random.seed(20160528)
+
+class TestCoherence(object):
+
+    def test_coherence(self):
+        lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+
+        cs = Crossspectrum(lc1, lc2)
+        coh = cs.coherence()
+
+        assert len(coh) == 2
+        assert np.abs(np.mean(coh)) < 1
+
 
 class TestCrossspectrum(object):
 
@@ -93,6 +107,10 @@ class TestCrossspectrum(object):
         assert len(cs.cs) == 4999
         assert cs.norm == 'abs'
 
+    def test_coherence(self):
+        coh = self.cs.coherence()
+        assert len(coh) == 4999
+        assert np.abs(coh[0]) < 1
 
 class TestAveragedCrossspectrum(object):
 
@@ -124,3 +142,15 @@ class TestAveragedCrossspectrum(object):
     def test_init_with_inifite_segment_size(self):
         with pytest.raises(AssertionError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
+
+    def test_coherence(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            coh = self.cs.coherence()
+
+            assert len(coh[0]) == 4999
+            assert len(coh[1]) == 4999
+
+            assert len(w) == 1
+            assert issubclass(w[-1].category, UserWarning)
