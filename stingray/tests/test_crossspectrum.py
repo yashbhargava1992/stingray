@@ -143,6 +143,23 @@ class TestAveragedCrossspectrum(object):
         with pytest.raises(AssertionError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
 
+    def test_with_iterable_of_lightcurves(self):
+        def iter_lc(lc, n):
+            "Generator of n parts of lc."
+            t0 = int(len(lc) / n)
+            t = t0
+            i = 0
+            while(True):
+                lc_seg = lc[i:t]
+                yield lc_seg
+                if t + t0 > len(lc):
+                    break
+                else:
+                    i, t = t, t + t0
+
+        cs = AveragedCrossspectrum(iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),
+                                   segment_size=1)
+
     def test_coherence(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
