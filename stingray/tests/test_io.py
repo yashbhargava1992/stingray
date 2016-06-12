@@ -17,7 +17,6 @@ import warnings
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
 
-
 class TestIO(object):
 
     """Real unit tests."""
@@ -80,6 +79,15 @@ class TestIOReadWrite(object):
     def test_operation(self):
         return self.number * 10
 
+H5PY_INSTALLED = True
+
+try:
+    import h5py
+except ImportError:
+    H5PY_INSTALLED = False
+
+skip_condition = pytest.mark.skipif(not H5PY_INSTALLED,
+    reason = "H5PY not installed.")
 
 class TestFileFormats(object):
 
@@ -111,12 +119,14 @@ class TestFileFormats(object):
         assert read('test.pickle', 'pickle').test_operation() == test_object.number * 10
         os.remove('test.pickle')
 
+    @skip_condition
     def test_hdf5_write(self):
         """Test write functionality of hdf5."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         os.remove('test.hdf5')
 
+    @skip_condition
     def test_hdf5_read(self):
         """Test read functionality of hdf5."""
         test_object = TestIOReadWrite()
@@ -124,6 +134,7 @@ class TestFileFormats(object):
         read('test.hdf5','hdf5')
         os.remove('test.hdf5')
 
+    @skip_condition
     def test_hdf5_data_recovery(self):
         """Test if hdf5 stored data is properly recovered."""
         test_object = TestIOReadWrite()

@@ -1,7 +1,6 @@
 from __future__ import (absolute_import, division,
                         print_function)
 
-import h5py
 import numpy as np
 import logging
 import warnings
@@ -508,7 +507,13 @@ def write(input_, filename, format_='pickle', **kwargs):
         _save_pickle_object(input_, filename)
 
     elif format_ == 'hdf5':
-        _save_hdf5_object(input_, filename)
+        try:
+            import h5py
+            _save_hdf5_object(input_, filename)
+
+        except ImportError:
+            utils.simon('h5py not installed, using pickle instead to save object.')
+            _save_pickle_object(input_, filename)
 
     elif format_ == 'ascii':
         _save_ascii_object(input_, filename, **kwargs)
