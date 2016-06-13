@@ -1,3 +1,4 @@
+from __future__ import division
 __all__ = ["Crossspectrum", "AveragedCrossspectrum"]
 
 import numpy as np
@@ -6,9 +7,35 @@ import scipy.stats
 import scipy.fftpack
 import scipy.optimize
 
+from stingray import Powerspectrum, AveragedPowerspectrum
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 
+
+def coherence(lc1, lc2):
+    """
+    Estimate coherence function of two light curves.
+
+    Parameters
+    ----------
+    lc1: lightcurve.Lightcurve object
+        The first light curve data for the channel of interest.
+
+    lc2: lightcurve.Lightcurve object
+        The light curve data for reference band
+
+    Returns
+    -------
+    coh : np.ndarray
+        Coherence function
+    """
+
+    assert isinstance(lc1, lightcurve.Lightcurve)
+    assert isinstance(lc2, lightcurve.Lightcurve)
+
+    cs = Crossspectrum(lc1, lc2, norm='none')
+
+    return cs.coherence()
 
 class Crossspectrum(object):
 
@@ -78,6 +105,8 @@ class Crossspectrum(object):
             self.m = 1
             self.n = None
             return
+        self.lc1 = lc1
+        self.lc2 = lc2
         self._make_crossspectrum(lc1, lc2)
 
     def _make_crossspectrum(self, lc1, lc2):
@@ -225,10 +254,31 @@ class Crossspectrum(object):
 
         return cs
 
+    def coherence(self):
+        """
+        Compute Coherence function of the cross spectrum. Coherence is a
+        Fourier frequency dependent measure of the linear correlation
+        between time series measured simultaneously in two energy channels.
+
+        Returns
+        -------
+        coh : numpy.ndarray
+            Coherence function
+
+        References
+        ----------
+        .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
+
+        """
+        ps1 = Powerspectrum(self.lc1)
+        ps2 = Powerspectrum(self.lc2)
+
+        return self.unnorm_cross/(ps1.unnorm_powers * ps2.unnorm_powers)
+
 
 class AveragedCrossspectrum(Crossspectrum):
 
-    def __init__(self, lc1, lc2, segment_size=1, norm='none'):
+    def __init__(self, lc1, lc2, segment_size, norm='none'):
         """
         Make an averaged cross spectrum from a light curve by segmenting two
         light curves, Fourier-transforming each segment and then averaging the
@@ -246,7 +296,7 @@ class AveragedCrossspectrum(Crossspectrum):
             Second light curve data to be Fourier-transformed. This is the
             reference band.
 
-        segment_size: float, default 1 second
+        segment_size: float
             The size of each segment to average. Note that if the total duration
             of each Lightcurve object in lc1 or lc2 is not an integer multiple
             of the segment_size, then any fraction left-over at the end of the
@@ -334,40 +384,91 @@ class AveragedCrossspectrum(Crossspectrum):
         ## chop light curves into segments
         if isinstance(lc1, lightcurve.Lightcurve) and \
                 isinstance(lc2, lightcurve.Lightcurve):
-            cs_all, nphots1_all, nphots2_all = self._make_segment_csd(lc1,
+            self.cs_all, nphots1_all, nphots2_all = self._make_segment_csd(lc1,
                                                         lc2, self.segment_size)
         else:
-            cs_all, nphots1_all, nphots2_all = [], [], []
+            self.cs_all, nphots1_all, nphots2_all = [], [], []
             ## TODO: should be using izip from iterables if lc1 or lc2 could
             ## be long
             for lc1_seg, lc2_seg in zip(lc1, lc2):
                 cs_sep, nphots1_sep, nphots2_sep = self._make_segment_csd(lc1_seg, lc2_seg,
                                                             self.segment_size)
 
-                cs_all.append(cs_sep)
+                self.cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
                 nphots2_all.append(nphots2_sep)
 
-            cs_all = np.hstack(cs_all)
+            self.cs_all = np.hstack(self.cs_all)
             nphots1_all = np.hstack(nphots1_all)
             nphots2_all = np.hstack(nphots2_all)
 
 
-        m = len(cs_all)
+        m = len(self.cs_all)
         nphots1 = np.mean(nphots1_all)
         nphots2 = np.mean(nphots2_all)
 
-        cs_avg = np.zeros_like(cs_all[0].cs)
-        for cs in cs_all:
+        cs_avg = np.zeros_like(self.cs_all[0].cs)
+        for cs in self.cs_all:
             cs_avg += cs.cs
 
         cs_avg /= np.float(m)
 
-        self.freq = cs_all[0].freq
+        self.freq = self.cs_all[0].freq
         self.cs = cs_avg
         self.m = m
-        self.df = cs_all[0].df
-        self.n = cs_all[0].n
+        self.df = self.cs_all[0].df
+        self.n = self.cs_all[0].n
         self.nphots1 = nphots1
         self.nphots2 = nphots2
+
+    def coherence(self):
+        """
+        Compute an averaged Coherence function of cross spectrum by computing
+        coherence function of each segment and averaging them. The return type
+        is a tuple with first element as the coherence function and the second
+        element as the corresponding uncertainty[1] associated with it.
+
+        Note : The uncertainty in coherence function is strictly valid for
+               Gaussian statistics only.
+
+        Returns
+        -------
+        tuple : tuple of np.ndarray
+            Tuple of coherence function and uncertainty.
+
+        References
+        ----------
+        .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
+
+        """
+        if self.m < 50:
+            utils.simon("Number of segments used in averaging is "
+                        "significantly low. The result might not follow the "
+                        "expected statistical distributions.")
+
+        # Calculate average coherence
+        unnorm_cross_avg = np.zeros_like(self.cs_all[0].unnorm_cross)
+        for cs in self.cs_all:
+            unnorm_cross_avg += cs.unnorm_cross
+
+        unnorm_cross_avg /= self.m
+        num = np.abs(unnorm_cross_avg)**2
+
+        aps1 = AveragedPowerspectrum(self.lc1, segment_size=self.segment_size)
+        aps2 = AveragedPowerspectrum(self.lc2, segment_size=self.segment_size)
+
+        unnorm_powers_avg_1 = np.zeros_like(aps1.ps_all[0].unnorm_powers)
+        for ps in aps1.ps_all:
+            unnorm_powers_avg_1 += ps.unnorm_powers
+
+        unnorm_powers_avg_2 = np.zeros_like(aps2.ps_all[0].unnorm_powers)
+        for ps in aps2.ps_all:
+            unnorm_powers_avg_2 += ps.unnorm_powers
+
+        coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
+
+        # Calculate uncertainty
+        uncertainty = (2**0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m**0.5)
+
+        return (coh, uncertainty)
 
