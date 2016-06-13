@@ -22,6 +22,18 @@ class TestSimulator(object):
         s = np.random.rand(1024)
         assert len(self.simulator.simulate(s)), 1024
 
+    def test_simulate_lorenzian(self):
+        """
+        Simulate light curve using lorenzian model.
+        """
+        assert len(self.simulator.simulate('lorenzian',[1,2,3,4])), 1024
+
+    def test_simulate_smoothbknpo(self):
+        """
+        Simulate light curve using smooth broken power law model.
+        """
+        assert len(self.simulator.simulate('smoothbknpo',[1,2,3,4])), 1024
+
     def test_simulate_impulse(self):
         """
         Simulate light curve from impulse response.
