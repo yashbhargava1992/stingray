@@ -7,7 +7,6 @@ import scipy.stats
 import scipy.fftpack
 import scipy.optimize
 
-from stingray import Powerspectrum, AveragedPowerspectrum
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 
@@ -333,10 +332,12 @@ class Crossspectrum(object):
         .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
 
         """
-        ps1 = Powerspectrum(self.lc1)
-        ps2 = Powerspectrum(self.lc2)
+        # this computes the averaged power spectrum, but using the
+        # cross spectrum code to avoid circular imports
+        ps1 = Crossspectrum(self.lc1, self.lc1)
+        ps2 = Crossspectrum(self.lc2, self.lc2)
 
-        return self.unnorm_cross/(ps1.unnorm_powers * ps2.unnorm_powers)
+        return self.unnorm_power/(ps1.unnorm_power * ps2.unnorm_power)
 
 
 class AveragedCrossspectrum(Crossspectrum):
@@ -452,11 +453,11 @@ class AveragedCrossspectrum(Crossspectrum):
                 isinstance(lc2, lightcurve.Lightcurve):
 
             if self.type == "crossspectrum":
-                cs_all, nphots1_all, nphots2_all = \
+                self.cs_all, nphots1_all, nphots2_all = \
                     self._make_segment_spectrum(lc1, lc2, self.segment_size)
 
             elif self.type == "powerspectrum":
-                cs_all, nphots1_all = \
+                self.cs_all, nphots1_all = \
                     self._make_segment_spectrum(lc1, self.segment_size)
 
         else:
@@ -474,6 +475,9 @@ class AveragedCrossspectrum(Crossspectrum):
                     cs_sep, nphots1_sep = \
                         self._make_segment_spectrum(lc1_seg, self.segment_size)
 
+                else:
+                    raise Exception("Type of spectrum not recognized!")
+
                 self.cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
 
@@ -483,17 +487,16 @@ class AveragedCrossspectrum(Crossspectrum):
             if self.type == "crossspectrum":
                 nphots2_all = np.hstack(nphots2_all)
 
-
         m = len(self.cs_all)
         nphots1 = np.mean(nphots1_all)
 
-        power_avg = np.zeros_like(cs_all[0].power)
-        for cs in cs_all:
+        power_avg = np.zeros_like(self.cs_all[0].power)
+        for cs in self.cs_all:
             power_avg += cs.power
 
         power_avg /= np.float(m)
 
-        self.freq = cs_all[0].freq
+        self.freq = self.cs_all[0].freq
         self.power = power_avg
         self.m = m
         self.df = self.cs_all[0].df
@@ -532,23 +535,27 @@ class AveragedCrossspectrum(Crossspectrum):
                         "expected statistical distributions.")
 
         # Calculate average coherence
-        unnorm_cross_avg = np.zeros_like(self.cs_all[0].unnorm_cross)
+        unnorm_power_avg = np.zeros_like(self.cs_all[0].unnorm_power)
         for cs in self.cs_all:
-            unnorm_cross_avg += cs.unnorm_cross
+            unnorm_power_avg += cs.unnorm_power
 
-        unnorm_cross_avg /= self.m
-        num = np.abs(unnorm_cross_avg)**2
+        unnorm_power_avg /= self.m
+        num = np.abs(unnorm_power_avg)**2
 
-        aps1 = AveragedPowerspectrum(self.lc1, segment_size=self.segment_size)
-        aps2 = AveragedPowerspectrum(self.lc2, segment_size=self.segment_size)
+        # this computes the averaged power spectrum, but using the
+        # cross spectrum code to avoid circular imports
+        aps1 = AveragedCrossspectrum(self.lc1, self.lc1,
+                                     segment_size=self.segment_size)
+        aps2 = AveragedCrossspectrum(self.lc2, self.lc2,
+                                     segment_size=self.segment_size)
 
-        unnorm_powers_avg_1 = np.zeros_like(aps1.ps_all[0].unnorm_powers)
-        for ps in aps1.ps_all:
-            unnorm_powers_avg_1 += ps.unnorm_powers
+        unnorm_powers_avg_1 = np.zeros_like(aps1.cs_all[0].unnorm_power)
+        for ps in aps1.cs_all:
+            unnorm_powers_avg_1 += ps.unnorm_power
 
-        unnorm_powers_avg_2 = np.zeros_like(aps2.ps_all[0].unnorm_powers)
-        for ps in aps2.ps_all:
-            unnorm_powers_avg_2 += ps.unnorm_powers
+        unnorm_powers_avg_2 = np.zeros_like(aps2.cs_all[0].unnorm_power)
+        for ps in aps2.cs_all:
+            unnorm_powers_avg_2 += ps.unnorm_power
 
         coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
 
