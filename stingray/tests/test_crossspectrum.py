@@ -1,10 +1,24 @@
 from __future__ import division
 import numpy as np
 import pytest
+import warnings
 from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum
 
 np.random.seed(20160528)
+
+class TestCoherence(object):
+
+    def test_coherence(self):
+        lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+
+        cs = Crossspectrum(lc1, lc2)
+        coh = cs.coherence()
+
+        assert len(coh) == 2
+        assert np.abs(np.mean(coh)) < 1
+
 
 class TestCrossspectrum(object):
 
@@ -93,6 +107,10 @@ class TestCrossspectrum(object):
         assert len(cs.power) == 4999
         assert cs.norm == 'abs'
 
+    def test_coherence(self):
+        coh = self.cs.coherence()
+        assert len(coh) == 4999
+        assert np.abs(coh[0]) < 1
 
 class TestAveragedCrossspectrum(object):
 
@@ -109,16 +127,47 @@ class TestAveragedCrossspectrum(object):
         self.lc1 = Lightcurve(time, counts1)
         self.lc2 = Lightcurve(time, counts2)
 
-        self.cs = AveragedCrossspectrum(self.lc1, self.lc2)
+        self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
 
     def test_init_with_norm_not_str(self):
         with pytest.raises(AssertionError):
-            cs = AveragedCrossspectrum(self.lc1, self.lc2, norm=1)
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                       norm=1)
 
     def test_init_with_invalid_norm(self):
         with pytest.raises(AssertionError):
-            cs = AveragedCrossspectrum(self.lc1, self.lc2, norm='frabs')
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                       norm='frabs')
 
     def test_init_with_inifite_segment_size(self):
         with pytest.raises(AssertionError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
+
+    def test_with_iterable_of_lightcurves(self):
+        def iter_lc(lc, n):
+            "Generator of n parts of lc."
+            t0 = int(len(lc) / n)
+            t = t0
+            i = 0
+            while(True):
+                lc_seg = lc[i:t]
+                yield lc_seg
+                if t + t0 > len(lc):
+                    break
+                else:
+                    i, t = t, t + t0
+
+        cs = AveragedCrossspectrum(iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),
+                                   segment_size=1)
+
+    def test_coherence(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            coh = self.cs.coherence()
+
+            assert len(coh[0]) == 4999
+            assert len(coh[1]) == 4999
+
+            assert len(w) == 1
+            assert issubclass(w[-1].category, UserWarning)
