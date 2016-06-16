@@ -264,7 +264,7 @@ class Simulator(object):
         f_conj = np.conjugate(np.array(f))
 
         # Obtain time series
-        return np.fft.irfft(f_conj, n=self.N)
+        return np.fft.irfft(f_conj, n=self.red_noise*self.N)
 
     def _extract_and_scale(self, long_lc):
         
@@ -290,8 +290,8 @@ class Simulator(object):
             lc = long_lc
         else:
             # Make random cut and extract light curve of length 'N'
-            extract = rnd.randint(self.N-1, self.red_noise*self.N+1)
-            lc = np.take(long_lc,range(extract, extract + self.N)) 
+            extract = np.random.randint(self.N-1, self.red_noise*self.N - self.N+1)
+            lc = np.take(long_lc, range(extract, extract + self.N)) 
 
         avg = np.mean(lc)
         std = np.std(lc)

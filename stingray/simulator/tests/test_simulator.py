@@ -1,17 +1,17 @@
 import numpy as np
 
 from astropy.tests.helper import pytest
-from stingray.simulator import simulator
-from matplotlib import pyplot as plt
-from scipy import signal
+from stingray.simulator import simulator, models
 
 class TestSimulator(object):
 
     @classmethod
     def setup_class(self):
         self.simulator = simulator.Simulator(N=1024)
-        self.w = np.fft.rfftfreq(self.simulator.N, d=self.simulator.dt)[1:]
-        self.B = 2
+
+    def test_simulate_with_seed(self):
+        self.simulator = simulator.Simulator(N=1024, seed=12)
+        assert len(self.simulator.simulate(2).counts), 1024
 
     def test_simulate_powerlaw(self):
         """
@@ -22,19 +22,15 @@ class TestSimulator(object):
     def test_compare_powerlaw(self):
         """
         Compare simulated power spectrum with actual one.
-        """
-        actual = np.power((1/self.w),self.B/2)
-        a_mean = np.mean(actual)
-        
-        lc = [self.simulator.simulate(self.B) for i in xrange(1,30)] 
+        """        
+        B, N, red_noise, dt = 2, 1024, 10, 1
+
+        self.simulator = simulator.Simulator(N=N, dt=dt, mean=5, rms=1.4, red_noise=red_noise)
+        lc = [self.simulator.simulate(B) for i in xrange(1,30)] 
         simulated = self.simulator.periodogram(lc, lc[0].tseg)
         
-        # plt.figure()
-        # plt.plot(simulated, label='Simulated')
-        # plt.plot(actual, label='Actual')
-        # plt.title('Comparison of Actual and Simulated Power \n Spectrums [Power Law with B=2]')
-        # plt.legend()
-        # plt.show()
+        w = np.fft.rfftfreq(N, d=dt)[1:]
+        actual = np.power((1/w), B/2)
 
     def test_simulate_powerspectrum(self):
         """
@@ -49,11 +45,38 @@ class TestSimulator(object):
         """
         assert len(self.simulator.simulate('lorenzian',[1,2,3,4])), 1024
 
+    def test_compare_lorenzian(self):
+        """
+        Compare simulated lorenzian spectrum with original spectrum.
+        """
+        N, red_noise, dt = 1024, 10, 1
+
+        self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.4, red_noise=red_noise)
+        lc = [self.simulator.simulate('lorenzian',[0.3, 0.9, 0.6, 0.5]) for i in xrange(1,100)] 
+        simulated = self.simulator.periodogram(lc, lc[0].tseg)
+        
+        w = np.fft.rfftfreq(N, d=dt)[1:]
+        actual = models.lorenzian(w,[0.3, 0.9, 0.6, 0.5])
+
     def test_simulate_smoothbknpo(self):
         """
         Simulate light curve using smooth broken power law model.
         """
         assert len(self.simulator.simulate('smoothbknpo',[1,2,3,4])), 1024
+
+    def test_compare_smoothbknpo(self):
+        """
+        Compare simulated smooth broken power law spectrum with original
+        spectrum.
+        """
+        N, red_noise, dt = 1024, 10, 1
+
+        self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.7, red_noise=red_noise)
+        lc = [self.simulator.simulate('smoothbknpo',[0.6, 0.2, 0.6, 0.5]) for i in xrange(1,100)] 
+        simulated = self.simulator.periodogram(lc, lc[0].tseg)
+        
+        w = np.fft.rfftfreq(N, d=dt)[1:]
+        actual = models.smoothbknpo(w,[0.6, 0.2, 0.6, 0.5])
 
     def test_simulate_impulse(self):
         """
@@ -72,6 +95,4 @@ class TestSimulator(object):
         """
         Create a periodogram without light curve.
         """
-        self.simulator.periodogram(self.simulator.lc)   
-            
-
+        self.simulator.periodogram(self.simulator.lc) 
