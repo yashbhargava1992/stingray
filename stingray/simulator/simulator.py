@@ -3,12 +3,12 @@ import numpy as np
 
 from ..utils import simon
 from ..lightcurve import Lightcurve
-from ..powerspectrum import Powerspectrum
+from ..powerspectrum import AveragedPowerspectrum
 import stingray.simulator.models as models
 
 class Simulator(object):
 
-    def __init__(self, dt=1, N=1024, mean=0, seed=None):
+    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1, seed=None):
         
         """
         Methods to simulate and visualize light curves.
@@ -21,6 +21,9 @@ class Simulator(object):
             bins count of simulated light curve
         mean: float, default 0
             mean value of the simulated light curve
+        red_noise: int, default 1
+            multiple of real length of light curve, by 
+            which to simulate, to avoid red noise leakage
         seed: int, default None
             seed value for random processes
         """
@@ -28,6 +31,8 @@ class Simulator(object):
         self.dt = dt
         self.N = N
         self.mean = mean
+        self.rms = rms
+        self.red_noise = red_noise
         self.time = dt*np.arange(N)
         self.lc = None
 
@@ -131,7 +136,7 @@ class Simulator(object):
         """
 
         # Define frequencies at which to compute PSD
-        w = np.fft.rfftfreq(self.N, d=self.dt)[1:]
+        w = np.fft.rfftfreq(self.red_noise*self.N, d=self.dt)[1:]
         
         # Draw two set of 'N' guassian distributed numbers
         a1 = np.random.normal(size=len(w))
@@ -142,10 +147,8 @@ class Simulator(object):
         imaginary = a2 * np.power((1/w),B/2)
 
         # Obtain time series
-        rate = self._find_inverse(real, imaginary)
-        counts = self._scale(rate)
-
-        self.lc = Lightcurve(self.time, counts)
+        long_lc = self._find_inverse(real, imaginary)
+        self.lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
 
         return self.lc
 
@@ -162,25 +165,28 @@ class Simulator(object):
         -------
         lightCurve: `LightCurve` object
         """
+
         # Cast spectrum as numpy array
         s = np.array(s)
+
+        self.red_noise = 1
 
         # Draw two set of 'N' guassian distributed numbers
         a1 = np.random.normal(size=len(s))
         a2 = np.random.normal(size=len(s))
 
-        rate = self._find_inverse(a1*s, a2*s)
-        self.lc = Lightcurve(self.time, self._scale(rate))
+        lc = self._find_inverse(a1*s, a2*s)
+        self.lc = Lightcurve(self.time, self._extract_and_scale(lc))
 
         return self.lc
 
-    def _simulate_model(self, model, p):
+    def _simulate_model(self, mod, p):
         """
         For generating a light curve from pre-defined model
 
         Parameters
         ----------
-        model: str
+        mod: str
             name of the pre-defined model
 
         p: list iterable
@@ -193,18 +199,18 @@ class Simulator(object):
         """
 
         # Define frequencies at which to compute PSD
-        w = np.fft.rfftfreq(self.N, d=self.dt)[1:]
+        w = np.fft.rfftfreq(self.red_noise*self.N, d=self.dt)[1:]
 
-        if model in dir(models):
-            model = 'models.'+ model
-            s = eval(model +'(w, p)')
-            
+        if mod in dir(models):
+            mod = 'models.'+ mod
+            s = eval(mod +'(w, p)')
+
             # Draw two set of 'N' guassian distributed numbers
             a1 = np.random.normal(size=len(s))
             a2 = np.random.normal(size=len(s))
 
-            rate = self._find_inverse(a1*s, a2*s)
-            self.lc = Lightcurve(self.time, self._scale(rate))
+            long_lc = self._find_inverse(a1*s, a2*s)
+            self.lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
 
             return self.lc
         
@@ -234,6 +240,19 @@ class Simulator(object):
         """
         Forms complex numbers corresponding to real and imaginary
         parts and finds inverse series.
+
+        Parameters
+        ----------
+        real: numpy.ndarray
+            Co-effients corresponding to real parts of complex numbers
+        imaginary: numpy.ndarray
+            Co-efficients correspondong to imaginary parts of complex
+            numbers
+
+        Returns
+        -------
+        ifft: numpy.ndarray
+            Real inverse fourier transform of complex numbers
         """
 
         # Form complex numbers corresponding to each frequency
@@ -245,25 +264,58 @@ class Simulator(object):
         f_conj = np.conjugate(np.array(f))
 
         # Obtain time series
-        return np.fft.irfft(f_conj,n=self.N)
+        return np.fft.irfft(f_conj, n=self.N)
 
-    def _scale(self, rate):
+    def _extract_and_scale(self, long_lc):
         
         """
-        Rescale light curve with zero mean and unit standard
-        deviation.
+        i) Make a random cut and extract a light curve of required
+        length.
+
+        ii) Rescale light curve i) with zero mean and unit standard
+        deviation, and ii) user provided mean and rms (fractional
+        rms * mean)
+
+        Parameters
+        ----------
+        long_lc: numpy.ndarray
+            Simulated lightcurve of length 'N' times 'red_noise'
+
+        Returns
+        -------
+        lc: numpy.ndarray
+            Normalized and extracted lightcurve of length 'N'
         """
+        if self.red_noise == 1:
+            lc = long_lc
+        else:
+            # Make random cut and extract light curve of length 'N'
+            extract = rnd.randint(self.N-1, self.red_noise*self.N+1)
+            lc = np.take(long_lc,range(extract, extract + self.N)) 
 
-        avg = np.mean(rate)
-        std = np.std(rate)
+        avg = np.mean(lc)
+        std = np.std(lc)
 
-        return (rate-avg)/std
+        return (lc-avg)/std * self.mean * self.rms + self.mean
 
-    def periodogram(self):
+    def periodogram(self, lc, seg_size=None):
         """
         Make a periodogram of the simulated light curve.
+
+        Parameters
+        ----------
+        lc: lightcurve.Lightcurve object OR
+            iterable of lightcurve.Lightcurve objects
+            The light curve data to be Fourier-transformed.
+
+        Returns
+        -------
+        ps: numpy.ndarray
+            The array of normalized squared absolute values of Fourier
+            amplitudes    
+
         """
-        if self.lc is None:
-            simon("Drawing periodogram without a simulated light curve.")
-        else:
-            return Powerspectrum(self.lc)
+        if seg_size is None:
+            seg_size = self.lc.tseg
+
+        return AveragedPowerspectrum(lc, seg_size).ps
