@@ -499,6 +499,9 @@ def _retrieve_ascii_object(filename, **kwargs):
         return data[cols]
 
 def _isattribute(data):
+    """
+    Check if data is a single number or an array.
+    """
 
     try:
         return len(data) < 0

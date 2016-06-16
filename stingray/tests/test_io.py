@@ -139,12 +139,14 @@ class TestFileFormats(object):
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         rec_object = read('test.hdf5','hdf5')
+
         assert rec_object['number'] == test_object.number
         assert rec_object['str'] == test_object.str
         assert (rec_object['list'] == test_object.list).all()
         assert (rec_object['array'] == np.array(test_object.array)).all()
         assert rec_object['long_number'] == np.double(test_object.long_number)
         assert (rec_object['long_array'] == np.double(np.array(test_object.long_array))).all()
+        
         os.remove('test.hdf5')
 
     def test_save_ascii(self):

@@ -44,6 +44,13 @@ env:
 
 matrix:
     include:
+        
+        #Try without importing h5py
+        - python: 2.7
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
+
+        - python: 3.4
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
 
         # Do a coverage test in Python 2.
         - python: 2.7
@@ -60,13 +67,6 @@ matrix:
 
         - python: 3.4
           env: ASTROPY_VERSION=development
-
-        #Try without importing hdf5
-        - python: 2.7
-          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
-
-        - python: 3.4
-          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
 
     allow_failures:
         # Try older numpy versions
