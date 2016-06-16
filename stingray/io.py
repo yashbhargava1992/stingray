@@ -356,11 +356,21 @@ def _save_hdf5_object(object, filename):
     with h5py.File(filename, 'w') as hf:   
         for attr in attrs:
             data = items[attr]
+            
             # If data is a single number, store as an attribute.
             if _isattribute(data):
+
+                if isinstance(data, np.longdouble):
+                    data = np.double(data) 
+                    utils.simon("Casting data as double instead of longdouble.")
                 hf.attrs[attr] = data
+            
             # If data is a numpy array, create a dataset.
             else:
+
+                if isinstance(data[0], np.longdouble):
+                    data = np.double(data) 
+                    utils.simon("Casting data as double instead of longdouble.")
                 hf.create_dataset(attr, data=data) 
 
 def _retrieve_hdf5_object(filename):
@@ -490,9 +500,10 @@ def _retrieve_ascii_object(filename, **kwargs):
 
 def _isattribute(data):
 
-    return isinstance(data, int) or isinstance(data, float) \
-        or isinstance(data, str) or isinstance(data, bool) \
-        or isinstance(data, long)
+    try:
+        return len(data) < 0
+    except:
+        return True
 
 def write(input_, filename, format_='pickle', **kwargs):
     """
