@@ -152,6 +152,13 @@ class TestPowerspectrum(object):
         rms_lc = np.std(self.lc.counts) / np.mean(self.lc.counts)
         assert np.isclose(rms_ps, rms_lc, atol=0.01)
 
+    def test_fractional_rms_fails_when_rms_not_leahy(self):
+        with pytest.raises(Exception):
+            ps = Powerspectrum(lc=self.lc, norm="rms")
+            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
+                                            max_freq=ps.freq[-1])
+
+
     def test_fractional_rms_error(self):
         """
         TODO: Need to write a test for the fractional rms error.

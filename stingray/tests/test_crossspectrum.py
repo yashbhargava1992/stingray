@@ -3,9 +3,39 @@ import numpy as np
 import pytest
 import warnings
 from stingray import Lightcurve
-from stingray import Crossspectrum, AveragedCrossspectrum
+from stingray import Crossspectrum, AveragedCrossspectrum, coherence
 
 np.random.seed(20160528)
+
+
+class TestCoherenceFunction(object):
+
+    def setup_class(self):
+        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+
+    def test_coherence_runs(self):
+        coh = coherence(self.lc1, self.lc2)
+
+    def test_coherence_fails_if_data1_not_lc(self):
+        data = np.array([[1,2,3,4,5],[2,3,4,5,1]])
+
+        with pytest.raises(AssertionError):
+            coh = coherence(self.lc1, data)
+
+    def test_coherence_fails_if_data2_not_lc(self):
+        data = np.array([[1,2,3,4,5],[2,3,4,5,1]])
+
+        with pytest.raises(AssertionError):
+            coh = coherence(data, self.lc2)
+
+    def test_coherence_computes_correctly(self):
+
+        coh = coherence(self.lc1, self.lc2)
+
+        assert len(coh) == 2
+        assert np.abs(np.mean(coh)) < 1
+
 
 class TestCoherence(object):
 
@@ -18,6 +48,7 @@ class TestCoherence(object):
 
         assert len(coh) == 2
         assert np.abs(np.mean(coh)) < 1
+
 
 
 class TestCrossspectrum(object):
@@ -107,6 +138,10 @@ class TestCrossspectrum(object):
         assert len(cs.power) == 4999
         assert cs.norm == 'abs'
 
+    def test_failure_when_normalization_not_recognized(self):
+        with pytest.raises(AssertionError):
+            cs = Crossspectrum(self.lc1, self.lc2, norm='wrong')
+
     def test_coherence(self):
         coh = self.cs.coherence()
         assert len(coh) == 4999
@@ -171,3 +206,9 @@ class TestAveragedCrossspectrum(object):
 
             assert len(w) == 1
             assert issubclass(w[-1].category, UserWarning)
+
+    def test_failure_when_normalization_not_recognized(self):
+        with pytest.raises(AssertionError):
+            self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
+                                            segment_size=1,
+                                            norm="wrong")

@@ -1,5 +1,5 @@
 from __future__ import division
-__all__ = ["Crossspectrum", "AveragedCrossspectrum"]
+__all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence"]
 
 import numpy as np
 import scipy
