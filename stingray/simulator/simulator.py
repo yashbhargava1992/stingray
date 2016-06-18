@@ -1,4 +1,4 @@
-
+from __future__ import division, print_function, absolute_import
 import numpy as np
 
 from ..utils import simon
@@ -9,7 +9,6 @@ import stingray.simulator.models as models
 class Simulator(object):
 
     def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1, seed=None):
-        
         """
         Methods to simulate and visualize light curves.
 
@@ -45,7 +44,6 @@ class Simulator(object):
         assert rms<=1, 'Fractional rms must be less than 1.'
 
     def simulate(self, *args):
-        
         """
         Simulate light curve generation using power spectrum or
         impulse response.
@@ -126,7 +124,6 @@ class Simulator(object):
 
 
     def _simulate_power_law(self, B):
-
         """
         Generate LightCurve from a power law spectrum.
 
@@ -223,7 +220,6 @@ class Simulator(object):
             simon('Model is not defined!')
 
     def _simulate_impulse_response(self, s, h):
-        
         """
         Generate LightCurve from a power law spectrum.
 
@@ -241,7 +237,6 @@ class Simulator(object):
         pass
 
     def _find_inverse(self, real, imaginary):
-    
         """
         Forms complex numbers corresponding to real and imaginary
         parts and finds inverse series.
@@ -272,7 +267,6 @@ class Simulator(object):
         return np.fft.irfft(f_conj, n=self.red_noise*self.N)
 
     def _extract_and_scale(self, long_lc):
-        
         """
         i) Make a random cut and extract a light curve of required
         length.
