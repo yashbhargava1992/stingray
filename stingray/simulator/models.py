@@ -1,3 +1,4 @@
+from __future__ import division, print_function, absolute_import
 
 def lorenzian(x, p):
     """
@@ -22,7 +23,7 @@ def lorenzian(x, p):
     """
 
     assert p[3] > 0., "The power coefficient should be greater than zero."
-    return p[2] * (p[1]/2.)**p[3] * 1./( abs(x - p[0])**p[3] + (p[1]/2.)**p[3] ) 
+    return p[2] * (p[1] / 2)**p[3] * 1./(abs(x - p[0])**p[3] + (p[1] / 2)**p[3]) 
 
 def smoothbknpo(x, p):
     """
@@ -46,4 +47,4 @@ def smoothbknpo(x, p):
         generalized smooth broken power law psd model
     """
 
-    return p[0]*x**(-p[1])/(1.+(x/p[3])**2.)**(-(p[1]-p[2])/2.)
+    return p[0] * x**(-p[1]) / (1. + (x / p[3])**2)**(-(p[1] - p[2]) / 2)
