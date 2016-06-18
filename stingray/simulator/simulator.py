@@ -21,6 +21,9 @@ class Simulator(object):
             bins count of simulated light curve
         mean: float, default 0
             mean value of the simulated light curve
+        rms: float, default 1
+            fractional rms of the simulated light curve,
+            actual rms is calculated by mean*rms
         red_noise: int, default 1
             multiple of real length of light curve, by 
             which to simulate, to avoid red noise leakage
@@ -38,6 +41,8 @@ class Simulator(object):
 
         if seed is not None:
             np.random.seed(seed)
+
+        assert rms<=1, 'Fractional rms must be less than 1.'
 
     def simulate(self, *args):
         

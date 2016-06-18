@@ -2,6 +2,7 @@ import numpy as np
 
 from astropy.tests.helper import pytest
 from stingray.simulator import simulator, models
+from scipy.stats import chisquare
 
 class TestSimulator(object):
 
@@ -10,6 +11,9 @@ class TestSimulator(object):
         self.simulator = simulator.Simulator(N=1024)
 
     def test_simulate_with_seed(self):
+        """
+        Simulate with a random seed value.
+        """
         self.simulator = simulator.Simulator(N=1024, seed=12)
         assert len(self.simulator.simulate(2).counts), 1024
 
@@ -25,12 +29,17 @@ class TestSimulator(object):
         """        
         B, N, red_noise, dt = 2, 1024, 10, 1
 
-        self.simulator = simulator.Simulator(N=N, dt=dt, mean=5, rms=1.4, red_noise=red_noise)
-        lc = [self.simulator.simulate(B) for i in xrange(1,30)] 
-        simulated = self.simulator.periodogram(lc, lc[0].tseg)
-        
+        self.simulator = simulator.Simulator(N=N, dt=dt, mean=5, rms=1, red_noise=red_noise)
+        lc = [self.simulator.simulate(B) for i in xrange(1,30)]
+        simulated = self.simulator.periodogram(lc, lc[0].tseg)       
+
         w = np.fft.rfftfreq(N, d=dt)[1:]
-        actual = np.power((1/w), B/2)
+        actual = np.power((1/w), B/2)[:-1]
+
+        actual_prob = actual/float(sum(actual))
+        simulated_prob = simulated/float(sum(simulated))
+
+        assert np.all(np.abs(actual_prob - simulated_prob) < 3 * np.sqrt(actual_prob))
 
     def test_simulate_powerspectrum(self):
         """
@@ -52,11 +61,16 @@ class TestSimulator(object):
         N, red_noise, dt = 1024, 10, 1
 
         self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.4, red_noise=red_noise)
-        lc = [self.simulator.simulate('lorenzian',[0.3, 0.9, 0.6, 0.5]) for i in xrange(1,100)] 
+        lc = [self.simulator.simulate('lorenzian',[0.3, 0.9, 0.6, 0.5]) for i in xrange(1,50)] 
         simulated = self.simulator.periodogram(lc, lc[0].tseg)
         
         w = np.fft.rfftfreq(N, d=dt)[1:]
-        actual = models.lorenzian(w,[0.3, 0.9, 0.6, 0.5])
+        actual = models.lorenzian(w,[0.3, 0.9, 0.6, 0.5])[:-1]
+
+        actual_prob = actual/float(sum(actual))
+        simulated_prob = simulated/float(sum(simulated))
+
+        assert np.all(np.abs(actual_prob - simulated_prob) < 3 * np.sqrt(actual_prob))
 
     def test_simulate_smoothbknpo(self):
         """
@@ -72,11 +86,16 @@ class TestSimulator(object):
         N, red_noise, dt = 1024, 10, 1
 
         self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.7, red_noise=red_noise)
-        lc = [self.simulator.simulate('smoothbknpo',[0.6, 0.2, 0.6, 0.5]) for i in xrange(1,100)] 
+        lc = [self.simulator.simulate('smoothbknpo',[0.6, 0.2, 0.6, 0.5]) for i in xrange(1,50)] 
         simulated = self.simulator.periodogram(lc, lc[0].tseg)
         
         w = np.fft.rfftfreq(N, d=dt)[1:]
-        actual = models.smoothbknpo(w,[0.6, 0.2, 0.6, 0.5])
+        actual = models.smoothbknpo(w,[0.6, 0.2, 0.6, 0.5])[:-1]
+
+        actual_prob = actual/float(sum(actual))
+        simulated_prob = simulated/float(sum(simulated))
+
+        assert np.all(np.abs(actual_prob - simulated_prob) < 3 * np.sqrt(actual_prob))
 
     def test_simulate_impulse(self):
         """
