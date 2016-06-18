@@ -30,7 +30,7 @@ class TestSimulator(object):
         B, N, red_noise, dt = 2, 1024, 10, 1
 
         self.simulator = simulator.Simulator(N=N, dt=dt, mean=5, rms=1, red_noise=red_noise)
-        lc = [self.simulator.simulate(B) for i in xrange(1,30)]
+        lc = [self.simulator.simulate(B) for i in range(1,30)]
         simulated = self.simulator.periodogram(lc, lc[0].tseg)       
 
         w = np.fft.rfftfreq(N, d=dt)[1:]
@@ -61,7 +61,7 @@ class TestSimulator(object):
         N, red_noise, dt = 1024, 10, 1
 
         self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.4, red_noise=red_noise)
-        lc = [self.simulator.simulate('lorenzian',[0.3, 0.9, 0.6, 0.5]) for i in xrange(1,50)] 
+        lc = [self.simulator.simulate('lorenzian',[0.3, 0.9, 0.6, 0.5]) for i in range(1,30)] 
         simulated = self.simulator.periodogram(lc, lc[0].tseg)
         
         w = np.fft.rfftfreq(N, d=dt)[1:]
@@ -86,7 +86,7 @@ class TestSimulator(object):
         N, red_noise, dt = 1024, 10, 1
 
         self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.7, red_noise=red_noise)
-        lc = [self.simulator.simulate('smoothbknpo',[0.6, 0.2, 0.6, 0.5]) for i in xrange(1,50)] 
+        lc = [self.simulator.simulate('smoothbknpo',[0.6, 0.2, 0.6, 0.5]) for i in range(1,30)] 
         simulated = self.simulator.periodogram(lc, lc[0].tseg)
         
         w = np.fft.rfftfreq(N, d=dt)[1:]
