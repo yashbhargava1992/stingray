@@ -531,7 +531,7 @@ def write(input_, filename, format_='pickle', **kwargs):
 
         else:
             utils.simon('h5py not installed, using pickle instead to save object.')
-            _save_pickle_object(input_, filename)
+            _save_pickle_object(input_, filename.split('.')[0]+'.pickle')
 
     elif format_ == 'ascii':
         _save_ascii_object(input_, filename, **kwargs)
