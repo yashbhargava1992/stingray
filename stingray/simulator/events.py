@@ -1,6 +1,5 @@
-
 """Functions to simulate event lists data."""
-
+from __future__ import division, print_function, absolute_import
 import numpy as np
 import numpy.random as ra
 from stingray.simulator.utils import _assign_value_if_none
@@ -9,7 +8,6 @@ import warnings
 
 def gen_events_from_lc(
         times, lc, use_spline=False, bin_time=None):
-
     """
     Create events from a light curve.
 
@@ -123,7 +121,6 @@ def gen_events_from_lc(
 
 def gen_lc_from_events(event_list, bin_time, start_time=None,
            stop_time=None, center_time=True):
-
     """
     From a list of event times, extract a lightcurve.
 
@@ -178,7 +175,6 @@ def gen_lc_from_events(event_list, bin_time, start_time=None,
     return times, lc.astype(np.float)
 
 def assign_energies(N, spectrum):
-
     '''
     Assign energies to an event list.
 
@@ -212,7 +208,7 @@ def assign_energies(N, spectrum):
         fluxes = spectrum[1]
 
     # Create a set of probability values
-    prob = fluxes/float(sum(fluxes))
+    prob = fluxes / float(sum(fluxes))
 
     # Calculate cumulative probability
     cum_prob = np.cumsum(prob)
@@ -221,4 +217,4 @@ def assign_energies(N, spectrum):
     R = ra.uniform(0, 1, N)
 
     # Assign energies to events corresponding to the random numbers drawn
-    return [int(energies[np.argwhere(cum_prob == min(cum_prob[(cum_prob - r) > 0]))]) for r in R]
+    return np.array([energies[np.argwhere(cum_prob == min(cum_prob[(cum_prob - r) > 0]))] for r in R])

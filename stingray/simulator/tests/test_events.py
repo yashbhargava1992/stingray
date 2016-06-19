@@ -81,9 +81,11 @@ class TestFakeSimulator(object):
         """
         fluxes = np.array(self.spectrum[1])
         energies = events.assign_energies(1000, self.spectrum)
+        energies = [int(energy) for energy in energies]
 
         # Histogram energies to get shape approximation
         gen_energies = ((np.array(energies) - 1) / 1).astype(int)
+
         lc = np.bincount(energies)
 
         # Remove first entry as it contains occurences of '0' element

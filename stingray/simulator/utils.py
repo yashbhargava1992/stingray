@@ -5,4 +5,4 @@ def _assign_value_if_none(value, default):
         return default
     else:
         return value
-
+        
