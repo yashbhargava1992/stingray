@@ -112,6 +112,21 @@ class TestCrossspectrum(object):
         assert len(coh) == 4999
         assert np.abs(coh[0]) < 1
 
+    def test_timelag(self):
+        time_lag = self.cs.time_lag()
+        assert max(time_lag) <= np.pi
+        assert min(time_lag) >= -np.pi
+
+    def test_timelag_error(self):
+        class Child(Crossspectrum):
+            def __init__(self):
+                pass
+
+        obj = Child()
+        with pytest.raises(AttributeError):
+            lag = obj.time_lag()
+
+
 class TestAveragedCrossspectrum(object):
 
     def setup_class(self):
