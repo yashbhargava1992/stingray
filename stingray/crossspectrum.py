@@ -485,19 +485,3 @@ class AveragedCrossspectrum(Crossspectrum):
         uncertainty = (2**0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m**0.5)
 
         return (coh, uncertainty)
-
-    def _phase_lag(self):
-        """Return the fourier phase lag of the average crossspectrum."""
-
-        return np.angle(self.cs)
-
-    def time_lag(self):
-        """
-        Calculate the fourier time lag of the average crossspectrum.
-
-        Note : The time lag is calculate using the center of the frequency
-        bins.
-        """
-        ph_lag = self._phase_lag()
-
-        return ph_lag / (2 * np.pi * self.freq)
