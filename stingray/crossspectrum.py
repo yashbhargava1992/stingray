@@ -285,9 +285,12 @@ class Crossspectrum(object):
         Calculate the fourier time lag of the cross spectrum. The time lag is
         calculate using the center of the frequency bins.
         """
-        ph_lag = self._phase_lag()
+        if self.__class__ in [Crossspectrum, AveragedCrossspectrum]:
+            ph_lag = self._phase_lag()
 
-        return ph_lag / (2 * np.pi * self.freq)
+            return ph_lag / (2 * np.pi * self.freq)
+        else:
+            raise AttributeError("Object has no attribute named 'time_lag' !")
 
 
 class AveragedCrossspectrum(Crossspectrum):
