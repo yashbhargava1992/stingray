@@ -121,9 +121,11 @@ class Simulator(object):
             h: array-like
                 Impulse response
             mode: str
-                mode can be either 'same' or 'full'.
+                mode can be 'same', 'filtered, or 'full'.
                 'same' indicates that the length of output light
                 curve is same as that of input signal.
+                'filtered' means that length of output light curve
+                is len(s) - lag_delay
                 'full' indicates that the length of output light
                 curve is len(s) + len(h) -1
 
@@ -406,15 +408,26 @@ class Simulator(object):
             Underlying variability signal
         h: array-like
             Impulse response
+        mode: str
+            mode can be 'same', 'filtered, or 'full'.
+            'same' indicates that the length of output light
+            curve is same as that of input signal.
+            'filtered' means that length of output light curve
+            is len(s) - lag_delay
+            'full' indicates that the length of output light
+            curve is len(s) + len(h) -1
 
         Returns
         -------
         lightCurve: `LightCurve` object
         """
         lc = signal.fftconvolve(s, h)
+
         if mode == 'same':
             lc = lc[:-(len(h) - 1)]
-
+        elif mode == 'filtered':
+            lc = lc[(len(h) - 1):-(len(h) - 1)]
+        
         time = self.dt * np.arange(len(lc))
         return Lightcurve(time, lc)
         

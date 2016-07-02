@@ -200,6 +200,16 @@ class TestSimulator(object):
         h = self.simulator.relativistic_ir()
         output = self.simulator.simulate(s,h)
 
+    def test_filtered_simulate(self):
+        """
+        Simulate light curve using 'filtered' mode.
+        """
+        lc = sampledata.sample_data()
+        s = lc.counts
+
+        h = self.simulator.simple_ir()
+        output = self.simulator.simulate(s, h, 'filtered')
+        
     def test_simple_lag_spectrum(self):
         """
         Simulate light curve from simple impulse response and 
