@@ -275,6 +275,23 @@ class Crossspectrum(object):
 
         return self.unnorm_cross/(ps1.unnorm_powers * ps2.unnorm_powers)
 
+    def _phase_lag(self):
+        """Return the fourier phase lag of the cross spectrum."""
+
+        return np.angle(self.cs)
+
+    def time_lag(self):
+        """
+        Calculate the fourier time lag of the cross spectrum. The time lag is
+        calculate using the center of the frequency bins.
+        """
+        if self.__class__ in [Crossspectrum, AveragedCrossspectrum]:
+            ph_lag = self._phase_lag()
+
+            return ph_lag / (2 * np.pi * self.freq)
+        else:
+            raise AttributeError("Object has no attribute named 'time_lag' !")
+
 
 class AveragedCrossspectrum(Crossspectrum):
 
@@ -471,4 +488,3 @@ class AveragedCrossspectrum(Crossspectrum):
         uncertainty = (2**0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m**0.5)
 
         return (coh, uncertainty)
-
