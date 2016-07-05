@@ -16,7 +16,7 @@ class TestFakeSimulator(object):
         """
         Simulate an event list from fake times and counts.
         """
-        events.gen_events_from_lc(self.times, self.counts)
+        events.lc_to_events(self.times, self.counts)
 
     def test_actual_event_create(self):
         """
@@ -24,7 +24,7 @@ class TestFakeSimulator(object):
         """
         lc = sample_data()
         new_lc = lc[0:100]
-        events.gen_events_from_lc(new_lc.time, new_lc.counts)
+        events.lc_to_events(new_lc.time, new_lc.counts)
 
     def test_event_create_with_spline(self):
         """
@@ -32,14 +32,14 @@ class TestFakeSimulator(object):
         """
         lc = sample_data()
         new_lc = lc[0:100]
-        events.gen_events_from_lc(new_lc.time, new_lc.counts, use_spline=True)
+        events.lc_to_events(new_lc.time, new_lc.counts, use_spline=True)
 
     def test_fake_recover_lcurve(self):
         """
         Recover a lightcurve from a fake event list.
         """
-        ev_list = events.gen_events_from_lc(self.times, self.counts)
-        new_times, new_counts = events.gen_lc_from_events(ev_list, 1, start_time=0,
+        ev_list = events.lc_to_events(self.times, self.counts)
+        new_times, new_counts = events.events_to_lc(ev_list, 1, start_time=0,
                                                           stop_time=4)
 
         assert np.all(np.abs(new_counts - self.counts) < 3 * np.sqrt(self.counts))
@@ -51,10 +51,10 @@ class TestFakeSimulator(object):
         """
         lc = sample_data()
         new_lc = lc[0:100]
-        ev_list = events.gen_events_from_lc(new_lc.time, new_lc.counts)
+        ev_list = events.lc_to_events(new_lc.time, new_lc.counts)
 
         bin_length = new_lc.time[1] - new_lc.time[0]
-        new_times, new_counts = events.gen_lc_from_events(ev_list, bin_length,
+        new_times, new_counts = events.events_to_lc(ev_list, bin_length,
                                                           start_time = new_lc.time[0] - bin_length/2,
                                                           stop_time = new_lc.time[-1] + bin_length/2)
 

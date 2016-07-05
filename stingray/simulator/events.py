@@ -6,7 +6,7 @@ from stingray.simulator.utils import _assign_value_if_none
 import logging
 import warnings
 
-def gen_events_from_lc(
+def lc_to_events(
         times, lc, use_spline=False, bin_time=None):
     """
     Create events from a light curve.
@@ -119,7 +119,7 @@ def gen_events_from_lc(
     return ev_list
 
 
-def gen_lc_from_events(event_list, bin_time, start_time=None,
+def events_to_lc(event_list, bin_time, start_time=None,
            stop_time=None, center_time=True):
     """
     From a list of event times, extract a lightcurve.
