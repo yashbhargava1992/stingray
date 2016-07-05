@@ -5,8 +5,16 @@ import logging
 import warnings
 import os
 
-from .utils import _order_list_of_arrays, is_string
-from .utils import _assign_value_if_none
+import stingray.utils as utils
+from .utils import order_list_of_arrays, is_string
+from .utils import assign_value_if_none
+
+try:
+    # Python 2
+    import cPickle as pickle
+except:
+    # Python 3
+    import pickle
 
 
 def get_file_extension(fname):
@@ -57,7 +65,7 @@ def load_gtis(fits_file, gtistring=None):
     from astropy.io import fits as pf
     import numpy as np
 
-    gtistring = _assign_value_if_none(gtistring, 'GTI')
+    gtistring = assign_value_if_none(gtistring, 'GTI')
     logging.info("Loading GTIS from file %s" % fits_file)
     lchdulist = pf.open(fits_file, checksum=True)
     lchdulist.verify('warn')
@@ -142,7 +150,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     """
     from astropy.io import fits as pf
 
-    gtistring = _assign_value_if_none(gtistring, 'GTI,STDGTI')
+    gtistring = assign_value_if_none(gtistring, 'GTI,STDGTI')
     lchdulist = pf.open(fits_file)
 
     # Load data table
@@ -198,7 +206,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     order = np.argsort(ev_list)
     ev_list = ev_list[order]
 
-    additional_data = _order_list_of_arrays(additional_data, order)
+    additional_data = order_list_of_arrays(additional_data, order)
 
     returns = _empty()
     returns.ev_list = ev_list
@@ -420,8 +428,8 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
 
     check_gtis(gtis)
 
-    dt = _assign_value_if_none(dt,
-                               np.zeros_like(time) + (time[1] - time[0]) / 2)
+    dt = assign_value_if_none(dt,
+                              np.zeros_like(time) + (time[1] - time[0]) / 2)
 
     mask = np.zeros(len(time), dtype=bool)
 
@@ -484,7 +492,7 @@ def create_gti_from_condition(time, condition,
     if not isinstance(safe_interval, collections.Iterable):
         safe_interval = [safe_interval, safe_interval]
 
-    dt = _assign_value_if_none(dt,
+    dt = assign_value_if_none(dt,
                                np.zeros_like(time) + (time[1] - time[0]) / 2)
 
     gtis = []
@@ -632,8 +640,8 @@ def get_btis(gtis, start_time=None, stop_time=None):
         return np.array([[start_time, stop_time]], dtype=np.longdouble)
     check_gtis(gtis)
 
-    start_time = _assign_value_if_none(start_time, gtis[0][0])
-    stop_time = _assign_value_if_none(stop_time, gtis[-1][1])
+    start_time = assign_value_if_none(start_time, gtis[0][0])
+    stop_time = assign_value_if_none(stop_time, gtis[-1][1])
 
     if gtis[0][0] - start_time <= 0:
         btis = []
@@ -653,3 +661,98 @@ def get_btis(gtis, start_time=None, stop_time=None):
 def gti_len(gti):
     """Return the total good time from a list of GTIs."""
     return np.sum([g[1] - g[0] for g in gti])
+
+def _save_pickle_object(object, filename):
+    pickle.dump(object, open(filename, "wb" ))
+
+def _retrieve_pickle_object(filename):
+    return pickle.load(open(filename, "rb" ) )
+
+def _save_hdf5_object(object, filename):
+    pass
+
+def _retrieve_hdf5_object(object, filename):
+    pass
+
+def _save_ascii_object(object, filename):
+    pass
+
+def _retrieve_ascii_object(object, filename):
+    pass
+
+def write(input, filename, format = 'pickle'):
+    """
+    Pickle a class instance.
+
+    Parameters
+    ----------
+    object: a class instance
+    filename: str
+              name of the file to be created.
+    format: str
+            pickle, hdf5, ascii ...
+
+    """
+
+    if format == 'pickle':
+        _save_pickle_object(input, filename)
+
+    elif format == 'hdf5':
+        _save_hdf5_object(input, filename)
+
+    elif format == 'ascii':
+        _save_ascii_object(input, filename)
+
+
+def read(filename, format = 'pickle'):
+    """
+    Return a pickled class instance.
+
+    Parameters
+    ----------
+    filename: str
+              name of the file to be retrieved.
+    format: str
+            pickle, hdf5, ascii ...
+    """
+
+    if format == 'pickle':
+        return _retrieve_pickle_object(filename)
+
+    elif format == 'hdf5':
+        return _retrieve_hdf5_object(filename)
+
+    elif format == 'ascii':
+        return _retrieve_ascii_object(filename)
+
+def savefig(filename, **kwargs):
+    """
+    Save a figure plotted by Matplotlib.
+
+    Note : This function is supposed to be used after the ``plot``
+    function. Otherwise it will save a blank image with no plot.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the image file. Extension must be specified in the
+        file name. For example filename with `.png` extension will give a
+        rasterized image while `.pdf` extension will give a vectorized
+        output.
+
+    kwargs : keyword arguments
+        Keyword arguments to be passed to ``savefig`` function of
+        ``matplotlib.pyplot``. For example use `bbox_inches='tight'` to
+        remove the undesirable whitepace around the image.
+    """
+
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise ImportError("Matplotlib required for savefig()")
+
+    if not plt.fignum_exists(1):
+        utils.simon("use ``plot`` function to plot the image first and "
+                    "then use ``savefig`` to save the figure.")
+
+    plt.savefig(filename, **kwargs)
