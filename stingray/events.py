@@ -5,9 +5,14 @@ Definition of :class:`EventList`.
 """
 from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
-import numpy as np
-from .lightcurve import Lightcurve
+
 from stingray.simulator.events import events_to_lc, lc_to_events, assign_energies
+
+from .lightcurve import Lightcurve
+import stingray.io as io
+import stingray.utils as utils
+
+import numpy as np
 
 
 class EventList(object):
@@ -98,17 +103,6 @@ class EventList(object):
 
         return EventList(times, gti=gti, pi=pi, pha=pha, dt=dt, mjdref=mjdref)
 
-    def from_lc(self, lc):
-        """
-        Make an event list with light curve as input.
-
-        Parameters
-        ----------
-        lc: `Lightcurve` object
-        """ 
-
-        self = EventList(events_to_lc(lc.counts))
-
     def to_lc(self, bin_time, start_time=None, stop_time=None, center_time=True):
         """
         Convert event list to a light curve object.
@@ -137,7 +131,18 @@ class EventList(object):
 
         return Lightcurve(times, counts)
 
-    def energies(self, spectrum):
+    def set_times(self, lc):
+        """
+        Assign photon arrival times to event list.
+
+        Parameters
+        ----------
+        lc: `Lightcurve` object
+        """ 
+        times = lc_to_events(lc.time, lc.counts)
+        self.time = EventList(times)
+
+    def set_energies(self, spectrum):
         """
         Assign energies to event list.
 
@@ -150,3 +155,58 @@ class EventList(object):
         """
 
         self.energy = assign_energies(self.ncounts, spectrum)
+
+    def read(self, filename, format_='pickle'):
+        """
+        Imports EventList object.
+
+        Parameters
+        ----------
+        filename: str
+            Name of the EventList object to be read.
+
+        format_: str
+            Available options are 'pickle', 'hdf5', 'ascii'
+
+        Returns
+        --------
+        If format_ is 'ascii': astropy.table is returned.
+        If format_ is 'hdf5': dictionary with key-value pairs is returned.
+        If format_ is 'pickle': class object is set.
+        """
+
+        if format_ == 'ascii' or format_ == 'hdf5':
+            return io.read(filename, format_)
+
+        elif format_ == 'pickle':
+            self = io.read(filename, format_)
+
+        else:
+            utils.simon("Format not understood.")
+
+    def write(self, filename, format_='pickle', **kwargs):
+        """
+        Exports EventList object.
+
+        Parameters
+        ----------
+        filename: str
+            Name of the LightCurve object to be created.
+
+        format_: str
+            Available options are 'pickle', 'hdf5', 'ascii'
+        """
+
+        if format_ == 'ascii':
+            io.write(np.array([self.time]).T,
+              filename, format_, fmt=["%s"])
+
+        elif format_ == 'pickle':
+            io.write(self, filename, format_)
+
+        elif format_ == 'hdf5':
+            io.write(self, filename, format_)
+
+        else:
+            utils.simon("Format not understood.")
+
