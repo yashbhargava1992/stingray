@@ -6,7 +6,7 @@ Definition of :class:`EventList`.
 from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 import numpy as np
-from lightcurve import Lightcurve
+from .lightcurve import Lightcurve
 from stingray.simulator.events import events_to_lc, lc_to_events, assign_energies
 
 
@@ -72,7 +72,7 @@ class EventList(object):
 
         """
         self.time = np.array(times, dtype=np.longdouble)
-        self.energies = np.array(energies)
+        self.energy = np.array(energies)
         self.ncounts = len(times)
         self.notes = notes
         self.dt = dt
@@ -98,7 +98,7 @@ class EventList(object):
 
         return EventList(times, gti=gti, pi=pi, pha=pha, dt=dt, mjdref=mjdref)
 
-    def from_lc(lc):
+    def from_lc(self, lc):
         """
         Make an event list with light curve as input.
 
@@ -109,7 +109,7 @@ class EventList(object):
 
         self = EventList(events_to_lc(lc.counts))
 
-    def to_lc(bin_time, start_time=None, stop_time=None, center_time=True):
+    def to_lc(self, bin_time, start_time=None, stop_time=None, center_time=True):
         """
         Convert event list to a light curve object.
 
@@ -137,7 +137,7 @@ class EventList(object):
 
         return Lightcurve(times, counts)
 
-    def energies(spectrum):
+    def energies(self, spectrum):
         """
         Assign energies to event list.
 
@@ -149,4 +149,4 @@ class EventList(object):
             second one.
         """
 
-        self.energies = assign_energies(self.ncounts, spectrum)
+        self.energy = assign_energies(self.ncounts, spectrum)
