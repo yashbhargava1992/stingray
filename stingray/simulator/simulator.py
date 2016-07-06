@@ -297,7 +297,7 @@ class Simulator(object):
 
         return (lc-avg)/std * self.mean * self.rms + self.mean
 
-    def periodogram(self, lc, seg_size=None):
+    def powerspectrum(self, lc, seg_size=None):
         """
         Make a periodogram of the simulated light curve.
 
