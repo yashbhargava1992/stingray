@@ -8,7 +8,7 @@ class TestSimulator(object):
 
     @classmethod
     def setup_class(self):
-        self.simulator = simulator.Simulator(N=1024)
+        self.simulator = simulator.Simulator(N=1024, mean=1)
 
     def test_simulate_with_seed(self):
         """
@@ -29,9 +29,10 @@ class TestSimulator(object):
         """        
         B, N, red_noise, dt = 2, 1024, 10, 1
 
-        self.simulator = simulator.Simulator(N=N, dt=dt, mean=5, rms=1, red_noise=red_noise)
+        self.simulator = simulator.Simulator(N=N, dt=dt, mean=5, rms=1,
+                                             red_noise=red_noise)
         lc = [self.simulator.simulate(B) for i in range(1,30)]
-        simulated = self.simulator.periodogram(lc, lc[0].tseg)       
+        simulated = self.simulator.powerspectrum(lc, lc[0].tseg)       
 
         w = np.fft.rfftfreq(N, d=dt)[1:]
         actual = np.power((1/w), B/2)[:-1]
@@ -39,7 +40,8 @@ class TestSimulator(object):
         actual_prob = actual/float(sum(actual))
         simulated_prob = simulated/float(sum(simulated))
 
-        assert np.all(np.abs(actual_prob - simulated_prob) < 3 * np.sqrt(actual_prob))
+        assert np.all(np.abs(actual_prob - simulated_prob) < 3
+                      * np.sqrt(actual_prob))
 
     def test_simulate_powerspectrum(self):
         """
@@ -60,9 +62,11 @@ class TestSimulator(object):
         """
         N, red_noise, dt = 1024, 10, 1
 
-        self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.4, red_noise=red_noise)
-        lc = [self.simulator.simulate('lorenzian',[0.3, 0.9, 0.6, 0.5]) for i in range(1,30)] 
-        simulated = self.simulator.periodogram(lc, lc[0].tseg)
+        self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1,
+                                             rms=0.4, red_noise=red_noise)
+        lc = [self.simulator.simulate('lorenzian',[0.3, 0.9, 0.6, 0.5])
+              for i in range(1,30)]
+        simulated = self.simulator.powerspectrum(lc, lc[0].tseg)
         
         w = np.fft.rfftfreq(N, d=dt)[1:]
         actual = models.lorenzian(w,[0.3, 0.9, 0.6, 0.5])[:-1]
@@ -70,7 +74,8 @@ class TestSimulator(object):
         actual_prob = actual/float(sum(actual))
         simulated_prob = simulated/float(sum(simulated))
 
-        assert np.all(np.abs(actual_prob - simulated_prob) < 3 * np.sqrt(actual_prob))
+        assert np.all(np.abs(actual_prob - simulated_prob) < 3
+                      * np.sqrt(actual_prob))
 
     def test_simulate_smoothbknpo(self):
         """
@@ -85,9 +90,12 @@ class TestSimulator(object):
         """
         N, red_noise, dt = 1024, 10, 1
 
-        self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.7, red_noise=red_noise)
-        lc = [self.simulator.simulate('smoothbknpo',[0.6, 0.2, 0.6, 0.5]) for i in range(1,30)] 
-        simulated = self.simulator.periodogram(lc, lc[0].tseg)
+        self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.7,
+                                             red_noise=red_noise)
+        lc = [self.simulator.simulate('smoothbknpo',[0.6, 0.2, 0.6, 0.5])
+              for i in range(1,30)]
+
+        simulated = self.simulator.powerspectrum(lc, lc[0].tseg)
         
         w = np.fft.rfftfreq(N, d=dt)[1:]
         actual = models.smoothbknpo(w,[0.6, 0.2, 0.6, 0.5])[:-1]
@@ -95,7 +103,8 @@ class TestSimulator(object):
         actual_prob = actual/float(sum(actual))
         simulated_prob = simulated/float(sum(simulated))
 
-        assert np.all(np.abs(actual_prob - simulated_prob) < 3 * np.sqrt(actual_prob))
+        assert np.all(np.abs(actual_prob - simulated_prob) < 3
+                      * np.sqrt(actual_prob))
 
     def test_simulate_impulse(self):
         """
@@ -103,15 +112,10 @@ class TestSimulator(object):
         """
         self.simulator.simulate([],[])
 
-    def test_periodogram_with_lc(self):
+    def test_powerspectrum(self):
         """
-        Create a periodogram from light curve.
+        Create a power spectrum from light curve.
         """
         self.simulator.simulate(2)
-        self.simulator.periodogram(self.simulator.lc)
+        self.simulator.powerspectrum(self.simulator.lc)
 
-    def test_periodogram_without_lc(self):
-        """
-        Create a periodogram without light curve.
-        """
-        self.simulator.periodogram(self.simulator.lc) 
