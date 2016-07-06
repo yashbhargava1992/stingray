@@ -63,10 +63,7 @@ class Lightcurve(object):
             raise ValueError( "There are inf or NaN values in "
                               "your time array!")
 
-        print("np.all(np.isfinite(counts)): " + str(np.all(np.isfinite(counts))))
-
         if np.all(np.isfinite(counts)) == False:
-            print("I am here!")
             raise ValueError( "There are inf or NaN values in "
                               "your counts array!")
 
