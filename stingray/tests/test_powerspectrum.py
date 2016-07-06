@@ -66,12 +66,12 @@ class TestPowerspectrum(object):
 
     def test_init_with_nonsense_norm(self):
         nonsense_norm = "bla"
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             assert Powerspectrum(self.lc, norm=nonsense_norm)
 
     def test_init_with_wrong_norm_type(self):
         nonsense_norm = 1.0
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             assert Powerspectrum(self.lc, norm=nonsense_norm)
 
     def test_total_variance(self):

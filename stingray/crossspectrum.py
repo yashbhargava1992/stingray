@@ -80,10 +80,11 @@ class Crossspectrum(object):
             The total number of photons in light curve 2
         """
 
-        assert isinstance(norm, str), "norm is not a string!"
+        if isinstance(norm, str) is False:
+            raise TypeError("norm must be a string")
 
-        assert norm.lower() in ["frac", "abs", "leahy", "none"], \
-                "norm must be 'frac', 'abs', 'leahy', or 'none'!"
+        if norm.lower() not in ["frac", "abs", "leahy", "none"]:
+            raise ValueError( "norm must be 'frac', 'abs', 'leahy', or 'none'!")
 
         self.norm = norm.lower()
 
@@ -93,14 +94,15 @@ class Crossspectrum(object):
             if lc1 is not None or lc2 is not None:
                  raise TypeError("You can't do a cross spectrum with just one "
                          "light curve!")
-            self.freq = None
-            self.power = None
-            self.df = None
-            self.nphots1 = None
-            self.nphots2 = None
-            self.m = 1
-            self.n = None
-            return
+            else:
+                self.freq = None
+                self.power = None
+                self.df = None
+                self.nphots1 = None
+                self.nphots2 = None
+                self.m = 1
+                self.n = None
+                return
 
         self.lc1 = lc1
         self.lc2 = lc2
@@ -342,7 +344,7 @@ class Crossspectrum(object):
     def _phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
 
-        return np.angle(self.cs)
+        return np.angle(self.power)
 
     def time_lag(self):
         """
@@ -412,10 +414,17 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         self.type = "crossspectrum"
 
-        assert isinstance(norm, str), "norm is not a string!"
+        if isinstance(norm, str) is False:
+            raise TypeError("Norm must be a string!")
 
-        assert norm.lower() in ["frac", "abs", "leahy", "none"], \
-                "norm must be 'frac', 'abs', 'leahy', or 'none'!"
+        if norm.lower() not in ["frac", "abs", "leahy", "none"]:
+            raise ValueError("norm must be 'frac', 'abs', 'leahy', or 'none'!")
+
+        #if isinstance(lc1, lightcurve.Lightcurve) is False:
+        #    raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+        #if isinstance(lc2, lightcurve.Lightcurve) is False:
+        #    raise TypeError("lc2 must be a lightcurve.Lightcurve object")
 
         self.norm = norm.lower()
 
