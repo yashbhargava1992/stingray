@@ -8,7 +8,7 @@ class TestSimulator(object):
 
     @classmethod
     def setup_class(self):
-        self.simulator = simulator.Simulator(N=1024)
+        self.simulator = simulator.Simulator(N=1024, mean=1)
 
     def test_simulate_with_seed(self):
         """
