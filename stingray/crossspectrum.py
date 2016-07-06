@@ -84,11 +84,11 @@ class Crossspectrum(object):
             The total number of photons in light curve 2
         """
 
-        if not isinstance(norm, str):
+        if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
 
-        if not norm.lower() in ["frac", "abs", "leahy", "none"]:
-            raise ValueError("norm must be 'frac', 'abs', 'leahy', or 'none'!")
+        if norm.lower() not in ["frac", "abs", "leahy", "none"]:
+            raise ValueError( "norm must be 'frac', 'abs', 'leahy', or 'none'!")
 
         self.norm = norm.lower()
 
@@ -423,13 +423,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
         """
         self.type = "crossspectrum"
-
-        #assert isinstance(norm, str), "norm is not a string!"
-
-        #assert norm.lower() in ["frac", "abs", "leahy", "none"], \
-        #        "norm must be 'frac', 'abs', 'leahy', or 'none'!"
-
-        #self.norm = norm.lower()
 
         if not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite")

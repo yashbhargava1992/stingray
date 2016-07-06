@@ -297,7 +297,7 @@ class Simulator(object):
 
         return (lc-avg)/std * self.mean * self.rms + self.mean
 
-    def periodogram(self, lc, seg_size=None):
+    def powerspectrum(self, lc, seg_size=None):
         """
         Make a periodogram of the simulated light curve.
 
@@ -309,7 +309,7 @@ class Simulator(object):
 
         Returns
         -------
-        ps: numpy.ndarray
+        power: numpy.ndarray
             The array of normalized squared absolute values of Fourier
             amplitudes    
 
@@ -317,4 +317,4 @@ class Simulator(object):
         if seg_size is None:
             seg_size = self.lc.tseg
 
-        return AveragedPowerspectrum(lc, seg_size).ps
+        return AveragedPowerspectrum(lc, seg_size).power
