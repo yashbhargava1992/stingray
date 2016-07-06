@@ -6,6 +6,7 @@ import os
 import matplotlib.pyplot as plt
 
 from stingray import Lightcurve
+from stingray._exceptions import StingrayError
 
 np.random.seed(20150907)
 
@@ -122,7 +123,7 @@ class TestLightcurve(object):
         mean_counts = 2.0
         times = np.arange(0 + dt/2, 5 - dt/2, dt)
         counts = np.array([np.inf] * times.shape[0])
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             lc = Lightcurve(times, counts)
 
     def test_creating_lightcurve_raises_type_error_when_input_is_nan(self):
@@ -130,21 +131,21 @@ class TestLightcurve(object):
         mean_counts = 2.0
         times = np.arange(0 + dt/2, 5 - dt/2, dt)
         counts = np.array([np.nan] * times.shape[0])
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             lc = Lightcurve(times, counts)
 
     def test_init_with_diff_array_lengths(self):
         time = [1, 2, 3]
         counts = [2, 2, 2, 2]
         
-        with pytest.raises(AssertionError):
+        with pytest.raises(StingrayError):
             lc = Lightcurve(time, counts)
 
     def test_add_with_different_time_arrays(self):
         _times = [1, 2, 3, 4, 5]
         _counts = [2, 2, 2, 2, 2]
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
 
             lc1 = Lightcurve(self.times, self.counts)
             lc2 = Lightcurve(_times, _counts)
@@ -154,7 +155,7 @@ class TestLightcurve(object):
     def test_add_with_unequal_time_arrays(self):
         _times = [1, 3, 5, 7]
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             lc1 = Lightcurve(self.times, self.counts)
             lc2 = Lightcurve(_times, self.counts)
 
@@ -175,7 +176,7 @@ class TestLightcurve(object):
         _times = [1, 2, 3, 4, 5]
         _counts = [2, 2, 2, 2, 2]
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             lc1 = Lightcurve(self.times, self.counts)
             lc2 = Lightcurve(_times, _counts)
 
@@ -226,7 +227,7 @@ class TestLightcurve(object):
     def test_slicing_index_error(self):
         lc = Lightcurve(self.times, self.counts)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(StingrayError):
             lc_new = lc[1:2]
 
     def test_join_with_different_dt(self):
@@ -280,8 +281,13 @@ class TestLightcurve(object):
     def test_truncate_by_time_stop_less_than_start(self):
         lc = Lightcurve(self.times, self.counts)
  
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             lc1 = lc.truncate(start=2, stop=1, method='time')
+
+    def test_truncate_fails_with_incorrect_method(self):
+        lc = Lightcurve(self.times, self.counts)
+        with pytest.raises(ValueError):
+            lc1 = lc.truncate(start=1, method="wrong")
 
     def test_truncate_by_time(self):
         lc = Lightcurve(self.times, self.counts)
