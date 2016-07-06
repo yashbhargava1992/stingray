@@ -189,14 +189,6 @@ class Powerspectrum(Crossspectrum):
             max_freq
 
         """
-        # assert min_freq >= self.freq[0], "Lower frequency bound must be " \
-        #                                 "larger or equal the minimum " \
-        #                                 "frequency in the periodogram!"
-
-        # assert max_freq <= self.freq[-1], "Upper frequency bound must be " \
-        #                                 "smaller or equal the maximum " \
-        #                                 "frequency in the periodogram!"
-
         minind = self.freq.searchsorted(min_freq)
         maxind = self.freq.searchsorted(max_freq)
         powers = self.power[minind:maxind]
@@ -207,7 +199,7 @@ class Powerspectrum(Crossspectrum):
         elif self.norm.lower() == "frac":
             rms = np.sqrt(np.sum(powers*self.df))
         else:
-            raise Exception("Normalization not recognized!")
+            raise TypeError("Normalization not recognized!")
 
         rms_err = self._rms_error(powers)
 
@@ -360,14 +352,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         """
 
         self.type = "powerspectrum"
-
-        if not isinstance(norm, str):
-            raise TypeError("norm must be a string")
-
-        if not norm.lower() in ["frac", "abs", "leahy", "none"]:
-            raise ValueError( "norm must be 'frac', 'abs', 'leahy', or 'none'!")
-
-        self.norm = norm.lower()
 
         if not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")

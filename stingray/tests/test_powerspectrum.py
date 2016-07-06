@@ -56,22 +56,22 @@ class TestPowerspectrum(object):
         assert Powerspectrum(self.lc)
 
     def test_init_without_lightcurve(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             assert Powerspectrum(self.lc.counts)
 
     def test_init_with_nonsense_data(self):
         nonsense_data = [None for i in range(100)]
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             assert Powerspectrum(nonsense_data)
 
     def test_init_with_nonsense_norm(self):
         nonsense_norm = "bla"
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             assert Powerspectrum(self.lc, norm=nonsense_norm)
 
     def test_init_with_wrong_norm_type(self):
         nonsense_norm = 1.0
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             assert Powerspectrum(self.lc, norm=nonsense_norm)
 
     def test_total_variance(self):

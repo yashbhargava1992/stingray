@@ -1,4 +1,5 @@
 
+from astropy.tests.helper import pytest
 import numpy as np
 import stingray.utils as utils
 
@@ -54,13 +55,8 @@ class TestRebinData(object):
 
     def test_rebin_data_should_raise_error_when_method_is_different_than_allowed(self):
         dx_new = 2.0
-        try:
+        with pytest.raises(ValueError):
             utils.rebin_data(self.x, self.y, dx_new, method='not_allowed_method')
-        except utils.UnrecognizedMethod:
-            pass
-        else:
-            raise AssertionError("Expected exception does not occurred")
-
 
 class TestUtils(object):
 

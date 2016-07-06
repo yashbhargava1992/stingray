@@ -9,6 +9,7 @@ import scipy.optimize
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
+from stingray._exceptions import StingrayError
 
 def coherence(lc1, lc2):
     """
@@ -28,8 +29,11 @@ def coherence(lc1, lc2):
         Coherence function
     """
 
-    assert isinstance(lc1, lightcurve.Lightcurve)
-    assert isinstance(lc2, lightcurve.Lightcurve)
+    if not isinstance(lc1, lightcurve.Lightcurve):
+        raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+    if not isinstance(lc2, lightcurve.Lightcurve):
+        raise TypeError("lc2 must be a lightcurve.Lightcurve object")
 
     cs = Crossspectrum(lc1, lc2, norm='none')
 
@@ -80,10 +84,11 @@ class Crossspectrum(object):
             The total number of photons in light curve 2
         """
 
-        assert isinstance(norm, str), "norm is not a string!"
+        if not isinstance(norm, str):
+            raise TypeError("norm must be a string")
 
-        assert norm.lower() in ["frac", "abs", "leahy", "none"], \
-                "norm must be 'frac', 'abs', 'leahy', or 'none'!"
+        if not norm.lower() in ["frac", "abs", "leahy", "none"]:
+            raise ValueError("norm must be 'frac', 'abs', 'leahy', or 'none'!")
 
         self.norm = norm.lower()
 
@@ -93,14 +98,15 @@ class Crossspectrum(object):
             if lc1 is not None or lc2 is not None:
                  raise TypeError("You can't do a cross spectrum with just one "
                          "light curve!")
-            self.freq = None
-            self.power = None
-            self.df = None
-            self.nphots1 = None
-            self.nphots2 = None
-            self.m = 1
-            self.n = None
-            return
+            else:
+                self.freq = None
+                self.power = None
+                self.df = None
+                self.nphots1 = None
+                self.nphots2 = None
+                self.m = 1
+                self.n = None
+                return
 
         self.lc1 = lc1
         self.lc2 = lc2
@@ -109,10 +115,11 @@ class Crossspectrum(object):
     def _make_crossspectrum(self, lc1, lc2):
 
         ## make sure the inputs work!
-        assert isinstance(lc1, lightcurve.Lightcurve), \
-                        "lc1 must be a lightcurve.Lightcurve object!"
-        assert isinstance(lc2, lightcurve.Lightcurve), \
-                        "lc2 must be a lightcurve.Lightcurve object!"
+        if not isinstance(lc1, lightcurve.Lightcurve):
+            raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+        if not isinstance(lc2, lightcurve.Lightcurve):
+            raise TypeError("lc2 must be a lightcurve.Lightcurve object")
 
         ## total number of photons is the sum of the
         ## counts in the light curve
@@ -123,10 +130,15 @@ class Crossspectrum(object):
         self.meancounts2 = np.mean(lc2.counts)
 
         ## the number of data points in the light curve
-        assert lc1.counts.shape[0] == lc2.counts.shape[0], \
-            "Light curves do not have same number of time bins per segment."
-        assert lc1.dt == lc2.dt, \
-                "Light curves do not have same time binning dt."
+
+        if lc1.counts.shape[0] != lc2.counts.shape[0]:
+            raise StingrayError("Light curves do not have same number "
+                                "of time bins per segment.")
+
+        if lc1.dt != lc2.dt:
+            raise StingrayError("Light curves do not have "
+                                "same time binning dt.")
+
         self.n = lc1.counts.shape[0]
 
         ## the frequency resolution
@@ -342,7 +354,7 @@ class Crossspectrum(object):
     def _phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
 
-        return np.angle(self.cs)
+        return np.angle(self.power)
 
     def time_lag(self):
         """
@@ -412,18 +424,19 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         self.type = "crossspectrum"
 
-        assert isinstance(norm, str), "norm is not a string!"
+        #assert isinstance(norm, str), "norm is not a string!"
 
-        assert norm.lower() in ["frac", "abs", "leahy", "none"], \
-                "norm must be 'frac', 'abs', 'leahy', or 'none'!"
+        #assert norm.lower() in ["frac", "abs", "leahy", "none"], \
+        #        "norm must be 'frac', 'abs', 'leahy', or 'none'!"
 
-        self.norm = norm.lower()
+        #self.norm = norm.lower()
 
-        assert np.isfinite(segment_size), "segment_size must be finite!"
+        if not np.isfinite(segment_size):
+            raise ValueError("segment_size must be finite")
 
         self.segment_size = segment_size
 
-        Crossspectrum.__init__(self, lc1, lc2, self.norm)
+        Crossspectrum.__init__(self, lc1, lc2, norm)
 
         return
 
@@ -433,10 +446,11 @@ class AveragedCrossspectrum(Crossspectrum):
         assert isinstance(lc1, lightcurve.Lightcurve)
         assert isinstance(lc2, lightcurve.Lightcurve)
 
-        assert lc1.dt == lc2.dt, \
-            "Light curves do not have same time binning dt."
+        if lc1.dt != lc2.dt:
+            raise ValueError("Light curves do not have same time binning dt.")
 
-        assert lc1.tseg == lc2.tseg, "Lightcurves do not have same tseg."
+        if lc1.tseg != lc2.tseg:
+            raise ValueError("Lightcurves do not have same tseg.")
 
         # number of bins per segment
         nbins = int(segment_size/lc1.dt)
