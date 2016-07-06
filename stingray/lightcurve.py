@@ -59,11 +59,11 @@ class Lightcurve(object):
             The start time of the light curve.
 
         """
-        if np.all(np.isfinite(time)) == False:
+        if not np.all(np.isfinite(time)):
             raise ValueError( "There are inf or NaN values in "
                               "your time array!")
 
-        if np.all(np.isfinite(counts)) == False:
+        if not np.all(np.isfinite(counts)):
             raise ValueError( "There are inf or NaN values in "
                               "your counts array!")
 
@@ -465,7 +465,7 @@ class Lightcurve(object):
             arrays.
         """
 
-        if isinstance(method, str) is False:
+        if not isinstance(method, str):
             raise TypeError("method key word argument is not " \
                                         "a string !")
 
