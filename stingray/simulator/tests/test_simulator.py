@@ -10,12 +10,6 @@ class TestSimulator(object):
     def setup_class(self):
         self.simulator = simulator.Simulator(N=1024)
 
-    def test_periodogram_without_lc(self):
-        """
-        Create a periodogram without light curve.
-        """
-        self.simulator.periodogram(self.simulator.lc)
-
     def test_simulate_with_seed(self):
         """
         Simulate with a random seed value.
