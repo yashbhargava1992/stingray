@@ -59,7 +59,7 @@ class TestEvents(object):
 		ev = EventList(self.times)
 		ev.write('ev.pickle', format_='pickle')
 		ev.read('ev.pickle',format_='pickle')
-		assert np.all(ev.time == self.times)
+		assert np.all(ev.times == self.times)
 		os.remove('ev.pickle')
 
 	def test_io_with_hdf5(self):
@@ -76,6 +76,6 @@ class TestEvents(object):
 
 		else:
 			ev.read('ev.pickle',format_='pickle')
-			assert np.all(ev.time == self.times)
+			assert np.all(ev.times == self.times)
 			os.remove('ev.pickle')
 
