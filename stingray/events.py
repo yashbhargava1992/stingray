@@ -16,7 +16,8 @@ import numpy as np
 
 
 class EventList(object):
-    def __init__(self, time=None, energies=None, mjdref=0, dt=0, notes="", gti=None, pi=None):
+    def __init__(self, time=None, energies=None, ncounts = None, mjdref=0, dt=0, notes="", 
+            gti=None, pi=None):
         """
         Make an event list object from an array of time stamps
 
@@ -36,6 +37,9 @@ class EventList(object):
 
         mjdref : float
             The MJD used as a reference for the time array.
+
+        ncounts: int
+            Number of desired data points in event list.
 
         gtis: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time Intervals
@@ -71,12 +75,16 @@ class EventList(object):
         """
         self.time = np.array(time, dtype=np.longdouble)
         self.energies = np.array(energies)
-        self.ncounts = len(time)
         self.notes = notes
         self.dt = dt
         self.mjdref = mjdref
         self.gti = gti
         self.pi = pi
+        self.ncounts = ncounts
+
+        if self.ncounts is not None:
+            self.ncounts = len(time)
+        
 
     @staticmethod
     def from_fits(fname, **kwargs):
@@ -144,7 +152,8 @@ class EventList(object):
             second one.
         """
 
-        self.energies = assign_energies(self.ncounts, spectrum)
+        if self.ncounts is not None:
+            self.energies = assign_energies(self.ncounts, spectrum)
 
     def read(self, filename, format_='pickle'):
         """

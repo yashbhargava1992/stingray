@@ -66,7 +66,7 @@ class TestEvents(object):
 		"""
 		Test IO methods with hdf5 format.
 		"""
-		ev = EventList(time=self.time, energies=[1,2,3,4], gti=5, pi=5)
+		ev = EventList(time=self.time)
 		ev.write('ev.hdf5', format_='hdf5')
 
 		if _H5PY_INSTALLED:

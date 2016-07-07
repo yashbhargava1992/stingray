@@ -503,9 +503,9 @@ def _isattribute(data):
     Check if data is a single number or an array.
     """
 
-    try:
-        return len(data) < 0
-    except:
+    if isinstance(data, np.ndarray) or isinstance(data, list):
+        return False
+    else:
         return True
 
 def write(input_, filename, format_='pickle', **kwargs):
