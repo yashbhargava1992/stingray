@@ -16,13 +16,13 @@ import numpy as np
 
 
 class EventList(object):
-    def __init__(self, times, energies=None, mjdref=0, dt=0, notes="", gti=None, pi=None):
+    def __init__(self, time=None, energies=None, mjdref=0, dt=0, notes="", gti=None, pi=None):
         """
         Make an event list object from an array of time stamps
 
         Parameters
         ----------
-        times: iterable
+        time: iterable
             A list or array of time stamps
 
         Other Parameters
@@ -69,9 +69,9 @@ class EventList(object):
             PI channels
 
         """
-        self.times = np.array(times, dtype=np.longdouble)
+        self.time = np.array(time, dtype=np.longdouble)
         self.energies = np.array(energies)
-        self.ncounts = len(times)
+        self.ncounts = len(time)
         self.notes = notes
         self.dt = dt
         self.mjdref = mjdref
@@ -118,7 +118,7 @@ class EventList(object):
         lc: `Lightcurve` object
         """
 
-        return Lightcurve.make_lightcurve(self.times, bin_time, tstart=start_time)
+        return Lightcurve.make_lightcurve(self.time, bin_time, tstart=start_time)
 
     def set_times(self, lc):
         """
@@ -130,7 +130,7 @@ class EventList(object):
         lc: `Lightcurve` object
         """ 
         times = lc_to_events(lc.time, lc.counts)
-        self.times = EventList(times)
+        self.time = EventList(times)
 
     def set_energies(self, spectrum):
         """
@@ -188,7 +188,7 @@ class EventList(object):
         """
 
         if format_ == 'ascii':
-            io.write(np.array([self.times]).T,
+            io.write(np.array([self.time]).T,
               filename, format_, fmt=["%s"])
 
         elif format_ == 'pickle':
