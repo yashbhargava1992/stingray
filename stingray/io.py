@@ -351,7 +351,7 @@ def _save_hdf5_object(object, filename):
         The file name to save to
     """
     items = vars(object)
-    attrs = [name for name in items]
+    attrs = [name for name in items if items[name] is not None]
 
     with h5py.File(filename, 'w') as hf:   
         for attr in attrs:
@@ -363,15 +363,23 @@ def _save_hdf5_object(object, filename):
                 if isinstance(data, np.longdouble):
                     data = np.double(data) 
                     utils.simon("Casting data as double instead of longdouble.")
+                
                 hf.attrs[attr] = data
-            
+
             # If data is a numpy array, create a dataset.
             else:
 
-                if isinstance(data[0], np.longdouble):
-                    data = np.double(data) 
-                    utils.simon("Casting data as double instead of longdouble.")
-                hf.create_dataset(attr, data=data) 
+                try:
+                    if isinstance(data[0], np.longdouble):
+                        data = np.double(data) 
+                        utils.simon("Casting data as double instead of longdouble.")
+
+                    hf.create_dataset(attr, data=data) 
+
+                except IndexError:
+
+                    # To account for numpy arrays of type 'None' (0-d)
+                    pass
 
 def _retrieve_hdf5_object(filename):
     """

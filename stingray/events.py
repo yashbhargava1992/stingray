@@ -3,10 +3,9 @@ Definition of :class:`EventList`.
 
 :class:`EventList` is used to handle photon arrival times.
 """
-from __future__ import (absolute_import, unicode_literals, division,
-                        print_function)
+from __future__ import absolute_import, division, print_function
 
-from stingray.simulator.events import events_to_lc, lc_to_events, assign_energies
+from stingray.simulator.events import lc_to_events, assign_energies
 
 from .lightcurve import Lightcurve
 import stingray.io as io
