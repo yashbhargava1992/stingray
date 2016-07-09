@@ -494,7 +494,7 @@ class Simulator(object):
 
     def powerspectrum(self, lc, seg_size=None):
         """
-        Make a periodogram of the simulated light curve.
+        Make a powerspectrum of the simulated light curve.
 
         Parameters
         ----------

@@ -8,7 +8,6 @@ class TestSimulator(object):
 
     @classmethod
     def setup_class(self):
-        self.simulator = simulator.Simulator(N=1024, mean=1)
         self.simulator = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
 
     def calculate_lag(self, lc, h, delay):
@@ -25,7 +24,7 @@ class TestSimulator(object):
         cross = Crossspectrum(lc1, lc2)
         cross = cross.rebin(0.0075)
         
-        return np.angle(cross.cs)/ (2 * np.pi * cross.freq)
+        return np.angle(cross.power)/ (2 * np.pi * cross.freq)
 
     def test_simulate_with_seed(self):
         """
@@ -255,7 +254,7 @@ class TestSimulator(object):
         outputs = [self.simulator.simulate(s, i) for i in h]
 
         cross = [Crossspectrum(lc, lc2).rebin(0.0075) for lc2 in outputs]
-        lags = [np.angle(c.cs)/ (2 * np.pi * c.freq) for c in cross]
+        lags = [np.angle(c.power)/ (2 * np.pi * c.freq) for c in cross]
 
         v_cutoffs = [1.0/(2.0*5), 1.0/(2.0*10)]  
         h_cutoffs = [lag[int((v-0.0075)*1/0.0075)] for lag, v in zip(lags, v_cutoffs)]
@@ -278,7 +277,7 @@ class TestSimulator(object):
         outputs = [self.simulator.simulate(s, i) for i in h]
 
         cross = [Crossspectrum(lc, lc2).rebin(0.0075) for lc2 in outputs]
-        lags = [np.angle(c.cs)/ (2 * np.pi * c.freq) for c in cross]
+        lags = [np.angle(c.power)/ (2 * np.pi * c.freq) for c in cross]
 
         v_cutoff = 1.0/(2.0*5)  
         h_cutoffs = [lag[int((v_cutoff-0.0075)*1/0.0075)] for lag in lags]
@@ -286,9 +285,9 @@ class TestSimulator(object):
         assert np.abs(5-h_cutoffs[0]) < np.sqrt(5)
         assert np.abs(5-h_cutoffs[1]) < np.sqrt(5)
 
-    def test_periodogram(self):
+    def test_powerspectrum(self):
         """
-        Create a periodogram from light curve.
+        Create a powerspectrum from light curve.
         """
         lc = self.simulator.simulate(2)
-        self.simulator.periodogram(lc)
+        self.simulator.powerspectrum(lc)
