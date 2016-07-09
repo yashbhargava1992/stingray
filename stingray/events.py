@@ -88,23 +88,6 @@ class EventList(object):
                 # In case of a 0-d array, pass
                 pass
 
-    @staticmethod
-    def from_fits(fname, **kwargs):
-        from .utils import _assign_value_if_none
-        from .io import load_events_and_gtis
-
-        ret = load_events_and_gtis(fname, **kwargs)
-
-        times = ret.ev_list
-        gti = ret.gtis
-
-        pi = _assign_value_if_none(ret.additional_data, "PI", None)
-        pha = _assign_value_if_none(ret.additional_data, "PHA", None)
-        dt = ret.dt
-        mjdref = ret.mjdref
-
-        return EventList(times, gti=gti, pi=pi, pha=pha, dt=dt, mjdref=mjdref)
-
     def to_lc(self, dt, tstart=None):
         """
         Convert event list to a light curve object.
@@ -264,7 +247,7 @@ class EventList(object):
         self.energies = np.array([energies[np.argwhere(cum_prob == 
             min(cum_prob[(cum_prob - r) > 0]))] for r in R])
 
-    def read(self, filename, format_='pickle'):
+    def read(self, filename, format_='pickle', **kwargs):
         """
         Imports EventList object.
 
@@ -274,7 +257,7 @@ class EventList(object):
             Name of the EventList object to be read.
 
         format_: str
-            Available options are 'pickle', 'hdf5', 'ascii'
+            Available options are 'pickle', 'hdf5', 'ascii' and 'fits'.
         """
 
         object = io.read(filename, format_)
@@ -301,6 +284,25 @@ class EventList(object):
 
         elif format_ == 'pickle':
             self = object
+
+        elif format_ == "fits":
+            ret = io.load_events_and_gtis(filename, **kwargs)
+            times = ret.ev_list
+            gti = ret.gti_list
+            
+            keys = ret.additional_data.keys()
+            values = []
+            attributes = ['energies', 'ncounts', 'mjdref', 'dt', 'notes', 'pi']
+
+            for attribute in attributes:
+                if attribute in keys:
+                    values.append(object[attribute])
+
+                else:
+                    values.append(None)
+
+            self = EventList(time=times, gti=gti, energies=values[0], ncounts=values[1],
+                mjdref=values[2], dt=values[3], notes=values[4], pi=values[5])
 
         else:
             utils.simon("Format not understood.")

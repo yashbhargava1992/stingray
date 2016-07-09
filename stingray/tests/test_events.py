@@ -5,12 +5,16 @@ import os
 from ..events import EventList
 from ..lightcurve import Lightcurve
 
+curdir = os.path.abspath(os.path.dirname(__file__))
+datadir = os.path.join(curdir, 'data')
+
 _H5PY_INSTALLED = True
 
 try:
     import h5py
 except ImportError:
     _H5PY_INSTALLED = False
+
 
 class TestEvents(object):
 	
@@ -91,7 +95,7 @@ class TestEvents(object):
 
 	def test_io_with_ascii(self):
 		"""
-		Test IO methods with ascii format.
+		Test IO methods with 'ascii' format.
 		"""
 		ev = EventList(self.time)
 		ev.write('ascii_ev.txt',format_='ascii')
@@ -101,7 +105,7 @@ class TestEvents(object):
 
 	def test_io_with_pickle(self):
 		"""
-		Test IO methods with pickle format.
+		Test IO methods with 'pickle' format.
 		"""
 		ev = EventList(self.time)
 		ev.write('ev.pickle', format_='pickle')
@@ -111,7 +115,7 @@ class TestEvents(object):
 
 	def test_io_with_hdf5(self):
 		"""
-		Test IO methods with hdf5 format.
+		Test IO methods with 'hdf5' format.
 		"""
 		ev = EventList(time=self.time)
 		ev.write('ev.hdf5', format_='hdf5')
@@ -126,3 +130,11 @@ class TestEvents(object):
 			assert np.all(ev.time == self.time)
 			os.remove('ev.pickle')
 
+	def test_io_with_fits(self):
+		"""
+		Test read method with 'fits' format.
+		"""
+		print datadir
+		fname = os.path.join(datadir, 'lcurveA.fits')
+		ev = EventList()
+		ev.read(fname, format_='fits')
