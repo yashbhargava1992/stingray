@@ -221,21 +221,16 @@ class EventList(object):
             utils.simon("Either set time values or explicity provide counts.")
             return
 
-        if isinstance(spectrum, list):
-            try:
-                energies = np.array(spectrum[0])
-                fluxes = np.array(spectrum[1])
+        if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
             
-            except TypeError:
-                utils.simon("Spectrum must be a 2-d array or list")
+            energies = np.array(spectrum)[0]
+            fluxes = np.array(spectrum)[1]
 
+            if not isinstance(energies, np.ndarray):
+                raise IndexError("Spectrum must be a 2-d array or list")
+        
         else:
-            try:
-                energies = spectrum[0]
-                fluxes = spectrum[1]
-
-            except IndexError:
-                utils.simon("Spectrum must be a 2-d array or list")
+            raise TypeError("Spectrum must be a 2-d array or list")
         
         # Create a set of probability values
         prob = fluxes / float(sum(fluxes))
@@ -262,7 +257,6 @@ class EventList(object):
         format_: str
             Available options are 'pickle', 'hdf5', 'ascii' and 'fits'.
         """
-
         object = io.read(filename, format_)
 
         if format_ == 'ascii':
@@ -308,7 +302,7 @@ class EventList(object):
                 mjdref=values[2], dt=values[3], notes=values[4], pi=values[5])
 
         else:
-            utils.simon("Format not understood.")
+            raise KeyError("Format not understood.")
 
     def write(self, filename, format_='pickle', **kwargs):
         """
@@ -334,5 +328,5 @@ class EventList(object):
             io.write(self, filename, format_)
 
         else:
-            utils.simon("Format not understood.")
+            raise KeyError("Format not understood.")
 

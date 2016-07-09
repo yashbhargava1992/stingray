@@ -1,6 +1,7 @@
 
 import numpy as np
 import os
+import pytest
 
 from ..events import EventList
 from ..lightcurve import Lightcurve
@@ -65,7 +66,32 @@ class TestEvents(object):
 		"""
 		Assign photon energies to an event list.
 		"""
-		ev = EventList(100)
+		ev = EventList(ncounts=100)
+		ev.set_energies(self.spectrum)
+
+	def test_set_energies_with_1d_spectrum(self):
+		"""
+		Test that set_energies() method raises index
+		error exception is spectrum is 1-d. 
+		"""
+		ev = EventList(ncounts=100)
+		with pytest.raises(IndexError):
+			ev.set_energies(self.spectrum[0])
+
+	def test_set_energies_with_wrong_spectrum_type(self):
+		"""
+		Test that set_energies() method raises type error
+		exception when wrong sepctrum type is supplied.
+		"""
+		ev = EventList(ncounts=100)
+		with pytest.raises(TypeError):
+			ev.set_energies(1)
+
+	def test_set_energies_with_counts_not_set(self):
+		"""
+		Test set_energies() methods with counts not set.
+		"""
+		ev = EventList()
 		ev.set_energies(self.spectrum)
 
 	def test_compare_energies(self):
@@ -131,7 +157,17 @@ class TestEvents(object):
 		"""
 		Test read method with 'fits' format.
 		"""
-		print datadir
 		fname = os.path.join(datadir, 'lcurveA.fits')
 		ev = EventList()
 		ev.read(fname, format_='fits')
+
+	def test_io_with_wrong_format(self):
+		"""
+		Test that io methods raise Key Error when
+		wrong format is provided.
+		"""
+		ev = EventList()
+		with pytest.raises(KeyError):
+			ev.write('ev.pickle', format_="unsupported")
+			ev.read('ev.pickle', format_="unsupported")
+			
