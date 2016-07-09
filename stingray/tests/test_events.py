@@ -58,11 +58,8 @@ class TestEvents(object):
 		ev = EventList()
 		ev.set_times(lc)
 
-		lc_rcd = ev.to_lc(dt=1, tstart=0)
-
-		# TO DO: Compare the two counts, once `Lightcurve` class method has tend
-		# option.
-		# assert np.all(np.abs(lc_rcd.counts - lc.counts) < 3 * np.sqrt(lc.counts))
+		lc_rcd = ev.to_lc(dt=1, tstart=0, tseg=4)
+		assert np.all(np.abs(lc_rcd.counts - lc.counts) < 3 * np.sqrt(lc.counts))
 
 	def test_set_energies(self):
 		"""

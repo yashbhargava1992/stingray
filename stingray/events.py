@@ -88,7 +88,7 @@ class EventList(object):
                 # In case of a 0-d array, pass
                 pass
 
-    def to_lc(self, dt, tstart=None):
+    def to_lc(self, dt, tstart=None, tseg=None):
         """
         Convert event list to a light curve object.
 
@@ -101,13 +101,16 @@ class EventList(object):
         ----------------
         tstart : float
             Initial time of the light curve
+
+        tseg: float
+            Total duration of light curve
         
         Returns
         -------
         lc: `Lightcurve` object
         """
 
-        return Lightcurve.make_lightcurve(self.time, dt, tstart=tstart)
+        return Lightcurve.make_lightcurve(self.time, dt, tstart=tstart, tseg=tseg)
 
     def set_times(self, lc, use_spline=False, bin_time=None):
         """
