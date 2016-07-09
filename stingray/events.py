@@ -170,9 +170,11 @@ class EventList(object):
             
             t0 = times[bin_start]
             bin_stop = min([bin_start + max_bin, n_bin + 1])
+            
             lc_filt = counts[bin_start:bin_stop]
             t_filt = times[bin_start:bin_stop]
             length = t_filt[-1] - t_filt[0]
+            
             n_bin_filt = len(lc_filt)
             n_to_simulate = n_bin_filt * max(lc_filt)
             safety_factor = 10
@@ -201,9 +203,11 @@ class EventList(object):
             good = random_amps < pts
             len1 = len(random_ts)
             random_ts = random_ts[good]
+            
             len2 = len(random_ts)
             random_ts = random_ts[:n_predict]
             random_ts.sort()
+            
             new_nev = len(random_ts)
             ev_list[nev:nev + new_nev] = random_ts[:]
             nev += new_nev
@@ -271,19 +275,32 @@ class EventList(object):
 
         format_: str
             Available options are 'pickle', 'hdf5', 'ascii'
-
-        Returns
-        --------
-        If format_ is 'ascii': astropy.table is returned.
-        If format_ is 'hdf5': dictionary with key-value pairs is returned.
-        If format_ is 'pickle': class object is set.
         """
 
-        if format_ == 'ascii' or format_ == 'hdf5':
-            return io.read(filename, format_)
+        object = io.read(filename, format_)
+
+        if format_ == 'ascii':
+            time = np.array(object.columns[0])
+            self = EventList(time=time)
+        
+        elif format_ == 'hdf5':
+            keys = object.keys()
+            values = []
+            
+            attributes = ['time', 'energies', 'ncounts', 'mjdref', 'dt', 'notes', 'gti', 'pi']
+
+            for attribute in attributes:
+                if attribute in keys:
+                    values.append(object[attribute])
+
+                else:
+                    values.append(None)
+
+            self = EventList(time=values[0], energies=values[1], ncounts=values[2], 
+                mjdref=values[3], dt=values[4], notes=values[5], gti=values[6], pi=values[7])
 
         elif format_ == 'pickle':
-            self = io.read(filename, format_)
+            self = object
 
         else:
             utils.simon("Format not understood.")

@@ -96,6 +96,7 @@ class TestEvents(object):
 		ev = EventList(self.time)
 		ev.write('ascii_ev.txt',format_='ascii')
 		ev.read('ascii_ev.txt', format_='ascii')
+		assert np.all(ev.time == self.time)
 		os.remove('ascii_ev.txt')
 
 	def test_io_with_pickle(self):
@@ -116,8 +117,8 @@ class TestEvents(object):
 		ev.write('ev.hdf5', format_='hdf5')
 
 		if _H5PY_INSTALLED:
-			data = ev.read('ev.hdf5',format_='hdf5')
-			assert np.all(data['time'] == self.time)
+			ev.read('ev.hdf5',format_='hdf5')
+			assert np.all(ev.time == self.time)
 			os.remove('ev.hdf5')
 
 		else:
