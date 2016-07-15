@@ -51,7 +51,6 @@ class TestIO(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_events_and_gtis(fname, additional_columns=["PI"])
 
-
     def test_read_header_key(self):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
@@ -61,7 +60,6 @@ class TestIO(object):
     def test_read_mjdref(self):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
-        print(ref_mjd(fname))
         assert ref_mjd(fname) is not None
 
 
@@ -91,7 +89,6 @@ skip_condition = pytest.mark.skipif(not _H5PY_INSTALLED,
 class TestFileFormats(object):
 
     def test_pickle_read_write(self):
-        """Test pickle object writing and reading."""
         test_object = TestIOReadWrite()
         write(test_object, filename='test.pickle', format_='pickle')
         assert read('test.pickle', 'pickle') is not None
@@ -120,14 +117,12 @@ class TestFileFormats(object):
 
     @skip_condition
     def test_hdf5_write(self):
-        """Test write functionality of hdf5."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         os.remove('test.hdf5')
 
     @skip_condition
     def test_hdf5_read(self):
-        """Test read functionality of hdf5."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         read('test.hdf5','hdf5')
@@ -135,7 +130,6 @@ class TestFileFormats(object):
 
     @skip_condition
     def test_hdf5_data_recovery(self):
-        """Test if hdf5 stored data is properly recovered."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         rec_object = read('test.hdf5','hdf5')
@@ -178,6 +172,26 @@ class TestFileFormats(object):
         np.savetxt("ascii_test.txt", np.array([time, counts]).T)
         read("ascii_test.txt", "ascii")
         os.remove("ascii_test.txt")
+
+    def test_fits_write(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.fits', 'fits')
+        os.remove('test.fits')
+
+    def test_fits_read(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.fits', 'fits')
+        read('test.fits','fits')
+        os.remove('test.fits')
+
+    def test_fits_with_multiple_tables(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.fits', 'fits', tnames=['EVENTS', 'GTI'],
+            colsassign={'number':'GTI', 'array':'GTI'})
+        os.remove('test.fits')
+
+    def test_fits_data_recovery(self):
+        pass
 
     def test_savefig_matplotlib_not_installed(self):
         from ..io import savefig

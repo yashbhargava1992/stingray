@@ -359,16 +359,14 @@ def _save_hdf5_object(object, filename):
             
             # If data is a single number, store as an attribute.
             if _isattribute(data):
-
                 if isinstance(data, np.longdouble):
                     data = np.double(data) 
                     utils.simon("Casting data as double instead of longdouble.")
                 
                 hf.attrs[attr] = data
 
-            # If data is a numpy array, create a dataset.
+            # If data is an array or list, create a dataset.
             else:
-
                 try:
                     if isinstance(data[0], np.longdouble):
                         data = np.double(data) 
@@ -377,7 +375,6 @@ def _save_hdf5_object(object, filename):
                     hf.create_dataset(attr, data=data) 
 
                 except IndexError:
-
                     # To account for numpy arrays of type 'None' (0-d)
                     pass
 
@@ -506,6 +503,119 @@ def _retrieve_ascii_object(filename, **kwargs):
 
         return data[cols]
 
+def _save_fits_object(object, filename, **kwargs):
+    """
+    Save a class object in fits format.
+
+    Parameters
+    ----------
+    object: class instance
+        A class object whose attributes would be saved in a dictionary format.
+
+    filename: str
+        The file name to save to
+
+    Additional Keyword Parameters
+    -----------------------------
+    tnames: str iterable
+        The names of HDU tables. For instance, in case of eventlist, 
+        tnames could be ['EVENTS', 'GTI']
+
+    colsassign: dictionary iterable
+        This indicates the correct tables to which to assign columns
+        to. If this is None or if a column is not provided, it/they will
+        be assigned to the first table.
+
+        For example, [{'gti':'GTI'}] indicates that gti values should be 
+        stored in GTI table.
+    """
+    tables = []
+
+    if 'colsassign' in list(kwargs.keys()):
+        colsassign = kwargs['colsassign']
+        iscolsassigned = True
+
+    else:
+        iscolsassigned = False
+
+    if 'tnames' in list(kwargs.keys()): 
+        tables = kwargs['tnames']
+
+    else:
+        tables = ['MAIN']
+    
+    items = vars(object)
+    attrs = [name for name in items if items[name] is not None]
+    
+    cols = []
+    hdrs = []
+
+    for t in tables:
+        cols.append([])
+        hdrs.append(fits.Header())
+    
+    for attr in attrs:
+        data = items[attr]
+
+        if iscolsassigned and attr in colsassign.keys():
+            index = tables.index(colsassign[attr])
+
+        else:
+            index = 0
+        
+        # If data is a single number, store as metadata.
+        if _isattribute(data):   
+            hdrs[index][attr] = data
+
+        # If data is an array or list, insert as table column.
+        else:
+            try:
+                cols[index].append(fits.Column(name=attr,format=_lookup_format(data[0]), 
+                    array=data))
+
+            except IndexError:
+                # To account for numpy arrays of type 'None' (0-d)
+                pass
+
+    tbhdu = fits.HDUList()
+
+    # Create binary tables
+    for i in range(0, len(tables)):
+        tbhdu.append(fits.BinTableHDU.from_columns(cols[i], header=hdrs[i], name=tables[i]))
+    
+    tbhdu.writeto(filename)
+
+def _retrieve_fits_object(filename):
+    """
+    Retrieves a fits format class object.
+
+    Parameters
+    ----------
+    filename: str
+        The name of file with which object was saved
+
+    Returns
+    -------
+    data: dictionary
+        Loads the data from a fits object file and returns
+        in dictionary format.
+    """
+    pass
+
+
+def _lookup_format(var):
+    """
+    Looks up relevant format in fits.
+    """
+    lookup = {"<type 'int'>":"J", "<type 'float'>":"E", 
+        "<type 'numpy.int64'>": "K", "<type 'numpy.float64'>":"D", 
+        "<type 'numpy.float128'>":"D", "<type 'str'>":"30A", 
+        "<type 'bool'": "L"}
+
+    form = type(var)
+    return lookup[str(form)]
+
+
 def _isattribute(data):
     """
     Check if data is a single number or an array.
@@ -527,7 +637,7 @@ def write(input_, filename, format_='pickle', **kwargs):
     filename: str
         name of the file to be created.
     format_: str
-        pickle, hdf5, ascii ...
+        pickle, hdf5, ascii or fits.
     """
 
     if format_ == 'pickle':
@@ -544,6 +654,9 @@ def write(input_, filename, format_='pickle', **kwargs):
     elif format_ == 'ascii':
         _save_ascii_object(input_, filename, **kwargs)
 
+    elif format_ == 'fits':
+        _save_fits_object(input_, filename, **kwargs)
+
     else:
         utils.simon('Format not understood.')
 
@@ -556,7 +669,7 @@ def read(filename, format_='pickle', **kwargs):
     filename: str
         name of the file to be retrieved.
     format_: str
-        pickle, hdf5, ascii ...
+        pickle, hdf5, ascii or fits.
     """
 
     if format_ == 'pickle':
@@ -570,6 +683,9 @@ def read(filename, format_='pickle', **kwargs):
 
     elif format_ == 'ascii':
         return _retrieve_ascii_object(filename, **kwargs)
+
+    elif format_ == 'fits':
+        return _retrieve_fits_object(filename)
     
     else:
         utils.simon('Format not understood.')
