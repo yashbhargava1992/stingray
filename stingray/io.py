@@ -364,7 +364,6 @@ def _save_hdf5_object(object, filename):
                     utils.simon("Casting data as double instead of longdouble.")
                 
                 hf.attrs[attr] = data
-
             # If data is an array or list, create a dataset.
             else:
                 try:
@@ -373,7 +372,6 @@ def _save_hdf5_object(object, filename):
                         utils.simon("Casting data as double instead of longdouble.")
 
                     hf.create_dataset(attr, data=data) 
-
                 except IndexError:
                     # To account for numpy arrays of type 'None' (0-d)
                     pass
@@ -534,13 +532,11 @@ def _save_fits_object(object, filename, **kwargs):
     if 'colsassign' in list(kwargs.keys()):
         colsassign = kwargs['colsassign']
         iscolsassigned = True
-
     else:
         iscolsassigned = False
 
     if 'tnames' in list(kwargs.keys()): 
         tables = kwargs['tnames']
-
     else:
         tables = ['MAIN']
     
@@ -559,20 +555,17 @@ def _save_fits_object(object, filename, **kwargs):
 
         if iscolsassigned and attr in colsassign.keys():
             index = tables.index(colsassign[attr])
-
         else:
             index = 0
         
         # If data is a single number, store as metadata.
         if _isattribute(data):   
             hdrs[index][attr] = data
-
         # If data is an array or list, insert as table column.
         else:
             try:
                 cols[index].append(fits.Column(name=attr,format=_lookup_format(data[0]), 
                     array=data))
-
             except IndexError:
                 # To account for numpy arrays of type 'None' (0-d)
                 pass
@@ -585,7 +578,7 @@ def _save_fits_object(object, filename, **kwargs):
     
     tbhdu.writeto(filename)
 
-def _retrieve_fits_object(filename):
+def _retrieve_fits_object(filename, **kwargs):
     """
     Retrieves a fits format class object.
 
@@ -594,14 +587,43 @@ def _retrieve_fits_object(filename):
     filename: str
         The name of file with which object was saved
 
+    Additional Keyword Parameters
+    -----------------------------
+    cols: str iterable
+        The names of columns to extract from fits tables.
+
     Returns
     -------
     data: dictionary
         Loads the data from a fits object file and returns
         in dictionary format.
     """
-    pass
+    data = {}
 
+    if 'cols' in list(kwargs.keys()):
+        cols = kwargs['cols']
+    else:
+        cols = []
+
+    hdulist = fits.open(filename)
+    fits_cols = []
+
+    for i in range(1,len(hdulist)):
+        fits_cols.append(hdulist[i].data.names)
+
+    for c in cols:
+        for i in range(0, len(fits_cols)):
+            hdr_keys = [h.lower() for h in hdulist[i+1].header.keys()]
+
+            if c in fits_cols[i]:
+                data[c] = hdulist[i+1].data[c]
+            elif c.lower() in hdr_keys:
+                try:
+                    data[c] = hdulist[i+1].header[c]
+                except KeyError:
+                    data[c.upper()] = hdulist[i+1].header(c.upper())
+
+    return data
 
 def _lookup_format(var):
     """
@@ -613,8 +635,11 @@ def _lookup_format(var):
         "<type 'bool'": "L"}
 
     form = type(var)
-    return lookup[str(form)]
 
+    try:
+        return lookup[str(form)]
+    except KeyError:
+        return "D"
 
 def _isattribute(data):
     """
@@ -646,10 +671,11 @@ def write(input_, filename, format_='pickle', **kwargs):
     elif format_ == 'hdf5':
         if _H5PY_INSTALLED:
             _save_hdf5_object(input_, filename)
-
         else:
-            utils.simon('h5py not installed, using pickle instead to save object.')
-            _save_pickle_object(input_, filename.split('.')[0]+'.pickle')
+            utils.simon('h5py not installed, using pickle instead' \
+                'to save object.')
+            _save_pickle_object(input_, filename.split('.')[0]+
+                '.pickle')
 
     elif format_ == 'ascii':
         _save_ascii_object(input_, filename, **kwargs)
@@ -679,13 +705,14 @@ def read(filename, format_='pickle', **kwargs):
         if _H5PY_INSTALLED:
             return _retrieve_hdf5_object(filename)
         else:
-            utils.simon('h5py not installed, cannot read an hdf5 object.')
+            utils.simon('h5py not installed, cannot read an' \
+                'hdf5 object.')
 
     elif format_ == 'ascii':
         return _retrieve_ascii_object(filename, **kwargs)
 
     elif format_ == 'fits':
-        return _retrieve_fits_object(filename)
+        return _retrieve_fits_object(filename, **kwargs)
     
     else:
         utils.simon('Format not understood.')
