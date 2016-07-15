@@ -574,7 +574,8 @@ def _save_fits_object(object, filename, **kwargs):
 
     # Create binary tables
     for i in range(0, len(tables)):
-        tbhdu.append(fits.BinTableHDU.from_columns(cols[i], header=hdrs[i], name=tables[i]))
+        if cols[i] != []:
+            tbhdu.append(fits.BinTableHDU.from_columns(cols[i], header=hdrs[i], name=tables[i]))
     
     tbhdu.writeto(filename)
 
@@ -609,7 +610,7 @@ def _retrieve_fits_object(filename, **kwargs):
     fits_cols = []
 
     for i in range(1,len(hdulist)):
-        fits_cols.append(hdulist[i].data.names)
+        fits_cols.append([h.lower() for h in hdulist[i].data.names])
 
     for c in cols:
         for i in range(0, len(fits_cols)):
@@ -618,11 +619,8 @@ def _retrieve_fits_object(filename, **kwargs):
             if c in fits_cols[i]:
                 data[c] = hdulist[i+1].data[c]
             elif c.lower() in hdr_keys:
-                try:
-                    data[c] = hdulist[i+1].header[c]
-                except KeyError:
-                    data[c.upper()] = hdulist[i+1].header(c.upper())
-
+                data[c] = hdulist[i+1].header[c]
+    
     return data
 
 def _lookup_format(var):

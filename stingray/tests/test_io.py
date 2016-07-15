@@ -193,9 +193,10 @@ class TestFileFormats(object):
     def test_fits_data_recovery(self):
         test_object = TestIOReadWrite()
         write(test_object, 'test.fits', 'fits', tnames=['EVENTS', 'GTI'],
-            colsassign={'number':'GTI', 'array':'GTI'})
+            colsassign={'number':'GTI', 'long_array':'GTI'})
         rec_object = read('test.fits', 'fits', cols = ['number', 'str', 'list',
             'array','long_array','long_number'])
+        os.remove('test.fits')
 
         assert rec_object['number'] == test_object.number
         assert rec_object['str'] == test_object.str
@@ -203,8 +204,6 @@ class TestFileFormats(object):
         assert (rec_object['array'] == np.array(test_object.array)).all()
         assert rec_object['long_number'] == np.double(test_object.long_number)
         assert (rec_object['long_array'] == np.double(np.array(test_object.long_array))).all()
-
-        os.remove('test.fits')
 
     def test_savefig_matplotlib_not_installed(self):
         from ..io import savefig

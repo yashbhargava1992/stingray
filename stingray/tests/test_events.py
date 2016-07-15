@@ -88,9 +88,6 @@ class TestEvents(object):
 			ev.set_energies(1)
 
 	def test_set_energies_with_counts_not_set(self):
-		"""
-		Test set_energies() methods with counts not set.
-		"""
 		ev = EventList()
 		ev.set_energies(self.spectrum)
 
@@ -117,49 +114,48 @@ class TestEvents(object):
 		assert np.all(np.abs(lc_prob - fluxes_prob) < 3 * np.sqrt(fluxes_prob))
 
 	def test_io_with_ascii(self):
-		"""
-		Test IO methods with 'ascii' format.
-		"""
 		ev = EventList(self.time)
 		ev.write('ascii_ev.txt',format_='ascii')
-		ev.read('ascii_ev.txt', format_='ascii')
+		ev = ev.read('ascii_ev.txt', format_='ascii')
 		assert np.all(ev.time == self.time)
 		os.remove('ascii_ev.txt')
 
 	def test_io_with_pickle(self):
-		"""
-		Test IO methods with 'pickle' format.
-		"""
 		ev = EventList(self.time)
 		ev.write('ev.pickle', format_='pickle')
-		ev.read('ev.pickle',format_='pickle')
+		ev = ev.read('ev.pickle',format_='pickle')
 		assert np.all(ev.time == self.time)
 		os.remove('ev.pickle')
 
 	def test_io_with_hdf5(self):
-		"""
-		Test IO methods with 'hdf5' format.
-		"""
 		ev = EventList(time=self.time)
 		ev.write('ev.hdf5', format_='hdf5')
 
 		if _H5PY_INSTALLED:
-			ev.read('ev.hdf5',format_='hdf5')
+			ev = ev.read('ev.hdf5',format_='hdf5')
 			assert np.all(ev.time == self.time)
 			os.remove('ev.hdf5')
 
 		else:
-			ev.read('ev.pickle',format_='pickle')
+			ev = ev.read('ev.pickle',format_='pickle')
 			assert np.all(ev.time == self.time)
 			os.remove('ev.pickle')
 
 	def test_io_with_fits(self):
+		ev = EventList(time = self.time)
+		ev.write('ev.fits', format_='fits')
+		ev = ev.read('ev.fits', format_='fits')
+		assert np.all(ev.time == self.time)
+		os.remove('ev.fits')
+
+	def test_fits_with_standard_file(self):
 		"""
-		Test read method with 'fits' format.
+		Test that fits works with a standard event list
+		file.
 		"""
-		fname = os.path.join(datadir, 'lcurveA.fits')
+		fname = os.path.join(datadir, 'monol_testA.evt')
 		ev = EventList()
-		ev.read(fname, format_='fits')
+		ev = ev.read(fname, format_='fits')
 
 	def test_io_with_wrong_format(self):
 		"""

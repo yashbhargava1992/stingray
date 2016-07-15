@@ -245,7 +245,7 @@ class EventList(object):
         self.energies = np.array([energies[np.argwhere(cum_prob == 
             min(cum_prob[(cum_prob - r) > 0]))] for r in R])
 
-    def read(self, filename, format_='pickle', **kwargs):
+    def read(self, filename, format_='pickle'):
         """
         Imports EventList object.
 
@@ -256,19 +256,23 @@ class EventList(object):
 
         format_: str
             Available options are 'pickle', 'hdf5', 'ascii' and 'fits'.
+
+        Returns
+        -------
+        ev: `EventList` object
         """
-        object = io.read(filename, format_)
+        attributes = ['time', 'energies', 'ncounts', 'mjdref', 'dt', 
+                'notes', 'gti', 'pi']
+        object = io.read(filename, format_, cols=attributes)
 
         if format_ == 'ascii':
             time = np.array(object.columns[0])
-            self = EventList(time=time)
+            return EventList(time=time)
         
-        elif format_ == 'hdf5':
+        elif format_ == 'hdf5' or format_ == 'fits':
             keys = object.keys()
             values = []
             
-            attributes = ['time', 'energies', 'ncounts', 'mjdref', 'dt', 'notes', 'gti', 'pi']
-
             for attribute in attributes:
                 if attribute in keys:
                     values.append(object[attribute])
@@ -276,35 +280,16 @@ class EventList(object):
                 else:
                     values.append(None)
 
-            self = EventList(time=values[0], energies=values[1], ncounts=values[2], 
+            return EventList(time=values[0], energies=values[1], ncounts=values[2], 
                 mjdref=values[3], dt=values[4], notes=values[5], gti=values[6], pi=values[7])
 
         elif format_ == 'pickle':
-            self = object
-
-        elif format_ == "fits":
-            ret = io.load_events_and_gtis(filename, **kwargs)
-            times = ret.ev_list
-            gti = ret.gti_list
-            
-            keys = ret.additional_data.keys()
-            values = []
-            attributes = ['energies', 'ncounts', 'mjdref', 'dt', 'notes', 'pi']
-
-            for attribute in attributes:
-                if attribute in keys:
-                    values.append(object[attribute])
-
-                else:
-                    values.append(None)
-
-            self = EventList(time=times, gti=gti, energies=values[0], ncounts=values[1],
-                mjdref=values[2], dt=values[3], notes=values[4], pi=values[5])
+            return object
 
         else:
             raise KeyError("Format not understood.")
 
-    def write(self, filename, format_='pickle', **kwargs):
+    def write(self, filename, format_='pickle'):
         """
         Exports EventList object.
 
@@ -326,6 +311,10 @@ class EventList(object):
 
         elif format_ == 'hdf5':
             io.write(self, filename, format_)
+
+        elif format_ == 'fits':
+            io.write(self, filename, format_, tnames=['EVENTS','GTI'],
+                colsassign={'gti':'GTI'})
 
         else:
             raise KeyError("Format not understood.")
