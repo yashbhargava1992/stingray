@@ -62,47 +62,47 @@ class TestEvents(object):
 		lc_rcd = ev.to_lc(dt=1, tstart=0, tseg=4)
 		assert np.all(np.abs(lc_rcd.counts - lc.counts) < 3 * np.sqrt(lc.counts))
 
-	def test_set_energies(self):
+	def test_set_pha(self):
 		"""
 		Assign photon energies to an event list.
 		"""
 		ev = EventList(ncounts=100)
-		ev.set_energies(self.spectrum)
+		ev.set_pha(self.spectrum)
 
-	def test_set_energies_with_1d_spectrum(self):
+	def test_set_pha_with_1d_spectrum(self):
 		"""
-		Test that set_energies() method raises index
+		Test that set_pha() method raises index
 		error exception is spectrum is 1-d. 
 		"""
 		ev = EventList(ncounts=100)
 		with pytest.raises(IndexError):
-			ev.set_energies(self.spectrum[0])
+			ev.set_pha(self.spectrum[0])
 
-	def test_set_energies_with_wrong_spectrum_type(self):
+	def test_set_pha_with_wrong_spectrum_type(self):
 		"""
-		Test that set_energies() method raises type error
+		Test that set_pha() method raises type error
 		exception when wrong sepctrum type is supplied.
 		"""
 		ev = EventList(ncounts=100)
 		with pytest.raises(TypeError):
-			ev.set_energies(1)
+			ev.set_pha(1)
 
-	def test_set_energies_with_counts_not_set(self):
+	def test_set_pha_with_counts_not_set(self):
 		ev = EventList()
-		ev.set_energies(self.spectrum)
+		ev.set_pha(self.spectrum)
 
-	def test_compare_energies(self):
+	def test_compare_pha(self):
 		"""
 		Compare the simulated energy distribution to actual distribution.
 		"""
 		fluxes = np.array(self.spectrum[1])
 		ev = EventList(ncounts=1000)
-		ev.set_energies(self.spectrum)
-		energies = [int(energy) for energy in ev.energies]
+		ev.set_pha(self.spectrum)
+		pha = [int(p) for p in ev.pha]
 
-		# Histogram energies to get shape approximation
-		gen_energies = ((np.array(energies) - 1) / 1).astype(int)
-		lc = np.bincount(energies)
+		# Histogram pha to get shape approximation
+		gen_pha = ((np.array(pha) - 1) / 1).astype(int)
+		lc = np.bincount(pha)
 
 		# Remove first entry as it contains occurences of '0' element
 		lc = lc[1:len(lc)]

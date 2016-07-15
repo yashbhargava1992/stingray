@@ -14,7 +14,7 @@ import numpy.random as ra
 
 
 class EventList(object):
-    def __init__(self, time=None, energies=None, ncounts=None, mjdref=0, dt=0, notes="", 
+    def __init__(self, time=None, pha=None, ncounts=None, mjdref=0, dt=0, notes="", 
             gti=None, pi=None):
         """
         Make an event list object from an array of time stamps
@@ -30,7 +30,7 @@ class EventList(object):
             The time resolution of the events. Only relevant when using events
             to produce light curves with similar bin time.
 
-        energies: iterable
+        pha: iterable
             A list of array of photon energy values
 
         mjdref : float
@@ -51,7 +51,7 @@ class EventList(object):
             The array of event arrival times, in seconds from the reference
             MJD (self.mjdref)
 
-        energies: numpy.ndarray
+        pha: numpy.ndarray
             The array of photon energy values
 
         ncounts: int
@@ -72,7 +72,7 @@ class EventList(object):
 
         """
         self.time = np.array(time, dtype=np.longdouble)
-        self.energies = np.array(energies)
+        self.pha = np.array(pha)
         self.notes = notes
         self.dt = dt
         self.mjdref = mjdref
@@ -205,7 +205,7 @@ class EventList(object):
         
         self.time = EventList(time).time
 
-    def set_energies(self, spectrum):
+    def set_pha(self, spectrum):
         """
         Assign energies to event list.
 
@@ -223,10 +223,10 @@ class EventList(object):
 
         if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
             
-            energies = np.array(spectrum)[0]
+            pha = np.array(spectrum)[0]
             fluxes = np.array(spectrum)[1]
 
-            if not isinstance(energies, np.ndarray):
+            if not isinstance(pha, np.ndarray):
                 raise IndexError("Spectrum must be a 2-d array or list")
         
         else:
@@ -242,7 +242,7 @@ class EventList(object):
         R = ra.uniform(0, 1, self.ncounts)
 
         # Assign energies to events corresponding to the random numbers drawn
-        self.energies = np.array([energies[np.argwhere(cum_prob == 
+        self.pha = np.array([pha[np.argwhere(cum_prob == 
             min(cum_prob[(cum_prob - r) > 0]))] for r in R])
 
     def read(self, filename, format_='pickle'):
@@ -261,7 +261,7 @@ class EventList(object):
         -------
         ev: `EventList` object
         """
-        attributes = ['time', 'energies', 'ncounts', 'mjdref', 'dt', 
+        attributes = ['time', 'pha', 'ncounts', 'mjdref', 'dt', 
                 'notes', 'gti', 'pi']
         object = io.read(filename, format_, cols=attributes)
 
@@ -280,7 +280,7 @@ class EventList(object):
                 else:
                     values.append(None)
 
-            return EventList(time=values[0], energies=values[1], ncounts=values[2], 
+            return EventList(time=values[0], pha=values[1], ncounts=values[2], 
                 mjdref=values[3], dt=values[4], notes=values[5], gti=values[6], pi=values[7])
 
         elif format_ == 'pickle':
