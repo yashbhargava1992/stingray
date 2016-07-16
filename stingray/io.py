@@ -606,20 +606,20 @@ def _retrieve_fits_object(filename, **kwargs):
     else:
         cols = []
 
-    hdulist = fits.open(filename)
-    fits_cols = []
+    with fits.open(filename) as hdulist:
+        fits_cols = []
 
-    for i in range(1,len(hdulist)):
-        fits_cols.append([h.lower() for h in hdulist[i].data.names])
+        for i in range(1,len(hdulist)):
+            fits_cols.append([h.lower() for h in hdulist[i].data.names])
 
-    for c in cols:
-        for i in range(0, len(fits_cols)):
-            hdr_keys = [h.lower() for h in hdulist[i+1].header.keys()]
+        for c in cols:
+            for i in range(0, len(fits_cols)):
+                hdr_keys = [h.lower() for h in hdulist[i+1].header.keys()]
 
-            if c in fits_cols[i]:
-                data[c] = hdulist[i+1].data[c]
-            elif c.lower() in hdr_keys:
-                data[c] = hdulist[i+1].header[c]
+                if c in fits_cols[i]:
+                    data[c] = hdulist[i+1].data[c]
+                elif c.lower() in hdr_keys:
+                    data[c] = hdulist[i+1].header[c]
     
     return data
 
