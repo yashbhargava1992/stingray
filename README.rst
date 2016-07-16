@@ -23,6 +23,22 @@ The contents will be:
 - power colours
 - rms spectra
 
+Installation
+-------------
+
+1. Clone our project from github (remember about including --recursive flag due to our submodule(s))::
+
+    $ git clone --recursive https://github.com/StingraySoftware/stingray.git
+
+2. Go to already created directory and install all dependencies::
+
+    $ pip install -r requirements.txt
+
+3. Go back to stingray project directory and execute::
+
+    $ python setup.py install
+
+
 Documentation
 -------------
 
@@ -37,9 +53,9 @@ Then open ``./docs/_build/index.html`` in the browser of your choice.
 Test suite
 ----------
 
-Try::
+Stingray uses `py.test` for testing. To run the tests, try::
 
-   $ nosetests
+   $ python setup.py test 
 
 Copyright
 ---------
