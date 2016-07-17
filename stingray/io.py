@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division,
 
 import collections
 import logging
+import math
 import numpy as np
 import os
 import six
@@ -328,27 +329,14 @@ def split(number):
         Floating portion of high precision number
     """
 
-    log10 = 0
-
     if isinstance(number, collections.Iterable):
-        dum = np.min(np.abs(number))
-        
-        if dum < 1 and dum > 0.:
-            log10 = np.floor(np.log10(dum))
-
-        number /= 10 ** log10
-        number_I = np.floor(number).astype(np.long)
-        number_F = np.array(number - number_I, dtype=np.double)
-    
+        mods = [math.modf(n) for n in number]
+        number_F = [f for f,_ in mods]
+        number_I = [i for _,i in mods] 
     else:
-        if np.abs(number) < 1 and np.abs(number) > 0.:
-            log10 = np.floor(np.log10(np.abs(number)))
+        number_F, number_I = math.modf(number)
 
-        number /= 10 ** log10
-        number_I = np.long(np.floor(number))
-        number_F = np.double(number - number_I)
-    
-    return number_I, number_F
+    return np.double(number_I), np.double(number_F)
 
 def _save_pickle_object(object, filename):
     """
@@ -483,7 +471,7 @@ def _retrieve_hdf5_object(filename):
                     attr_copy.remove(m_key+'_F')
                 else:
                     data[key] = hf.attrs[key]
-            
+
     return data
 
 def _save_ascii_object(object, filename, fmt="%.18e", **kwargs):
@@ -704,7 +692,7 @@ def _retrieve_fits_object(filename, **kwargs):
     data = {}
 
     if 'cols' in list(kwargs.keys()):
-        cols = kwargs['cols']
+        cols = [col.upper() for col in kwargs['cols']]
     else:
         cols = []
 
@@ -713,21 +701,21 @@ def _retrieve_fits_object(filename, **kwargs):
 
         # Get columns from all tables
         for i in range(1,len(hdulist)):
-            fits_cols.append([h.lower() for h in hdulist[i].data.names])
+            fits_cols.append([h.upper() for h in hdulist[i].data.names])
 
         for c in cols:
             for i in range(0, len(fits_cols)):
-                # .lower() is used because `fits` sometimes changes case
-                hdr_keys = [h.lower() for h in hdulist[i+1].header.keys()]
+                # .upper() is used because `fits` stores values in upper case
+                hdr_keys = [h.upper() for h in hdulist[i+1].header.keys()]
 
                 # Longdouble case. Check for columns
-                if c+'_i' in fits_cols[i] or c+'_f' in fits_cols[i]:
+                if c+'_I' in fits_cols[i] or c+'_F' in fits_cols[i]:
                     if c not in data.keys():
                         data[c] = np.longdouble(hdulist[i+1].data[c+'_I'])
                         data[c] += np.longdouble(hdulist[i+1].data[c+'_F'])
 
                 # Longdouble case. Check for header keys
-                if c+'_i' in hdr_keys or c+'_f' in hdr_keys:
+                if c+'_I' in hdr_keys or c+'_F' in hdr_keys:
                     if c not in data.keys():
                         data[c] = np.longdouble(hdulist[i+1].header[c+'_I'])
                         data[c] += np.longdouble(hdulist[i+1].header[c+'_F'])
@@ -737,7 +725,7 @@ def _retrieve_fits_object(filename, **kwargs):
                     data[c] = hdulist[i+1].data[c]
 
                 # Normal case. Check for header keys
-                elif c.lower() in hdr_keys:
+                elif c in hdr_keys:
                     data[c] = hdulist[i+1].header[c]
 
     return data

@@ -273,13 +273,16 @@ class EventList(object):
             keys = object.keys()
             values = []
             
+            if format_ == 'fits':
+                attributes = [a.upper() for a in attributes]
+
             for attribute in attributes:
                 if attribute in keys:
                     values.append(object[attribute])
 
                 else:
                     values.append(None)
-
+                    
             return EventList(time=values[0], pha=values[1], ncounts=values[2], 
                 mjdref=values[3], dt=values[4], notes=values[5], gti=values[6], pi=values[7])
 
