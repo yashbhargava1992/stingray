@@ -18,9 +18,6 @@ datadir = os.path.join(curdir, 'data')
 
 class TestIO(object):
 
-    """Real unit tests."""
-
-
     def test_common_name(self):
         """Test the common_name function."""
         from ..io import common_name
@@ -70,7 +67,7 @@ class TestIOReadWrite(object):
         self.str = 'Test'
         self.list = [1,2,3]
         self.array = np.array([1,2,3])
-        self.long_number = np.longdouble(1)
+        self.long_number = np.longdouble(1.25)
         self.long_array = np.longdouble([1,2,3])
 
     def test_operation(self):
@@ -140,7 +137,7 @@ class TestFileFormats(object):
         assert (rec_object['array'] == np.array(test_object.array)).all()
         assert rec_object['long_number'] == np.double(test_object.long_number)
         assert (rec_object['long_array'] == np.double(np.array(test_object.long_array))).all()
-        
+
         os.remove('test.hdf5')
 
     def test_save_ascii(self):
