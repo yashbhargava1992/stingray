@@ -125,7 +125,8 @@ class Const(ParametricModel):
 
         def logprior(a):
 
-            assert np.isfinite(a), "A must be finite."
+            if not np.isfinite(a):
+                raise ValueError("A must be finite.")
 
             pp = scipy.stats.norm.pdf(a, a_mean, a_var)
             if pp == 0.0:
@@ -153,7 +154,8 @@ class Const(ParametricModel):
         model: numpy.ndarray
             The power law model for all values in x.
         """
-        assert np.isfinite(a), "A must be finite."
+        if not np.isfinite(a):
+            raise ValueError("A must be finite.")
         return np.ones_like(x)*a
 
 
@@ -241,8 +243,11 @@ class PowerLaw(ParametricModel):
 
         def logprior(alpha, amplitude):
 
-            assert np.isfinite(alpha), "alpha must be finite!"
-            assert np.isfinite(amplitude), "amplitude must be finite"
+            if not np.isfinite(alpha):
+                raise ValueError("alpha must be finite.")
+
+            if not np.isfinite(amplitude):
+                raise ValueError("amplitude must be finite.")
 
             p_alpha = (alpha_min <= alpha <= alpha_max) / \
                       (alpha_max-alpha_min)
@@ -280,8 +285,12 @@ class PowerLaw(ParametricModel):
         model: numpy.ndarray
             The power law model for all values in x.
         """
-        assert np.isfinite(alpha), "alpha must be finite!"
-        assert np.isfinite(amplitude), "amplitude must be finite"
+        if not np.isfinite(alpha):
+            raise ValueError("alpha must be finite.")
+
+        if not np.isfinite(amplitude):
+            raise ValueError("amplitude must be finite.")
+
 
         res = -alpha*np.log(x) + amplitude
         return np.exp(res)
@@ -377,7 +386,8 @@ class BrokenPowerLaw(ParametricModel):
             for p, n in zip([alpha1, alpha2, x_break, amplitude],
                             self.parnames):
 
-                assert np.isfinite(p), "{:d} must be finite!".format(n)
+                if not np.isfinite(p):
+                    raise ValueError("%s must be finite!"%n)
 
             p_alpha1 = (alpha1_min <= alpha1 <= alpha1_max) / \
                        (alpha1_max-alpha1_min)
@@ -423,7 +433,9 @@ class BrokenPowerLaw(ParametricModel):
         # compute bending factor
 
         for p, n in zip([alpha1, alpha2, x_break, amplitude], self.parnames):
-            assert np.isfinite(p), "{:d} must be finite!".format(n)
+
+            if not np.isfinite(p):
+                raise ValueError("%s must be finite!"%n)
 
         logz = (alpha2 - alpha1)*(np.log(x) - x_break)
 
