@@ -1,5 +1,6 @@
 from __future__ import division, print_function, absolute_import
 import numpy as np
+from scipy import signal
 
 from ..utils import simon
 from ..lightcurve import Lightcurve
@@ -36,12 +37,15 @@ class Simulator(object):
         self.rms = rms
         self.red_noise = red_noise
         self.time = dt*np.arange(N)
-        self.lc = None
+
+        # Initialize a tuple of energy ranges with corresponding light curves
+        self.channels = []
 
         if seed is not None:
             np.random.seed(seed)
 
         assert rms<=1, 'Fractional rms must be less than 1.'
+        assert dt>0, 'Time resolution must be greater than 0'
 
     def simulate(self, *args):
         """
@@ -92,7 +96,7 @@ class Simulator(object):
             -------
             lightCurve: `LightCurve` object
 
-        - x = simulate(s,h)
+        - x = simulate(s, h)
             For generating a light curve using impulse response.
 
             Parameters
@@ -103,6 +107,29 @@ class Simulator(object):
                 Impulse response
 
             Returns
+            -------
+            lightCurve: `LightCurve` object
+
+        - x = simulate(s, h, 'same')
+            For generating a light curve of same length as input
+            signal, using impulse response.
+
+            Parameters
+            ----------
+            s: array-like
+                Underlying variability signal
+            h: array-like
+                Impulse response
+            mode: str
+                mode can be 'same', 'filtered, or 'full'.
+                'same' indicates that the length of output light
+                curve is same as that of input signal.
+                'filtered' means that length of output light curve
+                is len(s) - lag_delay
+                'full' indicates that the length of output light
+                curve is len(s) + len(h) -1
+
+        Returns
             -------
             lightCurve: `LightCurve` object
         """
@@ -119,10 +146,160 @@ class Simulator(object):
         elif len(args) == 2:
             return self._simulate_impulse_response(args[0], args[1])
 
+        elif len(args) == 3:
+            return self._simulate_impulse_response(args[0], args[1], args[2])
+
         else:
-            raise AssertionError("Length of arguments must be 1 or 2.")
+            simon("Length of arguments must be 1, 2 or 3.")
 
+    def simulate_channel(self, channel, *args):
+        """
+        Simulate a lightcurve and add it to corresponding energy 
+        channel.
 
+        Parameters
+        ----------
+        channel: str
+            range of energy channel (e.g., 3.5-4.5)
+
+        *args: 
+            see description of simulate() for details
+
+        Returns
+        -------
+            lightCurve: `LightCurve` object
+        """
+
+        # Check that channel name does not already exist.
+        assert channel not in [lc[0] for lc in self.channels]
+        self.channels.append((channel, self.simulate(args)))
+
+    def get_channel(self, channel):
+        """
+        Get lightcurve belonging to the energy channel.
+        """
+
+        return [lc[1] for lc in self.channels if lc[0] == channel]
+
+    def get_channels(self, channels):
+        """
+        Get multiple light curves belonging to the energy channels.
+        """
+        
+        return [lc[1] for lc in self.channels if lc[0] in channels]
+
+    def delete_channel(self, channel):
+        """
+        Delete an energy channel.
+        """
+
+        channel = [lc for lc in self.channels if lc[0] == channel]
+        index = self.channels.index(channel[0])
+        del self.channels[index]
+
+    def delete_channels(self, channels):
+        """
+        Delete multiple energy channels.
+        """
+
+        channels = [lc for lc in self.channels if lc[0] in channels]
+        indices = [self.channels.index(channel) for channel in channels]
+        
+        for i in sorted(indices, reverse=True):
+            del self.channels[i]
+
+    def count_channels(self):
+        """
+        Return total number of energy channels.
+        """
+        
+        return len(self.channels)
+
+    def simple_ir(self, start=0, width=1000, intensity=1):
+        """
+        Construct a simple impulse response using start time, 
+        width and scaling intensity.
+        To create a delta impulse response, set width to 1.
+
+        Parameters
+        ----------
+        start: int
+            start time of impulse response
+        width: int
+            width of impulse response
+        intensity: float
+            scaling parameter to set the intensity of delayed emission
+            corresponding to direct emission.
+
+        Returns
+        -------
+        h: numpy.ndarray
+            Constructed impulse response
+        """
+
+        # Fill in 0 entries until the start time
+        h_zeros = np.zeros(start/self.dt)
+
+        # Define constant impulse response
+        h_ones = np.ones(width/self.dt) * intensity
+
+        return np.append(h_zeros, h_ones)
+
+    def relativistic_ir(self, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6, decay=0.1):
+        """
+        Construct a realistic impulse response considering the relativistic
+        effects.
+
+        Parameters
+        ----------
+        t1: int
+            primary peak time
+        t2: int
+            secondary peak time
+        t3: int
+            end time
+        p1: float
+            value of primary peak
+        p2: float
+            value of secondary peak
+        rise: float
+            slope of rising exponential from primary peak to secondary peak
+        decay: float
+            slope of decaying exponential from secondary peak to end time
+
+        Returns
+        -------
+        h: numpy.ndarray
+            Constructed impulse response
+        """
+
+        dt = self.dt
+
+        assert t2>t1, 'Secondary peak must be after primary peak.'
+        assert t3>t2, 'End time must be after secondary peak.'
+        assert p2>p1, 'Secondary peak must be greater than primary peak.'
+
+        # Append zeros before start time
+        h_primary = np.append(np.zeros(int(t1/dt)), p1)
+
+        # Create a rising exponential of user-provided slope
+        x = np.linspace(t1/dt, t2/dt, (t2-t1)/dt)
+        h_rise = np.exp(rise*x)
+        
+        # Evaluate a factor for scaling exponential
+        factor = np.max(h_rise)/(p2-p1)
+        h_secondary = (h_rise/factor) + p1
+
+        # Create a decaying exponential until the end time
+        x = np.linspace(t2/dt, t3/dt, (t3-t2)/dt)
+        h_decay = (np.exp((-decay)*(x-4/dt))) 
+
+        # Add the three responses
+        h = np.append(h_primary, h_secondary)
+        h = np.append(h, h_decay)
+
+        return h
+        
     def _simulate_power_law(self, B):
         """
         Generate LightCurve from a power law spectrum.
@@ -150,9 +327,9 @@ class Simulator(object):
 
         # Obtain time series
         long_lc = self._find_inverse(real, imaginary)
-        self.lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+        lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
 
-        return self.lc
+        return lc
 
     def _simulate_power_spectrum(self, s):
         """
@@ -178,9 +355,9 @@ class Simulator(object):
         a2 = np.random.normal(size=len(s))
 
         lc = self._find_inverse(a1*s, a2*s)
-        self.lc = Lightcurve(self.time, self._extract_and_scale(lc))
+        lc = Lightcurve(self.time, self._extract_and_scale(lc))
 
-        return self.lc
+        return lc
 
     def _simulate_model(self, mod, p):
         """
@@ -212,30 +389,48 @@ class Simulator(object):
             a2 = np.random.normal(size=len(s))
 
             long_lc = self._find_inverse(a1*s, a2*s)
-            self.lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+            lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
 
-            return self.lc
+            return lc
         
         else:
             simon('Model is not defined!')
 
-    def _simulate_impulse_response(self, s, h):
+    def _simulate_impulse_response(self, s, h, mode='same'):
         """
-        Generate LightCurve from a power law spectrum.
+        Generate LightCurve from impulse response. To get
+        accurate results, binning intervals (dt) of variability 
+        signal 's' and impulse response 'h' must be equal.
 
         Parameters
         ----------
         s: array-like
-                Underlying variability signal
+            Underlying variability signal
         h: array-like
-                Impulse response
+            Impulse response
+        mode: str
+            mode can be 'same', 'filtered, or 'full'.
+            'same' indicates that the length of output light
+            curve is same as that of input signal.
+            'filtered' means that length of output light curve
+            is len(s) - lag_delay
+            'full' indicates that the length of output light
+            curve is len(s) + len(h) -1
 
         Returns
         -------
-        lightCurve: array-like
+        lightCurve: `LightCurve` object
         """
-        pass
+        lc = signal.fftconvolve(s, h)
 
+        if mode == 'same':
+            lc = lc[:-(len(h) - 1)]
+        elif mode == 'filtered':
+            lc = lc[(len(h) - 1):-(len(h) - 1)]
+        
+        time = self.dt * np.arange(len(lc))
+        return Lightcurve(time, lc)
+        
     def _find_inverse(self, real, imaginary):
         """
         Forms complex numbers corresponding to real and imaginary
@@ -299,7 +494,7 @@ class Simulator(object):
 
     def powerspectrum(self, lc, seg_size=None):
         """
-        Make a periodogram of the simulated light curve.
+        Make a powerspectrum of the simulated light curve.
 
         Parameters
         ----------
@@ -315,6 +510,6 @@ class Simulator(object):
 
         """
         if seg_size is None:
-            seg_size = self.lc.tseg
+            seg_size = lc.tseg
 
         return AveragedPowerspectrum(lc, seg_size).power
