@@ -16,6 +16,6 @@ if not _ASTROPY_SETUP_:
     from stingray.utils import *
     from stingray.powerspectrum import *
     from stingray.crossspectrum import *
-    from stingray.parametricmodels import *
-    from stingray.posterior import *
-    from stingray.parameterestimation import *
+    from stingray import *
+    from stingray import *
+    from stingray import *

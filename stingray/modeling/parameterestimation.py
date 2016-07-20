@@ -36,7 +36,7 @@ try:
 except ImportError:
     comp_hessian = False
 
-from . import PSDPosterior
+from stingray.modeling.posterior import PSDPosterior
 
 
 class OptimizationResults(object):

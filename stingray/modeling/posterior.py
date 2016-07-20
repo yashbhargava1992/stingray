@@ -7,7 +7,7 @@ from scipy.special import gamma as scipy_gamma
 
 # TODO: Find out whether there is a gamma function in numpy!
 
-from stingray.parametricmodels import logmin
+from stingray.modeling.parametricmodels import logmin
 
 __all__ = ["Posterior", "PSDPosterior",
            "LightcurvePosterior", "GaussianPosterior"]
@@ -195,7 +195,7 @@ class PSDPosterior(Posterior):
             return res
 
 
-class LightcurvePosterior(Posterior):
+class PoissonPosterior(Posterior):
 
     def __init__(self, lc, model):
         """
