@@ -10,7 +10,7 @@ from scipy.special import gamma as scipy_gamma
 from stingray.modeling.parametricmodels import logmin
 
 __all__ = ["Posterior", "PSDPosterior",
-           "LightcurvePosterior", "GaussianPosterior"]
+           "PoissonPosterior", "GaussianPosterior"]
 
 
 class Posterior(object):

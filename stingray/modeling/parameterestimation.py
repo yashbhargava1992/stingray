@@ -114,19 +114,19 @@ class OptimizationResults(object):
 
         for i, (x, y, p) in enumerate(zip(self.p_opt, self.err,
                                           lpost.model.parnames)):
-            print("{:d}) Parameter {:s}: {:.5f} +/- {:.5f}".format(i, p, x, y))
+            print("%i) Parameter %s: %f.5 +/- %f.5f"%(i, p, x, y))
 
         print("\n")
 
         print("Fitting statistics: ")
-        print(" -- number of data points: {:i}".format((len(lpost.x))))
+        print(" -- number of data points: %i"%(len(lpost.x)))
 
         try:
             self.deviance
         except AttributeError:
             self._compute_criteria(lpost)
 
-        print(" -- Deviance [-2 log L] D = {:.3f}".format(self.deviance))
+        print(" -- Deviance [-2 log L] D = %f.3"%self.deviance)
         print(" -- The Akaike Information Criterion of the model is: " +
               str(self.aic) + ".")
 
@@ -139,13 +139,13 @@ class OptimizationResults(object):
             self._compute_statistics(lpost)
 
         print(" -- The figure-of-merit function for this model " +
-              " is: {:.5f}".format(self.merit) +
-              " and the fit for {:i} dof is {:.3f}".format(self.dof,
-                                                           self.merit/self.dof))
+              " is: %f.5f"%self.merit +
+              " and the fit for %i dof is %f.3f"%(self.dof,
+                                                  self.merit/self.dof))
 
-        print(" -- Summed Residuals S = {:.5f}".format(self.sobs))
-        print(" -- Expected S ~ {:.5f} +/- {:.5f}".format(self.sexp, self.ssd))
-        print(" -- merit function (SSE) M = {:.5f} \n\n".format(self.merit))
+        print(" -- Summed Residuals S = %f.5f"%self.sobs)
+        print(" -- Expected S ~ %f.5 +/- %f.5"%(self.sexp, self.ssd))
+        print(" -- merit function (SSE) M = %f.5f \n\n"%self.merit)
 
         return
 
@@ -425,10 +425,10 @@ class SamplingResults(object):
 
         """
 
-        print("-- The acceptance fraction is: {:.5f}".format(self.acceptance))
-        print("-- The autocorrelation time is: {:5.f}".format(self.acor))
+        print("-- The acceptance fraction is: %f.5"%self.acceptance)
+        print("-- The autocorrelation time is: %f.5"%self.acor)
 
-        print("R_hat for the parameters is: {:.5f}".format(self.rhat))
+        print("R_hat for the parameters is: %f.5"%self.rhat)
 
         print("-- Posterior Summary of Parameters: \n")
         print("parameter \t mean \t\t sd \t\t 5% \t\t 95% \n")

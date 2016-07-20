@@ -39,7 +39,8 @@ class ParametricModel(object):
             MCMC chains.
 
         """
-        assert isinstance(npar, int), "npar must be an integer!"
+        if not isinstance(npar, int):
+            raise ValueError("npar must be an integer!")
 
         self.npar = npar
         self.name = name
@@ -534,7 +535,8 @@ class Lorentzian(ParametricModel):
         def logprior(x0, gamma, amplitude):
 
             for p, n in zip([x0, gamma, amplitude], self.parnames):
-                assert np.isfinite(p), "{:d} must be finite!".format(n)
+                if not np.isfinite(p):
+                    raise ValueError("%s must be finite!"%n)
 
             p_gamma = (gamma_min <= gamma <= gamma_max) / \
                       (gamma_max - gamma_min)
@@ -569,7 +571,8 @@ class Lorentzian(ParametricModel):
         """
 
         for p, n in zip([x0, gamma, amplitude], self.parnames):
-            assert np.isfinite(p), "{:d} must be finite!".format(n)
+            if not np.isfinite(p):
+                raise ValueError("%s must be finite!"%n)
 
         gamma = np.exp(gamma)
         amplitude = np.exp(amplitude)
@@ -603,8 +606,11 @@ class FixedCentroidLorentzian(ParametricModel):
 
         def logprior(gamma, amplitude):
 
-            assert np.isfinite(gamma), "gamma must be finite"
-            assert np.isfinite(amplitude), "amplitude must be finite"
+            if not np.isfinite(gamma):
+                raise ValueError( "gamma must be finite")
+
+            if not np.isfinite(amplitude):
+                raise ValueError("amplitude must be finite")
 
             p_gamma = (gamma_min <= gamma <= gamma_max) / \
                       (gamma_max-gamma_min)
@@ -633,8 +639,11 @@ class FixedCentroidLorentzian(ParametricModel):
             The height or amplitude of the Lorentzian profile
         """
 
-        assert np.isfinite(gamma), "gamma must be finite"
-        assert np.isfinite(amplitude), "amplitude must be finite"
+        if not np.isfinite(gamma):
+            raise ValueError( "gamma must be finite")
+
+        if not np.isfinite(amplitude):
+            raise ValueError("amplitude must be finite")
 
         y = Lorentzian().func(x, self.x0, gamma, amplitude)
         return y
@@ -674,7 +683,8 @@ class PowerLawConst(ParametricModel):
         """
         def logprior(alpha, amplitude, const):
             for p, n in zip([alpha, amplitude, const], self.parnames):
-                assert np.isfinite(p), "{:d} must be finite!".format(n)
+                if not np.isinstance(p):
+                    raise ValueError("%s must be finite!"%n)
 
             pp = self.models[0].logprior(alpha, amplitude) + \
                  self.models[1].logprior(const)
@@ -705,7 +715,8 @@ class PowerLawConst(ParametricModel):
         """
 
         for p, n in zip([alpha, amplitude, const], self.parnames):
-            assert np.isfinite(p), "{:d} must be finite!".format(n)
+           if not np.isinstance(p):
+                raise ValueError("%s must be finite!"%n)
 
         res = self.models[0].func(x, alpha, amplitude) + \
               self.models[1].func(x, const)

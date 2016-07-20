@@ -1,11 +1,11 @@
 import numpy as np
 import scipy.stats
 
-from nose.tools import eq_, raises
+from astropy.tests.helper import pytest
 
 from stingray import Powerspectrum
-from stingray import Posterior, PSDPosterior
-from stingray import Const
+from stingray.modeling import Posterior, PSDPosterior
+from stingray.modeling import Const
 
 np.random.seed(20150907)
 
@@ -30,11 +30,10 @@ class PosteriorClassDummy(Posterior):
 
 class TestPosteriorABC(object):
 
-    @raises(TypeError)
     def test_instantiation_of_abcclass_fails(self):
-        p = Posterior()
+        with pytest.raises(TypeError):
+            p = Posterior()
 
-    @raises(TypeError)
     def test_failure_without_loglikelihood_method(self):
         """
         The abstract base class Posterior requires a method
@@ -46,7 +45,8 @@ class TestPosteriorABC(object):
             def __init__(self, x, y, model):
                 Posterior.__init__(self, x, y, model)
 
-        p = PartialPosterior()
+        with pytest.raises(TypeError):
+            p = PartialPosterior()
 
 
 class TestPosterior(object):
@@ -96,11 +96,11 @@ class TestPSDPosterior(object):
 
         cls.model = Const(hyperpars={"a_mean":cls.a_mean, "a_var":cls.a_var})
 
-    @raises(AssertionError)
     def test_logprior_fails_without_prior(self):
         model = Const()
         lpost = PSDPosterior(self.ps, model)
-        lpost.logprior([1])
+        with pytest.raises(AssertionError):
+            lpost.logprior([1])
 
     def test_making_posterior(self):
         lpost = PSDPosterior(self.ps, self.model)
@@ -109,10 +109,10 @@ class TestPSDPosterior(object):
         assert lpost.x.all() == self.ps.freq.all()
         assert lpost.y.all() == self.ps.ps.all()
 
-    @raises(AssertionError)
     def test_correct_number_of_parameters(self):
         lpost = PSDPosterior(self.ps, self.model)
-        lpost([2,3])
+        with pytest.raises(AssertionError):
+            lpost([2,3])
 
     def test_logprior(self):
         t0 = [2.0]
@@ -132,7 +132,6 @@ class TestPSDPosterior(object):
 
         assert np.isclose(loglike, loglike_test)
 
-    @raises(AssertionError)
     def test_loglikelihood_correctly_leaves_out_zeroth_freq(self):
         t0 = [2.0]
         m = self.model(self.ps.freq, t0)
@@ -141,7 +140,8 @@ class TestPSDPosterior(object):
         lpost = PSDPosterior(self.ps, self.model)
         loglike_test = lpost.loglikelihood(t0, neg=False)
 
-        assert np.isclose(loglike_test, loglike, atol=1.e-10, rtol=1.e-10)
+        with pytest.raises(AssertionError):
+            assert np.isclose(loglike_test, loglike, atol=1.e-10, rtol=1.e-10)
 
     def test_negative_loglikelihood(self):
         t0 = [2.0]
