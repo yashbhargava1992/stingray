@@ -86,7 +86,7 @@ class TestPSDPosterior(object):
 
         ps = Powerspectrum()
         ps.freq = freq
-        ps.ps = power
+        ps.power = power
         ps.m = m
         ps.df = freq[1]-freq[0]
         ps.norm = "leahy"
@@ -107,7 +107,7 @@ class TestPSDPosterior(object):
         #print(lpost.x)
         #print(self.ps.freq)
         assert lpost.x.all() == self.ps.freq.all()
-        assert lpost.y.all() == self.ps.ps.all()
+        assert lpost.y.all() == self.ps.power.all()
 
     def test_correct_number_of_parameters(self):
         lpost = PSDPosterior(self.ps, self.model)
@@ -125,7 +125,7 @@ class TestPSDPosterior(object):
     def test_loglikelihood(self):
         t0 = [2.0]
         m = self.model(self.ps.freq[1:], t0)
-        loglike = -np.sum(self.ps.ps[1:]/m + np.log(m))
+        loglike = -np.sum(self.ps.power[1:]/m + np.log(m))
 
         lpost = PSDPosterior(self.ps, self.model)
         loglike_test = lpost.loglikelihood(t0, neg=False)
@@ -135,7 +135,7 @@ class TestPSDPosterior(object):
     def test_loglikelihood_correctly_leaves_out_zeroth_freq(self):
         t0 = [2.0]
         m = self.model(self.ps.freq, t0)
-        loglike = -np.sum(self.ps.ps/m + np.log(m))
+        loglike = -np.sum(self.ps.power/m + np.log(m))
 
         lpost = PSDPosterior(self.ps, self.model)
         loglike_test = lpost.loglikelihood(t0, neg=False)
@@ -146,7 +146,7 @@ class TestPSDPosterior(object):
     def test_negative_loglikelihood(self):
         t0 = [2.0]
         m = self.model(self.ps.freq[1:], t0)
-        loglike = np.sum(self.ps.ps[1:]/m + np.log(m))
+        loglike = np.sum(self.ps.power[1:]/m + np.log(m))
 
         lpost = PSDPosterior(self.ps, self.model)
         loglike_test = lpost.loglikelihood(t0, neg=True)
@@ -159,7 +159,7 @@ class TestPSDPosterior(object):
         lpost = PSDPosterior(self.ps, self.model)
         post_test = lpost(t0, neg=False)
 
-        loglike = -np.sum(self.ps.ps[1:]/m + np.log(m))
+        loglike = -np.sum(self.ps.power[1:]/m + np.log(m))
         logprior = np.log(scipy.stats.norm(2.0, 1.0).pdf(t0))
         post = loglike + logprior
 
@@ -171,7 +171,7 @@ class TestPSDPosterior(object):
         lpost = PSDPosterior(self.ps, self.model)
         post_test = lpost(t0, neg=True)
 
-        loglike = -np.sum(self.ps.ps[1:]/m + np.log(m))
+        loglike = -np.sum(self.ps.power[1:]/m + np.log(m))
         logprior = np.log(scipy.stats.norm(2.0, 1.0).pdf(t0))
         post = -loglike - logprior
 
@@ -190,7 +190,7 @@ class TestPerPosteriorAveragedPeriodogram(object):
 
         ps = Powerspectrum()
         ps.freq = freq
-        ps.ps = power
+        ps.power = power
         ps.m = m
         ps.df = freq[1]-freq[0]
         ps.norm = "leahy"

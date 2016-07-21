@@ -580,7 +580,7 @@ class PSDParEst(ParameterEstimation):
 
             if log:
                 logx = np.log10(self.ps.freq[1:])
-                logy = np.log10(self.ps.ps[1:])
+                logy = np.log10(self.ps.power[1:])
                 logpar1 = np.log10(res1.mfit)
 
                 p1, = s1.plot(logx, logy, color='black', linestyle='steps-mid')
@@ -595,7 +595,7 @@ class PSDParEst(ParameterEstimation):
                     s1.set_ylabel("log(Power)", fontsize=18)
 
             else:
-                p1, = s1.plot(self.ps.freq[1:], self.ps.ps[1:],
+                p1, = s1.plot(self.ps.freq[1:], self.ps.power[1:],
                               color='black', linestyle='steps-mid')
                 p2, = s1.plot(self.ps.freq[1:], res1.mfit,
                               color='blue', lw=2)
@@ -603,9 +603,9 @@ class PSDParEst(ParameterEstimation):
                 s1.set_xscale("log")
                 s1.set_yscale("log")
 
-                s1.set_xlim([min(self.ps.freq[1:]), max(self.ps.ps[1:])])
+                s1.set_xlim([min(self.ps.freq[1:]), max(self.ps.power[1:])])
                 s1.set_ylim([min(self.ps.freq[1:])/10.0,
-                             max(self.ps.ps[1:])*10.0])
+                             max(self.ps.power[1:])*10.0])
 
                 if self.ps.norm == "leahy":
                     s1.set_ylabel('Leahy-Normalized Power', fontsize=18)
@@ -630,7 +630,7 @@ class PSDParEst(ParameterEstimation):
 
             # second subplot: power/model for Power law and straight line
             s2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1)
-            pldif = self.ps.ps[1:] / res1.mfit
+            pldif = self.ps.power[1:] / res1.mfit
 
             s2.set_ylabel("Residuals, \n" + res1.model.name + " model",
                           fontsize=18)
@@ -645,7 +645,7 @@ class PSDParEst(ParameterEstimation):
             else:
                 s2.plot(self.ps.freq[1:], pldif, color='black',
                         linestyle='steps-mid')
-                s2.plot(self.ps.ps[1:], np.ones(self.ps.ps.shape[0]),
+                s2.plot(self.ps.power[1:], np.ones(self.ps.power.shape[0]),
                         color='blue', lw=2)
 
                 s2.set_xscale("log")
@@ -654,7 +654,7 @@ class PSDParEst(ParameterEstimation):
                 s2.set_ylim([min(pldif), max(pldif)])
 
             if res2 is not None:
-                bpldif = self.ps.ps[1:]/res2.mfit
+                bpldif = self.ps.power[1:]/res2.mfit
 
             # third subplot: power/model for bent power law and straight line
                 s3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1)

@@ -142,7 +142,7 @@ class PSDPosterior(Posterior):
             The independent variable (list of frequencies) stored in ps.freq
 
         y: numpy.ndarray
-            The dependent variable (list of powers) stored in ps.ps
+            The dependent variable (list of powers) stored in ps.power
 
         model: instance of any subclass of parameterclass.ParametricModel
                The model for the power spectrum. Note that in order to define
@@ -153,7 +153,7 @@ class PSDPosterior(Posterior):
 
         """
         self.m = ps.m
-        Posterior.__init__(self, ps.freq, ps.ps, model)
+        Posterior.__init__(self, ps.freq, ps.power, model)
 
     def loglikelihood(self, t0, neg=False):
         """
@@ -222,7 +222,7 @@ class PoissonPosterior(Posterior):
             The independent variable (list of frequencies) stored in ps.freq
 
         y: numpy.ndarray
-            The dependent variable (list of powers) stored in ps.ps
+            The dependent variable (list of powers) stored in ps.power
 
         model: instance of any subclass of parameterclass.ParametricModel
                The model for the power spectrum. Note that in order to define
