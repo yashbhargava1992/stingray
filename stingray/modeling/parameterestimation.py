@@ -13,7 +13,7 @@ except ImportError:
 # check whether emcee is installed for sampling
 try:
     import emcee
-    can_plot = True
+    can_sample = True
 except ImportError:
     can_sample = False
 
@@ -310,7 +310,7 @@ class ParameterEstimation(object):
         """
         assert can_sample is True, "emcee not installed! Can't sample!"
 
-        ndim = t0
+        ndim = len(t0)
 
         # do a MAP fitting step to find good starting positions for
         # the sampler
