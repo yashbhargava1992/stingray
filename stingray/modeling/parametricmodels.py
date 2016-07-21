@@ -683,7 +683,7 @@ class PowerLawConst(ParametricModel):
         """
         def logprior(alpha, amplitude, const):
             for p, n in zip([alpha, amplitude, const], self.parnames):
-                if not isinstance(p):
+                if not np.isfinite(p):
                     raise ValueError("%s must be finite!"%n)
 
             pp = self.models[0].logprior(alpha, amplitude) + \
@@ -715,7 +715,7 @@ class PowerLawConst(ParametricModel):
         """
 
         for p, n in zip([alpha, amplitude, const], self.parnames):
-           if not isinstance(p):
+           if not np.isfinite(p):
                 raise ValueError("%s must be finite!"%n)
 
         res = self.models[0].func(x, alpha, amplitude) + \
