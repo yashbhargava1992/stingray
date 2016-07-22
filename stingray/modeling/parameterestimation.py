@@ -314,7 +314,7 @@ class ParameterEstimation(object):
 
         # do a MAP fitting step to find good starting positions for
         # the sampler
-        res = self.fit(lpost, t0, neg=True)
+        res = self.fit(lpost.model, t0, neg=True)
 
         # sample random starting positions for each walker from
         # a multivariate Gaussian
@@ -331,7 +331,7 @@ class ParameterEstimation(object):
         sampler.reset()
 
         # do the actual MCMC run
-        sampler.run_mcmc(pos, niter, rstate0=state)
+        _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
 
         res = SamplingResults(sampler)
 
@@ -386,7 +386,10 @@ class SamplingResults(object):
     def _check_convergence(self, sampler):
 
         # compute and store autocorrelation time
-        self.acor = sampler.acor
+        try:
+            self.acor = sampler.acor
+        except emcee.autocorr.AutocorrError:
+            print("Chains too short to compute autocorrelation lengths.")
 
         self.rhat = self._compute_rhat(sampler)
 
@@ -426,9 +429,11 @@ class SamplingResults(object):
         """
 
         print("-- The acceptance fraction is: %f.5"%self.acceptance)
-        print("-- The autocorrelation time is: %f.5"%self.acor)
-
-        print("R_hat for the parameters is: %f.5"%self.rhat)
+        try:
+            print("-- The autocorrelation time is: %f.5"%self.acor)
+        except AttributeError:
+            pass
+        print("R_hat for the parameters is: " + str(self.rhat))
 
         print("-- Posterior Summary of Parameters: \n")
         print("parameter \t mean \t\t sd \t\t 5% \t\t 95% \n")
