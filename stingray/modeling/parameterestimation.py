@@ -37,6 +37,7 @@ except ImportError:
     comp_hessian = False
 
 from stingray.modeling.posterior import PSDPosterior
+from astropy.modeling.fitting import _fitter_to_model_params
 
 
 class OptimizationResults(object):
@@ -81,7 +82,9 @@ class OptimizationResults(object):
             self.err = np.sqrt(np.diag(self.cov))
 
     def _compute_model(self, lpost):
-        self.mfit = lpost.model(lpost.x, *self.p_opt)
+        _fitter_to_model_params(lpost.model, self.p_opt)
+
+        self.mfit = lpost.model(lpost.x)
 
     def _compute_criteria(self, lpost):
 
@@ -252,7 +255,7 @@ class ParameterEstimation(object):
 
         return lrt
 
-    def sample(self, lpost, t0,
+    def sample(self, lpost, t0, cov=None, priors=None,
                nwalkers=500, niter=100, burnin=100, threads=1,
                print_results=True, plot=False, namestr="test"):
         """
@@ -262,13 +265,10 @@ class ParameterEstimation(object):
 
         Parameters
         ----------
-        lpost : Posterior object
-            The object containing the definition of the posterior, the
-            parametric model and the data.
-
         t0 : iterable
             list or array containing the starting parameters. Its length
             must match `lpost.model.npar`.
+
 
         nwalkers : int
             The number of walkers (chains) to use during the MCMC procedure.
@@ -312,13 +312,14 @@ class ParameterEstimation(object):
 
         ndim = len(t0)
 
-        # do a MAP fitting step to find good starting positions for
-        # the sampler
-        res = self.fit(lpost.model, t0, neg=True)
-
+        if cov is None:
+            # do a MAP fitting step to find good starting positions for
+            # the sampler
+            res = self.fit(lpost.model, t0, neg=True, priors=priors)
+            cov = res.cov
         # sample random starting positions for each walker from
         # a multivariate Gaussian
-        p0 = np.array([np.random.multivariate_normal(res.p_opt, res.cov) for
+        p0 = np.array([np.random.multivariate_normal(t0, cov) for
                        i in range(nwalkers)])
 
         # initialize the sampler
@@ -525,15 +526,33 @@ class PSDParEst(ParameterEstimation):
         ParameterEstimation.__init__(self, fitmethod=fitmethod,
                                      max_post=max_post)
 
-    def fit(self, model, t0, neg=True):
+    def fit(self, model, t0, neg=True, priors=None):
 
-        self.lpost = PSDPosterior(self.ps, model)
+        self.lpost = PSDPosterior(self.ps, model, priors=priors)
         res = ParameterEstimation.fit(self, self.lpost, t0, neg=neg)
 
         res.maxpow, res.maxfreq, res.maxind = \
             self._compute_highest_outlier(self.lpost, res)
 
         return res
+
+    def sample(self, model, t0, cov=None, priors=None,
+               nwalkers=500, niter=100, burnin=100, threads=1,
+               print_results=True, plot=False, namestr="test"):
+
+        self.lpost = PSDPosterior(self.ps, model, priors=priors)
+
+        fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
+
+        res = ParameterEstimation.sample(self, self.lpost, fit_res.p_opt, cov=fit_res.cov,
+                                         priors=priors, nwalkers=nwalkers,
+                                         niter=niter, burnin=burnin,
+                                         threads=threads,
+                                         print_results=print_results, plot=plot,
+                                         namestr=namestr)
+
+        return res
+
 
     def compute_lrt(self, model1, t1, model2, t2, neg=True):
 

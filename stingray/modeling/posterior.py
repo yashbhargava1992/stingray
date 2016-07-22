@@ -7,13 +7,16 @@ from scipy.special import gamma as scipy_gamma
 from astropy.modeling.fitting import _fitter_to_model_params
 
 from stingray import Lightcurve, Powerspectrum
+
 # TODO: Find out whether there is a gamma function in numpy!
+# TODO: Add checks and balances to code
 
 #from stingray.modeling.parametricmodels import logmin
 
-__all__ = ["Posterior", "PSDPosterior", "LogLikelihood", "ObjectiveFunction",
+__all__ = ["Posterior", "PSDPosterior", "LogLikelihood",
            "PSDLogLikelihood", "GaussianLogLikelihood",
-            "PoissonPosterior", "GaussianPosterior"]
+            "PoissonPosterior", "GaussianPosterior",
+           "PriorUndefinedError", "LikelihoodUndefinedError"]
 
 logmin = -10000000000000000.0
 
@@ -350,7 +353,7 @@ class Posterior(object):
 
 class PSDPosterior(Posterior):
 
-    def __init__(self, ps, model, m=1, priors=None):
+    def __init__(self, ps, model, priors=None):
         """
         Posterior distribution for power spectra.
         Uses an exponential distribution for the errors in the likelihood,
@@ -370,13 +373,23 @@ class PSDPosterior(Posterior):
             be a prior to be calculated! If all this object is used
             for a maximum likelihood-style analysis, no prior is required.
 
+        priors : dict of form {"parameter name": function}, optional
+            A dictionary with the definitions for the prior probabilities.
+            For each parameter in `model`, there must be a prior defined with
+            a key of the exact same name as stored in `model.param_names`.
+            The item for each key is a function definition defining the prior
+            (e.g. a lambda function or a `scipy.stats.distribution.pdf`.
+            If `priors = None`, then no prior is set. This means priors need
+            to be added by hand using the `set_logprior` function defined in
+            this module. Note that it is impossible to call the posterior object
+            itself or the `self.logposterior` method without defining a prior.
 
         Attributes
         ----------
         ps: {Powerspectrum | AveragedPowerspectrum} instance
             the Powerspectrum object containing the data
 
-        m: int, optional, default is 1
+        m: int
             The number of averaged periodograms or frequency bins in ps.
             Useful for binned/averaged periodograms, since the value of
             m will change the likelihood function!
@@ -397,7 +410,7 @@ class PSDPosterior(Posterior):
         """
         self.loglikelihood = PSDLogLikelihood(ps.freq,
                                               ps.power,
-                                              model, m=m)
+                                              model)
 
         self.m = ps.m
         Posterior.__init__(self, ps.freq, ps.power, model)

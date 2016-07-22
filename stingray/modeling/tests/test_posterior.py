@@ -11,6 +11,7 @@ np.random.seed(20150907)
 
 
 
+
 class PosteriorClassDummy(Posterior):
     """
     This is a test class that tests the basic functionality of the
@@ -26,28 +27,6 @@ class PosteriorClassDummy(Posterior):
     def logprior(self, t0):
         lp = 2.0
         return lp
-
-
-class TestPosteriorABC(object):
-
-    def test_instantiation_of_abcclass_fails(self):
-        with pytest.raises(TypeError):
-            p = Posterior()
-
-    def test_failure_without_loglikelihood_method(self):
-        """
-        The abstract base class Posterior requires a method
-        :loglikelihood: to be defined in any of its subclasses.
-        Having a subclass without this method should cause failure.
-
-        """
-        class PartialPosterior(Posterior):
-            def __init__(self, x, y, model):
-                Posterior.__init__(self, x, y, model)
-
-        with pytest.raises(TypeError):
-            p = PartialPosterior()
-
 
 class TestPosterior(object):
 
