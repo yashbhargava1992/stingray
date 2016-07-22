@@ -6,7 +6,7 @@ import numpy as np
 from scipy.special import gamma as scipy_gamma
 from astropy.modeling.fitting import _fitter_to_model_params
 
-
+from stingray import Lightcurve, Powerspectrum
 # TODO: Find out whether there is a gamma function in numpy!
 
 #from stingray.modeling.parametricmodels import logmin
@@ -21,6 +21,9 @@ class PriorUndefinedError(Exception):
     pass
 
 class LikelihoodUndefinedError(Exception):
+    pass
+
+class IncorrectParameterError(Exception):
     pass
 
 def set_logprior(lpost, priors):
@@ -93,12 +96,16 @@ def set_logprior(lpost, priors):
             The logarithm of the prior distribution for the model and
             parameters given.
         """
+        if len(t0) != len(free_params):
+            raise IncorrectParameterError("The number of parameters passed into "
+                                          "the prior does not match the number "
+                                          "of parameters in the model.")
 
         logp = 0.0
         for p, pname in zip(t0, free_params):
             logp += np.log(priors[pname](p))
 
-        if not np.isfinite(lp):
+        if not np.isfinite(logp):
             logp = logmin
 
         if neg:
@@ -108,20 +115,9 @@ def set_logprior(lpost, priors):
 
     return logprior
 
-class ObjectiveFunction(object):
-    __metaclass__ = abc.ABCMeta
 
-    @abc.abstractmethod
-    def __call__(self, parameters):
-        """
-        Any objective function must have a `__call__` method that
-        takes parameters as a numpy-array and returns a value to be
-        optimized or sampled.
 
-        """
-        pass
-
-class LogLikelihood(ObjectiveFunction):
+class LogLikelihood(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, x, y, model):
@@ -152,7 +148,7 @@ class LogLikelihood(ObjectiveFunction):
         return self.evaluate(parameters, **kwargs)
 
 
-class GaussianLogLikelihood(LogLikelihood, object):
+class GaussianLogLikelihood(LogLikelihood):
 
     def __init__(self, x, y, yerr, model):
         """
@@ -190,8 +186,7 @@ class GaussianLogLikelihood(LogLikelihood, object):
         return loglike
 
 
-
-class PoissonLogLikelihood(LogLikelihood, object):
+class PoissonLogLikelihood(LogLikelihood):
 
     def __init__(self, x, y, model):
         """
@@ -227,7 +222,7 @@ class PoissonLogLikelihood(LogLikelihood, object):
         return loglike
 
 
-class PSDLogLikelihood(LogLikelihood, object):
+class PSDLogLikelihood(LogLikelihood):
 
     def __init__(self, x, y, model, m=1):
         """
@@ -277,7 +272,7 @@ class PSDLogLikelihood(LogLikelihood, object):
             return loglike
 
 
-class Posterior(ObjectiveFunction):
+class Posterior(object):
 
     def __init__(self, x, y, model):
         """
@@ -332,44 +327,18 @@ class Posterior(ObjectiveFunction):
         self.model = model
         self.model.npar = model.parameters.shape[0]
 
-
-    #def logprior(self, t0):
-    #    """
-    #    The logarithm of the prior distribution for the
-    #    model defined in self.model.
-
-    #    Parameters:
-    #    ------------
-    #    t0: {list | numpy.ndarray}
-    #        The list with parameters for the model
-
-    #    Returns:
-    #    --------
-    #    logp: float
-    #        The logarithm of the prior distribution for the model and
-    #        parameters given.
-    #    """
-    #    assert hasattr(self.model, "logprior")
-    #    assert np.size(t0) == self.model.npar, "Input parameters must " \
-    #                                           "match model parameters!"
-
-    #    return self.model.logprior(*t0)
-
-    #@abc.abstractmethod
-    #def logprior(self, t0):
-    #    pass
-
     def logposterior(self, t0, neg=False):
 
         if not hasattr(self, "logprior"):
-            raise PriorUndefinedError("There is no prior defined. " +
+            raise PriorUndefinedError("There is no prior implemented. " +
                                       "Cannot calculate posterior!")
 
         if not hasattr(self, "loglikelihood"):
-            raise PriorUndefinedError("There is no likelihood defined. " +
-                                      "Cannot calculate posterior!")
+            raise LikelihoodUndefinedError("There is no likelihood implemented. " +
+                                           "Cannot calculate posterior!")
 
         lpost = self.loglikelihood(t0) + self.logprior(t0)
+
         if neg is True:
             return -lpost
         else:
@@ -381,7 +350,7 @@ class Posterior(ObjectiveFunction):
 
 class PSDPosterior(Posterior):
 
-    def __init__(self, ps, model, m=1):
+    def __init__(self, ps, model, m=1, priors=None):
         """
         Posterior distribution for power spectra.
         Uses an exponential distribution for the errors in the likelihood,
@@ -433,52 +402,12 @@ class PSDPosterior(Posterior):
         self.m = ps.m
         Posterior.__init__(self, ps.freq, ps.power, model)
 
-
-
-    #def loglikelihood(self, t0, neg=False):
-    #    """
-    #    The log-likelihood for the model defined in self.model
-    #    and the parameters in t0. Uses a $\Chi^2$ model for
-    #    the uncertainty.
-
-    #    Parameters:
-    #    ------------
-    #    t0: {list | numpy.ndarray}
-    #        The list with parameters for the model
-
-    #    Returns:
-    #    --------
-    #    logl: float
-    #        The logarithm of the likelihood function for the model and
-    #        parameters given.
-
-    #    """
-    #    assert np.size(t0) == self.model.npar, "Input parameters must" \
-    #                                           " match model parameters!"
-
-    #    _fitter_to_model_params(self.model, t0)
-    #    funcval = self.model(self.x[1:])
-
-    #    if self.m == 1:
-    #        res = -np.sum(np.log(funcval)) - np.sum(self.y[1:]/funcval)
-    #    else:
-    #        res = -2.0*self.m*(np.sum(np.log(funcval)) +
-    #                           np.sum(self.y[1:]/funcval) +
-    #                           np.sum((2.0 / (2. * self.m) - 1.0) *
-    #                                  np.log(self.y[1:])))
-
-    #    if np.isfinite(res) is False:
-    #        res = logmin
-
-    #    if neg:
-    #        return -res
-    #    else:
-    #        return res
-
+        if not priors is None:
+            self.logprior = set_logprior(self, priors)
 
 class PoissonPosterior(Posterior):
 
-    def __init__(self, lc, model):
+    def __init__(self, x, y, model):
         """
         Posterior for Poisson lightcurve data. Primary intended use is for
         modelling X-ray light curves, but alternative uses are conceivable.
@@ -487,8 +416,11 @@ class PoissonPosterior(Posterior):
 
         Parameters
         ----------
-        lc: lightcurve.Lightcurve object
-            Object containing the light curve to be modelled
+        x : numpy.ndarray
+            The independent variable (e.g. time stamps of a light curve)
+
+        y : numpy.ndarray
+            The dependent variable (e.g. counts per bin of a light curve)
 
         model: instance of any subclass of parameterclass.ParametricModel
             The model for the power spectrum. Note that in order to define
@@ -496,11 +428,9 @@ class PoissonPosterior(Posterior):
             instantiated with the hyperpars parameter set, or there won't
             be a prior to be calculated! If all this object is used
             for a maximum likelihood-style analysis, no prior is required.
+
         Attributes
         ----------
-        lc: lightcurve.Lightcurve instance
-            the Lightcurve object containing the data
-
         x: numpy.ndarray
             The independent variable (list of frequencies) stored in ps.freq
 
@@ -515,13 +445,16 @@ class PoissonPosterior(Posterior):
                for a maximum likelihood-style analysis, no prior is required.
 
         """
-        self.lc = lc
-        Posterior.__init__(self, lc.time, lc.counts, model)
+        self.x = x
+        self.y = y
+
+        Posterior.__init__(self, self.x, self.y, model)
 
     def loglikelihood(self, t0, neg=False):
 
-        assert np.size(t0) == self.model.npar, "Input parameters must" \
-                                               " match model parameters!"
+        if np.size(t0) != self.model.parameters.shape[0]:
+            raise IncorrectParameterError("Input parameters must" +
+                                          " match model parameters!")
 
         _fitter_to_model_params(self.model, t0)
 
