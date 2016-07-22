@@ -7,7 +7,6 @@ import sys
 
 import ah_bootstrap
 from setuptools import setup
-from six.moves import configparser
 
 #A dirty hack to get around some early import/configurations ambiguities
 if sys.version_info[0] >= 3:
