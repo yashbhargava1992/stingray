@@ -5,6 +5,7 @@ python:
     - 2.7
     - 3.3
     - 3.4
+    - 3.5
 
 # Setting sudo to false opts in to Travis-CI container-based builds.
 sudo: false
@@ -44,7 +45,7 @@ env:
 
 matrix:
     include:
-        
+
         #Try without importing h5py
         - python: 2.7
           env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
@@ -117,7 +118,7 @@ install:
     # As described above, using ci-helpers, you should be able to set up an
     # environment with dependencies installed using conda and pip, but in some
     # cases this may not provide enough flexibility in how to install a
-    # specific dependency (and it will not be able to install non-Python 
+    # specific dependency (and it will not be able to install non-Python
     # dependencies). Therefore, you can also include commands below (as
     # well as at the start of the install section or in the before_install
     # section if they are needed before setting up conda) to install any
