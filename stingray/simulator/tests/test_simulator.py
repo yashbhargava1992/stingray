@@ -37,7 +37,7 @@ class TestSimulator(object):
         """
         Simulate an energy channel.
         """
-        self.simulator.simulate_channel('3.5-4.5', 2)
+        self.simulator.simulate_channel('3.5-4.5', 'lorenzian', [1,2,3,4])
         self.simulator.delete_channel('3.5-4.5')
 
     def test_get_channel(self):
@@ -54,7 +54,7 @@ class TestSimulator(object):
         Retrieve multiple energy channel after it has been simulated.
         """
         self.simulator.simulate_channel('3.5-4.5', 2)
-        self.simulator.simulate_channel('4.5-5.5', 1)
+        self.simulator.simulate_channel('4.5-5.5', 'smoothbknpo', [1,2,3,4])
         lc = self.simulator.get_channels(['3.5-4.5','4.5-5.5'])
 
         self.simulator.delete_channels(['3.5-4.5','4.5-5.5'])
