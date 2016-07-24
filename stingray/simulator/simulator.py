@@ -9,7 +9,7 @@ import stingray.simulator.models as models
 
 class Simulator(object):
 
-    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1, seed=None):
+    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1, seed=None, channels=None):
         """
         Methods to simulate and visualize light curves.
 
@@ -38,8 +38,11 @@ class Simulator(object):
         self.red_noise = red_noise
         self.time = dt*np.arange(N)
 
-        # Initialize a tuple of energy ranges with corresponding light curves
-        self.channels = []
+        if channels is None:
+            # Initialize a tuple of energy ranges with corresponding light curves
+            self.channels = []
+        else:
+            self.channels = channels
 
         if seed is not None:
             np.random.seed(seed)
@@ -513,3 +516,68 @@ class Simulator(object):
             seg_size = lc.tseg
 
         return AveragedPowerspectrum(lc, seg_size).power
+
+       def read(self, filename, format_='pickle'):
+        """
+        Imports Simulator object.
+
+        Parameters
+        ----------
+        filename: str
+            Name of the Simulator object to be read.
+
+        format_: str
+            Available options are 'pickle' and 'hdf5'.
+
+        Returns
+        -------
+        simulator: `Simulator` object
+        """
+
+        attributes = ['dt', 'N', 'mean', 'rms', 'red_noise', 
+            'seed', 'channels']
+        object = io.read(filename, format_)
+
+        
+        if format_ == 'hdf5':
+            keys = object.keys()
+            values = []
+            
+            for attribute in attributes:
+                if attribute in keys:
+                    values.append(object[attribute])
+
+                else:
+                    values.append(None)
+                    
+            return Simulator(dt=values[0], N=values[1], mean=values[2], 
+                rms=values[3], red_noise=values[4], seed=values[5], channels=values[6])
+
+        elif format_ == 'pickle':
+            return object
+
+        else:
+            raise KeyError("Format not understood.")
+
+    def write(self, filename, format_='pickle'):
+        """
+        Exports Simulator object.
+
+        Parameters
+        ----------
+        filename: str
+            Name of the Simulator object to be created.
+
+        format_: str
+            Available options are 'pickle' and 'hdf5'.
+        """
+
+        if format_ == 'pickle':
+            io.write(self, filename, format_)
+
+        elif format_ == 'hdf5':
+            io.write(self, filename, format_)
+
+        else:
+            raise KeyError("Format not understood.")
+
