@@ -4,6 +4,13 @@ from astropy.tests.helper import pytest
 from stingray import Lightcurve, Crossspectrum, sampledata
 from stingray.simulator import simulator, models
 
+_H5PY_INSTALLED = True
+
+try:
+    import h5py
+except ImportError:
+    _H5PY_INSTALLED = False
+
 class TestSimulator(object):
 
     @classmethod
@@ -291,3 +298,34 @@ class TestSimulator(object):
         """
         lc = self.simulator.simulate(2)
         self.simulator.powerspectrum(lc)
+
+    def test_io_with_pickle(self):
+        sim = simulator.Simulator(N=1024)
+        sim.write('sim.pickle', format_='pickle')
+        sim = sim.read('sim.pickle', format_='pickle')
+        assert sim.N == 1024
+        os.remove('sim.pickle')
+
+    def test_io_with_hdf5(self):
+        sim = simulator.Simulator(N=1024)
+        sim.write('sim.hdf5', format_='hdf5')
+
+        if _H5PY_INSTALLED:
+            sim = sim.read('sim.hdf5', format_='hdf5')
+            assert sim.N == 1024
+            os.remove('sim.hdf5')
+
+        else:
+            sim = sim.read('sim.pickle',format_='pickle')
+            assert sim.N == 1024
+            os.remove('sim.pickle')
+
+    def test_io_with_wrong_format(self):
+        """
+        Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        sim = simulator.Simulator(N=1024)
+        with pytest.raises(KeyError):
+            sim.write('sim.pickle', format_="unsupported")
+            sim.read('sim.pickle', format_="unsupported")

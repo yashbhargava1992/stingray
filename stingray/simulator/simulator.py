@@ -3,8 +3,7 @@ import numpy as np
 from scipy import signal
 
 from ..utils import simon
-from ..lightcurve import Lightcurve
-from ..powerspectrum import AveragedPowerspectrum
+from stingray import Lightcurve, AveragedPowerspectrum, io
 import stingray.simulator.models as models
 
 class Simulator(object):
@@ -517,7 +516,7 @@ class Simulator(object):
 
         return AveragedPowerspectrum(lc, seg_size).power
 
-       def read(self, filename, format_='pickle'):
+    def read(self, filename, format_='pickle'):
         """
         Imports Simulator object.
 
