@@ -5,7 +5,7 @@ import os
 
 from astropy.tests.helper import pytest
 
-from ..io import read, write, split
+from ..io import read, write, split_numbers
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
 from ..io import load_events_and_gtis
@@ -69,11 +69,11 @@ class TestIO(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         assert ref_mjd(fname) is not None
 
-    def test_split(self):
+    def test_split_number(self):
         """Test split with high precision numbers."""
         numbers = np.array([57401.0000003423423400453453, 
             0.00000574010000003426646], dtype = np.longdouble)
-        number_I, number_F = split(numbers)
+        number_I, number_F = split_numbers(numbers)
         r_numbers = np.longdouble(number_I) + np.longdouble(number_F)
 
         assert (numbers == r_numbers).all()

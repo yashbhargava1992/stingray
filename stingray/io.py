@@ -308,12 +308,10 @@ def common_name(str1, str2, default='common'):
     logging.debug('common_name: %s %s -> %s' % (str1, str2, common_str))
     return common_str
 
-def split(number):
+def split_numbers(number):
     """
-    Split a high precision number in integer and floating parts. 
-    If it is a longdouble, split it in integer and float parts. 
-    If the number is below zero, also use a logarithm of 10 before 
-    that, to not lose precision.
+    Split high precision number(s) into doubles.
+    TODO: Consider the option of using a third number to specify shift.
 
     Parameters
     ----------
@@ -322,11 +320,11 @@ def split(number):
 
     Returns
     -------
-    number_I: long integer
-        Integer portion of high precision number
+    number_I: double
+        First part of high precision number
 
     number_F: double
-        Floating portion of high precision number
+        Second part of high precision number
     """
 
     if isinstance(number, collections.Iterable):
@@ -396,7 +394,7 @@ def _save_hdf5_object(object, filename):
             # If data is a single number, store as an attribute.
             if _isattribute(data):
                 if isinstance(data, np.longdouble):
-                    data_I, data_F= split(data)
+                    data_I, data_F= split_numbers(data)
                     names = [attr+'_I', attr+'_F']
                     hf.attrs[names[0]] = data_I
                     hf.attrs[names[1]] = data_F
@@ -407,7 +405,7 @@ def _save_hdf5_object(object, filename):
             else:
                 try:
                     if isinstance(data[0], np.longdouble):
-                        data_I, data_F= split(data)
+                        data_I, data_F= split_numbers(data)
                         names = [attr+'_I', attr+'_F']
                         hf.create_dataset(names[0], data=data_I)
                         hf.create_dataset(names[1], data=data_F)
@@ -634,7 +632,7 @@ def _save_fits_object(object, filename, **kwargs):
         if _isattribute(data): 
             if isinstance(data, np.longdouble):
                 # Longdouble case. Split and save integer and float parts
-                data_I, data_F = split(data)
+                data_I, data_F = split_numbers(data)
                 names = [attr+'_I', attr+'_F'] 
                 hdrs[index][names[0]] = data_I
                 hdrs[index][names[1]] = data_F
@@ -647,7 +645,7 @@ def _save_fits_object(object, filename, **kwargs):
             try:
                 if isinstance(data[0], np.longdouble):
                     # Longdouble case. Split and save integer and float parts
-                    data_I, data_F= split(data)
+                    data_I, data_F= split_numbers(data)
                     names = [attr+'_I', attr+'_F']
                     cols[index].append(fits.Column(name=names[0],format='D', array=data_I))
                     cols[index].append(fits.Column(name=names[1],format='D', array=data_F))

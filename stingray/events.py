@@ -114,7 +114,7 @@ class EventList(object):
 
     def set_times(self, lc, use_spline=False, bin_time=None):
         """
-        Assign photon arrival times to event list, using acception-rejection
+        Assign photon arrival times to event list, using acceptance-rejection
         method.
 
         Parameters
