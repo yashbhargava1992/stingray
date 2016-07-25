@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from astropy.tests.helper import pytest
 from stingray import Lightcurve, Crossspectrum, sampledata
@@ -316,7 +317,7 @@ class TestSimulator(object):
             os.remove('sim.hdf5')
 
         else:
-            sim = sim.read('sim.pickle',format_='pickle')
+            sim = sim.read('sim.pickle', format_='pickle')
             assert sim.N == 1024
             os.remove('sim.pickle')
 
