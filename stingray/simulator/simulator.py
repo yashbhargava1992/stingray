@@ -2,13 +2,12 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 from scipy import signal
 
-from ..utils import simon
 from stingray import Lightcurve, AveragedPowerspectrum, io
 import stingray.simulator.models as models
 
 class Simulator(object):
 
-    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1, seed=None, channels=None):
+    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1, seed=None):
         """
         Methods to simulate and visualize light curves.
 
@@ -37,12 +36,9 @@ class Simulator(object):
         self.red_noise = red_noise
         self.time = dt*np.arange(N)
 
-        if channels is None:
-            # Initialize a tuple of energy ranges with corresponding light curves
-            self.channels = []
-        else:
-            self.channels = channels
-
+        # Initialize a tuple of energy ranges with corresponding light curves
+        self.channels = []
+        
         if seed is not None:
             np.random.seed(seed)
 
@@ -136,13 +132,13 @@ class Simulator(object):
             lightCurve: `LightCurve` object
         """
 
-        if type(args[0]) == int:
+        if type(args[0]) == int and len(args) == 1: 
             return  self._simulate_power_law(args[0])
 
         elif len(args) == 1:
             return self._simulate_power_spectrum(args[0])
 
-        elif type(args[0]) == str:
+        elif type(args[0]) == str and len(args) == 2:
             return self._simulate_model(args[0], args[1])
 
         elif len(args) == 2:
@@ -152,7 +148,7 @@ class Simulator(object):
             return self._simulate_impulse_response(args[0], args[1], args[2])
 
         else:
-            simon("Length of arguments must be 1, 2 or 3.")
+            raise ValueError("Length of arguments must be 1, 2 or 3.")
 
     def simulate_channel(self, channel, *args):
         """
@@ -181,7 +177,7 @@ class Simulator(object):
         Get lightcurve belonging to the energy channel.
         """
 
-        return [lc[1] for lc in self.channels if lc[0] == channel]
+        return [lc[1] for lc in self.channels if lc[0] == channel][0]
 
     def get_channels(self, channels):
         """
@@ -196,19 +192,27 @@ class Simulator(object):
         """
 
         channel = [lc for lc in self.channels if lc[0] == channel]
-        index = self.channels.index(channel[0])
-        del self.channels[index]
+        
+        if len(channel) == 0:
+            raise KeyError('This channel does not exist or has already been deleted.')
+        else:
+            index = self.channels.index(channel[0])
+            del self.channels[index]
 
     def delete_channels(self, channels):
         """
         Delete multiple energy channels.
         """
-
+        n = len(channels)
         channels = [lc for lc in self.channels if lc[0] in channels]
-        indices = [self.channels.index(channel) for channel in channels]
-        
-        for i in sorted(indices, reverse=True):
-            del self.channels[i]
+
+        if len(channels) != n:
+            raise KeyError('One of more of the channels do not exist or have already been'
+                'deleted.')
+        else:
+            indices = [self.channels.index(channel) for channel in channels]
+            for i in sorted(indices, reverse=True):
+                del self.channels[i]
 
     def count_channels(self):
         """
@@ -396,7 +400,7 @@ class Simulator(object):
             return lc
         
         else:
-            simon('Model is not defined!')
+            raise ValueError('Model is not defined!')
 
     def _simulate_impulse_response(self, s, h, mode='same'):
         """
@@ -526,37 +530,18 @@ class Simulator(object):
             Name of the Simulator object to be read.
 
         format_: str
-            Available options are 'pickle' and 'hdf5'.
+            Available option is 'pickle.'
 
         Returns
         -------
-        simulator: `Simulator` object
+        object: `Simulator` object
         """
 
-        attributes = ['dt', 'N', 'mean', 'rms', 'red_noise', 
-            'seed', 'channels']
-        object = io.read(filename, format_)
-
-        
-        if format_ == 'hdf5':
-            keys = object.keys()
-            values = []
-            
-            for attribute in attributes:
-                if attribute in keys:
-                    values.append(object[attribute])
-
-                else:
-                    values.append(None)
-                    
-            return Simulator(dt=values[0], N=values[1], mean=values[2], 
-                rms=values[3], red_noise=values[4], seed=values[5], channels=values[6])
-
-        elif format_ == 'pickle':
+        if format_ == 'pickle':
+            object = io.read(filename, 'pickle')        
             return object
-
         else:
-            raise KeyError("Format not understood.")
+            raise KeyError("Format not supported.")
 
     def write(self, filename, format_='pickle'):
         """
@@ -572,11 +557,6 @@ class Simulator(object):
         """
 
         if format_ == 'pickle':
-            io.write(self, filename, format_)
-
-        elif format_ == 'hdf5':
-            io.write(self, filename, format_)
-
+            io.write(self, filename)
         else:
-            raise KeyError("Format not understood.")
-
+            raise KeyError("Format not supported.")
