@@ -520,7 +520,8 @@ class Simulator(object):
 
         return AveragedPowerspectrum(lc, seg_size).power
 
-    def read(self, filename, format_='pickle'):
+    @staticmethod
+    def read(filename, format_='pickle'):
         """
         Imports Simulator object.
 

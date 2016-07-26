@@ -212,6 +212,8 @@ class TestSimulator(object):
         """
         lc = sampledata.sample_data()
         s = lc.counts
+        h = self.simulator.simple_ir(10,1,1)
+        output = self.simulator.simulate(s,h)
 
     def test_powerspectrum(self):
         """
@@ -219,10 +221,6 @@ class TestSimulator(object):
         """
         self.simulator.simulate(2)
         self.simulator.powerspectrum(self.simulator.lc)
-
-        h = self.simulator.mono_ir(start=14, width=1)
-        h = self.simulator.simple_ir(start=14, width=1)
-        output = self.simulator.simulate(s,h)
 
     def test_simulate_relativistic_impulse(self):
         """
@@ -336,11 +334,9 @@ class TestSimulator(object):
 
     def test_io_with_unsupported_format(self):
         sim = simulator.Simulator(N=1024)
-        
         with pytest.raises(KeyError):
             sim.write('sim.hdf5', format_='hdf5')
         with pytest.raises(KeyError):
             sim.write('sim.pickle', format_='pickle')
             sim.read('sim.pickle', format_='hdf5')
-        
         os.remove('sim.pickle')
