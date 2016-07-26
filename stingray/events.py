@@ -71,8 +71,8 @@ class EventList(object):
             PI channels
 
         """
-        self.time = np.array(time, dtype=np.longdouble)
-        self.pha = np.array(pha)
+        
+        self.pha = None if pha is None else np.array(pha)
         self.notes = notes
         self.dt = dt
         self.mjdref = mjdref
@@ -80,13 +80,15 @@ class EventList(object):
         self.pi = pi
         self.ncounts = ncounts
 
-        if self.ncounts is None:
-            
-            try:
-                self.ncounts = len(time)
-            except:
-                # In case of a 0-d array, pass
-                pass
+        if time is not None:
+            self.time = np.array(time, dtype=np.longdouble)
+            self.ncounts = len(time)
+        else:
+            self.time = None
+
+        if (time is not None) and (pha is not None):
+            if len(time) != len(pha):
+                raise ValueError('Lengths of time and pha must be equal.')
 
     def to_lc(self, dt, tstart=None, tseg=None):
         """
@@ -204,6 +206,7 @@ class EventList(object):
         time.sort()
         
         self.time = EventList(time).time
+        self.ncounts = len(self.time)
 
     def set_pha(self, spectrum):
         """
@@ -244,6 +247,43 @@ class EventList(object):
         # Assign energies to events corresponding to the random numbers drawn
         self.pha = np.array([pha[np.argwhere(cum_prob == 
             min(cum_prob[(cum_prob - r) > 0]))] for r in R])
+
+    def join(self, other):
+        """
+        Join two eventlist objects into one.
+
+        Parameters
+        ----------
+        other : `EventList` object
+            The other `EventList` object which is supposed to be joined with.
+
+        Returns
+        -------
+        ev_new : EventList object
+            The resulting EventList object.
+        """
+
+        ev_new = EventList()
+
+        if (np.max(self.time) > np.min(other.time)) or (np.max(other.time)
+            > np.min(self.time)):
+            #Case 1: event lists are not overalapping. Add GTIs
+            pass
+        else:
+            #Case 2: event lists merging, see maltpynt for GTI treatment
+            pass
+
+        ev_new.time = np.concatenate([self.time, other.time])
+        order = np.argsort(ev_new.time)
+        ev_new.time = ev_new.time[order] 
+
+        if (self.pha is None) or (other.pha is None):
+            pass
+        else:
+            ev_new.pha = np.concatenate([self.pha, other.pha])
+            ev_new.pha = ev_new.pha[order]
+
+        return ev_new
 
     def read(self, filename, format_='pickle'):
         """
