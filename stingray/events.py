@@ -5,9 +5,10 @@ Definition of :class:`EventList`.
 """
 from __future__ import absolute_import, division, print_function
 
+from .gti import *
+from .io import *
 from .lightcurve import Lightcurve
-import stingray.io as io
-import stingray.utils as utils
+from .utils import *
 
 import numpy as np
 import numpy.random as ra
@@ -129,13 +130,13 @@ class EventList(object):
         
         except:
             if use_spline:
-                utils.simon("Scipy not available. Cannot use spline.")
+                simon("Scipy not available. Cannot use spline.")
                 use_spline = False
 
         times = lc.time
         counts = lc.counts
 
-        bin_time = utils.assign_value_if_none(bin_time, times[1] - times[0])
+        bin_time = assign_value_if_none(bin_time, times[1] - times[0])
         n_bin = len(counts)
         bin_start = 0
         maxlc = np.max(counts)
@@ -221,7 +222,7 @@ class EventList(object):
         """
 
         if self.ncounts is None:
-            utils.simon("Either set time values or explicity provide counts.")
+            simon("Either set time values or explicity provide counts.")
             return
 
         if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
@@ -265,14 +266,9 @@ class EventList(object):
 
         ev_new = EventList()
 
-        if (np.max(self.time) > np.min(other.time)) or (np.max(other.time)
-            > np.min(self.time)):
-            #Case 1: event lists are not overalapping. Add GTIs
-            pass
-        else:
-            #Case 2: event lists merging, see maltpynt for GTI treatment
-            pass
-
+        if (self.time is None) or (other.time is None):
+            raise ValueError('Times of both event lists must be set before joining.')
+        
         ev_new.time = np.concatenate([self.time, other.time])
         order = np.argsort(ev_new.time)
         ev_new.time = ev_new.time[order] 
@@ -282,6 +278,12 @@ class EventList(object):
         else:
             ev_new.pha = np.concatenate([self.pha, other.pha])
             ev_new.pha = ev_new.pha[order]
+
+        if (self.gti is None) or (other.gti is None):
+            if check_separate(self.time, other.time):
+                #ev_new.gtis = create_gti_mask()
+            else:
+                pass
 
         return ev_new
 
@@ -303,7 +305,7 @@ class EventList(object):
         """
         attributes = ['time', 'pha', 'ncounts', 'mjdref', 'dt', 
                 'notes', 'gti', 'pi']
-        object = io.read(filename, format_, cols=attributes)
+        object = read(filename, format_, cols=attributes)
 
         if format_ == 'ascii':
             time = np.array(object.columns[0])
@@ -346,17 +348,17 @@ class EventList(object):
         """
 
         if format_ == 'ascii':
-            io.write(np.array([self.time]).T,
+            write(np.array([self.time]).T,
               filename, format_, fmt=["%s"])
 
         elif format_ == 'pickle':
-            io.write(self, filename, format_)
+            write(self, filename, format_)
 
         elif format_ == 'hdf5':
-            io.write(self, filename, format_)
+            write(self, filename, format_)
 
         elif format_ == 'fits':
-            io.write(self, filename, format_, tnames=['EVENTS','GTI'],
+            write(self, filename, format_, tnames=['EVENTS','GTI'],
                 colsassign={'gti':'GTI'})
 
         else:

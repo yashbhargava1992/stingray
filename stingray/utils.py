@@ -30,9 +30,11 @@ def simon(message, **kwargs):
     ----------
     message : string
         The message that is thrown
+
     kwargs : dict
         The rest of the arguments that are passed to warnings.warn
     """
+    
     warnings.warn("SIMON says: {0}".format(message), **kwargs)
 
 
@@ -119,13 +121,14 @@ def rebin_data(x, y, dx_new, method='sum'):
 def assign_value_if_none(value, default):
     return default if value is None else value
 
-
 def look_for_array_in_array(array1, array2):
     return next((i for i in array1 if i in array2), None)
 
-
 def is_string(s):  # pragma : no cover
-    """Portable function to answer this question."""
+    """
+    Portable function to answer this question.
+    """
+    
     PY2 = sys.version_info[0] == 2
     if PY2:
         return isinstance(s, basestring)  # NOQA
@@ -134,9 +137,11 @@ def is_string(s):  # pragma : no cover
 
 
 def is_iterable(stuff):
-    """Test if stuff is an iterable."""
+    """
+    Test if stuff is an iterable.
+    """
+    
     return isinstance(stuff, collections.Iterable)
-
 
 def order_list_of_arrays(data, order):
     if hasattr(data, 'items'):
@@ -150,16 +155,19 @@ def order_list_of_arrays(data, order):
 
 
 def optimal_bin_time(fftlen, tbin):
-    """Vary slightly the bin time to have a power of two number of bins.
+    """
+    Vary slightly the bin time to have a power of two number of bins.
 
     Given an FFT length and a proposed bin time, return a bin time
     slightly shorter than the original, that will produce a power-of-two number
     of FFT bins.
     """
+    
     return fftlen / (2 ** np.ceil(np.log2(fftlen / tbin)))
 
 def contiguous_regions(condition):
-    """Find contiguous True regions of the boolean array "condition".
+    """
+    Find contiguous True regions of the boolean array "condition".
 
     Return a 2D array where the first column is the start index of the region
     and the second column is the end index.
@@ -176,8 +184,11 @@ def contiguous_regions(condition):
 
     Notes
     -----
-    From http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-fulfilling-condition-in-a-numpy-array
-    """  # NOQA
+    From : http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-
+    fulfilling-condition-in-a-numpy-array
+    """  
+
+    # NOQA
     # Find the indicies of changes in "condition"
     diff = np.diff(condition)
     idx, = diff.nonzero()
@@ -193,3 +204,27 @@ def contiguous_regions(condition):
     # Reshape the result into two columns
     idx.shape = (-1, 2)
     return idx
+
+def check_separate(array1, array2):
+    """
+    Check if two arrays are mutually exclusive.
+
+    Parameters
+    ----------
+    array1: numpy.ndarray
+        First array
+
+    array2: numpy.ndarray
+        Second array
+
+    Returns
+    -------
+    separate: boolean
+        True if arrays are mutually exclusive, False if not
+    """
+
+    if (max(array1) < min(array2)) or (max(array2) < min(array1)):
+        return True
+    else:
+        return False
+        
