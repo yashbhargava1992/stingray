@@ -121,6 +121,22 @@ class TestEvents(object):
 
 		assert np.all(np.abs(lc_prob - fluxes_prob) < 3 * np.sqrt(fluxes_prob))
 
+	def test_join_without_times_set(self):
+		"""
+		Test if exception is raised when join method is
+		called before first setting times.
+		"""
+		ev = EventList()
+		ev_other = EventList()
+
+		with pytest.raises(ValueError):
+			ev.join(ev_other)
+
+	def test_join_without_pha(self):
+		ev = EventList(time=[1,2,3])
+		ev_other = EventList(time=[2,3])
+		ev.join(ev_other)
+
 	def test_non_overlapping_join(self):
 		"""
 		Join two overlapping event lists.
@@ -197,5 +213,7 @@ class TestEvents(object):
 		ev = EventList()
 		with pytest.raises(KeyError):
 			ev.write('ev.pickle', format_="unsupported")
+
+		with pytest.raises(KeyError):
 			ev.read('ev.pickle', format_="unsupported")
 			
