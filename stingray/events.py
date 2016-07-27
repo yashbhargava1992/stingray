@@ -274,15 +274,11 @@ class EventList(object):
         order = np.argsort(ev_new.time)
         ev_new.time = ev_new.time[order] 
 
-        if (self.pha is None) or (other.pha is None):
-            pass
-        else:
+        if (self.pha is not None) and (other.pha is not None):
             ev_new.pha = np.concatenate([self.pha, other.pha])
             ev_new.pha = ev_new.pha[order]
 
-        if (self.gti is None) or (other.gti is None):
-            pass
-        else:
+        if (self.gti is not None) and (other.gti is not None):
             if check_separate(self.gti, other.gti):
                 ev_new.gti = append_gtis(self.gti, other.gti)
                 simon('GTIs in these two event lists do not overlap at all.'
