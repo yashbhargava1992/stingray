@@ -2,11 +2,70 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 
 """
-Implements artificial and simulated time and energy averaged 
-responses.
+Implementation of time and energy averaged responses from 2-d 
+transfer functions.
 """
 
-def simple_ir(self, start=0, width=1000, intensity=1):
+class TransferFunction(object):
+
+    def __init__(self, data, dt=1, de=1):
+        """
+        Create or retrieve a transfer function, and form
+        time and energy averaged responses.
+
+        Parameters
+        ----------
+        data: numpy 2-d array
+            Has time values across the first dimension, and energy 
+            values across the second one.
+
+        dt: float
+            time interval
+
+        de: float
+            energy interval
+
+        Attributes
+        ----------
+        time: numpy.ndarray
+            energy-averaged response of 2-d transfer function
+
+        energy: numpy.ndarray
+            time-averaged response of 2-d transfer function
+        """
+        
+        pass
+
+    def average_time(self):
+        """
+        Form a time-averaged response of 2-d transfer function. 
+
+        Returns
+        -------
+        energy: numpy.ndarray
+            time-averaged response of 2-d transfer function
+        """
+        
+        pass
+
+    def average_energy(self):
+        """
+        Form an energy-averaged response of 2-d transfer function. 
+
+        Returns
+        -------
+        time: numpy.ndarray
+            energy-averaged response of 2-d transfer function
+        """
+        
+        pass
+
+"""
+Implementation of artificial methods to create energy-averaged 
+responses for quick testing.
+"""
+
+def simple_ir(dt, start=0, width=1000, intensity=1):
     """
     Construct a simple impulse response using start time, 
     width and scaling intensity.
@@ -14,10 +73,15 @@ def simple_ir(self, start=0, width=1000, intensity=1):
 
     Parameters
     ----------
+    dt: float
+        Time resolution
+
     start: int
         start time of impulse response
+    
     width: int
         width of impulse response
+    
     intensity: float
         scaling parameter to set the intensity of delayed emission
         corresponding to direct emission.
@@ -29,32 +93,41 @@ def simple_ir(self, start=0, width=1000, intensity=1):
     """
 
     # Fill in 0 entries until the start time
-    h_zeros = np.zeros(start/self.dt)
+    h_zeros = np.zeros(start/dt)
 
     # Define constant impulse response
-    h_ones = np.ones(width/self.dt) * intensity
+    h_ones = np.ones(width/dt) * intensity
 
     return np.append(h_zeros, h_ones)
 
-def relativistic_ir(self, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6, decay=0.1):
+def relativistic_ir(dt, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6, decay=0.1):
     """
     Construct a realistic impulse response considering the relativistic
     effects.
 
     Parameters
     ----------
+    dt: float
+        Time resolution
+
     t1: int
         primary peak time
+    
     t2: int
         secondary peak time
+    
     t3: int
         end time
+    
     p1: float
         value of primary peak
+    
     p2: float
         value of secondary peak
+    
     rise: float
         slope of rising exponential from primary peak to secondary peak
+    
     decay: float
         slope of decaying exponential from secondary peak to end time
 
@@ -63,8 +136,6 @@ def relativistic_ir(self, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6, decay=0.1):
     h: numpy.ndarray
         Constructed impulse response
     """
-
-    dt = self.dt
 
     assert t2>t1, 'Secondary peak must be after primary peak.'
     assert t3>t2, 'End time must be after secondary peak.'
