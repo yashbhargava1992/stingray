@@ -5,10 +5,11 @@ Definition of :class:`EventList`.
 """
 from __future__ import absolute_import, division, print_function
 
-from .gti import *
-from .io import *
+from .io import read, write
+from .utils import simon, assign_value_if_none
+from .gti import cross_gtis, append_gtis, check_separate
+
 from .lightcurve import Lightcurve
-from .utils import *
 
 import numpy as np
 import numpy.random as ra

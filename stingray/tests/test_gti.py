@@ -6,11 +6,12 @@ import pytest
 import os
 
 from ..utils import contiguous_regions
-from ..gti import *
+from ..gti import cross_gtis, append_gtis, load_gtis, get_btis
+from ..gti import check_separate, create_gti_mask
+from ..gti import create_gti_from_condition
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
-
 
 class TestGTI(object):
 
