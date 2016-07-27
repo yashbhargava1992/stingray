@@ -125,23 +125,25 @@ class TestEvents(object):
 		"""
 		Join two overlapping event lists.
 		"""
-		ev = EventList(time=[1,1,2,3,4], pha=[3,4,7,4,3])
-		ev_other = EventList(time=[5,6,6,7,10], pha=[4,3,8,1,2])
+		ev = EventList(time=[1,1,2,3,4], pha=[3,4,7,4,3], gti=[[1,2],[3,4]])
+		ev_other = EventList(time=[5,6,6,7,10], pha=[4,3,8,1,2], gti=[[6,7]])
 		ev_new = ev.join(ev_other)
 
 		assert (ev_new.time == np.array([1,1,2,3,4,5,6,6,7,10])).all()
 		assert (ev_new.pha == np.array([3,4,7,4,3,4,3,8,1,2])).all()
+		assert (ev_new.gti == np.array([[1,2],[3,4],[6,7]])).all()
 
 	def test_overlapping_join(self):
 		"""
 		Join two non-overlapping event lists.
 		"""
-		ev = EventList(time=[1,1,10,6,5], pha=[10,6,3,11,2])
-		ev_other = EventList(time=[5,7,6,6,10], pha=[2,3,8,1,2])
+		ev = EventList(time=[1,1,10,6,5], pha=[10,6,3,11,2], gti=[[1,3],[5,6]])
+		ev_other = EventList(time=[5,7,6,6,10], pha=[2,3,8,1,2], gti=[[5,7],[8,10]])
 		ev_new = ev.join(ev_other)
 
 		assert (ev_new.time == np.array([1,1,5,5,6,6,6,7,10,10])).all()
 		assert (ev_new.pha == np.array([10,6,2,2,11,8,1,3,3,2])).all()
+		assert (ev_new.gti == np.array([[5,6]])).all()
 
 	def test_io_with_ascii(self):
 		ev = EventList(self.time)

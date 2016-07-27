@@ -328,3 +328,70 @@ def get_btis(gtis, start_time=None, stop_time=None):
 def gti_len(gti):
     """Return the total good time from a list of GTIs."""
     return np.sum([g[1] - g[0] for g in gti])
+
+def check_separate(gti0, gti1):
+    """
+    Check if two GTIs are mutually exclusive.
+
+    Parameters
+    ----------
+    gti0: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    
+    gti1: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+
+    Returns
+    -------
+    separate: boolean
+        True if GTIs are mutually exclusive, False if not
+    """
+
+    gti0 = np.array(gti0, dtype=np.longdouble)
+    gti1 = np.array(gti1, dtype=np.longdouble)
+
+    # Check if independently GTIs are well behaved
+    check_gtis(gti0)
+    check_gtis(gti1)
+    
+    gti0_start = gti0[:, 0][0]
+    gti0_end = gti0[:, 1][-1]
+    gti1_start = gti1[:, 0][0]
+    gti1_end = gti1[:, 1][-1]
+
+    if (gti0_end < gti1_start) or (gti1_end < gti0_start):
+        return True
+    else:
+        return False
+
+def append_gtis(gti0, gti1):
+    """
+    Merge two non-overlapping GTIs.
+
+    Parameters
+    ----------
+    gti0: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    
+    gti1: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+
+    Returns
+    -------
+    gti: 2-d float array
+        The newly created GTI
+    """
+
+    gti0 = np.array(gti0, dtype=np.longdouble)
+    gti1 = np.array(gti1, dtype=np.longdouble)
+
+    # Check if independently GTIs are well behaved.
+    check_gtis(gti0)
+    check_gtis(gti1)
+
+    # Check if GTIs are mutually exclusive.
+    if not check_separate(gti0, gti1):
+        raise ValueError('In order to append, GTIs must be mutually'
+            'exclusive.')
+
+    return np.concatenate([gti0, gti1])

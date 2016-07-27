@@ -280,10 +280,14 @@ class EventList(object):
             ev_new.pha = ev_new.pha[order]
 
         if (self.gti is None) or (other.gti is None):
-            if check_separate(self.time, other.time):
-                #ev_new.gtis = create_gti_mask()
+            pass
+        else:
+            if check_separate(self.gti, other.gti):
+                ev_new.gti = append_gtis(self.gti, other.gti)
+                simon('GTIs in these two event lists do not overlap at all.'
+                    'Merging instead of returning an overlap.')
             else:
-                pass
+                ev_new.gti = cross_gtis([self.gti, other.gti])
 
         return ev_new
 

@@ -204,27 +204,3 @@ def contiguous_regions(condition):
     # Reshape the result into two columns
     idx.shape = (-1, 2)
     return idx
-
-def check_separate(array1, array2):
-    """
-    Check if two arrays are mutually exclusive.
-
-    Parameters
-    ----------
-    array1: numpy.ndarray
-        First array
-
-    array2: numpy.ndarray
-        Second array
-
-    Returns
-    -------
-    separate: boolean
-        True if arrays are mutually exclusive, False if not
-    """
-
-    if (max(array1) < min(array2)) or (max(array2) < min(array1)):
-        return True
-    else:
-        return False
-        
