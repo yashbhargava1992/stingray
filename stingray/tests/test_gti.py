@@ -2,19 +2,16 @@ from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 
 import numpy as np
+import pytest
 import os
 
 from ..utils import contiguous_regions
-
-from ..gti import cross_gtis
-from ..gti import get_btis
-from ..gti import create_gti_mask
+from ..gti import cross_gtis, append_gtis, load_gtis, get_btis
+from ..gti import check_separate, create_gti_mask
 from ..gti import create_gti_from_condition
-from ..gti import load_gtis
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
-
 
 class TestGTI(object):
 
@@ -64,3 +61,30 @@ class TestGTI(object):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_gtis(fname, gtistring="GTI")
+
+    def test_check_separate_overlapping_case(self):
+        """Test if intersection between two GTIs can be detected. """
+        gti1 = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
+        gti2 = np.array([[2, 5], [6, 9], [11.4, 14]])
+        assert check_separate(gti1, gti2) == False
+
+    def test_check_separate_nonoverlapping_case(self):
+        """Test if two non-overlapping GTIs can be detected."""
+        gti1 = np.array([[1, 2], [4, 5]])
+        gti2 = np.array([[6, 7], [8, 9]])
+        assert check_separate(gti1, gti2) == True
+
+    def test_append_gtis(self):
+        """Test if two non-overlapping GTIs can be appended. """
+        gti1 = np.array([[1, 2], [4, 5]])
+        gti2 = np.array([[6, 7], [8, 9]])
+        assert np.all(append_gtis(gti1, gti2) == [[1,2],[4,5],[6,7],[8,9]])
+
+    def test_append_overlapping_gtis(self):
+        """Test if exception is raised in event of overlapping gtis."""
+        gti1 = np.array([[1, 2], [4, 5]])
+        gti2 = np.array([[3, 4.5], [8, 9]])
+
+        with pytest.raises(ValueError):
+            append_gtis(gti1, gti2)
+

@@ -5,9 +5,11 @@ Definition of :class:`EventList`.
 """
 from __future__ import absolute_import, division, print_function
 
+from .io import read, write
+from .utils import simon, assign_value_if_none
+from .gti import cross_gtis, append_gtis, check_separate
+
 from .lightcurve import Lightcurve
-import stingray.io as io
-import stingray.utils as utils
 
 import numpy as np
 import numpy.random as ra
@@ -71,8 +73,8 @@ class EventList(object):
             PI channels
 
         """
-        self.time = np.array(time, dtype=np.longdouble)
-        self.pha = np.array(pha)
+        
+        self.pha = None if pha is None else np.array(pha)
         self.notes = notes
         self.dt = dt
         self.mjdref = mjdref
@@ -80,13 +82,15 @@ class EventList(object):
         self.pi = pi
         self.ncounts = ncounts
 
-        if self.ncounts is None:
-            
-            try:
-                self.ncounts = len(time)
-            except:
-                # In case of a 0-d array, pass
-                pass
+        if time is not None:
+            self.time = np.array(time, dtype=np.longdouble)
+            self.ncounts = len(time)
+        else:
+            self.time = None
+
+        if (time is not None) and (pha is not None):
+            if len(time) != len(pha):
+                raise ValueError('Lengths of time and pha must be equal.')
 
     def to_lc(self, dt, tstart=None, tseg=None):
         """
@@ -127,13 +131,13 @@ class EventList(object):
         
         except:
             if use_spline:
-                utils.simon("Scipy not available. Cannot use spline.")
+                simon("Scipy not available. Cannot use spline.")
                 use_spline = False
 
         times = lc.time
         counts = lc.counts
 
-        bin_time = utils.assign_value_if_none(bin_time, times[1] - times[0])
+        bin_time = assign_value_if_none(bin_time, times[1] - times[0])
         n_bin = len(counts)
         bin_start = 0
         maxlc = np.max(counts)
@@ -204,6 +208,7 @@ class EventList(object):
         time.sort()
         
         self.time = EventList(time).time
+        self.ncounts = len(self.time)
 
     def set_pha(self, spectrum):
         """
@@ -218,7 +223,7 @@ class EventList(object):
         """
 
         if self.ncounts is None:
-            utils.simon("Either set time values or explicity provide counts.")
+            simon("Either set time values or explicity provide counts.")
             return
 
         if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
@@ -245,6 +250,44 @@ class EventList(object):
         self.pha = np.array([pha[np.argwhere(cum_prob == 
             min(cum_prob[(cum_prob - r) > 0]))] for r in R])
 
+    def join(self, other):
+        """
+        Join two eventlist objects into one.
+
+        Parameters
+        ----------
+        other : `EventList` object
+            The other `EventList` object which is supposed to be joined with.
+
+        Returns
+        -------
+        ev_new : EventList object
+            The resulting EventList object.
+        """
+
+        ev_new = EventList()
+
+        if (self.time is None) or (other.time is None):
+            raise ValueError('Times of both event lists must be set before joining.')
+        
+        ev_new.time = np.concatenate([self.time, other.time])
+        order = np.argsort(ev_new.time)
+        ev_new.time = ev_new.time[order] 
+
+        if (self.pha is not None) and (other.pha is not None):
+            ev_new.pha = np.concatenate([self.pha, other.pha])
+            ev_new.pha = ev_new.pha[order]
+
+        if (self.gti is not None) and (other.gti is not None):
+            if check_separate(self.gti, other.gti):
+                ev_new.gti = append_gtis(self.gti, other.gti)
+                simon('GTIs in these two event lists do not overlap at all.'
+                    'Merging instead of returning an overlap.')
+            else:
+                ev_new.gti = cross_gtis([self.gti, other.gti])
+
+        return ev_new
+
     def read(self, filename, format_='pickle'):
         """
         Imports EventList object.
@@ -263,14 +306,14 @@ class EventList(object):
         """
         attributes = ['time', 'pha', 'ncounts', 'mjdref', 'dt', 
                 'notes', 'gti', 'pi']
-        object = io.read(filename, format_, cols=attributes)
+        data = read(filename, format_, cols=attributes)
 
         if format_ == 'ascii':
-            time = np.array(object.columns[0])
+            time = np.array(data.columns[0])
             return EventList(time=time)
         
         elif format_ == 'hdf5' or format_ == 'fits':
-            keys = object.keys()
+            keys = data.keys()
             values = []
             
             if format_ == 'fits':
@@ -278,7 +321,7 @@ class EventList(object):
 
             for attribute in attributes:
                 if attribute in keys:
-                    values.append(object[attribute])
+                    values.append(data[attribute])
 
                 else:
                     values.append(None)
@@ -287,7 +330,7 @@ class EventList(object):
                 mjdref=values[3], dt=values[4], notes=values[5], gti=values[6], pi=values[7])
 
         elif format_ == 'pickle':
-            return object
+            return data
 
         else:
             raise KeyError("Format not understood.")
@@ -306,17 +349,16 @@ class EventList(object):
         """
 
         if format_ == 'ascii':
-            io.write(np.array([self.time]).T,
-              filename, format_, fmt=["%s"])
+            write(np.array([self.time]).T, filename, format_, fmt=["%s"])
 
         elif format_ == 'pickle':
-            io.write(self, filename, format_)
+            write(self, filename, format_)
 
         elif format_ == 'hdf5':
-            io.write(self, filename, format_)
+            write(self, filename, format_)
 
         elif format_ == 'fits':
-            io.write(self, filename, format_, tnames=['EVENTS','GTI'],
+            write(self, filename, format_, tnames=['EVENTS','GTI'], 
                 colsassign={'gti':'GTI'})
 
         else:
