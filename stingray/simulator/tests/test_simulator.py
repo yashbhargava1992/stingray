@@ -1,8 +1,16 @@
 import numpy as np
+import os
 
 from astropy.tests.helper import pytest
 from stingray import Lightcurve, Crossspectrum, sampledata
 from stingray.simulator import simulator, models
+
+_H5PY_INSTALLED = True
+
+try:
+    import h5py
+except ImportError:
+    _H5PY_INSTALLED = False
 
 class TestSimulator(object):
 
@@ -33,11 +41,15 @@ class TestSimulator(object):
         self.simulator = simulator.Simulator(N=1024, seed=12)
         assert len(self.simulator.simulate(2).counts), 1024
 
+    def test_simulate_with_incorrect_arguments(self):
+        with pytest.raises(ValueError):
+            self.simulator.simulate(1,2,3,4)
+
     def test_simulate_channel(self):
         """
         Simulate an energy channel.
         """
-        self.simulator.simulate_channel('3.5-4.5', 2)
+        self.simulator.simulate_channel('3.5-4.5', 'lorenzian', [1,2,3,4])
         self.simulator.delete_channel('3.5-4.5')
 
     def test_get_channel(self):
@@ -46,7 +58,6 @@ class TestSimulator(object):
         """
         self.simulator.simulate_channel('3.5-4.5', 2)
         lc = self.simulator.get_channel('3.5-4.5')
-
         self.simulator.delete_channel('3.5-4.5')
     
     def test_get_channels(self):
@@ -54,7 +65,7 @@ class TestSimulator(object):
         Retrieve multiple energy channel after it has been simulated.
         """
         self.simulator.simulate_channel('3.5-4.5', 2)
-        self.simulator.simulate_channel('4.5-5.5', 1)
+        self.simulator.simulate_channel('4.5-5.5', 'smoothbknpo', [1,2,3,4])
         lc = self.simulator.get_channels(['3.5-4.5','4.5-5.5'])
 
         self.simulator.delete_channels(['3.5-4.5','4.5-5.5'])
@@ -67,7 +78,24 @@ class TestSimulator(object):
         self.simulator.simulate_channel('4.5-5.5', 1)
 
         assert self.simulator.count_channels() == 2
-        
+        self.simulator.delete_channels(['3.5-4.5','4.5-5.5'])
+
+    def test_delete_incorrect_channel(self):
+        """
+        Test if deleting incorrect channel raises a
+        keyerror exception.
+        """
+        with pytest.raises(KeyError):
+            self.simulator.delete_channel('3.5-4.5')
+
+    def test_delete_incorrect_channels(self):
+        """
+        Test if deleting incorrect channels raises a
+        keyerror exception.
+        """
+        with pytest.raises(KeyError):
+            self.simulator.delete_channels(['3.5-4.5','4.5-5.5'])
+
     def test_simulate_powerlaw(self):
         """
         Simulate light curve from power law spectrum.
@@ -157,6 +185,13 @@ class TestSimulator(object):
         assert np.all(np.abs(actual_prob - simulated_prob) < 3
                       * np.sqrt(actual_prob))
 
+    def test_simulate_wrong_model(self):
+        """
+        Simulate with a model that does not exist.
+        """
+        with pytest.raises(ValueError):
+            self.simulator.simulate('unsupported', [0.6, 0.2, 0.6, 0.5])
+
     def test_construct_simple_ir(self):
         """
         Construct simple impulse response.
@@ -177,6 +212,8 @@ class TestSimulator(object):
         """
         lc = sampledata.sample_data()
         s = lc.counts
+        h = self.simulator.simple_ir(10,1,1)
+        output = self.simulator.simulate(s,h)
 
     def test_powerspectrum(self):
         """
@@ -184,10 +221,6 @@ class TestSimulator(object):
         """
         self.simulator.simulate(2)
         self.simulator.powerspectrum(self.simulator.lc)
-
-        h = self.simulator.mono_ir(start=14, width=1)
-        h = self.simulator.simple_ir(start=14, width=1)
-        output = self.simulator.simulate(s,h)
 
     def test_simulate_relativistic_impulse(self):
         """
@@ -291,3 +324,19 @@ class TestSimulator(object):
         """
         lc = self.simulator.simulate(2)
         self.simulator.powerspectrum(lc)
+
+    def test_io(self):
+        sim = simulator.Simulator(N=1024)
+        sim.write('sim.pickle')
+        sim = sim.read('sim.pickle')
+        assert sim.N == 1024
+        os.remove('sim.pickle')
+
+    def test_io_with_unsupported_format(self):
+        sim = simulator.Simulator(N=1024)
+        with pytest.raises(KeyError):
+            sim.write('sim.hdf5', format_='hdf5')
+        with pytest.raises(KeyError):
+            sim.write('sim.pickle', format_='pickle')
+            sim.read('sim.pickle', format_='hdf5')
+        os.remove('sim.pickle')
