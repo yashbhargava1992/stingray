@@ -8,58 +8,148 @@ transfer functions.
 
 class TransferFunction(object):
 
-    def __init__(self, data, dt=1, de=1):
+    def __init__(self, data, dt=1, de=1, tstart=0, estart=0):
         """
         Create or retrieve a transfer function, and form
         time and energy averaged responses.
 
         Parameters
         ----------
-        data: numpy 2-d array
-            Has time values across the first dimension, and energy 
-            values across the second one.
+        data : numpy 2-d array / 2-d list
+            inner/first dimension (or column counts) represents time
+            and outer/second dimension (or rows counts) represents energy.
 
-        dt: float
+            As an example, if you have you 2-d model define by 'arr', then
+            arr[1][5] defines a time of 5(s) and energy of 1(keV) [assuming
+            'dt' and 'de' are 1 and 'tstart' and 'estart' are 0.]
+
+        dt : float, default 1
             time interval
 
-        de: float
+        de : float, default 1
             energy interval
+
+        tstart : float, default 0
+            initial time value across time axis
+
+        estart : float, default 0
+            initial energy value across energy axis
 
         Attributes
         ----------
-        time: numpy.ndarray
+        time : numpy.ndarray
             energy-averaged response of 2-d transfer function
 
-        energy: numpy.ndarray
+        energy : numpy.ndarray
             time-averaged response of 2-d transfer function
         """
         
-        pass
+        self.data = np.asarray(data)
+        self.dt = dt
+        self.de = de
+        self.tstart = tstart
+        self.estart = estart
+        self.time = None
+        self.energy = None
 
-    def average_time(self):
+        if len(data[0]) < 2:
+            raise ValueError('Number of columns should be greater than 1.')
+
+        if len(data[:]) < 2:
+            raise ValueError('Number of rows should be greater than 1.')
+
+    def time_response(self):
         """
         Form a time-averaged response of 2-d transfer function. 
 
         Returns
         -------
-        energy: numpy.ndarray
+        energy : numpy.ndarray
             time-averaged response of 2-d transfer function
         """
         
-        pass
+        self.time = np.mean(self.data, axis=0)
 
-    def average_energy(self):
+    def energy_response(self):
         """
         Form an energy-averaged response of 2-d transfer function. 
 
         Returns
         -------
-        time: numpy.ndarray
+        time : numpy.ndarray
             energy-averaged response of 2-d transfer function
+        """
+        
+        self.energy = np.mean(self.data, axis=1)
+
+    def plot(self, response='2d'):
+        """
+        Plot 'time', 'energy' or 2-d response using matplotlib.
+
+        In case of 1-d response, 'time' and 'energy' would appear
+        along x-axis and corresponding flux across y-axis. In case
+        of 2-d response, a spectrograph would be formed with 'time'
+        along x-axis and 'energy' along y-axis.
+
+        Parameters
+        ----------
+        response : str
+            type of response. accepts 'time', 'energy', '2d'
+
+        marker : str, default '-'
+            Line style and color of the plot. Line styles and colors are
+            combined in a single format string, as in ``'bo'`` for blue
+            circles. See `matplotlib.pyplot.plot` for more options.
+
+        filename : str
+            the name of file to save plot to. If a default of 'None' is
+            picked, plot is not saved.
+        """
+
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise ImportError("Matplotlib required for plot()")
+
+        if response not in ['time', 'energy', '2d']:
+            raise ValueError("Response value is not recognized. Available"
+                            "response types are ")
+
+        fig = plt.figure()
+        
+    @staticmethod
+    def read(format_='pickle'):
+        """
+        Reads transfer function from a 'fits', 'pickle', 'hdf5' or 
+        'ascii' file.
+
+        Parameter
+        ---------
+        format_ : str
+            the format of the file to be retrieved - accepts 'pickle'
+            , 'hdf5', 'ascii' and 'fits'
+
+        Returns
+        -------
+        data : class instance
+            `TransferFunction` object
         """
         
         pass
 
+    def write(self, format_='pickle'):
+        """
+        Writes a transfer function to 'pickle', 'hdf5', 'ascii' or
+        'fits' file. 
+
+        Parameters
+        ----------
+        format_ : str
+            the format of the file to be saved - accepts 'pickle'
+            , 'hdf5', 'ascii' and 'fits'
+        """
+
+        pass
 """
 Implementation of artificial methods to create energy-averaged 
 responses for quick testing.
@@ -73,22 +163,22 @@ def simple_ir(dt, start=0, width=1000, intensity=1):
 
     Parameters
     ----------
-    dt: float
+    dt : float
         Time resolution
 
-    start: int
+    start : int
         start time of impulse response
     
-    width: int
+    width : int
         width of impulse response
     
-    intensity: float
+    intensity : float
         scaling parameter to set the intensity of delayed emission
         corresponding to direct emission.
 
     Returns
     -------
-    h: numpy.ndarray
+    h : numpy.ndarray
         Constructed impulse response
     """
 
@@ -107,28 +197,28 @@ def relativistic_ir(dt, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6, decay=0.1):
 
     Parameters
     ----------
-    dt: float
+    dt : float
         Time resolution
 
-    t1: int
+    t1 : int
         primary peak time
     
-    t2: int
+    t2 : int
         secondary peak time
     
-    t3: int
+    t3 : int
         end time
     
-    p1: float
+    p1 : float
         value of primary peak
     
-    p2: float
+    p2 : float
         value of secondary peak
     
-    rise: float
+    rise : float
         slope of rising exponential from primary peak to secondary peak
     
-    decay: float
+    decay : float
         slope of decaying exponential from secondary peak to end time
 
     Returns
