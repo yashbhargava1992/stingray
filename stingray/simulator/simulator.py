@@ -1,8 +1,9 @@
 from __future__ import division, print_function, absolute_import
 import numpy as np
+import numbers
 from scipy import signal
 
-from stingray import Lightcurve, AveragedPowerspectrum, io
+from stingray import Lightcurve, AveragedPowerspectrum, io, utils
 import stingray.simulator.models as models
 
 class Simulator(object):
@@ -132,13 +133,13 @@ class Simulator(object):
             lightCurve: `LightCurve` object
         """
 
-        if type(args[0]) == int and len(args) == 1: 
+        if isinstance(args[0], numbers.Integral) and len(args) == 1: 
             return  self._simulate_power_law(args[0])
 
         elif len(args) == 1:
             return self._simulate_power_spectrum(args[0])
 
-        elif type(args[0]) == str and len(args) == 2:
+        elif utils.is_string(args[0]) and len(args) == 2:
             return self._simulate_model(args[0], args[1])
 
         elif len(args) == 2:
