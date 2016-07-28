@@ -540,8 +540,8 @@ class Simulator(object):
         """
 
         if format_ == 'pickle':
-            object = io.read(filename, 'pickle')        
-            return object
+            data = io.read(filename, 'pickle')        
+            return data
         else:
             raise KeyError("Format not supported.")
 
