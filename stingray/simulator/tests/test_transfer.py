@@ -55,11 +55,18 @@ class TestSimulator(object):
         self.transfer.plot(save=True, filename='response.png')
         os.remove('response.png')
 
-    def test_read(self):
-        self.transfer.read()
+    def test_io_with_pickle(self):
+        self.transfer.write('transfer.pickle', format_='pickle')
+        tr = self.transfer.read('transfer.pickle', format_='pickle')
+        assert (tr.data == self.transfer.data).all()
+        os.remove('transfer.pickle')
 
-    def test_write(self):
-        self.transfer.write()
+    def test_io_with_unsupported_type(self):
+        with pytest.raises(KeyError):
+            self.transfer.write('transfer', format_='unsupported')
+        self.transfer.write('transfer', format_='pickle')
+        with pytest.raises(KeyError):
+            self.transfer.read('transfer', format_='unsupported')
 
     def test_simple_ir(self):
         """Test constructing a simple impulse response."""

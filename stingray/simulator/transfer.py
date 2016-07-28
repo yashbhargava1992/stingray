@@ -1,6 +1,8 @@
 from __future__ import division, print_function, absolute_import
 import numpy as np
 
+from stingray.io import read, write
+
 """
 Implementation of time and energy averaged responses from 2-d 
 transfer functions.
@@ -8,7 +10,8 @@ transfer functions.
 
 class TransferFunction(object):
 
-    def __init__(self, data, dt=1, de=1, tstart=0, estart=0):
+    def __init__(self, data, dt=1, de=1, tstart=0, estart=0,
+                time=None, energy=None):
         """
         Create or retrieve a transfer function, and form
         time and energy averaged responses.
@@ -145,16 +148,14 @@ class TransferFunction(object):
                 plt.savefig(filename)
         
     @staticmethod
-    def read(format_='pickle'):
+    def read(filename, format_='pickle'):
         """
-        Reads transfer function from a 'fits', 'pickle', 'hdf5' or 
-        'ascii' file.
+        Reads transfer function from a 'pickle' file.
 
         Parameter
         ---------
         format_ : str
-            the format of the file to be retrieved - accepts 'pickle'
-            , 'hdf5', 'ascii' and 'fits'
+            the format of the file to be retrieved - accepts 'pickle'.
 
         Returns
         -------
@@ -162,21 +163,30 @@ class TransferFunction(object):
             `TransferFunction` object
         """
         
-        pass
+        object = read(filename, format_)
 
-    def write(self, format_='pickle'):
+        if format_ == 'pickle':
+            return object
+
+        else:
+            raise KeyError("Format not understood.")
+
+    def write(self, filename, format_='pickle'):
         """
-        Writes a transfer function to 'pickle', 'hdf5', 'ascii' or
-        'fits' file. 
+        Writes a transfer function to 'pickle' file. 
 
         Parameters
         ----------
         format_ : str
             the format of the file to be saved - accepts 'pickle'
-            , 'hdf5', 'ascii' and 'fits'
         """
 
-        pass
+        if format_ == 'pickle':
+            write(self, filename, format_)
+
+        else:
+            raise KeyError("Format not understood.")
+
 """
 Implementation of artificial methods to create energy-averaged 
 responses for quick testing.
