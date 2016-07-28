@@ -1,11 +1,13 @@
-from stingray.simulator import transfer
+import os
 import pytest
+
+from stingray.simulator import transfer
 
 class TestSimulator(object):
 
     @classmethod
     def setup_class(self):
-        arr = [[0 for j in range(5)] for i in range(10)]
+        arr = [[1 for j in range(5)] for i in range(10)]
         self.transfer = transfer.TransferFunction(arr)
 
     def test_incorrect_rows(self):
@@ -28,13 +30,30 @@ class TestSimulator(object):
         """Test obtaining a time-resolved response."""
         self.transfer.time_response()
 
-    def test_average_energy(self):
+    def test_energy_response(self):
         """Test obtaining an energy-resolved response."""
         self.transfer.energy_response()
 
-    def test_plot(self):
-        """Test plotting a transfer function."""
-        self.transfer.plot()
+    def test_plot_with_incorrect_type(self):
+        with pytest.raises(ValueError):
+            self.transfer.plot('unsupported')
+
+    def test_plot_time(self):
+        self.transfer.plot(response='time')
+
+    def test_plot_energy(self):
+        self.transfer.plot(response='energy')
+
+    def test_plot_2d(self):
+        self.transfer.plot(response='2d')
+
+    def test_plot_with_save(self):
+        self.transfer.plot(save=True)
+        os.remove('out.png')
+
+    def test_plot_with_filename(self):
+        self.transfer.plot(save=True, filename='response.png')
+        os.remove('response.png')
 
     def test_read(self):
         self.transfer.read()

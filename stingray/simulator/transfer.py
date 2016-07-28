@@ -38,10 +38,12 @@ class TransferFunction(object):
         Attributes
         ----------
         time : numpy.ndarray
-            energy-averaged response of 2-d transfer function
+            energy-averaged/time-resolved response of 2-d transfer 
+            function
 
         energy : numpy.ndarray
-            time-averaged response of 2-d transfer function
+            time-averaged/energy-resolved response of 2-d transfer 
+            function
         """
         
         self.data = np.asarray(data)
@@ -60,29 +62,30 @@ class TransferFunction(object):
 
     def time_response(self):
         """
-        Form a time-averaged response of 2-d transfer function. 
+        Form an energy-averaged/time-resolved response of 2-d transfer 
+        function. 
 
         Returns
         -------
         energy : numpy.ndarray
-            time-averaged response of 2-d transfer function
+            energy-averaged/time-resolved response of 2-d transfer function
         """
         
         self.time = np.mean(self.data, axis=0)
 
     def energy_response(self):
         """
-        Form an energy-averaged response of 2-d transfer function. 
+        Form a time-averaged/energy-resolved response of 2-d transfer function. 
 
         Returns
         -------
         time : numpy.ndarray
-            energy-averaged response of 2-d transfer function
+            time-averaged/energy-resolved response of 2-d transfer function
         """
         
         self.energy = np.mean(self.data, axis=1)
 
-    def plot(self, response='2d'):
+    def plot(self, response='2d', save=False, filename=None):
         """
         Plot 'time', 'energy' or 2-d response using matplotlib.
 
@@ -94,12 +97,7 @@ class TransferFunction(object):
         Parameters
         ----------
         response : str
-            type of response. accepts 'time', 'energy', '2d'
-
-        marker : str, default '-'
-            Line style and color of the plot. Line styles and colors are
-            combined in a single format string, as in ``'bo'`` for blue
-            circles. See `matplotlib.pyplot.plot` for more options.
+            type of response - accepts 'time', 'energy', '2d'
 
         filename : str
             the name of file to save plot to. If a default of 'None' is
@@ -111,11 +109,40 @@ class TransferFunction(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        if response not in ['time', 'energy', '2d']:
-            raise ValueError("Response value is not recognized. Available"
-                            "response types are ")
-
         fig = plt.figure()
+
+        if response == 'time':
+            t = np.linspace(self.tstart, len(self.data[0])*self.dt, 
+                            len(self.data[0]))
+            figure = plt.plot(t, self.time, 'bo')
+            plt.xlabel('Time')
+            plt.ylabel('Flux')
+            plt.title('Time-resolved Response')
+
+        elif response == 'energy':
+            e = np.linspace(self.estart, len(self.data[:])*self.de, 
+                            len(self.data[:]))
+            figure = plt.plot(e, self.energy, 'bo')
+            plt.xlabel('Energy')
+            plt.ylabel('Flux')
+            plt.title('Energy-resolved Response')
+            
+        elif response == '2d':
+            figure = plt.imshow(self.data, interpolation='nearest', aspect='auto')
+            plt.xlabel('Time')
+            plt.ylabel('Energy')
+            plt.title('2-d Transfer Function')
+            plt.colorbar()
+
+        else:
+            raise ValueError("Response value is not recognized. Available"
+                            "response types are 'time', 'energy', and '2d'.")
+
+        if save:
+            if filename is None:
+                plt.savefig('out.png')
+            else:
+                plt.savefig(filename)
         
     @staticmethod
     def read(format_='pickle'):
