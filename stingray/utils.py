@@ -20,8 +20,7 @@ class UnrecognizedMethod(Exception):
 
 
 def simon(message, **kwargs):
-    """
-    The Statistical Interpretation MONitor.
+    """The Statistical Interpretation MONitor.
 
     A warning system designed to always remind the user that Simon
     is watching him/her.
@@ -40,8 +39,7 @@ def simon(message, **kwargs):
 
 def rebin_data(x, y, dx_new, method='sum'):
 
-    """
-    Rebin some data to an arbitrary new data resolution. Either sum
+    """Rebin some data to an arbitrary new data resolution. Either sum
     the data points in the new bins or average them.
 
     Parameters
@@ -125,9 +123,7 @@ def look_for_array_in_array(array1, array2):
     return next((i for i in array1 if i in array2), None)
 
 def is_string(s):  # pragma : no cover
-    """
-    Portable function to answer this question.
-    """
+    """Portable function to answer this question."""
     
     PY2 = sys.version_info[0] == 2
     if PY2:
@@ -137,9 +133,7 @@ def is_string(s):  # pragma : no cover
 
 
 def is_iterable(stuff):
-    """
-    Test if stuff is an iterable.
-    """
+    """Test if stuff is an iterable."""
     
     return isinstance(stuff, collections.Iterable)
 
@@ -155,8 +149,7 @@ def order_list_of_arrays(data, order):
 
 
 def optimal_bin_time(fftlen, tbin):
-    """
-    Vary slightly the bin time to have a power of two number of bins.
+    """Vary slightly the bin time to have a power of two number of bins.
 
     Given an FFT length and a proposed bin time, return a bin time
     slightly shorter than the original, that will produce a power-of-two number
@@ -166,8 +159,7 @@ def optimal_bin_time(fftlen, tbin):
     return fftlen / (2 ** np.ceil(np.log2(fftlen / tbin)))
 
 def contiguous_regions(condition):
-    """
-    Find contiguous True regions of the boolean array "condition".
+    """Find contiguous True regions of the boolean array "condition".
 
     Return a 2D array where the first column is the start index of the region
     and the second column is the end index.

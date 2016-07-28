@@ -330,8 +330,7 @@ def gti_len(gti):
     return np.sum([g[1] - g[0] for g in gti])
 
 def check_separate(gti0, gti1):
-    """
-    Check if two GTIs do not overlap.
+    """Check if two GTIs do not overlap.
 
     Parameters
     ----------
@@ -365,8 +364,7 @@ def check_separate(gti0, gti1):
         return False
 
 def append_gtis(gti0, gti1):
-    """
-    Merge two non-overlapping GTIs.
+    """Merge two non-overlapping GTIs.
 
     Parameters
     ----------

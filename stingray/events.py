@@ -349,8 +349,7 @@ class EventList(object):
         """
 
         if format_ == 'ascii':
-            write(np.array([self.time]).T,
-              filename, format_, fmt=["%s"])
+            write(np.array([self.time]).T, filename, format_, fmt=["%s"])
 
         elif format_ == 'pickle':
             write(self, filename, format_)
@@ -359,7 +358,7 @@ class EventList(object):
             write(self, filename, format_)
 
         elif format_ == 'fits':
-            write(self, filename, format_, tnames=['EVENTS','GTI'],
+            write(self, filename, format_, tnames=['EVENTS','GTI'], 
                 colsassign={'gti':'GTI'})
 
         else:
