@@ -69,13 +69,13 @@ class TestGTI(object):
         assert check_separate(gti1, gti2) == False
 
     def test_check_separate_nonoverlapping_case(self):
-        """Test if two mutually exclusive GTIs can be detected."""
+        """Test if two non-overlapping GTIs can be detected."""
         gti1 = np.array([[1, 2], [4, 5]])
         gti2 = np.array([[6, 7], [8, 9]])
         assert check_separate(gti1, gti2) == True
 
     def test_append_gtis(self):
-        """Test if two mutually exclusive GTIs can be appended. """
+        """Test if two non-overlapping GTIs can be appended. """
         gti1 = np.array([[1, 2], [4, 5]])
         gti2 = np.array([[6, 7], [8, 9]])
         assert np.all(append_gtis(gti1, gti2) == [[1,2],[4,5],[6,7],[8,9]])

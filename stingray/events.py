@@ -306,14 +306,14 @@ class EventList(object):
         """
         attributes = ['time', 'pha', 'ncounts', 'mjdref', 'dt', 
                 'notes', 'gti', 'pi']
-        object = read(filename, format_, cols=attributes)
+        data = read(filename, format_, cols=attributes)
 
         if format_ == 'ascii':
-            time = np.array(object.columns[0])
+            time = np.array(data.columns[0])
             return EventList(time=time)
         
         elif format_ == 'hdf5' or format_ == 'fits':
-            keys = object.keys()
+            keys = data.keys()
             values = []
             
             if format_ == 'fits':
@@ -321,7 +321,7 @@ class EventList(object):
 
             for attribute in attributes:
                 if attribute in keys:
-                    values.append(object[attribute])
+                    values.append(data[attribute])
 
                 else:
                     values.append(None)
@@ -330,7 +330,7 @@ class EventList(object):
                 mjdref=values[3], dt=values[4], notes=values[5], gti=values[6], pi=values[7])
 
         elif format_ == 'pickle':
-            return object
+            return data
 
         else:
             raise KeyError("Format not understood.")

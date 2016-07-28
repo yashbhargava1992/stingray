@@ -331,7 +331,7 @@ def gti_len(gti):
 
 def check_separate(gti0, gti1):
     """
-    Check if two GTIs are mutually exclusive.
+    Check if two GTIs do not overlap.
 
     Parameters
     ----------
