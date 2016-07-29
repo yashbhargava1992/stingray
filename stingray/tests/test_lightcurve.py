@@ -23,6 +23,7 @@ class TestLightcurve(object):
         cls.times = [1, 2, 3, 4]
         cls.counts = [2, 2, 2, 2]
         cls.dt = 1.0
+        cls.gti = [[0.5, 4.5]]
 
     def test_create(self):
         """
@@ -151,6 +152,19 @@ class TestLightcurve(object):
 
             lc = lc1 + lc2
 
+    def test_add_with_same_gtis(self):
+        lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti)
+        lc = lc1 + lc2
+        np.testing.assert_almost_equal(lc.gti, self.gti)
+
+    def test_add_with_different_gtis(self):
+        gti = [[0., 3.5]]
+        lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
+        lc2 = Lightcurve(self.times, self.counts, gti=gti)
+        lc = lc1 + lc2
+        np.testing.assert_almost_equal(lc.gti, [[0.5, 3.5]])
+
     def test_add_with_unequal_time_arrays(self):
         _times = [1, 3, 5, 7]
 
@@ -267,15 +281,17 @@ class TestLightcurve(object):
         assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
 
     def test_truncate_by_index(self):
-        lc = Lightcurve(self.times, self.counts)
+        lc = Lightcurve(self.times, self.counts, gti=self.gti)
 
         lc1 = lc.truncate(start=1)
         assert np.all(lc1.time == np.array([2, 3, 4]))
         assert np.all(lc1.counts == np.array([2, 2, 2]))
+        np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
 
         lc2 = lc.truncate(stop=2)
         assert np.all(lc2.time == np.array([1, 2]))
         assert np.all(lc2.counts == np.array([2, 2]))
+        np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
 
     def test_truncate_by_time_stop_less_than_start(self):
         lc = Lightcurve(self.times, self.counts)
@@ -284,15 +300,17 @@ class TestLightcurve(object):
             lc1 = lc.truncate(start=2, stop=1, method='time')
 
     def test_truncate_by_time(self):
-        lc = Lightcurve(self.times, self.counts)
+        lc = Lightcurve(self.times, self.counts, gti=self.gti)
 
         lc1 = lc.truncate(start=1, method='time')
         assert np.all(lc1.time == np.array([1, 2, 3, 4]))
         assert np.all(lc1.counts == np.array([2, 2, 2, 2]))
+        np.testing.assert_almost_equal(lc1.gti[0][0], 0.5)
 
         lc2 = lc.truncate(stop=3, method='time')
         assert np.all(lc2.time == np.array([1, 2]))
         assert np.all(lc2.counts == np.array([2, 2]))
+        np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
 
     def test_sort(self):
         _times = [1, 2, 3, 4]
