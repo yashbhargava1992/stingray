@@ -194,8 +194,8 @@ def cross_two_gtis(gti0, gti1):
     cross_gtis : From multiple GTI lists, extract common intervals *EXACTLY*
 
     """
-    gti0 = np.array(gti0, dtype=np.longdouble)
-    gti1 = np.array(gti1, dtype=np.longdouble)
+    gti0 = np.asarray(gti0)
+    gti1 = np.asarray(gti1)
     # Check GTIs
     check_gtis(gti0)
     check_gtis(gti1)
@@ -260,7 +260,7 @@ def cross_two_gtis(gti0, gti1):
             final_gti.append([s, e])
             last_end = e
 
-    return np.array(final_gti, dtype=np.longdouble)
+    return np.array(final_gti)
 
 
 def cross_gtis(gti_list):
@@ -304,7 +304,7 @@ def get_btis(gtis, start_time=None, stop_time=None):
         assert start_time is not None and stop_time is not None, \
             'Empty GTI and no valid start_time and stop_time. BAD!'
 
-        return np.array([[start_time, stop_time]], dtype=np.longdouble)
+        return np.asarray([[start_time, stop_time]])
     check_gtis(gtis)
 
     start_time = assign_value_if_none(start_time, gtis[0][0])
@@ -322,7 +322,7 @@ def get_btis(gtis, start_time=None, stop_time=None):
     if stop_time - gtis[-1][1] > 0:
         btis.extend([[gtis[0][0] - stop_time]])
 
-    return np.array(btis, dtype=np.longdouble)
+    return np.asarray(btis)
 
 
 def gti_len(gti):
@@ -346,19 +346,21 @@ def check_separate(gti0, gti1):
         True if GTIs are mutually exclusive, False if not
     """
 
-    gti0 = np.array(gti0, dtype=np.longdouble)
-    gti1 = np.array(gti1, dtype=np.longdouble)
+    gti0 = np.asarray(gti0)
+    gti1 = np.asarray(gti1)
+    if len(gti0) == 0 or len(gti1) == 0:
+        return True
 
     # Check if independently GTIs are well behaved
     check_gtis(gti0)
     check_gtis(gti1)
-    
+
     gti0_start = gti0[:, 0][0]
     gti0_end = gti0[:, 1][-1]
     gti1_start = gti1[:, 0][0]
     gti1_end = gti1[:, 1][-1]
 
-    if (gti0_end < gti1_start) or (gti1_end < gti0_start):
+    if (gti0_end <= gti1_start) or (gti1_end <= gti0_start):
         return True
     else:
         return False
@@ -380,8 +382,8 @@ def append_gtis(gti0, gti1):
         The newly created GTI
     """
 
-    gti0 = np.array(gti0, dtype=np.longdouble)
-    gti1 = np.array(gti1, dtype=np.longdouble)
+    gti0 = np.asarray(gti0)
+    gti1 = np.asarray(gti1)
 
     # Check if independently GTIs are well behaved.
     check_gtis(gti0)
@@ -393,3 +395,47 @@ def append_gtis(gti0, gti1):
             'exclusive.')
 
     return np.concatenate([gti0, gti1])
+
+
+def join_gtis(gti0, gti1):
+    """Merge two overlapping GTIs
+
+    Parameters
+    ----------
+    gti0: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+
+    gti1: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+
+    Returns
+    -------
+    gti: 2-d float array
+        The newly created GTI
+    """
+
+    gti0 = np.asarray(gti0)
+    gti1 = np.asarray(gti1)
+
+    # Check if independently GTIs are well behaved.
+    check_gtis(gti0)
+    check_gtis(gti1)
+
+    # Check if GTIs are mutually exclusive. If so, append them
+    if check_separate(gti0, gti1):
+        return append_gtis(gti0, gti1)
+
+    # Otherwise, do a more complicated operation.
+    # First, find common interval
+
+    cross = cross_two_gtis(gti0, gti1)
+    mincross = np.min(cross)
+    maxcross = np.max(cross)
+
+    good0 = np.logical_or(gti0[:, 0] >= maxcross, gti0[:, 1] <= mincross)
+    good1 = np.logical_or(gti1[:, 0] >= maxcross, gti1[:, 1] <= mincross)
+
+    final_gti = append_gtis(gti0[good0], cross)
+    final_gti = append_gtis(gti1[good1], final_gti)
+
+    return np.sort(final_gti, axis=0)
