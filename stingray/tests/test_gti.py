@@ -6,7 +6,7 @@ import pytest
 import os
 
 from ..utils import contiguous_regions
-from ..gti import cross_gtis, append_gtis, load_gtis, get_btis
+from ..gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
 from ..gti import check_separate, create_gti_mask
 from ..gti import create_gti_from_condition
 
@@ -87,4 +87,16 @@ class TestGTI(object):
 
         with pytest.raises(ValueError):
             append_gtis(gti1, gti2)
+
+    def test_join_gtis_nonoverlapping(self):
+        gti0 = [[0, 1], [2, 3]]
+        gti1 = [[10, 11], [12, 13]]
+        assert np.all(join_gtis(gti0, gti1) == np.array([[0, 1], [2, 3], [10, 11], [12, 13]]))
+
+    def test_join_gtis_nonoverlapping(self):
+        gti0 = [[0, 1], [2, 3], [4, 8]]
+        gti1 = [[7, 8], [10, 11], [12, 13]]
+        assert np.all(join_gtis(gti0, gti1) == np.array([[0, 1], [2, 3], [7, 8], [10, 11], [12, 13]]))
+
+
 
