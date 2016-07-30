@@ -67,6 +67,7 @@ class TestSimulator(object):
         self.transfer.write('transfer', format_='pickle')
         with pytest.raises(KeyError):
             self.transfer.read('transfer', format_='unsupported')
+        os.remove('transfer')
 
     def test_simple_ir(self):
         """Test constructing a simple impulse response."""
