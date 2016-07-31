@@ -277,14 +277,13 @@ def bin_intervals_from_gtis(gtis, chunk_length, time):
         stopbin = np.argmin(np.abs(time + bintime / 2 - g[1]))
 
         if time[startbin] < g[0]: startbin += 1
-        if time[stopbin] > g[1] + bintime/2: stopbin -= 1
+        if time[stopbin] < g[1] + bintime/2: stopbin += 1
 
         newbins = np.arange(startbin, stopbin - nbin + 1, nbin,
                             dtype=np.long)
         spectrum_start_bins = \
             np.append(spectrum_start_bins,
                       newbins)
-
     assert len(spectrum_start_bins) > 0, \
         ("No GTIs are equal to or longer than chunk_length.")
     return spectrum_start_bins, spectrum_start_bins + nbin
