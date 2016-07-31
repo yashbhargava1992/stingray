@@ -8,6 +8,7 @@ import logging
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
+from stingray.gti import cross_two_gtis
 from stingray.utils import simon
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
 
@@ -362,27 +363,25 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         return
 
-    def _make_segment_spectrum(self, lc, segment_size):
+    def _make_segment_spectrum(self, lc, segment_size, gti=None):
 
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
-        # number of bins per segment
-        nbins = int(segment_size/lc.dt)
+        if gti is None:
+            gti = lc.gti
 
-        start_ind = 0
-        end_ind = nbins
+        start_inds, end_inds = \
+            utils.bin_intervals_from_gtis(gti, segment_size, lc.time)
 
         power_all = []
         nphots_all = []
-        while end_ind <= lc.counts.shape[0]:
+        for start_ind, end_ind in zip(start_inds, end_inds):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
             lc_seg = lightcurve.Lightcurve(time, counts)
             power_seg = Powerspectrum(lc_seg, norm=self.norm)
             power_all.append(power_seg)
             nphots_all.append(np.sum(lc_seg.counts))
-            start_ind += nbins
-            end_ind += nbins
 
         return power_all, nphots_all
