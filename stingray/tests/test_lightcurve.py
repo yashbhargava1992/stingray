@@ -392,6 +392,7 @@ class TestLightcurve(object):
         lc.read('lc.pickle',format_='pickle')
         assert np.all(lc.time == self.times)
         assert np.all(lc.counts == self.counts)
+        assert np.all(lc.gti == self.gti)
         os.remove('lc.pickle')
 
     def test_io_with_hdf5(self):
@@ -402,12 +403,14 @@ class TestLightcurve(object):
             data = lc.read('lc.hdf5',format_='hdf5')
             assert np.all(data['time'] == self.times)
             assert np.all(data['counts'] == self.counts)
+            assert np.all(data['gti'] == self.gti)
             os.remove('lc.hdf5')
 
         else:
             lc.read('lc.pickle',format_='pickle')
             assert np.all(lc.time == self.times)
             assert np.all(lc.counts == self.counts)
+            assert np.all(lc.gti == self.gti)
             os.remove('lc.pickle')
 
         
