@@ -274,7 +274,8 @@ def cross_gtis(gti_list):
 
     Returns
     -------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gti0: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         The newly created GTIs
 
     See Also
@@ -366,7 +367,7 @@ def check_separate(gti0, gti1):
         return False
 
 def append_gtis(gti0, gti1):
-    """Merge two non-overlapping GTIs.
+    """Union of two non-overlapping GTIs.
 
     Parameters
     ----------
@@ -398,7 +399,7 @@ def append_gtis(gti0, gti1):
 
 
 def join_gtis(gti0, gti1):
-    """Merge two overlapping GTIs
+    """Union of two GTIs, general case
 
     Parameters
     ----------
