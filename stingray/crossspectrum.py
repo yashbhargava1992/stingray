@@ -9,6 +9,7 @@ import scipy.optimize
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
+from stingray.gti import cross_two_gtis
 
 def coherence(lc1, lc2):
     """
@@ -411,6 +412,10 @@ class AveragedCrossspectrum(Crossspectrum):
         nphots2: float
             The total number of photons in the second (reference) light curve
 
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+            They are calculated by taking the common GTI between the two light curves
+
         """
         self.type = "crossspectrum"
 
@@ -436,7 +441,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         return
 
-    def _make_segment_spectrum(self, lc1, lc2, segment_size):
+    def _make_segment_spectrum(self, lc1, lc2, segment_size, gti=None):
 
         # TODO: need to update this for making cross spectra.
         assert isinstance(lc1, lightcurve.Lightcurve)
@@ -447,16 +452,17 @@ class AveragedCrossspectrum(Crossspectrum):
 
         assert lc1.tseg == lc2.tseg, "Lightcurves do not have same tseg."
 
-        # number of bins per segment
-        nbins = int(segment_size/lc1.dt)
-        start_ind = 0
-        end_ind = nbins
+        if gti is None:
+            gti = cross_two_gtis(lc1.gti, lc2.gti)
 
         cs_all = []
         nphots1_all = []
         nphots2_all = []
 
-        while end_ind <= lc1.counts.shape[0]:
+        start_inds, end_inds = \
+            utils.bin_intervals_from_gtis(gti, segment_size, lc1.time)
+
+        for start_ind, end_ind in zip(start_inds, end_inds):
             time_1 = lc1.time[start_ind:end_ind]
             counts_1 = lc1.counts[start_ind:end_ind]
             time_2 = lc2.time[start_ind:end_ind]
@@ -467,8 +473,6 @@ class AveragedCrossspectrum(Crossspectrum):
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
             nphots2_all.append(np.sum(lc2_seg.counts))
-            start_ind += nbins
-            end_ind += nbins
 
         return cs_all, nphots1_all, nphots2_all
 
