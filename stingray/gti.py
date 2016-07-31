@@ -274,7 +274,8 @@ def cross_gtis(gti_list):
 
     Returns
     -------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gti0: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         The newly created GTIs
 
     See Also
@@ -366,7 +367,7 @@ def check_separate(gti0, gti1):
         return False
 
 def append_gtis(gti0, gti1):
-    """Merge two non-overlapping GTIs.
+    """Union of two non-overlapping GTIs.
 
     Parameters
     ----------
@@ -398,7 +399,7 @@ def append_gtis(gti0, gti1):
 
 
 def join_gtis(gti0, gti1):
-    """Merge two overlapping GTIs
+    """Union of two GTIs, general case
 
     Parameters
     ----------
@@ -425,17 +426,43 @@ def join_gtis(gti0, gti1):
     if check_separate(gti0, gti1):
         return append_gtis(gti0, gti1)
 
-    # Otherwise, do a more complicated operation.
-    # First, find common interval
+    # Otherwise, do a trickier procedure.
+    # When two GTIs overlap partially, we put them on a line and look at the
+    # number of opened and closed intervals. When the number of closed and
+    # opened intervals is the same, the full GTI is complete and we close it.
+    # In practice, we assign to each opening time of a GTI the value -1, and
+    # the value 1 to each closing time; when the cumulative sum is zero, the
+    # GTI has ended. The timestamp after each closed GTI is the start of a new
+    # one.
 
-    cross = cross_two_gtis(gti0, gti1)
-    mincross = np.min(cross)
-    maxcross = np.max(cross)
+    g0 = gti0.flatten()
+    # Opening GTI: type = 1; Closing: type = -1
+    g0_type = np.asarray(list(zip(-np.ones(len(g0) / 2),
+                                  np.ones(len(g0) / 2))))
+    g1 = gti1.flatten()
+    g1_type = np.asarray(list(zip(-np.ones(len(g1) / 2),
+                                  np.ones(len(g1) / 2))))
 
-    good0 = np.logical_or(gti0[:, 0] >= maxcross, gti0[:, 1] <= mincross)
-    good1 = np.logical_or(gti1[:, 0] >= maxcross, gti1[:, 1] <= mincross)
+    g_all = np.append(g0, g1)
+    g_type_all = np.append(g0_type, g1_type)
+    order = np.argsort(g_all)
+    g_all = g_all[order]
+    g_type_all = g_type_all[order]
 
-    final_gti = append_gtis(gti0[good0], cross)
-    final_gti = append_gtis(gti1[good1], final_gti)
+    sums = np.cumsum(g_type_all)
+
+    # Where the cumulative sum is zero, we close the GTI
+    closing_bins = sums == 0
+    # The next element in the sequence is the start of the new GTI. In the case
+    # of the last element, the next is the first. Numpy.roll gives this for
+    # free.
+    starting_bins = np.roll(closing_bins, 1)
+
+    starting_times = g_all[starting_bins]
+    closing_times = g_all[closing_bins]
+
+    final_gti = []
+    for start, stop in zip(starting_times, closing_times):
+        final_gti.append([start, stop])
 
     return np.sort(final_gti, axis=0)

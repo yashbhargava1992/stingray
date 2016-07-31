@@ -36,7 +36,8 @@ class Lightcurve(object):
             is in units of counts/bin. If False, it assumes the data
             in 'counts' is in counts/second.
 
-        gti: [[start0, end0], [start1, end1], ...]
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time Intervals
 
         Attributes
@@ -62,7 +63,8 @@ class Lightcurve(object):
         tstart: float
             The start time of the light curve.
 
-        gti: [[start0, end0], [start1, end1], ...]
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time Intervals
 
         """
@@ -285,7 +287,8 @@ class Lightcurve(object):
             If this is None, the arrival time of the first photon will be used
             as the start time of the light curve.
 
-        gti: [[start0, end0], [start1, end1], ...]
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time Intervals
 
         Returns
