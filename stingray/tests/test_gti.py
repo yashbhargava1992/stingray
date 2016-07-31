@@ -101,6 +101,7 @@ class TestGTI(object):
         assert np.all(join_gtis(gti0, gti1) == np.array([[0, 1], [2, 3], [4, 8],
                                                          [10, 11], [12, 13]]))
 
+
     def test_time_intervals_from_gtis(self):
         """Test the division of start and end times to calculate spectra."""
         start_times, stop_times = \
