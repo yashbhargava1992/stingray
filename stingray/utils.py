@@ -192,3 +192,95 @@ def contiguous_regions(condition):
     # Reshape the result into two columns
     idx.shape = (-1, 2)
     return idx
+
+
+def time_intervals_from_gtis(gtis, chunk_length):
+    """Returns equal time intervals compatible with GTIs.
+
+    Used to start each FFT/PDS/cospectrum from the start of a GTI,
+    and stop before the next gap in data (end of GTI).
+
+    Parameters
+    ----------
+    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    chunk_length : float
+        Length of the chunks
+
+    Returns
+    -------
+    spectrum_start_times : array-like
+        List of starting times to use in the spectral calculations.
+
+    spectrum_stop_times : array-like
+        List of end times to use in the spectral calculations.
+
+    """
+    spectrum_start_times = np.array([], dtype=np.longdouble)
+    for g in gtis:
+        if g[1] - g[0] < chunk_length:
+            continue
+
+        newtimes = np.arange(g[0], g[1] - chunk_length,
+                             np.longdouble(chunk_length),
+                             dtype=np.longdouble)
+        spectrum_start_times = \
+            np.append(spectrum_start_times,
+                      newtimes)
+
+    assert len(spectrum_start_times) > 0, \
+        ("No GTIs are equal to or longer than chunk_length.")
+    return spectrum_start_times, spectrum_start_times + chunk_length
+
+
+def bin_intervals_from_gtis(gtis, chunk_length, time):
+    """Similar to intervals_from_gtis, but given an input time array.
+
+    Used to start each FFT/PDS/cospectrum from the start of a GTI,
+    and stop before the next gap in data (end of GTI).
+    In this case, it is necessary to specify the time array containing the
+    times of the light curve bins.
+    Returns start and stop bins of the intervals to use for the PDS
+
+    Parameters
+    ----------
+    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    chunk_length : float
+        Length of the chunks
+    time : array-like
+        Times of light curve bins
+
+    Returns
+    -------
+    spectrum_start_bins : array-like
+        List of starting bins in the original time array to use in spectral
+        calculations.
+
+    spectrum_stop_bins : array-like
+        List of end bins to use in the spectral calculations.
+    """
+    bintime = time[1] - time[0]
+    nbin = np.long(chunk_length / bintime)
+
+    spectrum_start_bins = np.array([], dtype=np.long)
+    for g in gtis:
+        if g[1] - g[0] < chunk_length:
+            continue
+        good = (time - bintime / 2 > g[0])&(time + bintime / 2 < g[1])
+        t_good = time[good]
+        if len(t_good) == 0:
+            continue
+        startbin = np.argmin(np.abs(time - bintime / 2 - g[0]))
+        stopbin = np.argmin(np.abs(time + bintime / 2 - g[1]))
+
+        if time[startbin] < g[0]: startbin += 1
+        if time[stopbin] > g[1] + bintime/2: stopbin -= 1
+
+        newbins = np.arange(startbin, stopbin - nbin + 1, nbin,
+                            dtype=np.long)
+        spectrum_start_bins = \
+            np.append(spectrum_start_bins,
+                      newbins)
+
+    assert len(spectrum_start_bins) > 0, \
+        ("No GTIs are equal to or longer than chunk_length.")
+    return spectrum_start_bins, spectrum_start_bins + nbin
