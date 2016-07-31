@@ -47,8 +47,6 @@ class TestRebinData(object):
     def test_uneven_binned_counts(self):
         dx_new = 1.5
         xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
-        print(xbin)
-        print(ybin)
         ybin_test = np.zeros_like(xbin) + self.counts*dx_new/self.dx
         assert np.allclose(ybin_test, ybin)
 
@@ -99,4 +97,20 @@ class TestUtils(object):
         cont = utils.contiguous_regions(array)
         assert np.all(cont == np.array([[1, 3], [4, 7]])), \
             'Contiguous region wrong'
+
+    def test_time_intervals_from_gtis(self):
+        """Test the division of start and end times to calculate spectra."""
+        start_times, stop_times = \
+            utils.time_intervals_from_gtis([[0, 400], [1022, 1200]], 128)
+        assert np.all(start_times == np.array([0, 128, 256, 1022]))
+        assert np.all(stop_times == np.array([0, 128, 256, 1022])) + 128
+
+    def test_bin_intervals_from_gtis(self):
+        """Test the division of start and end times to calculate spectra."""
+        times = np.arange(0.5, 13.5)
+        start_bins, stop_bins = \
+            utils.bin_intervals_from_gtis([[0, 5], [6, 8]], 2, times)
+
+        assert np.all(start_bins == np.array([0, 2]))
+        assert np.all(stop_bins == np.array([2, 4]))
 
