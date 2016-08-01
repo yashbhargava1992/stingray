@@ -36,9 +36,11 @@ class Lightcurve(object):
             is in units of counts/bin. If False, it assumes the data
             in 'counts' is in counts/second.
 
-        gti: 2-d float array
+        gti: 2-d float array, default None
             [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Good Time Intervals
+            Good Time Intervals. They are *not* applied to the data by default.
+            They will be used by other methods to have an indication of the 
+            "safe" time intervals to use during analysis. 
 
         Attributes
         ----------
@@ -65,7 +67,8 @@ class Lightcurve(object):
 
         gti: 2-d float array
             [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Good Time Intervals
+            Good Time Intervals. They indicate the "safe" time intervals
+            to be used during the analysis of the light curve.
 
         """
 
