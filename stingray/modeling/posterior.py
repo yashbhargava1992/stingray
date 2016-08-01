@@ -61,7 +61,7 @@ def set_logprior(lpost, priors):
     Example
     -------
     Make a light curve and power spectrum
-    >>> photon_arrivals = np.random.uniform(0,1000, size=10000)
+    >>> photon_arrivals = np.sort(np.random.uniform(0,1000, size=10000))
     >>> lc = Lightcurve.make_lightcurve(photon_arrivals, dt=1.0)
     >>> ps = Powerspectrum(lc, norm="frac")
     Define the model
