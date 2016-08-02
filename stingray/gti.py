@@ -591,10 +591,10 @@ def gti_border_bins(gtis, time):
     >>> start_bins, stop_bins = \
             gti_border_bins([[0, 5], [6, 8]], times)
 
-    >>> start_bins
-    array([0, 6])
-    >>> stop_bins
-    array([5, 8])
+    >>> np.all(start_bins == [0, 6])
+    True
+    >>> np.all(stop_bins == [5, 8])
+    True
     >>> np.all(times[start_bins[0]:stop_bins[0]] == [ 0.5, 1.5, 2.5, 3.5, 4.5])
     True
     >>> np.all(times[start_bins[1]:stop_bins[1]] == [6.5, 7.5])
