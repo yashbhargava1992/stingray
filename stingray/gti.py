@@ -616,7 +616,6 @@ def gti_border_bins(gtis, time):
         good = (time - bintime / 2 >= g[0])&(time + bintime / 2 <= g[1])
         t_good = time[good]
         if len(t_good) == 0:
-            print(time - bintime / 2, time + bintime / 2)
             continue
         startbin = np.argmin(np.abs(time - bintime / 2 - g[0]))
         stopbin = np.argmin(np.abs(time + bintime / 2 - g[1]))
