@@ -9,7 +9,7 @@ import numpy as np
 import stingray.io as io
 import stingray.utils as utils
 from stingray.utils import simon, assign_value_if_none
-from stingray.gti import cross_two_gtis, join_gtis
+from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
 
 
 __all__ = ["Lightcurve"]
@@ -688,3 +688,17 @@ class Lightcurve(object):
 
         else:
             utils.simon("Format not understood.")
+
+    def split_by_gti(self):
+        """Splits the `LightCurve` into a list of `LightCurve`s , using GTIs."""
+        list_of_lcs = []
+
+        start_bins, stop_bins = gti_border_bins(self.gti, self.time)
+        for i in range(len(start_bins)):
+            start = start_bins[i]
+            stop = stop_bins[i]
+            # Note: GTIs are consistent with default in this case!
+            new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop])
+            list_of_lcs.append(new_lc)
+
+        return list_of_lcs
