@@ -289,6 +289,10 @@ def cross_gtis(gti_list):
     --------
     cross_two_gtis : Extract the common intervals from two GTI lists *EXACTLY*
     """
+    gti_list = np.asarray(gti_list)
+    for g in gti_list:
+        check_gtis(g)
+
     ninst = len(gti_list)
     if ninst == 1:
         return gti_list[0]
@@ -575,7 +579,9 @@ def bin_intervals_from_gtis(gtis, chunk_length, time):
 
 
 def gti_border_bins(gtis, time):
-    """Find the bins in a time array corresponding to the borders of GTIs
+    """Find the bins in a time array corresponding to the borders of GTIs.
+
+    GTIs shorter than the bin time are not returned.
 
     Parameters
     ----------
@@ -597,7 +603,7 @@ def gti_border_bins(gtis, time):
     --------
     >>> times = np.arange(0.5, 13.5)
     >>> start_bins, stop_bins = \
-            gti_border_bins([[0, 5], [6, 8]], times)
+            gti_border_bins([[0, 5], [6, 8], [9, 9.5]], times)
 
     >>> np.all(start_bins == [0, 6])
     True
