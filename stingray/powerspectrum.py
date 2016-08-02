@@ -8,7 +8,7 @@ import logging
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
-from stingray.gti import cross_two_gtis
+from stingray.gti import bin_intervals_from_gtis
 from stingray.utils import simon
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
 
@@ -372,7 +372,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             gti = lc.gti
 
         start_inds, end_inds = \
-            utils.bin_intervals_from_gtis(gti, segment_size, lc.time)
+            bin_intervals_from_gtis(gti, segment_size, lc.time)
 
         power_all = []
         nphots_all = []
