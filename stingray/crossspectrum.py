@@ -9,7 +9,7 @@ import scipy.optimize
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
-from stingray.gti import cross_two_gtis
+from stingray.gti import cross_two_gtis, bin_intervals_from_gtis
 
 def coherence(lc1, lc2):
     """
@@ -461,7 +461,7 @@ class AveragedCrossspectrum(Crossspectrum):
         nphots2_all = []
 
         start_inds, end_inds = \
-            utils.bin_intervals_from_gtis(gti, segment_size, lc1.time)
+            bin_intervals_from_gtis(gti, segment_size, lc1.time)
 
         for start_ind, end_ind in zip(start_inds, end_inds):
             time_1 = lc1.time[start_ind:end_ind]
