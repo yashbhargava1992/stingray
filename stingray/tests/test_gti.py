@@ -8,7 +8,7 @@ import os
 from ..utils import contiguous_regions
 from ..gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
 from ..gti import check_separate, create_gti_mask
-from ..gti import create_gti_from_condition
+from ..gti import create_gti_from_condition, gti_len
 from ..gti import time_intervals_from_gtis, bin_intervals_from_gtis
 
 curdir = os.path.abspath(os.path.dirname(__file__))
@@ -87,6 +87,12 @@ class TestGTI(object):
         gti2 = np.array([[6, 7], [8, 9]])
         assert check_separate(gti1, gti2) == True
 
+    def test_check_separate_empty_case(self):
+        """Test if intersection between two GTIs can be detected. """
+        gti1 = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
+        gti2 = np.array([])
+        assert check_separate(gti1, gti2) == True
+
     def test_append_gtis(self):
         """Test if two non-overlapping GTIs can be appended. """
         gti1 = np.array([[1, 2], [4, 5]])
@@ -116,9 +122,10 @@ class TestGTI(object):
     def test_time_intervals_from_gtis(self):
         """Test the division of start and end times to calculate spectra."""
         start_times, stop_times = \
-            time_intervals_from_gtis([[0, 400], [1022, 1200]], 128)
+            time_intervals_from_gtis([[0, 400], [1022, 1200],
+                                      [1210, 1220]], 128)
         assert np.all(start_times == np.array([0, 128, 256, 1022]))
-        assert np.all(stop_times == np.array([0, 128, 256, 1022])) + 128
+        assert np.all(stop_times == np.array([0, 128, 256, 1022]) + 128)
 
     def test_bin_intervals_from_gtis(self):
         """Test the division of start and end times to calculate spectra."""
@@ -128,4 +135,7 @@ class TestGTI(object):
 
         assert np.all(start_bins == np.array([0, 2]))
         assert np.all(stop_bins == np.array([2, 4]))
+
+    def test_gti_length(self):
+        assert gti_len([[0, 5], [6, 7]]) == 6
 
