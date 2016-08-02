@@ -399,7 +399,22 @@ def append_gtis(gti0, gti1):
 
 
 def join_gtis(gti0, gti1):
-    """Union of two GTIs, general case
+    """Union of two GTIs.
+    
+    If GTIs are mutually exclusive, it calls `append_gtis`. Otherwise we put the 
+    extremes of partially overlapping GTIs on an ideal line and look at the 
+    number of opened and closed intervals. When the number of closed and opened 
+    intervals is the same, the full GTI is complete and we close it.
+    
+    In practice, we assign to each opening time of a GTI the value -1, and
+    the value 1 to each closing time; when the cumulative sum is zero, the
+    GTI has ended. The timestamp after each closed GTI is the start of a new
+    one.
+
+    (cumsum)   -1   -2         -1   0   -1 -2           -1  -2  -1        0
+    GTI A      |-----:----------|   :    |--:------------|   |---:--------| 
+    FINAL GTI  |-----:--------------|    |--:--------------------:--------|
+    GTI B            |--------------|       |--------------------|
 
     Parameters
     ----------
@@ -422,18 +437,8 @@ def join_gtis(gti0, gti1):
     check_gtis(gti0)
     check_gtis(gti1)
 
-    # Check if GTIs are mutually exclusive. If so, append them
     if check_separate(gti0, gti1):
         return append_gtis(gti0, gti1)
-
-    # Otherwise, do a trickier procedure.
-    # When two GTIs overlap partially, we put them on a line and look at the
-    # number of opened and closed intervals. When the number of closed and
-    # opened intervals is the same, the full GTI is complete and we close it.
-    # In practice, we assign to each opening time of a GTI the value -1, and
-    # the value 1 to each closing time; when the cumulative sum is zero, the
-    # GTI has ended. The timestamp after each closed GTI is the start of a new
-    # one.
 
     g0 = gti0.flatten()
     # Opening GTI: type = 1; Closing: type = -1
