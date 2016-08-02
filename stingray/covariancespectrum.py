@@ -201,7 +201,7 @@ class Covariancespectrum(object):
                 energy_events_[mid_bin] = []
 
                 # Modify self.energy_events to form a band with one key
-                for key in list(self.energy_events.keys()):
+                for key in list(energy_events.keys()):
                     if key >= band[0] and key <= band[1]:
                         energy_events_[mid_bin] += energy_events[key]
                         del energy_events[key]
@@ -317,7 +317,7 @@ class Covariancespectrum(object):
         if not self.avg_covar:
             M = 1
         else:
-            M = self.segment_size
+            M = self.nbins
 
         num = xs_x*err_y + xs_y*err_x + err_x*err_y
         denom = N * M * xs_y
