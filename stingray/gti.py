@@ -481,7 +481,8 @@ def time_intervals_from_gtis(gtis, chunk_length):
 
     Parameters
     ----------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gtis : 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
     chunk_length : float
         Length of the chunks
 
@@ -522,7 +523,8 @@ def bin_intervals_from_gtis(gtis, chunk_length, time):
 
     Parameters
     ----------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gtis : 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
     chunk_length : float
         Length of the chunks
     time : array-like
@@ -562,3 +564,65 @@ def bin_intervals_from_gtis(gtis, chunk_length, time):
     assert len(spectrum_start_bins) > 0, \
         ("No GTIs are equal to or longer than chunk_length.")
     return spectrum_start_bins, spectrum_start_bins + nbin
+
+
+def gti_border_bins(gtis, time):
+    """Find the bins in a time array corresponding to the borders of GTIs
+
+    Parameters
+    ----------
+    gtis : 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    time : array-like
+        Times of light curve bins
+
+    Returns
+    -------
+    spectrum_start_bins : array-like
+        List of starting bins of each GTI
+
+    spectrum_stop_bins : array-like
+        List of stop bins of each GTI. The elements corresponding to these bins
+        should *not* be included.
+
+    Examples
+    --------
+    >>> times = np.arange(0.5, 13.5)
+    >>> start_bins, stop_bins = \
+            gti_border_bins([[0, 5], [6, 8]], times)
+
+    >>> start_bins
+    array([0, 6])
+    >>> stop_bins
+    array([5, 8])
+    >>> np.all(times[start_bins[0]:stop_bins[0]] == [ 0.5, 1.5, 2.5, 3.5, 4.5])
+    True
+    >>> np.all(times[start_bins[1]:stop_bins[1]] == [6.5, 7.5])
+    True
+    """
+    bintime = time[1] - time[0]
+
+    spectrum_start_bins = np.array([], dtype=np.long)
+    spectrum_stop_bins = np.array([], dtype=np.long)
+    for g in gtis:
+        good = (time - bintime / 2 >= g[0])&(time + bintime / 2 <= g[1])
+        t_good = time[good]
+        if len(t_good) == 0:
+            print(time - bintime / 2, time + bintime / 2)
+            continue
+        startbin = np.argmin(np.abs(time - bintime / 2 - g[0]))
+        stopbin = np.argmin(np.abs(time + bintime / 2 - g[1]))
+
+        if time[startbin] < g[0]: startbin += 1
+        if time[stopbin] < g[1] + bintime/2: stopbin += 1
+
+        spectrum_start_bins = \
+            np.append(spectrum_start_bins,
+                      [startbin])
+        spectrum_stop_bins = \
+            np.append(spectrum_stop_bins,
+                      [stopbin])
+    assert len(spectrum_start_bins) > 0, \
+        ("No GTIs are equal to or longer than chunk_length.")
+    return spectrum_start_bins, spectrum_stop_bins
+
