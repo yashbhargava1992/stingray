@@ -4,6 +4,7 @@ import abc
 
 import numpy as np
 from scipy.special import gamma as scipy_gamma
+from scipy.special import gammaln as scipy_gammaln
 from astropy.modeling.fitting import _fitter_to_model_params
 
 from stingray import Lightcurve, Powerspectrum
@@ -217,10 +218,8 @@ class PoissonLogLikelihood(LogLikelihood):
 
         mean_model = self.model(self.x)
 
-        #TODO: Implement Poisson log-likelihood
-        #loglike = np.sum(-0.5*np.log(2.*np.pi) - np.log(self.yerr) -
-        #                 (self.y-mean_model)**2/(2.*self.yerr**2))
-        loglike = 1.0
+        loglike = -mean_model + self.y*np.log(mean_model) \
+               - scipy_gammaln(self.y + 1.)
 
         return loglike
 
