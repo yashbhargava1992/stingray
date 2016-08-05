@@ -1,10 +1,27 @@
-X-Ray Timing Made Easy
-=======================
+X-Ray Spectral Timing Made Easy
+===============================
 +------------------+-------------------------+----------------------------+
 | Master           | |Build Status Master|   | |Coverage Status Master|   |
 +------------------+-------------------------+----------------------------+
 
-We are writing a general-purpose timing package for X-ray time series.
+Stingray is an in-development spectral-timing software package for astrophysical X-ray (and more) data.
+Stingray merges existing efforts for a (spectral-)timing package in Python, and is 
+structured with the best guidelines for modern open-source programming, following the example of `Astropy`_.
+
+It is composed of:
+
+1. a library of time series methods, including power spectra, cross spectra, covariance spectra, lags, and so on; 
+2. a set of scripts to load FITS data files from different missions;
+3. a simulator of light curves and event lists, that includes different kinds of variability and more complicated phenomena based on the impulse response of given physical events (e.g. reverberation);
+4. finally, an in-development GUI to ease the learning curve for new users.
+
+There are a number of official software packages for X-ray spectral fitting (Xspec, ISIS, Sherpa, ...). 
+Such a widely used and standard software package does not exist for X-ray timing, 
+that remains for now mostly done with custom software. 
+Stingray aims not only at becoming a standard timing package, 
+but at extending the implementation to the most advanced spectral timing techniques available in the literature. 
+The ultimate goal of this project is to provide the community with a package that eases 
+the learning curve for the advanced spectral timing techniques with a correct statistical framework.
 
 Contents
 --------
@@ -70,3 +87,4 @@ this project, please `get in touch via the issues
     :target: https://travis-ci.org/StingraySoftware/stingray
 .. |Coverage Status Master| image:: https://coveralls.io/repos/github/StingraySoftware/stingray/badge.svg?branch=master
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
+.. _`https://www.github.com/astropy/astropy`
