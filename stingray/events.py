@@ -271,11 +271,11 @@ class EventList(object):
             raise ValueError('Times of at least one event list must be set before joining.')
 
         elif (self.time is None):
-            simon("You are concatenating empty event lists.")
+            simon("One of the event lists you are concatenating is empty.")
             self.time = []
 
         elif (other.time is None):
-            simon("You are concatenating empty event lists.")
+            simon("One of the event lists you are concatenating is empty.")
             other.time = []
 
         ev_new.time = np.concatenate([self.time, other.time])
