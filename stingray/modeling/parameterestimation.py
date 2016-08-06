@@ -82,6 +82,7 @@ class OptimizationResults(object):
             self.err = np.sqrt(np.diag(self.cov))
 
     def _compute_model(self, lpost):
+
         _fitter_to_model_params(lpost.model, self.p_opt)
 
         self.mfit = lpost.model(lpost.x)

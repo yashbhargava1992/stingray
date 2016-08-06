@@ -6,6 +6,7 @@ import numpy as np
 from scipy.special import gamma as scipy_gamma
 from scipy.special import gammaln as scipy_gammaln
 from astropy.modeling.fitting import _fitter_to_model_params
+from astropy.modeling import models
 
 from stingray import Lightcurve, Powerspectrum
 
@@ -14,7 +15,7 @@ from stingray import Lightcurve, Powerspectrum
 
 #from stingray.modeling.parametricmodels import logmin
 
-__all__ = ["Posterior", "PSDPosterior", "LogLikelihood",
+__all__ = ["set_logprior", "Posterior", "PSDPosterior", "LogLikelihood",
            "PSDLogLikelihood", "GaussianLogLikelihood",
             "PoissonPosterior", "GaussianPosterior",
            "PriorUndefinedError", "LikelihoodUndefinedError"]
@@ -62,21 +63,30 @@ def set_logprior(lpost, priors):
     Example
     -------
     Make a light curve and power spectrum
+
     >>> photon_arrivals = np.sort(np.random.uniform(0,1000, size=10000))
     >>> lc = Lightcurve.make_lightcurve(photon_arrivals, dt=1.0)
     >>> ps = Powerspectrum(lc, norm="frac")
+
     Define the model
+
     >>> pl = models.PowerLaw1D()
     >>> pl.x_0.fixed = True
+
     Instantiate the posterior:
+
     >>> lpost = PSDPosterior(ps, pl)
+
     Define the priors:
+
     >>> p_alpha = lambda alpha: ((-1. <= alpha) & (alpha <= 5.))
     >>> p_amplitude = lambda amplitude: ((-10 <= np.log(amplitude)) &
-    >>>                                 ((np.log(amplitude) <= 10.0)))
+    ...                                 ((np.log(amplitude) <= 10.0)))
     >>> priors = {"alpha":p_alpha, "amplitude":p_amplitude}
+
     Set the logprior method in the lpost object:
-    >>> lpost.logprior = set_priors(lpost, priors)
+
+    >>> lpost.logprior = set_logprior(lpost, priors)
     """
 
     # get the number of free parameters in the model
@@ -100,6 +110,9 @@ def set_logprior(lpost, priors):
             The logarithm of the prior distribution for the model and
             parameters given.
         """
+        print("len(free_params): " + str(len(free_params)))
+        print("len(t0): " + str(len(t0)))
+
         if len(t0) != len(free_params):
             raise IncorrectParameterError("The number of parameters passed into "
                                           "the prior does not match the number "
@@ -118,7 +131,6 @@ def set_logprior(lpost, priors):
             return logp
 
     return logprior
-
 
 
 class LogLikelihood(object):

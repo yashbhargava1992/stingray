@@ -2,14 +2,51 @@ import numpy as np
 import scipy.stats
 
 from astropy.tests.helper import pytest
+from astropy.modeling import models
 
-from stingray import Powerspectrum
+from stingray import Lightcurve, Powerspectrum
 from stingray.modeling import Posterior, PSDPosterior
-from stingray.modeling import Const
+from stingray.modeling import set_logprior
+from stingray.modeling.posterior import logmin
 
 np.random.seed(20150907)
 
+class TestSetPrior(object):
 
+    @classmethod
+    def setup_class(cls):
+        photon_arrivals = np.sort(np.random.uniform(0,1000, size=10000))
+        cls.lc = Lightcurve.make_lightcurve(photon_arrivals, dt=1.0)
+        cls.ps = Powerspectrum(cls.lc, norm="frac")
+        pl = models.PowerLaw1D()
+        cls.lpost = PSDPosterior(cls.ps, pl)
+
+    def test_set_prior_runs(self):
+        p_alpha = lambda alpha: ((-1. <= alpha) & (alpha <= 5.))/6.0
+        p_amplitude = lambda amplitude: ((-10 <= np.log(amplitude)) &
+                                         ((np.log(amplitude) <= 10.0)))/20.0
+
+        priors = {"alpha":p_alpha, "amplitude":p_amplitude}
+        self.lpost.logprior = set_logprior(self.lpost, priors)
+
+    def test_prior_executes_correctly(self):
+        p_alpha = lambda alpha: ((-1. <= alpha) & (alpha <= 5.))/6.0
+        p_amplitude = lambda amplitude: ((-10 <= np.log(amplitude)) &
+                                         ((np.log(amplitude) <= 10.0)))/20.0
+
+        priors = {"alpha":p_alpha, "amplitude":p_amplitude}
+        self.lpost.logprior = set_logprior(self.lpost, priors)
+        true_logprior = np.log(1./6.) + np.log(1./20.0)
+        assert self.lpost.logprior([0.0, 0.0]) ==  true_logprior
+
+    def test_prior_returns_logmin_outside_prior_range(self):
+        p_alpha = lambda alpha: ((-1. <= alpha) & (alpha <= 5.))/6.0
+        p_amplitude = lambda amplitude: ((-10 <= np.log(amplitude)) &
+                                         ((np.log(amplitude) <= 10.0)))/20.0
+
+        priors = {"alpha":p_alpha, "amplitude":p_amplitude}
+        self.lpost.logprior = set_logprior(self.lpost, priors)
+        assert self.lpost.logprior([0.0, 0.0]) ==  2*logmin
 
 
 class PosteriorClassDummy(Posterior):
@@ -34,13 +71,17 @@ class TestPosterior(object):
     def setup_class(cls):
         cls.x = np.arange(100)
         cls.y = np.ones(cls.x.shape[0])
-        cls.model = Const(hyperpars={"a_mean":2.0, "a_var":1.0})
+        cls.model = models.Const1D()
         cls.p = PosteriorClassDummy(cls.x, cls.y, cls.model)
+        p_alpha = lambda alpha: ((-1. <= alpha) & (alpha <= 5.))/6.0
+
+        priors = {"alpha":p_alpha}
+        cls.p.logprior = set_logprior(cls.p, priors)
 
     def test_inputs(self):
         assert np.allclose(self.p.x, self.x)
         assert np.allclose(self.p.y, self.y)
-        assert isinstance(self.p.model, Const)
+        assert isinstance(self.p.model, models.Const1D)
 
     def test_call_method_positive(self):
         t0 = [1,2,3]
@@ -73,18 +114,23 @@ class TestPSDPosterior(object):
         cls.ps = ps
         cls.a_mean, cls.a_var = 2.0, 1.0
 
-        cls.model = Const(hyperpars={"a_mean":cls.a_mean, "a_var":cls.a_var})
+        cls.model = models.Const1D()
+        cls.p = PosteriorClassDummy(ps.freq, ps.power, cls.model)
+
+        p_alpha = lambda amean, avar: scipy.stats.norm(loc=amean,
+                                                       scale=avar)
+
+        priors = {"alpha":p_alpha}
+        cls.p.logprior = set_logprior(cls.p, priors)
 
     def test_logprior_fails_without_prior(self):
-        model = Const()
+        model = models.Const1D()
         lpost = PSDPosterior(self.ps, model)
         with pytest.raises(AssertionError):
             lpost.logprior([1])
 
     def test_making_posterior(self):
         lpost = PSDPosterior(self.ps, self.model)
-        #print(lpost.x)
-        #print(self.ps.freq)
         assert lpost.x.all() == self.ps.freq.all()
         assert lpost.y.all() == self.ps.power.all()
 
@@ -177,7 +223,7 @@ class TestPerPosteriorAveragedPeriodogram(object):
         cls.ps = ps
         cls.a_mean, cls.a_var = 2.0, 1.0
 
-        cls.model = Const(hyperpars={"a_mean":cls.a_mean, "a_var":cls.a_var})
+        cls.model = models.Const1D()
 
     def test_likelihood(self):
         t0 = [2.0]
