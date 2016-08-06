@@ -8,9 +8,9 @@ import logging
 import numpy as np
 import stingray.io as io
 import stingray.utils as utils
+from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
-
 
 __all__ = ["Lightcurve"]
 
@@ -71,18 +71,21 @@ class Lightcurve(object):
             to be used during the analysis of the light curve.
 
         """
+        if not np.all(np.isfinite(time)):
+            raise ValueError( "There are inf or NaN values in "
+                              "your time array!")
 
-        assert np.all(np.isfinite(time)), "There are inf or NaN values in " \
-                                          "your time array!"
+        if not np.all(np.isfinite(counts)):
+            raise ValueError( "There are inf or NaN values in "
+                              "your counts array!")
 
-        assert np.all(np.isfinite(counts)), "There are inf or NaN values in " \
-                                            "your counts array!"
+        if len(time) != len(counts):
+            raise StingrayError("time are counts array are not "
+                                         "of the same length!")
 
-        assert len(time) == len(counts), "time are counts array are not " \
-                                         "of the same length!"
-
-        assert len(time) > 1, "A single or no data points can not create " \
-                              "a lightcurve!"
+        if len(time) <= 1:
+            raise StingrayError("A single or no data points can not create " \
+                              "a lightcurve!")
 
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
@@ -139,7 +142,7 @@ class Lightcurve(object):
         try:
             assert np.all(np.equal(self.time, other.time))
         except (ValueError, AssertionError):
-            raise AssertionError("Time arrays of both light curves must be "
+            raise ValueError("Time arrays of both light curves must be "
                                  "of same dimension and equal.")
 
         new_counts = np.add(self.counts, other.counts)
@@ -178,7 +181,7 @@ class Lightcurve(object):
         try:
             assert np.all(np.equal(self.time, other.time))
         except (ValueError, AssertionError):
-            raise AssertionError("Time arrays of both light curves must be "
+            raise ValueError("Time arrays of both light curves must be "
                                  "of same dimension and equal.")
 
         new_counts = np.subtract(self.counts, other.counts)
@@ -354,8 +357,10 @@ class Lightcurve(object):
         lc_new: :class:`Lightcurve` object
             The :class:`Lightcurve` object with the new, binned light curve.
         """
-        assert dt_new >= self.dt, "New time resolution must be larger than " \
-                                  "old time resolution!"
+
+        if dt_new < self.dt:
+            raise ValueError("New time resolution must be larger than " \
+                                  "old time resolution!")
 
         bin_time, bin_counts, _ = utils.rebin_data(self.time,
                                                    self.counts,
@@ -493,11 +498,14 @@ class Lightcurve(object):
             The :class:`Lightcurve` object with truncated time and counts
             arrays.
         """
-        assert isinstance(method, str), "method key word argument is not " \
-                                        "a string !"
 
-        assert method.lower() in ['index', 'time'], "Unknown method type " + \
-                                                    method + "."
+        if not isinstance(method, str):
+            raise TypeError("method key word argument is not " \
+                                        "a string !")
+
+        if method.lower() not in ['index', 'time']:
+            raise ValueError("Unknown method type " + method + ".")
+
         if method.lower() == 'index':
             return self._truncate_by_index(start, stop)
         else:
@@ -516,8 +524,10 @@ class Lightcurve(object):
 
     def _truncate_by_time(self, start, stop):
         """Private method for truncation using time values."""
+
         if stop is not None:
-            assert start < stop, "start time must be less than stop time!"
+            if start > stop:
+                raise ValueError("start time must be less than stop time!")
 
         if not start == 0:
             start = np.where(self.time == start)[0][0]

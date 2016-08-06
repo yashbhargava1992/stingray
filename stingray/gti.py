@@ -7,7 +7,7 @@ import logging
 from astropy.io import fits
 from .io import assign_value_if_none
 from .utils import contiguous_regions
-
+from stingray.exceptions import StingrayError
 
 def load_gtis(fits_file, gtistring=None):
     """Load GTI from HDU EVENTS of file fits_file."""
@@ -60,9 +60,14 @@ def check_gtis(gti):
 
     logging.debug('-- GTI: ' + repr(gti))
     # Check that GTIs are well-behaved
-    assert np.all(gti_end >= gti_start), 'This GTI is incorrect'
+    if not np.all(gti_end >= gti_start):
+        raise ValueError('This GTI end times must be larger than '
+                         'GTI start times')
+
     # Check that there are no overlaps in GTIs
-    assert np.all(gti_start[1:] >= gti_end[:-1]), 'This GTI has overlaps'
+    if not np.all(gti_start[1:] >= gti_end[:-1]):
+        raise ValueError('This GTI has overlaps')
+
     logging.debug('-- Correct')
 
     return
@@ -152,8 +157,10 @@ def create_gti_from_condition(time, condition,
     """
     import collections
 
-    assert len(time) == len(condition), \
-        'The length of the condition and time arrays must be the same.'
+    if len(time) != len(condition):
+        raise StingrayError('The length of the condition and '
+                            'time arrays must be the same.')
+
     idxs = contiguous_regions(condition)
 
     if not isinstance(safe_interval, collections.Iterable):
@@ -302,8 +309,9 @@ def get_btis(gtis, start_time=None, stop_time=None):
     """
     # Check GTIs
     if len(gtis) == 0:
-        assert start_time is not None and stop_time is not None, \
-            'Empty GTI and no valid start_time and stop_time. BAD!'
+        if not start_time or not stop_time:
+            raise ValueError('Empty GTI and no valid start_time '
+                             'and stop_time. BAD!')
 
         return np.asarray([[start_time, stop_time]])
     check_gtis(gtis)
