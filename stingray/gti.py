@@ -7,7 +7,7 @@ import logging
 from astropy.io import fits
 from .io import assign_value_if_none
 from .utils import contiguous_regions
-from stingray._exceptions import StingrayError
+from stingray.exceptions import StingrayError
 
 def load_gtis(fits_file, gtistring=None):
     """Load GTI from HDU EVENTS of file fits_file."""

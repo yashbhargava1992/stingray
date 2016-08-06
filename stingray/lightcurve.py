@@ -8,7 +8,7 @@ import logging
 import numpy as np
 import stingray.io as io
 import stingray.utils as utils
-from stingray._exceptions import StingrayError
+from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
 
