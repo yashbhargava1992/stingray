@@ -6,7 +6,7 @@ import os
 import matplotlib.pyplot as plt
 
 from stingray import Lightcurve
-from stingray._exceptions import StingrayError
+from stingray.exceptions import StingrayError
 
 np.random.seed(20150907)
 
