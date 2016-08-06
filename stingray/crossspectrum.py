@@ -9,7 +9,7 @@ import scipy.optimize
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
-from stingray._exceptions import StingrayError
+from stingray.exceptions import StingrayError
 
 def coherence(lc1, lc2):
     """
