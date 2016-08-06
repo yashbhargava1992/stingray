@@ -48,8 +48,6 @@ class TestRebinData(object):
     def test_uneven_binned_counts(self):
         dx_new = 1.5
         xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
-        print(xbin)
-        print(ybin)
         ybin_test = np.zeros_like(xbin) + self.counts*dx_new/self.dx
         assert np.allclose(ybin_test, ybin)
 
@@ -95,4 +93,3 @@ class TestUtils(object):
         cont = utils.contiguous_regions(array)
         assert np.all(cont == np.array([[1, 3], [4, 7]])), \
             'Contiguous region wrong'
-

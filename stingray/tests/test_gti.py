@@ -2,19 +2,17 @@ from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 
 import numpy as np
+import pytest
 import os
 
 from ..utils import contiguous_regions
-
-from ..gti import cross_gtis
-from ..gti import get_btis
-from ..gti import create_gti_mask
+from ..gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
+from ..gti import check_separate, create_gti_mask
 from ..gti import create_gti_from_condition
-from ..gti import load_gtis
+from ..gti import time_intervals_from_gtis, bin_intervals_from_gtis
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
-
 
 class TestGTI(object):
 
@@ -64,3 +62,58 @@ class TestGTI(object):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_gtis(fname, gtistring="GTI")
+
+    def test_check_separate_overlapping_case(self):
+        """Test if intersection between two GTIs can be detected. """
+        gti1 = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
+        gti2 = np.array([[2, 5], [6, 9], [11.4, 14]])
+        assert check_separate(gti1, gti2) == False
+
+    def test_check_separate_nonoverlapping_case(self):
+        """Test if two non-overlapping GTIs can be detected."""
+        gti1 = np.array([[1, 2], [4, 5]])
+        gti2 = np.array([[6, 7], [8, 9]])
+        assert check_separate(gti1, gti2) == True
+
+    def test_append_gtis(self):
+        """Test if two non-overlapping GTIs can be appended. """
+        gti1 = np.array([[1, 2], [4, 5]])
+        gti2 = np.array([[6, 7], [8, 9]])
+        assert np.all(append_gtis(gti1, gti2) == [[1,2],[4,5],[6,7],[8,9]])
+
+    def test_append_overlapping_gtis(self):
+        """Test if exception is raised in event of overlapping gtis."""
+        gti1 = np.array([[1, 2], [4, 5]])
+        gti2 = np.array([[3, 4.5], [8, 9]])
+
+        with pytest.raises(ValueError):
+            append_gtis(gti1, gti2)
+
+    def test_join_gtis_nonoverlapping(self):
+        gti0 = [[0, 1], [2, 3]]
+        gti1 = [[10, 11], [12, 13]]
+        assert np.all(join_gtis(gti0, gti1) == np.array([[0, 1], [2, 3],
+                                                         [10, 11], [12, 13]]))
+
+    def test_join_gtis_overlapping(self):
+        gti0 = [[0, 1], [2, 3], [4, 8]]
+        gti1 = [[7, 8], [10, 11], [12, 13]]
+        assert np.all(join_gtis(gti0, gti1) == np.array([[0, 1], [2, 3], [4, 8],
+                                                         [10, 11], [12, 13]]))
+
+    def test_time_intervals_from_gtis(self):
+        """Test the division of start and end times to calculate spectra."""
+        start_times, stop_times = \
+            time_intervals_from_gtis([[0, 400], [1022, 1200]], 128)
+        assert np.all(start_times == np.array([0, 128, 256, 1022]))
+        assert np.all(stop_times == np.array([0, 128, 256, 1022])) + 128
+
+    def test_bin_intervals_from_gtis(self):
+        """Test the division of start and end times to calculate spectra."""
+        times = np.arange(0.5, 13.5)
+        start_bins, stop_bins = \
+            bin_intervals_from_gtis([[0, 5], [6, 8]], 2, times)
+
+        assert np.all(start_bins == np.array([0, 2]))
+        assert np.all(stop_bins == np.array([2, 4]))
+

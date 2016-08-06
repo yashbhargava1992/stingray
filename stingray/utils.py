@@ -15,8 +15,7 @@ except:
         return fun
 
 def simon(message, **kwargs):
-    """
-    The Statistical Interpretation MONitor.
+    """The Statistical Interpretation MONitor.
 
     A warning system designed to always remind the user that Simon
     is watching him/her.
@@ -25,16 +24,17 @@ def simon(message, **kwargs):
     ----------
     message : string
         The message that is thrown
+
     kwargs : dict
         The rest of the arguments that are passed to warnings.warn
     """
+    
     warnings.warn("SIMON says: {0}".format(message), **kwargs)
 
 
 def rebin_data(x, y, dx_new, method='sum'):
 
-    """
-    Rebin some data to an arbitrary new data resolution. Either sum
+    """Rebin some data to an arbitrary new data resolution. Either sum
     the data points in the new bins or average them.
 
     Parameters
@@ -115,13 +115,12 @@ def rebin_data(x, y, dx_new, method='sum'):
 def assign_value_if_none(value, default):
     return default if value is None else value
 
-
 def look_for_array_in_array(array1, array2):
     return next((i for i in array1 if i in array2), None)
 
-
 def is_string(s):  # pragma : no cover
     """Portable function to answer this question."""
+    
     PY2 = sys.version_info[0] == 2
     if PY2:
         return isinstance(s, basestring)  # NOQA
@@ -131,8 +130,8 @@ def is_string(s):  # pragma : no cover
 
 def is_iterable(stuff):
     """Test if stuff is an iterable."""
+    
     return isinstance(stuff, collections.Iterable)
-
 
 def order_list_of_arrays(data, order):
     if hasattr(data, 'items'):
@@ -152,6 +151,7 @@ def optimal_bin_time(fftlen, tbin):
     slightly shorter than the original, that will produce a power-of-two number
     of FFT bins.
     """
+    
     return fftlen / (2 ** np.ceil(np.log2(fftlen / tbin)))
 
 def contiguous_regions(condition):
@@ -172,8 +172,11 @@ def contiguous_regions(condition):
 
     Notes
     -----
-    From http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-fulfilling-condition-in-a-numpy-array
-    """  # NOQA
+    From : http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-
+    fulfilling-condition-in-a-numpy-array
+    """  
+
+    # NOQA
     # Find the indicies of changes in "condition"
     diff = np.diff(condition)
     idx, = diff.nonzero()
