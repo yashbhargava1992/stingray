@@ -1,13 +1,22 @@
-from __future__ import (absolute_import, unicode_literals, division,
+from __future__ import (absolute_import, division,
                         print_function)
-import numpy as np
+
+import collections
 import logging
-import warnings
+import math
+import numpy as np
 import os
+import six
+import warnings
+
+from astropy.io import fits
+from astropy.table import Table
 
 import stingray.utils as utils
 from .utils import order_list_of_arrays, is_string
 from .utils import assign_value_if_none
+
+from .gti import  _get_gti_from_extension, load_gtis
 
 try:
     # Python 2
@@ -16,6 +25,12 @@ except:
     # Python 3
     import pickle
 
+_H5PY_INSTALLED = True
+
+try:
+    import h5py 
+except:
+    _H5PY_INSTALLED = False
 
 def get_file_extension(fname):
     """Get the extension from the file name."""
@@ -58,49 +73,6 @@ def high_precision_keyword_read(hdr, keyword):
         return value
     except:
         return None
-
-
-def load_gtis(fits_file, gtistring=None):
-    """Load GTI from HDU EVENTS of file fits_file."""
-    from astropy.io import fits as pf
-    import numpy as np
-
-    gtistring = assign_value_if_none(gtistring, 'GTI')
-    logging.info("Loading GTIS from file %s" % fits_file)
-    lchdulist = pf.open(fits_file, checksum=True)
-    lchdulist.verify('warn')
-
-    gtitable = lchdulist[gtistring].data
-    gti_list = np.array([[a, b]
-                         for a, b in zip(gtitable.field('START'),
-                                         gtitable.field('STOP'))],
-                        dtype=np.longdouble)
-    lchdulist.close()
-    return gti_list
-
-
-def _get_gti_from_extension(lchdulist, accepted_gtistrings=['GTI']):
-    hdunames = [h.name for h in lchdulist]
-    gtiextn = [ix for ix, x in enumerate(hdunames)
-               if x in accepted_gtistrings][0]
-    gtiext = lchdulist[gtiextn]
-    gtitable = gtiext.data
-
-    colnames = [col.name for col in gtitable.columns.columns]
-    # Default: NuSTAR: START, STOP. Otherwise, try RXTE: Start, Stop
-    if 'START' in colnames:
-        startstr, stopstr = 'START', 'STOP'
-    else:
-        startstr, stopstr = 'Start', 'Stop'
-
-    gtistart = np.array(gtitable.field(startstr), dtype=np.longdouble)
-    gtistop = np.array(gtitable.field(stopstr), dtype=np.longdouble)
-    gti_list = np.array([[a, b]
-                         for a, b in zip(gtistart,
-                                         gtistop)],
-                        dtype=np.longdouble)
-    return gti_list
-
 
 def _get_additional_data(lctable, additional_columns):
     additional_data = {}
@@ -148,10 +120,9 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     t_start : float
     t_stop : float
     """
-    from astropy.io import fits as pf
 
     gtistring = assign_value_if_none(gtistring, 'GTI,STDGTI')
-    lchdulist = pf.open(fits_file)
+    lchdulist = fits.open(fits_file)
 
     # Load data table
     try:
@@ -260,9 +231,8 @@ def read_header_key(fits_file, key, hdu=1):
     ----------------
     hdu : int
     """
-    from astropy.io import fits as pf
 
-    hdulist = pf.open(fits_file)
+    hdulist = fits.open(fits_file)
     try:
         value = hdulist[hdu].header[key]
     except:  # pragma: no cover
@@ -294,9 +264,7 @@ def ref_mjd(fits_file, hdu=1):
         fits_file = fits_file[0]
         logging.info("opening %s" % fits_file)
 
-    from astropy.io import fits as pf
-
-    hdulist = pf.open(fits_file)
+    hdulist = fits.open(fits_file)
 
     ref_mjd_val = high_precision_keyword_read(hdulist[hdu].header, "MJDREF")
 
@@ -340,391 +308,532 @@ def common_name(str1, str2, default='common'):
     logging.debug('common_name: %s %s -> %s' % (str1, str2, common_str))
     return common_str
 
-
-def contiguous_regions(condition):
-    """Find contiguous True regions of the boolean array "condition".
-
-    Return a 2D array where the first column is the start index of the region
-    and the second column is the end index.
+def split_numbers(number):
+    """
+    Split high precision number(s) into doubles.
+    TODO: Consider the option of using a third number to specify shift.
 
     Parameters
     ----------
-    condition : boolean array
+    number: long double
+        The input high precision number which is to be split
 
     Returns
     -------
-    idx : [[i0_0, i0_1], [i1_0, i1_1], ...]
-        A list of integer couples, with the start and end of each True blocks
-        in the original array
+    number_I: double
+        First part of high precision number
 
-    Notes
-    -----
-    From http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-fulfilling-condition-in-a-numpy-array
-    """  # NOQA
-    # Find the indicies of changes in "condition"
-    diff = np.diff(condition)
-    idx, = diff.nonzero()
-    # We need to start things after the change in "condition". Therefore,
-    # we'll shift the index by 1 to the right.
-    idx += 1
-    if condition[0]:
-        # If the start of condition is True prepend a 0
-        idx = np.r_[0, idx]
-    if condition[-1]:
-        # If the end of condition is True, append the length of the array
-        idx = np.r_[idx, condition.size]
-    # Reshape the result into two columns
-    idx.shape = (-1, 2)
-    return idx
-
-
-def check_gtis(gti):
-    """Check if GTIs are well-behaved. No start>end, no overlaps.
-
-    Raises
-    ------
-    AssertionError
-        If GTIs are not well-behaved.
+    number_F: double
+        Second part of high precision number
     """
-    gti_start = gti[:, 0]
-    gti_end = gti[:, 1]
 
-    logging.debug('-- GTI: ' + repr(gti))
-    # Check that GTIs are well-behaved
-    assert np.all(gti_end >= gti_start), 'This GTI is incorrect'
-    # Check that there are no overlaps in GTIs
-    assert np.all(gti_start[1:] >= gti_end[:-1]), 'This GTI has overlaps'
-    logging.debug('-- Correct')
-
-    return
-
-
-def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
-                    return_new_gtis=False, dt=None):
-    """Create GTI mask.
-
-    Assumes that no overlaps are present between GTIs
-
-    Parameters
-    ----------
-    time : float array
-    gtis : [[g0_0, g0_1], [g1_0, g1_1], ...], float array-like
-
-    Returns
-    -------
-    mask : boolean array
-    new_gtis : Nx2 array
-
-    Other parameters
-    ----------------
-    safe_interval : float or [float, float]
-        A safe interval to exclude at both ends (if single float) or the start
-        and the end (if pair of values) of GTIs.
-    min_length : float
-    return_new_gtis : bool
-    dt : float
-    """
-    import collections
-
-    check_gtis(gtis)
-
-    dt = assign_value_if_none(dt,
-                              np.zeros_like(time) + (time[1] - time[0]) / 2)
-
-    mask = np.zeros(len(time), dtype=bool)
-
-    if not isinstance(safe_interval, collections.Iterable):
-        safe_interval = [safe_interval, safe_interval]
-
-    newgtis = np.zeros_like(gtis)
-    # Whose GTIs, including safe intervals, are longer than min_length
-    newgtimask = np.zeros(len(newgtis), dtype=np.bool)
-
-    for ig, gti in enumerate(gtis):
-        limmin, limmax = gti
-        limmin += safe_interval[0]
-        limmax -= safe_interval[1]
-        if limmax - limmin >= min_length:
-            newgtis[ig][:] = [limmin, limmax]
-            cond1 = time - dt >= limmin
-            cond2 = time + dt <= limmax
-            good = np.logical_and(cond1, cond2)
-            mask[good] = True
-            newgtimask[ig] = True
-
-    res = mask
-    if return_new_gtis:
-        res = [res, newgtis[newgtimask]]
-    return res
-
-
-def create_gti_from_condition(time, condition,
-                              safe_interval=0, dt=None):
-    """Create a GTI list from a time array and a boolean mask ("condition").
-
-    Parameters
-    ----------
-    time : array-like
-        Array containing times
-    condition : array-like
-        An array of bools, of the same length of time.
-        A possible condition can be, e.g., the result of lc > 0.
-
-    Returns
-    -------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        The newly created GTIs
-
-    Other parameters
-    ----------------
-    safe_interval : float or [float, float]
-        A safe interval to exclude at both ends (if single float) or the start
-        and the end (if pair of values) of GTIs.
-    dt : float
-        The width (in sec) of each bin of the time array. Can be irregular.
-    """
-    import collections
-
-    assert len(time) == len(condition), \
-        'The length of the condition and time arrays must be the same.'
-    idxs = contiguous_regions(condition)
-
-    if not isinstance(safe_interval, collections.Iterable):
-        safe_interval = [safe_interval, safe_interval]
-
-    dt = assign_value_if_none(dt,
-                               np.zeros_like(time) + (time[1] - time[0]) / 2)
-
-    gtis = []
-    for idx in idxs:
-        logging.debug(idx)
-        startidx = idx[0]
-        stopidx = idx[1] - 1
-
-        t0 = time[startidx] - dt[startidx] + safe_interval[0]
-        t1 = time[stopidx] + dt[stopidx] - safe_interval[1]
-        if t1 - t0 < 0:
-            continue
-        gtis.append([t0, t1])
-    return np.array(gtis)
-
-
-def cross_two_gtis(gti0, gti1):
-    """Extract the common intervals from two GTI lists *EXACTLY*.
-
-    Parameters
-    ----------
-    gti0 : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-    gti1 : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-
-    Returns
-    -------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        The newly created GTIs
-
-    See Also
-    --------
-    cross_gtis : From multiple GTI lists, extract common intervals *EXACTLY*
-
-    """
-    gti0 = np.array(gti0, dtype=np.longdouble)
-    gti1 = np.array(gti1, dtype=np.longdouble)
-    # Check GTIs
-    check_gtis(gti0)
-    check_gtis(gti1)
-
-    gti0_start = gti0[:, 0]
-    gti0_end = gti0[:, 1]
-    gti1_start = gti1[:, 0]
-    gti1_end = gti1[:, 1]
-
-    # Create a list that references to the two start and end series
-    gti_start = [gti0_start, gti1_start]
-    gti_end = [gti0_end, gti1_end]
-
-    # Concatenate the series, while keeping track of the correct origin of
-    # each start and end time
-    gti0_tag = np.array([0 for g in gti0_start], dtype=bool)
-    gti1_tag = np.array([1 for g in gti1_start], dtype=bool)
-    conc_start = np.concatenate((gti0_start, gti1_start))
-    conc_end = np.concatenate((gti0_end, gti1_end))
-    conc_tag = np.concatenate((gti0_tag, gti1_tag))
-
-    # Put in time order
-    order = np.argsort(conc_end)
-    conc_start = conc_start[order]
-    conc_end = conc_end[order]
-    conc_tag = conc_tag[order]
-
-    last_end = conc_start[0] - 1
-    final_gti = []
-    for ie, e in enumerate(conc_end):
-        # Is this ending in series 0 or 1?
-        this_series = conc_tag[ie]
-        other_series = not this_series
-
-        # Check that this closes intervals in both series.
-        # 1. Check that there is an opening in both series 0 and 1 lower than e
-        try:
-            st_pos = \
-                np.argmax(gti_start[this_series][gti_start[this_series] < e])
-            so_pos = \
-                np.argmax(gti_start[other_series][gti_start[other_series] < e])
-            st = gti_start[this_series][st_pos]
-            so = gti_start[other_series][so_pos]
-
-            s = max([st, so])
-        except:  # pragma: no cover
-            continue
-
-        # If this start is inside the last interval (It can happen for equal
-        # GTI start times between the two series), then skip!
-        if s <= last_end:
-            continue
-        # 2. Check that there is no closing before e in the "other series",
-        # from intervals starting either after s, or starting and ending
-        # between the last closed interval and this one
-        cond1 = (gti_end[other_series] > s) * (gti_end[other_series] < e)
-        cond2 = gti_end[other_series][so_pos] < s
-        condition = np.any(np.logical_or(cond1, cond2))
-        # Well, if none of the conditions at point 2 apply, then you can
-        # create the new gti!
-        if not condition:
-            final_gti.append([s, e])
-            last_end = e
-
-    return np.array(final_gti, dtype=np.longdouble)
-
-
-def cross_gtis(gti_list):
-    """From multiple GTI lists, extract the common intervals *EXACTLY*.
-
-    Parameters
-    ----------
-    gti_list : array-like
-        List of GTI arrays, each one in the usual format [[gti0_0, gti0_1],
-        [gti1_0, gti1_1], ...]
-
-    Returns
-    -------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        The newly created GTIs
-
-    See Also
-    --------
-    cross_two_gtis : Extract the common intervals from two GTI lists *EXACTLY*
-    """
-    ninst = len(gti_list)
-    if ninst == 1:
-        return gti_list[0]
-
-    gti0 = gti_list[0]
-
-    for gti in gti_list[1:]:
-        gti0 = cross_two_gtis(gti0, gti)
-
-    return gti0
-
-
-def get_btis(gtis, start_time=None, stop_time=None):
-    """From GTIs, obtain bad time intervals.
-
-    GTIs have to be well-behaved, in the sense that they have to pass
-    `check_gtis`.
-    """
-    # Check GTIs
-    if len(gtis) == 0:
-        assert start_time is not None and stop_time is not None, \
-            'Empty GTI and no valid start_time and stop_time. BAD!'
-
-        return np.array([[start_time, stop_time]], dtype=np.longdouble)
-    check_gtis(gtis)
-
-    start_time = assign_value_if_none(start_time, gtis[0][0])
-    stop_time = assign_value_if_none(stop_time, gtis[-1][1])
-
-    if gtis[0][0] - start_time <= 0:
-        btis = []
+    if isinstance(number, collections.Iterable):
+        mods = [math.modf(n) for n in number]
+        number_F = [f for f,_ in mods]
+        number_I = [i for _,i in mods] 
     else:
-        btis = [[gtis[0][0] - start_time]]
-    # Transform GTI list in
-    flat_gtis = gtis.flatten()
-    new_flat_btis = zip(flat_gtis[1:-2:2], flat_gtis[2:-1:2])
-    btis.extend(new_flat_btis)
+        number_F, number_I = math.modf(number)
 
-    if stop_time - gtis[-1][1] > 0:
-        btis.extend([[gtis[0][0] - stop_time]])
-
-    return np.array(btis, dtype=np.longdouble)
-
-
-def gti_len(gti):
-    """Return the total good time from a list of GTIs."""
-    return np.sum([g[1] - g[0] for g in gti])
+    return np.double(number_I), np.double(number_F)
 
 def _save_pickle_object(object, filename):
-    pickle.dump(object, open(filename, "wb" ))
+    """
+    Save a class object in pickle format.
+
+    Parameters
+    ----------
+    object: class instance
+        A class object whose attributes are saved in a 
+        dictionary format
+
+    filename: str
+        Name of the file in which object is saved
+    """
+
+    with open(filename, "wb" ) as f:
+        pickle.dump(object, f)
 
 def _retrieve_pickle_object(filename):
-    return pickle.load(open(filename, "rb" ) )
+    """
+    Retrieves a pickled class object.
+
+    Parameters
+    ----------
+    filename: str
+        Name of the file in which object is saved
+
+    Returns
+    -------
+    data: class object
+    """
+
+    with open(filename, "rb" ) as f:
+        return pickle.load(f)
 
 def _save_hdf5_object(object, filename):
-    pass
-
-def _retrieve_hdf5_object(object, filename):
-    pass
-
-def _save_ascii_object(object, filename):
-    pass
-
-def _retrieve_ascii_object(object, filename):
-    pass
-
-def write(input, filename, format = 'pickle'):
     """
-    Pickle a class instance.
+    Save a class object in hdf5 format.
+
+    Parameters
+    ----------
+    object: class instance
+        A class object whose attributes are saved in a 
+        dictionary format
+
+    filename: str
+        Name of the file in which object is saved
+    """
+
+    items = vars(object)
+    attrs = [name for name in items if items[name] is not None]
+
+    with h5py.File(filename, 'w') as hf:   
+        for attr in attrs:
+            data = items[attr]
+            
+            # If data is a single number, store as an attribute.
+            if _isattribute(data):
+                if isinstance(data, np.longdouble):
+                    data_I, data_F= split_numbers(data)
+                    names = [attr+'_I', attr+'_F']
+                    hf.attrs[names[0]] = data_I
+                    hf.attrs[names[1]] = data_F
+                else:
+                    hf.attrs[attr] = data
+            
+            # If data is an array or list, create a dataset.
+            else:
+                try:
+                    if isinstance(data[0], np.longdouble):
+                        data_I, data_F= split_numbers(data)
+                        names = [attr+'_I', attr+'_F']
+                        hf.create_dataset(names[0], data=data_I)
+                        hf.create_dataset(names[1], data=data_F)
+                    else:
+                        hf.create_dataset(attr, data=data) 
+                except IndexError:
+                    # To account for numpy arrays of type 'None' (0-d)
+                    pass
+
+def _retrieve_hdf5_object(filename):
+    """
+    Retrieves an hdf5 format class object.
+
+    Parameters
+    ----------
+    filename: str
+        The name of file with which object was saved
+
+    Returns
+    -------
+    data: dictionary
+        Loads the data from an hdf5 object file and returns
+        in dictionary format.
+    """
+
+    with h5py.File(filename, 'r') as hf:
+        dset_keys = hf.keys()
+        attr_keys = hf.attrs.keys()
+        data = {}
+
+        dset_copy = dset_keys[:]
+        for key in dset_keys:
+
+            # Make sure key hasn't been removed
+            if key in dset_copy:
+                # Longdouble case
+                if key[-2:] in ['_I', '_F']:
+                    m_key = key[:-2]
+                    # Add integer and float parts
+                    data[m_key] = np.longdouble(hf[m_key+'_I'].value) 
+                    data[m_key] += np.longdouble(hf[m_key+'_F'].value)
+                    # Remove integer and float parts from attributes
+                    dset_copy.remove(m_key+'_I')
+                    dset_copy.remove(m_key+'_F')
+                else:
+                    data[key] = hf[key].value
+        
+        attr_copy = attr_keys[:]
+        for key in attr_keys:
+            
+            # Make sure key hasn't been removed
+            if key in attr_copy:
+                # Longdouble case
+                if key[-2:] in ['_I', '_F']:
+                    m_key = key[:-2]
+                    # Add integer and float parts
+                    data[m_key] = np.longdouble(hf.attrs[m_key+'_I'])
+                    data[m_key] += np.longdouble(hf.attrs[m_key+'_F'])
+                    # Remove integer and float parts from attributes
+                    attr_copy.remove(m_key+'_I')
+                    attr_copy.remove(m_key+'_F')
+                else:
+                    data[key] = hf.attrs[key]
+
+    return data
+
+def _save_ascii_object(object, filename, fmt="%.18e", **kwargs):
+    """
+    Save an array to a text file.
+
+    Parameters
+    ----------
+    object : numpy.ndarray
+        An array with the data to be saved
+
+    filename : str
+        The file name to save to
+
+    fmt : str or sequence of strs, optional
+        Use for formatting of columns. See `numpy.savetxt` documentation
+        for details.
+
+    Other Parameters
+    ----------------
+    kwargs : any keyword argument taken by `numpy.savetxt`
+
+    """
+
+    try:
+        np.savetxt(filename, object, fmt=fmt, **kwargs)
+    except TypeError:
+        raise Exception("Formatting of columns not recognized! Use 'fmt' option to "
+              "format columns including strings or mixed types!")
+
+    pass
+
+def _retrieve_ascii_object(filename, **kwargs):
+    """
+    Helper function to retrieve ascii objects from file.
+    Uses astropy.Table for reading and storing the data.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the file with the data to be retrieved.
+
+    Additional Keyword Parameters
+    -----------------------------
+    usecols : {int | iterable}
+        The indices of the columns in the file to be returned.
+        By default, all columns will be returned
+
+    skiprows : int
+        The number of rows at the beginning to skip
+        By default, no rows will be skipped.
+
+    names : iterable
+        A list of column names to be attached to the columns.
+        By default, no column names are added, unless they are specified
+        in the file header and can be read by astropy.Table.read
+        automatically.
+
+    Returns
+    -------
+    data : astropy.Table object
+        An astropy.Table object with the data from the file
+
+
+    Example
+    -------
+    """
+
+    assert isinstance(filename, six.string_types), \
+        "filename must be string!"
+
+    if 'usecols' in list(kwargs.keys()):
+        assert np.size(kwargs['usecols']) == 2, "Need to define two columns"
+        usecols = kwargs["usecols"]
+    else:
+        usecols = None
+
+    if 'skiprows' in list(kwargs.keys()):
+        assert isinstance(kwargs["skiprows"], int)
+        skiprows = kwargs["skiprows"]
+    else:
+        skiprows = 0
+
+    if "names" in list(kwargs.keys()):
+        names = kwargs["names"]
+    else:
+        names = None
+
+    data = Table.read(filename, data_start=skiprows,
+                      names=names, format="ascii")
+
+    if usecols is None:
+        return data
+    else:
+        colnames = np.array(data.colnames)
+        cols = colnames[usecols]
+
+        return data[cols]
+
+def _save_fits_object(object, filename, **kwargs):
+    """
+    Save a class object in fits format.
+
+    Parameters
+    ----------
+    object: class instance
+        A class object whose attributes would be saved in a dictionary format.
+
+    filename: str
+        The file name to save to
+
+    Additional Keyword Parameters
+    -----------------------------
+    tnames: str iterable
+        The names of HDU tables. For instance, in case of eventlist, 
+        tnames could be ['EVENTS', 'GTI']
+
+    colsassign: dictionary iterable
+        This indicates the correct tables to which to assign columns
+        to. If this is None or if a column is not provided, it/they will
+        be assigned to the first table.
+
+        For example, [{'gti':'GTI'}] indicates that gti values should be 
+        stored in GTI table.
+    """
+
+    tables = []
+
+    if 'colsassign' in list(kwargs.keys()):
+        colsassign = kwargs['colsassign']
+        iscolsassigned = True
+    else:
+        iscolsassigned = False
+
+    if 'tnames' in list(kwargs.keys()): 
+        tables = kwargs['tnames']
+    else:
+        tables = ['MAIN']
+    
+    items = vars(object)
+    attrs = [name for name in items if items[name] is not None]
+    
+    cols = []
+    hdrs = []
+
+    for t in tables:
+        cols.append([])
+        hdrs.append(fits.Header())
+    
+    for attr in attrs:
+        data = items[attr]
+
+        # Get the index of table to which column belongs
+        if iscolsassigned and attr in colsassign.keys():
+            index = tables.index(colsassign[attr])
+        else:
+            index = 0
+        
+        # If data is a single number, store as metadata
+        if _isattribute(data): 
+            if isinstance(data, np.longdouble):
+                # Longdouble case. Split and save integer and float parts
+                data_I, data_F = split_numbers(data)
+                names = [attr+'_I', attr+'_F'] 
+                hdrs[index][names[0]] = data_I
+                hdrs[index][names[1]] = data_F
+            else:
+                # Normal case. Save as it is
+                hdrs[index][attr] = data
+        
+        # If data is an array or list, insert as table column
+        else:
+            try:
+                if isinstance(data[0], np.longdouble):
+                    # Longdouble case. Split and save integer and float parts
+                    data_I, data_F= split_numbers(data)
+                    names = [attr+'_I', attr+'_F']
+                    cols[index].append(fits.Column(name=names[0],format='D', array=data_I))
+                    cols[index].append(fits.Column(name=names[1],format='D', array=data_F))
+                else:
+                    # Normal case. Save as it is
+                    cols[index].append(fits.Column(name=attr,format=_lookup_format(data[0]), 
+                        array=data))
+            except IndexError:
+                # To account for numpy arrays of type 'None' (0-d)
+                pass
+
+    tbhdu = fits.HDUList()
+
+    # Create binary tables
+    for i in range(0, len(tables)):
+        if cols[i] != []:
+            tbhdu.append(fits.BinTableHDU.from_columns(cols[i], header=hdrs[i], name=tables[i]))
+    
+    tbhdu.writeto(filename)
+
+def _retrieve_fits_object(filename, **kwargs):
+    """
+    Retrieves a fits format class object.
+
+    Parameters
+    ----------
+    filename: str
+        The name of file with which object was saved
+
+    Additional Keyword Parameters
+    -----------------------------
+    cols: str iterable
+        The names of columns to extract from fits tables.
+
+    Returns
+    -------
+    data: dictionary
+        Loads the data from a fits object file and returns
+        in dictionary format.
+    """
+
+    data = {}
+
+    if 'cols' in list(kwargs.keys()):
+        cols = [col.upper() for col in kwargs['cols']]
+    else:
+        cols = []
+
+    with fits.open(filename) as hdulist:
+        fits_cols = []
+
+        # Get columns from all tables
+        for i in range(1,len(hdulist)):
+            fits_cols.append([h.upper() for h in hdulist[i].data.names])
+
+        for c in cols:
+            for i in range(0, len(fits_cols)):
+                # .upper() is used because `fits` stores values in upper case
+                hdr_keys = [h.upper() for h in hdulist[i+1].header.keys()]
+
+                # Longdouble case. Check for columns
+                if c+'_I' in fits_cols[i] or c+'_F' in fits_cols[i]:
+                    if c not in data.keys():
+                        data[c] = np.longdouble(hdulist[i+1].data[c+'_I'])
+                        data[c] += np.longdouble(hdulist[i+1].data[c+'_F'])
+
+                # Longdouble case. Check for header keys
+                if c+'_I' in hdr_keys or c+'_F' in hdr_keys:
+                    if c not in data.keys():
+                        data[c] = np.longdouble(hdulist[i+1].header[c+'_I'])
+                        data[c] += np.longdouble(hdulist[i+1].header[c+'_F'])
+
+                # Normal case. Check for columns
+                elif c in fits_cols[i]:
+                    data[c] = hdulist[i+1].data[c]
+
+                # Normal case. Check for header keys
+                elif c in hdr_keys:
+                    data[c] = hdulist[i+1].header[c]
+
+    return data
+
+def _lookup_format(var):
+    """
+    Looks up relevant format in fits.
+    """
+
+    lookup = {"<type 'int'>":"J", "<type 'float'>":"E", 
+        "<type 'numpy.int64'>": "K", "<type 'numpy.float64'>":"D", 
+        "<type 'numpy.float128'>":"D", "<type 'str'>":"30A", 
+        "<type 'bool'": "L"}
+
+    form = type(var)
+
+    try:
+        return lookup[str(form)]
+    except KeyError:
+        # If an entry is not contained in lookup dictionary
+        return "D"
+
+def _isattribute(data):
+    """
+    Check if data is a single number or an array.
+    """
+
+    if isinstance(data, np.ndarray) or isinstance(data, list):
+        return False
+    else:
+        return True
+
+def write(input_, filename, format_='pickle', **kwargs):
+    """
+    Pickle a class instance. For parameters depending on
+    `format_`, see individual function definitions.
 
     Parameters
     ----------
     object: a class instance
-    filename: str
-              name of the file to be created.
-    format: str
-            pickle, hdf5, ascii ...
+        The object to be stored.
 
+    filename: str
+        The name of the file to be created.
+
+    format_: str
+        The format in which to store file. Formats supported 
+        are pickle, hdf5, ascii or fits.  
     """
 
-    if format == 'pickle':
-        _save_pickle_object(input, filename)
+    if format_ == 'pickle':
+        _save_pickle_object(input_, filename)
 
-    elif format == 'hdf5':
-        _save_hdf5_object(input, filename)
+    elif format_ == 'hdf5':
+        if _H5PY_INSTALLED:
+            _save_hdf5_object(input_, filename)
+        else:
+            utils.simon('h5py not installed, using pickle instead' \
+                'to save object.')
+            _save_pickle_object(input_, filename.split('.')[0]+
+                '.pickle')
 
-    elif format == 'ascii':
-        _save_ascii_object(input, filename)
+    elif format_ == 'ascii':
+        _save_ascii_object(input_, filename, **kwargs)
 
+    elif format_ == 'fits':
+        _save_fits_object(input_, filename, **kwargs)
 
-def read(filename, format = 'pickle'):
+    else:
+        utils.simon('Format not understood.')
+
+def read(filename, format_='pickle', **kwargs):
     """
     Return a pickled class instance.
 
     Parameters
     ----------
     filename: str
-              name of the file to be retrieved.
-    format: str
-            pickle, hdf5, ascii ...
+        The name of the file to be retrieved.
+
+    format_: str
+        The format used to store file. Supported formats are
+        pickle, hdf5, ascii or fits.
+    
+    Returns
+    -------
+    If format_ is 'pickle', a class object is returned.
+    If format_ is 'ascii', astropy.table object is returned.
+    If format_ is 'hdf5' or 'fits', a dictionary object is returned.
     """
 
-    if format == 'pickle':
+    if format_ == 'pickle':
         return _retrieve_pickle_object(filename)
 
-    elif format == 'hdf5':
-        return _retrieve_hdf5_object(filename)
+    elif format_ == 'hdf5':
+        if _H5PY_INSTALLED:
+            return _retrieve_hdf5_object(filename)
+        else:
+            utils.simon('h5py not installed, cannot read an' \
+                'hdf5 object.')
 
-    elif format == 'ascii':
-        return _retrieve_ascii_object(filename)
+    elif format_ == 'ascii':
+        return _retrieve_ascii_object(filename, **kwargs)
 
+    elif format_ == 'fits':
+        return _retrieve_fits_object(filename, **kwargs)
+    
+    else:
+        utils.simon('Format not understood.')
+        
 def savefig(filename, **kwargs):
     """
     Save a figure plotted by Matplotlib.

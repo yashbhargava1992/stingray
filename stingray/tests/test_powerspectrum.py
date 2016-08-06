@@ -30,9 +30,9 @@ class TestPowerspectrum(object):
 
     def test_make_empty_periodogram(self):
         ps = Powerspectrum()
-        assert ps.norm == "rms"
+        assert ps.norm == "frac"
         assert ps.freq is None
-        assert ps.ps is None
+        assert ps.power is None
         assert ps.df is None
         assert ps.m == 1
         assert ps.n is None
@@ -40,9 +40,9 @@ class TestPowerspectrum(object):
     def test_make_periodogram_from_lightcurve(self):
         ps = Powerspectrum(lc=self.lc)
         assert ps.freq is not None
-        assert ps.ps is not None
+        assert ps.power is not None
         assert ps.df == 1.0 / self.lc.tseg
-        assert ps.norm == "rms"
+        assert ps.norm == "frac"
         assert ps.m == 1
         assert ps.n == self.lc.time.shape[0]
         assert ps.nphots == np.sum(self.lc.counts)
@@ -50,7 +50,7 @@ class TestPowerspectrum(object):
     def test_periodogram_types(self):
         ps = Powerspectrum(lc=self.lc)
         assert isinstance(ps.freq, np.ndarray)
-        assert isinstance(ps.ps, np.ndarray)
+        assert isinstance(ps.power, np.ndarray)
 
     def test_init_with_lightcurve(self):
         assert Powerspectrum(self.lc)
@@ -66,12 +66,12 @@ class TestPowerspectrum(object):
 
     def test_init_with_nonsense_norm(self):
         nonsense_norm = "bla"
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             assert Powerspectrum(self.lc, norm=nonsense_norm)
 
     def test_init_with_wrong_norm_type(self):
         nonsense_norm = 1.0
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             assert Powerspectrum(self.lc, norm=nonsense_norm)
 
     def test_total_variance(self):
@@ -84,44 +84,48 @@ class TestPowerspectrum(object):
         """
         ps = Powerspectrum(lc=self.lc)
         nn = ps.n
-        pp = ps.unnorm_powers / np.float(nn)**2
+        pp = ps.unnorm_power / np.float(nn)**2
         p_int = np.sum(pp[:-1]*ps.df) + (pp[-1]*ps.df)/2
         var_lc = np.var(self.lc.counts) / (2.*self.lc.tseg)
         assert np.isclose(p_int, var_lc, atol=0.01, rtol=0.01)
 
-    def test_rms_normalization_is_standard(self):
+    def test_frac_normalization_is_standard(self):
         """
         Make sure the standard normalization of a periodogram is
         rms and it stays that way!
         """
         ps = Powerspectrum(lc=self.lc)
-        assert ps.norm == "rms"
+        assert ps.norm == "frac"
 
-    def test_rms_normalization_correct(self):
+    def test_frac_normalization_correct(self):
         """
         In rms normalization, the integral of the powers should be
         equal to the variance of the light curve divided by the mean
         of the light curve squared.
         """
-        ps = Powerspectrum(lc=self.lc, norm="rms")
-        ps_int = np.sum(ps.ps[:-1]*ps.df) + ps.ps[-1]*ps.df/2
+        ps = Powerspectrum(lc=self.lc, norm="frac")
+        ps_int = np.sum(ps.power[:-1]*ps.df) + ps.power[-1]*ps.df/2
         std_lc = np.var(self.lc.counts) / np.mean(self.lc.counts)**2
+        print(ps_int)
+        print(std_lc)
         assert np.isclose(ps_int, std_lc, atol=0.01, rtol=0.01)
 
-    def test_fractional_rms_in_rms_norm(self):
-        ps = Powerspectrum(lc=self.lc, norm="rms")
+    def test_fractional_rms_in_frac_norm(self):
+        ps = Powerspectrum(lc=self.lc, norm="frac")
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
                                          max_freq=ps.freq[-1])
         rms_lc = np.std(self.lc.counts) / np.mean(self.lc.counts)
         assert np.isclose(rms_ps, rms_lc, atol=0.01)
 
     def test_leahy_norm_correct(self):
-        time = np.arange(0, 10.0, 10/1e6)
+        time = np.linspace(0, 10.0, 1e6)
         counts = np.random.poisson(1000, size=time.shape[0])
 
         lc = Lightcurve(time, counts)
         ps = Powerspectrum(lc, norm="leahy")
-        assert np.isclose(np.mean(ps.ps), 2.0, atol=0.01, rtol=0.01)
+        print(np.mean(ps.power[1:]))
+
+        assert np.isclose(np.mean(ps.power[1:]), 2.0, atol=0.01, rtol=0.01)
 
     def test_leahy_norm_total_variance(self):
         """
@@ -131,7 +135,7 @@ class TestPowerspectrum(object):
         """
         ps = Powerspectrum(lc=self.lc, norm="Leahy")
         ps_var = (np.sum(self.lc.counts)/ps.n**2.) * \
-            (np.sum(ps.ps[:-1]) + ps.ps[-1]/2.)
+            (np.sum(ps.power[:-1]) + ps.power[-1]/2.)
 
         assert np.isclose(ps_var, np.var(self.lc.counts), atol=0.01)
 
@@ -148,6 +152,13 @@ class TestPowerspectrum(object):
         rms_lc = np.std(self.lc.counts) / np.mean(self.lc.counts)
         assert np.isclose(rms_ps, rms_lc, atol=0.01)
 
+    def test_fractional_rms_fails_when_rms_not_leahy(self):
+        with pytest.raises(Exception):
+            ps = Powerspectrum(lc=self.lc, norm="rms")
+            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
+                                            max_freq=ps.freq[-1])
+
+
     def test_fractional_rms_error(self):
         """
         TODO: Need to write a test for the fractional rms error.
@@ -158,12 +169,12 @@ class TestPowerspectrum(object):
     def test_rebin_makes_right_attributes(self):
         ps = Powerspectrum(lc=self.lc, norm="Leahy")
         # replace powers
-        ps.ps = np.ones_like(ps.ps) * 2.0
+        ps.power = np.ones_like(ps.power) * 2.0
         rebin_factor = 2.0
         bin_ps = ps.rebin(rebin_factor*ps.df)
 
         assert bin_ps.freq is not None
-        assert bin_ps.ps is not None
+        assert bin_ps.power is not None
         assert bin_ps.df == rebin_factor * 1.0 / self.lc.tseg
         assert bin_ps.norm.lower() == "leahy"
         assert bin_ps.m == 2
@@ -198,7 +209,7 @@ class TestPowerspectrum(object):
         ps.classical_significances()
 
     def test_classical_significances_fails_in_rms(self):
-        ps = Powerspectrum(lc=self.lc, norm="rms")
+        ps = Powerspectrum(lc=self.lc, norm="frac")
         with pytest.raises(AssertionError):
             ps.classical_significances()
 
@@ -206,10 +217,10 @@ class TestPowerspectrum(object):
         ps = Powerspectrum(lc=self.lc, norm="leahy")
 
         # change the powers so that just one exceeds the threshold
-        ps.ps = np.zeros(ps.ps.shape[0])+2.0
+        ps.power = np.zeros_like(ps.power)+2.0
 
         index = 1
-        ps.ps[index] = 10.0
+        ps.power[index] = 10.0
 
         threshold = 0.01
 
@@ -221,9 +232,9 @@ class TestPowerspectrum(object):
     def test_classical_significances_trial_correction(self):
         ps = Powerspectrum(lc=self.lc, norm="leahy")
         # change the powers so that just one exceeds the threshold
-        ps.ps = np.zeros(ps.ps.shape[0]) + 2.0
+        ps.power = np.zeros_like(ps.power) + 2.0
         index = 1
-        ps.ps[index] = 10.0
+        ps.power[index] = 10.0
         threshold = 0.01
         pval = ps.classical_significances(threshold=threshold,
                                           trial_correction=True)
@@ -232,10 +243,10 @@ class TestPowerspectrum(object):
     def test_pvals_is_numpy_array(self):
         ps = Powerspectrum(lc=self.lc, norm="leahy")
         # change the powers so that just one exceeds the threshold
-        ps.ps = np.zeros(ps.ps.shape[0])+2.0
+        ps.power = np.zeros_like(ps.power)+2.0
 
         index = 1
-        ps.ps[index] = 10.0
+        ps.power[index] = 10.0
 
         threshold = 1.0
 
@@ -370,8 +381,8 @@ class TestAveragedPowerspectrum(object):
 
         ps = AveragedPowerspectrum(lc_all, 10.0, norm="leahy")
 
-        assert np.isclose(np.mean(ps.ps), 2.0, atol=1e-3, rtol=1e-3)
-        assert np.isclose(np.std(ps.ps), 2.0/np.sqrt(n), atol=0.1, rtol=0.1)
+        assert np.isclose(np.mean(ps.power), 2.0, atol=1e-3, rtol=1e-3)
+        assert np.isclose(np.std(ps.power), 2.0/np.sqrt(n), atol=0.1, rtol=0.1)
 
 
 class TestClassicalSignificances(object):

@@ -3,9 +3,39 @@ import numpy as np
 import pytest
 import warnings
 from stingray import Lightcurve
-from stingray import Crossspectrum, AveragedCrossspectrum
+from stingray import Crossspectrum, AveragedCrossspectrum, coherence
 
 np.random.seed(20160528)
+
+
+class TestCoherenceFunction(object):
+
+    def setup_class(self):
+        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+
+    def test_coherence_runs(self):
+        coh = coherence(self.lc1, self.lc2)
+
+    def test_coherence_fails_if_data1_not_lc(self):
+        data = np.array([[1,2,3,4,5],[2,3,4,5,1]])
+
+        with pytest.raises(AssertionError):
+            coh = coherence(self.lc1, data)
+
+    def test_coherence_fails_if_data2_not_lc(self):
+        data = np.array([[1,2,3,4,5],[2,3,4,5,1]])
+
+        with pytest.raises(AssertionError):
+            coh = coherence(data, self.lc2)
+
+    def test_coherence_computes_correctly(self):
+
+        coh = coherence(self.lc1, self.lc2)
+
+        assert len(coh) == 2
+        assert np.abs(np.mean(coh)) < 1
+
 
 class TestCoherence(object):
 
@@ -18,6 +48,7 @@ class TestCoherence(object):
 
         assert len(coh) == 2
         assert np.abs(np.mean(coh)) < 1
+
 
 
 class TestCrossspectrum(object):
@@ -40,7 +71,7 @@ class TestCrossspectrum(object):
     def test_make_empty_crossspectrum(self):
         cs = Crossspectrum()
         assert cs.freq is None
-        assert cs.cs is None
+        assert cs.power is None
         assert cs.df is None
         assert cs.nphots1 is None
         assert cs.nphots2 is None
@@ -52,11 +83,11 @@ class TestCrossspectrum(object):
             cs = Crossspectrum(self.lc1)
 
     def test_init_with_norm_not_str(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             cs = Crossspectrum(norm=1)
 
     def test_init_with_invalid_norm(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             cs = Crossspectrum(norm='frabs')
 
     def test_init_with_wrong_lc1_instance(self):
@@ -94,23 +125,42 @@ class TestCrossspectrum(object):
 
     def test_norm_leahy(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
-        assert len(cs.cs) == 4999
+        assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
 
     def test_norm_frac(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='frac')
-        assert len(cs.cs) == 4999
+        assert len(cs.power) == 4999
         assert cs.norm == 'frac'
 
     def test_norm_abs(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='abs')
-        assert len(cs.cs) == 4999
+        assert len(cs.power) == 4999
         assert cs.norm == 'abs'
+
+    def test_failure_when_normalization_not_recognized(self):
+        with pytest.raises(ValueError):
+            cs = Crossspectrum(self.lc1, self.lc2, norm='wrong')
 
     def test_coherence(self):
         coh = self.cs.coherence()
         assert len(coh) == 4999
         assert np.abs(coh[0]) < 1
+
+    def test_timelag(self):
+        time_lag = self.cs.time_lag()
+        assert max(time_lag) <= np.pi
+        assert min(time_lag) >= -np.pi
+
+    def test_timelag_error(self):
+        class Child(Crossspectrum):
+            def __init__(self):
+                pass
+
+        obj = Child()
+        with pytest.raises(AttributeError):
+            lag = obj.time_lag()
+
 
 class TestAveragedCrossspectrum(object):
 
@@ -130,12 +180,12 @@ class TestAveragedCrossspectrum(object):
         self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
 
     def test_init_with_norm_not_str(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(TypeError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
                                        norm=1)
 
     def test_init_with_invalid_norm(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
                                        norm='frabs')
 
@@ -171,3 +221,9 @@ class TestAveragedCrossspectrum(object):
 
             assert len(w) == 1
             assert issubclass(w[-1].category, UserWarning)
+
+    def test_failure_when_normalization_not_recognized(self):
+        with pytest.raises(ValueError):
+            self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
+                                            segment_size=1,
+                                            norm="wrong")
