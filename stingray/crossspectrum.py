@@ -10,6 +10,8 @@ import scipy.optimize
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis
+from stingray.exceptions import StingrayError
+
 
 def coherence(lc1, lc2):
     """
@@ -29,8 +31,11 @@ def coherence(lc1, lc2):
         Coherence function
     """
 
-    assert isinstance(lc1, lightcurve.Lightcurve)
-    assert isinstance(lc2, lightcurve.Lightcurve)
+    if not isinstance(lc1, lightcurve.Lightcurve):
+        raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+    if not isinstance(lc2, lightcurve.Lightcurve):
+        raise TypeError("lc2 must be a lightcurve.Lightcurve object")
 
     cs = Crossspectrum(lc1, lc2, norm='none')
 
@@ -112,10 +117,11 @@ class Crossspectrum(object):
     def _make_crossspectrum(self, lc1, lc2):
 
         ## make sure the inputs work!
-        assert isinstance(lc1, lightcurve.Lightcurve), \
-                        "lc1 must be a lightcurve.Lightcurve object!"
-        assert isinstance(lc2, lightcurve.Lightcurve), \
-                        "lc2 must be a lightcurve.Lightcurve object!"
+        if not isinstance(lc1, lightcurve.Lightcurve):
+            raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+        if not isinstance(lc2, lightcurve.Lightcurve):
+            raise TypeError("lc2 must be a lightcurve.Lightcurve object")
 
         ## total number of photons is the sum of the
         ## counts in the light curve
@@ -126,10 +132,15 @@ class Crossspectrum(object):
         self.meancounts2 = np.mean(lc2.counts)
 
         ## the number of data points in the light curve
-        assert lc1.counts.shape[0] == lc2.counts.shape[0], \
-            "Light curves do not have same number of time bins per segment."
-        assert lc1.dt == lc2.dt, \
-                "Light curves do not have same time binning dt."
+
+        if lc1.counts.shape[0] != lc2.counts.shape[0]:
+            raise StingrayError("Light curves do not have same number "
+                                "of time bins per segment.")
+
+        if lc1.dt != lc2.dt:
+            raise StingrayError("Light curves do not have "
+                                "same time binning dt.")
+
         self.n = lc1.counts.shape[0]
 
         ## the frequency resolution
@@ -420,25 +431,12 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         self.type = "crossspectrum"
 
-        if isinstance(norm, str) is False:
-            raise TypeError("Norm must be a string!")
-
-        if norm.lower() not in ["frac", "abs", "leahy", "none"]:
-            raise ValueError("norm must be 'frac', 'abs', 'leahy', or 'none'!")
-
-        #if isinstance(lc1, lightcurve.Lightcurve) is False:
-        #    raise TypeError("lc1 must be a lightcurve.Lightcurve object")
-
-        #if isinstance(lc2, lightcurve.Lightcurve) is False:
-        #    raise TypeError("lc2 must be a lightcurve.Lightcurve object")
-
-        self.norm = norm.lower()
-
-        assert np.isfinite(segment_size), "segment_size must be finite!"
+        if not np.isfinite(segment_size):
+            raise ValueError("segment_size must be finite")
 
         self.segment_size = segment_size
 
-        Crossspectrum.__init__(self, lc1, lc2, self.norm)
+        Crossspectrum.__init__(self, lc1, lc2, norm)
 
         return
 
@@ -448,10 +446,11 @@ class AveragedCrossspectrum(Crossspectrum):
         assert isinstance(lc1, lightcurve.Lightcurve)
         assert isinstance(lc2, lightcurve.Lightcurve)
 
-        assert lc1.dt == lc2.dt, \
-            "Light curves do not have same time binning dt."
+        if lc1.dt != lc2.dt:
+            raise ValueError("Light curves do not have same time binning dt.")
 
-        assert lc1.tseg == lc2.tseg, "Lightcurves do not have same tseg."
+        if lc1.tseg != lc2.tseg:
+            raise ValueError("Lightcurves do not have same tseg.")
 
         if gti is None:
             gti = cross_two_gtis(lc1.gti, lc2.gti)
