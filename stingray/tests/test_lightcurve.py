@@ -138,7 +138,7 @@ class TestLightcurve(object):
     def test_init_with_diff_array_lengths(self):
         time = [1, 2, 3]
         counts = [2, 2, 2, 2]
-        
+
         with pytest.raises(StingrayError):
             lc = Lightcurve(time, counts)
 
@@ -296,7 +296,7 @@ class TestLightcurve(object):
 
     def test_truncate_by_time_stop_less_than_start(self):
         lc = Lightcurve(self.times, self.counts)
- 
+
         with pytest.raises(ValueError):
             lc1 = lc.truncate(start=2, stop=1, method='time')
 
@@ -404,7 +404,7 @@ class TestLightcurve(object):
     def test_io_with_hdf5(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('lc.hdf5', format_='hdf5')
-        
+
         if _H5PY_INSTALLED:
             data = lc.read('lc.hdf5',format_='hdf5')
             assert np.all(data['time'] == self.times)
@@ -449,7 +449,7 @@ class TestLightcurveRebin(object):
 
     def test_rebin_even(self):
         dt_new = 2.0
-        lc_binned = self.lc.rebin_lightcurve(dt_new)
+        lc_binned = self.lc.rebin(dt_new)
         assert np.isclose(lc_binned.dt, dt_new)
         counts_test = np.zeros_like(lc_binned.time) + \
             self.lc.counts[0]*dt_new/self.lc.dt
@@ -457,7 +457,7 @@ class TestLightcurveRebin(object):
 
     def test_rebin_odd(self):
         dt_new = 1.5
-        lc_binned = self.lc.rebin_lightcurve(dt_new)
+        lc_binned = self.lc.rebin(dt_new)
         assert np.isclose(lc_binned.dt, dt_new)
 
         counts_test = np.zeros_like(lc_binned.time) + \
@@ -468,7 +468,7 @@ class TestLightcurveRebin(object):
         """
         TODO: Not sure how to write tests for the rebin method!
         """
-        lc_binned = self.lc.rebin_lightcurve(dt)
+        lc_binned = self.lc.rebin(dt)
         assert len(lc_binned.time) == len(lc_binned.counts)
 
     def test_rebin_equal_numbers(self):
