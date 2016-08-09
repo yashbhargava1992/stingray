@@ -201,8 +201,8 @@ class Crossspectrum(object):
         """
 
         # rebin cross spectrum to new resolution
-        binfreq, bincs, step_size = utils.rebin_data(self.freq[1:],
-                                                     self.power[1:], df,
+        binfreq, bincs, step_size = utils.rebin_data(self.freq,
+                                                     self.power, df,
                                                      method=method)
 
         # make an empty cross spectrum object
@@ -210,8 +210,8 @@ class Crossspectrum(object):
         bin_cs = self.__class__()
 
         # store the binned periodogram in the new object
-        bin_cs.freq = np.hstack([binfreq[0]-self.df, binfreq])
-        bin_cs.power = np.hstack([self.power[0], bincs])
+        bin_cs.freq = binfreq
+        bin_cs.power = bincs
         bin_cs.df = df
         bin_cs.n = self.n
         bin_cs.norm = self.norm
