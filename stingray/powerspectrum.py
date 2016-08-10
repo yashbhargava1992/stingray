@@ -363,16 +363,16 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         return
 
-    def _make_segment_spectrum(self, lc, segment_size, gti=None):
+    def _make_segment_spectrum(self, lc, segment_size):
 
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
-        if gti is None:
-            gti = lc.gti
+        if self.gti is None:
+            self.gti = lc.gti
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(gti, segment_size, lc.time)
+            bin_intervals_from_gtis(self.gti, segment_size, lc.time)
 
         power_all = []
         nphots_all = []
