@@ -42,7 +42,7 @@ def coherence(lc1, lc2):
 
 class Crossspectrum(object):
 
-    def __init__(self, lc1=None, lc2=None, norm='none'):
+    def __init__(self, lc1=None, lc2=None, norm='none', gti=None):
         """
         Make a cross spectrum from a (binned) light curve.
         You can also make an empty Crossspectrum object to populate with your
@@ -59,6 +59,13 @@ class Crossspectrum(object):
 
         norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
             The normalization of the (real part of the) cross spectrum.
+
+        Other Parameters
+        ----------------
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+            This choice overrides the GTIs in the single light curves. Use with
+            care!
 
         Attributes
         ----------
@@ -108,7 +115,7 @@ class Crossspectrum(object):
                 self.m = 1
                 self.n = None
                 return
-
+        self.gti = gti
         self.lc1 = lc1
         self.lc2 = lc2
         self._make_crossspectrum(lc1, lc2)
@@ -121,6 +128,18 @@ class Crossspectrum(object):
 
         if not isinstance(lc2, lightcurve.Lightcurve):
             raise TypeError("lc2 must be a lightcurve.Lightcurve object")
+
+        # Then check that GTIs make sense
+        if self.gti is None:
+            self.gti = cross_two_gtis(lc1.gti, lc2.gti)
+
+        if self.gti.shape[0] != 1:
+            print(self.gti, lc1.gti, lc2.gti)
+            raise TypeError("Non-averaged Cross Spectra need "
+                            "a single Good Time Interval")
+
+        lc1 = lc1.split_by_gti()[0]
+        lc2 = lc2.split_by_gti()[0]
 
         ## total number of photons is the sum of the
         ## counts in the light curve
@@ -373,7 +392,7 @@ class Crossspectrum(object):
 
 class AveragedCrossspectrum(Crossspectrum):
 
-    def __init__(self, lc1, lc2, segment_size, norm='none'):
+    def __init__(self, lc1, lc2, segment_size, norm='none', gti=None):
         """
         Make an averaged cross spectrum from a light curve by segmenting two
         light curves, Fourier-transforming each segment and then averaging the
@@ -399,6 +418,13 @@ class AveragedCrossspectrum(Crossspectrum):
 
         norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
             The normalization of the (real part of the) cross spectrum.
+
+        Other Parameters
+        ----------------
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+            This choice overrides the GTIs in the single light curves. Use with
+            care!
 
         Attributes
         ----------
@@ -435,11 +461,11 @@ class AveragedCrossspectrum(Crossspectrum):
 
         self.segment_size = segment_size
 
-        Crossspectrum.__init__(self, lc1, lc2, norm)
+        Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti)
 
         return
 
-    def _make_segment_spectrum(self, lc1, lc2, segment_size, gti=None):
+    def _make_segment_spectrum(self, lc1, lc2, segment_size):
 
         # TODO: need to update this for making cross spectra.
         assert isinstance(lc1, lightcurve.Lightcurve)
@@ -451,15 +477,15 @@ class AveragedCrossspectrum(Crossspectrum):
         if lc1.tseg != lc2.tseg:
             raise ValueError("Lightcurves do not have same tseg.")
 
-        if gti is None:
-            gti = cross_two_gtis(lc1.gti, lc2.gti)
+        if self.gti is None:
+            self.gti = cross_two_gtis(lc1.gti, lc2.gti)
 
         cs_all = []
         nphots1_all = []
         nphots2_all = []
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(gti, segment_size, lc1.time)
+            bin_intervals_from_gtis(self.gti, segment_size, lc1.time)
 
         for start_ind, end_ind in zip(start_inds, end_inds):
             time_1 = lc1.time[start_ind:end_ind]
