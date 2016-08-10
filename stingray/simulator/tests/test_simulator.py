@@ -284,7 +284,12 @@ class TestSimulator(object):
         h.append(self.simulator.simple_ir(start=9, width=1))
 
         delays = [int(5/lc.dt), int(10/lc.dt)]
-        outputs = [self.simulator.simulate(s, i) for i in h]
+
+        outputs = []
+        for i in h:
+            lc2 = self.simulator.simulate(s, i)
+            lc2.shift(-lc2.time[0] + lc.time[0])
+            outputs.append(lc2)
 
         cross = [Crossspectrum(lc, lc2).rebin(0.0075) for lc2 in outputs]
         lags = [np.angle(c.power)/ (2 * np.pi * c.freq) for c in cross]
@@ -307,7 +312,12 @@ class TestSimulator(object):
         h.append(self.simulator.simple_ir(start=4, width=1, intensity=20))
 
         delay = int(5/lc.dt)
-        outputs = [self.simulator.simulate(s, i) for i in h]
+
+        outputs = []
+        for i in h:
+            lc2 = self.simulator.simulate(s, i)
+            lc2.shift(-lc2.time[0] + lc.time[0])
+            outputs.append(lc2)
 
         cross = [Crossspectrum(lc, lc2).rebin(0.0075) for lc2 in outputs]
         lags = [np.angle(c.power)/ (2 * np.pi * c.freq) for c in cross]
