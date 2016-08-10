@@ -25,20 +25,28 @@ the learning curve for the advanced spectral timing techniques with a correct st
 
 Contents
 --------
-
-The contents will be:
-
 - make a light curve from event data
 - make periodograms in Leahy and rms normalization
 - average periodograms
 - cross spectra and lags (time vs energy, time vs frequency)
+- coherence
+- simulate a light curve with a given power spectrum
+- simulate a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
+- simulate an event list from a given light curve _and_ with a given energy spectrum
+- load event lists from fits files of a few missions (_RXTE_/PCA, _NuSTAR_/FPM, _XMM-Newton_/EPIC)
+
+Future Additions
+----------------
+- cross correlation functions, 
 - maximum likelihood fitting of periodograms/parametric models
 - bispectra (?)
-- cross correlation functions, coherence
 - spectral-timing functionality
 - Bayesian QPO searches
 - power colours
 - rms spectra
+- full HEASARC-compatible mission support
+- graphical interface
+
 
 Installation
 -------------
