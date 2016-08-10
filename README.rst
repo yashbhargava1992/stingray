@@ -33,7 +33,7 @@ Contents
 - simulate a light curve with a given power spectrum
 - simulate a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
 - simulate an event list from a given light curve _and_ with a given energy spectrum
-- load event lists from fits files of a few missions (_RXTE_/PCA, _NuSTAR_/FPM, _XMM-Newton_/EPIC)
+- load event lists from fits files of a few missions (*RXTE*/PCA, *NuSTAR*/FPM, *XMM-Newton*/EPIC)
 
 Future Additions
 ----------------
@@ -46,7 +46,7 @@ Future Additions
 - rms spectra
 - full HEASARC-compatible mission support
 - graphical interface
-
+- (...) Feel free to propose! Use the `Issues`_ page!
 
 Installation
 -------------
@@ -96,3 +96,4 @@ this project, please `get in touch via the issues
 .. |Coverage Status Master| image:: https://coveralls.io/repos/github/StingraySoftware/stingray/badge.svg?branch=master
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
 .. _Astropy: https://www.github.com/astropy/astropy
+.. _Issues: https://www.github.com/stingraysoftware/stingray/issues
