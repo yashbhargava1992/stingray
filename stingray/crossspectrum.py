@@ -458,8 +458,9 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         self.type = "crossspectrum"
 
-        if not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite")
+        if segment_size is not None:
+            if not np.isfinite(segment_size):
+                raise ValueError("segment_size must be finite")
 
         self.segment_size = segment_size
 
