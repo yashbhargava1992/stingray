@@ -135,7 +135,6 @@ class Crossspectrum(object):
             self.gti = cross_two_gtis(lc1.gti, lc2.gti)
 
         if self.gti.shape[0] != 1:
-            print(self.gti, lc1.gti, lc2.gti)
             raise TypeError("Non-averaged Cross Spectra need "
                             "a single Good Time Interval")
 
