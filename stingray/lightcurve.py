@@ -114,6 +114,18 @@ class Lightcurve(object):
                                             [[self.tstart,
                                               self.tstart + self.tseg]]))
 
+    def shift(self, time_shift):
+        """Shift the light curve and the GTIs in time.
+
+        Parameters
+        ----------
+        time_shift: float
+            The amount of time that the light curve will be shifted
+        """
+        self.tstart += time_shift
+        self.time += time_shift
+        self.gti += time_shift
+
     def __add__(self, other):
         """
         Add two light curves element by element having the same time array.
