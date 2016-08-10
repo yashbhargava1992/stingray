@@ -234,25 +234,7 @@ class Covariancespectrum(object):
             xs_var = dict()
 
         for energy in energy_covar.keys():
-            lc = Lightcurve.make_lightcurve(
-                    energy_events[energy], self.dt, tstart=self.min_time,
-                    tseg=self.max_time - self.min_time)
-
-            # Calculating timestamps for lc_ref
-            toa_ref = []
-            for key, value in energy_events.items():
-                if key >= self.ref_band_interest[0] and \
-                        key <= self.ref_band_interest[1]:
-                    if key != energy:
-                        toa_ref.extend(value)
-
-            toa_ref = np.array(sorted(toa_ref))
-
-            lc_ref = Lightcurve.make_lightcurve(
-                    toa_ref, self.dt, tstart=self.min_time,
-                    tseg=self.max_time - self.min_time)
-
-            assert len(lc.time) == len(lc_ref.time)
+            lc, lc_ref = self._create_lc_and_lc_ref(energy, energy_events)
 
             covar = self._compute_covariance(lc, lc_ref)
 
@@ -278,6 +260,29 @@ class Covariancespectrum(object):
             self.covar = np.vstack(energy_covar.items())
 
             self.covar_error = np.vstack(self.covar_error.items())
+
+    def _create_lc_and_lc_ref(self, energy, energy_events):
+        lc = Lightcurve.make_lightcurve(
+                energy_events[energy], self.dt, tstart=self.min_time,
+                tseg=self.max_time - self.min_time)
+
+        # Calculating timestamps for lc_ref
+        toa_ref = []
+        for key, value in energy_events.items():
+            if key >= self.ref_band_interest[0] and \
+                    key <= self.ref_band_interest[1]:
+                if key != energy:
+                    toa_ref.extend(value)
+
+        toa_ref = np.array(sorted(toa_ref))
+
+        lc_ref = Lightcurve.make_lightcurve(
+                toa_ref, self.dt, tstart=self.min_time,
+                tseg=self.max_time - self.min_time)
+
+        assert len(lc.time) == len(lc_ref.time)
+
+        return lc, lc_ref
 
     def _calculate_excess_variance(self, lc):
         """Calculate excess variance in a band with the standard deviation."""
@@ -409,6 +414,10 @@ class AveragedCovariancespectrum(Covariancespectrum):
 
         self._make_averaged_covar_spectrum()
 
+        self._init_covar_error()
+
+        self._calculate_covariance_error()
+
     def _make_averaged_covar_spectrum(self):
         """
         Calls methods from base class for every segment and calculates averaged
@@ -457,3 +466,35 @@ class AveragedCovariancespectrum(Covariancespectrum):
             self.energy_covar[key] = value / (self.xs_var[key])**0.5
 
         self.covar = np.vstack(self.energy_covar.items())
+
+    def _init_covar_error(self):
+        """Initialize dictionaries separately for the calculation of error."""
+        self.energy_events = {}
+        self._construct_energy_events(self.energy_events)
+        self._update_energy_events(self.energy_events)
+        self.covar_error = {}
+        self._init_energy_covar(self.energy_events, self.covar_error)
+
+    def _calculate_covariance_error(self):
+        """
+        Calculate Covariance error on the averaged quantities.
+
+        Reference
+        ---------
+        http://arxiv.org/pdf/1405.6575v2.pdf Equation 15
+
+        """
+        for energy in self.covar_error.keys():
+            lc, lc_ref = self._create_lc_and_lc_ref(energy, self.energy_events)
+
+            xs_y = self._calculate_excess_variance(lc_ref)
+
+            err_x = self._calculate_std(lc)
+            err_y = self._calculate_std(lc_ref)
+
+            covar = self.energy_covar[energy]
+
+            num = (covar**2)*err_y + xs_y*err_x + err_x*err_y
+            denom = 2*self.nbins*xs_y
+
+            self.covar_error[energy] = (num / denom)**0.5
