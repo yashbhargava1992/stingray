@@ -362,7 +362,7 @@ def check_separate(gti0, gti1):
     ----------
     gti0: 2-d float array
         [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-    
+
     gti1: 2-d float array
         [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
 
@@ -398,7 +398,7 @@ def append_gtis(gti0, gti1):
     ----------
     gti0: 2-d float array
         [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-    
+
     gti1: 2-d float array
         [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
 
@@ -425,19 +425,19 @@ def append_gtis(gti0, gti1):
 
 def join_gtis(gti0, gti1):
     """Union of two GTIs.
-    
-    If GTIs are mutually exclusive, it calls `append_gtis`. Otherwise we put the 
-    extremes of partially overlapping GTIs on an ideal line and look at the 
-    number of opened and closed intervals. When the number of closed and opened 
+
+    If GTIs are mutually exclusive, it calls `append_gtis`. Otherwise we put the
+    extremes of partially overlapping GTIs on an ideal line and look at the
+    number of opened and closed intervals. When the number of closed and opened
     intervals is the same, the full GTI is complete and we close it.
-    
+
     In practice, we assign to each opening time of a GTI the value -1, and
     the value 1 to each closing time; when the cumulative sum is zero, the
     GTI has ended. The timestamp after each closed GTI is the start of a new
     one.
 
     (cumsum)   -1   -2         -1   0   -1 -2           -1  -2  -1        0
-    GTI A      |-----:----------|   :    |--:------------|   |---:--------| 
+    GTI A      |-----:----------|   :    |--:------------|   |---:--------|
     FINAL GTI  |-----:--------------|    |--:--------------------:--------|
     GTI B            |--------------|       |--------------------|
 
@@ -615,8 +615,9 @@ def gti_border_bins(gtis, time):
     Examples
     --------
     >>> times = np.arange(0.5, 13.5)
-    >>> start_bins, stop_bins = \
-            gti_border_bins([[0, 5], [6, 8], [9, 9.5]], times)
+
+    >>> start_bins, stop_bins = gti_border_bins(
+    ...    [[0, 5], [6, 8]], times)
 
     >>> np.all(start_bins == [0, 6])
     True
