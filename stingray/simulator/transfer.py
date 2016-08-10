@@ -22,7 +22,7 @@ class TransferFunction(object):
             inner/first dimension (or column counts) represents time
             and outer/second dimension (or rows counts) represents energy.
 
-            As an example, if you have you 2-d model define by 'arr', then
+            As an example, if you have you 2-d model defined by 'arr', then
             arr[1][5] defines a time of 5(s) and energy of 1(keV) [assuming
             'dt' and 'de' are 1 and 'tstart' and 'estart' are 0.]
 
@@ -63,7 +63,7 @@ class TransferFunction(object):
         if len(data[:]) < 2:
             raise ValueError('Number of rows should be greater than 1.')
 
-    def time_response(self):
+    def time_response(self, e0=None, e1=None):
         """
         Form an energy-averaged/time-resolved response of 2-d transfer 
         function. 
@@ -72,9 +72,36 @@ class TransferFunction(object):
         -------
         energy : numpy.ndarray
             energy-averaged/time-resolved response of 2-d transfer function
+
+        e0: int
+            start value of energy interval to be averaged
+
+        e1: int
+            end value of energy interval to be averaged
         """
         
-        self.time = np.mean(self.data, axis=0)
+        # Set start and stop values
+        if e0 is None:
+            start = 0
+        else:
+            start = int(self.estart + e0/self.de)
+        
+        if e1 is None:
+            stop = len(self.data[0]) - 1
+        else:
+            stop = int(self.estart + e1/self.de)
+
+        # Ensure start and stop values are legal
+        if (start < 0) or (stop < 0):
+            raise ValueError('e0 and e1 must be positive.')
+
+        if (start > len(self.data[:])) or (stop > len(self.data[:])):
+            raise ValueError('One or both of the given energy values are out of range.')
+
+        if start == stop:
+            raise ValueError('e0 and e1 must be separated by at least de.')
+
+        self.time = np.mean(self.data[start:stop, :], axis=0)
 
     def energy_response(self):
         """

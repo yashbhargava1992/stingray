@@ -30,6 +30,22 @@ class TestSimulator(object):
         """Test obtaining a time-resolved response."""
         self.transfer.time_response()
 
+    def test_time_response_with_energy_ranges(self):
+        self.transfer.time_response(e0=3.3, e1=6.7)
+
+    def test_time_response_with_incorrect_ranges(self):
+        """Test that incorrect energy ranges raises a 
+        Value Error.
+        """
+        with pytest.raises(ValueError):
+            self.transfer.time_response(e0=-1, e1=2)
+
+        with pytest.raises(ValueError):
+            self.transfer.time_response(e0=3, e1=12)
+
+        with pytest.raises(ValueError):
+            self.transfer.time_response(e0=3.1, e1=3.2)
+
     def test_energy_response(self):
         """Test obtaining an energy-resolved response."""
         self.transfer.energy_response()
