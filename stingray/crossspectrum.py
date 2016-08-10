@@ -9,8 +9,10 @@ import scipy.optimize
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
+from stingray.gti import cross_two_gtis, bin_intervals_from_gtis
 from stingray.exceptions import StingrayError
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis
+
 
 def coherence(lc1, lc2):
     """
