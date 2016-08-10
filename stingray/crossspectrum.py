@@ -394,7 +394,7 @@ class Crossspectrum(object):
 
 class AveragedCrossspectrum(Crossspectrum):
 
-    def __init__(self, lc1, lc2, segment_size, norm='none', gti=None):
+    def __init__(self, lc1=None, lc2=None, segment_size=None, norm='none', gti=None):
         """
         Make an averaged cross spectrum from a light curve by segmenting two
         light curves, Fourier-transforming each segment and then averaging the
