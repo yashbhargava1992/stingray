@@ -61,12 +61,20 @@ def classical_pvalue(power, nspec):
         the null hypothesis of white noise
 
     """
+    if not np.isfinite(power):
+        raise ValueError("power must be a finite floating point number!")
 
-    assert np.isfinite(power), "power must be a finite floating point number!"
-    assert power > 0, "power must be a positive real number!"
-    assert np.isfinite(nspec), "nspec must be a finite integer number"
-    assert nspec >= 1, "nspec must be larger or equal to 1"
-    assert np.isclose(nspec % 1, 0), "nspec must be an integer number!"
+    if power < 0:
+        raise ValueError("power must be a positive real number!")
+
+    if not np.isfinite(nspec):
+        raise ValueError("nspec must be a finite integer number")
+
+    if nspec < 1:
+        raise ValueError("nspec must be larger or equal to 1")
+
+    if not np.isclose(nspec % 1, 0):
+        raise ValueError("nspec must be an integer number!")
 
     # If the power is really big, it's safe to say it's significant,
     # and the p-value will be nearly zero
@@ -181,24 +189,17 @@ class Powerspectrum(Crossspectrum):
             max_freq
 
         """
-        # assert min_freq >= self.freq[0], "Lower frequency bound must be " \
-        #                                 "larger or equal the minimum " \
-        #                                 "frequency in the periodogram!"
-
-        # assert max_freq <= self.freq[-1], "Upper frequency bound must be " \
-        #                                 "smaller or equal the maximum " \
-        #                                 "frequency in the periodogram!"
-
         minind = self.freq.searchsorted(min_freq)
         maxind = self.freq.searchsorted(max_freq)
         powers = self.power[minind:maxind]
+
         if self.norm.lower() == 'leahy':
             rms = np.sqrt(np.sum(powers)/self.nphots)
 
         elif self.norm.lower() == "frac":
             rms = np.sqrt(np.sum(powers*self.df))
         else:
-            raise Exception("Normalization not recognized!")
+            raise TypeError("Normalization not recognized!")
 
         rms_err = self._rms_error(powers)
 
@@ -275,8 +276,9 @@ class Powerspectrum(Crossspectrum):
             lower than the threshold specified in `threshold`.
 
         """
-        assert self.norm == "leahy", "This method only works on " \
-                                     "Leahy-normalized power spectra!"
+        if not self.norm == "leahy":
+            raise ValueError("This method only works on "
+                             "Leahy-normalized power spectra!")
 
         # calculate p-values for all powers
         # leave out zeroth power since it just encodes the number of photons!
@@ -351,15 +353,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         self.type = "powerspectrum"
 
-
-        assert isinstance(norm, str), "norm is not a string!"
-
-        assert norm.lower() in ["frac", "abs", "leahy", "none"], \
-                "norm must be 'frac', 'abs', 'leahy', or 'none'!"
-
-        self.norm = norm.lower()
-
-        assert np.isfinite(segment_size), "segment_size must be finite!"
+        if not np.isfinite(segment_size):
+            raise ValueError("segment_size must be finite!")
 
         self.segment_size = segment_size
 
@@ -369,7 +364,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     def _make_segment_spectrum(self, lc, segment_size):
 
-        assert isinstance(lc, lightcurve.Lightcurve)
+        if not isinstance(lc, lightcurve.Lightcurve):
+            raise TypeError("lc must be a lightcurve.Lightcurve object")
 
         # number of bins per segment
         nbins = int(segment_size/lc.dt)

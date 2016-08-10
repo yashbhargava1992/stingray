@@ -15,13 +15,38 @@ It is composed of:
 3. a simulator of light curves and event lists, that includes different kinds of variability and more complicated phenomena based on the impulse response of given physical events (e.g. reverberation);
 4. finally, an in-development GUI to ease the learning curve for new users.
 
-There are a number of official software packages for X-ray spectral fitting (Xspec, ISIS, Sherpa, ...). 
+There are a number of official software packages for X-ray spectral fitting (Xspec, ISIS, Sherpa, ...).
 Such a widely used and standard software package does not exist for X-ray timing, 
 that remains for now mostly done with custom software. 
 Stingray aims not only at becoming a standard timing package, 
 but at extending the implementation to the most advanced spectral timing techniques available in the literature. 
 The ultimate goal of this project is to provide the community with a package that eases 
 the learning curve for the advanced spectral timing techniques with a correct statistical framework.
+
+
+Note to Users
+-------------
+
+Stingray is currently in **development phase**. Some of the code is not in
+its final stage, and might change before our first release. There might also
+still be bugs we are working on fixing and features that are not finished.
+
+We encourage you to download it and try it out, but please be aware of
+the caveats of working with in-development code.
+At the same time, we welcome contributions and we need your help!
+If you have your own code duplicating any part of the methods implemented in
+Stingray, please try out Stingray and compare to your own results.
+
+We do welcome any sort of feedback: if something breaks, please report it via
+the `issues <https://github.com/StingraySoftware/stingray/issues>`_. Similarly,
+please open an issue if any functionality is missing, the API is not intuitive
+or if you have suggestions for additional functionality that would be useful to
+have.
+
+If you have code you might want to contribute, we'd love to hear from you,
+either via a `pull request
+ <https://github.com/StingraySoftware/stingray/pulls>`_or via an
+ `issue <https://github.com/StingraySoftware/stingray/issues>`_.
 
 Contents
 --------
@@ -49,7 +74,7 @@ Future Additions
 - (...) Feel free to propose! Use the `Issues`_ page!
 
 Installation
--------------
+------------
 
 1. Clone our project from github (remember about including --recursive flag due to our submodule(s))::
 
