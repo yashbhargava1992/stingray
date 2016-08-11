@@ -124,9 +124,11 @@ class Lightcurve(object):
         time_shift: float
             The amount of time that the light curve will be shifted
         """
-        self.tstart += time_shift
-        self.time += time_shift
-        self.gti += time_shift
+        new_lc = Lightcurve(self.time + time_shift, self.counts,
+                            gti=self.gti + time_shift)
+        new_lc.countrate = self.countrate
+        new_lc.counts = self.counts
+        return new_lc
 
     def __add__(self, other):
         """

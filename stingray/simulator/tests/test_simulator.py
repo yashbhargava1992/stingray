@@ -288,7 +288,7 @@ class TestSimulator(object):
         outputs = []
         for i in h:
             lc2 = self.simulator.simulate(s, i)
-            lc2.shift(-lc2.time[0] + lc.time[0])
+            lc2 = lc2.shift(-lc2.time[0] + lc.time[0])
             outputs.append(lc2)
 
         cross = [Crossspectrum(lc, lc2).rebin(0.0075) for lc2 in outputs]
@@ -316,7 +316,7 @@ class TestSimulator(object):
         outputs = []
         for i in h:
             lc2 = self.simulator.simulate(s, i)
-            lc2.shift(-lc2.time[0] + lc.time[0])
+            lc2 = lc2.shift(-lc2.time[0] + lc.time[0])
             outputs.append(lc2)
 
         cross = [Crossspectrum(lc, lc2).rebin(0.0075) for lc2 in outputs]

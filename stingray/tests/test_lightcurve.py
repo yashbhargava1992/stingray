@@ -438,11 +438,17 @@ class TestLightcurve(object):
     def test_shift(self):
         times = [1, 2, 3, 4, 5, 6, 7, 8]
         counts = [1, 1, 1, 1, 2, 3, 3, 2]
-        lc = Lightcurve(times, counts)
-        lc.shift(1)
-        assert np.all(lc.time - 1 == times)
-        lc.shift(-2)
-        assert np.all(lc.time + 1 == times)
+        lc = Lightcurve(times, counts, input_counts=True)
+        lc2 = lc.shift(1)
+        assert np.all(lc2.time - 1 == times)
+        lc2 = lc.shift(-1)
+        assert np.all(lc2.time + 1 == times)
+        assert np.all(lc2.counts == lc.counts)
+        assert np.all(lc2.countrate == lc.countrate)
+        lc = Lightcurve(times, counts, input_counts=False)
+        lc2 = lc.shift(1)
+        assert np.all(lc2.counts == lc.counts)
+        assert np.all(lc2.countrate == lc.countrate)
 
 
 class TestLightcurveRebin(object):
