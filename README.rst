@@ -38,15 +38,13 @@ If you have your own code duplicating any part of the methods implemented in
 Stingray, please try out Stingray and compare to your own results.
 
 We do welcome any sort of feedback: if something breaks, please report it via
-the `issues <https://github.com/StingraySoftware/stingray/issues>`_. Similarly,
+the `issues`_ page. Similarly,
 please open an issue if any functionality is missing, the API is not intuitive
 or if you have suggestions for additional functionality that would be useful to
 have.
 
 If you have code you might want to contribute, we'd love to hear from you,
-either via a `pull request
- <https://github.com/StingraySoftware/stingray/pulls>`_or via an
- `issue <https://github.com/StingraySoftware/stingray/issues>`_.
+either via a `pull request`_ or via an `issue`_.
 
 Contents
 --------
@@ -122,3 +120,5 @@ this project, please `get in touch via the issues
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
 .. _Astropy: https://www.github.com/astropy/astropy
 .. _Issues: https://www.github.com/stingraysoftware/stingray/issues
+.. _Issue: https://www.github.com/stingraysoftware/stingray/issues
+.. _pull request: https://github.com/StingraySoftware/stingray/pulls
