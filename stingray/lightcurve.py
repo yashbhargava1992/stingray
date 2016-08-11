@@ -114,7 +114,7 @@ class Lightcurve(object):
             np.asarray(assign_value_if_none(gti,
                                             [[self.tstart,
                                               self.tstart + self.tseg]]))
-        check_gtis(gti)
+        check_gtis(self.gti)
 
     def shift(self, time_shift):
         """Shift the light curve and the GTIs in time.
