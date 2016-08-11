@@ -48,13 +48,26 @@ def _get_gti_from_extension(lchdulist, accepted_gtistrings=['GTI']):
     return gti_list
 
 def check_gtis(gti):
-    """Check if GTIs are well-behaved. No start>end, no overlaps.
+    """Check if GTIs are well-behaved.
+
+    Check that:
+    1) the shape of the GTI array is correct;
+    2) No start>end
+    3) no overlaps.
 
     Raises
     ------
-    AssertionError
-        If GTIs are not well-behaved.
+    TypeError
+        If GTIs are of the wrong shape
+    ValueError
+        If GTIs have overlapping or displaced values
     """
+    if len(gti) != gti.shape[0] or len(gti.shape) != 2 or \
+                    len(gti) != gti.shape[0]:
+        raise TypeError("Please check formatting of GTIs. They need to be"
+                        " provided as [[gti00, gti01], [gti10, gti11], ...]")
+
+
     gti_start = gti[:, 0]
     gti_end = gti[:, 1]
 
@@ -638,4 +651,3 @@ def gti_border_bins(gtis, time):
     assert len(spectrum_start_bins) > 0, \
         ("No GTIs are equal to or longer than chunk_length.")
     return spectrum_start_bins, spectrum_stop_bins
-
