@@ -10,7 +10,7 @@ import scipy.optimize
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
-from stingray.gti import cross_two_gtis, bin_intervals_from_gtis
+from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 
 
 def coherence(lc1, lc2):
@@ -133,6 +133,8 @@ class Crossspectrum(object):
         # Then check that GTIs make sense
         if self.gti is None:
             self.gti = cross_two_gtis(lc1.gti, lc2.gti)
+
+        check_gtis(self.gti)
 
         if self.gti.shape[0] != 1:
             raise TypeError("Non-averaged Cross Spectra need "
@@ -479,6 +481,8 @@ class AveragedCrossspectrum(Crossspectrum):
 
         if self.gti is None:
             self.gti = cross_two_gtis(lc1.gti, lc2.gti)
+
+        check_gtis(self.gti)
 
         cs_all = []
         nphots1_all = []
