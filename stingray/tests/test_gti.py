@@ -7,7 +7,7 @@ import os
 
 from ..utils import contiguous_regions
 from ..gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
-from ..gti import check_separate, create_gti_mask
+from ..gti import check_separate, create_gti_mask, check_gtis
 from ..gti import create_gti_from_condition, gti_len
 from ..gti import time_intervals_from_gtis, bin_intervals_from_gtis
 
@@ -140,3 +140,16 @@ class TestGTI(object):
     def test_gti_length(self):
         assert gti_len([[0, 5], [6, 7]]) == 6
 
+    def test_check_gtis_shape(self):
+        with pytest.raises(TypeError):
+            check_gtis([0, 1])
+
+        with pytest.raises(TypeError):
+            check_gtis([[0, 1], [0]])
+
+    def test_check_gtis_values(self):
+        with pytest.raises(ValueError):
+            check_gtis([[0, 2], [1, 3]])
+
+        with pytest.raises(ValueError):
+            check_gtis([[1, 0]])
