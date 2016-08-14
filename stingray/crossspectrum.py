@@ -394,7 +394,7 @@ class Crossspectrum(object):
 
 class AveragedCrossspectrum(Crossspectrum):
 
-    def __init__(self, lc1, lc2, segment_size, norm='none', gti=None):
+    def __init__(self, lc1=None, lc2=None, segment_size=None, norm='none', gti=None):
         """
         Make an averaged cross spectrum from a light curve by segmenting two
         light curves, Fourier-transforming each segment and then averaging the
@@ -458,8 +458,9 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         self.type = "crossspectrum"
 
-        if not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite")
+        if segment_size is not None:
+            if not np.isfinite(segment_size):
+                raise ValueError("segment_size must be finite")
 
         self.segment_size = segment_size
 
