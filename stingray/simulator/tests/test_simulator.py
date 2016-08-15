@@ -255,7 +255,7 @@ class TestSimulator(object):
         delay = int(15/lc.dt)
 
         lag = self.calculate_lag(lc, h, delay)
-        v_cutoff = 1.0/(2*10.0)
+        v_cutoff = 1.0/(2*15.0)
         h_cutoff = lag[int((v_cutoff-0.0075)*1/0.0075)]
 
         assert np.abs(15-h_cutoff) < np.sqrt(15)
