@@ -48,13 +48,26 @@ def _get_gti_from_extension(lchdulist, accepted_gtistrings=['GTI']):
     return gti_list
 
 def check_gtis(gti):
-    """Check if GTIs are well-behaved. No start>end, no overlaps.
+    """Check if GTIs are well-behaved.
+
+    Check that:
+    1) the shape of the GTI array is correct;
+    2) No start>end
+    3) no overlaps.
 
     Raises
     ------
-    AssertionError
-        If GTIs are not well-behaved.
+    TypeError
+        If GTIs are of the wrong shape
+    ValueError
+        If GTIs have overlapping or displaced values
     """
+    gti = np.asarray(gti)
+    if len(gti) != gti.shape[0] or len(gti.shape) != 2 or \
+                    len(gti) != gti.shape[0]:
+        raise TypeError("Please check formatting of GTIs. They need to be"
+                        " provided as [[gti00, gti01], [gti10, gti11], ...]")
+
     gti_start = gti[:, 0]
     gti_end = gti[:, 1]
 
@@ -289,6 +302,10 @@ def cross_gtis(gti_list):
     --------
     cross_two_gtis : Extract the common intervals from two GTI lists *EXACTLY*
     """
+    gti_list = np.asarray(gti_list)
+    for g in gti_list:
+        check_gtis(g)
+
     ninst = len(gti_list)
     if ninst == 1:
         return gti_list[0]
@@ -345,7 +362,7 @@ def check_separate(gti0, gti1):
     ----------
     gti0: 2-d float array
         [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-    
+
     gti1: 2-d float array
         [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
 
@@ -381,7 +398,7 @@ def append_gtis(gti0, gti1):
     ----------
     gti0: 2-d float array
         [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-    
+
     gti1: 2-d float array
         [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
 
@@ -408,19 +425,19 @@ def append_gtis(gti0, gti1):
 
 def join_gtis(gti0, gti1):
     """Union of two GTIs.
-    
-    If GTIs are mutually exclusive, it calls `append_gtis`. Otherwise we put the 
-    extremes of partially overlapping GTIs on an ideal line and look at the 
-    number of opened and closed intervals. When the number of closed and opened 
+
+    If GTIs are mutually exclusive, it calls `append_gtis`. Otherwise we put the
+    extremes of partially overlapping GTIs on an ideal line and look at the
+    number of opened and closed intervals. When the number of closed and opened
     intervals is the same, the full GTI is complete and we close it.
-    
+
     In practice, we assign to each opening time of a GTI the value -1, and
     the value 1 to each closing time; when the cumulative sum is zero, the
     GTI has ended. The timestamp after each closed GTI is the start of a new
     one.
 
     (cumsum)   -1   -2         -1   0   -1 -2           -1  -2  -1        0
-    GTI A      |-----:----------|   :    |--:------------|   |---:--------| 
+    GTI A      |-----:----------|   :    |--:------------|   |---:--------|
     FINAL GTI  |-----:--------------|    |--:--------------------:--------|
     GTI B            |--------------|       |--------------------|
 
@@ -575,7 +592,9 @@ def bin_intervals_from_gtis(gtis, chunk_length, time):
 
 
 def gti_border_bins(gtis, time):
-    """Find the bins in a time array corresponding to the borders of GTIs
+    """Find the bins in a time array corresponding to the borders of GTIs.
+
+    GTIs shorter than the bin time are not returned.
 
     Parameters
     ----------
@@ -596,8 +615,9 @@ def gti_border_bins(gtis, time):
     Examples
     --------
     >>> times = np.arange(0.5, 13.5)
-    >>> start_bins, stop_bins = \
-            gti_border_bins([[0, 5], [6, 8]], times)
+
+    >>> start_bins, stop_bins = gti_border_bins(
+    ...    [[0, 5], [6, 8]], times)
 
     >>> np.all(start_bins == [0, 6])
     True
@@ -616,7 +636,6 @@ def gti_border_bins(gtis, time):
         good = (time - bintime / 2 >= g[0])&(time + bintime / 2 <= g[1])
         t_good = time[good]
         if len(t_good) == 0:
-            print(time - bintime / 2, time + bintime / 2)
             continue
         startbin = np.argmin(np.abs(time - bintime / 2 - g[0]))
         stopbin = np.argmin(np.abs(time + bintime / 2 - g[1]))
@@ -633,4 +652,3 @@ def gti_border_bins(gtis, time):
     assert len(spectrum_start_bins) > 0, \
         ("No GTIs are equal to or longer than chunk_length.")
     return spectrum_start_bins, spectrum_stop_bins
-

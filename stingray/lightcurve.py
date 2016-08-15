@@ -11,6 +11,7 @@ import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
+from stingray.gti import check_gtis
 
 __all__ = ["Lightcurve"]
 
@@ -113,6 +114,21 @@ class Lightcurve(object):
             np.asarray(assign_value_if_none(gti,
                                             [[self.tstart,
                                               self.tstart + self.tseg]]))
+        check_gtis(self.gti)
+
+    def shift(self, time_shift):
+        """Shift the light curve and the GTIs in time.
+
+        Parameters
+        ----------
+        time_shift: float
+            The amount of time that the light curve will be shifted
+        """
+        new_lc = Lightcurve(self.time + time_shift, self.counts,
+                            gti=self.gti + time_shift)
+        new_lc.countrate = self.countrate
+        new_lc.counts = self.counts
+        return new_lc
 
     def __add__(self, other):
         """

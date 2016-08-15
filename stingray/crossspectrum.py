@@ -10,6 +10,8 @@ import scipy.optimize
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
+from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
+
 
 def coherence(lc1, lc2):
     """
@@ -41,7 +43,7 @@ def coherence(lc1, lc2):
 
 class Crossspectrum(object):
 
-    def __init__(self, lc1=None, lc2=None, norm='none'):
+    def __init__(self, lc1=None, lc2=None, norm='none', gti=None):
         """
         Make a cross spectrum from a (binned) light curve.
         You can also make an empty Crossspectrum object to populate with your
@@ -58,6 +60,13 @@ class Crossspectrum(object):
 
         norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
             The normalization of the (real part of the) cross spectrum.
+
+        Other Parameters
+        ----------------
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+            This choice overrides the GTIs in the single light curves. Use with
+            care!
 
         Attributes
         ----------
@@ -107,7 +116,7 @@ class Crossspectrum(object):
                 self.m = 1
                 self.n = None
                 return
-
+        self.gti = gti
         self.lc1 = lc1
         self.lc2 = lc2
         self._make_crossspectrum(lc1, lc2)
@@ -120,6 +129,19 @@ class Crossspectrum(object):
 
         if not isinstance(lc2, lightcurve.Lightcurve):
             raise TypeError("lc2 must be a lightcurve.Lightcurve object")
+
+        # Then check that GTIs make sense
+        if self.gti is None:
+            self.gti = cross_two_gtis(lc1.gti, lc2.gti)
+
+        check_gtis(self.gti)
+
+        if self.gti.shape[0] != 1:
+            raise TypeError("Non-averaged Cross Spectra need "
+                            "a single Good Time Interval")
+
+        lc1 = lc1.split_by_gti()[0]
+        lc2 = lc2.split_by_gti()[0]
 
         ## total number of photons is the sum of the
         ## counts in the light curve
@@ -313,7 +335,8 @@ class Crossspectrum(object):
 
         # compute the mean of the powers that fall into each new frequency bin
         binpower, bin_edges, binno = scipy.stats.binned_statistic(
-            self.freq, self.power, statistic="mean", bins=binfreq)
+            self.freq.astype(np.float), self.power.astype(np.float),
+            statistic="mean", bins=binfreq)
 
         # compute the number of powers in each frequency bin
         nsamples = np.array([len(binno[np.where(binno == i)[0]])
@@ -371,7 +394,7 @@ class Crossspectrum(object):
 
 class AveragedCrossspectrum(Crossspectrum):
 
-    def __init__(self, lc1, lc2, segment_size, norm='none'):
+    def __init__(self, lc1=None, lc2=None, segment_size=None, norm='none', gti=None):
         """
         Make an averaged cross spectrum from a light curve by segmenting two
         light curves, Fourier-transforming each segment and then averaging the
@@ -398,6 +421,13 @@ class AveragedCrossspectrum(Crossspectrum):
         norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
             The normalization of the (real part of the) cross spectrum.
 
+        Other Parameters
+        ----------------
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+            This choice overrides the GTIs in the single light curves. Use with
+            care!
+
         Attributes
         ----------
         freq: numpy.ndarray
@@ -421,15 +451,20 @@ class AveragedCrossspectrum(Crossspectrum):
         nphots2: float
             The total number of photons in the second (reference) light curve
 
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+            They are calculated by taking the common GTI between the two light curves
+
         """
         self.type = "crossspectrum"
 
-        if not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite")
+        if segment_size is not None:
+            if not np.isfinite(segment_size):
+                raise ValueError("segment_size must be finite")
 
         self.segment_size = segment_size
 
-        Crossspectrum.__init__(self, lc1, lc2, norm)
+        Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti)
 
         return
 
@@ -445,16 +480,19 @@ class AveragedCrossspectrum(Crossspectrum):
         if lc1.tseg != lc2.tseg:
             raise ValueError("Lightcurves do not have same tseg.")
 
-        # number of bins per segment
-        nbins = int(segment_size/lc1.dt)
-        start_ind = 0
-        end_ind = nbins
+        if self.gti is None:
+            self.gti = cross_two_gtis(lc1.gti, lc2.gti)
+
+        check_gtis(self.gti)
 
         cs_all = []
         nphots1_all = []
         nphots2_all = []
 
-        while end_ind <= lc1.counts.shape[0]:
+        start_inds, end_inds = \
+            bin_intervals_from_gtis(self.gti, segment_size, lc1.time)
+
+        for start_ind, end_ind in zip(start_inds, end_inds):
             time_1 = lc1.time[start_ind:end_ind]
             counts_1 = lc1.counts[start_ind:end_ind]
             time_2 = lc2.time[start_ind:end_ind]
@@ -465,8 +503,6 @@ class AveragedCrossspectrum(Crossspectrum):
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
             nphots2_all.append(np.sum(lc2_seg.counts))
-            start_ind += nbins
-            end_ind += nbins
 
         return cs_all, nphots1_all, nphots2_all
 
