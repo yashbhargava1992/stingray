@@ -156,8 +156,7 @@ class TestPowerspectrum(object):
         with pytest.raises(Exception):
             ps = Powerspectrum(lc=self.lc, norm="rms")
             rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
-                                            max_freq=ps.freq[-1])
-
+                                             max_freq=ps.freq[-1])
 
     def test_fractional_rms_error(self):
         """

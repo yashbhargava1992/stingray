@@ -17,6 +17,7 @@ try:
 except ImportError:
     _H5PY_INSTALLED = False
 
+
 class TestLightcurve(object):
 
     @classmethod
@@ -325,7 +326,7 @@ class TestLightcurve(object):
 
         lc.sort()
 
-        assert np.all(lc.counts == np.array([ 5, 10, 20, 40]))
+        assert np.all(lc.counts == np.array([5, 10, 20, 40]))
         assert np.all(lc.time == np.array([4, 2, 3, 1]))
 
         lc.sort(reverse=True)
@@ -388,14 +389,14 @@ class TestLightcurve(object):
 
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write('ascii_lc.txt',format_='ascii')
+        lc.write('ascii_lc.txt', format_='ascii')
         lc.read('ascii_lc.txt', format_='ascii')
         os.remove('ascii_lc.txt')
 
     def test_io_with_pickle(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('lc.pickle', format_='pickle')
-        lc.read('lc.pickle',format_='pickle')
+        lc.read('lc.pickle', format_='pickle')
         assert np.all(lc.time == self.times)
         assert np.all(lc.counts == self.counts)
         assert np.all(lc.gti == self.gti)
@@ -406,14 +407,14 @@ class TestLightcurve(object):
         lc.write('lc.hdf5', format_='hdf5')
 
         if _H5PY_INSTALLED:
-            data = lc.read('lc.hdf5',format_='hdf5')
+            data = lc.read('lc.hdf5', format_='hdf5')
             assert np.all(data['time'] == self.times)
             assert np.all(data['counts'] == self.counts)
             assert np.all(data['gti'] == self.gti)
             os.remove('lc.hdf5')
 
         else:
-            lc.read('lc.pickle',format_='pickle')
+            lc.read('lc.pickle', format_='pickle')
             assert np.all(lc.time == self.times)
             assert np.all(lc.counts == self.counts)
             assert np.all(lc.gti == self.gti)
