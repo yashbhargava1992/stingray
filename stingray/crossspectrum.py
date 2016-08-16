@@ -78,6 +78,9 @@ class Crossspectrum(object):
         power: numpy.ndarray
             The array of cross spectra (complex numbers)
 
+        power_err: numpy.ndarray
+            The uncertainties of power
+
         df: float
             The frequency resolution
 
@@ -112,6 +115,7 @@ class Crossspectrum(object):
             else:
                 self.freq = None
                 self.power = None
+                self.power_err = None
                 self.df = None
                 self.nphots1 = None
                 self.nphots2 = None
@@ -179,6 +183,8 @@ class Crossspectrum(object):
         # with the imaginary part still intact.
         self.power = self._normalize_crossspectrum(self.unnorm_power, lc1.tseg)
 
+        self.power_err = self.power / np.sqrt(self.m)
+
     def _fourier_cross(self, lc1, lc2):
         """
         Fourier transform the two light curves, then compute the cross spectrum.
@@ -225,9 +231,11 @@ class Crossspectrum(object):
         """
 
         # rebin cross spectrum to new resolution
-        binfreq, bincs, step_size = utils.rebin_data(self.freq,
-                                                     self.power, df,
-                                                     method=method)
+        binfreq, bincs, binerr, step_size = utils.rebin_data(self.freq,
+                                                             self.power,
+                                                             self.power_err,
+                                                             df,
+                                                             method=method)
 
         # make an empty cross spectrum object
         # note: syntax deliberate to work with subclass Powerspectrum
@@ -242,6 +250,7 @@ class Crossspectrum(object):
         bin_cs.nphots1 = self.nphots1
         bin_cs.nphots2 = self.nphots2
         bin_cs.m = int(step_size)*self.m
+        bin_cs.power_err = bincs / np.sqrt(bin_cs.m)
 
         return bin_cs
 
@@ -265,7 +274,7 @@ class Crossspectrum(object):
             'none' normalization, imaginary part is returned as well.
         """
 
-        # The "effective" counst/bin is the geometrical mean of the counts/bin
+        # The "effective" counts/bin is the geometrical mean of the counts/bin
         # of the two light curves
 
         log_nphots1 = np.log(self.nphots1)
@@ -319,6 +328,9 @@ class Crossspectrum(object):
         binpower: numpy.ndarray
             the binned powers
 
+        binpower_err: numpy.ndarray
+            the uncertainties in binpower
+
         nsamples: numpy.ndarray
             the samples of the original periodogramincluded in each
             frequency bin
@@ -351,7 +363,9 @@ class Crossspectrum(object):
         # last right bin edge
         binfreq = binfreq[:-1] + df/2
 
-        return binfreq, binpower, nsamples
+        binpower_err = binpower / np.sqrt(self.m * nsamples)
+
+        return binfreq, binpower, binpower_err, nsamples
 
     def coherence(self):
         """
@@ -440,6 +454,9 @@ class AveragedCrossspectrum(Crossspectrum):
         power: numpy.ndarray
             The array of cross spectra
 
+        power_err: numpy.ndarray
+            The uncertainties of power
+
         df: float
             The frequency resolution
 
@@ -500,10 +517,12 @@ class AveragedCrossspectrum(Crossspectrum):
         for start_ind, end_ind in zip(start_inds, end_inds):
             time_1 = lc1.time[start_ind:end_ind]
             counts_1 = lc1.counts[start_ind:end_ind]
+            counts_1_err = lc1.counts_err[start_ind:end_ind]
             time_2 = lc2.time[start_ind:end_ind]
             counts_2 = lc2.counts[start_ind:end_ind]
-            lc1_seg = lightcurve.Lightcurve(time_1, counts_1)
-            lc2_seg = lightcurve.Lightcurve(time_2, counts_2)
+            counts_2_err = lc2.counts_err[start_ind:end_ind]
+            lc1_seg = lightcurve.Lightcurve(time_1, counts_1, err=counts_1_err)
+            lc2_seg = lightcurve.Lightcurve(time_2, counts_2, err=counts_2_err)
             cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm)
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
@@ -564,6 +583,7 @@ class AveragedCrossspectrum(Crossspectrum):
         self.freq = self.cs_all[0].freq
         self.power = power_avg
         self.m = m
+        self.power_err = self.power/np.sqrt(self.m)
         self.df = self.cs_all[0].df
         self.n = self.cs_all[0].n
         self.nphots1 = nphots1

@@ -154,6 +154,9 @@ class Powerspectrum(Crossspectrum):
             The array of normalized squared absolute values of Fourier
             amplitudes
 
+        power_err: numpy.ndarray
+            The uncertainties of `power`
+
         df: float
             The frequency resolution
 
@@ -350,6 +353,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             The array of normalized squared absolute values of Fourier
             amplitudes
 
+        power_err: numpy.ndarray
+            The uncertainties of `power`
+
         df: float
             The frequency resolution
 
@@ -393,7 +399,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         for start_ind, end_ind in zip(start_inds, end_inds):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
-            lc_seg = lightcurve.Lightcurve(time, counts)
+            counts_err = lc.counts_err[start_ind: end_ind]
+            lc_seg = lightcurve.Lightcurve(time, counts, err=counts_err)
             power_seg = Powerspectrum(lc_seg, norm=self.norm)
             power_all.append(power_seg)
             nphots_all.append(np.sum(lc_seg.counts))
