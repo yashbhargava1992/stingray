@@ -241,7 +241,7 @@ class Crossspectrum(object):
         bin_cs.norm = self.norm
         bin_cs.nphots1 = self.nphots1
         bin_cs.nphots2 = self.nphots2
-        bin_cs.m = int(step_size)
+        bin_cs.m = int(step_size)*self.m
 
         return bin_cs
 
