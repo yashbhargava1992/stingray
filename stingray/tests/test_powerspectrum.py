@@ -33,6 +33,7 @@ class TestPowerspectrum(object):
         assert ps.norm == "frac"
         assert ps.freq is None
         assert ps.power is None
+        assert ps.power_err is None
         assert ps.df is None
         assert ps.m == 1
         assert ps.n is None
@@ -41,6 +42,7 @@ class TestPowerspectrum(object):
         ps = Powerspectrum(lc=self.lc)
         assert ps.freq is not None
         assert ps.power is not None
+        assert ps.power_err is not None
         assert ps.df == 1.0 / self.lc.tseg
         assert ps.norm == "frac"
         assert ps.m == 1
@@ -51,6 +53,7 @@ class TestPowerspectrum(object):
         ps = Powerspectrum(lc=self.lc)
         assert isinstance(ps.freq, np.ndarray)
         assert isinstance(ps.power, np.ndarray)
+        assert isinstance(ps.power_err, np.ndarray)
 
     def test_init_with_lightcurve(self):
         assert Powerspectrum(self.lc)
@@ -173,6 +176,7 @@ class TestPowerspectrum(object):
         bin_ps = ps.rebin(rebin_factor*ps.df)
 
         assert bin_ps.freq is not None
+        assert bin_ps.power is not None
         assert bin_ps.power is not None
         assert bin_ps.df == rebin_factor * 1.0 / self.lc.tseg
         assert bin_ps.norm.lower() == "leahy"
