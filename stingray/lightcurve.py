@@ -53,11 +53,11 @@ class Lightcurve(object):
 
         countrate: numpy.ndarray
             The counts per second in each of the bins defined in `time`.
-		
-		meanrate: float
+
+        meanrate: float
             The mean count rate of the light curve.
             
-		meancounts: float
+        meancounts: float
             The mean counts of the light curve.
             
         ncounts: int
@@ -87,7 +87,7 @@ class Lightcurve(object):
                               "your counts array!")
 
         if len(time) != len(counts):
-            raise StingrayError("time are counts array are not "
+            raise StingrayError("time and counts arrays are not "
                                          "of the same length!")
 
         if len(time) <= 1:
