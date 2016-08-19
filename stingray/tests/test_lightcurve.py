@@ -115,7 +115,7 @@ class TestLightcurve(object):
         times = [0.5, 1.0, 1.5, 2.0]
         counts = [2, 3, 3, 4]
         lc = Lightcurve(times, counts)
-        assert lc.meanrate == 1.5
+        assert lc.meanrate == 6
 
     def test_meancounts(self):
         counts = [2, 3, 3, 4]
