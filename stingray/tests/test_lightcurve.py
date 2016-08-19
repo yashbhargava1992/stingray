@@ -110,17 +110,17 @@ class TestLightcurve(object):
         lc = Lightcurve(times, countrate, input_counts=False)
         assert np.allclose(lc.counts, np.zeros_like(countrate) +
                            mean_counts*dt)
-	
-	def test_meanrate(self):
-		times = [0.5, 1.0, 1.5, 2.0]
-		counts = [2, 3, 3, 4]
-		lc = Lightcurve(times, counts)
-		assert lc.meanrate == 1.5
-	
-	def test_meancounts(self):
-		counts = [2, 3, 3, 4]
-		lc = Lightcurve(self.times, counts)
-		assert lc.meancounts == 3
+
+    def test_meanrate(self):
+        times = [0.5, 1.0, 1.5, 2.0]
+        counts = [2, 3, 3, 4]
+        lc = Lightcurve(times, counts)
+        assert lc.meanrate == 1.5
+
+    def test_meancounts(self):
+        counts = [2, 3, 3, 4]
+        lc = Lightcurve(self.times, counts)
+        assert lc.meancounts == 3
 
     def test_creating_lightcurve_raises_type_error_when_input_is_none(self):
         dt = 0.5
