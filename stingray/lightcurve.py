@@ -46,7 +46,7 @@ class Lightcurve(object):
         Attributes
         ----------
         time: numpy.ndarray
-            The array of midpoints of time bins
+            The array of midpoints of time bins.
 
         counts: numpy.ndarray
             The counts per bin corresponding to the bins in `time`.
@@ -56,7 +56,10 @@ class Lightcurve(object):
 		
 		meanrate: float
             The mean count rate of the light curve.
-		
+            
+		meancounts: float
+            The mean counts of the light curve.
+            
         ncounts: int
             The number of data points in the light curve.
 
@@ -103,6 +106,7 @@ class Lightcurve(object):
 
         self.ncounts = self.counts.shape[0]
         self.meanrate = np.mean(self.countrate)
+        self.meancounts = np.mean(self.counts)
 
         # Issue a warning if the input time iterable isn't regularly spaced,
         # i.e. the bin sizes aren't equal throughout.
@@ -133,6 +137,7 @@ class Lightcurve(object):
         new_lc.countrate = self.countrate
         new_lc.counts = self.counts
         new_lc.meanrate = np.mean(new_lc.countrate)
+        new_lc.meancounts = np.mean(new_lc.counts)
         return new_lc
 
     def __add__(self, other):
