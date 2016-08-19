@@ -112,12 +112,15 @@ class TestLightcurve(object):
                            mean_counts*dt)
 	
 	def test_meanrate(self):
-		lc = Lightcurve(self.times, self.counts)
-		assert lc.meanrate == 2
+		times = [0.5, 1.0, 1.5, 2.0]
+		counts = [2, 3, 3, 4]
+		lc = Lightcurve(times, counts)
+		assert lc.meanrate == 1.5
 	
 	def test_meancounts(self):
-		lc = Lightcurve(self.times, self.counts)
-		assert lc.meancounts == 2
+		counts = [2, 3, 3, 4]
+		lc = Lightcurve(self.times, counts)
+		assert lc.meancounts == 3
 
     def test_creating_lightcurve_raises_type_error_when_input_is_none(self):
         dt = 0.5
