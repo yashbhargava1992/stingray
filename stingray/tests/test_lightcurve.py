@@ -47,6 +47,10 @@ class TestLightcurve(object):
             lc = Lightcurve(times, counts)
             assert str(w[0].message) == warn_str
 
+    def test_n(self):
+        lc = Lightcurve(self.times, self.counts)
+        assert lc.n == 4
+
     def test_lightcurve_from_toa(self):
         lc = Lightcurve.make_lightcurve(self.times, self.dt)
 
@@ -64,10 +68,6 @@ class TestLightcurve(object):
 
         assert lc.tseg == tseg
         assert lc.time[-1] - lc.time[0] == tseg - self.dt
-
-    def test_n(self):
-        lc = Lightcurve.make_lightcurve(self.times, self.counts)
-        assert lc.n == 4
 
     def test_nondivisble_tseg(self):
         """
