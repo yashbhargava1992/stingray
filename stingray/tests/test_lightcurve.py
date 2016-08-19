@@ -64,11 +64,11 @@ class TestLightcurve(object):
 
         assert lc.tseg == tseg
         assert lc.time[-1] - lc.time[0] == tseg - self.dt
-	
-	def test_n(self):
-		lc = Lightcurve.make_lightcurve(self.times, self.counts)
-		assert lc.n == 4
-	
+
+    def test_n(self):
+        lc = Lightcurve.make_lightcurve(self.times, self.counts)
+        assert lc.n == 4
+
     def test_nondivisble_tseg(self):
         """
         If the light curve length input is not divisible by the time
