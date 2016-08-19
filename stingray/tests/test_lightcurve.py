@@ -31,7 +31,7 @@ class TestLightcurve(object):
         Demonstrate that we can create a trivial Lightcurve object.
         """
         lc = Lightcurve(self.times, self.counts)
-
+	
     def test_irregular_time_warning(self):
         """
         Check if inputting an irregularly spaced time iterable throws out
@@ -110,6 +110,14 @@ class TestLightcurve(object):
         lc = Lightcurve(times, countrate, input_counts=False)
         assert np.allclose(lc.counts, np.zeros_like(countrate) +
                            mean_counts*dt)
+	
+	def test_meanrate(self):
+		lc = Lightcurve(self.times, self.counts)
+		assert lc.meanrate == 2
+	
+	def test_meancounts(self):
+		lc = Lightcurve(self.times, self.counts)
+		assert lc.meancounts == 2
 
     def test_creating_lightcurve_raises_type_error_when_input_is_none(self):
         dt = 0.5
