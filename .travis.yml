@@ -5,6 +5,7 @@ python:
     - 2.7
     - 3.3
     - 3.4
+    - 3.5
 
 # Setting sudo to false opts in to Travis-CI container-based builds.
 sudo: false
@@ -29,12 +30,13 @@ env:
         - NUMPY_VERSION=1.9
         - SCIPY_VERSION=0.17.0
         - ASTROPY_VERSION=stable
+        - H5PY_VERSION=2.5.0
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES=''
         # For this package-template, we include examples of Cython modules,
         # so Cython is required for testing. If your package does not include
         # Cython code, you can set CONDA_DEPENDENCIES=''
-        - CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
+        - CONDA_DEPENDENCIES='Cython numpy scipy h5py nose matplotlib'
     matrix:
         # Make sure that egg_info works without dependencies
         - SETUP_CMD='egg_info'
@@ -43,6 +45,13 @@ env:
 
 matrix:
     include:
+
+        #Try without importing h5py
+        - python: 2.7
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
+
+        - python: 3.4
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
 
         # Do a coverage test in Python 2.
         - python: 2.7
@@ -56,6 +65,7 @@ matrix:
         # Try Astropy development version
         - python: 2.7
           env: ASTROPY_VERSION=development
+
         - python: 3.4
           env: ASTROPY_VERSION=development
 
@@ -108,11 +118,16 @@ install:
     # As described above, using ci-helpers, you should be able to set up an
     # environment with dependencies installed using conda and pip, but in some
     # cases this may not provide enough flexibility in how to install a
-    # specific dependency (and it will not be able to install non-Python 
+    # specific dependency (and it will not be able to install non-Python
     # dependencies). Therefore, you can also include commands below (as
     # well as at the start of the install section or in the before_install
     # section if they are needed before setting up conda) to install any
     # other dependencies.
+
+before_script:
+   - "export DISPLAY=:99.0"
+   - "sh -e /etc/init.d/xvfb start"
+   - sleep 3
 
 script:
    - python setup.py $SETUP_CMD

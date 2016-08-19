@@ -8,7 +8,10 @@ import logging
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
+from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.utils import simon
+from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
+
 
 __all__ = ["Powerspectrum", "AveragedPowerspectrum"]
 
@@ -52,13 +55,27 @@ def classical_pvalue(power, nspec):
         significant in averaged spectra even though it would not be in a single
         power spectrum.
 
-    """
+    Returns
+    -------
+    pval : float
+        The classical p-value of the observed power being consistent with
+        the null hypothesis of white noise
 
-    assert np.isfinite(power), "power must be a finite floating point number!"
-    assert power > 0, "power must be a positive real number!"
-    assert np.isfinite(nspec), "nspec must be a finite integer number"
-    assert nspec >= 1, "nspec must be larger or equal to 1"
-    assert np.isclose(nspec % 1, 0), "nspec must be an integer number!"
+    """
+    if not np.isfinite(power):
+        raise ValueError("power must be a finite floating point number!")
+
+    if power < 0:
+        raise ValueError("power must be a positive real number!")
+
+    if not np.isfinite(nspec):
+        raise ValueError("nspec must be a finite integer number")
+
+    if nspec < 1:
+        raise ValueError("nspec must be larger or equal to 1")
+
+    if not np.isclose(nspec % 1, 0):
+        raise ValueError("nspec must be an integer number!")
 
     # If the power is really big, it's safe to say it's significant,
     # and the p-value will be nearly zero
@@ -99,9 +116,9 @@ def _pavnosigfun(power, nspec):
     return sum
 
 
-class Powerspectrum(object):
+class Powerspectrum(Crossspectrum):
 
-    def __init__(self, lc=None, norm='rms'):
+    def __init__(self, lc=None, norm='frac', gti=None):
         """
         Make a Periodogram (power spectrum) from a (binned) light curve.
         Periodograms can be Leahy normalized or fractional rms normalized.
@@ -118,6 +135,12 @@ class Powerspectrum(object):
             The normaliation of the periodogram to be used. Options are
             "leahy" or "rms", default is "rms".
 
+        Other Parameters
+        ----------------
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+            This choice overrides the GTIs in the single light curves. Use with
+            care!
 
         Attributes
         ----------
@@ -127,7 +150,7 @@ class Powerspectrum(object):
         freq: numpy.ndarray
             The array of mid-bin frequencies that the Fourier transform samples
 
-        ps: numpy.ndarray
+        power: numpy.ndarray
             The array of normalized squared absolute values of Fourier
             amplitudes
 
@@ -143,207 +166,15 @@ class Powerspectrum(object):
         nphots: float
             The total number of photons in the light curve
 
-
         """
-
-        # TODO: One should be able to convert from rms to Leahy and do this
-        # anyway!
-        assert isinstance(norm, str), "norm is not a string!"
-
-        assert norm.lower() in ["rms", "leahy"], \
-            "norm must be either 'rms' or 'leahy'!"
-
-        self.norm = norm.lower()
-
-        # check if input data is a Lightcurve object, if not make one or
-        # make an empty Periodogram object if lc == time == counts == None
-        if lc is not None:
-            pass
-        else:
-            self.freq = None
-            self.ps = None
-            self.df = None
-            self.nphots = None
-            self.m = 1
-            self.n = None
-            return
-
-        self._make_powerspectrum(lc)
-
-    def _make_powerspectrum(self, lc):
-
-        # make sure my inputs work!
-        assert isinstance(lc, lightcurve.Lightcurve), \
-            "lc must be a lightcurve.Lightcurve object!"
-
-        # total number of photons is the sum of the
-        # counts in the light curve
-        self.nphots = np.sum(lc.counts)
-
-        # the number of data points in the light curve
-        self.n = lc.counts.shape[0]
-
-        # the frequency resolution
-        self.df = 1 / lc.tseg
-
-        # the number of averaged periodograms in the final output
-        # This should *always* be 1 here
-        self.m = 1
-
-        # make the actual Fourier transform
-        self.freq, self.unnorm_powers = self._fourier_modulus(lc)
-
-        # normalize to either Leahy or rms normalization
-        self.ps = self._normalize_periodogram(self.unnorm_powers, lc)
-
-    def _fourier_modulus(self, lc):
-        """
-        Fourier transform the light curve, then square the
-        absolute value of the Fourier amplitudes.
-
-        Parameters
-        ----------
-        lc: lightcurve.Lightcurve object
-            The light curve to be Fourier transformed
-
-        Returns
-        -------
-        fr: numpy.ndarray
-            The squared absolute value of the Fourier amplitudes
-
-        """
-        fourier = scipy.fftpack.fft(lc.counts)  # do Fourier transform
-        freqs = scipy.fftpack.fftfreq(lc.counts.shape[0], lc.dt)
-        fr = np.abs(fourier[freqs > 0])**2.
-        return freqs[freqs > 0], fr
-
-    def _normalize_periodogram(self, unnorm_powers, lc):
-        """
-        Normalize the periodogram to either Leahy or RMS normalization.
-        In Leahy normalization, the periodogram is normalized in such a way
-        that a flat light curve of Poissonian data will make a realization of
-        the power spectrum in which the powers are distributed as Chi^2 with
-        two degrees of freedom (with a mean of 2 and a variance of 4).
-
-        In rms normalization, the periodogram will be normalized such that
-        the integral of the periodogram will equal the total variance in the
-        light curve divided by the mean of the light curve squared.
-
-        Parameters
-        ----------
-        unnorm_powers: numpy.ndarray
-            The squared absolute value of the Fourier amplitudes
-
-        lc: lightcurve.Lightcurve object
-            The input light curve
-
-
-        Returns
-        -------
-        ps: numpy.nd.array
-            The normalized periodogram
-        """
-        if self.norm.lower() == 'leahy':
-            p = unnorm_powers
-            ps = 2 * p / self.nphots
-
-        elif self.norm.lower() == 'rms':
-            p = unnorm_powers / np.float(self.n**2)
-            ps = (p*2*lc.tseg) / (np.mean(lc.counts)**2)
-
-        else:
-            raise Exception("Normalization not recognized!")
-
-        return ps
+        Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti)
+        self.nphots = self.nphots1
 
     def rebin(self, df, method="mean"):
-        """
-        Rebin the periodogram to a new frequency resolution df.
-
-        Parameters
-        ----------
-        df: float
-            The new frequency resolution
-
-        Returns
-        -------
-        bin_ps = Periodogram object
-            The newly binned periodogram
-        """
-
-        # rebin power spectrum to new resolution
-        binfreq, binps, step_size = utils.rebin_data(self.freq[1:],
-                                                     self.ps[1:], df,
-                                                     method=method)
-
-        # make an empty periodogram object
-        bin_ps = Powerspectrum()
-
-        # store the binned periodogram in the new object
-        bin_ps.norm = self.norm
-        bin_ps.freq = np.hstack([binfreq[0] - self.df, binfreq])
-        bin_ps.ps = np.hstack([self.ps[0], binps])
-        bin_ps.df = df
-        bin_ps.n = self.n
-        bin_ps.nphots = self.nphots
-        bin_ps.m = int(step_size)
+        bin_ps = Crossspectrum.rebin(self, df=df, method=method)
+        bin_ps.nphots = bin_ps.nphots1
 
         return bin_ps
-
-    def rebin_log(self, f=0.01):
-        """
-        Logarithmic rebin of the periodogram.
-        The new frequency depends on the previous frequency
-        modified by a factor f:
-
-        dnu_j = dnu_{j-1}*(1+f)
-
-        Parameters
-        ----------
-        f: float, optional, default 0.01
-            parameter that steers the frequency resolution
-
-
-        Returns
-        -------
-        binfreq: numpy.ndarray
-            the binned frequencies
-
-        binps: numpy.ndarray
-            the binned powers
-
-        nsamples: numpy.ndarray
-            the samples of the original periodogramincluded in each
-            frequency bin
-        """
-
-        minfreq = self.freq[1] * 0.5  # frequency to start from
-        maxfreq = self.freq[-1]  # maximum frequency to end
-        binfreq = [minfreq, minfreq + self.df]  # first
-        df = self.freq[1]  # the frequency resolution of the first bin
-
-        # until we reach the maximum frequency, increase the width of each
-        # frequency bin by f
-        while binfreq[-1] <= maxfreq:
-            binfreq.append(binfreq[-1] + df*(1.0+f))
-            df = binfreq[-1] - binfreq[-2]
-
-        # compute the mean of the powers that fall into each new frequency bin
-        binps, bin_edges, binno = scipy.stats.binned_statistic(
-            self.freq, self.ps, statistic="mean", bins=binfreq)
-
-        # compute the number of powers in each frequency bin
-        nsamples = np.array([len(binno[np.where(binno == i)[0]])
-                             for i in range(np.max(binno))])
-
-        # the frequency resolution
-        df = np.diff(binfreq)
-
-        # shift the lower bin edges to the middle of the bin and drop the
-        # last right bin edge
-        binfreq = binfreq[:-1] + df/2
-
-        return binfreq, binps, nsamples
 
     def compute_rms(self, min_freq, max_freq):
         """
@@ -365,23 +196,17 @@ class Powerspectrum(object):
             max_freq
 
         """
-        # assert min_freq >= self.freq[0], "Lower frequency bound must be " \
-        #                                 "larger or equal the minimum " \
-        #                                 "frequency in the periodogram!"
-
-        # assert max_freq <= self.freq[-1], "Upper frequency bound must be " \
-        #                                 "smaller or equal the maximum " \
-        #                                 "frequency in the periodogram!"
-
         minind = self.freq.searchsorted(min_freq)
         maxind = self.freq.searchsorted(max_freq)
-        powers = self.ps[minind:maxind]
+        powers = self.power[minind:maxind]
+
         if self.norm.lower() == 'leahy':
             rms = np.sqrt(np.sum(powers)/self.nphots)
-        elif self.norm.lower() == "rms":
+
+        elif self.norm.lower() == "frac":
             rms = np.sqrt(np.sum(powers*self.df))
         else:
-            raise Exception("Normalization not recognized!")
+            raise TypeError("Normalization not recognized!")
 
         rms_err = self._rms_error(powers)
 
@@ -399,7 +224,6 @@ class Powerspectrum(object):
         ----------
         powers: iterable
             The list of powers used to compute the fractional rms amplitude.
-
 
         Returns
         -------
@@ -459,18 +283,19 @@ class Powerspectrum(object):
             lower than the threshold specified in `threshold`.
 
         """
-        assert self.norm == "leahy", "This method only works on " \
-                                     "Leahy-normalized power spectra!"
+        if not self.norm == "leahy":
+            raise ValueError("This method only works on "
+                             "Leahy-normalized power spectra!")
 
         # calculate p-values for all powers
         # leave out zeroth power since it just encodes the number of photons!
         pv = np.array([classical_pvalue(power, self.m)
-                      for power in self.ps])
+                      for power in self.power])
 
         # if trial correction is used, then correct the threshold for
         # the number of powers in the power spectrum
         if trial_correction:
-            threshold /= self.ps.shape[0]
+            threshold /= self.power.shape[0]
 
         # need to add 1 to the indices to make up for the fact that
         # we left out the first power above!
@@ -481,9 +306,9 @@ class Powerspectrum(object):
         return pvals
 
 
-class AveragedPowerspectrum(Powerspectrum):
+class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
-    def __init__(self, lc, segment_size, norm="rms"):
+    def __init__(self, lc, segment_size, norm="frac", gti=None):
         """
         Make an averaged periodogram from a light curve by segmenting the light
         curve, Fourier-transforming each segment and then averaging the
@@ -506,6 +331,13 @@ class AveragedPowerspectrum(Powerspectrum):
             "leahy" or "rms", default is "rms".
 
 
+        Other Parameters
+        ----------------
+        gti: 2-d float array
+            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+            This choice overrides the GTIs in the single light curves. Use with
+            care!
+
         Attributes
         ----------
         norm: {"leahy" | "rms"}
@@ -514,7 +346,7 @@ class AveragedPowerspectrum(Powerspectrum):
         freq: numpy.ndarray
             The array of mid-bin frequencies that the Fourier transform samples
 
-        ps: numpy.ndarray
+        power: numpy.ndarray
             The array of normalized squared absolute values of Fourier
             amplitudes
 
@@ -532,67 +364,38 @@ class AveragedPowerspectrum(Powerspectrum):
 
 
         """
-        assert np.isfinite(segment_size), "segment_size must be finite!"
 
-        self.norm = norm.lower()
+        self.type = "powerspectrum"
+
+        if not np.isfinite(segment_size):
+            raise ValueError("segment_size must be finite!")
+
         self.segment_size = segment_size
 
-        Powerspectrum.__init__(self, lc, norm)
+        Powerspectrum.__init__(self, lc, norm, gti=gti)
 
         return
 
-    def _make_segment_psd(self, lc, segment_size):
-        assert isinstance(lc, lightcurve.Lightcurve)
+    def _make_segment_spectrum(self, lc, segment_size):
 
-        # number of bins per segment
-        nbins = int(segment_size/lc.dt)
+        if not isinstance(lc, lightcurve.Lightcurve):
+            raise TypeError("lc must be a lightcurve.Lightcurve object")
 
-        start_ind = 0
-        end_ind = nbins
+        if self.gti is None:
+            self.gti = lc.gti
+        check_gtis(self.gti)
 
-        ps_all = []
+        start_inds, end_inds = \
+            bin_intervals_from_gtis(self.gti, segment_size, lc.time)
+
+        power_all = []
         nphots_all = []
-        while end_ind <= lc.counts.shape[0]:
+        for start_ind, end_ind in zip(start_inds, end_inds):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
             lc_seg = lightcurve.Lightcurve(time, counts)
-            ps_seg = Powerspectrum(lc_seg, norm=self.norm)
-            ps_all.append(ps_seg)
+            power_seg = Powerspectrum(lc_seg, norm=self.norm)
+            power_all.append(power_seg)
             nphots_all.append(np.sum(lc_seg.counts))
-            start_ind += nbins
-            end_ind += nbins
 
-        return ps_all, nphots_all
-
-    def _make_powerspectrum(self, lc):
-
-        # chop light curves into segments
-        if isinstance(lc, lightcurve.Lightcurve):
-            ps_all, nphots_all = self._make_segment_psd(lc,
-                                                        self.segment_size)
-        else:
-            ps_all, nphots_all = [], []
-            for lc_seg in lc:
-                ps_sep, nphots_sep = self._make_segment_psd(lc_seg,
-                                                            self.segment_size)
-
-                ps_all.append(ps_sep)
-                nphots_all.append(nphots_sep)
-
-            ps_all = np.hstack(ps_all)
-            nphots_all = np.hstack(nphots_all)
-
-        m = len(ps_all)
-        nphots = np.mean(nphots_all)
-        ps_avg = np.zeros_like(ps_all[0].ps)
-        for ps in ps_all:
-            ps_avg += ps.ps
-
-        ps_avg /= np.float(m)
-
-        self.freq = ps_all[0].freq
-        self.ps = ps_avg
-        self.m = m
-        self.df = ps_all[0].df
-        self.n = ps_all[0].n
-        self.nphots = nphots
+        return power_all, nphots_all
