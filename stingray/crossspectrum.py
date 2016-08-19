@@ -153,7 +153,7 @@ class Crossspectrum(object):
 
         ## the number of data points in the light curve
 
-        if lc1.counts.shape[0] != lc2.counts.shape[0]:
+        if lc1.n != lc2.n:
             raise StingrayError("Light curves do not have same number "
                                 "of time bins per segment.")
 
@@ -161,7 +161,7 @@ class Crossspectrum(object):
             raise StingrayError("Light curves do not have "
                                 "same time binning dt.")
 
-        self.n = lc1.counts.shape[0]
+        self.n = lc1.n
 
         ## the frequency resolution
         self.df = 1.0/lc1.tseg
@@ -202,7 +202,7 @@ class Crossspectrum(object):
         fourier_1 = scipy.fftpack.fft(lc1.counts)  # do Fourier transform 1
         fourier_2 = scipy.fftpack.fft(lc2.counts)  # do Fourier transform 2
 
-        freqs = scipy.fftpack.fftfreq(lc1.counts.shape[0], lc1.dt)
+        freqs = scipy.fftpack.fftfreq(lc1.n, lc1.dt)
         cross = fourier_1[freqs > 0] * np.conj(fourier_2[freqs > 0])
 
         return freqs[freqs > 0], cross
