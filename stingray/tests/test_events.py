@@ -24,6 +24,7 @@ class TestEvents(object):
         self.time = [0.5, 1.5, 2.5, 3.5]
         self.counts = [3000, 2000, 2200, 3600]
         self.spectrum = [[1, 2, 3, 4, 5, 6],[1000, 2040, 1000, 3000, 4020, 2070]]
+        self.gti = [[0, 4]]
 
     def test_inequal_length(self):
         """Check that exception is raised in case of
@@ -34,8 +35,11 @@ class TestEvents(object):
 
     def test_to_lc(self):
         """Create a light curve from event list."""
-        ev = EventList(self.time)
+        ev = EventList(self.time, gti=self.gti)
         lc = ev.to_lc(1)
+        print(lc.time)
+        assert (lc.time == [0.5, 1.5, 2.5, 3.5]).all()
+        assert (lc.gti == self.gti).all()
 
     def test_from_lc(self):
         """Load event list from lightcurve"""

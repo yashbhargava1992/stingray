@@ -108,13 +108,18 @@ class EventList(object):
 
         tseg: float
             Total duration of light curve
-        
+
         Returns
         -------
         lc: `Lightcurve` object
         """
 
-        return Lightcurve.make_lightcurve(self.time, dt, tstart=tstart, tseg=tseg)
+        if tstart is None and self.gti is not None:
+            tstart = self.gti[0][0]
+            tseg = self.gti[-1][1] - tstart
+
+        return Lightcurve.make_lightcurve(self.time, dt, tstart=tstart,
+                                          gti=self.gti, tseg=tseg)
 
     @staticmethod
     def from_lc(lc):
