@@ -122,6 +122,14 @@ class TestLightcurve(object):
         lc = Lightcurve(self.times, counts)
         assert lc.meancounts == 3
 
+    def test_lc_gtis(self):
+        t = [0.5, 1.5, 2.5, 3.5, 4.5]
+        lc = [4, 4, 0, 4, 4]
+        gtis = [[0, 2], [3, 5]]
+        lc = Lightcurve(t, lc, gti=gtis)
+        assert lc.meanrate == 4
+        assert lc.meancounts == 4
+
     def test_creating_lightcurve_raises_type_error_when_input_is_none(self):
         dt = 0.5
         mean_counts = 2.0
