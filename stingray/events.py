@@ -154,13 +154,7 @@ class EventList(object):
         lc: `Lightcurve` object
         """ 
         
-        try:
-            import scipy.interpolate as sci
-        
-        except:
-            if use_spline:
-                simon("Scipy not available. Cannot use spline.")
-                use_spline = False
+        import scipy.interpolate as sci
 
         times = lc.time
         counts = lc.counts
