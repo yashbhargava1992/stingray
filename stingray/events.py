@@ -275,7 +275,15 @@ class EventList(object):
 
     def join(self, other):
         """
-        Join two eventlist objects into one.
+        Join two ``EventList`` objects into one.
+
+        If both are empty, an empty ``EventList`` is returned.
+
+        GTIs are crossed if the event lists are over a common time interval,
+        and appended otherwise.
+
+        PI and PHA remain None if they are None in both. Otherwise, 0 is used
+        as a default value for the ``EventList``s where they were None.
 
         Parameters
         ----------
@@ -290,26 +298,67 @@ class EventList(object):
 
         ev_new = EventList()
 
-        if (self.time is None) and (other.time is None):
-            raise ValueError('Times of at least one event list must be set before joining.')
+        if self.dt != other.dt:
+            simon("The time resolution is different."
+                  " Using the rougher by default")
+            ev_new.dt = np.max([self.dt, other.dt])
 
-        elif (self.time is None):
+        if self.time is None and other.time is None:
+            return ev_new
+
+        if (self.time is None):
             simon("One of the event lists you are concatenating is empty.")
-            self.time = []
+            self.time = np.asarray([])
 
         elif (other.time is None):
             simon("One of the event lists you are concatenating is empty.")
-            other.time = []
+            other.time = np.asarray([])
 
         ev_new.time = np.concatenate([self.time, other.time])
         order = np.argsort(ev_new.time)
         ev_new.time = ev_new.time[order] 
 
+        if (self.pi is None) and (other.pi is None):
+            ev_new.pi = None
+        elif (self.pi is None) or (other.pi is None):
+            self.pi = assign_value_if_none(self.pi, np.zeros_like(self.time))
+            other.pi = assign_value_if_none(other.pi,
+                                             np.zeros_like(other.time))
+
+        if (self.pi is not None) and (other.pi is not None):
+            ev_new.pi = np.concatenate([self.pi, other.pi])
+            ev_new.pi = ev_new.pi[order]
+
+        if (self.pha is None) and (other.pha is None):
+            ev_new.pha = None
+        elif (self.pha is None) or (other.pha is None):
+            self.pha = assign_value_if_none(self.pha, np.zeros_like(self.time))
+            other.pha = assign_value_if_none(other.pha,
+                                             np.zeros_like(other.time))
+
         if (self.pha is not None) and (other.pha is not None):
             ev_new.pha = np.concatenate([self.pha, other.pha])
             ev_new.pha = ev_new.pha[order]
 
-        if (self.gti is not None) and (other.gti is not None):
+        if self.gti is None and len(self.time) > 0:
+            self.gti = \
+                assign_value_if_none(self.gti,
+                                     np.asarray([[self.time[0] - self.dt / 2,
+                                                  self.time[-1] + self.dt / 2]]))
+        if other.gti is None and len(other.time) > 0:
+            other.gti = \
+                assign_value_if_none(other.gti,
+                                     np.asarray([[other.time[0] - other.dt / 2,
+                                                  other.time[-1] + other.dt / 2]]))
+
+        if (self.gti is None) and (other.gti is None):
+            ev_new.gti = None
+        elif self.gti is None:
+            ev_new.gti = other.gti
+        elif other.gti is None:
+            ev_new.gti = self.gti
+
+        elif (self.gti is not None) and (other.gti is not None):
             if check_separate(self.gti, other.gti):
                 ev_new.gti = append_gtis(self.gti, other.gti)
                 simon('GTIs in these two event lists do not overlap at all.'
