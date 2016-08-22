@@ -352,10 +352,6 @@ class EventList(object):
 
         if (self.gti is None) and (other.gti is None):
             ev_new.gti = None
-        elif self.gti is None:
-            ev_new.gti = other.gti
-        elif other.gti is None:
-            ev_new.gti = self.gti
 
         elif (self.gti is not None) and (other.gti is not None):
             if check_separate(self.gti, other.gti):

@@ -153,6 +153,15 @@ class TestEvents(object):
         assert ev_new.pi == None
         assert ev_new.pha == None
 
+        ev = EventList(time=[1, 2, 3])
+        ev_other = EventList([])
+        ev_new = ev.join(ev_other)
+        assert np.all(ev_new.time == [1, 2, 3])
+        ev = EventList([])
+        ev_other = EventList(time=[1, 2, 3])
+        ev_new = ev.join(ev_other)
+        assert np.all(ev_new.time == [1, 2, 3])
+
     def test_join_different_dt(self):
         ev = EventList(time=[10, 20, 30], dt = 1)
         ev_other = EventList(time=[40, 50, 60], dt = 3)
