@@ -182,6 +182,12 @@ class TestEvents(object):
 
         assert np.all(ev_new.gti == [[0.5, 3.5], [4, 5]])
 
+        ev = EventList(time=[1, 2, 3])
+        ev_other = EventList(time=[4, 5])
+        ev_new = ev.join(ev_other)
+
+        assert ev_new.gti == None
+
     def test_non_overlapping_join(self):
         """Join two overlapping event lists.
         """

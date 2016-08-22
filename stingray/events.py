@@ -340,12 +340,12 @@ class EventList(object):
             ev_new.pha = np.concatenate([self.pha, other.pha])
             ev_new.pha = ev_new.pha[order]
 
-        if self.gti is None and len(self.time) > 0:
+        if self.gti is None and other.gti is not None and len(self.time) > 0:
             self.gti = \
                 assign_value_if_none(self.gti,
                                      np.asarray([[self.time[0] - self.dt / 2,
                                                   self.time[-1] + self.dt / 2]]))
-        if other.gti is None and len(other.time) > 0:
+        if other.gti is None and self.gti is not None and len(other.time) > 0:
             other.gti = \
                 assign_value_if_none(other.gti,
                                      np.asarray([[other.time[0] - other.dt / 2,
