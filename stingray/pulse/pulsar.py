@@ -365,7 +365,7 @@ def z2_2_probability(z2, n=2, ntrial=1):
     if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
-    return stats.chi2.sf(stat, 2 * n) * ntrial
+    return stats.chi2.sf(z2, 2 * n) * ntrial
 
 
 def fftfit_fun(profile, template, amplitude, phase):
