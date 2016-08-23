@@ -9,6 +9,44 @@ class TestAll(object):
 
     """Unit tests for the stingray.pulsar module."""
 
+    def test_stat(self):
+        """Test pulse phase calculation, frequency only."""
+        prof = np.array([2, 2, 2, 2])
+        np.testing.assert_array_almost_equal(stat(prof), 0)
+
+    def test_zn(self):
+        """Test pulse phase calculation, frequency only."""
+        ph = np.array([0, 1])
+        np.testing.assert_array_almost_equal(z_n(ph), 8)
+        ph = np.array([])
+        np.testing.assert_array_almost_equal(z_n(ph), 0)
+        ph = np.array([0.2, 0.7])
+        ph2 = np.array([0, 0.5])
+        np.testing.assert_array_almost_equal(z_n(ph), z_n(ph2))
+
+    def test_fold_detection_level(self):
+        """Test pulse phase calculation, frequency only."""
+        np.testing.assert_almost_equal(fold_detection_level(16, 0.01),
+                                       30.577914166892498)
+        np.testing.assert_almost_equal(fold_detection_level(16, 0.01, ntrial=2),
+                                       fold_detection_level(16, 0.01 / 2))
+
+    def test_zn_detection_level(self):
+        np.testing.assert_almost_equal(z2_n_detection_level(2),
+                                       13.276704135987625)
+        np.testing.assert_almost_equal(z2_n_detection_level(4, 0.01, ntrial=2),
+                                       z2_n_detection_level(4, 0.01/2))
+
+    def test_fold_probability(self):
+        detlev = fold_detection_level(16, 0.1)
+        np.testing.assert_almost_equal(fold_profile_probability(detlev, 16),
+                                       0.1)
+
+    def test_zn_probability(self):
+        detlev = z2_n_detection_level(2, 0.1)
+        np.testing.assert_almost_equal(z2_n_probability(detlev, 2),
+                                       0.1)
+
     def test_pulse_phase1(self):
         """Test pulse phase calculation, frequency only."""
         times = np.arange(0, 4, 0.5)
@@ -54,6 +92,16 @@ class TestAll(object):
         expo = phase_exposure(start_time, stop_time, period, nbin, gtis=gtis)
         expected = np.ones(nbin)
         expected[nbin/2:] = 0
+        np.testing.assert_array_almost_equal(expo, expected)
+
+    def test_phase_exposure4(self):
+        start_time = 0
+        stop_time = 1
+        gtis = np.array([[-0.2, 1.2]])
+        period = 1
+        nbin = 16
+        expo = phase_exposure(start_time, stop_time, period, nbin, gtis=gtis)
+        expected = np.ones(nbin)
         np.testing.assert_array_almost_equal(expo, expected)
 
     def test_pulse_profile1(self):
