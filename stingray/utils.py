@@ -14,6 +14,7 @@ except:
     def jit(fun):
         return fun
 
+
 def simon(message, **kwargs):
     """The Statistical Interpretation MONitor.
 
@@ -28,7 +29,7 @@ def simon(message, **kwargs):
     kwargs : dict
         The rest of the arguments that are passed to warnings.warn
     """
-    
+
     warnings.warn("SIMON says: {0}".format(message), **kwargs)
 
 
@@ -107,7 +108,8 @@ def rebin_data(x, y, dx_new, method='sum'):
     if (tseg / dx_new % 1) > 0:
         ybin = ybin[:-1]
 
-    xbin = np.arange(ybin.shape[0]) * dx_new + x[0] - dx_old + dx_new
+    new_x0 = (x[0] - (0.5*dx_old)) + (0.5*dx_new)
+    xbin = np.arange(ybin.shape[0]) * dx_new + new_x0
 
     return xbin, ybin, step_size
 
@@ -115,12 +117,14 @@ def rebin_data(x, y, dx_new, method='sum'):
 def assign_value_if_none(value, default):
     return default if value is None else value
 
+
 def look_for_array_in_array(array1, array2):
     return next((i for i in array1 if i in array2), None)
 
+
 def is_string(s):  # pragma : no cover
     """Portable function to answer this question."""
-    
+
     PY2 = sys.version_info[0] == 2
     if PY2:
         return isinstance(s, basestring)  # NOQA
@@ -130,8 +134,9 @@ def is_string(s):  # pragma : no cover
 
 def is_iterable(stuff):
     """Test if stuff is an iterable."""
-    
+
     return isinstance(stuff, collections.Iterable)
+
 
 def order_list_of_arrays(data, order):
     if hasattr(data, 'items'):
@@ -151,8 +156,9 @@ def optimal_bin_time(fftlen, tbin):
     slightly shorter than the original, that will produce a power-of-two number
     of FFT bins.
     """
-    
+
     return fftlen / (2 ** np.ceil(np.log2(fftlen / tbin)))
+
 
 def contiguous_regions(condition):
     """Find contiguous True regions of the boolean array "condition".
@@ -174,7 +180,7 @@ def contiguous_regions(condition):
     -----
     From : http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-
     fulfilling-condition-in-a-numpy-array
-    """  
+    """
 
     # NOQA
     # Find the indicies of changes in "condition"
@@ -192,4 +198,3 @@ def contiguous_regions(condition):
     # Reshape the result into two columns
     idx.shape = (-1, 2)
     return idx
-

@@ -17,6 +17,7 @@ try:
 except ImportError:
     _H5PY_INSTALLED = False
 
+
 class TestLightcurve(object):
 
     @classmethod
@@ -138,7 +139,7 @@ class TestLightcurve(object):
     def test_init_with_diff_array_lengths(self):
         time = [1, 2, 3]
         counts = [2, 2, 2, 2]
-        
+
         with pytest.raises(StingrayError):
             lc = Lightcurve(time, counts)
 
@@ -296,7 +297,7 @@ class TestLightcurve(object):
 
     def test_truncate_by_time_stop_less_than_start(self):
         lc = Lightcurve(self.times, self.counts)
- 
+
         with pytest.raises(ValueError):
             lc1 = lc.truncate(start=2, stop=1, method='time')
 
@@ -325,7 +326,7 @@ class TestLightcurve(object):
 
         lc.sort()
 
-        assert np.all(lc.counts == np.array([ 5, 10, 20, 40]))
+        assert np.all(lc.counts == np.array([5, 10, 20, 40]))
         assert np.all(lc.time == np.array([4, 2, 3, 1]))
 
         lc.sort(reverse=True)
@@ -388,14 +389,14 @@ class TestLightcurve(object):
 
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write('ascii_lc.txt',format_='ascii')
+        lc.write('ascii_lc.txt', format_='ascii')
         lc.read('ascii_lc.txt', format_='ascii')
         os.remove('ascii_lc.txt')
 
     def test_io_with_pickle(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('lc.pickle', format_='pickle')
-        lc.read('lc.pickle',format_='pickle')
+        lc.read('lc.pickle', format_='pickle')
         assert np.all(lc.time == self.times)
         assert np.all(lc.counts == self.counts)
         assert np.all(lc.gti == self.gti)
@@ -404,16 +405,16 @@ class TestLightcurve(object):
     def test_io_with_hdf5(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('lc.hdf5', format_='hdf5')
-        
+
         if _H5PY_INSTALLED:
-            data = lc.read('lc.hdf5',format_='hdf5')
+            data = lc.read('lc.hdf5', format_='hdf5')
             assert np.all(data['time'] == self.times)
             assert np.all(data['counts'] == self.counts)
             assert np.all(data['gti'] == self.gti)
             os.remove('lc.hdf5')
 
         else:
-            lc.read('lc.pickle',format_='pickle')
+            lc.read('lc.pickle', format_='pickle')
             assert np.all(lc.time == self.times)
             assert np.all(lc.counts == self.counts)
             assert np.all(lc.gti == self.gti)
@@ -464,7 +465,7 @@ class TestLightcurveRebin(object):
 
     def test_rebin_even(self):
         dt_new = 2.0
-        lc_binned = self.lc.rebin_lightcurve(dt_new)
+        lc_binned = self.lc.rebin(dt_new)
         assert np.isclose(lc_binned.dt, dt_new)
         counts_test = np.zeros_like(lc_binned.time) + \
             self.lc.counts[0]*dt_new/self.lc.dt
@@ -472,7 +473,7 @@ class TestLightcurveRebin(object):
 
     def test_rebin_odd(self):
         dt_new = 1.5
-        lc_binned = self.lc.rebin_lightcurve(dt_new)
+        lc_binned = self.lc.rebin(dt_new)
         assert np.isclose(lc_binned.dt, dt_new)
 
         counts_test = np.zeros_like(lc_binned.time) + \
@@ -483,7 +484,7 @@ class TestLightcurveRebin(object):
         """
         TODO: Not sure how to write tests for the rebin method!
         """
-        lc_binned = self.lc.rebin_lightcurve(dt)
+        lc_binned = self.lc.rebin(dt)
         assert len(lc_binned.time) == len(lc_binned.counts)
 
     def test_rebin_equal_numbers(self):

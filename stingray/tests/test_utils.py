@@ -54,7 +54,9 @@ class TestRebinData(object):
     def test_rebin_data_should_raise_error_when_method_is_different_than_allowed(self):
         dx_new = 2.0
         with pytest.raises(ValueError):
-            utils.rebin_data(self.x, self.y, dx_new, method='not_allowed_method')
+            utils.rebin_data(self.x, self.y, dx_new,
+                             method='not_allowed_method')
+
 
 class TestUtils(object):
 
@@ -81,7 +83,7 @@ class TestUtils(object):
     def test_look_for_array(self):
         assert utils.look_for_array_in_array(np.arange(2), np.arange(1, 3))
         assert not utils.look_for_array_in_array(np.arange(2),
-                                                  np.arange(2, 4))
+                                                 np.arange(2, 4))
 
     def test_assign_value_if_none(self):
         assert utils.assign_value_if_none(None, 2) == 2
@@ -93,4 +95,3 @@ class TestUtils(object):
         cont = utils.contiguous_regions(array)
         assert np.all(cont == np.array([[1, 3], [4, 7]])), \
             'Contiguous region wrong'
-
