@@ -38,13 +38,14 @@ class TestAll(object):
                                        z2_n_detection_level(4, 0.01/2))
 
     def test_fold_probability(self):
-        detlev = fold_detection_level(16, 0.1)
-        np.testing.assert_almost_equal(fold_profile_probability(detlev, 16),
+        detlev = fold_detection_level(16, 0.1, ntrial=3)
+        np.testing.assert_almost_equal(fold_profile_probability(detlev, 16,
+                                                                ntrial=3),
                                        0.1)
 
     def test_zn_probability(self):
-        detlev = z2_n_detection_level(2, 0.1)
-        np.testing.assert_almost_equal(z2_n_probability(detlev, 2),
+        detlev = z2_n_detection_level(2, 0.1, ntrial=3)
+        np.testing.assert_almost_equal(z2_n_probability(detlev, 2, ntrial=3),
                                        0.1)
 
     def test_pulse_phase1(self):
@@ -135,6 +136,7 @@ class TestAll(object):
         np.testing.assert_almost_equal(z_n(np.arange(2)+0.5, n=2, norm=1), 8)
 
     def test_get_TOA1(self):
+        np.random.seed(1234)
         period = 1.2
         tstart = 122
         start_phase = 0.2123
@@ -150,6 +152,7 @@ class TestAll(object):
         assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
 
     def test_get_TOA2(self):
+        np.random.seed(1234)
         period = 1.2
         tstart = 122
         start_phase = 0.2123
