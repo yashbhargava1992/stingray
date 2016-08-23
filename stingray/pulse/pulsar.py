@@ -342,7 +342,7 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     return stats.chi2.isf(epsilon / ntrial, 2 * n)
 
 
-def z2_2_probability(z2, n=2, ntrial=1):
+def z2_n_probability(z2, n=2, ntrial=1):
     """Calculate the probability of a certain folded profile, due to noise.
 
     Parameters
