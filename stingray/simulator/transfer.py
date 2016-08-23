@@ -26,6 +26,9 @@ class TransferFunction(object):
             arr[1][5] defines a time of 5(s) and energy of 1(keV) [assuming
             'dt' and 'de' are 1 and 'tstart' and 'estart' are 0.]
 
+            Note that each row is a different energy channel starting from
+            the lowest to the highest.
+
         dt : float, default 1
             time interval
 
@@ -87,7 +90,7 @@ class TransferFunction(object):
             start = int(self.estart + e0/self.de)
         
         if e1 is None:
-            stop = len(self.data[0]) - 1
+            stop = len(self.data[:][0]) - 1
         else:
             stop = int(self.estart + e1/self.de)
 
@@ -95,8 +98,8 @@ class TransferFunction(object):
         if (start < 0) or (stop < 0):
             raise ValueError('e0 and e1 must be positive.')
 
-        if (start > len(self.data[:])) or (stop > len(self.data[:])):
-            raise ValueError('One or both of the given energy values are out of range.')
+        if (start > len(self.data[:][0])) or (stop > len(self.data[:][0])):
+            raise ValueError('One or both energy values are out of range.')
 
         if start == stop:
             raise ValueError('e0 and e1 must be separated by at least de.')
@@ -115,7 +118,7 @@ class TransferFunction(object):
         
         self.energy = np.mean(self.data, axis=1)
 
-    def plot(self, response='2d', save=False, filename=None):
+    def plot(self, response='2d', save=False, filename=None, show=False):
         """
         Plot 'time', 'energy' or 2-d response using matplotlib.
 
@@ -144,7 +147,7 @@ class TransferFunction(object):
         if response == 'time':
             t = np.linspace(self.tstart, len(self.data[0])*self.dt, 
                             len(self.data[0]))
-            figure = plt.plot(t, self.time, 'bo')
+            figure = plt.plot(t, self.time)
             plt.xlabel('Time')
             plt.ylabel('Flux')
             plt.title('Time-resolved Response')
@@ -152,13 +155,14 @@ class TransferFunction(object):
         elif response == 'energy':
             e = np.linspace(self.estart, len(self.data[:])*self.de, 
                             len(self.data[:]))
-            figure = plt.plot(e, self.energy, 'bo')
+            figure = plt.plot(e, self.energy)
             plt.xlabel('Energy')
             plt.ylabel('Flux')
             plt.title('Energy-resolved Response')
             
         elif response == '2d':
-            figure = plt.imshow(self.data, interpolation='nearest', aspect='auto')
+            figure = plt.imshow(self.data, interpolation='nearest',
+                                cmap='Oranges', origin='lower')
             plt.xlabel('Time')
             plt.ylabel('Energy')
             plt.title('2-d Transfer Function')
@@ -173,6 +177,11 @@ class TransferFunction(object):
                 plt.savefig('out.png')
             else:
                 plt.savefig(filename)
+        
+        if show:
+            plt.show()
+        else:
+            plt.close()
         
     @staticmethod
     def read(filename, format_='pickle'):
@@ -219,7 +228,7 @@ Implementation of artificial methods to create energy-averaged
 responses for quick testing.
 """
 
-def simple_ir(dt, start=0, width=1000, intensity=1):
+def simple_ir(dt=0.125, start=0, width=1000, intensity=1):
     """
     Construct a simple impulse response using start time, 
     width and scaling intensity.
@@ -254,7 +263,7 @@ def simple_ir(dt, start=0, width=1000, intensity=1):
 
     return np.append(h_zeros, h_ones)
 
-def relativistic_ir(dt, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6, decay=0.1):
+def relativistic_ir(dt=0.125, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6, decay=0.1):
     """
     Construct a realistic impulse response considering the relativistic
     effects.

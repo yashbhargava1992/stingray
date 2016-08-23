@@ -170,8 +170,11 @@ class Simulator(object):
         """
 
         # Check that channel name does not already exist.
-        assert channel not in [lc[0] for lc in self.channels]
-        self.channels.append((channel, self.simulate(*args)))
+        if channel not in [lc[0] for lc in self.channels]:
+            self.channels.append((channel, self.simulate(*args)))
+
+        else:
+            raise KeyError('A channel with this name already exists.')
 
     def get_channel(self, channel):
         """
@@ -186,6 +189,13 @@ class Simulator(object):
         """
         
         return [lc[1] for lc in self.channels if lc[0] in channels]
+
+    def get_all_channels(self):
+        """
+        Get lightcurves belonging to all channels.
+        """
+
+        return [lc[1] for lc in self.channels]
 
     def delete_channel(self, channel):
         """

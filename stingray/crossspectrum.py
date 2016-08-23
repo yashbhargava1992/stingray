@@ -332,7 +332,7 @@ class Crossspectrum(object):
             the uncertainties in binpower
 
         nsamples: numpy.ndarray
-            the samples of the original periodogramincluded in each
+            the samples of the original periodogram included in each
             frequency bin
         """
 
@@ -347,9 +347,10 @@ class Crossspectrum(object):
             binfreq.append(binfreq[-1] + df*(1.0+f))
             df = binfreq[-1] - binfreq[-2]
 
-        # compute the mean of the powers that fall into each new frequency bin
+        # compute the mean of the powers that fall into each new frequency bin.
+        # we cast to np.double due to scipy's bad handling of longdoubles
         binpower, bin_edges, binno = scipy.stats.binned_statistic(
-            self.freq.astype(np.float), self.power.astype(np.float),
+            self.freq.astype(np.double), self.power.astype(np.double),
             statistic="mean", bins=binfreq)
 
         # compute the number of powers in each frequency bin
