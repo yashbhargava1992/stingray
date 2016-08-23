@@ -280,7 +280,7 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     if ntrial > 1:
         simon("fold: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
-    return stats.chi2.isf(epsilon, nbin - 1)
+    return stats.chi2.isf(epsilon/ntrial, nbin - 1)
 
 
 def z_n(phase, n=2, norm=1):
