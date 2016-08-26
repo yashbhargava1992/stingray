@@ -1,5 +1,4 @@
 from __future__ import division
-__all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence"]
 
 import numpy as np
 import scipy
@@ -11,6 +10,8 @@ import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
+
+__all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence"]
 
 
 def coherence(lc1, lc2):
@@ -40,6 +41,7 @@ def coherence(lc1, lc2):
     cs = Crossspectrum(lc1, lc2, norm='none')
 
     return cs.coherence()
+
 
 class Crossspectrum(object):
 
@@ -97,16 +99,16 @@ class Crossspectrum(object):
             raise TypeError("norm must be a string")
 
         if norm.lower() not in ["frac", "abs", "leahy", "none"]:
-            raise ValueError( "norm must be 'frac', 'abs', 'leahy', or 'none'!")
+            raise ValueError("norm must be 'frac', 'abs', 'leahy', or 'none'!")
 
         self.norm = norm.lower()
 
-        ## check if input data is a Lightcurve object, if not make one or
-        ## make an empty Crossspectrum object if lc1 == None or lc2 == None
+        # check if input data is a Lightcurve object, if not make one or
+        # make an empty Crossspectrum object if lc1 == None or lc2 == None
         if lc1 is None or lc2 is None:
             if lc1 is not None or lc2 is not None:
-                 raise TypeError("You can't do a cross spectrum with just one "
-                         "light curve!")
+                raise TypeError("You can't do a cross spectrum with just one "
+                                "light curve!")
             else:
                 self.freq = None
                 self.power = None
@@ -123,7 +125,7 @@ class Crossspectrum(object):
 
     def _make_crossspectrum(self, lc1, lc2):
 
-        ## make sure the inputs work!
+        # make sure the inputs work!
         if not isinstance(lc1, lightcurve.Lightcurve):
             raise TypeError("lc1 must be a lightcurve.Lightcurve object")
 
@@ -143,15 +145,15 @@ class Crossspectrum(object):
         lc1 = lc1.split_by_gti()[0]
         lc2 = lc2.split_by_gti()[0]
 
-        ## total number of photons is the sum of the
-        ## counts in the light curve
+        # total number of photons is the sum of the
+        # counts in the light curve
         self.nphots1 = np.float64(np.sum(lc1.counts))
         self.nphots2 = np.float64(np.sum(lc2.counts))
 
         self.meancounts1 = np.mean(lc1.counts)
         self.meancounts2 = np.mean(lc2.counts)
 
-        ## the number of data points in the light curve
+        # the number of data points in the light curve
 
         if lc1.counts.shape[0] != lc2.counts.shape[0]:
             raise StingrayError("Light curves do not have same number "
@@ -163,24 +165,24 @@ class Crossspectrum(object):
 
         self.n = lc1.counts.shape[0]
 
-        ## the frequency resolution
+        # the frequency resolution
         self.df = 1.0/lc1.tseg
 
-        ## the number of averaged periodograms in the final output
-        ## This should *always* be 1 here
+        # the number of averaged periodograms in the final output
+        # This should *always* be 1 here
         self.m = 1
 
-        ## make the actual Fourier transform and compute cross spectrum
+        # make the actual Fourier transform and compute cross spectrum
         self.freq, self.unnorm_power = self._fourier_cross(lc1, lc2)
 
-        ## If co-spectrum is desired, normalize here. Otherwise, get raw back
-        ## with the imaginary part still intact.
+        # If co-spectrum is desired, normalize here. Otherwise, get raw back
+        # with the imaginary part still intact.
         self.power = self._normalize_crossspectrum(self.unnorm_power, lc1.tseg)
 
     def _fourier_cross(self, lc1, lc2):
         """
         Fourier transform the two light curves, then compute the cross spectrum.
-        computed as CS = lc1 x lc2* (where lc2 is the one that gets
+        Computed as CS = lc1 x lc2* (where lc2 is the one that gets
         complex-conjugated)
 
         Parameters
@@ -190,8 +192,8 @@ class Crossspectrum(object):
             interest or channel of interest.
 
         lc2: lightcurve.Lightcurve object
-            Another light curve to be Fourier transformed. This is the reference
-            band.
+            Another light curve to be Fourier transformed.
+            This is the reference band.
 
         Returns
         -------
@@ -223,8 +225,8 @@ class Crossspectrum(object):
         """
 
         # rebin cross spectrum to new resolution
-        binfreq, bincs, step_size = utils.rebin_data(self.freq[1:],
-                                                     self.power[1:], df,
+        binfreq, bincs, step_size = utils.rebin_data(self.freq,
+                                                     self.power, df,
                                                      method=method)
 
         # make an empty cross spectrum object
@@ -232,14 +234,14 @@ class Crossspectrum(object):
         bin_cs = self.__class__()
 
         # store the binned periodogram in the new object
-        bin_cs.freq = np.hstack([binfreq[0]-self.df, binfreq])
-        bin_cs.power = np.hstack([self.power[0], bincs])
+        bin_cs.freq = binfreq
+        bin_cs.power = bincs
         bin_cs.df = df
         bin_cs.n = self.n
         bin_cs.norm = self.norm
         bin_cs.nphots1 = self.nphots1
         bin_cs.nphots2 = self.nphots2
-        bin_cs.m = int(step_size)
+        bin_cs.m = int(step_size)*self.m
 
         return bin_cs
 
@@ -273,7 +275,7 @@ class Crossspectrum(object):
         actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
 
         assert actual_mean > 0.0, \
-                "Mean count rate is <= 0. Something went wrong."
+            "Mean count rate is <= 0. Something went wrong."
 
         if self.norm.lower() == 'leahy':
             c = unnorm_power.real
@@ -395,7 +397,8 @@ class Crossspectrum(object):
 
 class AveragedCrossspectrum(Crossspectrum):
 
-    def __init__(self, lc1=None, lc2=None, segment_size=None, norm='none', gti=None):
+    def __init__(self, lc1=None, lc2=None, segment_size=None,
+                 norm='none', gti=None):
         """
         Make an averaged cross spectrum from a light curve by segmenting two
         light curves, Fourier-transforming each segment and then averaging the
@@ -414,10 +417,11 @@ class AveragedCrossspectrum(Crossspectrum):
             reference band.
 
         segment_size: float
-            The size of each segment to average. Note that if the total duration
-            of each Lightcurve object in lc1 or lc2 is not an integer multiple
-            of the segment_size, then any fraction left-over at the end of the
-            time series will be lost. Otherwise you introduce artefacts.
+            The size of each segment to average. Note that if the total
+            duration of each Lightcurve object in lc1 or lc2 is not an
+            integer multiple of the segment_size, then any fraction left-over
+            at the end of the time series will be lost. Otherwise you introduce
+            artefacts.
 
         norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
             The normalization of the (real part of the) cross spectrum.
@@ -454,7 +458,8 @@ class AveragedCrossspectrum(Crossspectrum):
 
         gti: 2-d float array
             [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            They are calculated by taking the common GTI between the two light curves
+            They are calculated by taking the common GTI between the
+            two light curves
 
         """
         self.type = "crossspectrum"
@@ -523,14 +528,14 @@ class AveragedCrossspectrum(Crossspectrum):
 
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
-            ## TODO: should be using izip from iterables if lc1 or lc2 could
-            ## be long
+            # TODO: should be using izip from iterables if lc1 or lc2 could
+            # be long
             for lc1_seg, lc2_seg in zip(lc1, lc2):
 
                 if self.type == "crossspectrum":
                     cs_sep, nphots1_sep, nphots2_sep = \
                         self._make_segment_spectrum(lc1_seg, lc2_seg,
-                                                            self.segment_size)
+                                                    self.segment_size)
                     nphots2_all.append(nphots2_sep)
                 elif self.type == "powerspectrum":
                     cs_sep, nphots1_sep = \

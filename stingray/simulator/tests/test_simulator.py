@@ -53,6 +53,13 @@ class TestSimulator(object):
         self.simulator.simulate_channel('3.5-4.5', 'lorenzian', [1, 2, 3, 4])
         self.simulator.delete_channel('3.5-4.5')
 
+    def test_incorrect_simulate_channel(self):
+        """Test simulating a channel that already exists."""
+        self.simulator.simulate_channel('3.5-4.5', 2)
+        with pytest.raises(KeyError):
+            self.simulator.simulate_channel('3.5-4.5', 2)
+        self.simulator.delete_channel('3.5-4.5')
+
     def test_get_channel(self):
         """
         Retrieve an energy channel after it has been simulated.
@@ -68,6 +75,14 @@ class TestSimulator(object):
         self.simulator.simulate_channel('3.5-4.5', 2)
         self.simulator.simulate_channel('4.5-5.5', 'smoothbknpo', [1, 2, 3, 4])
         lc = self.simulator.get_channels(['3.5-4.5', '4.5-5.5'])
+
+        self.simulator.delete_channels(['3.5-4.5', '4.5-5.5'])
+
+    def test_get_all_channels(self):
+        """ Retrieve all energy channels. """
+        self.simulator.simulate_channel('3.5-4.5', 2)
+        self.simulator.simulate_channel('4.5-5.5', 1)
+        lc = self.simulator.get_all_channels()
 
         self.simulator.delete_channels(['3.5-4.5', '4.5-5.5'])
 

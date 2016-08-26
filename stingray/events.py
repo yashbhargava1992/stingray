@@ -116,9 +116,32 @@ class EventList(object):
 
         return Lightcurve.make_lightcurve(self.time, dt, tstart=tstart, tseg=tseg)
 
-    def set_times(self, lc, use_spline=False, bin_time=None):
+    @staticmethod
+    def from_lc(lc):
         """
-        Assign photon arrival times to event list, using acceptance-rejection
+        Loads eventlist from light curve.
+
+        Parameters
+        ----------
+        lc: lightcurve.Lightcurve object
+            Light curve data to load from
+
+        Returns
+        -------
+        ev: events.EventList object
+            Event List
+        """
+
+        # Multiply times by number of counts
+        times = [[i] * j for i,j in zip(lc.time, lc.counts)]
+        # Concatenate all lists
+        times = [i for j in times for i in j]
+
+        return EventList(time=times)
+
+    def simulate_times(self, lc, use_spline=False, bin_time=None):
+        """
+        Assign (simulate) photon arrival times to event list, using acceptance-rejection
         method.
 
         Parameters
@@ -210,9 +233,9 @@ class EventList(object):
         self.time = EventList(time).time
         self.ncounts = len(self.time)
 
-    def set_pha(self, spectrum):
+    def simulate_energies(self, spectrum):
         """
-        Assign energies to event list.
+        Assign (simulate) energies to event list.
 
         Parameters
         ----------
@@ -296,7 +319,8 @@ class EventList(object):
 
         return ev_new
 
-    def read(self, filename, format_='pickle'):
+    @staticmethod
+    def read(filename, format_='pickle'):
         """
         Imports EventList object.
 
@@ -366,7 +390,7 @@ class EventList(object):
             write(self, filename, format_)
 
         elif format_ == 'fits':
-            write(self, filename, format_, tnames=['EVENTS','GTI'], 
+            write(self, filename, format_, tnames=['EVENTS', 'GTI'], 
                 colsassign={'gti':'GTI'})
 
         else:

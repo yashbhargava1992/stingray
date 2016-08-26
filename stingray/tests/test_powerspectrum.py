@@ -156,8 +156,7 @@ class TestPowerspectrum(object):
         with pytest.raises(Exception):
             ps = Powerspectrum(lc=self.lc, norm="rms")
             rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
-                                            max_freq=ps.freq[-1])
-
+                                             max_freq=ps.freq[-1])
 
     def test_fractional_rms_error(self):
         """
@@ -197,7 +196,10 @@ class TestPowerspectrum(object):
         """
         ps = Powerspectrum(lc=self.lc, norm="Leahy")
         bin_ps = ps.rebin(df)
-        assert np.isclose(bin_ps.freq[0], bin_ps.df, atol=1e-4, rtol=1e-4)
+        assert np.isclose(bin_ps.freq[1]-bin_ps.freq[0], bin_ps.df,
+                          atol=1e-4, rtol=1e-4)
+        assert np.isclose(bin_ps.freq[0], (ps.freq[0]-ps.df*0.5+bin_ps.df*0.5),
+                          atol=1e-4, rtol=1e-4)
 
     def test_rebin(self):
         df_all = [2, 3, 5, 1.5, 1, 85]
