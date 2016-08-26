@@ -30,28 +30,35 @@ class TestEvents(object):
         disparity in length of 'time' and 'pha'
         """
         with pytest.raises(ValueError):
-            EventList(time=[1,2,3], pha=[10,12])    
+            EventList(time=[1, 2, 3], pha=[10, 12])    
 
     def test_to_lc(self):
         """Create a light curve from event list."""
         ev = EventList(self.time)
         lc = ev.to_lc(1)
 
-    def test_set_times(self):
-        """Set photon arrival times for an event list 
+    def test_from_lc(self):
+        """Load event list from lightcurve"""
+        lc = Lightcurve(time=[0.5, 1.5, 2.5], counts=[2, 1, 2])
+        ev = EventList.from_lc(lc)
+
+        assert (ev.time == np.array([0.5, 0.5, 1.5, 2.5, 2.5])).all()
+
+    def test_simulate_times(self):
+        """Simulate photon arrival times for an event list 
         from light curve.
         """
         lc = Lightcurve(self.time, self.counts)
         ev = EventList()
-        ev.set_times(lc)
+        ev.simulate_times(lc)
 
-    def test_set_times_with_spline(self):
-        """Set photon arrival times, with use_spline option
+    def test_simulate_times_with_spline(self):
+        """Simulate photon arrival times, with use_spline option
         enabled.
         """
         lc = Lightcurve(self.time, self.counts)
         ev = EventList()
-        ev.set_times(lc, use_spline = True)
+        ev.simulate_times(lc, use_spline = True)
 
     def test_recover_lc(self):
         """Test that the original light curve can be recovered from 
@@ -59,43 +66,43 @@ class TestEvents(object):
         """
         lc = Lightcurve(self.time, self.counts)
         ev = EventList()
-        ev.set_times(lc)
+        ev.simulate_times(lc)
 
         lc_rcd = ev.to_lc(dt=1, tstart=0, tseg=4)
         assert np.all(np.abs(lc_rcd.counts - lc.counts) < 3 * np.sqrt(lc.counts))
 
-    def test_set_pha(self):
+    def test_simulate_energies(self):
         """Assign photon energies to an event list.
         """
         ev = EventList(ncounts=100)
-        ev.set_pha(self.spectrum)
+        ev.simulate_energies(self.spectrum)
 
-    def test_set_pha_with_1d_spectrum(self):
-        """Test that set_pha() method raises index
+    def test_simulate_energies_with_1d_spectrum(self):
+        """Test that simulate_energies() method raises index
         error exception is spectrum is 1-d. 
         """
         ev = EventList(ncounts=100)
         with pytest.raises(IndexError):
-            ev.set_pha(self.spectrum[0])
+            ev.simulate_energies(self.spectrum[0])
 
-    def test_set_pha_with_wrong_spectrum_type(self):
-        """Test that set_pha() method raises type error
+    def test_simulate_energies_with_wrong_spectrum_type(self):
+        """Test that simulate_energies() method raises type error
         exception when wrong sepctrum type is supplied.
         """
         ev = EventList(ncounts=100)
         with pytest.raises(TypeError):
-            ev.set_pha(1)
+            ev.simulate_energies(1)
 
-    def test_set_pha_with_counts_not_set(self):
+    def test_simulate_energies_with_counts_not_set(self):
         ev = EventList()
-        ev.set_pha(self.spectrum)
+        ev.simulate_energies(self.spectrum)
 
     def test_compare_pha(self):
         """Compare the simulated energy distribution to actual distribution.
         """
         fluxes = np.array(self.spectrum[1])
         ev = EventList(ncounts=1000)
-        ev.set_pha(self.spectrum)
+        ev.simulate_energies(self.spectrum)
         pha = [int(p) for p in ev.pha]
 
         # Histogram pha to get shape approximation
@@ -111,9 +118,9 @@ class TestEvents(object):
 
         assert np.all(np.abs(lc_prob - fluxes_prob) < 3 * np.sqrt(fluxes_prob))
 
-    def test_join_without_times_set(self):
+    def test_join_without_times_simulated(self):
         """Test if exception is raised when join method is
-        called before first setting times.
+        called before first simulating times.
         """
         ev = EventList()
         ev_other = EventList()
@@ -125,40 +132,49 @@ class TestEvents(object):
         """Test if an empty event list can be concatenated
         with a non-empty event list.
         """
-        ev = EventList(time=[1,2,3])
+        ev = EventList(time=[1, 2, 3])
         ev_other = EventList()
         ev.join(ev_other)
 
         ev = EventList()
-        ev_other = EventList(time=[1,2,3])
+        ev_other = EventList(time=[1, 2, 3])
         ev.join(ev_other)
 
     def test_join_without_pha(self):
-        ev = EventList(time=[1,2,3])
-        ev_other = EventList(time=[2,3])
+        ev = EventList(time=[1, 2, 3])
+        ev_other = EventList(time=[2, 3])
         ev.join(ev_other)
 
     def test_non_overlapping_join(self):
         """Join two overlapping event lists.
         """
-        ev = EventList(time=[1,1,2,3,4], pha=[3,4,7,4,3], gti=[[1,2],[3,4]])
-        ev_other = EventList(time=[5,6,6,7,10], pha=[4,3,8,1,2], gti=[[6,7]])
+        ev = EventList(time=[1, 1, 2, 3, 4], 
+                        pha=[3, 4, 7, 4, 3], gti=[[1, 2],[3, 4]])
+        ev_other = EventList(time=[5, 6, 6, 7, 10], 
+                            pha=[4, 3, 8, 1, 2], gti=[[6, 7]])
         ev_new = ev.join(ev_other)
 
-        assert (ev_new.time == np.array([1,1,2,3,4,5,6,6,7,10])).all()
-        assert (ev_new.pha == np.array([3,4,7,4,3,4,3,8,1,2])).all()
-        assert (ev_new.gti == np.array([[1,2],[3,4],[6,7]])).all()
+        assert (ev_new.time ==
+                np.array([1, 1, 2, 3, 4, 5, 6, 6, 7, 10])).all()
+        assert (ev_new.pha ==
+                np.array([3, 4, 7, 4, 3, 4, 3, 8, 1, 2])).all()
+        assert (ev_new.gti == 
+                np.array([[1, 2],[3, 4],[6, 7]])).all()
 
     def test_overlapping_join(self):
         """Join two non-overlapping event lists.
         """
-        ev = EventList(time=[1,1,10,6,5], pha=[10,6,3,11,2], gti=[[1,3],[5,6]])
-        ev_other = EventList(time=[5,7,6,6,10], pha=[2,3,8,1,2], gti=[[5,7],[8,10]])
+        ev = EventList(time=[1, 1, 10, 6, 5], 
+                        pha=[10, 6, 3, 11, 2], gti=[[1, 3],[5, 6]])
+        ev_other = EventList(time=[5, 7, 6, 6, 10], 
+                            pha=[2, 3, 8, 1, 2], gti=[[5, 7],[8, 10]])
         ev_new = ev.join(ev_other)
 
-        assert (ev_new.time == np.array([1,1,5,5,6,6,6,7,10,10])).all()
-        assert (ev_new.pha == np.array([10,6,2,2,11,8,1,3,3,2])).all()
-        assert (ev_new.gti == np.array([[5,6]])).all()
+        assert (ev_new.time ==
+                np.array([1, 1, 5, 5, 6, 6, 6, 7, 10, 10])).all()
+        assert (ev_new.pha ==
+                np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
+        assert (ev_new.gti == np.array([[5, 6]])).all()
 
     def test_io_with_ascii(self):
         ev = EventList(self.time)
