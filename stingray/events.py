@@ -13,6 +13,7 @@ from .lightcurve import Lightcurve
 
 import numpy as np
 import numpy.random as ra
+import scipy.interpolate as sci
 
 
 class EventList(object):
@@ -153,9 +154,7 @@ class EventList(object):
         ----------
         lc: `Lightcurve` object
         """ 
-        
-        import scipy.interpolate as sci
-
+       
         times = lc.time
         counts = lc.counts
 
