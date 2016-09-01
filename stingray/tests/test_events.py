@@ -24,6 +24,7 @@ class TestEvents(object):
         self.time = [0.5, 1.5, 2.5, 3.5]
         self.counts = [3000, 2000, 2200, 3600]
         self.spectrum = [[1, 2, 3, 4, 5, 6],[1000, 2040, 1000, 3000, 4020, 2070]]
+        self.gti = [[0, 4]]
 
     def test_inequal_length(self):
         """Check that exception is raised in case of
@@ -34,8 +35,11 @@ class TestEvents(object):
 
     def test_to_lc(self):
         """Create a light curve from event list."""
-        ev = EventList(self.time)
+        ev = EventList(self.time, gti=self.gti)
         lc = ev.to_lc(1)
+        print(lc.time)
+        assert (lc.time == [0.5, 1.5, 2.5, 3.5]).all()
+        assert (lc.gti == self.gti).all()
 
     def test_from_lc(self):
         """Load event list from lightcurve"""
@@ -125,8 +129,7 @@ class TestEvents(object):
         ev = EventList()
         ev_other = EventList()
 
-        with pytest.raises(ValueError):
-            ev.join(ev_other)
+        assert ev.join(ev_other).time is None
 
     def test_join_empty_lists(self):
         """Test if an empty event list can be concatenated
@@ -134,16 +137,69 @@ class TestEvents(object):
         """
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList()
-        ev.join(ev_other)
+        ev_new = ev.join(ev_other)
+        assert np.all(ev_new.time == [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList(time=[1, 2, 3])
-        ev.join(ev_other)
+        ev_new = ev.join(ev_other)
+        assert np.all(ev_new.time == [1, 2, 3])
+
+        ev = EventList()
+        ev_other = EventList()
+        ev_new = ev.join(ev_other)
+        assert ev_new.time == None
+        assert ev_new.gti == None
+        assert ev_new.pi == None
+        assert ev_new.pha == None
+
+        ev = EventList(time=[1, 2, 3])
+        ev_other = EventList([])
+        ev_new = ev.join(ev_other)
+        assert np.all(ev_new.time == [1, 2, 3])
+        ev = EventList([])
+        ev_other = EventList(time=[1, 2, 3])
+        ev_new = ev.join(ev_other)
+        assert np.all(ev_new.time == [1, 2, 3])
+
+    def test_join_different_dt(self):
+        ev = EventList(time=[10, 20, 30], dt = 1)
+        ev_other = EventList(time=[40, 50, 60], dt = 3)
+        ev_new = ev.join(ev_other)
+        assert ev_new.dt == 3
 
     def test_join_without_pha(self):
+        ev = EventList(time=[1, 2, 3], pha=[3, 3, 3])
+        ev_other = EventList(time=[4, 5])
+        ev_new = ev.join(ev_other)
+
+        assert np.all(ev_new.pha == [3, 3, 3, 0, 0])
+
+    def test_join_without_pi(self):
+        ev = EventList(time=[1, 2, 3], pi=[3, 3, 3])
+        ev_other = EventList(time=[4, 5])
+        ev_new = ev.join(ev_other)
+
+        assert np.all(ev_new.pi == [3, 3, 3, 0, 0])
+
+    def test_join_with_gti_none(self):
         ev = EventList(time=[1, 2, 3])
-        ev_other = EventList(time=[2, 3])
-        ev.join(ev_other)
+        ev_other = EventList(time=[4, 5], gti=[[3.5, 5.5]])
+        ev_new = ev.join(ev_other)
+
+        assert np.all(ev_new.gti == [[1, 3], [3.5, 5.5]])
+
+        ev = EventList(time=[1, 2, 3], gti=[[0.5, 3.5]])
+        ev_other = EventList(time=[4, 5])
+        ev_new = ev.join(ev_other)
+
+        assert np.all(ev_new.gti == [[0.5, 3.5], [4, 5]])
+
+        ev = EventList(time=[1, 2, 3])
+        ev_other = EventList(time=[4, 5])
+        ev_new = ev.join(ev_other)
+
+        assert ev_new.gti == None
 
     def test_non_overlapping_join(self):
         """Join two overlapping event lists.
