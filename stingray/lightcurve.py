@@ -59,8 +59,8 @@ class Lightcurve(object):
             
         meancounts: float
             The mean counts of the light curve.
-            
-        ncounts: int
+
+        n: int
             The number of data points in the light curve.
 
         dt: float
@@ -105,9 +105,9 @@ class Lightcurve(object):
             self.countrate = np.asarray(counts)
             self.counts = self.countrate * self.dt
 
-        self.ncounts = self.counts.shape[0]
         self.meanrate = np.mean(self.countrate)
         self.meancounts = np.mean(self.counts)
+        self.n = self.counts.shape[0]
 
         # Issue a warning if the input time iterable isn't regularly spaced,
         # i.e. the bin sizes aren't equal throughout.
@@ -255,7 +255,7 @@ class Lightcurve(object):
         >>> len(lc)
         3
         """
-        return self.ncounts
+        return self.n
 
     def __getitem__(self, index):
         """
