@@ -17,7 +17,8 @@ __all__ = ["Lightcurve"]
 
 
 class Lightcurve(object):
-    def __init__(self, time, counts, err=None, input_counts=True, gti=None):
+    def __init__(self, time, counts, err=None, input_counts=True,
+                 gti=None, statistic=None):
         """
         Make a light curve object from an array of time stamps and an
         array of counts.
@@ -50,6 +51,12 @@ class Lightcurve(object):
             Good Time Intervals. They are *not* applied to the data by default.
             They will be used by other methods to have an indication of the
             "safe" time intervals to use during analysis.
+
+        statistic: str, optional, default=None
+            Statistic of the Lightcurve, it is used to calculate the
+            uncertainties and other statistical values apropriately.
+            Default makes no assumptions and keep errors equal to zero.
+
 
         Attributes
         ----------
@@ -85,6 +92,11 @@ class Lightcurve(object):
             Good Time Intervals. They indicate the "safe" time intervals
             to be used during the analysis of the light curve.
 
+        statistic: string
+            Statistic of the Lightcurve, it is used to calculate the
+            uncertainties and other statistical values apropriately.
+            It propagates to Spectrum classes.
+
         """
         if not np.all(np.isfinite(time)):
             raise ValueError("There are inf or NaN values in "
@@ -107,10 +119,25 @@ class Lightcurve(object):
                 raise ValueError("There are inf or NaN values in "
                                  "your err array")
         else:
-            err = 1.0 + np.sqrt(np.absolute(np.asarray(counts)) + 0.75)
+            if statistic not in ["poisson", "gaussian", None]:
+                #statistic set can be increased with other statistics
+                raise StingrayError("Statistic not recognized."
+                                    "Please select one of these: ",
+                                    "[poisson, gaussian]")
+            if statistic == 'poisson':
+                err = 1.0 + np.sqrt(np.absolute(np.asarray(counts)) + 0.75)
+                # other test can be implemented for other statistics
+            else:
+                simon("Stingray only uses poisson statistic at the moment, "
+                      "We are setting your errors to zero to avoid complications. "
+                      "Sorry for the inconvenience.")
+                err = np.zeros_like(counts)
+
 
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
+
+        self.statistic = statistic
 
         if input_counts:
             self.counts = np.asarray(counts)
@@ -188,8 +215,22 @@ class Lightcurve(object):
                              "of same dimension and equal.")
 
         new_counts = np.add(self.counts, other.counts)
-        new_counts_err = np.sqrt(np.add(self.counts_err**2,
-                                        other.counts_err**2))
+
+        if self.statistic != other.statistic:
+            simon("Lightcurves have different statistics!"
+                  "We are setting the errors to zero to avoid complications.")
+            new_counts_err = np.zeros_like(new_counts)
+        elif self.statistic in ['poisson', 'gaussian']:
+                new_counts_err = np.sqrt(np.add(self.counts_err**2,
+                                                other.counts_err**2))
+            # More conditions can be implemented for other statistics
+        elif self.statistic is None:
+            new_counts_err = np.zeros_like(new_counts)
+        else:
+            raise StingrayError("Statistics not recognized."
+                                " Please use one of these: "
+                                "[poisson, gaussian]")
+
         common_gti = cross_two_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(self.time, new_counts,
@@ -230,8 +271,22 @@ class Lightcurve(object):
                              "of same dimension and equal.")
 
         new_counts = np.subtract(self.counts, other.counts)
-        new_counts_err = np.sqrt(np.add(self.counts_err**2,
-                                        other.counts_err**2))
+
+        if self.statistic != other.statistic:
+            simon("Lightcurves have different statistics!"
+                  "We are setting the errors to zero to avoid complications.")
+            new_counts_err = np.zeros_like(new_counts)
+        elif self.statistic in ['poisson', 'gaussian']:
+            new_counts_err = np.sqrt(np.add(self.counts_err**2,
+                                            other.counts_err**2))
+            # More conditions can be implemented for other statistics
+        elif self.statistic is None:
+            new_counts_err = np.zeros_like(new_counts)
+        else:
+            raise StingrayError("Statistics not recognized."
+                                " Please use one of these: "
+                                "[poisson, gaussian]")
+
         common_gti = cross_two_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(self.time, new_counts,
@@ -494,8 +549,20 @@ class Lightcurve(object):
                     # Average the overlapping counts
                     new_counts.append((count1 + count2) / 2)
 
-                    new_counts_err.append(np.sqrt(((count1_err**2) +
-                                                   (count2_err**2)) / 2))
+                    if self.statistic != other.statistic:
+                        simon("Lightcurves have different statistics!"
+                              "We are setting the errors to zero to avoid complications.")
+                        new_counts_err = np.zeros_like(new_counts)
+                    elif self.statistic in ['poisson', 'gaussian']:
+                        new_counts_err.append(np.sqrt(((count1_err**2) +
+                                                      (count2_err**2)) / 2))
+                    # More conditions can be implemented for other statistics
+                    elif self.statistic is None:
+                        new_counts_err.append(0.0)
+                    else:
+                        raise StingrayError("Statistics not recognized."
+                                            " Please use one of these: "
+                                            "[poisson, gaussian]")
                 else:
                     new_counts.append(count1)
                     new_counts_err.append(count1_err)
