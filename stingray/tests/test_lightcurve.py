@@ -45,6 +45,21 @@ class TestLightcurve(object):
                     "transforms. Please make the input time evenly sampled.")
 
         with warnings.catch_warnings(record=True) as w:
+            lc = Lightcurve(times, counts, statistic="poisson")
+            assert str(w[0].message) == warn_str
+
+    def test_unrecognize_statistic_warning(self):
+        """
+        Check if inputting an irregularly spaced time iterable throws out
+        a warning.
+        """
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, 2, 2, 2]
+        warn_str = ("SIMON says: Stingray only uses poisson statistic at "
+                    "the moment, We are setting your errors to zero to avoid "
+                    "complications. Sorry for the inconvenience.")
+
+        with warnings.catch_warnings(record=True) as w:
             lc = Lightcurve(times, counts)
             assert str(w[0].message) == warn_str
 
