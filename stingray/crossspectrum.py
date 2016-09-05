@@ -240,7 +240,15 @@ class Crossspectrum(object):
         bin_cs.n = self.n
         bin_cs.norm = self.norm
         bin_cs.nphots1 = self.nphots1
-        bin_cs.nphots2 = self.nphots2
+        try:
+            bin_cs.nphots2 = self.nphots2
+        except AttributeError:
+            #probably a(n) (Averaged)Powerspectrum
+            if self.type == 'powerspectrum':
+                pass
+            else:
+                raise
+
         bin_cs.m = int(step_size)*self.m
 
         return bin_cs
