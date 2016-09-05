@@ -79,7 +79,11 @@ class Crossspectrum(object):
             The array of cross spectra (complex numbers)
 
         power_err: numpy.ndarray
-            The uncertainties of power
+            The uncertainties of `power`.
+            An approximation for each bin given by "power_err= power/Sqrt(m)".
+            Where `m` is the number of power averaged in each bin (by frequency
+            binning, or averaging more than one spectra). Note that for a single
+            realization (m=1) the error is equal to the power.
 
         df: float
             The frequency resolution
@@ -182,6 +186,13 @@ class Crossspectrum(object):
         # If co-spectrum is desired, normalize here. Otherwise, get raw back
         # with the imaginary part still intact.
         self.power = self._normalize_crossspectrum(self.unnorm_power, lc1.tseg)
+
+        if lc1.statistic != lc2.statistic:
+            utils.simon("Your lightcurves have different statistics."
+                  "The errors in the Crossspectrum will be incorrect.")
+        elif lc1.statistic != "poisson":
+            utils.simon("Looks like your lightcurve statistic is not poisson."
+                        "The errors in the Powerspectrum will be incorrect.")
 
         self.power_err = self.power / np.sqrt(self.m)
 
@@ -456,7 +467,11 @@ class AveragedCrossspectrum(Crossspectrum):
             The array of cross spectra
 
         power_err: numpy.ndarray
-            The uncertainties of power
+            The uncertainties of `power`.
+            An approximation for each bin given by "power_err= power/Sqrt(m)".
+            Where `m` is the number of power averaged in each bin (by frequency
+            binning, or averaging powerspectrum). Note that for a single
+            realization (m=1) the error is equal to the power.
 
         df: float
             The frequency resolution
@@ -522,8 +537,10 @@ class AveragedCrossspectrum(Crossspectrum):
             time_2 = lc2.time[start_ind:end_ind]
             counts_2 = lc2.counts[start_ind:end_ind]
             counts_2_err = lc2.counts_err[start_ind:end_ind]
-            lc1_seg = lightcurve.Lightcurve(time_1, counts_1, err=counts_1_err)
-            lc2_seg = lightcurve.Lightcurve(time_2, counts_2, err=counts_2_err)
+            lc1_seg = lightcurve.Lightcurve(time_1, counts_1, err=counts_1_err,
+                                            statistic=lc1.statistic)
+            lc2_seg = lightcurve.Lightcurve(time_2, counts_2, err=counts_2_err,
+                                            statistic=lc2.statistic)
             cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm)
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
