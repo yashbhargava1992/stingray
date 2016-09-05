@@ -68,7 +68,7 @@ class Lightcurve(object):
         countrate_err: numpy.ndarray
             The uncertainties corresponding to `countrate`
 
-        ncounts: int
+        n: int
             The number of data points in the light curve.
 
         dt: float
@@ -123,7 +123,7 @@ class Lightcurve(object):
             self.counts_err = np.asarray(err) * self.dt
             self.countrate_err = np.asarray(err)
 
-        self.ncounts = self.counts.shape[0]
+        self.n = self.counts.shape[0]
 
         # Issue a warning if the input time iterable isn't regularly spaced,
         # i.e. the bin sizes aren't equal throughout.
@@ -277,7 +277,7 @@ class Lightcurve(object):
         >>> len(lc)
         3
         """
-        return self.ncounts
+        return self.n
 
     def __getitem__(self, index):
         """
