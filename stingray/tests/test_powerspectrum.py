@@ -364,6 +364,14 @@ class TestAveragedPowerspectrum(object):
             for df in df_all:
                 yield self.rebin_several, df
 
+        def test_rebin_with_invalid_type_attribute(self):
+            new_df = 2
+            aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+                                        norm='leahy')
+            aps.type = 'invalid_type'
+            with pytest.raises(AttributeError):
+                assert aps.rebin(df=new_df)
+
     def test_list_with_nonsense_component(self):
         n_lcs = 10
 
