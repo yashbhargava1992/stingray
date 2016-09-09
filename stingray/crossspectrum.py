@@ -243,11 +243,10 @@ class Crossspectrum(object):
         try:
             bin_cs.nphots2 = self.nphots2
         except AttributeError:
-            #probably a(n) (Averaged)Powerspectrum
             if self.type == 'powerspectrum':
                 pass
             else:
-                raise
+                raise AttributeError('Spectrum has no attribute named nphots2.')
 
         bin_cs.m = int(step_size)*self.m
 
