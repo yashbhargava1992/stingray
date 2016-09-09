@@ -180,6 +180,19 @@ class TestAveragedCrossspectrum(object):
 
         self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
 
+    def test_different_dt(self):
+        tstart2 = 0.0
+        tend2 = 2.0
+        dt2 = 0.0002
+        time2 = np.linspace(tstart2, tend2, int((tend2-tstart2)/dt2))
+
+        counts2_test = np.random.negative_binomial(1, 0.09,
+                                                   size=time2.shape[0])
+        test_lc2 = Lightcurve(time2, counts2_test)
+
+        with pytest.raises(ValueError):
+            assert AveragedCrossspectrum(self.lc1, test_lc2, segment_size=1)
+
     def test_init_with_norm_not_str(self):
         with pytest.raises(TypeError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
