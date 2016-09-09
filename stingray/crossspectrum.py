@@ -535,7 +535,7 @@ class AveragedCrossspectrum(Crossspectrum):
                     self._make_segment_spectrum(lc1, self.segment_size)
 
             else:
-                raise AttributeError("Type of spectrum not recognized!")
+                raise ValueError("Type of spectrum not recognized!")
 
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
@@ -553,7 +553,7 @@ class AveragedCrossspectrum(Crossspectrum):
                         self._make_segment_spectrum(lc1_seg, self.segment_size)
 
                 else:
-                    raise AttributeError("Type of spectrum not recognized!")
+                    raise ValueError("Type of spectrum not recognized!")
 
                 self.cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
