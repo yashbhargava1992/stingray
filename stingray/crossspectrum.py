@@ -240,7 +240,14 @@ class Crossspectrum(object):
         bin_cs.n = self.n
         bin_cs.norm = self.norm
         bin_cs.nphots1 = self.nphots1
-        bin_cs.nphots2 = self.nphots2
+        try:
+            bin_cs.nphots2 = self.nphots2
+        except AttributeError:
+            if self.type == 'powerspectrum':
+                pass
+            else:
+                raise AttributeError('Spectrum has no attribute named nphots2.')
+
         bin_cs.m = int(step_size)*self.m
 
         return bin_cs
@@ -526,6 +533,9 @@ class AveragedCrossspectrum(Crossspectrum):
                 self.cs_all, nphots1_all = \
                     self._make_segment_spectrum(lc1, self.segment_size)
 
+            else:
+                raise ValueError("Type of spectrum not recognized!")
+
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
             # TODO: should be using izip from iterables if lc1 or lc2 could
@@ -542,7 +552,7 @@ class AveragedCrossspectrum(Crossspectrum):
                         self._make_segment_spectrum(lc1_seg, self.segment_size)
 
                 else:
-                    raise Exception("Type of spectrum not recognized!")
+                    raise ValueError("Type of spectrum not recognized!")
 
                 self.cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)

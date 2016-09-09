@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 import pytest
 import warnings
-from stingray import Lightcurve
+from stingray import Lightcurve, AveragedPowerspectrum
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence
 from stingray import StingrayError
 
@@ -82,6 +82,11 @@ class TestCrossspectrum(object):
     def test_init_with_one_lc_none(self):
         with pytest.raises(TypeError):
             cs = Crossspectrum(self.lc1)
+
+    def test_init_with_multiple_gti(self):
+        gti = np.array([[0.0, 0.2], [0.6, 1.0]])
+        with pytest.raises(TypeError):
+            cs = Crossspectrum(self.lc1, self.lc2, gti=gti)
 
     def test_init_with_norm_not_str(self):
         with pytest.raises(TypeError):
@@ -179,6 +184,72 @@ class TestAveragedCrossspectrum(object):
         self.lc2 = Lightcurve(time, counts2)
 
         self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
+
+    def test_invalid_type_attribute(self):
+        with pytest.raises(ValueError):
+            cs_test = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
+            cs_test.type = 'invalid_type'
+            assert AveragedCrossspectrum._make_crossspectrum(cs_test,
+                                                             self.lc1,
+                                                             self.lc2)
+
+    def test_invalid_type_attribute_with_multiple_lcs(self):
+        acs_test = AveragedCrossspectrum([self.lc1, self.lc2],
+                                         [self.lc2, self.lc1],
+                                         segment_size=1)
+        acs_test.type = 'invalid_type'
+        with pytest.raises(ValueError):
+            assert AveragedCrossspectrum._make_crossspectrum(acs_test,
+                                                             lc1=[self.lc1,
+                                                                  self.lc2],
+                                                             lc2=[self.lc2,
+                                                                  self.lc1])
+
+    def test_different_dt(self):
+        time1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        counts1_test = np.random.poisson(0.01, size=len(time1))
+        test_lc1 = Lightcurve(time1, counts1_test)
+
+        time2 = [2, 4, 6, 8, 10]
+        counts2_test = np.random.negative_binomial(1, 0.09, size=len(time2))
+        test_lc2 = Lightcurve(time2, counts2_test)
+
+        assert test_lc1.tseg == test_lc2.tseg
+
+        assert test_lc1.dt != test_lc2.dt
+
+        with pytest.raises(ValueError):
+            assert AveragedCrossspectrum(test_lc1, test_lc2, segment_size=1)
+
+    def test_different_tseg(self):
+        time2 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        counts2_test = np.random.poisson(0.01, size=len(time2))
+        test_lc2 = Lightcurve(time2, counts2_test)
+
+        time1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        counts1_test = np.random.negative_binomial(1, 0.09, size=len(time1))
+        test_lc1 = Lightcurve(time1, counts1_test)
+
+        assert test_lc2.dt == test_lc1.dt
+
+        assert test_lc2.tseg != test_lc1.tseg
+
+        with pytest.raises(ValueError):
+            assert AveragedCrossspectrum(test_lc1, test_lc2, segment_size=1)
+
+    def test_rebin_with_invalid_type_attribute(self):
+        new_df = 2
+        aps = AveragedPowerspectrum(lc=self.lc1, segment_size=1,
+                                    norm='leahy')
+        aps.type = 'invalid_type'
+        with pytest.raises(AttributeError):
+            assert aps.rebin(df=new_df)
+
+    def test_rebin_with_valid_type_attribute(self):
+        new_df = 2
+        aps = AveragedPowerspectrum(lc=self.lc1, segment_size=1,
+                                    norm='leahy')
+        assert aps.rebin(df=new_df)
 
     def test_init_with_norm_not_str(self):
         with pytest.raises(TypeError):
