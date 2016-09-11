@@ -150,8 +150,8 @@ class Crossspectrum(object):
         self.nphots1 = np.float64(np.sum(lc1.counts))
         self.nphots2 = np.float64(np.sum(lc2.counts))
 
-        self.meancounts1 = np.mean(lc1.counts)
-        self.meancounts2 = np.mean(lc2.counts)
+        self.meancounts1 = lc1.meancounts
+        self.meancounts2 = lc2.meancounts
 
         # the number of data points in the light curve
 

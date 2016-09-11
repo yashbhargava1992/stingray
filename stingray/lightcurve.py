@@ -46,13 +46,19 @@ class Lightcurve(object):
         Attributes
         ----------
         time: numpy.ndarray
-            The array of midpoints of time bins
+            The array of midpoints of time bins.
 
         counts: numpy.ndarray
             The counts per bin corresponding to the bins in `time`.
 
         countrate: numpy.ndarray
             The counts per second in each of the bins defined in `time`.
+
+        meanrate: float
+            The mean count rate of the light curve.
+            
+        meancounts: float
+            The mean counts of the light curve.
 
         n: int
             The number of data points in the light curve.
@@ -81,6 +87,7 @@ class Lightcurve(object):
                              "your counts array!")
 
         if len(time) != len(counts):
+
             raise StingrayError("time are counts array are not "
                                 "of the same length!")
 
@@ -98,6 +105,8 @@ class Lightcurve(object):
             self.countrate = np.asarray(counts)
             self.counts = self.countrate * self.dt
 
+        self.meanrate = np.mean(self.countrate)
+        self.meancounts = np.mean(self.counts)
         self.n = self.counts.shape[0]
 
         # Issue a warning if the input time iterable isn't regularly spaced,
@@ -128,6 +137,8 @@ class Lightcurve(object):
                             gti=self.gti + time_shift)
         new_lc.countrate = self.countrate
         new_lc.counts = self.counts
+        new_lc.meanrate = np.mean(new_lc.countrate)
+        new_lc.meancounts = np.mean(new_lc.counts)
         return new_lc
 
     def __add__(self, other):
