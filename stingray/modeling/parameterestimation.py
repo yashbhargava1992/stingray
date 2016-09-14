@@ -225,9 +225,18 @@ class ParameterEstimation(object):
 
             # if max_post is False, then do a Maximum Likelihood Fit
             else:
-                opt = scipy.optimize.minimize(lpost.loglikelihood, t0_p,
-                                              method=self.fitmethod,
-                                              args=args, tol=1.e-10)
+                try:
+                    # This could be a `Posterior` object
+                    opt = scipy.optimize.minimize(lpost.loglikelihood, t0_p,
+                                                  method=self.fitmethod,
+                                                  args=args, tol=1.e-10)
+                except AttributeError:
+                    # Except this could be a `LogLikelihood object
+                    # In which case, use the evaluate function
+                    # if it's not either, give up and break!
+                    opt = scipy.optimize.minimize(lpost.evaluate, t0_p,
+                                                  method=self.fitmethod,
+                                                  args=args, tol=1.e-10)
 
             funcval = opt.fun
             i += 1
