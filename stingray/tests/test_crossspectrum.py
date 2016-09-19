@@ -50,6 +50,13 @@ class TestCoherence(object):
         assert len(coh) == 2
         assert np.abs(np.mean(coh)) < 1
 
+    def test_high_coherence(self):
+        t = np.arange(1280)
+        a = np.random.poisson(100, len(t))
+        lc = Lightcurve(t, a)
+        c = AveragedCrossspectrum(lc, lc, 128)
+        coh, _ = c.coherence()
+        np.testing.assert_almost_equal(np.mean(coh).real, 1.0)
 
 
 class TestCrossspectrum(object):
