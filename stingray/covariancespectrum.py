@@ -315,7 +315,7 @@ class Covariancespectrum(object):
         # Standard deviation of light curve
         err_x = self._calculate_std(lc_x)
         # Number of time bins in lightcurve
-        N = lc_x.ncounts
+        N = lc_x.n
         # Number of segments averaged
         if not self.avg_covar:
             M = 1

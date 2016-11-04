@@ -345,6 +345,33 @@ class TestAveragedPowerspectrum(object):
         segment_size = 0.5
         assert AveragedPowerspectrum(lc_all, segment_size)
 
+        def rebin_several_averagedps(self, df):
+            """
+            TODO: Not sure how to write tests for the rebin method!
+            """
+
+            aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+                                        norm="Leahy")
+            bin_aps = aps.rebin(df)
+            assert np.isclose(bin_aps.freq[1]-bin_aps.freq[0], bin_aps.df,
+                              atol=1e-4, rtol=1e-4)
+            assert np.isclose(bin_aps.freq[0],
+                              (aps.freq[0]-aps.df*0.5+bin_aps.df*0.5),
+                              atol=1e-4, rtol=1e-4)
+
+        def test_rebin_averagedps(self):
+            df_all = [2, 3, 5, 1.5, 10, 45]
+            for df in df_all:
+                yield self.rebin_several, df
+
+        def test_rebin_with_invalid_type_attribute(self):
+            new_df = 2
+            aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+                                        norm='leahy')
+            aps.type = 'invalid_type'
+            with pytest.raises(AttributeError):
+                assert aps.rebin(df=new_df)
+
     def test_list_with_nonsense_component(self):
         n_lcs = 10
 
