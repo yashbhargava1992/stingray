@@ -90,8 +90,9 @@ def set_logprior(lpost, priors):
     """
 
     # get the number of free parameters in the model
-    free_params = [p for p in lpost.model.param_names if not
-                    getattr(lpost.model, p).fixed]
+    #free_params = [p for p in lpost.model.param_names if not
+    #                getattr(lpost.model, p).fixed]
+    free_params = [key for key, l in lpost.model.fixed.items() if not l]
 
     # define the logprior
     def logprior(t0, neg=False):
@@ -120,6 +121,8 @@ def set_logprior(lpost, priors):
 
         logp = 0.0
         for p, pname in zip(t0, free_params):
+            print("pname: " + str(pname))
+            print("val: " + str(p))
             logp += np.log(priors[pname](p))
 
         if not np.isfinite(logp):
@@ -151,6 +154,7 @@ class LogLikelihood(object):
         self.y = y
 
         self.model = model
+
 
     @abc.abstractmethod
     def evaluate(self, parameters):
@@ -190,8 +194,11 @@ class GaussianLogLikelihood(LogLikelihood):
         self.y = y
         self.yerr = yerr
         self.model = model
+        self.params = [k for k,l in self.model.fixed.items() if not l]
+        self.npar = len(self.params)
 
     def evaluate(self, pars):
+
         _fitter_to_model_params(self.model, pars)
 
         mean_model = self.model(self.x)
@@ -224,6 +231,8 @@ class PoissonLogLikelihood(LogLikelihood):
         self.x = x
         self.y = y
         self.model = model
+        self.params = [k for k,l in self.model.fixed.items() if not l]
+        self.npar = len(self.params)
 
     def evaluate(self, pars):
         _fitter_to_model_params(self.model, pars)
@@ -262,11 +271,22 @@ class PSDLogLikelihood(LogLikelihood):
         self.y = y
         self.model = model
         self.m = m
+        self.params = [k for k,l in self.model.fixed.items() if not l]
+        self.npar = len(self.params)
 
     def evaluate(self, pars, neg=False):
+
+        if np.size(pars) != self.npar:
+            raise IncorrectParameterError("Input parameters must" +
+                                          " match model parameters!")
+
         _fitter_to_model_params(self.model, pars)
 
+        print("self.model.parameters" + str(self.model.parameters))
+
         mean_model = self.model(self.x)
+        print("mean_model: " + str(mean_model))
+        print("len(mean_model): " + str(len(mean_model)))
 
         if self.m == 1:
             loglike = -np.sum(np.log(mean_model)) - \
@@ -275,7 +295,7 @@ class PSDLogLikelihood(LogLikelihood):
             loglike = -2.0*self.m*(np.sum(np.log(mean_model)) +
                                np.sum(self.y/mean_model) +
                                np.sum((2.0 / (2. * self.m) - 1.0) *
-                                      np.log(self.y[1:])))
+                                      np.log(self.y)))
 
         if not np.isfinite(loglike):
             loglike = logmin
@@ -351,6 +371,7 @@ class Posterior(object):
             raise LikelihoodUndefinedError("There is no likelihood implemented. " +
                                            "Cannot calculate posterior!")
 
+        print("t0: " + str(t0))
         lpost = self.loglikelihood(t0) + self.logprior(t0)
 
         if neg is True:
@@ -482,7 +503,7 @@ class PoissonPosterior(Posterior):
 
         _fitter_to_model_params(self.model, t0)
 
-        funcval = self.model(self.x[1:])
+        funcval = self.model(self.x)
 
         # THIS IS WRONG! FIX THIS!
         res = -funcval + self.y*np.log(funcval) - scipy_gamma(self.y + 1.)
@@ -527,7 +548,7 @@ class GaussianPosterior(Posterior):
                                                " match model parameters!"
 
         _fitter_to_model_params(self.model, t0)
-        funcval = self.model(self.x[1:])
+        funcval = self.model(self.x)
 
         # TODO: Add Gaussian likelihood
         res = 1.0

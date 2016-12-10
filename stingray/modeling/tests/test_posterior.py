@@ -8,6 +8,7 @@ from stingray import Lightcurve, Powerspectrum
 from stingray.modeling import Posterior, PSDPosterior
 from stingray.modeling import set_logprior
 from stingray.modeling.posterior import logmin
+from stingray.modeling.posterior import IncorrectParameterError
 
 np.random.seed(20150907)
 
@@ -19,6 +20,8 @@ class TestSetPrior(object):
         cls.lc = Lightcurve.make_lightcurve(photon_arrivals, dt=1.0)
         cls.ps = Powerspectrum(cls.lc, norm="frac")
         pl = models.PowerLaw1D()
+        pl.x_0.fixed = True
+
         cls.lpost = PSDPosterior(cls.ps, pl)
 
     def test_set_prior_runs(self):
@@ -37,7 +40,7 @@ class TestSetPrior(object):
         priors = {"alpha":p_alpha, "amplitude":p_amplitude}
         self.lpost.logprior = set_logprior(self.lpost, priors)
         true_logprior = np.log(1./6.) + np.log(1./20.0)
-        assert self.lpost.logprior([0.0, 0.0]) ==  true_logprior
+        assert self.lpost.logprior([np.exp(0.0), np.exp(0.0)]) ==  true_logprior
 
     def test_prior_returns_logmin_outside_prior_range(self):
         p_alpha = lambda alpha: ((-1. <= alpha) & (alpha <= 5.))/6.0
@@ -46,7 +49,7 @@ class TestSetPrior(object):
 
         priors = {"alpha":p_alpha, "amplitude":p_amplitude}
         self.lpost.logprior = set_logprior(self.lpost, priors)
-        assert self.lpost.logprior([0.0, 0.0]) ==  2*logmin
+        assert self.lpost.logprior([-2.0, np.exp(11.0)]) ==  logmin
 
 
 class PosteriorClassDummy(Posterior):
@@ -75,7 +78,7 @@ class TestPosterior(object):
         cls.p = PosteriorClassDummy(cls.x, cls.y, cls.model)
         p_alpha = lambda alpha: ((-1. <= alpha) & (alpha <= 5.))/6.0
 
-        priors = {"alpha":p_alpha}
+        priors = {"amplitude":p_alpha}
         cls.p.logprior = set_logprior(cls.p, priors)
 
     def test_inputs(self):
@@ -84,14 +87,14 @@ class TestPosterior(object):
         assert isinstance(self.p.model, models.Const1D)
 
     def test_call_method_positive(self):
-        t0 = [1,2,3]
+        t0 = [1]
         post = self.p(t0, neg=False)
-        assert post == 3.0
+        assert post == 1.0 + np.log(1./6.0)
 
     def test_call_method_negative(self):
-        t0 = [1,2,3]
+        t0 = [1]
         post = self.p(t0, neg=True)
-        assert post == -3.0
+        assert post == -(1.0 + np.log(1./6.0))
 
 
 class TestPSDPosterior(object):
@@ -115,58 +118,57 @@ class TestPSDPosterior(object):
         cls.a_mean, cls.a_var = 2.0, 1.0
 
         cls.model = models.Const1D()
-        cls.p = PosteriorClassDummy(ps.freq, ps.power, cls.model)
 
-        p_alpha = lambda amean, avar: scipy.stats.norm(loc=amean,
-                                                       scale=avar)
+        p_amplitude = lambda amplitude: \
+            scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
 
-        priors = {"alpha":p_alpha}
-        cls.p.logprior = set_logprior(cls.p, priors)
+        cls.priors = {"amplitude":p_amplitude}
 
     def test_logprior_fails_without_prior(self):
-        model = models.Const1D()
-        lpost = PSDPosterior(self.ps, model)
-        with pytest.raises(AssertionError):
+        lpost = PSDPosterior(self.ps, self.model)
+
+        with pytest.raises(AttributeError):
             lpost.logprior([1])
 
     def test_making_posterior(self):
         lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
         assert lpost.x.all() == self.ps.freq.all()
         assert lpost.y.all() == self.ps.power.all()
 
     def test_correct_number_of_parameters(self):
         lpost = PSDPosterior(self.ps, self.model)
-        with pytest.raises(AssertionError):
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        with pytest.raises(IncorrectParameterError):
             lpost([2,3])
 
     def test_logprior(self):
         t0 = [2.0]
 
         lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
         lp_test = lpost.logprior(t0)
         lp = np.log(scipy.stats.norm(2.0, 1.0).pdf(t0))
         assert lp == lp_test
 
     def test_loglikelihood(self):
         t0 = [2.0]
-        m = self.model(self.ps.freq[1:], t0)
-        loglike = -np.sum(self.ps.power[1:]/m + np.log(m))
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.ps.freq)
+        print("test mean_model: " + str(mean_model))
+        print("test len(mean_model):" + str(len(mean_model)))
+        loglike = -np.sum(np.log(mean_model)) - np.sum(self.ps.power/mean_model)
 
         lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
         loglike_test = lpost.loglikelihood(t0, neg=False)
 
         assert np.isclose(loglike, loglike_test)
 
-    def test_loglikelihood_correctly_leaves_out_zeroth_freq(self):
-        t0 = [2.0]
-        m = self.model(self.ps.freq, t0)
-        loglike = -np.sum(self.ps.power/m + np.log(m))
-
-        lpost = PSDPosterior(self.ps, self.model)
-        loglike_test = lpost.loglikelihood(t0, neg=False)
-
-        with pytest.raises(AssertionError):
-            assert np.isclose(loglike_test, loglike, atol=1.e-10, rtol=1.e-10)
 
     def test_negative_loglikelihood(self):
         t0 = [2.0]
@@ -174,6 +176,8 @@ class TestPSDPosterior(object):
         loglike = np.sum(self.ps.power[1:]/m + np.log(m))
 
         lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
         loglike_test = lpost.loglikelihood(t0, neg=True)
 
         assert np.isclose(loglike, loglike_test)
@@ -182,6 +186,8 @@ class TestPSDPosterior(object):
         t0 = [2.0]
         m = self.model(self.ps.freq[1:], t0)
         lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
         post_test = lpost(t0, neg=False)
 
         loglike = -np.sum(self.ps.power[1:]/m + np.log(m))
@@ -194,6 +200,8 @@ class TestPSDPosterior(object):
         t0 = [2.0]
         m = self.model(self.ps.freq[1:], t0)
         lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
         post_test = lpost(t0, neg=True)
 
         loglike = -np.sum(self.ps.power[1:]/m + np.log(m))
