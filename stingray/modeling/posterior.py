@@ -111,8 +111,6 @@ def set_logprior(lpost, priors):
             The logarithm of the prior distribution for the model and
             parameters given.
         """
-        print("len(free_params): " + str(len(free_params)))
-        print("len(t0): " + str(len(t0)))
 
         if len(t0) != len(free_params):
             raise IncorrectParameterError("The number of parameters passed into "
@@ -121,8 +119,6 @@ def set_logprior(lpost, priors):
 
         logp = 0.0
         for p, pname in zip(t0, free_params):
-            print("pname: " + str(pname))
-            print("val: " + str(p))
             logp += np.log(priors[pname](p))
 
         if not np.isfinite(logp):
@@ -164,8 +160,9 @@ class LogLikelihood(object):
         """
         pass
 
-    def __call__(self, parameters, **kwargs):
-        return self.evaluate(parameters, **kwargs)
+    def __call__(self, parameters, neg=False):
+        return self.evaluate(parameters, neg)
+
 
 
 class GaussianLogLikelihood(LogLikelihood):
@@ -197,7 +194,7 @@ class GaussianLogLikelihood(LogLikelihood):
         self.params = [k for k,l in self.model.fixed.items() if not l]
         self.npar = len(self.params)
 
-    def evaluate(self, pars):
+    def evaluate(self, pars, neg=False):
 
         _fitter_to_model_params(self.model, pars)
 
@@ -206,7 +203,13 @@ class GaussianLogLikelihood(LogLikelihood):
         loglike = np.sum(-0.5*np.log(2.*np.pi) - np.log(self.yerr) -
                          (self.y-mean_model)**2/(2.*self.yerr**2))
 
-        return loglike
+        if not np.isfinite(loglike):
+            loglike = logmin
+
+        if neg:
+            return -loglike
+        else:
+            return loglike
 
 
 class PoissonLogLikelihood(LogLikelihood):
@@ -234,7 +237,7 @@ class PoissonLogLikelihood(LogLikelihood):
         self.params = [k for k,l in self.model.fixed.items() if not l]
         self.npar = len(self.params)
 
-    def evaluate(self, pars):
+    def evaluate(self, pars, neg=False):
         _fitter_to_model_params(self.model, pars)
 
         mean_model = self.model(self.x)
@@ -242,7 +245,13 @@ class PoissonLogLikelihood(LogLikelihood):
         loglike = -mean_model + self.y*np.log(mean_model) \
                - scipy_gammaln(self.y + 1.)
 
-        return loglike
+        if not np.isfinite(loglike):
+            loglike = logmin
+
+        if neg:
+            return -loglike
+        else:
+            return loglike
 
 
 class PSDLogLikelihood(LogLikelihood):
@@ -282,11 +291,7 @@ class PSDLogLikelihood(LogLikelihood):
 
         _fitter_to_model_params(self.model, pars)
 
-        print("self.model.parameters" + str(self.model.parameters))
-
         mean_model = self.model(self.x)
-        print("mean_model: " + str(mean_model))
-        print("len(mean_model): " + str(len(mean_model)))
 
         if self.m == 1:
             loglike = -np.sum(np.log(mean_model)) - \
@@ -371,7 +376,6 @@ class Posterior(object):
             raise LikelihoodUndefinedError("There is no likelihood implemented. " +
                                            "Cannot calculate posterior!")
 
-        print("t0: " + str(t0))
         lpost = self.loglikelihood(t0) + self.logprior(t0)
 
         if neg is True:

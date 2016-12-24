@@ -71,7 +71,11 @@ class OptimizationResults(object):
     def _compute_covariance(self, lpost, res):
 
         if hasattr(res, "hess_inv"):
-            self.cov = np.asarray(res.hess_inv)
+            if not isinstance(res.hess_inv, np.ndarray):
+                self.cov = np.asarray(res.hess_inv.todense())
+            else:
+                self.cov = res.hess_inv
+
             self.err = np.sqrt(np.diag(self.cov))
         else:
             # calculate Hessian approximating with finite differences
@@ -116,8 +120,11 @@ class OptimizationResults(object):
 
         print("The best-fit model parameters plus errors are:")
 
-        for i, (x, y, p) in enumerate(zip(self.p_opt, self.err,
-                                          lpost.model.parnames)):
+        fixed = [lpost.model.fixed[n] for n in lpost.model.param_names]
+        parnames = [n for n, f in zip(lpost.model.param_names, fixed) \
+                    if f is False]
+
+        for i, (x, y, p) in enumerate(zip(self.p_opt, self.err, parnames)):
             print("%i) Parameter %s: %f.5 +/- %f.5f"%(i, p, x, y))
 
         print("\n")
@@ -565,11 +572,12 @@ class PSDParEst(ParameterEstimation):
 
 
     def compute_lrt(self, model1, t1, model2, t2, neg=True):
-
+        # TODO: Fix differences in superclass and subclass in whether I input
+        # model or posterior; it's too confusing!
         lpost1 = PSDPosterior(self.ps, model1)
         lpost2 = PSDPosterior(self.ps, model2)
 
-        lrt = ParameterEstimation.compute_lrt(self, lpost1, t1, lpost2, t2,
+        lrt = ParameterEstimation.compute_lrt(self, model1, t1, model2, t2,
                                               neg=neg)
 
         return lrt
