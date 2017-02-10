@@ -88,7 +88,7 @@ class Lightcurve(object):
 
         if len(time) != len(counts):
 
-            raise StingrayError("time are counts array are not "
+            raise StingrayError("time and counts array are not "
                                 "of the same length!")
 
         if len(time) <= 1:
