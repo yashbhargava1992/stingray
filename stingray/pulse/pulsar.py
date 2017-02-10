@@ -280,7 +280,7 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     if ntrial > 1:
         simon("fold: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
-    return stats.chi2.isf(epsilon, nbin - 1)
+    return stats.chi2.isf(epsilon/ntrial, nbin - 1)
 
 
 def z_n(phase, n=2, norm=1):
@@ -342,7 +342,7 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     return stats.chi2.isf(epsilon / ntrial, 2 * n)
 
 
-def z2_2_probability(z2, n=2, ntrial=1):
+def z2_n_probability(z2, n=2, ntrial=1):
     """Calculate the probability of a certain folded profile, due to noise.
 
     Parameters
@@ -365,7 +365,7 @@ def z2_2_probability(z2, n=2, ntrial=1):
     if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
-    return stats.chi2.sf(stat, 2 * n) * ntrial
+    return stats.chi2.sf(z2, 2 * n) * ntrial
 
 
 def fftfit_fun(profile, template, amplitude, phase):

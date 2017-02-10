@@ -1,4 +1,5 @@
 
+from astropy.tests.helper import pytest
 import numpy as np
 import stingray.utils as utils
 
@@ -47,19 +48,14 @@ class TestRebinData(object):
     def test_uneven_binned_counts(self):
         dx_new = 1.5
         xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
-        print(xbin)
-        print(ybin)
         ybin_test = np.zeros_like(xbin) + self.counts*dx_new/self.dx
         assert np.allclose(ybin_test, ybin)
 
     def test_rebin_data_should_raise_error_when_method_is_different_than_allowed(self):
         dx_new = 2.0
-        try:
-            utils.rebin_data(self.x, self.y, dx_new, method='not_allowed_method')
-        except utils.UnrecognizedMethod:
-            pass
-        else:
-            raise AssertionError("Expected exception does not occurred")
+        with pytest.raises(ValueError):
+            utils.rebin_data(self.x, self.y, dx_new,
+                             method='not_allowed_method')
 
 
 class TestUtils(object):
@@ -87,7 +83,7 @@ class TestUtils(object):
     def test_look_for_array(self):
         assert utils.look_for_array_in_array(np.arange(2), np.arange(1, 3))
         assert not utils.look_for_array_in_array(np.arange(2),
-                                                  np.arange(2, 4))
+                                                 np.arange(2, 4))
 
     def test_assign_value_if_none(self):
         assert utils.assign_value_if_none(None, 2) == 2
@@ -99,4 +95,3 @@ class TestUtils(object):
         cont = utils.contiguous_regions(array)
         assert np.all(cont == np.array([[1, 3], [4, 7]])), \
             'Contiguous region wrong'
-

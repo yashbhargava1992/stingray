@@ -5,7 +5,7 @@ import os
 
 from astropy.tests.helper import pytest
 
-from ..io import read, write
+from ..io import read, write, split_numbers
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
 from ..io import load_events_and_gtis
@@ -16,10 +16,17 @@ import warnings
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
 
+_H5PY_INSTALLED = True
+
+try:
+    import h5py
+except ImportError:
+    _H5PY_INSTALLED = False
+
+skip_condition = pytest.mark.skipif(not _H5PY_INSTALLED,
+    reason = "H5PY not installed.")
+
 class TestIO(object):
-
-    """Real unit tests."""
-
 
     def test_common_name(self):
         """Test the common_name function."""
@@ -51,7 +58,6 @@ class TestIO(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_events_and_gtis(fname, additional_columns=["PI"])
 
-
     def test_read_header_key(self):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
@@ -61,9 +67,16 @@ class TestIO(object):
     def test_read_mjdref(self):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
-        print(ref_mjd(fname))
         assert ref_mjd(fname) is not None
 
+    def test_split_number(self):
+        """Test split with high precision numbers."""
+        numbers = np.array([57401.0000003423423400453453, 
+            0.00000574010000003426646], dtype = np.longdouble)
+        number_I, number_F = split_numbers(numbers)
+        r_numbers = np.longdouble(number_I) + np.longdouble(number_F)
+
+        assert (numbers == r_numbers).all()
 
 class TestIOReadWrite(object):
     """A class to test all the read and write functions."""
@@ -72,26 +85,15 @@ class TestIOReadWrite(object):
         self.str = 'Test'
         self.list = [1,2,3]
         self.array = np.array([1,2,3])
-        self.long_number = np.longdouble(1)
+        self.long_number = np.longdouble(1.25)
         self.long_array = np.longdouble([1,2,3])
 
     def test_operation(self):
         return self.number * 10
 
-_H5PY_INSTALLED = True
-
-try:
-    import h5py
-except ImportError:
-    _H5PY_INSTALLED = False
-
-skip_condition = pytest.mark.skipif(not _H5PY_INSTALLED,
-    reason = "H5PY not installed.")
-
 class TestFileFormats(object):
 
     def test_pickle_read_write(self):
-        """Test pickle object writing and reading."""
         test_object = TestIOReadWrite()
         write(test_object, filename='test.pickle', format_='pickle')
         assert read('test.pickle', 'pickle') is not None
@@ -120,14 +122,12 @@ class TestFileFormats(object):
 
     @skip_condition
     def test_hdf5_write(self):
-        """Test write functionality of hdf5."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         os.remove('test.hdf5')
 
     @skip_condition
     def test_hdf5_read(self):
-        """Test read functionality of hdf5."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         read('test.hdf5','hdf5')
@@ -135,7 +135,6 @@ class TestFileFormats(object):
 
     @skip_condition
     def test_hdf5_data_recovery(self):
-        """Test if hdf5 stored data is properly recovered."""
         test_object = TestIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         rec_object = read('test.hdf5','hdf5')
@@ -146,7 +145,7 @@ class TestFileFormats(object):
         assert (rec_object['array'] == np.array(test_object.array)).all()
         assert rec_object['long_number'] == np.double(test_object.long_number)
         assert (rec_object['long_array'] == np.double(np.array(test_object.long_array))).all()
-        
+
         os.remove('test.hdf5')
 
     def test_save_ascii(self):
@@ -179,6 +178,39 @@ class TestFileFormats(object):
         read("ascii_test.txt", "ascii")
         os.remove("ascii_test.txt")
 
+    def test_fits_write(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.fits', 'fits')
+        os.remove('test.fits')
+
+    def test_fits_read(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.fits', 'fits')
+        read('test.fits','fits',cols=['array','number','long_number'])
+        os.remove('test.fits')
+
+    def test_fits_with_multiple_tables(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.fits', 'fits', tnames=['EVENTS', 'GTI'],
+            colsassign={'number':'GTI', 'array':'GTI'})
+        os.remove('test.fits')
+
+    def test_fits_data_recovery(self):
+        test_object = TestIOReadWrite()
+        write(test_object, 'test.fits', 'fits')
+        rec_object = read('test.fits', 'fits', cols = ['number', 'str', 'list',
+            'array','long_array','long_number'])
+
+        assert rec_object['NUMBER'] == test_object.number
+        assert rec_object['STR'] == test_object.str
+        assert (rec_object['LIST'] == test_object.list).all()
+        assert (rec_object['ARRAY'] == np.array(test_object.array)).all()
+        assert rec_object['LONG_NUMBER'] == np.double(test_object.long_number)
+        assert (rec_object['LONG_ARRAY'] == np.double(np.array(test_object.long_array))).all()
+
+        del rec_object
+        os.remove('test.fits')
+
     def test_savefig_matplotlib_not_installed(self):
         from ..io import savefig
         try:
@@ -194,7 +226,7 @@ class TestFileFormats(object):
     def test_savefig_without_plot(self):
         import matplotlib.pyplot as plt
         from ..io import savefig
-        plt.close()
+        plt.close("all")
         with warnings.catch_warnings(record=True) as w:
             savefig('test.png')
             assert "plot the image first" in str(w[0].message)

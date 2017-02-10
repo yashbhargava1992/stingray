@@ -17,3 +17,5 @@ if not _ASTROPY_SETUP_:
     from stingray.powerspectrum import *
     from stingray.crossspectrum import *
     from stingray import *
+    from stingray.exceptions import *
+    from stingray.covariancespectrum import *
