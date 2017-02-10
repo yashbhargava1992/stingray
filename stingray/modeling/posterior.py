@@ -456,7 +456,7 @@ class PSDPosterior(Posterior):
 
 class PoissonPosterior(Posterior):
 
-    def __init__(self, x, y, model):
+    def __init__(self, x, y, model, priors=None):
         """
         Posterior for Poisson lightcurve data. Primary intended use is for
         modelling X-ray light curves, but alternative uses are conceivable.
@@ -478,6 +478,17 @@ class PoissonPosterior(Posterior):
             be a prior to be calculated! If all this object is used
             for a maximum likelihood-style analysis, no prior is required.
 
+        priors : dict of form {"parameter name": function}, optional
+            A dictionary with the definitions for the prior probabilities.
+            For each parameter in `model`, there must be a prior defined with
+            a key of the exact same name as stored in `model.param_names`.
+            The item for each key is a function definition defining the prior
+            (e.g. a lambda function or a `scipy.stats.distribution.pdf`.
+            If `priors = None`, then no prior is set. This means priors need
+            to be added by hand using the `set_logprior` function defined in
+            this module. Note that it is impossible to call the posterior object
+            itself or the `self.logposterior` method without defining a prior.
+
         Attributes
         ----------
         x: numpy.ndarray
@@ -497,33 +508,18 @@ class PoissonPosterior(Posterior):
         self.x = x
         self.y = y
 
+        self.loglikelihood = PoissonLogLikelihood(self.x, self.y, model)
+
         Posterior.__init__(self, self.x, self.y, model)
 
-    def loglikelihood(self, t0, neg=False):
+        if not priors is None:
+            self.logprior = set_logprior(self, priors)
 
-        if np.size(t0) != self.model.parameters.shape[0]:
-            raise IncorrectParameterError("Input parameters must" +
-                                          " match model parameters!")
-
-        _fitter_to_model_params(self.model, t0)
-
-        funcval = self.model(self.x)
-
-        # THIS IS WRONG! FIX THIS!
-        res = -funcval + self.y*np.log(funcval) - scipy_gamma(self.y + 1.)
-
-        if np.isfinite(res) is False:
-            res = logmin
-
-        if neg:
-            return -res
-        else:
-            return res
 
 
 class GaussianPosterior(Posterior):
 
-    def __init__(self, x, y, model):
+    def __init__(self, x, y, model, priors=None):
         """
         A general class for two-dimensional data following a Gaussian
         sampling distribution.
@@ -544,23 +540,9 @@ class GaussianPosterior(Posterior):
             for a maximum likelihood-style analysis, no prior is required.
 
         """
+        self.loglikelihood = GaussianLogLikelihood(x, y, model)
+
         Posterior.__init__(self, x, y, model)
 
-    def loglikelihood(self, t0, neg=False):
-
-        assert np.size(t0) == self.model.npar, "Input parameters must" \
-                                               " match model parameters!"
-
-        _fitter_to_model_params(self.model, t0)
-        funcval = self.model(self.x)
-
-        # TODO: Add Gaussian likelihood
-        res = 1.0
-
-        if np.isfinite(res) is False:
-            res = logmin
-
-        if neg:
-            return -res
-        else:
-            return res
+        if not priors is None:
+            self.logprior = set_logprior(self, priors)
