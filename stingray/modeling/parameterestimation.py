@@ -561,8 +561,9 @@ class PSDParEst(ParameterEstimation):
 
         fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
 
-        res = ParameterEstimation.sample(self, self.lpost, fit_res.p_opt, cov=fit_res.cov,
-                                         priors=priors, nwalkers=nwalkers,
+        res = ParameterEstimation.sample(self, self.lpost, fit_res.p_opt,
+                                         cov=fit_res.cov, priors=priors,
+                                         nwalkers=nwalkers,
                                          niter=niter, burnin=burnin,
                                          threads=threads,
                                          print_results=print_results, plot=plot,

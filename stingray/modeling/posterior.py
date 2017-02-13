@@ -10,14 +10,13 @@ from astropy.modeling import models
 
 from stingray import Lightcurve, Powerspectrum
 
-# TODO: Find out whether there is a gamma function in numpy!
 # TODO: Add checks and balances to code
 
 #from stingray.modeling.parametricmodels import logmin
 
 __all__ = ["set_logprior", "Posterior", "PSDPosterior", "LogLikelihood",
            "PSDLogLikelihood", "GaussianLogLikelihood",
-            "PoissonPosterior", "GaussianPosterior",
+           "PoissonPosterior", "GaussianPosterior",
            "PriorUndefinedError", "LikelihoodUndefinedError"]
 
 logmin = -10000000000000000.0
@@ -151,7 +150,6 @@ class LogLikelihood(object):
 
         self.model = model
 
-
     @abc.abstractmethod
     def evaluate(self, parameters):
         """
@@ -162,7 +160,6 @@ class LogLikelihood(object):
 
     def __call__(self, parameters, neg=False):
         return self.evaluate(parameters, neg)
-
 
 
 class GaussianLogLikelihood(LogLikelihood):
@@ -180,7 +177,7 @@ class GaussianLogLikelihood(LogLikelihood):
             y-coordinte of the data
 
         yerr: iterable
-            the error on the data
+            the uncertainty on the data, as standard deviation
 
         model: an Astropy Model instance
             The model to use in the likelihood.
@@ -191,10 +188,14 @@ class GaussianLogLikelihood(LogLikelihood):
         self.y = y
         self.yerr = yerr
         self.model = model
+
         self.params = [k for k,l in self.model.fixed.items() if not l]
         self.npar = len(self.params)
 
     def evaluate(self, pars, neg=False):
+        if np.size(pars) != self.npar:
+            raise IncorrectParameterError("Input parameters must" +
+                                          " match model parameters!")
 
         _fitter_to_model_params(self.model, pars)
 
@@ -238,12 +239,17 @@ class PoissonLogLikelihood(LogLikelihood):
         self.npar = len(self.params)
 
     def evaluate(self, pars, neg=False):
+
+        if np.size(pars) != self.npar:
+            raise IncorrectParameterError("Input parameters must" +
+                                          " match model parameters!")
+
         _fitter_to_model_params(self.model, pars)
 
         mean_model = self.model(self.x)
 
-        loglike = -mean_model + self.y*np.log(mean_model) \
-               - scipy_gammaln(self.y + 1.)
+        loglike = np.sum(-mean_model + self.y*np.log(mean_model) \
+               - scipy_gammaln(self.y + 1.))
 
         if not np.isfinite(loglike):
             loglike = logmin
@@ -446,13 +452,14 @@ class PSDPosterior(Posterior):
         """
         self.loglikelihood = PSDLogLikelihood(ps.freq,
                                               ps.power,
-                                              model)
+                                              model, m=ps.m)
 
         self.m = ps.m
         Posterior.__init__(self, ps.freq, ps.power, model)
 
         if not priors is None:
             self.logprior = set_logprior(self, priors)
+
 
 class PoissonPosterior(Posterior):
 
@@ -516,10 +523,9 @@ class PoissonPosterior(Posterior):
             self.logprior = set_logprior(self, priors)
 
 
-
 class GaussianPosterior(Posterior):
 
-    def __init__(self, x, y, model, priors=None):
+    def __init__(self, x, y, yerr, model, priors=None):
         """
         A general class for two-dimensional data following a Gaussian
         sampling distribution.
@@ -532,6 +538,9 @@ class GaussianPosterior(Posterior):
         y: numpy.ndarray
             dependent variable
 
+        yerr: numpy.ndarray
+            measurement uncertainties for y
+
         model: instance of any subclass of parameterclass.ParametricModel
             The model for the power spectrum. Note that in order to define
             the posterior properly, the ParametricModel subclass must be
@@ -540,9 +549,11 @@ class GaussianPosterior(Posterior):
             for a maximum likelihood-style analysis, no prior is required.
 
         """
-        self.loglikelihood = GaussianLogLikelihood(x, y, model)
+        self.loglikelihood = GaussianLogLikelihood(x, y, yerr, model)
 
         Posterior.__init__(self, x, y, model)
+
+        self.yerr = yerr
 
         if not priors is None:
             self.logprior = set_logprior(self, priors)

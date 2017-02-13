@@ -1,11 +1,13 @@
 import numpy as np
 import scipy.stats
+import copy
 
 from astropy.tests.helper import pytest
 from astropy.modeling import models
+from scipy.special import gammaln as scipy_gammaln
 
 from stingray import Lightcurve, Powerspectrum
-from stingray.modeling import Posterior, PSDPosterior
+from stingray.modeling import Posterior, PSDPosterior, PoissonPosterior, GaussianPosterior
 from stingray.modeling import set_logprior
 from stingray.modeling.posterior import logmin
 from stingray.modeling.posterior import IncorrectParameterError
@@ -158,8 +160,7 @@ class TestPSDPosterior(object):
         t0 = [2.0]
         self.model.amplitude = t0[0]
         mean_model = self.model(self.ps.freq)
-        print("test mean_model: " + str(mean_model))
-        print("test len(mean_model):" + str(len(mean_model)))
+
         loglike = -np.sum(np.log(mean_model)) - np.sum(self.ps.power/mean_model)
 
         lpost = PSDPosterior(self.ps, self.model)
@@ -210,33 +211,403 @@ class TestPSDPosterior(object):
 
         assert np.isclose(post_test, post, atol=1.e-10)
 
+
+class TestPoissonPosterior(object):
+
+    @classmethod
+    def setup_class(cls):
+
+        nx = 1000000
+        cls.x = np.arange(nx)
+        cls.countrate = 10.0
+        cls.y = np.random.poisson(cls.countrate, size=cls.x.shape[0])
+
+        cls.model = models.Const1D()
+
+        p_amplitude = lambda amplitude: \
+            scipy.stats.norm(loc=cls.countrate, scale=cls.countrate).pdf(amplitude)
+
+        cls.priors = {"amplitude":p_amplitude}
+
+    def test_logprior_fails_without_prior(self):
+        lpost = PoissonPosterior(self.x, self.y, self.model)
+
+        with pytest.raises(AttributeError):
+            lpost.logprior([10])
+
+    def test_making_posterior(self):
+        lpost = PoissonPosterior(self.x, self.y, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        assert lpost.x.all() == self.x.all()
+        assert lpost.y.all() == self.y.all()
+
+    def test_correct_number_of_parameters(self):
+        lpost = PoissonPosterior(self.x, self.y, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        with pytest.raises(IncorrectParameterError):
+            lpost([2,3])
+
+    def test_logprior(self):
+        t0 = [10.0]
+
+        lpost = PoissonPosterior(self.x, self.y, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        lp_test = lpost.logprior(t0)
+        lp = np.log(scipy.stats.norm(self.countrate, self.countrate).pdf(t0))
+        assert lp == lp_test
+
+    def test_loglikelihood(self):
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        loglike = np.sum(-mean_model + self.y*np.log(mean_model) - scipy_gammaln(self.y+1))
+
+        lpost = PoissonPosterior(self.x, self.y, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        loglike_test = lpost.loglikelihood(t0, neg=False)
+
+        assert np.isclose(loglike, loglike_test)
+
+
+    def test_negative_loglikelihood(self):
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        loglike = -np.sum(-mean_model + self.y*np.log(mean_model) - scipy_gammaln(self.y+1))
+
+        lpost = PoissonPosterior(self.x, self.y, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        loglike_test = lpost.loglikelihood(t0, neg=True)
+
+        assert np.isclose(loglike, loglike_test)
+
+    def test_posterior(self):
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        lpost = PoissonPosterior(self.x, self.y, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        post_test = lpost(t0, neg=False)
+
+        loglike = np.sum(-mean_model + self.y*np.log(mean_model) - scipy_gammaln(self.y+1))
+        logprior = np.log(scipy.stats.norm(self.countrate, self.countrate).pdf(t0))
+
+        post = loglike + logprior
+
+        assert np.isclose(post_test, post, atol=1.e-10)
+
+    def test_negative_posterior(self):
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        lpost = PoissonPosterior(self.x, self.y, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        post_test = lpost(t0, neg=True)
+
+        loglike = np.sum(-mean_model + self.y*np.log(mean_model) - scipy_gammaln(self.y+1))
+        logprior = np.log(scipy.stats.norm(self.countrate, self.countrate).pdf(t0))
+
+        post = -loglike - logprior
+
+        assert np.isclose(post_test, post, atol=1.e-10)
+
+    def test_counts_are_nan(self):
+        y = np.nan * np.ones(self.x.shape[0])
+
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        lpost = PoissonPosterior(self.x, y, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        assert np.isclose(lpost(t0), logmin, 1e-5)
+
+class TestGaussianPosterior(object):
+
+    @classmethod
+    def setup_class(cls):
+
+        nx = 1000000
+        cls.x = np.arange(nx)
+        cls.countrate = 10.0
+        cls.cerr = 2.0
+        cls.y = np.random.normal(cls.countrate, cls.cerr, size=cls.x.shape[0])
+        cls.yerr = np.ones_like(cls.y)*cls.cerr
+
+        cls.model = models.Const1D()
+
+        p_amplitude = lambda amplitude: \
+            scipy.stats.norm(loc=cls.countrate, scale=cls.cerr).pdf(amplitude)
+
+        cls.priors = {"amplitude":p_amplitude}
+
+    def test_logprior_fails_without_prior(self):
+        lpost = GaussianPosterior(self.x, self.y, self.yerr, self.model)
+
+        with pytest.raises(AttributeError):
+            lpost.logprior([10])
+
+    def test_making_posterior(self):
+        lpost = GaussianPosterior(self.x, self.y, self.yerr, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        assert lpost.x.all() == self.x.all()
+        assert lpost.y.all() == self.y.all()
+
+    def test_correct_number_of_parameters(self):
+        lpost = GaussianPosterior(self.x, self.y, self.yerr, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        with pytest.raises(IncorrectParameterError):
+            lpost([2,3])
+
+    def test_logprior(self):
+        t0 = [10.0]
+
+        lpost = GaussianPosterior(self.x, self.y, self.yerr, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        lp_test = lpost.logprior(t0)
+        lp = np.log(scipy.stats.norm(self.countrate, self.cerr).pdf(t0))
+        assert lp == lp_test
+
+    def test_loglikelihood(self):
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        loglike = np.sum(-0.5*np.log(2.*np.pi) - np.log(self.yerr) - \
+                         0.5*((self.y - mean_model)/self.yerr)**2.0)
+
+        lpost = GaussianPosterior(self.x, self.y, self.yerr, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        loglike_test = lpost.loglikelihood(t0, neg=False)
+
+        assert np.isclose(loglike, loglike_test)
+
+
+    def test_negative_loglikelihood(self):
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        loglike = -np.sum(-0.5*np.log(2.*np.pi) - np.log(self.yerr) - \
+                         0.5*((self.y - mean_model)/self.yerr)**2.0)
+
+        lpost = GaussianPosterior(self.x, self.y, self.yerr, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        loglike_test = lpost.loglikelihood(t0, neg=True)
+
+        assert np.isclose(loglike, loglike_test)
+
+    def test_posterior(self):
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        lpost = GaussianPosterior(self.x, self.y, self.yerr, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        post_test = lpost(t0, neg=False)
+
+        loglike = np.sum(-0.5*np.log(2.*np.pi) - np.log(self.yerr) - \
+                         0.5*((self.y - mean_model)/self.yerr)**2.0)
+        logprior = np.log(scipy.stats.norm(self.countrate, self.cerr).pdf(t0))
+
+        post = loglike + logprior
+
+        assert np.isclose(post_test, post, atol=1.e-10)
+
+    def test_negative_posterior(self):
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.x)
+
+        lpost = GaussianPosterior(self.x, self.y, self.yerr, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        post_test = lpost(t0, neg=True)
+
+        loglike = np.sum(-0.5*np.log(2.*np.pi) - np.log(self.yerr) - \
+                         0.5*((self.y - mean_model)/self.yerr)**2.0)
+        logprior = np.log(scipy.stats.norm(self.countrate, self.cerr).pdf(t0))
+
+        post = -loglike - logprior
+
+        assert np.isclose(post_test, post, atol=1.e-10)
+
+    def test_counts_are_nan(self):
+        y = np.nan * np.ones(self.x.shape[0])
+
+        t0 = [10.0]
+        self.model.amplitude = t0[0]
+
+        lpost = GaussianPosterior(self.x, y, self.yerr, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        assert np.isclose(lpost(t0), logmin, 1e-5)
+
+
+
 class TestPerPosteriorAveragedPeriodogram(object):
 
     @classmethod
     def setup_class(cls):
 
-        m = 10
+        cls.m = 10
         nfreq = 1000000
         freq = np.arange(nfreq)
-        noise = scipy.stats.chi2(2.*m).rvs(size=nfreq)/np.float(m)
+        noise = scipy.stats.chi2(2.*cls.m).rvs(size=nfreq)/np.float(cls.m)
         power = noise
 
         ps = Powerspectrum()
         ps.freq = freq
         ps.power = power
-        ps.m = m
+        ps.m = cls.m
         ps.df = freq[1]-freq[0]
         ps.norm = "leahy"
+
 
         cls.ps = ps
         cls.a_mean, cls.a_var = 2.0, 1.0
 
         cls.model = models.Const1D()
 
-    def test_likelihood(self):
+        p_amplitude = lambda amplitude: \
+            scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
+
+        cls.priors = {"amplitude":p_amplitude}
+
+    def test_logprior_fails_without_prior(self):
+        lpost = PSDPosterior(self.ps, self.model)
+
+        with pytest.raises(AttributeError):
+            lpost.logprior([1])
+
+    def test_making_posterior(self):
+        lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        assert lpost.x.all() == self.ps.freq.all()
+        assert lpost.y.all() == self.ps.power.all()
+
+    def test_correct_number_of_parameters(self):
+        lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        with pytest.raises(IncorrectParameterError):
+            lpost([2,3])
+
+    def test_logprior(self):
+        t0 = [2.0]
+
+        lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        lp_test = lpost.logprior(t0)
+        lp = np.log(scipy.stats.norm(2.0, 1.0).pdf(t0))
+        assert lp == lp_test
+
+    def test_loglikelihood(self):
+        t0 = [2.0]
+        self.model.amplitude = t0[0]
+        mean_model = self.model(self.ps.freq)
+
+        loglike = -2.0*self.m*(np.sum(np.log(mean_model)) +
+                               np.sum(self.ps.power/mean_model) +
+                               np.sum((2.0 / (2. * self.m) - 1.0) *
+                                      np.log(self.ps.power)))
+
+        lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        loglike_test = lpost.loglikelihood(t0, neg=False)
+
+        assert np.isclose(loglike, loglike_test)
+
+
+    def test_negative_loglikelihood(self):
+        t0 = [2.0]
+        self.model.amplitude = t0[0]
+
+        mean_model = self.model(self.ps.freq)
+
+        loglike = 2.0*self.m*(np.sum(np.log(mean_model)) +
+                               np.sum(self.ps.power/mean_model) +
+                               np.sum((2.0 / (2. * self.m) - 1.0) *
+                                      np.log(self.ps.power)))
+
+
+        lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        loglike_test = lpost.loglikelihood(t0, neg=True)
+
+        assert np.isclose(loglike, loglike_test)
+
+    def test_posterior(self):
+        t0 = [2.0]
+        self.model.amplitude = t0[0]
+
+        mean_model = self.model(self.ps.freq)
+        lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        post_test = lpost(t0, neg=False)
+
+        loglike = -2.0*self.m*(np.sum(np.log(mean_model)) +
+                               np.sum(self.ps.power/mean_model) +
+                               np.sum((2.0 / (2. * self.m) - 1.0) *
+                                      np.log(self.ps.power)))
+
+        logprior = np.log(scipy.stats.norm(2.0, 1.0).pdf(t0))
+        post = loglike + logprior
+
+        assert np.isclose(post_test, post, atol=1.e-10)
+
+    def test_negative_posterior(self):
+        t0 = [2.0]
+        self.model.amplitude = t0[0]
+
+        mean_model = self.model(self.ps.freq)
+        lpost = PSDPosterior(self.ps, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
+
+        post_test = lpost(t0, neg=True)
+
+        loglike = -2.0*self.m*(np.sum(np.log(mean_model)) +
+                               np.sum(self.ps.power/mean_model) +
+                               np.sum((2.0 / (2. * self.m) - 1.0) *
+                                      np.log(self.ps.power)))
+
+        logprior = np.log(scipy.stats.norm(2.0, 1.0).pdf(t0))
+        post = -loglike - logprior
+
+        assert np.isclose(post_test, post, atol=1.e-10)
+
+    def test_counts_are_nan(self):
+        y = np.nan * np.ones_like(self.ps.freq)
+
+        ps_nan = copy.copy(self.ps)
+        ps_nan.power = np.nan*np.ones_like(self.ps.freq)
+
         t0 = [2.0]
         m = self.model(self.ps.freq[1:], t0)
-        ## TODO: Finish this test!
+        lpost = PSDPosterior(ps_nan, self.model)
+        lpost.logprior = set_logprior(lpost, self.priors)
 
-## TODO: Write tests for Lightcurve posterior
-## TODO: Write tests for Gaussian posterior
+        assert np.isclose(lpost(t0), logmin, 1e-5)
