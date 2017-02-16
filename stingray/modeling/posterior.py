@@ -116,9 +116,13 @@ def set_logprior(lpost, priors):
                                           "the prior does not match the number "
                                           "of parameters in the model.")
 
-        logp = 0.0
-        ii = 0
+        logp = 0.0 # initialize log-prior
+        ii = 0 # counter for the variable parameter
 
+        # loop through all parameter names, but only compute
+        # prior for those that are not fixed
+        # Note: need to do it this way to preserve order of parameters
+        # correctly!
         for pname in lpost.model.param_names:
             if not lpost.model.fixed[pname]:
                 logp += np.log(priors[pname](t0[ii]))

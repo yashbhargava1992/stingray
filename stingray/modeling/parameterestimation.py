@@ -83,7 +83,7 @@ class OptimizationResults(object):
             phess = approx_hess(self.p_opt, lpost)
 
             self.cov = np.linalg.inv(phess)
-            self.err = np.sqrt(np.diag(self.cov))
+            self.err = np.sqrt(np.diag(np.abs(self.cov)))
 
     def _compute_model(self, lpost):
 
@@ -277,16 +277,36 @@ class ParameterEstimation(object):
 
         return res
 
-    def compute_lrt(self, lpost1, t1, lpost2, t2, neg=True):
+    def compute_lrt(self, lpost1, t1, lpost2, t2, neg=True, max_post=False):
         """
         This function computes the Likelihood Ratio Test between two
         nested models.
 
         Parameters
         ----------
+        lpost1 : object of a subclass of Posterior
+            The posterior object for model 1
 
+        t1 : iterable
+            The starting parameters for model 1
+
+        lpost2 : object of a subclass of Posterior
+            The posterior object for model 2
+
+        t2 : iterable
+            The starting parameters for model 2
+
+        neg : bool, optional, default True
+            Boolean flag to decide whether to use the negative log-likelihood
+            or log-posterior
+
+        max_post: bool, optional, default False
+            If True, set the internal state to do the optimization with the
+            log-likelihood rather than the log-posterior.
 
         """
+
+        self.max_post = max_post
 
         # fit data with both models
         res1 = self.fit(lpost1, t1, neg=neg)
@@ -297,7 +317,7 @@ class ParameterEstimation(object):
 
         return lrt
 
-    def sample(self, lpost, t0, cov=None, priors=None,
+    def sample(self, lpost, t0, cov=None,
                nwalkers=500, niter=100, burnin=100, threads=1,
                print_results=True, plot=False, namestr="test"):
         """
@@ -350,7 +370,8 @@ class ParameterEstimation(object):
         res : SamplingResults object
 
         """
-        assert can_sample is True, "emcee not installed! Can't sample!"
+        if not can_sample:
+            raise ImportError("emcee not installed! Can't sample!")
 
         ndim = len(t0)
 
