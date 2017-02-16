@@ -1,5 +1,6 @@
 
-__all__ = ["OptimizationResults", "ParameterEstimation", "PSDParEst"]
+__all__ = ["OptimizationResults", "ParameterEstimation", "PSDParEst",
+           "SamplingResults"]
 
 
 # check whether matplotlib is installed for easy plotting
@@ -222,7 +223,7 @@ class ParameterEstimation(object):
             raise TypeError("lpost must be a subclass of "
                             "Posterior or LogLikelihoood.")
 
-        if not len(t0) == lpost.model.npar:
+        if not len(t0) == lpost.npar:
             raise ValueError("Parameter set t0 must be of right "
                              "length for model in lpost.")
 
@@ -378,7 +379,7 @@ class ParameterEstimation(object):
         if cov is None:
             # do a MAP fitting step to find good starting positions for
             # the sampler
-            res = self.fit(lpost.model, t0, neg=True)
+            res = self.fit(lpost, t0, neg=True)
             cov = res.cov
         # sample random starting positions for each walker from
         # a multivariate Gaussian
@@ -608,7 +609,7 @@ class PSDParEst(ParameterEstimation):
         fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
 
         res = ParameterEstimation.sample(self, self.lpost, fit_res.p_opt,
-                                         cov=fit_res.cov, priors=priors,
+                                         cov=fit_res.cov,
                                          nwalkers=nwalkers,
                                          niter=niter, burnin=burnin,
                                          threads=threads,
@@ -618,8 +619,7 @@ class PSDParEst(ParameterEstimation):
         return res
 
 
-    def compute_lrt(self, lpost1, t1, lpost2, t2, neg=True):
-
+    def compute_lrt(self, lpost1, t1, lpost2, t2, neg=True, max_post=False):
 
         lrt = ParameterEstimation.compute_lrt(self, lpost1, t1, lpost2, t2,
                                               neg=neg)
@@ -628,7 +628,7 @@ class PSDParEst(ParameterEstimation):
 
     def _compute_highest_outlier(self, lpost, res, nmax=1):
 
-        residuals = 2.0 * lpost.y[1:] / res.mfit[1:]
+        residuals = 2.0 * lpost.y/ res.mfit
 
         ratio_sort = copy.copy(residuals)
         ratio_sort.sort()
@@ -649,7 +649,8 @@ class PSDParEst(ParameterEstimation):
 
         return max_x, max_ind
 
-    def plotfits(self, res1, res2=None, namestr='test', log=False):
+    def plotfits(self, res1, res2=None, save_plot=False,
+                 namestr='test', log=False):
 
         if not can_plot:
             print("No matplotlib imported. Can't plot!")
@@ -665,8 +666,8 @@ class PSDParEst(ParameterEstimation):
             s1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
 
             if log:
-                logx = np.log10(self.ps.freq[1:])
-                logy = np.log10(self.ps.power[1:])
+                logx = np.log10(self.ps.freq)
+                logy = np.log10(self.ps.power)
                 logpar1 = np.log10(res1.mfit)
 
                 p1, = s1.plot(logx, logy, color='black', linestyle='steps-mid')
@@ -681,17 +682,17 @@ class PSDParEst(ParameterEstimation):
                     s1.set_ylabel("log(Power)", fontsize=18)
 
             else:
-                p1, = s1.plot(self.ps.freq[1:], self.ps.power[1:],
+                p1, = s1.plot(self.ps.freq, self.ps.power,
                               color='black', linestyle='steps-mid')
-                p2, = s1.plot(self.ps.freq[1:], res1.mfit,
+                p2, = s1.plot(self.ps.freq, res1.mfit,
                               color='blue', lw=2)
 
                 s1.set_xscale("log")
                 s1.set_yscale("log")
 
-                s1.set_xlim([min(self.ps.freq[1:]), max(self.ps.power[1:])])
-                s1.set_ylim([min(self.ps.freq[1:])/10.0,
-                             max(self.ps.power[1:])*10.0])
+                s1.set_xlim([min(self.ps.freq), max(self.ps.freq)])
+                s1.set_ylim([min(self.ps.freq)/10.0,
+                             max(self.ps.power)*10.0])
 
                 if self.ps.norm == "leahy":
                     s1.set_ylabel('Leahy-Normalized Power', fontsize=18)
@@ -705,7 +706,7 @@ class PSDParEst(ParameterEstimation):
                     logpar2 = np.log10(res2.mfit)
                     p3, = s1.plot(logx, logpar2, color='red', lw=2)
                 else:
-                    p3, = s1.plot(self.ps.freq[1:], res2.mfit,
+                    p3, = s1.plot(self.ps.freq, res2.mfit,
                                   color='red', lw=2)
                 s1.legend([p1, p2, p3], ["data", "model 1 fit", "model 2 fit"])
             else:
@@ -716,54 +717,54 @@ class PSDParEst(ParameterEstimation):
 
             # second subplot: power/model for Power law and straight line
             s2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1)
-            pldif = self.ps.power[1:] / res1.mfit
+            pldif = self.ps.power / res1.mfit
 
-            s2.set_ylabel("Residuals, \n" + res1.model.name + " model",
+            s2.set_ylabel("Residuals, \n first model",
                           fontsize=18)
 
             if log:
                 s2.plot(logx, pldif, color='black', linestyle='steps-mid')
-                s2.plot(logx, np.ones(self.ps.freq[1:].shape[0]),
+                s2.plot(logx, np.ones(self.ps.freq.shape[0]),
                         color='blue', lw=2)
                 s2.set_xlim([min(logx), max(logx)])
                 s2.set_ylim([min(pldif), max(pldif)])
 
             else:
-                s2.plot(self.ps.freq[1:], pldif, color='black',
+                s2.plot(self.ps.freq, pldif, color='black',
                         linestyle='steps-mid')
-                s2.plot(self.ps.power[1:], np.ones(self.ps.power.shape[0]),
+                s2.plot(self.ps.power, np.ones(self.ps.power.shape[0]),
                         color='blue', lw=2)
 
                 s2.set_xscale("log")
                 s2.set_yscale("log")
-                s2.set_xlim([min(self.ps.freq[1:]), max(self.ps.freq[1:])])
+                s2.set_xlim([min(self.ps.freq), max(self.ps.freq)])
                 s2.set_ylim([min(pldif), max(pldif)])
 
             if res2 is not None:
-                bpldif = self.ps.power[1:]/res2.mfit
+                bpldif = self.ps.power/res2.mfit
 
             # third subplot: power/model for bent power law and straight line
                 s3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1)
 
                 if log:
                     s3.plot(logx, bpldif, color='black', linestyle='steps-mid')
-                    s3.plot(logx, np.ones(len(self.ps.freq[1:])),
+                    s3.plot(logx, np.ones(len(self.ps.freq)),
                             color='red', lw=2)
                     s3.axis([min(logx), max(logx), min(bpldif), max(bpldif)])
                     s3.set_xlabel("log(Frequency) [Hz]", fontsize=18)
 
                 else:
-                    s3.plot(self.ps.freq[1:], bpldif,
+                    s3.plot(self.ps.freq, bpldif,
                             color='black', linestyle='steps-mid')
-                    s3.plot(self.ps.freq[1:], np.ones(len(self.ps.freq[1:])),
+                    s3.plot(self.ps.freq, np.ones(len(self.ps.freq)),
                             color='red', lw=2)
                     s3.set_xscale("log")
                     s3.set_yscale("log")
-                    s3.set_xlim([min(self.ps.freq[1:]), max(self.ps.freq[1:])])
+                    s3.set_xlim([min(self.ps.freq), max(self.ps.freq)])
                     s3.set_ylim([min(bpldif), max(bpldif)])
                     s3.set_xlabel("Frequency [Hz]", fontsize=18)
 
-                s3.set_ylabel("Residuals, \n" + res2.model.name + " model",
+                s3.set_ylabel("Residuals, \n second model",
                               fontsize=18)
 
             else:
@@ -781,8 +782,8 @@ class PSDParEst(ParameterEstimation):
             # appear there
             plt.setp(s1.get_xticklabels(), visible=False)
 
-            # save figure in png file and close plot device
-            plt.savefig(namestr + '_ps_fit.png', format='png')
-            plt.close()
+            if save_plot:
+                # save figure in png file and close plot device
+                plt.savefig(namestr + '_ps_fit.png', format='png')
 
         return

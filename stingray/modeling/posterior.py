@@ -197,8 +197,11 @@ class GaussianLogLikelihood(LogLikelihood):
         self.yerr = yerr
         self.model = model
 
-        self.params = [k for k,l in self.model.fixed.items() if not l]
-        self.npar = len(self.params)
+        self.npar = 0
+        for pname in self.model.param_names:
+            if not self.model.fixed[pname]:
+                self.npar += 1
+
 
     def evaluate(self, pars, neg=False):
         if np.size(pars) != self.npar:
@@ -243,8 +246,10 @@ class PoissonLogLikelihood(LogLikelihood):
         self.x = x
         self.y = y
         self.model = model
-        self.params = [k for k,l in self.model.fixed.items() if not l]
-        self.npar = len(self.params)
+        self.npar = 0
+        for pname in self.model.param_names:
+            if not self.model.fixed[pname]:
+                self.npar += 1
 
     def evaluate(self, pars, neg=False):
 
@@ -294,8 +299,10 @@ class PSDLogLikelihood(LogLikelihood):
         self.y = y
         self.model = model
         self.m = m
-        self.params = [k for k,l in self.model.fixed.items() if not l]
-        self.npar = len(self.params)
+        self.npar = 0
+        for pname in self.model.param_names:
+            if not self.model.fixed[pname]:
+                self.npar += 1
 
     def evaluate(self, pars, neg=False):
 
@@ -356,9 +363,9 @@ class Posterior(object):
         y : iterable
             The ordinate or dependent variable of the data.
 
-        model: ParametricModel subclass instance
-            The parametric model supposed to represent the data. Has to be
-             an instance of a subclass of ParametricModel.
+        model: astropy.modeling.models class instance
+            The parametric model supposed to represent the data. For details
+            see the astropy.modeling documentation
 
 
         References
@@ -378,7 +385,11 @@ class Posterior(object):
         self.y = y
 
         self.model = model
-        self.model.npar = model.parameters.shape[0]
+
+        self.npar = 0
+        for pname in self.model.param_names:
+            if not self.model.fixed[pname]:
+                self.npar += 1
 
     def logposterior(self, t0, neg=False):
 

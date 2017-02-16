@@ -7,10 +7,13 @@ from astropy.modeling.fitting import _fitter_to_model_params
 
 from stingray import Powerspectrum
 
-from stingray.modeling import ParameterEstimation, PSDParEst, OptimizationResults
+from stingray.modeling import ParameterEstimation, PSDParEst, \
+    OptimizationResults, SamplingResults
 from stingray.modeling import PSDPosterior, set_logprior
 
 from statsmodels.tools.numdiff import approx_hess
+import emcee
+
 
 class TestParameterEstimation(object):
 
@@ -120,13 +123,12 @@ class TestParameterEstimation(object):
     def test_sampler_runs(self):
 
         pe = ParameterEstimation()
-        sample_res = pe.sample(self.lpost, [2.0], nwalkers=200, niter=100,
-                               burnin=100, print_results=True, plot=False)
+        sample_res = pe.sample(self.lpost, [2.0], nwalkers=100, niter=10,
+                               burnin=50, print_results=True, plot=False)
 
 
         assert sample_res.acceptance > 0.25
-
-
+        assert isinstance(sample_res, SamplingResults)
 
 
 
@@ -406,3 +408,187 @@ class TestOptimizationResultInternalFunctions(object):
         assert np.all(optres.cov == hess_inv)
         assert np.all(optres.err == np.sqrt(np.diag(np.abs(hess_inv))))
 
+
+class SamplingResultsDummy(SamplingResults):
+
+    def __init__(self, sampler, ci_min=0.05, ci_max=0.95):
+
+        # store all the samples
+        self.samples = sampler.flatchain
+
+        self.nwalkers = np.float(sampler.chain.shape[0])
+        self.niter = np.float(sampler.iterations)
+
+        # store number of dimensions
+        self.ndim = sampler.dim
+
+        # compute and store acceptance fraction
+        self.acceptance = np.nanmean(sampler.acceptance_fraction)
+        self.L = self.acceptance*self.samples.shape[0]
+
+
+
+class TestSamplingResults(object):
+
+    @classmethod
+    def setup_class(cls):
+        m = 1
+        nfreq = 1000000
+        freq = np.arange(nfreq)
+        noise = np.random.exponential(size=nfreq)
+        power = noise*2.0
+
+        ps = Powerspectrum()
+        ps.freq = freq
+        ps.power = power
+        ps.m = m
+        ps.df = freq[1]-freq[0]
+        ps.norm = "leahy"
+
+        cls.ps = ps
+        cls.a_mean, cls.a_var = 2.0, 1.0
+
+        cls.model = models.Const1D()
+
+        p_amplitude = lambda amplitude: \
+            scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
+
+        cls.priors = {"amplitude":p_amplitude}
+        cls.lpost = PSDPosterior(cls.ps, cls.model)
+        cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
+
+        cls.fitmethod = "BFGS"
+        cls.max_post = True
+        cls.t0 = [2.0]
+        cls.neg = True
+
+        pe = ParameterEstimation()
+        res = pe.fit(cls.lpost, cls.t0)
+
+        cls.nwalkers = 100
+        cls.niter = 200
+
+        np.random.seed(200)
+        p0 = np.array([np.random.multivariate_normal(res.p_opt, res.cov) for
+                       i in range(cls.nwalkers)])
+
+        cls.sampler = emcee.EnsembleSampler(cls.nwalkers, len(res.p_opt), cls.lpost,
+                                        args=[False], threads=1)
+
+        _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
+
+
+    def test_sample_results_object_initializes(self):
+
+        SamplingResults(self.sampler)
+
+    def test_sample_results_produces_attributes(self):
+
+        s = SamplingResults(self.sampler)
+
+        assert s.samples.shape[0] == self.nwalkers*self.niter
+
+    def test_sampling_results_acceptance_ratio(self):
+
+        s = SamplingResults(self.sampler)
+
+        assert s.acceptance > 0.25
+        assert s.L == s.acceptance*self.nwalkers*self.niter
+
+    def test_check_convergence_works(self):
+
+        s = SamplingResultsDummy(self.sampler)
+        s._check_convergence(self.sampler)
+
+        assert hasattr(s, "rhat")
+
+    def test_rhat_computes_correct_answer(self):
+        s = SamplingResults(self.sampler)
+
+        rhat_test =  3.81886815e-06
+
+        assert np.isclose(rhat_test, s.rhat[0], atol=0.001, rtol=0.001)
+
+    def test_infer_works(self):
+
+        s = SamplingResultsDummy(self.sampler)
+        s._infer()
+
+        assert hasattr(s, "mean")
+        assert hasattr(s, "std")
+        assert hasattr(s, "ci")
+
+    def test_infer_computes_correct_values(self):
+
+        s = SamplingResults(self.sampler)
+
+        test_mean = 2.00190793
+        test_std = 0.00195719
+        test_ci = [[1.99435539], [1.9971502]]
+
+        assert np.isclose(test_mean, s.mean[0], atol=0.01, rtol=0.01)
+        assert np.isclose(test_std, s.std[0], atol=0.01, rtol=0.01)
+        assert np.all(np.isclose(test_ci, s.ci, atol=0.01, rtol=0.01))
+
+
+class TestPSDParEst(object):
+
+    @classmethod
+    def setup_class(cls):
+
+        m = 1
+        nfreq = 1000000
+        freq = np.linspace(1, 10.0, nfreq)
+
+        np.random.seed(100) # set the seed for the random number generator
+        noise = np.random.exponential(size=nfreq)
+
+        cls.model = models.Lorentz1D() + models.Const1D()
+
+        cls.x_0_0 = 2.0
+        cls.fwhm_0 = 0.1
+        cls.amplitude_0 = 100.0
+
+        cls.amplitude_1 = 2.0
+
+        cls.model.x_0_0 = cls.x_0_0
+        cls.model.fwhm_0 = cls.fwhm_0
+        cls.model.amplitude_0 = cls.amplitude_0
+        cls.model.amplitude_1 = cls.amplitude_1
+
+        p = cls.model(freq)
+
+        np.random.seed(400)
+        power = noise*p
+
+        ps = Powerspectrum()
+        ps.freq = freq
+        ps.power = power
+        ps.m = m
+        ps.df = freq[1]-freq[0]
+        ps.norm = "leahy"
+
+        cls.ps = ps
+        cls.a_mean, cls.a_var = 2.0, 1.0
+        cls.a2_mean, cls.a2_var = 100.0, 10.0
+
+        p_amplitude_1 = lambda amplitude: \
+            scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
+
+        p_alpha_0 = lambda alpha: \
+            scipy.stats.uniform(0.0, 5.0).pdf(alpha)
+
+        p_amplitude_0 = lambda amplitude: \
+            scipy.stats.norm(loc=cls.a2_mean, scale=cls.a2_var).pdf(amplitude)
+
+        cls.priors = {"amplitude_1": p_amplitude_1,
+                      "amplitude_0": p_amplitude_0,
+                      "alpha_0": p_alpha_0}
+
+        cls.lpost = PSDPosterior(cls.ps, cls.model)
+        cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
+
+        cls.fitmethod = "BFGS"
+        cls.max_post = True
+        cls.t0 = [cls.amplitude_0, cls.alpha_0, cls.amplitude_1]
+        cls.neg = True

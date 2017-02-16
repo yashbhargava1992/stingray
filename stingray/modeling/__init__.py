@@ -14,3 +14,4 @@ from .._astropy_init import *
 if not _ASTROPY_SETUP_:
      from stingray.modeling.posterior import *
      from stingray.modeling.parameterestimation import *
+     from stingray.modeling.scripts import *
