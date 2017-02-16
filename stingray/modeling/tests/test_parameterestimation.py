@@ -503,7 +503,7 @@ if can_sample:
             s = SamplingResults(self.sampler)
 
             assert s.acceptance > 0.25
-            assert s.L == s.acceptance*self.nwalkers*self.niter
+            assert np.isclose(s.L,  s.acceptance*self.nwalkers*self.niter)
 
         def test_check_convergence_works(self):
 
