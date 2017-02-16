@@ -117,8 +117,12 @@ def set_logprior(lpost, priors):
                                           "of parameters in the model.")
 
         logp = 0.0
-        for p, pname in zip(t0, free_params):
-            logp += np.log(priors[pname](p))
+        ii = 0
+
+        for pname in lpost.model.param_names:
+            if not lpost.model.fixed[pname]:
+                logp += np.log(priors[pname](t0[ii]))
+                ii += 1
 
         if not np.isfinite(logp):
             logp = logmin

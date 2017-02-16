@@ -36,7 +36,7 @@ try:
 except ImportError:
     comp_hessian = False
 
-from stingray.modeling.posterior import PSDPosterior
+from stingray.modeling.posterior import Posterior, PSDPosterior, LogLikelihood
 from astropy.modeling.fitting import _fitter_to_model_params
 
 
@@ -80,7 +80,7 @@ class OptimizationResults(object):
         else:
             # calculate Hessian approximating with finite differences
             print("Approximating Hessian with finite differences ...")
-            phess = approx_hess(self.p_opt, lpost, neg=self.neg)
+            phess = approx_hess(self.p_opt, lpost)
 
             self.cov = np.linalg.inv(phess)
             self.err = np.sqrt(np.diag(self.cov))
@@ -183,9 +183,10 @@ class ParameterEstimation(object):
         """
 
         self.fitmethod = fitmethod
+
         self.max_post = max_post
 
-    def fit(self, lpost, t0, neg=True):
+    def fit(self, lpost, t0, neg=True, scipy_optimize_options=None):
         """
         Do either a Maximum A Posteriori or Maximum Likelihood
         fit to the data.
@@ -200,6 +201,15 @@ class ParameterEstimation(object):
         t0 : {list | numpy.ndarray}
             List/array with set of initial parameters
 
+        neg : bool, optional, default True
+            Boolean to be passed to `lpost`, setting whether to use the
+            *negative* posterior or the *negative* log-likelihood. Since
+            `Posterior` and `LogLikelihood` objects are generally defined in
+
+        scipy_optimize_options : dict, optional, default None
+            A dictionary with options for `scipy.optimize.minimize`,
+            directly passed on as keyword arguments.
+
         Returns:
         --------
         fitparams: dict
@@ -207,10 +217,22 @@ class ParameterEstimation(object):
             TODO: Add description of keywords in the class!
         """
 
+        if not isinstance(lpost, Posterior) and not isinstance(lpost,
+                                                               LogLikelihood):
+            raise TypeError("lpost must be a subclass of "
+                            "Posterior or LogLikelihoood.")
+
+        if not len(t0) == lpost.model.npar:
+            raise ValueError("Parameter set t0 must be of right "
+                             "length for model in lpost.")
+
         if scipy.__version__ < "0.10.0":
             args = [neg]
         else:
             args = (neg,)
+
+        if not scipy_optimize_options:
+            scipy_optimize_options = {}
 
         # different commands for different fitting methods,
         # at least until scipy 0.11 is out
@@ -228,7 +250,8 @@ class ParameterEstimation(object):
             if self.max_post:
                 opt = scipy.optimize.minimize(lpost, t0_p,
                                               method=self.fitmethod,
-                                              args=args, tol=1.e-10)
+                                              args=args, tol=1.e-10,
+                                              **scipy_optimize_options)
 
             # if max_post is False, then do a Maximum Likelihood Fit
             else:
@@ -236,14 +259,16 @@ class ParameterEstimation(object):
                     # This could be a `Posterior` object
                     opt = scipy.optimize.minimize(lpost.loglikelihood, t0_p,
                                                   method=self.fitmethod,
-                                                  args=args, tol=1.e-10)
+                                                  args=args, tol=1.e-10,
+                                                  **scipy_optimize_options)
                 except AttributeError:
                     # Except this could be a `LogLikelihood object
                     # In which case, use the evaluate function
                     # if it's not either, give up and break!
                     opt = scipy.optimize.minimize(lpost.evaluate, t0_p,
                                                   method=self.fitmethod,
-                                                  args=args, tol=1.e-10)
+                                                  args=args, tol=1.e-10,
+                                                  **scipy_optimize_options)
 
             funcval = opt.fun
             i += 1
@@ -332,7 +357,7 @@ class ParameterEstimation(object):
         if cov is None:
             # do a MAP fitting step to find good starting positions for
             # the sampler
-            res = self.fit(lpost.model, t0, neg=True, priors=priors)
+            res = self.fit(lpost.model, t0, neg=True)
             cov = res.cov
         # sample random starting positions for each walker from
         # a multivariate Gaussian
@@ -572,13 +597,10 @@ class PSDParEst(ParameterEstimation):
         return res
 
 
-    def compute_lrt(self, model1, t1, model2, t2, neg=True):
-        # TODO: Fix differences in superclass and subclass in whether I input
-        # model or posterior; it's too confusing!
-        lpost1 = PSDPosterior(self.ps, model1)
-        lpost2 = PSDPosterior(self.ps, model2)
+    def compute_lrt(self, lpost1, t1, lpost2, t2, neg=True):
 
-        lrt = ParameterEstimation.compute_lrt(self, model1, t1, model2, t2,
+
+        lrt = ParameterEstimation.compute_lrt(self, lpost1, t1, lpost2, t2,
                                               neg=neg)
 
         return lrt
