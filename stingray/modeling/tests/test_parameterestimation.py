@@ -11,9 +11,17 @@ from stingray.modeling import ParameterEstimation, PSDParEst, \
     OptimizationResults, SamplingResults
 from stingray.modeling import PSDPosterior, set_logprior
 
-from statsmodels.tools.numdiff import approx_hess
-import emcee
+try:
+    from statsmodels.tools.numdiff import approx_hess
+    comp_hessian = True
+except ImportError:
+    comp_hessian = False
 
+try:
+    import emcee
+    can_sample = True
+except ImportError:
+    can_sample = False
 
 class TestParameterEstimation(object):
 
@@ -402,133 +410,135 @@ class TestOptimizationResultInternalFunctions(object):
 
         optres._compute_covariance(self.lpost, opt)
 
-        phess = approx_hess(opt.x, self.lpost)
-        hess_inv = np.linalg.inv(phess)
+        if comp_hessian:
+            phess = approx_hess(opt.x, self.lpost)
+            hess_inv = np.linalg.inv(phess)
 
-        assert np.all(optres.cov == hess_inv)
-        assert np.all(optres.err == np.sqrt(np.diag(np.abs(hess_inv))))
-
-
-class SamplingResultsDummy(SamplingResults):
-
-    def __init__(self, sampler, ci_min=0.05, ci_max=0.95):
-
-        # store all the samples
-        self.samples = sampler.flatchain
-
-        self.nwalkers = np.float(sampler.chain.shape[0])
-        self.niter = np.float(sampler.iterations)
-
-        # store number of dimensions
-        self.ndim = sampler.dim
-
-        # compute and store acceptance fraction
-        self.acceptance = np.nanmean(sampler.acceptance_fraction)
-        self.L = self.acceptance*self.samples.shape[0]
+            assert np.all(optres.cov == hess_inv)
+            assert np.all(optres.err == np.sqrt(np.diag(np.abs(hess_inv))))
 
 
+if can_sample:
+    class SamplingResultsDummy(SamplingResults):
 
-class TestSamplingResults(object):
+        def __init__(self, sampler, ci_min=0.05, ci_max=0.95):
 
-    @classmethod
-    def setup_class(cls):
-        m = 1
-        nfreq = 1000000
-        freq = np.arange(nfreq)
-        noise = np.random.exponential(size=nfreq)
-        power = noise*2.0
+            # store all the samples
+            self.samples = sampler.flatchain
 
-        ps = Powerspectrum()
-        ps.freq = freq
-        ps.power = power
-        ps.m = m
-        ps.df = freq[1]-freq[0]
-        ps.norm = "leahy"
+            self.nwalkers = np.float(sampler.chain.shape[0])
+            self.niter = np.float(sampler.iterations)
 
-        cls.ps = ps
-        cls.a_mean, cls.a_var = 2.0, 1.0
+            # store number of dimensions
+            self.ndim = sampler.dim
 
-        cls.model = models.Const1D()
-
-        p_amplitude = lambda amplitude: \
-            scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
-
-        cls.priors = {"amplitude":p_amplitude}
-        cls.lpost = PSDPosterior(cls.ps, cls.model)
-        cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
-
-        cls.fitmethod = "BFGS"
-        cls.max_post = True
-        cls.t0 = [2.0]
-        cls.neg = True
-
-        pe = ParameterEstimation()
-        res = pe.fit(cls.lpost, cls.t0)
-
-        cls.nwalkers = 100
-        cls.niter = 200
-
-        np.random.seed(200)
-        p0 = np.array([np.random.multivariate_normal(res.p_opt, res.cov) for
-                       i in range(cls.nwalkers)])
-
-        cls.sampler = emcee.EnsembleSampler(cls.nwalkers, len(res.p_opt), cls.lpost,
-                                        args=[False], threads=1)
-
-        _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
+            # compute and store acceptance fraction
+            self.acceptance = np.nanmean(sampler.acceptance_fraction)
+            self.L = self.acceptance*self.samples.shape[0]
 
 
-    def test_sample_results_object_initializes(self):
 
-        SamplingResults(self.sampler)
+    class TestSamplingResults(object):
 
-    def test_sample_results_produces_attributes(self):
+        @classmethod
+        def setup_class(cls):
+            m = 1
+            nfreq = 1000000
+            freq = np.arange(nfreq)
+            noise = np.random.exponential(size=nfreq)
+            power = noise*2.0
 
-        s = SamplingResults(self.sampler)
+            ps = Powerspectrum()
+            ps.freq = freq
+            ps.power = power
+            ps.m = m
+            ps.df = freq[1]-freq[0]
+            ps.norm = "leahy"
 
-        assert s.samples.shape[0] == self.nwalkers*self.niter
+            cls.ps = ps
+            cls.a_mean, cls.a_var = 2.0, 1.0
 
-    def test_sampling_results_acceptance_ratio(self):
+            cls.model = models.Const1D()
 
-        s = SamplingResults(self.sampler)
+            p_amplitude = lambda amplitude: \
+                scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
 
-        assert s.acceptance > 0.25
-        assert s.L == s.acceptance*self.nwalkers*self.niter
+            cls.priors = {"amplitude":p_amplitude}
+            cls.lpost = PSDPosterior(cls.ps, cls.model)
+            cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
 
-    def test_check_convergence_works(self):
+            cls.fitmethod = "BFGS"
+            cls.max_post = True
+            cls.t0 = [2.0]
+            cls.neg = True
 
-        s = SamplingResultsDummy(self.sampler)
-        s._check_convergence(self.sampler)
+            pe = ParameterEstimation()
+            res = pe.fit(cls.lpost, cls.t0)
 
-        assert hasattr(s, "rhat")
+            cls.nwalkers = 100
+            cls.niter = 200
 
-    def test_rhat_computes_correct_answer(self):
-        s = SamplingResults(self.sampler)
+            np.random.seed(200)
+            p0 = np.array([np.random.multivariate_normal(res.p_opt, res.cov) for
+                           i in range(cls.nwalkers)])
 
-        rhat_test =  3.81886815e-06
+            cls.sampler = emcee.EnsembleSampler(cls.nwalkers, len(res.p_opt), cls.lpost,
+                                            args=[False], threads=1)
 
-        assert np.isclose(rhat_test, s.rhat[0], atol=0.001, rtol=0.001)
+            _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
 
-    def test_infer_works(self):
 
-        s = SamplingResultsDummy(self.sampler)
-        s._infer()
+        def test_sample_results_object_initializes(self):
 
-        assert hasattr(s, "mean")
-        assert hasattr(s, "std")
-        assert hasattr(s, "ci")
+            SamplingResults(self.sampler)
 
-    def test_infer_computes_correct_values(self):
+        def test_sample_results_produces_attributes(self):
 
-        s = SamplingResults(self.sampler)
+            s = SamplingResults(self.sampler)
 
-        test_mean = 2.00190793
-        test_std = 0.00195719
-        test_ci = [[1.99435539], [1.9971502]]
+            assert s.samples.shape[0] == self.nwalkers*self.niter
 
-        assert np.isclose(test_mean, s.mean[0], atol=0.01, rtol=0.01)
-        assert np.isclose(test_std, s.std[0], atol=0.01, rtol=0.01)
-        assert np.all(np.isclose(test_ci, s.ci, atol=0.01, rtol=0.01))
+        def test_sampling_results_acceptance_ratio(self):
+
+            s = SamplingResults(self.sampler)
+
+            assert s.acceptance > 0.25
+            assert s.L == s.acceptance*self.nwalkers*self.niter
+
+        def test_check_convergence_works(self):
+
+            s = SamplingResultsDummy(self.sampler)
+            s._check_convergence(self.sampler)
+
+            assert hasattr(s, "rhat")
+
+        def test_rhat_computes_correct_answer(self):
+            s = SamplingResults(self.sampler)
+
+            rhat_test =  3.81886815e-06
+
+            assert np.isclose(rhat_test, s.rhat[0], atol=0.001, rtol=0.001)
+
+        def test_infer_works(self):
+
+            s = SamplingResultsDummy(self.sampler)
+            s._infer()
+
+            assert hasattr(s, "mean")
+            assert hasattr(s, "std")
+            assert hasattr(s, "ci")
+
+        def test_infer_computes_correct_values(self):
+
+            s = SamplingResults(self.sampler)
+
+            test_mean = 2.00190793
+            test_std = 0.00195719
+            test_ci = [[1.99435539], [1.9971502]]
+
+            assert np.isclose(test_mean, s.mean[0], atol=0.01, rtol=0.01)
+            assert np.isclose(test_std, s.std[0], atol=0.01, rtol=0.01)
+            assert np.all(np.isclose(test_ci, s.ci, atol=0.01, rtol=0.01))
 
 
 class TestPSDParEst(object):

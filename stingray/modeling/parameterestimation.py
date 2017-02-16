@@ -11,6 +11,7 @@ try:
 except ImportError:
     can_plot = False
 
+
 # check whether emcee is installed for sampling
 try:
     import emcee
@@ -79,12 +80,18 @@ class OptimizationResults(object):
 
             self.err = np.sqrt(np.diag(self.cov))
         else:
-            # calculate Hessian approximating with finite differences
-            print("Approximating Hessian with finite differences ...")
-            phess = approx_hess(self.p_opt, lpost)
+            if comp_hessian:
+                # calculate Hessian approximating with finite differences
+                print("Approximating Hessian with finite differences ...")
 
-            self.cov = np.linalg.inv(phess)
-            self.err = np.sqrt(np.diag(np.abs(self.cov)))
+                phess = approx_hess(self.p_opt, lpost)
+
+                self.cov = np.linalg.inv(phess)
+                self.err = np.sqrt(np.diag(np.abs(self.cov)))
+
+            else:
+                self.cov = None
+                self.err = None
 
     def _compute_model(self, lpost):
 
