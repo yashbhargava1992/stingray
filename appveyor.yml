@@ -4,7 +4,6 @@
 environment:
 
     global:
-	CONDA_PY: "35"
         PYTHON: "C:\\conda"
         MINICONDA_VERSION: ""
         CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\ci-helpers\\appveyor\\windows_sdk.cmd"
@@ -18,11 +17,13 @@ environment:
 
         - PYTHON_VERSION: "2.7"
           NUMPY_VERSION: "stable"
+          CONDA_PY: "27"
         - PYTHON_VERSION: "3.4"
           NUMPY_VERSION: "stable"
+          CONDA_PY: "34"
         - PYTHON_VERSION: "3.5"
           NUMPY_VERSION: "stable"
-
+          CONDA_PY: "35"
 matrix:
     fast_finish: true
     allow_failures:
