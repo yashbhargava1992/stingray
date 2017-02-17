@@ -6,6 +6,7 @@ python:
     - 3.3
     - 3.4
     - 3.5
+    - 3.6
 
 # Setting sudo to false opts in to Travis-CI container-based builds.
 sudo: false
@@ -27,10 +28,7 @@ env:
         # The following versions are the 'default' for tests, unless
         # overidden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
-        - NUMPY_VERSION=1.9
-        - SCIPY_VERSION=0.17.0
         - ASTROPY_VERSION=stable
-        - H5PY_VERSION=2.5.0
         - SETUP_CMD='test'
         - PIP_DEPENDENCIES='emcee statsmodels'
         # For this package-template, we include examples of Cython modules,
