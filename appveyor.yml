@@ -15,19 +15,22 @@ environment:
 
     matrix:
 
+        - PYTHON_VERSION: "3.4"
+          NUMPY_VERSION: "1.11"
+          CONDA_PY: "34"
+        - PYTHON_VERSION: "3.5"
+          NUMPY_VERSION: "1.11"
+          CONDA_PY: "35"
         - PYTHON_VERSION: "2.7"
           NUMPY_VERSION: "stable"
           CONDA_PY: "27"
-        - PYTHON_VERSION: "3.4"
+        - PYTHON_VERSION: "3.6"
           NUMPY_VERSION: "stable"
-          CONDA_PY: "34"
-        - PYTHON_VERSION: "3.5"
-          NUMPY_VERSION: "stable"
-          CONDA_PY: "35"
+          CONDA_PY: "36"
 matrix:
     fast_finish: true
     allow_failures:
-        - PYTHON_VERSION: "3.5"
+        - PYTHON_VERSION: "3.6"
           NUMPY_VERSION: "stable"
 
 platform:
