@@ -81,7 +81,7 @@ class TestAll(object):
         nbin = 16
         expo = phase_exposure(start_time, stop_time, period, nbin)
         expected = np.ones(nbin)
-        expected[nbin/2:] = 0
+        expected[nbin//2:] = 0
         np.testing.assert_array_almost_equal(expo, expected)
 
     def test_phase_exposure3(self):
@@ -92,7 +92,7 @@ class TestAll(object):
         nbin = 16
         expo = phase_exposure(start_time, stop_time, period, nbin, gtis=gtis)
         expected = np.ones(nbin)
-        expected[nbin/2:] = 0
+        expected[nbin//2:] = 0
         np.testing.assert_array_almost_equal(expo, expected)
 
     def test_phase_exposure4(self):
