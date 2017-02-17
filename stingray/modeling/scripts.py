@@ -107,11 +107,11 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
     >>> t0 = [150, 0.4, 0.2, 50, 2.3, 0.6, 20, 8.0, 0.4, 2.1]
 
     We're ready for doing the fit:
-    >>> parest, res = fit_lorentzians(ps_new, nlor, t0)
+    >>> parest, res = fit_lorentzians(ps, nlor, t0)
 
     `res` contains a whole array of useful information about the fit, for
     example the parameters at the optimum:
-    >>> res.p_opt
+    >>> p_opt = res.p_opt
 
     """
 
