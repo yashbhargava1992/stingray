@@ -97,7 +97,7 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
     >>> power = p*noise
     >>> ps = Powerspectrum()
     >>> ps.freq = freq
-    >>> ps.power = powers
+    >>> ps.power = power
     >>> ps.df = ps.freq[1] - ps.freq[0]
     >>> ps.m = 1
 
