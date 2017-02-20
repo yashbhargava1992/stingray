@@ -312,6 +312,15 @@ class TestOptimizationResultInternalFunctions(object):
         cls.optres = OptimizationResultsSubclassDummy(cls.lpost, cls.opt,
                                                       neg=True)
 
+    def test_output(self, capsys):
+        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
+                                                  neg=True)
+
+        optres._compute_covariance(self.lpost, self.opt)
+        optres.print_summary(self.lpost)
+        out, err = capsys.readouterr()
+        assert "The best-fit model parameter" in out
+        assert "merit function (SSE)" in out
 
     def test_compute_model(self):
         optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
