@@ -53,7 +53,7 @@ matrix:
 
         # Try without using corner
         - python: 3.5
-          env: CONDA_DEPENDENCIES='Cython numpy scipy nose' PIP_DEPENDENCIES='emcee statsmodels corner' SETUP_CMD='test --coverage'
+          env: PIP_DEPENDENCIES='emcee statsmodels' SETUP_CMD='test --coverage'
 
         # Do a coverage test in Python 2.
         - python: 2.7
