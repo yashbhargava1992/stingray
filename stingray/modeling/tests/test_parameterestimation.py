@@ -213,11 +213,8 @@ class TestOptimizationResults(object):
     def test_compute_criteria_computes_criteria_correctly(self):
         res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
 
-        # test_aic = 1694708.7566869266
         test_aic = 169440.83719024697
-        # test_bic = 1694720.5721974846
         test_bic = 169245.62163088709
-        # test_deviance = 3389411.675487054
         test_deviance = 337950.6823459795
 
         assert np.isclose(res.aic, test_aic, atol=0.1, rtol=0.1)
@@ -227,7 +224,6 @@ class TestOptimizationResults(object):
     def test_merit_calculated_correctly(self):
         res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
 
-        # test_merit = 999563.81710186403
         test_merit = 98770.654981073574
         assert np.isclose(res.merit, test_merit, atol=0.1, rtol=0.1)
 
@@ -358,13 +354,10 @@ class TestOptimizationResultInternalFunctions(object):
         assert hasattr(optres, "sobs")
 
     def test_compute_statistics_returns_correct_values(self):
-        # test_merit = 1000377.6603212412
         test_merit = 99765.718448514497
         test_dof = 99997.0
         test_sexp = 600000.0
-        # test_ssd =  3464.1016151377544
         test_ssd = 1095.4451150103323
-        # test_sobs = 819.79384402855862
         test_sobs = -154.901207861497
 
         optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
@@ -396,12 +389,8 @@ class TestOptimizationResultInternalFunctions(object):
 
         optres._compute_criteria(self.lpost)
 
-        # test_aic = 1708892.3207432728
         test_aic = 170988.9174964963
-        # test_bic = 169311.12214492715
-        # test_bic = 1708927.7672749467
         test_bic = 171017.4562728912
-        # test_deviance = 3417761.061446513
         test_deviance = 341954.16168676887
 
         assert np.isclose(test_aic, optres.aic)
