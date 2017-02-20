@@ -30,7 +30,7 @@ env:
         # to repeat them for all configurations.
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
-        - PIP_DEPENDENCIES='emcee statsmodels'
+        - PIP_DEPENDENCIES='emcee statsmodels corner'
         # For this package-template, we include examples of Cython modules,
         # so Cython is required for testing. If your package does not include
         # Cython code, you can set CONDA_DEPENDENCIES=''
@@ -48,11 +48,19 @@ matrix:
         - python: 2.7
           env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
 
-        - python: 3.4
+        - python: 3.5
           env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
+
+        # Try without using corner
+        - python: 3.5
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose' PIP_DEPENDENCIES='emcee statsmodels corner' SETUP_CMD='test --coverage'
 
         # Do a coverage test in Python 2.
         - python: 2.7
+          env: SETUP_CMD='test --coverage'
+
+        # Do a coverage test in Python 3.
+        - python: 3.5
           env: SETUP_CMD='test --coverage'
 
         # Check for sphinx doc build warnings - we do this first because it
@@ -64,7 +72,7 @@ matrix:
         - python: 2.7
           env: ASTROPY_VERSION=development
 
-        - python: 3.4
+        - python: 3.5
           env: ASTROPY_VERSION=development
 
     allow_failures:
