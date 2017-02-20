@@ -55,7 +55,6 @@ class TestParameterEstimation(object):
     def test_par_est_initializes(self):
         pe = ParameterEstimation()
 
-
     def test_parest_stores_max_post_correctly(self):
         """
         Make sure the keyword for Maximum A Posteriori fits is stored correctly
@@ -137,7 +136,6 @@ class TestParameterEstimation(object):
 
         assert sample_res.acceptance > 0.25
         assert isinstance(sample_res, SamplingResults)
-
 
 
 class TestOptimizationResults(object):
