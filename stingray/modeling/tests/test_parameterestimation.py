@@ -141,7 +141,6 @@ class TestParameterEstimation(object):
         assert isinstance(sample_res, SamplingResults)
 
 
-
 class TestOptimizationResults(object):
 
     @classmethod
