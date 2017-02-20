@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.stats
+import os
 
 from astropy.tests.helper import pytest
 from astropy.modeling import models
@@ -54,7 +55,6 @@ class TestParameterEstimation(object):
 
     def test_par_est_initializes(self):
         pe = ParameterEstimation()
-
 
     def test_parest_stores_max_post_correctly(self):
         """
@@ -131,10 +131,12 @@ class TestParameterEstimation(object):
     def test_sampler_runs(self):
 
         pe = ParameterEstimation()
+        if os.path.exists("test_corner.pdf"):
+            os.unlink("test_corner.pdf")
         sample_res = pe.sample(self.lpost, [2.0], nwalkers=100, niter=10,
-                               burnin=50, print_results=True, plot=False)
+                               burnin=50, print_results=True, plot=True)
 
-
+        assert os.path.exists("test_corner.pdf")
         assert sample_res.acceptance > 0.25
         assert isinstance(sample_res, SamplingResults)
 
