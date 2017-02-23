@@ -598,8 +598,14 @@ class PSDParEst(ParameterEstimation):
                                      max_post=max_post)
 
     def fit(self, model, t0, neg=True, priors=None):
+        if not hasattr(model, "param_names"):
+            raise TypeError("model must be a valid Astropy model")
 
         self.lpost = PSDPosterior(self.ps, model, priors=priors)
+        if not len(t0) == self.lpost.npar:
+            raise ValueError("Parameter set t0 must be of right "
+                             "length for model in lpost.")
+
         res = ParameterEstimation.fit(self, self.lpost, t0, neg=neg)
 
         res.maxpow, res.maxfreq, res.maxind = \
