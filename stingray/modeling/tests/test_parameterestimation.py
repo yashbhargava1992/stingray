@@ -664,6 +664,50 @@ class TestPSDParEst(object):
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 
+    def test_plotfits_log(self):
+        pe = PSDParEst(self.ps)
+        t0 = [2.0, 1, 1, 1]
+        res = pe.fit(self.model, t0, priors=self.priors)
+
+        pe.plotfits(res, save_plot=True, log=True)
+
+        assert os.path.exists("test_ps_fit.png")
+        os.unlink("test_ps_fit.png")
+
+    def test_plotfits2(self):
+        t0 = [2.0, 1, 1, 1]
+        ps = Powerspectrum()
+        ps.freq = self.ps.freq
+        ps.power = self.ps.power
+        ps.m = self.ps.m
+        ps.df = self.ps.df
+        ps.norm = "rms"
+        pe = PSDParEst(ps)
+
+        res = pe.fit(self.model, t0, priors=self.priors)
+
+        pe.plotfits(res, res2=res, save_plot=True)
+
+        assert os.path.exists("test_ps_fit.png")
+        os.unlink("test_ps_fit.png")
+
+    def test_plotfits_log2(self):
+        ps = Powerspectrum()
+        ps.freq = self.ps.freq
+        ps.power = self.ps.power
+        ps.m = self.ps.m
+        ps.df = self.ps.df
+        ps.norm = "rms"
+        pe = PSDParEst(ps)
+
+        t0 = [2.0, 1, 1, 1]
+        res = pe.fit(self.model, t0, priors=self.priors)
+
+        pe.plotfits(res, res2=res, save_plot=True, log=True)
+
+        assert os.path.exists("test_ps_fit.png")
+        os.unlink("test_ps_fit.png")
+
     # def test_compute_lrt_fails_when_garbage_goes_in(self):
     #     pe = PSDParEst(self.ps)
     #     t0 = [2.0, 1, 1, 1]
