@@ -648,23 +648,28 @@ class TestPSDParEst(object):
         pe = PSDParEst(self.ps)
         t0 = [1,2]
         with pytest.raises(ValueError):
-            res = pe.fit(self.model, t0)
+            res = pe.fit(self.lpost, t0)
 
     def test_fit_method_works_with_correct_parameter(self):
         pe = PSDParEst(self.ps)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
         t0 = [2.0, 1, 1, 1]
-        res = pe.fit(self.model, t0, priors=self.priors)
+        res = pe.fit(lpost, t0)
 
     def test_fit_method_returns_optimization_results_object(self):
         pe = PSDParEst(self.ps)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
         t0 = [2.0, 1, 1, 1]
-        res = pe.fit(self.model, t0, priors=self.priors)
-        assert isinstance(res, OptimizationResults), "res must be of type OptimizationResults"
+        res = pe.fit(self.lpost, t0)
+        assert isinstance(res, OptimizationResults), "res must be of type " \
+                                                     "OptimizationResults"
 
     def test_plotfits(self):
         pe = PSDParEst(self.ps)
         t0 = [2.0, 1, 1, 1]
-        res = pe.fit(self.model, t0, priors=self.priors)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
+
+        res = pe.fit(lpost, t0)
 
         pe.plotfits(res, save_plot=True)
 
@@ -674,7 +679,9 @@ class TestPSDParEst(object):
     def test_plotfits_log(self):
         pe = PSDParEst(self.ps)
         t0 = [2.0, 1, 1, 1]
-        res = pe.fit(self.model, t0, priors=self.priors)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
+
+        res = pe.fit(self.lpost, t0)
 
         pe.plotfits(res, save_plot=True, log=True)
 
@@ -690,8 +697,9 @@ class TestPSDParEst(object):
         ps.df = self.ps.df
         ps.norm = "rms"
         pe = PSDParEst(ps)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
 
-        res = pe.fit(self.model, t0, priors=self.priors)
+        res = pe.fit(self.lpost, t0)
 
         pe.plotfits(res, res2=res, save_plot=True)
 
@@ -706,51 +714,52 @@ class TestPSDParEst(object):
         ps.df = self.ps.df
         ps.norm = "rms"
         pe = PSDParEst(ps)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
 
         t0 = [2.0, 1, 1, 1]
-        res = pe.fit(self.model, t0, priors=self.priors)
+        res = pe.fit(self.lpost, t0)
 
         pe.plotfits(res, res2=res, save_plot=True, log=True)
 
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 
-    # def test_compute_lrt_fails_when_garbage_goes_in(self):
-    #     pe = PSDParEst(self.ps)
-    #     t0 = [2.0, 1, 1, 1]
-    #
-    #     with pytest.raises(TypeError):
-    #         pe.compute_lrt(self.lpost, t0, None, t0)
-    #
-    #     with pytest.raises(ValueError):
-    #         pe.compute_lrt(self.lpost, t0[:-1], self.lpost, t0)
-    #
-    # def test_compute_lrt_sets_max_post_to_false(self):
-    #     t0 = [2.0, 1, 1, 1]
-    #     pe = PSDParEst(self.ps, max_post=True)
-    #
-    #     assert pe.max_post is True
-    #     delta_deviance = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
-    #
-    #     assert pe.max_post is False
-    #
-    # def test_compute_lrt_computes_deviance_correctly(self):
-    #
-    #     t0 = [2.0, 1, 1, 1]
-    #     pe = PSDParEst(self.ps)
-    #
-    #     delta_deviance = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
-    #
-    #     assert delta_deviance < 1e-7
-    #
-    #
+    def test_compute_lrt_fails_when_garbage_goes_in(self):
+        pe = PSDParEst(self.ps)
+        t0 = [2.0, 1, 1, 1]
+
+        with pytest.raises(TypeError):
+            pe.compute_lrt(self.lpost, t0, None, t0)
+
+        with pytest.raises(ValueError):
+            pe.compute_lrt(self.lpost, t0[:-1], self.lpost, t0)
+
+    def test_compute_lrt_sets_max_post_to_false(self):
+        t0 = [2.0, 1, 1, 1]
+        pe = PSDParEst(self.ps, max_post=True)
+
+        assert pe.max_post is True
+        delta_deviance = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
+
+        assert pe.max_post is False
+
+    def test_compute_lrt_computes_deviance_correctly(self):
+
+        t0 = [2.0, 1, 1, 1]
+        pe = PSDParEst(self.ps)
+
+        delta_deviance = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
+
+        assert delta_deviance < 1e-7
+
     def test_sampler_runs(self):
 
         pe = PSDParEst(self.ps)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
 
-        sample_res = pe.sample(self.model, [2.0, 0.1, 100, 2.0], nwalkers=50,
-                               niter=10, priors=self.priors,
-                               burnin=15, print_results=True, plot=True)
+        sample_res = pe.sample(lpost, [2.0, 0.1, 100, 2.0], nwalkers=50,
+                               niter=10, burnin=15, print_results=True,
+                               plot=True)
         assert os.path.exists("test_corner.pdf")
         os.unlink("test_corner.pdf")
         assert sample_res.acceptance > 0.25

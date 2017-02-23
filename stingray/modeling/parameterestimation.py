@@ -101,7 +101,10 @@ class OptimizationResults(object):
 
     def _compute_criteria(self, lpost):
 
-        self.deviance = -2.0*lpost.loglikelihood(self.p_opt, neg=False)
+        if isinstance(lpost, Posterior):
+            self.deviance = -2.0*lpost.loglikelihood(self.p_opt, neg=False)
+        elif isinstance(lpost, LogLikelihood):
+            self.deviance = 2.0*self.result
 
         # Akaike Information Criterion
         self.aic = self.result+2.0*self.p_opt.shape[0]
@@ -601,14 +604,9 @@ class PSDParEst(ParameterEstimation):
         ParameterEstimation.__init__(self, fitmethod=fitmethod,
                                      max_post=max_post)
 
-    def fit(self, model, t0, neg=True, priors=None):
-        if not hasattr(model, "param_names"):
-            raise TypeError("model must be a valid Astropy model")
+    def fit(self, lpost, t0, neg=True):
 
-        self.lpost = PSDPosterior(self.ps, model, priors=priors)
-        if not len(t0) == self.lpost.npar:
-            raise ValueError("Parameter set t0 must be of right "
-                             "length for model in lpost.")
+        self.lpost = lpost
 
         res = ParameterEstimation.fit(self, self.lpost, t0, neg=neg)
 
@@ -617,11 +615,11 @@ class PSDParEst(ParameterEstimation):
 
         return res
 
-    def sample(self, model, t0, cov=None, priors=None,
+    def sample(self, lpost, t0, cov=None,
                nwalkers=500, niter=100, burnin=100, threads=1,
                print_results=True, plot=False, namestr="test"):
 
-        self.lpost = PSDPosterior(self.ps, model, priors=priors)
+        self.lpost = lpost
 
         fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
 
@@ -634,14 +632,6 @@ class PSDParEst(ParameterEstimation):
                                          namestr=namestr)
 
         return res
-
-
-    def compute_lrt(self, lpost1, t1, lpost2, t2, neg=True, max_post=False):
-
-        lrt = ParameterEstimation.compute_lrt(self, lpost1, t1, lpost2, t2,
-                                              neg=neg)
-
-        return lrt
 
     def _compute_highest_outlier(self, lpost, res, nmax=1):
 
