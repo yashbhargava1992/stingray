@@ -10,7 +10,7 @@ from stingray import Powerspectrum
 
 from stingray.modeling import ParameterEstimation, PSDParEst, \
     OptimizationResults, SamplingResults
-from stingray.modeling import PSDPosterior, set_logprior
+from stingray.modeling import PSDPosterior, set_logprior, PSDLogLikelihood
 
 try:
     from statsmodels.tools.numdiff import approx_hess
@@ -64,6 +64,13 @@ class TestParameterEstimation(object):
         pe = ParameterEstimation()
 
         assert pe.max_post is True, "max_post should be set to True as a default."
+
+    def test_object_works_with_loglikelihood_object(self):
+        llike = PSDLogLikelihood(self.ps.freq, self.ps.power, self.model)
+        pe = ParameterEstimation()
+        res = pe.fit(llike, [2.0])
+
+        pass
 
     def test_fit_fails_when_object_is_not_posterior_or_likelihood(self):
         x = np.ones(10)
