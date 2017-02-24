@@ -749,8 +749,8 @@ class TestPSDParEst(object):
         pe = PSDParEst(self.ps)
 
         delta_deviance = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
-
-        assert delta_deviance < 1e-7
+        # MB: Verify that this is correct!
+        assert np.absolute(delta_deviance) < 1.5e-5
 
     def test_sampler_runs(self):
 
