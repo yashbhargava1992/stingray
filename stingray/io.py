@@ -436,7 +436,7 @@ def _retrieve_hdf5_object(filename):
         attr_keys = hf.attrs.keys()
         data = {}
 
-        dset_copy = dset_keys[:]
+        dset_copy = list(dset_keys)[:]
         for key in dset_keys:
 
             # Make sure key hasn't been removed
@@ -453,7 +453,7 @@ def _retrieve_hdf5_object(filename):
                 else:
                     data[key] = hf[key].value
         
-        attr_copy = attr_keys[:]
+        attr_copy = list(attr_keys)[:]
         for key in attr_keys:
             
             # Make sure key hasn't been removed

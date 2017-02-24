@@ -14,9 +14,11 @@ Stingray Project Coordinators
 Contributors
 ============
 
-
 If you have contributed to Stingray and your name is missing,
 please send an email to the coordinators, or
 `open a pull request for this page <https://github.com/StingraySoftware/stingray/CREDITS.rst>`_
 in the `Stingray repository <https://github.com/StingraySoftware/stingray>`_)
 
+Acknowledgements
+================
+We would like to thank Jetbrains for the free use of PyCharm they accorded.
