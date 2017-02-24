@@ -338,8 +338,10 @@ class Lightcurve(object):
             tstart = toa[0]
 
         # compute the number of bins in the light curve
-        # for cases where tseg/dt are not integer, computer one
-        # last time bin more that we have to subtract in the end
+        # for cases where tseg/dt is not integer. 
+        # TODO: check that this is always consistent and that we 
+        # are not throwing away good events.
+
         if tseg is None:
             tseg = toa[-1] - toa[0]
 
