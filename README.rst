@@ -51,6 +51,7 @@ Contents
 - make a light curve from event data
 - make periodograms in Leahy and rms normalization
 - average periodograms
+- maximum likelihood fitting of periodograms/parametric models
 - cross spectra and lags (time vs energy, time vs frequency)
 - coherence
 - simulate a light curve with a given power spectrum
@@ -61,7 +62,6 @@ Contents
 Future Additions
 ----------------
 - cross correlation functions, 
-- maximum likelihood fitting of periodograms/parametric models
 - bispectra (?)
 - spectral-timing functionality
 - Bayesian QPO searches
