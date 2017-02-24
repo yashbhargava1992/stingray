@@ -46,7 +46,7 @@ class Lightcurve(object):
         Attributes
         ----------
         time: numpy.ndarray
-            The array of midpoints of time bins
+            The array of midpoints of time bins.
 
         counts: numpy.ndarray
             The counts per bin corresponding to the bins in `time`.
@@ -54,7 +54,13 @@ class Lightcurve(object):
         countrate: numpy.ndarray
             The counts per second in each of the bins defined in `time`.
 
-        ncounts: int
+        meanrate: float
+            The mean count rate of the light curve.
+            
+        meancounts: float
+            The mean counts of the light curve.
+
+        n: int
             The number of data points in the light curve.
 
         dt: float
@@ -81,7 +87,8 @@ class Lightcurve(object):
                              "your counts array!")
 
         if len(time) != len(counts):
-            raise StingrayError("time are counts array are not "
+
+            raise StingrayError("time and counts array are not "
                                 "of the same length!")
 
         if len(time) <= 1:
@@ -98,7 +105,9 @@ class Lightcurve(object):
             self.countrate = np.asarray(counts)
             self.counts = self.countrate * self.dt
 
-        self.ncounts = self.counts.shape[0]
+        self.meanrate = np.mean(self.countrate)
+        self.meancounts = np.mean(self.counts)
+        self.n = self.counts.shape[0]
 
         # Issue a warning if the input time iterable isn't regularly spaced,
         # i.e. the bin sizes aren't equal throughout.
@@ -128,6 +137,8 @@ class Lightcurve(object):
                             gti=self.gti + time_shift)
         new_lc.countrate = self.countrate
         new_lc.counts = self.counts
+        new_lc.meanrate = np.mean(new_lc.countrate)
+        new_lc.meancounts = np.mean(new_lc.counts)
         return new_lc
 
     def __add__(self, other):
@@ -244,7 +255,7 @@ class Lightcurve(object):
         >>> len(lc)
         3
         """
-        return self.ncounts
+        return self.n
 
     def __getitem__(self, index):
         """

@@ -308,7 +308,7 @@ class Powerspectrum(Crossspectrum):
 
 class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
-    def __init__(self, lc, segment_size, norm="frac", gti=None):
+    def __init__(self, lc=None, segment_size=None, norm="frac", gti=None):
         """
         Make an averaged periodogram from a light curve by segmenting the light
         curve, Fourier-transforming each segment and then averaging the
@@ -367,8 +367,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         self.type = "powerspectrum"
 
-        if not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite!")
+        if segment_size is not None:
+            if not np.isfinite(segment_size):
+                raise ValueError("segment_size must be finite!")
 
         self.segment_size = segment_size
 
