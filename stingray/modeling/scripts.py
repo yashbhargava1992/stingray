@@ -7,6 +7,7 @@ from stingray import Powerspectrum
 
 __all__ = ["fit_powerspectrum", "fit_lorentzians"]
 
+
 def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
               fitmethod="L-BFGS-B"):
     """
@@ -238,12 +239,6 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
     if fit_whitenoise:
         model += models.Const1D()
 
-    if priors:
-        lpost = PSDPosterior(ps, model, priors=priors)
-    else:
-        lpost = PSDLogLikelihood(ps.freq, ps.power, model, m=ps.m)
+    return fit_powerspectrum(ps, model, starting_pars, max_post=max_post,
+                             priors=priors, fitmethod=fitmethod)
 
-    parest = PSDParEst(ps, fitmethod=fitmethod, max_post=max_post)
-    res = parest.fit(lpost, starting_pars, neg=True)
-
-    return parest, res
