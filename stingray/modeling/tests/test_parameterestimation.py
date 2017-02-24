@@ -746,11 +746,13 @@ class TestPSDParEst(object):
     def test_compute_lrt_computes_deviance_correctly(self):
 
         t0 = [2.0, 1, 1, 1]
-        pe = PSDParEst(self.ps)
+        pe = PSDParEst(self.ps, max_post=True)
 
-        delta_deviance = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
-        # MB: Verify that this is correct!
-        assert np.absolute(delta_deviance) < 1.5e-5
+        # MB: This is a little too random
+        delta_deviance = pe.compute_lrt(self.lpost, t0,
+                                        self.lpost, t0)
+
+        assert np.absolute(delta_deviance) < 1.5e-4
 
     def test_sampler_runs(self):
 
