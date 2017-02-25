@@ -7,6 +7,9 @@ Contents:
    :maxdepth: 2
 
    api
+   modeling
+   pulse
+   simulator
 
 
 Indices and tables
