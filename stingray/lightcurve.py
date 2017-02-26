@@ -126,7 +126,8 @@ class Lightcurve(object):
         check_gtis(self.gti)
 
     def shift(self, time_shift):
-        """Shift the light curve and the GTIs in time.
+        """
+        Shift the light curve and the GTIs in time.
 
         Parameters
         ----------
