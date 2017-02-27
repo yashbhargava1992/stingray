@@ -683,7 +683,7 @@ class Lightcurve(object):
         filename: str
             Name of the LightCurve object to be created.
 
-        format_: str
+        format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
         """
 
@@ -709,14 +709,14 @@ class Lightcurve(object):
         filename: str
             Name of the LightCurve object to be read.
 
-        format_: str
+        format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
 
         Returns
         --------
-        If format_ is 'ascii': astropy.table is returned.
-        If format_ is 'hdf5': dictionary with key-value pairs is returned.
-        If format_ is 'pickle': class object is set.
+        If format\_ is 'ascii': astropy.table is returned.
+        If format\_ is 'hdf5': dictionary with key-value pairs is returned.
+        If format\_ is 'pickle': class object is set.
         """
 
         if format_ == 'ascii' or format_ == 'hdf5':
