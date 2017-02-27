@@ -52,6 +52,13 @@ class TestLightcurve(object):
         lc = Lightcurve(self.times, self.counts)
         assert lc.n == 4
 
+    def test_bin_edges(self):
+        bin_lo = [0.5,  1.5,  2.5,  3.5]
+        bin_hi = [1.5,  2.5,  3.5,  4.5]
+        lc = Lightcurve(self.times, self.counts)
+        assert np.allclose(lc.bin_lo, bin_lo)
+        assert np.allclose(lc.bin_hi, bin_hi)
+
     def test_lightcurve_from_toa(self):
         lc = Lightcurve.make_lightcurve(self.times, self.dt)
 
