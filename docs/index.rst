@@ -1,7 +1,8 @@
 Welcome to Stingray's documentation
-===================================
+***********************************
 
-Contents:
+Contents
+========
 
 .. toctree::
    :maxdepth: 3
@@ -15,4 +16,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
