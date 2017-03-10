@@ -467,11 +467,11 @@ def join_gtis(gti0, gti1):
 
     g0 = gti0.flatten()
     # Opening GTI: type = 1; Closing: type = -1
-    g0_type = np.asarray(list(zip(-np.ones(len(g0) / 2),
-                                  np.ones(len(g0) / 2))))
+    g0_type = np.asarray(list(zip(-np.ones(int(len(g0) / 2)),
+                                  np.ones(int(len(g0) / 2)))))
     g1 = gti1.flatten()
-    g1_type = np.asarray(list(zip(-np.ones(len(g1) / 2),
-                                  np.ones(len(g1) / 2))))
+    g1_type = np.asarray(list(zip(-np.ones(int(len(g1) / 2)),
+                                  np.ones(int(len(g1) / 2)))))
 
     g_all = np.append(g0, g1)
     g_type_all = np.append(g0_type, g1_type)

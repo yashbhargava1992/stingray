@@ -255,10 +255,10 @@ class Simulator(object):
         """
 
         # Fill in 0 entries until the start time
-        h_zeros = np.zeros(start/self.dt)
+        h_zeros = np.zeros(int(start/self.dt))
 
         # Define constant impulse response
-        h_ones = np.ones(width/self.dt) * intensity
+        h_ones = np.ones(int(width/self.dt)) * intensity
 
         return np.append(h_zeros, h_ones)
 

@@ -61,7 +61,7 @@ class Lightcurve(object):
         Attributes
         ----------
         time: numpy.ndarray
-            The array of midpoints of time bins
+            The array of midpoints of time bins.
 
         counts: numpy.ndarray
             The counts per bin corresponding to the bins in `time`.
@@ -74,6 +74,12 @@ class Lightcurve(object):
 
         countrate_err: numpy.ndarray
             The uncertainties corresponding to `countrate`
+
+        meanrate: float
+            The mean count rate of the light curve.
+
+        meancounts: float
+            The mean counts of the light curve.
 
         n: int
             The number of data points in the light curve.
@@ -107,7 +113,8 @@ class Lightcurve(object):
                              "your counts array!")
 
         if len(time) != len(counts):
-            raise StingrayError("time are counts array are not "
+
+            raise StingrayError("time and counts array are not "
                                 "of the same length!")
 
         if len(time) <= 1:
@@ -120,7 +127,7 @@ class Lightcurve(object):
                                  "your err array")
         else:
             if statistic not in ["poisson", "gaussian", None]:
-                #statistic set can be increased with other statistics
+                # statistic set can be increased with other statistics
                 raise StingrayError("Statistic not recognized."
                                     "Please select one of these: ",
                                     "[poisson, gaussian]")
@@ -129,10 +136,9 @@ class Lightcurve(object):
                 # other test can be implemented for other statistics
             else:
                 simon("Stingray only uses poisson statistic at the moment, "
-                      "We are setting your errors to zero to avoid complications. "
+                      "We are setting your errors to zero."
                       "Sorry for the inconvenience.")
                 err = np.zeros_like(counts)
-
 
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
@@ -150,6 +156,8 @@ class Lightcurve(object):
             self.counts_err = np.asarray(err) * self.dt
             self.countrate_err = np.asarray(err)
 
+        self.meanrate = np.mean(self.countrate)
+        self.meancounts = np.mean(self.counts)
         self.n = self.counts.shape[0]
 
         # Issue a warning if the input time iterable isn't regularly spaced,
@@ -181,6 +189,8 @@ class Lightcurve(object):
         new_lc.countrate = self.countrate
         new_lc.counts = self.counts
         new_lc.counts_err = self.counts_err
+        new_lc.meanrate = np.mean(new_lc.countrate)
+        new_lc.meancounts = np.mean(new_lc.counts)
         return new_lc
 
     def __add__(self, other):
@@ -415,8 +425,10 @@ class Lightcurve(object):
             tstart = toa[0]
 
         # compute the number of bins in the light curve
-        # for cases where tseg/dt are not integer, computer one
-        # last time bin more that we have to subtract in the end
+        # for cases where tseg/dt is not integer.
+        # TODO: check that this is always consistent and that we
+        # are not throwing away good events.
+
         if tseg is None:
             tseg = toa[-1] - toa[0]
 
@@ -551,7 +563,7 @@ class Lightcurve(object):
 
                     if self.statistic != other.statistic:
                         simon("Lightcurves have different statistics!"
-                              "We are setting the errors to zero to avoid complications.")
+                              "We are setting the errors to zero.")
                         new_counts_err = np.zeros_like(new_counts)
                     elif self.statistic in ['poisson', 'gaussian']:
                         new_counts_err.append(np.sqrt(((count1_err**2) +
@@ -794,7 +806,7 @@ class Lightcurve(object):
         filename: str
             Name of the LightCurve object to be created.
 
-        format_: str
+        format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
         """
 
@@ -820,14 +832,14 @@ class Lightcurve(object):
         filename: str
             Name of the LightCurve object to be read.
 
-        format_: str
+        format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
 
         Returns
         --------
-        If format_ is 'ascii': astropy.table is returned.
-        If format_ is 'hdf5': dictionary with key-value pairs is returned.
-        If format_ is 'pickle': class object is set.
+        If format\_ is 'ascii': astropy.table is returned.
+        If format\_ is 'hdf5': dictionary with key-value pairs is returned.
+        If format\_ is 'pickle': class object is set.
         """
 
         if format_ == 'ascii' or format_ == 'hdf5':

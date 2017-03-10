@@ -158,8 +158,8 @@ class Crossspectrum(object):
         self.nphots1 = np.float64(np.sum(lc1.counts))
         self.nphots2 = np.float64(np.sum(lc2.counts))
 
-        self.meancounts1 = np.mean(lc1.counts)
-        self.meancounts2 = np.mean(lc2.counts)
+        self.meancounts1 = lc1.meancounts
+        self.meancounts2 = lc2.meancounts
 
         # the number of data points in the light curve
 
@@ -259,7 +259,15 @@ class Crossspectrum(object):
         bin_cs.n = self.n
         bin_cs.norm = self.norm
         bin_cs.nphots1 = self.nphots1
-        bin_cs.nphots2 = self.nphots2
+
+        try:
+            bin_cs.nphots2 = self.nphots2
+        except AttributeError:
+            if self.type == 'powerspectrum':
+                pass
+            else:
+                raise AttributeError('Spectrum has no attribute named nphots2.')
+
         bin_cs.m = int(step_size)*self.m
         bin_cs.power_err = bincs / np.sqrt(bin_cs.m)
 
@@ -562,6 +570,9 @@ class AveragedCrossspectrum(Crossspectrum):
                 self.cs_all, nphots1_all = \
                     self._make_segment_spectrum(lc1, self.segment_size)
 
+            else:
+                raise ValueError("Type of spectrum not recognized!")
+
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
             # TODO: should be using izip from iterables if lc1 or lc2 could
@@ -578,7 +589,7 @@ class AveragedCrossspectrum(Crossspectrum):
                         self._make_segment_spectrum(lc1_seg, self.segment_size)
 
                 else:
-                    raise Exception("Type of spectrum not recognized!")
+                    raise ValueError("Type of spectrum not recognized!")
 
                 self.cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
@@ -655,10 +666,12 @@ class AveragedCrossspectrum(Crossspectrum):
         unnorm_powers_avg_1 = np.zeros_like(aps1.cs_all[0].unnorm_power)
         for ps in aps1.cs_all:
             unnorm_powers_avg_1 += ps.unnorm_power
+        unnorm_powers_avg_1 /= aps1.m
 
         unnorm_powers_avg_2 = np.zeros_like(aps2.cs_all[0].unnorm_power)
         for ps in aps2.cs_all:
             unnorm_powers_avg_2 += ps.unnorm_power
+        unnorm_powers_avg_2 /= aps2.m
 
         coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
 
