@@ -53,10 +53,9 @@ AveragedPowerspectrum
 
 .. autoclass:: stingray.AveragedPowerspectrum
 
-.. All definitions
-.. ===============
-.. 
-.. .. automodule:: stingray
-..    :members:
-..    :imported-members:
-..    :undoc-members:
+Functions
+===============
+
+.. automodule:: stingray
+   :members:
+   :imported-members:

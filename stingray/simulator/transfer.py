@@ -190,7 +190,7 @@ class TransferFunction(object):
 
         Parameter
         ---------
-        format_ : str
+        format\_ : str
             the format of the file to be retrieved - accepts 'pickle'.
 
         Returns
@@ -213,7 +213,7 @@ class TransferFunction(object):
 
         Parameters
         ----------
-        format_ : str
+        format\_ : str
             the format of the file to be saved - accepts 'pickle'
         """
 
