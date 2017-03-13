@@ -183,7 +183,7 @@ def contiguous_regions(condition):
     """
 
     # NOQA
-    # Find the indicies of changes in "condition"
+    # Find the indices of changes in "condition"
     diff = np.diff(condition)
     idx, = diff.nonzero()
     # We need to start things after the change in "condition". Therefore,
