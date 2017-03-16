@@ -208,6 +208,8 @@ def get_random_state(random_state = None):
         if isinstance(random_state, (numbers.Integral, np.integer)):
             random_state = np.random.RandomState(random_state)
         elif not isinstance(random_state, np.random.RandomState):
-            raise ValueError("{value} can't be used to generate a numpy.random.RandomState")
+            raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
+                value = random_state
+            ))
 
     return random_state
