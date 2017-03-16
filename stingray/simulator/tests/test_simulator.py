@@ -39,8 +39,11 @@ class TestSimulator(object):
         """
         Simulate with a random seed value.
         """
-        self.simulator = simulator.Simulator(N=1024, seed=12)
+        self.simulator = simulator.Simulator(N=1024, random_state=12)
         assert len(self.simulator.simulate(2).counts), 1024
+
+    def test_simulate_with_random_state(self):
+        self.simulator = simulator.Simulator(N=1024, random_state=np.random.RandomState(12))
 
     def test_simulate_with_incorrect_arguments(self):
         with pytest.raises(ValueError):
