@@ -131,6 +131,8 @@ html_theme_options = {
     'logotext3': ':docs'   # white,  light
     }
 
+extensions += ['matplotlib.sphinxext.plot_directive']
+
 # -- Options for LaTeX output --------------------------------------------------
 
 # Grouping the document tree into LaTeX files. List of tuples
