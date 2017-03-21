@@ -131,7 +131,7 @@ html_theme_options = {
     'logotext3': ':docs'   # white,  light
     }
 
-extensions += ['matplotlib.sphinxext.plot_directive']
+extensions += ['matplotlib.sphinxext.plot_directive','sphinx.ext.autodoc']
 
 # -- Options for LaTeX output --------------------------------------------------
 
@@ -163,3 +163,4 @@ if eval(setup_cfg.get('edit_on_github')):
 
     edit_on_github_source_root = ""
     edit_on_github_doc_root = "docs"
+

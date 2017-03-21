@@ -1,5 +1,3 @@
-.. include:: links.inc
-
 .. _stingray-simulator:
 
 ***************************************
@@ -9,9 +7,9 @@ Simulations (`stingray.simulator`)
 Introduction
 ============
 
-`stingray.simulator` provides a framework to simulate light curves with given variability distributions. In time series experiments, understanding the certainty is crucial to interpret the derived results in context of physical models. The simulator module allows means to  to assess this uncertainty by simulating time series and spectral data. 
+`stingray.simulator` provides a framework to simulate light curves with given variability distributions. In time series experiments, understanding the certainty is crucial to interpret the derived results in context of physical models. The simulator module provides tools to assess this uncertainty by simulating time series and spectral data. 
 
-The module supports multiple methods to carry out these simulation. Light curves can be simulated through power-law spectrum, through a user-defined defined or pre-defined model, or through impulse responses. The module is designed in a way such that all these methods can be accessed using similar set of commands.
+Stingray simulator supports multiple methods to carry out these simulation. Light curves can be simulated through power-law spectrum, through a user-defined defined or pre-defined model, or through impulse responses. The module is designed in a way such that all these methods can be accessed using similar set of commands.
 
 .. note::
 
@@ -26,10 +24,10 @@ Getting started
 ===============
 
 The examples here assume that the following libraries and modules have been imported::
-
+	
 	>>> import numpy as np
-    >>> from stingray import Lightcurve, sampledata
-    >>> from stingray.simulator import simulator, models
+	>>> from stingray import Lightcurve, sampledata
+	>>> from stingray.simulator import simulator, models
 
 Creating a Simulator Object
 ---------------------------
@@ -69,29 +67,66 @@ while a beta of 2 generates a random-walk distribution.
 .. plot::
    :include-source:
 
-	import numpy as np   
-	from stingray import Lightcurve, sampledata
-	from stingray.simulator import simulator, models
+   import matplotlib.pyplot as plt
+   from stingray.simulator import simulator
 
-	sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
+   # Instantiate simulator object
+   sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
+   # Specify beta values
+   lc1 = sim.simulate(1)
+   lc2 = sim.simulate(2)
 
-	# Flicker noise distribution
-	lc1 = sim.simulate(1)
-	
-	# Random walk distribution
-	lc2 = sim.simulate(2)
+   plt.figure(figsize=(8, 10))
+   plt.subplot(2,1,1)
+   plt.plot(lc1.counts, 'k')
+   plt.title('Flicker-noise distribution simulation')
+   plt.subplot(2,1,2)
+   plt.title('Random-Walk distribution simulation')
+   plt.plot(lc2.counts, 'k')
+   plt.show()
 
-	# Plot the data with the best-fit model
-    plt.figure(figsize=(14,5))
+Using User-defined Model
+------------------------
 
-    plt.subplot(2, 1, 1)
-    plt.plot(lc1.counts)
+Light curve can also be simulated using a user-defined spectrum, which can be
+passed on as a numpy array.
 
-    plt.subplot(2, 1, 2)
-    plt.plot(lc2.counts)
+.. plot::
+   :include-source:
 
+   import matplotlib.pyplot as plt
+   from stingray.simulator import simulator
 
+   # Instantiate simulator object
+   sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
+   # Define a spectrum and simulate
+   w = np.fft.rfftfreq(sim.N, d=sim.dt)[1:]
+   spectrum = np.power((1/w),2/2)
+   lc = sim.simulate(spectrum)
 
+   plt.plot(lc.counts, 'k')
+   plt.show()
 
+Using Pre-defined Models
+------------------------
 
+One of the pre-defined spectrum models can be used to simulate a light curve.
+In this case, model name and model parameters (as list iterable) need to be
+passed on as function arguments.
+
+Using Impulse Response
+----------------------
+
+In order to simulate a light curve using impulse response, first we need to generate
+the impulse response itself and the original light curve.
+
+Here, we import a sample light curve from stingray sampledata module.
+
+Channel Simulation
+==================
+
+The simulator class provides the functionality to simulate light curves independently for each channel. This is useful, for example, when dealing with energy dependent impulse responses where we can create a di↵erent simulation channel for each energy range. The module provides options to count, retrieve and delete channels.
+
+Reference/API
+=============
 
