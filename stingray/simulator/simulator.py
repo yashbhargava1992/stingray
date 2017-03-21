@@ -54,15 +54,13 @@ class Simulator(object):
 
         Examples
         --------
-        - x = simulate(2)
+        - x = simulate(beta)
             For generating a light curve using power law spectrum.
 
             Parameters
             ----------
-            Beta: int
+            beta: int
                 Defines the shape of spectrum
-            N: int
-                Number of samples
 
             Returns
             -------
@@ -80,17 +78,13 @@ class Simulator(object):
             -------
             lightCurve: `LightCurve` object
 
-        - x = simulate('lorenzian', p)
+        - x = simulate(model)
             For generating a light curve from pre-defined model
 
             Parameters
             ----------
-            model: str
-                name of the pre-defined model
-
-            p: list iterable
-                model parameters. For details, see model definitions
-                in model.py
+            model: astropy.modeling.Model
+                the pre-defined model
 
             Returns
             -------
@@ -138,13 +132,10 @@ class Simulator(object):
             return  self._simulate_power_law(args[0])
 
         elif isinstance(args[0], astropy.modeling.Model) and len(args) == 1:
-            return self._simulate_model_2(args[0])
+            return self._simulate_model(args[0])
         
         elif len(args) == 1:
             return self._simulate_power_spectrum(args[0])
-
-        elif utils.is_string(args[0]) and len(args) == 2:
-            return self._simulate_model(args[0], args[1])
 
         elif len(args) == 2:
             return self._simulate_impulse_response(args[0], args[1])
@@ -380,46 +371,10 @@ class Simulator(object):
 
         return lc
 
-    def _simulate_model(self, mod, p):
-        """
-        For generating a light curve from pre-defined model
-
-        Parameters
-        ----------
-        mod: str
-            name of the pre-defined model
-
-        p: list iterable
-            model parameters. For details, see model definitions
-            in model.py
-
-        Returns
-        -------
-        lightCurve: `LightCurve` object
-        """
-
-        # Define frequencies at which to compute PSD
-        w = np.fft.rfftfreq(self.red_noise*self.N, d=self.dt)[1:]
-
-        if mod in dir(models):
-            mod = 'models.'+ mod
-            s = eval(mod +'(w, p)')
-
-            # Draw two set of 'N' guassian distributed numbers
-            a1 = np.random.normal(size=len(s))
-            a2 = np.random.normal(size=len(s))
-
-            long_lc = self._find_inverse(a1*s, a2*s)
-            lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
-
-            return lc
-        
-        else:
-            raise ValueError('Model is not defined!')
             
-    def _simulate_model_2(self, model):
+    def _simulate_model(self, model):
         """
-        For generating a light curve from pre-defined model
+        For generating a light curve from a pre-defined model
 
         Parameters
         ----------
