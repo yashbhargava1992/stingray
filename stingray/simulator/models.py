@@ -1,4 +1,55 @@
 from __future__ import division, print_function, absolute_import
+from astropy.modeling.models import custom_model
+
+@custom_model
+def GeneralizedLorentz1D(x, x_0=1., fwhm=1., value=1., power_coeff=1.):
+    """
+    Generalized lorenzian function, 
+    implemented using astropy.modeling.models custom model
+
+    Parameters
+    ----------
+
+    x: numpy.ndarray
+        non-zero frequencies
+
+    x_0 : peak centeral frequency
+    fwhm : FWHM of the peak (gamma)
+    value : peak value at x=x0
+    power_coeff : power coefficient [n]
+
+    Returns
+    -------
+    model: astropy.modeling.Model
+        generalized Lorentzian psd model
+    """
+    assert power_coeff > 0., "The power coefficient should be greater than zero."
+    return value * (fwhm / 2)**power_coeff * 1./(abs(x - x_0)**power_coeff + (fwhm / 2)**power_coeff) 
+    
+@custom_model
+def SmoothBrokenPowerLaw(x, norm=1., gamma_low=1., gamma_high=1., break_freq=1.):
+    """
+    Smooth broken power law function,
+    implemented using astropy.modeling.models custom model
+
+    Parameters
+    ----------
+
+    x: numpy.ndarray
+        non-zero frequencies
+
+    norm: normalization frequency
+    gamma_low: power law index for f --> zero
+    gamma_high: power law index for f --> infinity
+    break_freq: break frequency
+
+    Returns
+    -------
+    model: astropy.modeling.Model
+        generalized smooth broken power law psd model
+    """
+    return p[0] * x**(-p[1]) / (1. + (x / p[3])**2)**(-(p[1] - p[2]) / 2)
+    
 
 def lorenzian(x, p):
     """

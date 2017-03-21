@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import numbers
 from scipy import signal
+import astropy.modeling.models
 
 from stingray import Lightcurve, AveragedPowerspectrum, io, utils
 import stingray.simulator.models as models
@@ -136,6 +137,9 @@ class Simulator(object):
         if isinstance(args[0], numbers.Integral) and len(args) == 1: 
             return  self._simulate_power_law(args[0])
 
+        elif isinstance(args[0], astropy.modeling.Model) and len(args) == 1:
+            return self._simulate_model_2(args[0])
+        
         elif len(args) == 1:
             return self._simulate_power_spectrum(args[0])
 
@@ -412,6 +416,44 @@ class Simulator(object):
         
         else:
             raise ValueError('Model is not defined!')
+            
+    def _simulate_model_2(self, model):
+        """
+        For generating a light curve from pre-defined model
+
+        Parameters
+        ----------
+        model: astropy.modeling.Model derived function
+            the pre-defined model 
+            (library-based, available in astropy.modeling.models or custom-defined)
+        
+        Returns
+        -------
+        lightCurve: `LightCurve` object
+        """
+
+        # Frequencies at which the PSD is to be computed 
+        # (only positive frequencies, since the signal is real)
+        nbins = self.red_noise*self.N
+        simfreq = np.fft.rfftfreq(nbins, d=self.dt)[1:]
+        
+        # Compute PSD from model
+        simpsd = model(simfreq)
+        
+        fac = np.sqrt(simpsd/2.)
+        pos_real   = np.random.normal(size=nbins//2)*fac
+        pos_imag   = np.random.normal(size=nbins//2)*fac
+        
+        pos_freq_transform = pos_real + 1j * pos_imag
+
+        # Simulate light curve from its Fourier transform
+        arg  = np.concatenate(([self.mean], pos_freq_transform))
+    
+        # Inverse Fourier transform
+        long_lc = np.fft.irfft(arg)
+        
+        lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+        return lc
 
     def _simulate_impulse_response(self, s, h, mode='same'):
         """
