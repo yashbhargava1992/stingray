@@ -1,7 +1,7 @@
 .. _stingray-simulator:
 
 ***************************************
-Simulations (`stingray.simulator`)
+Stingray Simulator (`stingray.simulator`)
 ***************************************
 
 Introduction
@@ -9,7 +9,7 @@ Introduction
 
 `stingray.simulator` provides a framework to simulate light curves with given variability distributions. In time series experiments, understanding the certainty is crucial to interpret the derived results in context of physical models. The simulator module provides tools to assess this uncertainty by simulating time series and spectral data. 
 
-Stingray simulator supports multiple methods to carry out these simulation. Light curves can be simulated through power-law spectrum, through a user-defined defined or pre-defined model, or through impulse responses. The module is designed in a way such that all these methods can be accessed using similar set of commands.
+Stingray simulator supports multiple methods to carry out these simulation. Light curves can be simulated through power-law spectrum, through a user-defined or pre-defined model, or through impulse responses. The module is designed in a way such that all these methods can be accessed using similar set of commands.
 
 .. note::
 
