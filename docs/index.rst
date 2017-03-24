@@ -8,6 +8,7 @@ Contents
    :maxdepth: 3
 
    api
+   simulator
 
 
 Indices and tables
