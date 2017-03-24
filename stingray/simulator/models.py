@@ -48,7 +48,7 @@ def SmoothBrokenPowerLaw(x, norm=1., gamma_low=1., gamma_high=1., break_freq=1.)
     model: astropy.modeling.Model
         generalized smooth broken power law psd model
     """
-    return p[0] * x**(-p[1]) / (1. + (x / p[3])**2)**(-(p[1] - p[2]) / 2)
+    return norm * x**(-gamma_low) / (1. + (x / break_freq)**2)**(-(gamma_low - gamma_high) / 2)
     
 
 def lorenzian(x, p):
