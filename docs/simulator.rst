@@ -14,7 +14,7 @@ Stingray simulator supports multiple methods to carry out these simulation. Ligh
 .. note::
 
     `stingray.simulator` is currently a work-in-progress, and thus it is likely
-    there will still be API changes in later versions of Astropy.  Backwards
+    there will still be API changes in later versions of Stingray.  Backwards
     compatibility support between versions will still be maintained as much as
     possible, but new features and enhancements are coming in future versions.
 
@@ -34,7 +34,7 @@ Creating a Simulator Object
 
 Stingray has a simulator class which can be used to instantiate a simulator
 object and subsequently, perform simulations. We can pass on arguments to
-the simulator class to set the properties of desired light curve.
+this class class to set the properties of the desired light curve.
 
 The simulator object can be instantiated as::
 
@@ -48,41 +48,35 @@ effect of red noise leakage.
 Simulate Method
 ---------------
 
-Stingray provides multiple ways to simulate a light curve. However, all these
-techniques can be accessed using a single simulate method. When only an
-integer argument is provided, that integer is interpreted as the decay value of
-the power-law spectrum. When an integer array is the input, that array is
-treated as a user-defined spectral model. In contrast, a pre-defined keyword
-can be specified to select a pre-defined model. Finally, by providing an original
-light curve object and an impulse response array, a simulated light curve can be
-modelled.
+Stingray provides multiple ways to simulate a light curve. However, all these methods follow a common recipe::
+
+  >>> sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
+  >>> simulator.simulate(...)
 
 Using Power-Law Spectrum
 ------------------------
 
-When only an integer argument ( beta) is provided, that integer defines the
-shape of the power law spectrum. Passing beta as 1 gives a flicker-noise distribution,
-while a beta of 2 generates a random-walk distribution.
+When only an integer argument (beta) is provided to the `simulate` method, that integer defines the shape of the power law spectrum. Passing `beta` as 1 gives a flicker-noise distribution, while a beta of 2 generates a random-walk distribution.
 
 .. plot::
    :include-source:
+
+   from matplotlib import rcParams
+   rcParams['font.family'] = 'sans-serif'
+   rcParams['font.sans-serif'] = ['Tahoma']
 
    import matplotlib.pyplot as plt
    from stingray.simulator import simulator
 
    # Instantiate simulator object
    sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
-   # Specify beta values
-   lc1 = sim.simulate(1)
-   lc2 = sim.simulate(2)
+   # Specify beta value
+   lc = sim.simulate(2)
 
-   plt.figure(figsize=(8, 10))
-   plt.subplot(2,1,1)
-   plt.plot(lc1.counts, 'k')
-   plt.title('Flicker-noise distribution simulation')
-   plt.subplot(2,1,2)
-   plt.title('Random-Walk distribution simulation')
-   plt.plot(lc2.counts, 'k')
+   plt.plot(lc.counts, 'g')
+   plt.title('Random-walk Distribution Simulation', fontsize='16')
+   plt.xlabel('Counts', fontsize='14', )
+   plt.ylabel('Flux', fontsize='14')
    plt.show()
 
 Using User-defined Model
@@ -94,17 +88,25 @@ passed on as a numpy array.
 .. plot::
    :include-source:
 
+   from matplotlib import rcParams
+   rcParams['font.family'] = 'sans-serif'
+   rcParams['font.sans-serif'] = ['Tahoma']
+
    import matplotlib.pyplot as plt
    from stingray.simulator import simulator
 
    # Instantiate simulator object
    sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
-   # Define a spectrum and simulate
+   # Define a spectrum
    w = np.fft.rfftfreq(sim.N, d=sim.dt)[1:]
    spectrum = np.power((1/w),2/2)
+   # Simulate
    lc = sim.simulate(spectrum)
 
-   plt.plot(lc.counts, 'k')
+   plt.plot(lc.counts, 'g')
+   plt.title('User-defined Model Simulation', fontsize='16')
+   plt.xlabel('Counts', fontsize='14')
+   plt.ylabel('Flux', fontsize='14')
    plt.show()
 
 Using Pre-defined Models
@@ -117,16 +119,62 @@ passed on as function arguments.
 Using Impulse Response
 ----------------------
 
-In order to simulate a light curve using impulse response, first we need to generate
-the impulse response itself and the original light curve.
+In order to simulate a light curve using impulse response, we need the original light curve and impulse response. Stingray provides `TransferFunction` class which can be used to obtain time and energy averaged impulse response by passing in a 2-D intensity profile as the input. A detailed tutorial on obtaining impulse response is provided `here <https://github.com/StingraySoftware/notebooks/blob/master/Transfer%20Functions/TransferFunction%20Tutorial.ipynb>`_.
 
-Here, we import a sample light curve from stingray sampledata module.
+Here, for the sake of simplicity, we use a simulated impulse response.
+
+.. plot::
+   :include-source:
+
+   from matplotlib import rcParams
+   rcParams['font.family'] = 'sans-serif'
+   rcParams['font.sans-serif'] = ['Tahoma']
+
+   import matplotlib.pyplot as plt
+   from stingray import sampledata
+   from stingray.simulator import simulator
+
+   # Obtain a sample light curve
+   lc = sampledata.sample_data().counts
+   # Instantiate simulator object
+   sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
+   # Obtain an artificial impulse response
+   ir = sim.relativistic_ir()
+   # Simulate
+   lc_new = sim.simulate(lc, ir)
+
+   plt.plot(lc_new.counts, 'g')
+   plt.title('Impulse Response based Simulation', fontsize='16')
+   plt.xlabel('Counts', fontsize='14')
+   plt.ylabel('Flux', fontsize='14')
+   plt.show()
+
+Since, the new light curve is produced by the convolution of original light curveand impulse response, its length is truncated by default for ease of analysis. This can be changed, however, by supplying an additional parameter `full`. However, at times, we do not need to include lag delay portion in the output light curve. This can be done by changing the final function parameter to `filtered`. For a more detailed analysis on lag-frequency spectrum, follow the notebook `here <https://github.com/StingraySoftware/notebooks/blob/master/Simulator/Lag%20Analysis.ipynb>`_.
 
 Channel Simulation
 ==================
 
-The simulator class provides the functionality to simulate light curves independently for each channel. This is useful, for example, when dealing with energy dependent impulse responses where we can create a di↵erent simulation channel for each energy range. The module provides options to count, retrieve and delete channels.
+The `simulator` class provides the functionality to simulate light curves independently for each channel. This is useful, for example, when dealing with energy dependent impulse responses where we can create a di↵erent simulation channel for each energy range. The module provides options to count, retrieve and delete channels.::
+  
+  >>> sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
+  >>> sim.simulate_channel('3.5 - 4.5', 2)
+  >>> sim.count_channels()
+  1
+  >>> lc = sim.get_channel('3.5 - 4.5')
+  >>> sim.delete_channel('3.5 - 4.5')
+  0
+
+Alternatively, assume that we have light curves in the simulated energy channels `3.5 - 4.5`, `4.5 - 5.5` and `5.5 - 6.5`. These channels can be retreived or deleted in single commands. 
+
+  >>> sim.countchannels()
+  3
+  >>> sim.get_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5'])
+  >>> sim.delete_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5'])
 
 Reference/API
 =============
+
+.. autoclass:: stingray.simulator.simulator.Simulator
+   :members:
+   :undoc-members:
 
