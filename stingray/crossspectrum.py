@@ -273,7 +273,7 @@ class Crossspectrum(object):
             'none' normalization, imaginary part is returned as well.
         """
 
-        # The "effective" counst/bin is the geometrical mean of the counts/bin
+        # The "effective" counts/bin is the geometrical mean of the counts/bin
         # of the two light curves
 
         log_nphots1 = np.log(self.nphots1)

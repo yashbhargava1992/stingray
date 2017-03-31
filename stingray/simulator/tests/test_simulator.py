@@ -2,6 +2,7 @@ import numpy as np
 import os
 
 from astropy.tests.helper import pytest
+import astropy.modeling.models
 from stingray import Lightcurve, Crossspectrum, sampledata
 from stingray.simulator import simulator, models
 
@@ -205,6 +206,74 @@ class TestSimulator(object):
         assert np.all(
             np.abs(actual_prob - simulated_prob) < 3*np.sqrt(actual_prob))
 
+    def test_simulate_GeneralizedLorentz1D_str(self):
+        """
+        Simulate a light curve using the GeneralizedLorentz1D model
+        called as a string
+        """
+        assert len(self.simulator.simulate('GeneralizedLorentz1D', {'x_0':10, 'fwhm':1., 'value':10., 'power_coeff':2})), 1024
+        
+    def test_simulate_GeneralizedLorentz1D(self):
+        """
+        Simulate a light curve using the GeneralizedLorentz1D model
+        called as a astropy.modeling.Model class
+        """
+        mod = models.GeneralizedLorentz1D(x_0=10, fwhm=1., value=10., power_coeff=2)
+        assert len(self.simulator.simulate(mod)), 1024
+        
+    def test_simulate_SmoothBrokenPowerLaw_str(self):
+        """
+        Simulate a light curve using SmoothBrokenPowerLaw model
+        called as a string
+        """
+        assert len(self.simulator.simulate('SmoothBrokenPowerLaw', {'norm':1., 'gamma_low':1., 'gamma_high':2., 'break_freq':1.})), 1024
+    
+    def test_simulate_SmoothBrokenPowerLaw(self):
+        """
+        Simulate a light curve using SmoothBrokenPowerLaw model
+        called as a astropy.modeling.Model class
+        """
+        mod = models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2., break_freq=1.)
+        assert len(self.simulator.simulate(mod)), 1024
+        
+        
+    def test_simulate_generic_model(self):
+        """
+        Simulate a light curve using a generic model
+        called as a astropy.modeling.Model class
+        """
+        mod = astropy.modeling.models.Gaussian1D(amplitude=10., mean=1., stddev=2.)
+        assert len(self.simulator.simulate(mod)), 1024
+        
+        
+    def test_compare_composite(self):
+        """
+        Compare the PSD of a light curve simulated using a composite model
+        (using SmoothBrokenPowerLaw plus GeneralizedLorentz1D)
+        with the actual model
+        """
+        N = 50000
+        dt = 0.01
+        m = 30000.
+        
+        self.simulator = simulator.Simulator(N=N, mean=m, dt=dt)
+        smoothbknpo = models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2., break_freq=1.)
+        lorentzian = models.GeneralizedLorentz1D(x_0=10, fwhm=1., value=10., power_coeff=2.)
+        myModel = smoothbknpo + lorentzian
+        
+        lc = [self.simulator.simulate(myModel) for i in range(1, 50)]
+
+        simulated = self.simulator.powerspectrum(lc, lc[0].tseg)
+
+        w = np.fft.rfftfreq(N, d=dt)[1:]
+        actual = myModel(w)[:-1]
+
+        actual_prob = actual/float(sum(actual))
+        simulated_prob = simulated/float(sum(simulated))
+
+        assert np.all(np.abs(actual_prob - simulated_prob) < 3*np.sqrt(actual_prob))
+        
+        
     def test_simulate_wrong_model(self):
         """
         Simulate with a model that does not exist.

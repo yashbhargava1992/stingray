@@ -134,6 +134,8 @@ html_theme_options = {
     'logotext3': ':docs'   # white,  light
     }
 
+extensions += ['matplotlib.sphinxext.plot_directive','sphinx.ext.autodoc']
+
 # -- Options for LaTeX output --------------------------------------------------
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -164,3 +166,4 @@ if eval(setup_cfg.get('edit_on_github')):
 
     edit_on_github_source_root = ""
     edit_on_github_doc_root = "docs"
+

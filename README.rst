@@ -1,26 +1,32 @@
+
+Stingray
+========
+
++------------------+-------------------------+---------------+---------+---------------------------+
+| Master           | |Build Status Master|   | |Readthedocs| | |Slack| | |Coverage Status Master|  |
++------------------+-------------------------+---------------+---------+---------------------------+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
-===============================
-+------------------+-------------------------+----------------------------+
-| Master           | |Build Status Master|   | |Coverage Status Master|   |
-+------------------+-------------------------+----------------------------+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Stingray is an in-development spectral-timing software package for astrophysical X-ray (and more) data.
-Stingray merges existing efforts for a (spectral-)timing package in Python, and is 
+Stingray merges existing efforts for a (spectral-)timing package in Python, and is
 structured with the best guidelines for modern open-source programming, following the example of `Astropy`_ .
 
 It is composed of:
 
-1. a library of time series methods, including power spectra, cross spectra, covariance spectra, lags, and so on; 
+1. a library of time series methods, including power spectra, cross spectra, covariance spectra, lags, and so on;
 2. a set of scripts to load FITS data files from different missions;
 3. a simulator of light curves and event lists, that includes different kinds of variability and more complicated phenomena based on the impulse response of given physical events (e.g. reverberation);
 4. finally, an in-development GUI to ease the learning curve for new users.
 
 There are a number of official software packages for X-ray spectral fitting (Xspec, ISIS, Sherpa, ...).
-Such a widely used and standard software package does not exist for X-ray timing, 
-that remains for now mostly done with custom software. 
-Stingray aims not only at becoming a standard timing package, 
-but at extending the implementation to the most advanced spectral timing techniques available in the literature. 
-The ultimate goal of this project is to provide the community with a package that eases 
+Such a widely used and standard software package does not exist for X-ray timing,
+that remains for now mostly done with custom software.
+Stingray aims not only at becoming a standard timing package,
+but at extending the implementation to the most advanced spectral timing techniques available in the literature.
+The ultimate goal of this project is to provide the community with a package that eases
 the learning curve for the advanced spectral timing techniques with a correct statistical framework.
 
 
@@ -61,7 +67,7 @@ Contents
 
 Future Additions
 ----------------
-- cross correlation functions, 
+- cross correlation functions,
 - bispectra (?)
 - spectral-timing functionality
 - Bayesian QPO searches
@@ -90,7 +96,9 @@ Installation
 Documentation
 -------------
 
-Is generated using `Sphinx`_. Try::
+Is hosted at https://stingray.readthedocs.io/
+
+And is generated using `Sphinx`_. Try::
 
    $ sphinx-build docs docs/_build
 
@@ -103,7 +111,7 @@ Test suite
 
 Stingray uses `py.test` for testing. To run the tests, try::
 
-   $ python setup.py test 
+   $ python setup.py test
 
 Copyright
 ---------
@@ -116,6 +124,10 @@ this project, please `get in touch via the issues
 
 .. |Build Status Master| image:: https://travis-ci.org/StingraySoftware/stingray.svg?branch=master
     :target: https://travis-ci.org/StingraySoftware/stingray
+.. |Readthedocs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
+    :target: https://stingray.readthedocs.io/
+.. |Slack| image:: http://slack-invite.timelabtechnologies.com/badge.svg
+    :target: http://slack-invite.timelabtechnologies.com
 .. |Coverage Status Master| image:: https://coveralls.io/repos/github/StingraySoftware/stingray/badge.svg?branch=master
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
 .. _Astropy: https://www.github.com/astropy/astropy
