@@ -27,8 +27,8 @@ class Simulator(object):
         red_noise: int, default 1
             multiple of real length of light curve, by
             which to simulate, to avoid red noise leakage
-        random_state: int, numpy.random.RandomState instance, default None
-            seed value or random number generator for random processes
+        seed: int, default None
+            seed value for random processes
         """
 
         self.dt = dt
@@ -360,9 +360,6 @@ class Simulator(object):
 
         return lc
 
-    def _simulate_emmanoulopoulos(self):
-        pass
-
     def _simulate_power_spectrum(self, s):
         """
         Generate a light curve from user-provided spectrum.
@@ -416,8 +413,8 @@ class Simulator(object):
         simpsd = model(simfreq)
 
         fac = np.sqrt(simpsd/2.)
-        pos_real   = np.random.normal(size=nbins//2)*fac
-        pos_imag   = np.random.normal(size=nbins//2)*fac
+        pos_real   = self.random_state.normal(size=nbins//2)*fac
+        pos_imag   = self.random_state.normal(size=nbins//2)*fac
 
         pos_freq_transform = pos_real + 1j * pos_imag
 
@@ -463,8 +460,8 @@ class Simulator(object):
                 raise ValueError('Params should be list or dictionary!')
 
             fac = np.sqrt(simpsd/2.)
-            pos_real   = np.random.normal(size=nbins//2)*fac
-            pos_imag   = np.random.normal(size=nbins//2)*fac
+            pos_real   = self.random_state.normal(size=nbins//2)*fac
+            pos_imag   = self.random_state.normal(size=nbins//2)*fac
 
             pos_freq_transform = pos_real + 1j * pos_imag
 
