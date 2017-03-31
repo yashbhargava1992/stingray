@@ -201,11 +201,14 @@ def contiguous_regions(condition):
     idx.shape = (-1, 2)
     return idx
 
+def is_int(obj):
+    return isinstance(obj, (numbers.Integral, np.integer))
+
 def get_random_state(random_state = None):
     if not random_state:
         random_state = np.random.mtrand._rand
     else:
-        if isinstance(random_state, (numbers.Integral, np.integer)):
+        if is_int(random_state):
             random_state = np.random.RandomState(random_state)
         elif not isinstance(random_state, np.random.RandomState):
             raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
