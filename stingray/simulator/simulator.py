@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import numbers
 from scipy import signal
+import astropy.modeling.models
 
 from stingray import Lightcurve, AveragedPowerspectrum, io, utils
 import stingray.simulator.models as models
@@ -52,15 +53,13 @@ class Simulator(object):
 
         Examples
         --------
-        - x = simulate(2)
+        - x = simulate(beta)
             For generating a light curve using power law spectrum.
 
             Parameters
             ----------
-            Beta: int
+            beta: int
                 Defines the shape of spectrum
-            N: int
-                Number of samples
 
             Returns
             -------
@@ -78,17 +77,27 @@ class Simulator(object):
             -------
             lightCurve: `LightCurve` object
 
-        - x = simulate('lorenzian', p)
+        - x = simulate(model)
             For generating a light curve from pre-defined model
 
             Parameters
             ----------
-            model: str
-                name of the pre-defined model
+            model: astropy.modeling.Model
+                the pre-defined model
 
-            p: list iterable
-                model parameters. For details, see model definitions
-                in model.py
+            Returns
+            -------
+            lightCurve: `LightCurve` object
+        
+        - x = simulate('model', params)
+            For generating a light curve from pre-defined model
+
+            Parameters
+            ----------
+            model: string
+                the pre-defined model
+            params: list iterable or dict
+                the parameters for the pre-defined model
 
             Returns
             -------
@@ -135,11 +144,14 @@ class Simulator(object):
         if isinstance(args[0], numbers.Integral) and len(args) == 1:
             return  self._simulate_power_law(args[0])
 
+        elif isinstance(args[0], astropy.modeling.Model) and len(args) == 1:
+            return self._simulate_model(args[0])
+        
+        elif utils.is_string(args[0]) and len(args) == 2:
+            return self._simulate_model_string(args[0], args[1])
+        
         elif len(args) == 1:
             return self._simulate_power_spectrum(args[0])
-
-        elif utils.is_string(args[0]) and len(args) == 2:
-            return self._simulate_model(args[0], args[1])
 
         elif len(args) == 2:
             return self._simulate_impulse_response(args[0], args[1])
@@ -149,6 +161,7 @@ class Simulator(object):
 
         else:
             raise ValueError("Length of arguments must be 1, 2 or 3.")
+
 
     def simulate_channel(self, channel, *args):
         """
@@ -378,42 +391,105 @@ class Simulator(object):
 
         return lc
 
-    def _simulate_model(self, mod, p):
+            
+    def _simulate_model(self, model):
         """
-        For generating a light curve from pre-defined model
+        For generating a light curve from a pre-defined model
 
         Parameters
         ----------
-        mod: str
-            name of the pre-defined model
-
-        p: list iterable
-            model parameters. For details, see model definitions
-            in model.py
-
+        model: astropy.modeling.Model derived function
+            the pre-defined model 
+            (library-based, available in astropy.modeling.models or custom-defined)
+        
         Returns
         -------
         lightCurve: `LightCurve` object
         """
 
-        # Define frequencies at which to compute PSD
-        w = np.fft.rfftfreq(self.red_noise*self.N, d=self.dt)[1:]
+        # Frequencies at which the PSD is to be computed 
+        # (only positive frequencies, since the signal is real)
+        nbins = self.red_noise*self.N
+        simfreq = np.fft.rfftfreq(nbins, d=self.dt)[1:]
+        
+        # Compute PSD from model
+        simpsd = model(simfreq)
+        
+        fac = np.sqrt(simpsd/2.)
+        pos_real   = np.random.normal(size=nbins//2)*fac
+        pos_imag   = np.random.normal(size=nbins//2)*fac
+        
+        pos_freq_transform = pos_real + 1j * pos_imag
 
-        if mod in dir(models):
-            mod = 'models.'+ mod
-            s = eval(mod +'(w, p)')
+        # Simulate light curve from its Fourier transform
+        arg  = np.concatenate(([self.mean], pos_freq_transform))
+    
+        # Inverse Fourier transform
+        long_lc = np.fft.irfft(arg)
+        
+        lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+        return lc
+        
+        
+    def _simulate_model_string(self, model_str, params):
+        """
+        For generating a light curve from a pre-defined model
 
+<<<<<<< HEAD
             # Draw two set of 'N' guassian distributed numbers
             a1 = self.random_state.normal(size=len(s))
             a2 = self.random_state.normal(size=len(s))
+=======
+        Parameters
+        ----------
+        model_str: string
+            name of the pre-defined model 
+        params: list or dictionary
+            parameters of the pre-defined model
+        
+        Returns
+        -------
+        lightCurve: `LightCurve` object
+        """
+>>>>>>> 6cf2d3ff50ea6440e948f10bfd9d644bd5635e5a
 
-            long_lc = self._find_inverse(a1*s, a2*s)
+        # Frequencies at which the PSD is to be computed 
+        # (only positive frequencies, since the signal is real)
+        nbins = self.red_noise*self.N
+        simfreq = np.fft.rfftfreq(nbins, d=self.dt)[1:]
+        
+        if model_str in dir(models):
+            if isinstance(params, dict):
+                model = eval('models.' + model_str + '(**params)')
+                # Compute PSD from model
+                simpsd = model(simfreq)
+            elif isinstance(params, list):
+                simpsd = eval('models.' + model_str + '(simfreq, params)')
+            else:
+                raise ValueError('Params should be list or dictionary!')    
+        
+            fac = np.sqrt(simpsd/2.)
+            pos_real   = np.random.normal(size=nbins//2)*fac
+            pos_imag   = np.random.normal(size=nbins//2)*fac
+            
+            pos_freq_transform = pos_real + 1j * pos_imag
+
+            # Simulate light curve from its Fourier transform
+            arg  = np.concatenate(([self.mean], pos_freq_transform))
+    
+            # Inverse Fourier transform
+            long_lc = np.fft.irfft(arg)
+        
             lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
-
             return lc
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6cf2d3ff50ea6440e948f10bfd9d644bd5635e5a
         else:
             raise ValueError('Model is not defined!')
+        
+        
 
     def _simulate_impulse_response(self, s, h, mode='same'):
         """

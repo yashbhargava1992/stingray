@@ -48,6 +48,12 @@ class Lightcurve(object):
         time: numpy.ndarray
             The array of midpoints of time bins.
 
+        bin_lo:
+            The array of lower time stamp of time bins.
+
+        bin_hi:
+            The array of higher time stamp of time bins.
+
         counts: numpy.ndarray
             The counts per bin corresponding to the bins in `time`.
 
@@ -98,6 +104,9 @@ class Lightcurve(object):
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
 
+        self.bin_lo = self.time - 0.5 * self.dt
+        self.bin_hi = self.time + 0.5 * self.dt
+
         if input_counts:
             self.counts = np.asarray(counts)
             self.countrate = self.counts / self.dt
@@ -126,7 +135,8 @@ class Lightcurve(object):
         check_gtis(self.gti)
 
     def shift(self, time_shift):
-        """Shift the light curve and the GTIs in time.
+        """
+        Shift the light curve and the GTIs in time.
 
         Parameters
         ----------

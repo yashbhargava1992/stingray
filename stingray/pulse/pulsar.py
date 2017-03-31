@@ -16,7 +16,8 @@ def _default_value_if_no_key(dictionary, key, default):
 
 
 def pulse_phase(times, *frequency_derivatives, **opts):
-    """Calculate pulse phase from the frequency and its derivatives.
+    """
+    Calculate pulse phase from the frequency and its derivatives.
 
     Parameters
     ----------
@@ -51,7 +52,8 @@ def pulse_phase(times, *frequency_derivatives, **opts):
 
 
 def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
-    '''Calculate the exposure on each phase of a pulse profile.
+    '''
+    Calculate the exposure on each phase of a pulse profile.
 
     Parameters
     ----------
