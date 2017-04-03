@@ -95,3 +95,15 @@ class TestUtils(object):
         cont = utils.contiguous_regions(array)
         assert np.all(cont == np.array([[1, 3], [4, 7]])), \
             'Contiguous region wrong'
+
+    def test_get_random_state(self):
+        # Life, Universe and Everything
+        lue = 42
+        random_state = np.random.RandomState(lue)
+
+        assert utils.get_random_state(None) is np.random.mtrand._rand
+        assert np.all(utils.get_random_state(lue).randn(lue) == np.random.RandomState(lue).randn(lue))
+        assert np.all(utils.get_random_state(np.random.RandomState(lue)).randn(lue) == np.random.RandomState(lue).randn(lue))
+
+        with pytest.raises(ValueError):
+            utils.get_random_state('foobar')

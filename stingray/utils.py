@@ -2,9 +2,11 @@ from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 import sys
 import collections
+import numbers
 
 import warnings
 import numpy as np
+
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
 
@@ -198,3 +200,19 @@ def contiguous_regions(condition):
     # Reshape the result into two columns
     idx.shape = (-1, 2)
     return idx
+
+def is_int(obj):
+    return isinstance(obj, (numbers.Integral, np.integer))
+
+def get_random_state(random_state = None):
+    if not random_state:
+        random_state = np.random.mtrand._rand
+    else:
+        if is_int(random_state):
+            random_state = np.random.RandomState(random_state)
+        elif not isinstance(random_state, np.random.RandomState):
+            raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
+                value = random_state
+            ))
+
+    return random_state
