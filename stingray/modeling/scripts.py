@@ -9,7 +9,7 @@ __all__ = ["fit_powerspectrum", "fit_lorentzians"]
 
 
 def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
-              fitmethod="L-BFGS-B"):
+                      fitmethod="L-BFGS-B"):
     """
     Fit a number of Lorentzians to a power spectrum, possibly including white
     noise. Each Lorentzian has three parameters (amplitude, centroid position,
@@ -29,8 +29,9 @@ def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
     ps : Powerspectrum
         A Powerspectrum object with the data to be fit
 
-    nlor : int
-        The number of Lorentzians to fit
+    model: astropy.modeling.models class instance
+        The parametric model supposed to represent the data. For details
+        see the astropy.modeling documentation
 
     starting_pars : iterable
         The list of starting guesses for the optimizer. See explanation above
