@@ -42,7 +42,7 @@ class VarEnergySpectrum(object):
         self.events = events
         self.freq_interval = freq_interval
         self.use_pi = use_pi
-        if self.log_distr:
+        if log_distr:
             self.energies = np.logspace(np.log10(energies[0]),
                                         np.log10(energies[1]),
                                         energies[2])
@@ -52,7 +52,7 @@ class VarEnergySpectrum(object):
 
     def _decide_ref_intervals(self, ref_band, base_band):
         """Eliminate base_band from ref_band."""
-        if check_separate(ref_band, base_band):
+        if check_separate([ref_band], [base_band]):
             return np.asarray([ref_band])
         not_base_band = [[0, base_band[0]],
                          [base_band[1], np.max([ref_band[-1],
