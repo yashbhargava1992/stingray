@@ -201,8 +201,10 @@ def contiguous_regions(condition):
     idx.shape = (-1, 2)
     return idx
 
+
 def is_int(obj):
     return isinstance(obj, (numbers.Integral, np.integer))
+
 
 def get_random_state(random_state = None):
     if not random_state:
@@ -216,3 +218,34 @@ def get_random_state(random_state = None):
             ))
 
     return random_state
+
+
+def baseline_als(y, lam, p, niter=10):
+    """Baseline Correction with Asymmetric Least Squares Smoothing.
+
+    Modifications to the routine from Eilers & Boelens 2005
+    https://www.researchgate.net/publication/228961729_Technical_Report_Baseline_Correction_with_Asymmetric_Least_Squares_Smoothing
+    The Python translation is partly from
+    http://stackoverflow.com/questions/29156532/python-baseline-correction-library
+    
+    Parameters
+    ----------
+    y : array of floats
+        the "light curve". It assumes equal spacing.
+    lam : float
+        "smoothness" parameter. Larger values make the baseline stiffer
+        Typically 1e2 < lam < 1e9
+    p : float
+        "asymmetry" parameter. Smaller values make the baseline more 
+        "horizontal". Typically 0.001 < p < 0.1, but not necessary.
+    """
+    from scipy import sparse
+    L = len(y)
+    D = sparse.csc_matrix(np.diff(np.eye(L), 2))
+    w = np.ones(L)
+    for i in range(niter):
+        W = sparse.spdiags(w, 0, L, L)
+        Z = W + lam * D.dot(D.transpose())
+        z = sparse.linalg.spsolve(Z, w*y)
+        w = p * (y > z) + (1-p) * (y < z)
+    return z
