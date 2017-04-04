@@ -1,17 +1,6 @@
 from __future__ import division
 import numpy as np
-import scipy
-import scipy.stats
-import scipy.fftpack
-import scipy.optimize
-import logging
-
-import stingray.lightcurve as lightcurve
-import stingray.utils as utils
 from stingray.gti import check_separate, cross_two_gtis
-from stingray.utils import simon
-from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
-from stingray.events import EventList
 from stingray.lightcurve import Lightcurve
 from stingray.utils import assign_value_if_none
 
