@@ -47,10 +47,10 @@ class VarEnergySpectrum(object):
         if log_distr:
             energies = np.logspace(np.log10(energy_spec[0]),
                                    np.log10(energy_spec[1]),
-                                   energy_spec[2])
+                                   energy_spec[2] + 1)
         else:
             energies = np.linspace(energy_spec[0], energy_spec[1],
-                                   energy_spec[2])
+                                   energy_spec[2] + 1)
 
         self.energies = list(zip(energies[0: -1], energies[1:]))
         self.ref_band = ref_band
@@ -90,6 +90,6 @@ class VarEnergySpectrum(object):
                                                 tstart=tstart,
                                                 tseg=tstop - tstart,
                                                 gti=self.events.gti)
-            ref_lc = ref_lc = new_lc
+            ref_lc = ref_lc + new_lc
 
         return base_lc, ref_lc

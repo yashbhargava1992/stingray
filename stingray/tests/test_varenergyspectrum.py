@@ -13,7 +13,7 @@ class TestPowerspectrum(object):
         tend = 10.0
         nphot = 100
         cls.events = EventList(np.random.uniform(tstart, tend, nphot),
-                                pha=np.random.uniform(0.3, 12, nphot))
+                               pha=np.random.uniform(0.3, 12, nphot))
         cls.vespec = VarEnergySpectrum(cls.events, [0., 10000],
                                        [0.5, 5, 10], [0.3, 10])
 
@@ -28,5 +28,12 @@ class TestPowerspectrum(object):
         np.testing.assert_allclose(ref_int, [[0.3, 5]])
 
     def test_construct_lightcurves(self):
-        self.vespec._construct_lightcurves(0.1, [6, 11], [0.3, 5],
-                                           tstart=0, tstop=10)
+        events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
+                           pha=[0,0,0,0,1,1])
+        vespec = VarEnergySpectrum(events, [0., 10000],
+                                   [0, 1, 2], [0.3, 10])
+        base_lc, ref_lc = \
+            vespec._construct_lightcurves(0.1, [0, 0.5], [0.5, 1.1],
+                                          tstart=0, tstop=0.65)
+        np.testing.assert_allclose(base_lc.counts, [1, 0, 2, 1, 0, 0])
+        np.testing.assert_allclose(ref_lc.counts, [0, 0, 0, 1, 0, 1])
