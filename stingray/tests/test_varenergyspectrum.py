@@ -16,6 +16,9 @@ class TestPowerspectrum(object):
                                pha=np.random.uniform(0.3, 12, nphot))
         cls.vespec = VarEnergySpectrum(cls.events, [0., 10000],
                                        [0.5, 5, 10], [0.3, 10])
+        cls.vespeclog = \
+            VarEnergySpectrum(cls.events, [0., 10000],
+                              [0.5, 5, 10], [0.3, 10], log_distr=True)
 
     def test_intervals_overlapping(self):
         ref_int = self.vespec._decide_ref_intervals([0.5, 6], [0.3, 10])
@@ -32,6 +35,17 @@ class TestPowerspectrum(object):
                            pha=[0,0,0,0,1,1])
         vespec = VarEnergySpectrum(events, [0., 10000],
                                    [0, 1, 2], [0.3, 10])
+        base_lc, ref_lc = \
+            vespec._construct_lightcurves(0.1, [0, 0.5], [0.5, 1.1],
+                                          tstart=0, tstop=0.65)
+        np.testing.assert_allclose(base_lc.counts, [1, 0, 2, 1, 0, 0])
+        np.testing.assert_allclose(ref_lc.counts, [0, 0, 0, 1, 0, 1])
+
+    def test_construct_lightcurves_pi(self):
+        events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
+                           pi=np.asarray([0, 0, 0, 0, 1, 1]))
+        vespec = VarEnergySpectrum(events, [0., 10000],
+                                   [0, 1, 2], [0.3, 10], use_pi=True)
         base_lc, ref_lc = \
             vespec._construct_lightcurves(0.1, [0, 0.5], [0.5, 1.1],
                                           tstart=0, tstop=0.65)
