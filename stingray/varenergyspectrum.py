@@ -77,9 +77,10 @@ class VarEnergySpectrum(object):
                                              gti=self.events.gti)
 
         if exclude:
-            ref_intervals = self._decide_ref_intervals(base_band, ref_band)
+            ref_intervals = self._decide_ref_intervals(base_band,
+                                                       self.ref_band)
         else:
-            ref_intervals = [ref_band]
+            ref_intervals = [self.ref_band]
 
         ref_lc = Lightcurve(base_lc.time, np.zeros_like(base_lc.counts),
                             gti=base_lc.gti)
@@ -95,14 +96,15 @@ class VarEnergySpectrum(object):
         return base_lc, ref_lc
 
     def _spectrum_function(self):
-        return None
-
-    def _calculate_stat(self):
-        return None
+        return None, None
 
 
 class RmsEnergySpectrum(VarEnergySpectrum):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def _spectrum_function(self):
+        # super(RmsEnergySpectrum, self)._spectrum_function()
         rms_spec = np.zeros(len(self.energy_intervals))
         for i, eint in enumerate(self.energy_intervals):
             base_lc, ref_lc = self._construct_lightcurves(eint)
