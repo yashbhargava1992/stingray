@@ -41,8 +41,9 @@ class VarEnergySpectrum(object):
             energies = np.linspace(energy_spec[0], energy_spec[1],
                                    energy_spec[2] + 1)
 
-        self.energies = list(zip(energies[0: -1], energies[1:]))
+        self.energy_intervals = list(zip(energies[0: -1], energies[1:]))
         self.ref_band = ref_band
+        self.spectrum = self._spectrum_function()
 
     def _decide_ref_intervals(self, base_band, ref_band):
         """Eliminate base_band from ref_band."""
@@ -54,7 +55,7 @@ class VarEnergySpectrum(object):
         return cross_two_gtis([ref_band], not_base_band)
 
     def _construct_lightcurves(self, dt, base_band, ref_band,
-                               tstart=None, tstop=None):
+                               tstart=None, tstop=None, exclude=True):
         if self.use_pi:
             energies = self.events.pi
         else:
@@ -69,7 +70,10 @@ class VarEnergySpectrum(object):
                                              tseg=tstop - tstart,
                                              gti=self.events.gti)
 
-        ref_intervals = self._decide_ref_intervals(base_band, ref_band)
+        if exclude:
+            ref_intervals = self._decide_ref_intervals(base_band, ref_band)
+        else:
+            ref_intervals = [ref_band]
 
         ref_lc = Lightcurve(base_lc.time, np.zeros_like(base_lc.counts),
                             gti=base_lc.gti)
@@ -82,3 +86,9 @@ class VarEnergySpectrum(object):
             ref_lc = ref_lc + new_lc
 
         return base_lc, ref_lc
+
+    def _spectrum_function(self):
+        return None
+
+    def _calculate_stat(self):
+        return None

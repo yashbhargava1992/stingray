@@ -41,6 +41,17 @@ class TestPowerspectrum(object):
         np.testing.assert_allclose(base_lc.counts, [1, 0, 2, 1, 0, 0])
         np.testing.assert_allclose(ref_lc.counts, [0, 0, 0, 1, 0, 1])
 
+    def test_construct_lightcurves_no_exclude(self):
+        events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
+                           pha=[0,0,0,0,1,1])
+        vespec = VarEnergySpectrum(events, [0., 10000],
+                                   [0, 1, 2], [0.3, 10])
+        base_lc, ref_lc = \
+            vespec._construct_lightcurves(0.1, [0, 0.5], [0, 0.5],
+                                          tstart=0, tstop=0.65,
+                                          exclude=False)
+        np.testing.assert_equal(base_lc.counts, ref_lc.counts)
+
     def test_construct_lightcurves_pi(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
                            pi=np.asarray([0, 0, 0, 0, 1, 1]))
