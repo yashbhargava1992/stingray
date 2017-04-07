@@ -101,14 +101,13 @@ class VarEnergySpectrum(object):
 
 
 class RmsEnergySpectrum(VarEnergySpectrum):
-    def __init__(self, *args, **kwargs):
-        if six.PY2:
-            obs = super(RmsEnergySpectrum,self).__init__(self,*args,**kwargs)
-        else:
-            obs = super().__init__(self)
 
     def _spectrum_function(self):
-        # super(RmsEnergySpectrum, self)._spectrum_function()
+        if six.PY2:
+            _ = super(RmsEnergySpectrum, self)._spectrum_function()
+        else:
+            _ = super()._spectrum_function()
+
         rms_spec = np.zeros(len(self.energy_intervals))
         for i, eint in enumerate(self.energy_intervals):
             base_lc, ref_lc = self._construct_lightcurves(eint)
