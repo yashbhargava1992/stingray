@@ -4,6 +4,7 @@ from stingray.gti import check_separate, cross_two_gtis
 from stingray.lightcurve import Lightcurve
 from stingray.utils import assign_value_if_none
 from stingray.crossspectrum import AveragedCrossspectrum
+import six
 
 
 class VarEnergySpectrum(object):
@@ -101,7 +102,10 @@ class VarEnergySpectrum(object):
 
 class RmsEnergySpectrum(VarEnergySpectrum):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        if six.PY2:
+            obs = super(RmsEnergySpectrum,self).__init__(self,*args,**kwargs)
+        else:
+            obs = super().__init__(self)
 
     def _spectrum_function(self):
         # super(RmsEnergySpectrum, self)._spectrum_function()
