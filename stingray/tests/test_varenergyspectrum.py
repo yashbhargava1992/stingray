@@ -3,6 +3,7 @@ from stingray.events import EventList
 from stingray.varenergyspectrum import VarEnergySpectrum, RmsEnergySpectrum
 
 from astropy.tests.helper import pytest
+np.random.seed(20150907)
 
 
 class TestPowerspectrum(object):
@@ -11,7 +12,7 @@ class TestPowerspectrum(object):
     def setup_class(cls):
         tstart = 0.0
         tend = 100.0
-        nphot = 100
+        nphot = 1000
         alltimes = np.random.uniform(tstart, tend, nphot)
         alltimes.sort()
         cls.events = EventList(alltimes,
