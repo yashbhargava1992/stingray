@@ -19,7 +19,7 @@ class VarEnergySpectrum(object):
             event list
         freq_interval : [f0, f1], floats
             the frequency range over which calculating the variability quantity
-        energies : [emin, emax, N]
+        energy_spec : [emin, emax, N]
             minimum and maximum energy, and number of intervals, of the final 
             spectrum
         ref_band : [emin, emax]
