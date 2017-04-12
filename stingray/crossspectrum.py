@@ -199,8 +199,15 @@ class Crossspectrum(object):
             self.power_err = self.power / np.sqrt(self.m)
         elif self.__class__.__name__ in ['Crossspectrum',
                                          'AveragedCrossspectrum']:
+            # This is clearly a wild approximation.
+            utils.simon("Errorbars on cross spectra are not thoroughly tested. "
+                        "Please report any inconsistencies.")
+            unnorm_power_err = np.sqrt(2) / np.sqrt(self.m) # Leahy-like
+            unnorm_power_err /= (2 / np.sqrt(self.nphots1 * self.nphots2))
+            unnorm_power_err += np.zeros_like(self.power)
+
             self.power_err = \
-                np.zeros_like(self.power) + np.sqrt(2) / np.sqrt(self.m)
+                self._normalize_crossspectrum(unnorm_power_err, lc1.tseg)
         else:
             self.power_err = np.zeros(len(self.power))
 
@@ -267,6 +274,7 @@ class Crossspectrum(object):
         bin_cs.n = self.n
         bin_cs.norm = self.norm
         bin_cs.nphots1 = self.nphots1
+        bin_cs.power_err = binerr
 
         try:
             bin_cs.nphots2 = self.nphots2
@@ -277,14 +285,6 @@ class Crossspectrum(object):
                 raise AttributeError('Spectrum has no attribute named nphots2.')
 
         bin_cs.m = int(step_size)*self.m
-
-        if self.__class__.__name__ in ['Powerspectrum',
-                                       'AveragedPowerspectrum']:
-            bin_cs.power_err = bincs.power / np.sqrt(bin_cs.m)
-        elif self.__class__.__name__ in ['Crossspectrum',
-                                         'AveragedCrossspectrum']:
-            bin_cs.power_err = \
-                np.zeros_like(bincs.power) + np.sqrt(2) / np.sqrt(self.m)
 
         return bin_cs
 

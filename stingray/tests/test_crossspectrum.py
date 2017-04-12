@@ -302,7 +302,7 @@ class TestAveragedCrossspectrum(object):
             assert len(coh[0]) == 4999
             assert len(coh[1]) == 4999
 
-            assert len(w) == 3
+            assert len(w) == 5
             assert issubclass(w[-1].category, UserWarning)
 
     def test_failure_when_normalization_not_recognized(self):
