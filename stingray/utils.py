@@ -35,7 +35,7 @@ def simon(message, **kwargs):
     warnings.warn("SIMON says: {0}".format(message), **kwargs)
 
 
-def rebin_data(x, y, yerr, dx_new, method='sum'):
+def rebin_data(x, y, dx_new, yerr=None, method='sum'):
 
     """Rebin some data to an arbitrary new data resolution. Either sum
     the data points in the new bins or average them.
@@ -48,7 +48,7 @@ def rebin_data(x, y, yerr, dx_new, method='sum'):
     y: iterable
         The independent variable to be binned
 
-    yerr: iterable
+    yerr: iterable, optional
         The uncertainties of y, to be propagated during binning.
 
     dx_new: float
@@ -68,14 +68,14 @@ def rebin_data(x, y, yerr, dx_new, method='sum'):
         The binned quantity y
 
     ybin_err: numpy.ndarray
-        The uncertainties of the binned values of y
+        The uncertainties of the binned values of y.
 
     step_size: float
         The size of the binning step
     """
 
     y = np.asarray(y)
-    yerr = np.asarray(yerr)
+    yerr = np.asarray(assign_value_if_none(yerr, np.zeros_like(y)))
 
     dx_old = x[1] - x[0]
 

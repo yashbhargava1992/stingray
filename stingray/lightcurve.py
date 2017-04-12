@@ -488,10 +488,9 @@ class Lightcurve(object):
             raise ValueError("New time resolution must be larger than "
                              "old time resolution!")
 
-        bin_time, bin_counts, bin_err, _ = utils.rebin_data(self.time,
-                                                            self.counts,
-                                                            self.counts_err,
-                                                            dt_new, method)
+        bin_time, bin_counts, bin_err, _ = \
+            utils.rebin_data(self.time, self.counts, dt_new,
+                             yerr=self.counts_err, method=method)
 
         lc_new = Lightcurve(bin_time, bin_counts, err=bin_err)
         return lc_new
