@@ -175,10 +175,6 @@ class Powerspectrum(Crossspectrum):
 
         """
 
-        # if lc.statistic != 'poisson':
-        #    simon("Looks like your lightcurve statistic is not poisson."
-        #          "The errors in the Powerspectrum will be incorrect.")
-
         Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti)
         self.nphots = self.nphots1
 
@@ -415,7 +411,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             counts = lc.counts[start_ind:end_ind]
             counts_err = lc.counts_err[start_ind: end_ind]
             lc_seg = lightcurve.Lightcurve(time, counts, err=counts_err,
-                                           statistic=lc.statistic)
+                                           err_dist=lc.err_dist.lower())
             power_seg = Powerspectrum(lc_seg, norm=self.norm)
             power_all.append(power_seg)
             nphots_all.append(np.sum(lc_seg.counts))
