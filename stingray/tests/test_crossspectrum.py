@@ -75,6 +75,7 @@ class TestCrossspectrum(object):
         self.lc2 = Lightcurve(time, counts2)
 
         self.cs = Crossspectrum(self.lc1, self.lc2)
+        print(self.cs.power, self.cs.power_err)
 
     def test_make_empty_crossspectrum(self):
         cs = Crossspectrum()
@@ -85,6 +86,7 @@ class TestCrossspectrum(object):
         assert cs.nphots2 is None
         assert cs.m == 1
         assert cs.n is None
+        assert cs.power_err is None
 
     def test_init_with_one_lc_none(self):
         with pytest.raises(TypeError):
@@ -164,6 +166,9 @@ class TestCrossspectrum(object):
         time_lag = self.cs.time_lag()
         assert max(time_lag) <= np.pi
         assert min(time_lag) >= -np.pi
+
+    def test_nonzero_err(self):
+        assert np.all(self.cs.power_err > 0)
 
     def test_timelag_error(self):
         class Child(Crossspectrum):
