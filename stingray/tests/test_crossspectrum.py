@@ -320,7 +320,8 @@ class TestAveragedCrossspectrum(object):
         simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
-                              np.array(np.roll(test_lc1.counts, 2)))
+                              np.array(np.roll(test_lc1.counts, 2)),
+                              err_dist=test_lc1.err_dist)
 
         cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
                                    norm="none")
