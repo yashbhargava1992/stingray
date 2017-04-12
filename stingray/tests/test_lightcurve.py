@@ -56,8 +56,8 @@ class TestLightcurve(object):
         times = [1, 2, 3, 4, 5]
         counts = [2, 2, 2, 2, 2]
         warn_str = ("SIMON says: Stingray only uses poisson statistic at "
-                    "the moment, We are setting your errors to zero to avoid "
-                    "complications. Sorry for the inconvenience.")
+                    "the moment, We are setting your errors to zero. Sorry for "
+                    "the inconvenience.")
 
         with warnings.catch_warnings(record=True) as w:
             lc = Lightcurve(times, counts)

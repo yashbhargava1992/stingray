@@ -142,7 +142,7 @@ class Lightcurve(object):
                 # other test can be implemented for other statistics
             else:
                 simon("Stingray only uses poisson statistic at the moment, "
-                      "We are setting your errors to zero."
+                      "We are setting your errors to zero. "
                       "Sorry for the inconvenience.")
                 err = np.zeros_like(counts)
 
