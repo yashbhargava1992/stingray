@@ -63,6 +63,12 @@ class Lightcurve(object):
         time: numpy.ndarray
             The array of midpoints of time bins.
 
+        bin_lo:
+            The array of lower time stamp of time bins.
+
+        bin_hi:
+            The array of higher time stamp of time bins.
+
         counts: numpy.ndarray
             The counts per bin corresponding to the bins in `time`.
 
@@ -136,12 +142,15 @@ class Lightcurve(object):
                 # other test can be implemented for other statistics
             else:
                 simon("Stingray only uses poisson statistic at the moment, "
-                      "We are setting your errors to zero."
+                      "We are setting your errors to zero. "
                       "Sorry for the inconvenience.")
                 err = np.zeros_like(counts)
 
         self.time = np.asarray(time)
         self.dt = time[1] - time[0]
+
+        self.bin_lo = self.time - 0.5 * self.dt
+        self.bin_hi = self.time + 0.5 * self.dt
 
         self.statistic = statistic
 
@@ -177,7 +186,8 @@ class Lightcurve(object):
         check_gtis(self.gti)
 
     def shift(self, time_shift):
-        """Shift the light curve and the GTIs in time.
+        """
+        Shift the light curve and the GTIs in time.
 
         Parameters
         ----------
@@ -478,10 +488,9 @@ class Lightcurve(object):
             raise ValueError("New time resolution must be larger than "
                              "old time resolution!")
 
-        bin_time, bin_counts, bin_err, _ = utils.rebin_data(self.time,
-                                                            self.counts,
-                                                            self.counts_err,
-                                                            dt_new, method)
+        bin_time, bin_counts, bin_err, _ = \
+            utils.rebin_data(self.time, self.counts, dt_new,
+                             yerr=self.counts_err, method=method)
 
         lc_new = Lightcurve(bin_time, bin_counts, err=bin_err)
         return lc_new

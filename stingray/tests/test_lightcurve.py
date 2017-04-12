@@ -56,8 +56,8 @@ class TestLightcurve(object):
         times = [1, 2, 3, 4, 5]
         counts = [2, 2, 2, 2, 2]
         warn_str = ("SIMON says: Stingray only uses poisson statistic at "
-                    "the moment, We are setting your errors to zero to avoid "
-                    "complications. Sorry for the inconvenience.")
+                    "the moment, We are setting your errors to zero. Sorry for "
+                    "the inconvenience.")
 
         with warnings.catch_warnings(record=True) as w:
             lc = Lightcurve(times, counts)
@@ -66,6 +66,13 @@ class TestLightcurve(object):
     def test_n(self):
         lc = Lightcurve(self.times, self.counts)
         assert lc.n == 4
+
+    def test_bin_edges(self):
+        bin_lo = [0.5,  1.5,  2.5,  3.5]
+        bin_hi = [1.5,  2.5,  3.5,  4.5]
+        lc = Lightcurve(self.times, self.counts)
+        assert np.allclose(lc.bin_lo, bin_lo)
+        assert np.allclose(lc.bin_hi, bin_hi)
 
     def test_lightcurve_from_toa(self):
         lc = Lightcurve.make_lightcurve(self.times, self.dt)

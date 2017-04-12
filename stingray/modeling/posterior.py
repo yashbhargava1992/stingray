@@ -379,7 +379,7 @@ class Posterior(object):
             FL, USA: Chapman & Hall/CRC, 2014.
         * von Toussaint, Udo. "Bayesian inference in physics."
             Reviews of Modern Physics 83.3 (2011): 943.
-        *Hogg, David W. "Probability Calculus for inference".
+        * Hogg, David W. "Probability Calculus for inference".
             arxiv: 1205.4446
 
         """

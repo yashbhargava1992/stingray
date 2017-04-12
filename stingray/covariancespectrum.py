@@ -34,7 +34,7 @@ class Covariancespectrum(object):
             of interest in reference channel.
 
         std : float or np.array or list of numbers
-            The term std is used to cacluate the excess variance of a band.
+            The term std is used to calculate the excess variance of a band.
             If std is set to None, default Poisson case is taken and the
             std is calculated as `mean(lc)**0.5`. In the case of a single
             float as input, the same is used as the standard deviation which
@@ -50,7 +50,7 @@ class Covariancespectrum(object):
 
         energy_covar : dictionary
             A dictionary with mid point of band_interest and their covariance
-            computed with their individual reference band. The covaraince
+            computed with their individual reference band. The covariance
             values are normalized.
 
         unnorm_covar : np.ndarray
@@ -59,7 +59,7 @@ class Covariancespectrum(object):
             The covariance values are unnormalized.
 
         covar : np.ndarray
-            Normalized covaraiance spectrum.
+            Normalized covariance spectrum.
 
         covar_error : np.ndarray
             Errors of the normalized covariance spectrum.
@@ -227,7 +227,7 @@ class Covariancespectrum(object):
 
     def _construct_energy_covar(self, energy_events, energy_covar,
                                 xs_var=None):
-        """Form the actual output covaraince dictionary and array."""
+        """Form the actual output covariance dictionary and array."""
         self._init_energy_covar(energy_events, energy_covar)
 
         if not self.avg_covar:
@@ -363,7 +363,7 @@ class AveragedCovariancespectrum(Covariancespectrum):
             of interest in reference channel.
 
         std : float or np.array or list of numbers
-            The term std is used to cacluate the excess variance of a band.
+            The term std is used to calculate the excess variance of a band.
             If std is set to None, default Poisson case is taken and the
             std is calculated as `mean(lc)**0.5`. In the case of a single
             float as input, the same is used as the standard deviation which
@@ -379,7 +379,7 @@ class AveragedCovariancespectrum(Covariancespectrum):
 
         energy_covar : dictionary
             A dictionary with mid point of band_interest and their covariance
-            computed with their individual reference band. The covaraince
+            computed with their individual reference band. The covariance
             values are normalized.
 
         unnorm_covar : np.ndarray
@@ -388,7 +388,7 @@ class AveragedCovariancespectrum(Covariancespectrum):
             The covariance values are unnormalized.
 
         covar : np.ndarray
-            Normalized covaraiance spectrum.
+            Normalized covariance spectrum.
 
         covar_error : np.ndarray
             Errors of the normalized covariance spectrum.

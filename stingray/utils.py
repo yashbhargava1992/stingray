@@ -2,9 +2,11 @@ from __future__ import (absolute_import, unicode_literals, division,
                         print_function)
 import sys
 import collections
+import numbers
 
 import warnings
 import numpy as np
+
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
 
@@ -33,7 +35,7 @@ def simon(message, **kwargs):
     warnings.warn("SIMON says: {0}".format(message), **kwargs)
 
 
-def rebin_data(x, y, yerr, dx_new, method='sum'):
+def rebin_data(x, y, dx_new, yerr=None, method='sum'):
 
     """Rebin some data to an arbitrary new data resolution. Either sum
     the data points in the new bins or average them.
@@ -46,7 +48,7 @@ def rebin_data(x, y, yerr, dx_new, method='sum'):
     y: iterable
         The independent variable to be binned
 
-    yerr: iterable
+    yerr: iterable, optional
         The uncertainties of y, to be propagated during binning.
 
     dx_new: float
@@ -66,14 +68,14 @@ def rebin_data(x, y, yerr, dx_new, method='sum'):
         The binned quantity y
 
     ybin_err: numpy.ndarray
-        The uncertainties of the binned values of y
+        The uncertainties of the binned values of y.
 
     step_size: float
         The size of the binning step
     """
 
     y = np.asarray(y)
-    yerr = np.asarray(yerr)
+    yerr = np.asarray(assign_value_if_none(yerr, np.zeros_like(y)))
 
     dx_old = x[1] - x[0]
 
@@ -203,7 +205,7 @@ def contiguous_regions(condition):
     """
 
     # NOQA
-    # Find the indicies of changes in "condition"
+    # Find the indices of changes in "condition"
     diff = np.diff(condition)
     idx, = diff.nonzero()
     # We need to start things after the change in "condition". Therefore,
@@ -218,3 +220,52 @@ def contiguous_regions(condition):
     # Reshape the result into two columns
     idx.shape = (-1, 2)
     return idx
+
+
+def is_int(obj):
+    return isinstance(obj, (numbers.Integral, np.integer))
+
+
+def get_random_state(random_state = None):
+    if not random_state:
+        random_state = np.random.mtrand._rand
+    else:
+        if is_int(random_state):
+            random_state = np.random.RandomState(random_state)
+        elif not isinstance(random_state, np.random.RandomState):
+            raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
+                value = random_state
+            ))
+
+    return random_state
+
+
+def baseline_als(y, lam, p, niter=10):
+    """Baseline Correction with Asymmetric Least Squares Smoothing.
+
+    Modifications to the routine from Eilers & Boelens 2005
+    https://www.researchgate.net/publication/228961729_Technical_Report_Baseline_Correction_with_Asymmetric_Least_Squares_Smoothing
+    The Python translation is partly from
+    http://stackoverflow.com/questions/29156532/python-baseline-correction-library
+    
+    Parameters
+    ----------
+    y : array of floats
+        the "light curve". It assumes equal spacing.
+    lam : float
+        "smoothness" parameter. Larger values make the baseline stiffer
+        Typically 1e2 < lam < 1e9
+    p : float
+        "asymmetry" parameter. Smaller values make the baseline more 
+        "horizontal". Typically 0.001 < p < 0.1, but not necessary.
+    """
+    from scipy import sparse
+    L = len(y)
+    D = sparse.csc_matrix(np.diff(np.eye(L), 2))
+    w = np.ones(L)
+    for i in range(niter):
+        W = sparse.spdiags(w, 0, L, L)
+        Z = W + lam * D.dot(D.transpose())
+        z = sparse.linalg.spsolve(Z, w*y)
+        w = p * (y > z) + (1-p) * (y < z)
+    return z

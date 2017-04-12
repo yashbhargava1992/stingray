@@ -194,7 +194,15 @@ class Crossspectrum(object):
             utils.simon("Looks like your lightcurve statistic is not poisson."
                         "The errors in the Powerspectrum will be incorrect.")
 
-        self.power_err = self.power / np.sqrt(self.m)
+        if self.__class__.__name__ in ['Powerspectrum',
+                                       'AveragedPowerspectrum']:
+            self.power_err = self.power / np.sqrt(self.m)
+        elif self.__class__.__name__ in ['Crossspectrum',
+                                         'AveragedCrossspectrum']:
+            self.power_err = \
+                np.zeros_like(self.power) + np.sqrt(2) / np.sqrt(self.m)
+        else:
+            self.power_err = np.zeros(len(self.power))
 
     def _fourier_cross(self, lc1, lc2):
         """
@@ -244,8 +252,8 @@ class Crossspectrum(object):
         # rebin cross spectrum to new resolution
         binfreq, bincs, binerr, step_size = utils.rebin_data(self.freq,
                                                              self.power,
-                                                             self.power_err,
                                                              df,
+                                                             self.power_err,
                                                              method=method)
 
         # make an empty cross spectrum object

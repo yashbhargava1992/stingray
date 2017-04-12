@@ -15,6 +15,8 @@ import numpy as np
 import numpy.random as ra
 import scipy.interpolate as sci
 
+__all__ = ['EventList']
+
 
 class EventList(object):
     def __init__(self, time=None, pha=None, ncounts=None, mjdref=0, dt=0, notes="", 
