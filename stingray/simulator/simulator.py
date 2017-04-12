@@ -9,7 +9,8 @@ import stingray.simulator.models as models
 
 class Simulator(object):
 
-    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1, random_state=None):
+    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
+                 random_state=None):
         """
         Methods to simulate and visualize light curves.
 
