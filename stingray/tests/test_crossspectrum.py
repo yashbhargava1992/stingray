@@ -323,6 +323,4 @@ class TestAveragedCrossspectrum(object):
 
         time_lag, time_lag_err = cs.time_lag()
 
-        import matplotlib.pyplot as plt
-
         assert np.all(np.abs(time_lag[:10] - 0.1) < 3 * time_lag_err[:10])
