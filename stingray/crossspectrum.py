@@ -14,6 +14,10 @@ from .gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 __all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence"]
 
 
+def _root_squared_mean(array):
+    return np.sqrt(np.sum(array**2)) / len(array)
+
+
 def coherence(lc1, lc2):
     """
     Estimate coherence function of two light curves.
@@ -385,6 +389,10 @@ class Crossspectrum(object):
             self.freq.astype(np.double), self.power.astype(np.double),
             statistic="mean", bins=binfreq)
 
+        binpower_err, bin_edges, binno = scipy.stats.binned_statistic(
+            self.freq.astype(np.double), self.power_err.astype(np.double),
+            statistic=_root_squared_mean, bins=binfreq)
+
         # compute the number of powers in each frequency bin
         nsamples = np.array([len(binno[np.where(binno == i)[0]])
                              for i in range(np.max(binno))])
@@ -395,8 +403,6 @@ class Crossspectrum(object):
         # shift the lower bin edges to the middle of the bin and drop the
         # last right bin edge
         binfreq = binfreq[:-1] + df/2
-
-        binpower_err = binpower / np.sqrt(self.m * nsamples)
 
         return binfreq, binpower, binpower_err, nsamples
 

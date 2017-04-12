@@ -137,6 +137,10 @@ class TestCrossspectrum(object):
         new_cs = self.cs.rebin(df=1.5)
         assert new_cs.df == 1.5
 
+    def test_rebin_log(self):
+        # For now, just verify that it doesn't crash
+        _ = self.cs.rebin_log(f=0.01)
+
     def test_norm_leahy(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
         assert len(cs.power) == 4999
@@ -332,6 +336,5 @@ class TestAveragedCrossspectrum(object):
 
         cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
                                    norm="leahy")
-        print(cs.power)
-        print(cs.power_err)
+
         assert np.allclose(cs.power_err, np.sqrt(2/cs.m))
