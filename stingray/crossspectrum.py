@@ -662,7 +662,7 @@ class AveragedCrossspectrum(Crossspectrum):
             unnorm_power_avg += cs.unnorm_power
 
         unnorm_power_avg /= self.m
-        num = np.abs(unnorm_power_avg)**2
+        num = np.absolute(unnorm_power_avg)**2
 
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -671,14 +671,14 @@ class AveragedCrossspectrum(Crossspectrum):
         aps2 = AveragedCrossspectrum(self.lc2, self.lc2,
                                      segment_size=self.segment_size)
 
-        unnorm_powers_avg_1 = np.zeros_like(aps1.cs_all[0].unnorm_power)
+        unnorm_powers_avg_1 = np.zeros_like(aps1.cs_all[0].unnorm_power.real)
         for ps in aps1.cs_all:
-            unnorm_powers_avg_1 += ps.unnorm_power
+            unnorm_powers_avg_1 += ps.unnorm_power.real
         unnorm_powers_avg_1 /= aps1.m
 
-        unnorm_powers_avg_2 = np.zeros_like(aps2.cs_all[0].unnorm_power)
+        unnorm_powers_avg_2 = np.zeros_like(aps2.cs_all[0].unnorm_power.real)
         for ps in aps2.cs_all:
-            unnorm_powers_avg_2 += ps.unnorm_power
+            unnorm_powers_avg_2 += ps.unnorm_power.real
         unnorm_powers_avg_2 /= aps2.m
 
         coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
@@ -687,3 +687,14 @@ class AveragedCrossspectrum(Crossspectrum):
         uncertainty = (2**0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m**0.5)
 
         return (coh, uncertainty)
+
+    def time_lag(self):
+        """Calculate time lag and uncertainty.
+        
+        Formula from Bendat & Piersol 1986
+        """
+        lag = super(AveragedCrossspectrum, self).time_lag()
+        coh, uncert = self.coherence()
+        dum = (1. - coh) / (2. * coh)
+        lag_err = np.sqrt(dum / self.m) / (2 * np.pi * self.freq)
+        return (lag, lag_err)

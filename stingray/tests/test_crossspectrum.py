@@ -75,7 +75,6 @@ class TestCrossspectrum(object):
         self.lc2 = Lightcurve(time, counts2)
 
         self.cs = Crossspectrum(self.lc1, self.lc2)
-        print(self.cs.power, self.cs.power_err)
 
     def test_make_empty_crossspectrum(self):
         cs = Crossspectrum()
@@ -311,3 +310,8 @@ class TestAveragedCrossspectrum(object):
             self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
                                             segment_size=1,
                                             norm="wrong")
+
+    def test_timelag(self):
+        time_lag, time_lag_err = self.cs.time_lag()
+        assert max(time_lag) <= np.pi
+        assert min(time_lag) >= -np.pi
