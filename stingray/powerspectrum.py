@@ -386,10 +386,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         self.type = "powerspectrum"
 
-        # if lc.statistic != 'poisson':
-        #       simon("Looks like your lightcurve statistic is not poisson."
-        #      "The errors in the Powerspectrum will be incorrect.")
-
         if segment_size is not None:
             if not np.isfinite(segment_size):
                 raise ValueError("segment_size must be finite!")
