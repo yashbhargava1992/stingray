@@ -277,7 +277,14 @@ class Crossspectrum(object):
                 raise AttributeError('Spectrum has no attribute named nphots2.')
 
         bin_cs.m = int(step_size)*self.m
-        bin_cs.power_err = bincs / np.sqrt(bin_cs.m)
+
+        if self.__class__.__name__ in ['Powerspectrum',
+                                       'AveragedPowerspectrum']:
+            bin_cs.power_err = bincs.power / np.sqrt(bin_cs.m)
+        elif self.__class__.__name__ in ['Crossspectrum',
+                                         'AveragedCrossspectrum']:
+            bin_cs.power_err = \
+                np.zeros_like(bincs.power) + np.sqrt(2) / np.sqrt(self.m)
 
         return bin_cs
 
