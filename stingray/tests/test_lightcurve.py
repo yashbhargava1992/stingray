@@ -45,25 +45,24 @@ class TestLightcurve(object):
                     "transforms. Please make the input time evenly sampled.")
 
         with warnings.catch_warnings(record=True) as w:
-            lc = Lightcurve(times, counts, statistic="poisson")
+            lc = Lightcurve(times, counts, err_dist="poisson")
             assert str(w[0].message) == warn_str
 
-    def test_unrecognize_statistic_warning(self):
+    def test_unrecognize_err_dist_warning(self):
         """
-        Check if inputting an irregularly spaced time iterable throws out
-        a warning.
+        Check if a non-poisson error_dist throws the correct warning.
         """
         times = [1, 2, 3, 4, 5]
         counts = [2, 2, 2, 2, 2]
-        warn_str = ("SIMON says: Stingray only uses poisson statistic at "
+        warn_str = ("SIMON says: Stingray only uses poisson err_dist at "
                     "the moment, We are setting your errors to zero. Sorry for "
                     "the inconvenience.")
 
         with warnings.catch_warnings(record=True) as w:
-            lc = Lightcurve(times, counts)
+            lc = Lightcurve(times, counts, err_dist='gauss')
             assert str(w[0].message) == warn_str
 
-    def test_dummy_statistic_fail(self):
+    def test_dummy_err_dist_fail(self):
         """
         Check if inputting an irregularly spaced time iterable throws out
         a warning.
@@ -72,7 +71,7 @@ class TestLightcurve(object):
         counts = [2, 2, 2, 2, 2]
 
         with pytest.raises(StingrayError):
-            lc = Lightcurve(times, counts, statistic='joke')
+            lc = Lightcurve(times, counts, err_dist='joke')
 
     def test_invalid_data(self):
         times = [1, 2, 3, 4, 5]
@@ -224,10 +223,10 @@ class TestLightcurve(object):
 
             lc = lc1 + lc2
 
-    def test_add_with_different_statistic(self):
+    def test_add_with_different_err_dist(self):
         lc1 = Lightcurve(self.times, self.counts)
         lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
-                         statistic="gauss")
+                         err_dist="gauss")
         with warnings.catch_warnings(record=True) as w:
             lc = lc1 + lc2
             assert "ightcurves have different statistics" in str(w[0].message)
@@ -275,10 +274,10 @@ class TestLightcurve(object):
 
             lc = lc1 - lc2
 
-    def test_sub_with_different_statistic(self):
+    def test_sub_with_different_err_dist(self):
         lc1 = Lightcurve(self.times, self.counts)
         lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
-                         statistic="gauss")
+                         err_dist="gauss")
         with warnings.catch_warnings(record=True) as w:
             lc = lc1 - lc2
             assert "ightcurves have different statistics" in str(w[0].message)
