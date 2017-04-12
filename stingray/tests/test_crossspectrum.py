@@ -324,3 +324,15 @@ class TestAveragedCrossspectrum(object):
         time_lag, time_lag_err = cs.time_lag()
 
         assert np.all(np.abs(time_lag[:10] - 0.1) < 3 * time_lag_err[:10])
+
+
+    def test_errorbars(self):
+        time = np.arange(10000) * 0.1
+        test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
+        test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
+
+        cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
+                                   norm="leahy")
+        print(cs.power)
+        print(cs.power_err)
+        assert np.allclose(cs.power_err, np.sqrt(2/cs.m))
