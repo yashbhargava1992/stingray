@@ -538,4 +538,4 @@ class TestLightcurveRebin(object):
     def test_rebin_equal_numbers(self):
         dt_all = [2, 3, np.pi, 5]
         for dt in dt_all:
-            yield self.rebin_several, dt
+            self.rebin_several(dt)
