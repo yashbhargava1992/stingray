@@ -154,6 +154,13 @@ class Powerspectrum(Crossspectrum):
             The array of normalized squared absolute values of Fourier
             amplitudes
 
+        power_err: numpy.ndarray
+            The uncertainties of `power`.
+            An approximation for each bin given by "power_err= power/Sqrt(m)".
+            Where `m` is the number of power averaged in each bin (by frequency
+            binning, or averaging powerspectrum). Note that for a single
+            realization (m=1) the error is equal to the power.
+
         df: float
             The frequency resolution
 
@@ -167,6 +174,11 @@ class Powerspectrum(Crossspectrum):
             The total number of photons in the light curve
 
         """
+
+        # if lc.statistic != 'poisson':
+        #    simon("Looks like your lightcurve statistic is not poisson."
+        #          "The errors in the Powerspectrum will be incorrect.")
+
         Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti)
         self.nphots = self.nphots1
 
@@ -350,6 +362,13 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             The array of normalized squared absolute values of Fourier
             amplitudes
 
+        power_err: numpy.ndarray
+            The uncertainties of `power`.
+            An approximation for each bin given by "power_err= power/Sqrt(m)".
+            Where `m` is the number of power averaged in each bin (by frequency
+            binning, or averaging powerspectrum). Note that for a single
+            realization (m=1) the error is equal to the power.
+
         df: float
             The frequency resolution
 
@@ -366,6 +385,10 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         """
 
         self.type = "powerspectrum"
+
+        # if lc.statistic != 'poisson':
+        #       simon("Looks like your lightcurve statistic is not poisson."
+        #      "The errors in the Powerspectrum will be incorrect.")
 
         if segment_size is not None:
             if not np.isfinite(segment_size):
@@ -394,7 +417,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         for start_ind, end_ind in zip(start_inds, end_inds):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
-            lc_seg = lightcurve.Lightcurve(time, counts)
+            counts_err = lc.counts_err[start_ind: end_ind]
+            lc_seg = lightcurve.Lightcurve(time, counts, err=counts_err,
+                                           statistic=lc.statistic)
             power_seg = Powerspectrum(lc_seg, norm=self.norm)
             power_all.append(power_seg)
             nphots_all.append(np.sum(lc_seg.counts))
