@@ -6,10 +6,10 @@ import scipy.stats
 import scipy.fftpack
 import scipy.optimize
 
-from .lightcurve import Lightcurve
-from .utils import rebin_data, simon
-from .exceptions import StingrayError
-from .gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
+from stingray.lightcurve import Lightcurve
+from stingray.utils import rebin_data, simon
+from stingray.exceptions import StingrayError
+from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 
 __all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence"]
 
