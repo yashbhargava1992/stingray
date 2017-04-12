@@ -312,6 +312,17 @@ class TestAveragedCrossspectrum(object):
                                             norm="wrong")
 
     def test_timelag(self):
-        time_lag, time_lag_err = self.cs.time_lag()
-        assert max(time_lag) <= np.pi
-        assert min(time_lag) >= -np.pi
+        from ..simulator.simulator import Simulator
+        simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
+        test_lc1 = simulator.simulate(2)
+        test_lc2 = Lightcurve(test_lc1.time,
+                              np.array(np.roll(test_lc1.counts, 2)))
+
+        cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
+                                   norm="none")
+
+        time_lag, time_lag_err = cs.time_lag()
+
+        import matplotlib.pyplot as plt
+
+        assert np.all(np.abs(time_lag[:10] - 0.1) < 3 * time_lag_err[:10])

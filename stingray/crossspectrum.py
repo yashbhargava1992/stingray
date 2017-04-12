@@ -416,7 +416,7 @@ class Crossspectrum(object):
         ps1 = Crossspectrum(self.lc1, self.lc1)
         ps2 = Crossspectrum(self.lc2, self.lc2)
 
-        return self.unnorm_power/(ps1.unnorm_power * ps2.unnorm_power)
+        return self.unnorm_power.real/(ps1.unnorm_power.real * ps2.unnorm_power.real)
 
     def _phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
