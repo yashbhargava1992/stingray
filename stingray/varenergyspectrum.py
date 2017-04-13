@@ -123,6 +123,7 @@ class RmsEnergySpectrum(VarEnergySpectrum):
             _ = super()._spectrum_function()
 
         rms_spec = np.zeros(len(self.energy_intervals))
+        rms_spec_err = np.zeros_like(rms_spec)
         for i, eint in enumerate(self.energy_intervals):
             base_lc, ref_lc = self._construct_lightcurves(eint)
             xspect = AveragedCrossspectrum(base_lc, ref_lc,
@@ -132,4 +133,10 @@ class RmsEnergySpectrum(VarEnergySpectrum):
                    (xspect.freq < self.freq_interval[1])
             rms_spec[i] = np.sqrt(np.sum(xspect.power[good]*xspect.df))
 
-        return rms_spec, None
+            # Root squared sum of errors of the spectrum
+            root_sq_err_sum = np.sqrt(np.sum(xspect.power[good]**2))*xspect.df
+            # But the rms is the squared root. So,
+            # Error propagation
+            rms_spec_err[i] = 1 / (2 * rms_spec[i])  * root_sq_err_sum
+
+        return rms_spec, rms_spec_err
