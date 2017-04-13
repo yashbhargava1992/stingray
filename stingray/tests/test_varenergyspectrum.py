@@ -97,4 +97,4 @@ class TestPowerspectrum(object):
 
         # Assert that it is close to 0.4 (since we don't have infinite spectral
         # coverage, it will be a little less!)
-        assert np.allclose(rms.spectrum, 0.38, 0.02)
+        assert np.allclose(rms.spectrum, 0.37, 0.05)
