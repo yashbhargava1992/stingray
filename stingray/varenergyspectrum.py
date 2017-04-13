@@ -11,6 +11,7 @@ class VarEnergySpectrum(object):
     def __init__(self, events, freq_interval, energy_spec, ref_band,
                  bin_time=1, use_pi=False, log_distr=False,
                  segment_size=None, events2=None):
+
         """Generic variability-energy spectrum.
         
         Parameters

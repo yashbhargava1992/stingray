@@ -52,6 +52,7 @@ class TestPowerspectrum(object):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
                            pha=[0,0,0,0,1,1],
                            gti=[[0, 0.65]])
+
         vespec = VarEnergySpectrum(events, [0., 10000],
                                    [0, 1, 2], [0, 0.5],
                                    bin_time=0.1)
