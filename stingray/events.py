@@ -171,10 +171,10 @@ class EventList(object):
         events_per_bin_predict = n_events_predict / n_bin
         
         if use_spline:
-            max_bin = np.max([4, 1000000 / events_per_bin_predict])
+            max_bin = np.long(np.max([4, 1000000 / events_per_bin_predict]))
             
         else:
-            max_bin = np.max([4, 5000000 / events_per_bin_predict])
+            max_bin = np.long(np.max([4, 5000000 / events_per_bin_predict]))
 
         ev_list = np.zeros(n_events_predict)
         nev = 0
