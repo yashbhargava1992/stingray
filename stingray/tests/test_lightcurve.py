@@ -22,8 +22,8 @@ class TestLightcurve(object):
 
     @classmethod
     def setup_class(cls):
-        cls.times = [1, 2, 3, 4]
-        cls.counts = [2, 2, 2, 2]
+        cls.times = np.array([1, 2, 3, 4])
+        cls.counts = np.array([2, 2, 2, 2])
         cls.dt = 1.0
         cls.gti = [[0.5, 4.5]]
 
@@ -45,8 +45,44 @@ class TestLightcurve(object):
                     "transforms. Please make the input time evenly sampled.")
 
         with warnings.catch_warnings(record=True) as w:
-            lc = Lightcurve(times, counts)
+            lc = Lightcurve(times, counts, err_dist="poisson")
             assert str(w[0].message) == warn_str
+
+    def test_unrecognize_err_dist_warning(self):
+        """
+        Check if a non-poisson error_dist throws the correct warning.
+        """
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, 2, 2, 2]
+        warn_str = ("SIMON says: Stingray only uses poisson err_dist at "
+                    "the moment, We are setting your errors to zero. Sorry for "
+                    "the inconvenience.")
+
+        with warnings.catch_warnings(record=True) as w:
+            lc = Lightcurve(times, counts, err_dist='gauss')
+            assert str(w[0].message) == warn_str
+
+    def test_dummy_err_dist_fail(self):
+        """
+        Check if inputting an irregularly spaced time iterable throws out
+        a warning.
+        """
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, 2, 2, 2]
+
+        with pytest.raises(StingrayError):
+            lc = Lightcurve(times, counts, err_dist='joke')
+
+    def test_invalid_data(self):
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, np.nan, 2, 2]
+        counts_err = [1, 2, 3, np.nan, 2]
+
+        with pytest.raises(ValueError):
+            lc = Lightcurve(times, counts)
+
+        with pytest.raises(ValueError):
+            lc = Lightcurve(times, [2]*5, err=counts_err)
 
     def test_n(self):
         lc = Lightcurve(self.times, self.counts)
@@ -187,6 +223,14 @@ class TestLightcurve(object):
 
             lc = lc1 + lc2
 
+    def test_add_with_different_err_dist(self):
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
+                         err_dist="gauss")
+        with warnings.catch_warnings(record=True) as w:
+            lc = lc1 + lc2
+            assert "ightcurves have different statistics" in str(w[0].message)
+
     def test_add_with_same_gtis(self):
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
         lc2 = Lightcurve(self.times, self.counts, gti=self.gti)
@@ -229,6 +273,14 @@ class TestLightcurve(object):
             lc2 = Lightcurve(_times, _counts)
 
             lc = lc1 - lc2
+
+    def test_sub_with_different_err_dist(self):
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
+                         err_dist="gauss")
+        with warnings.catch_warnings(record=True) as w:
+            lc = lc1 - lc2
+            assert "ightcurves have different statistics" in str(w[0].message)
 
     def test_subtraction(self):
         _counts = [3, 4, 5, 6]
@@ -523,4 +575,4 @@ class TestLightcurveRebin(object):
     def test_rebin_equal_numbers(self):
         dt_all = [2, 3, np.pi, 5]
         for dt in dt_all:
-            yield self.rebin_several, dt
+            self.rebin_several(dt)
