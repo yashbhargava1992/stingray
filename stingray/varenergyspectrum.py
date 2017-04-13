@@ -125,7 +125,8 @@ class RmsEnergySpectrum(VarEnergySpectrum):
         rms_spec = np.zeros(len(self.energy_intervals))
         rms_spec_err = np.zeros_like(rms_spec)
         for i, eint in enumerate(self.energy_intervals):
-            base_lc, ref_lc = self._construct_lightcurves(eint)
+            base_lc, ref_lc = self._construct_lightcurves(eint,
+                                                          exclude=False)
             xspect = AveragedCrossspectrum(base_lc, ref_lc,
                                            segment_size=self.segment_size,
                                            norm='frac')

@@ -75,9 +75,26 @@ class TestPowerspectrum(object):
         np.testing.assert_allclose(base_lc.counts, [1, 0, 2, 1, 0, 0])
         np.testing.assert_allclose(ref_lc.counts, [0, 0, 0, 1, 0, 1])
 
-    def test_rmsspectrum_creation(self):
-        rms = RmsEnergySpectrum(self.events, [0., 10000],
-                                [0.3, 12, 2], [5, 10],
-                                bin_time=0.01,
-                                segment_size=30)
+    def test_rmsspectrum(self):
+        from ..simulator.simulator import Simulator
+        simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
+        test_lc = simulator.simulate(1)
+        test_ev1, test_ev2 = EventList(), EventList()
+        test_ev1.simulate_times(test_lc)
+        test_ev2.simulate_times(test_lc)
+        test_ev1.pha = np.random.uniform(0.3, 12, len(test_ev1.time))
+        test_ev2.pha = np.random.uniform(0.3, 12, len(test_ev2.time))
 
+        rms = RmsEnergySpectrum(test_ev1, [0., 100],
+                                [0.3, 12, 5], [0.3, 12],
+                                bin_time=0.01,
+                                segment_size=100,
+                                events2=test_ev2)
+
+        # Assert that the rms measured at all energies is the same
+        assert np.all(
+            np.abs(rms.spectrum - rms.spectrum[0]) < rms.spectrum_error)
+
+        # Assert that it is close to 0.4 (since we don't have infinite spectral
+        # coverage, it will be a little less!)
+        assert np.allclose(rms.spectrum, 0.38, 0.02)
