@@ -37,7 +37,8 @@ class TestPowerspectrum(object):
 
     def test_construct_lightcurves(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
-                           pha=[0,0,0,0,1,1])
+                           pha=[0,0,0,0,1,1],
+                           gti=[[0, 0.65]])
         vespec = VarEnergySpectrum(events, [0., 10000],
                                    [0, 1, 2], [0.5, 1.1],
                                    bin_time=0.1)
@@ -49,7 +50,8 @@ class TestPowerspectrum(object):
 
     def test_construct_lightcurves_no_exclude(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
-                           pha=[0,0,0,0,1,1])
+                           pha=[0,0,0,0,1,1],
+                           gti=[[0, 0.65]])
         vespec = VarEnergySpectrum(events, [0., 10000],
                                    [0, 1, 2], [0, 0.5],
                                    bin_time=0.1)
@@ -61,7 +63,8 @@ class TestPowerspectrum(object):
 
     def test_construct_lightcurves_pi(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
-                           pi=np.asarray([0, 0, 0, 0, 1, 1]))
+                           pi=np.asarray([0, 0, 0, 0, 1, 1]),
+                           gti=[[0, 0.65]])
         vespec = VarEnergySpectrum(events, [0., 10000],
                                    [0, 1, 2], [0.5, 1.1], use_pi=True,
                                    bin_time=0.1)

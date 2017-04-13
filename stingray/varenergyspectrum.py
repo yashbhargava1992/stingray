@@ -10,7 +10,7 @@ import six
 class VarEnergySpectrum(object):
     def __init__(self, events, freq_interval, energy_spec, ref_band,
                  bin_time=1, use_pi=False, log_distr=False,
-                 segment_size=None):
+                 segment_size=None, events2=None):
         """Generic variability-energy spectrum.
         
         Parameters
@@ -31,8 +31,12 @@ class VarEnergySpectrum(object):
             Use channel instead of energy
         log_distr : boolean
             distribute the energy interval logarithmically
+        events2 : stingray.events.EventList object
+            event list for the second channel, if not the same. Useful if the
+            reference band has to be taken from another detector.
         """
-        self.events = events
+        self.events1 = events
+        self.events2 = assign_value_if_none(events2, events)
         self.freq_interval = freq_interval
         self.use_pi = use_pi
         self.bin_time = bin_time
@@ -51,47 +55,56 @@ class VarEnergySpectrum(object):
         self.spectrum, self.spectrum_error = self._spectrum_function()
 
 
-    def _decide_ref_intervals(self, base_band, ref_band):
-        """Eliminate base_band from ref_band."""
-        if check_separate([ref_band], [base_band]):
+    def _decide_ref_intervals(self, channel_band, ref_band):
+        """Eliminate channel_band from ref_band."""
+        if check_separate([ref_band], [channel_band]):
             return np.asarray([ref_band])
-        not_base_band = [[0, base_band[0]],
-                         [base_band[1], np.max([ref_band[-1],
-                                                base_band[1] + 1])]]
-        return cross_two_gtis([ref_band], not_base_band)
+        not_channel_band = [[0, channel_band[0]],
+                            [channel_band[1], np.max([ref_band[-1],
+                                                      channel_band[1] + 1])]]
+        return cross_two_gtis([ref_band], not_channel_band)
 
-    def _construct_lightcurves(self, base_band, tstart=None, tstop=None,
+    def _construct_lightcurves(self, channel_band, tstart=None, tstop=None,
                                exclude=True):
         if self.use_pi:
-            energies = self.events.pi
+            energies1 = self.events1.pi
+            energies2 = self.events2.pi
         else:
-            energies = self.events.pha
+            energies2 = self.events2.pha
+            energies1 = self.events1.pha
 
-        tstart = assign_value_if_none(tstart, self.events.time[0])
-        tstop = assign_value_if_none(tstop, self.events.time[-1])
+        gti = cross_two_gtis(self.events1.gti, self.events2.gti)
 
-        good = (energies >= base_band[0]) & (energies < base_band[1])
-        base_lc = Lightcurve.make_lightcurve(self.events.time[good],
+        tstart = assign_value_if_none(tstart,
+                                      np.max([self.events1.time[0],
+                                              self.events2.time[0]]))
+        tstop = assign_value_if_none(tstop,
+                                      np.min([self.events1.time[-1],
+                                              self.events2.time[-1]]))
+
+        good = (energies1 >= channel_band[0]) & (energies1 < channel_band[1])
+        base_lc = Lightcurve.make_lightcurve(self.events1.time[good],
                                              self.bin_time,
                                              tstart=tstart,
                                              tseg=tstop - tstart,
-                                             gti=self.events.gti)
+                                             gti=gti)
 
         if exclude:
-            ref_intervals = self._decide_ref_intervals(base_band,
+            ref_intervals = self._decide_ref_intervals(channel_band,
                                                        self.ref_band)
         else:
             ref_intervals = [self.ref_band]
 
         ref_lc = Lightcurve(base_lc.time, np.zeros_like(base_lc.counts),
                             gti=base_lc.gti)
+
         for i in ref_intervals:
-            good = (energies >= i[0]) & (energies < i[1])
-            new_lc = Lightcurve.make_lightcurve(self.events.time[good],
+            good = (energies2 >= i[0]) & (energies2 < i[1])
+            new_lc = Lightcurve.make_lightcurve(self.events2.time[good],
                                                 self.bin_time,
                                                 tstart=tstart,
                                                 tseg=tstop - tstart,
-                                                gti=self.events.gti)
+                                                gti=gti)
             ref_lc = ref_lc + new_lc
 
         return base_lc, ref_lc
@@ -116,6 +129,6 @@ class RmsEnergySpectrum(VarEnergySpectrum):
                                            norm='frac')
             good = (xspect.freq >= self.freq_interval[0]) & \
                    (xspect.freq < self.freq_interval[1])
-            rms_spec[i] = np.sqrt(np.sum(xspect.power[good]))
+            rms_spec[i] = np.sqrt(np.sum(xspect.power[good]*xspect.df))
 
         return rms_spec, None
