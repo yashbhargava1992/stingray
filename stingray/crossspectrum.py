@@ -6,10 +6,10 @@ import scipy.stats
 import scipy.fftpack
 import scipy.optimize
 
-from .lightcurve import Lightcurve
-from .utils import rebin_data, simon
-from .exceptions import StingrayError
-from .gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
+from stingray.lightcurve import Lightcurve
+from stingray.utils import rebin_data, simon
+from stingray.exceptions import StingrayError
+from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 
 __all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence"]
 
@@ -191,10 +191,10 @@ class Crossspectrum(object):
         # with the imaginary part still intact.
         self.power = self._normalize_crossspectrum(self.unnorm_power, lc1.tseg)
 
-        if lc1.statistic != lc2.statistic:
+        if lc1.err_dist.lower() != lc2.err_dist.lower():
             simon("Your lightcurves have different statistics."
                   "The errors in the Crossspectrum will be incorrect.")
-        elif lc1.statistic != "poisson":
+        elif lc1.err_dist.lower() != "poisson":
             simon("Looks like your lightcurve statistic is not poisson."
                   "The errors in the Powerspectrum will be incorrect.")
 
@@ -565,9 +565,9 @@ class AveragedCrossspectrum(Crossspectrum):
             counts_2 = lc2.counts[start_ind:end_ind]
             counts_2_err = lc2.counts_err[start_ind:end_ind]
             lc1_seg = Lightcurve(time_1, counts_1, err=counts_1_err,
-                                            statistic=lc1.statistic)
+                                 err_dist=lc1.err_dist)
             lc2_seg = Lightcurve(time_2, counts_2, err=counts_2_err,
-                                            statistic=lc2.statistic)
+                                 err_dist=lc2.err_dist)
             cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm)
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))

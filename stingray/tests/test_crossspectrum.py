@@ -306,7 +306,7 @@ class TestAveragedCrossspectrum(object):
             assert len(coh[0]) == 4999
             assert len(coh[1]) == 4999
 
-            assert len(w) == 5
+            assert len(w) == 3
             assert issubclass(w[-1].category, UserWarning)
 
     def test_failure_when_normalization_not_recognized(self):
@@ -320,7 +320,8 @@ class TestAveragedCrossspectrum(object):
         simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
-                              np.array(np.roll(test_lc1.counts, 2)))
+                              np.array(np.roll(test_lc1.counts, 2)),
+                              err_dist=test_lc1.err_dist)
 
         cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
                                    norm="none")

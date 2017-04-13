@@ -21,7 +21,7 @@ valid_statistics = ["poisson", "gauss", None]
 
 class Lightcurve(object):
     def __init__(self, time, counts, err=None, input_counts=True,
-                 gti=None, statistic=None):
+                 gti=None, err_dist='poisson'):
         """
         Make a light curve object from an array of time stamps and an
         array of counts.
@@ -34,7 +34,7 @@ class Lightcurve(object):
         counts: iterable, optional, default None
             A list or array of the counts in each bin corresponding to the
             bins defined in `time` (note: use `input_counts=False` to
-            input the count rage, i.e. counts/second, otherwise use
+            input the count range, i.e. counts/second, otherwise use
             counts/bin).
 
         err: iterable, optional, default None:
@@ -42,7 +42,9 @@ class Lightcurve(object):
             the bins defined in `time` (note: use `input_counts=False` to
             input the count rage, i.e. counts/second, otherwise use
             counts/bin). If None, we assume the data is poisson distributed
-            and calculate the error as `1 + sqrt(N + 0.75)`
+            and calculate the error from the average of the lower and upper 
+            1-sigma confidence intervals for the Poissonian distribution with 
+            mean equal to `counts`.
 
         input_counts: bool, optional, default True
             If True, the code assumes that the input data in 'counts'
@@ -55,7 +57,7 @@ class Lightcurve(object):
             They will be used by other methods to have an indication of the
             "safe" time intervals to use during analysis.
 
-        statistic: str, optional, default=None
+        err_dist: str, optional, default=None
             Statistic of the Lightcurve, it is used to calculate the
             uncertainties and other statistical values apropriately.
             Default makes no assumptions and keep errors equal to zero.
@@ -107,7 +109,7 @@ class Lightcurve(object):
             Good Time Intervals. They indicate the "safe" time intervals
             to be used during the analysis of the light curve.
 
-        statistic: string
+        err_dist: string
             Statistic of the Lightcurve, it is used to calculate the
             uncertainties and other statistical values apropriately.
             It propagates to Spectrum classes.
@@ -136,19 +138,19 @@ class Lightcurve(object):
                 raise ValueError("There are inf or NaN values in "
                                  "your err array")
         else:
-            if statistic not in valid_statistics:
-                # statistic set can be increased with other statistics
+            if err_dist.lower() not in valid_statistics:
+                # err_dist set can be increased with other statistics
                 raise StingrayError("Statistic not recognized."
                                     "Please select one of these: ",
                                     "{}".format(valid_statistics))
-            if statistic == 'poisson':
+            if err_dist.lower() == 'poisson':
                 err_low, err_high = poisson_conf_interval(np.asarray(counts),
                     interval='frequentist-confidence', sigma=1)
                 # calculate approximately symetric uncertainties
                 err = (np.absolute(err_low)+np.absolute(err_high))/2.0
                 # other estimators can be implemented for other statistics
             else:
-                simon("Stingray only uses poisson statistic at the moment, "
+                simon("Stingray only uses poisson err_dist at the moment, "
                       "We are setting your errors to zero. "
                       "Sorry for the inconvenience.")
                 err = np.zeros_like(counts)
@@ -159,7 +161,7 @@ class Lightcurve(object):
         self.bin_lo = self.time - 0.5 * self.dt
         self.bin_hi = self.time + 0.5 * self.dt
 
-        self.statistic = statistic
+        self.err_dist = err_dist
 
         if input_counts:
             self.counts = np.asarray(counts)
@@ -243,16 +245,14 @@ class Lightcurve(object):
 
         new_counts = np.add(self.counts, other.counts)
 
-        if self.statistic != other.statistic:
+        if self.err_dist.lower() != other.err_dist.lower():
             simon("Lightcurves have different statistics!"
                   "We are setting the errors to zero to avoid complications.")
             new_counts_err = np.zeros_like(new_counts)
-        elif self.statistic in valid_statistics:
+        elif self.err_dist.lower() in valid_statistics:
                 new_counts_err = np.sqrt(np.add(self.counts_err**2,
                                                 other.counts_err**2))
             # More conditions can be implemented for other statistics
-        elif self.statistic is None:
-            new_counts_err = np.zeros_like(new_counts)
         else:
             raise StingrayError("Statistics not recognized."
                                 " Please use one of these: "
@@ -299,16 +299,14 @@ class Lightcurve(object):
 
         new_counts = np.subtract(self.counts, other.counts)
 
-        if self.statistic != other.statistic:
+        if self.err_dist.lower() != other.err_dist.lower():
             simon("Lightcurves have different statistics!"
                   "We are setting the errors to zero to avoid complications.")
             new_counts_err = np.zeros_like(new_counts)
-        elif self.statistic in valid_statistics:
+        elif self.err_dist.lower() in valid_statistics:
             new_counts_err = np.sqrt(np.add(self.counts_err**2,
                                             other.counts_err**2))
             # More conditions can be implemented for other statistics
-        elif self.statistic is None:
-            new_counts_err = np.zeros_like(new_counts)
         else:
             raise StingrayError("Statistics not recognized."
                                 " Please use one of these: "
@@ -577,16 +575,14 @@ class Lightcurve(object):
                     # Average the overlapping counts
                     new_counts.append((count1 + count2) / 2)
 
-                    if self.statistic != other.statistic:
+                    if self.err_dist.lower() != other.err_dist.lower():
                         simon("Lightcurves have different statistics!"
                               "We are setting the errors to zero.")
                         new_counts_err = np.zeros_like(new_counts)
-                    elif self.statistic in valid_statistics:
+                    elif self.err_dist.lower() in valid_statistics:
                         new_counts_err.append(np.sqrt(((count1_err**2) +
                                                       (count2_err**2)) / 2))
                     # More conditions can be implemented for other statistics
-                    elif self.statistic is None:
-                        new_counts_err.append(0.0)
                     else:
                         raise StingrayError("Statistics not recognized."
                                             " Please use one of these: "

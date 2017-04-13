@@ -357,7 +357,8 @@ class Simulator(object):
 
         # Obtain time series
         long_lc = self._find_inverse(real, imaginary)
-        lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+        lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
+                        err_dist='gauss')
 
         return lc
 
@@ -385,7 +386,8 @@ class Simulator(object):
         a2 = self.random_state.normal(size=len(s))
 
         lc = self._find_inverse(a1*s, a2*s)
-        lc = Lightcurve(self.time, self._extract_and_scale(lc))
+        lc = Lightcurve(self.time, self._extract_and_scale(lc),
+                        err_dist='gauss')
 
         return lc
 
@@ -425,7 +427,8 @@ class Simulator(object):
         # Inverse Fourier transform
         long_lc = np.fft.irfft(arg)
 
-        lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+        lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
+                        err_dist='gauss')
         return lc
 
 
@@ -472,7 +475,8 @@ class Simulator(object):
             # Inverse Fourier transform
             long_lc = np.fft.irfft(arg)
 
-            lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+            lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
+                            err_dist='gauss')
             return lc
         else:
             raise ValueError('Model is not defined!')
@@ -512,7 +516,7 @@ class Simulator(object):
             lc = lc[(len(h) - 1):-(len(h) - 1)]
 
         time = self.dt * np.arange(len(lc))
-        return Lightcurve(time, lc)
+        return Lightcurve(time, lc, err_dist='gauss')
 
     def _find_inverse(self, real, imaginary):
         """
