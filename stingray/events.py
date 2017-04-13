@@ -145,7 +145,7 @@ class EventList(object):
         # Concatenate all lists
         times = [i for j in times for i in j]
 
-        return EventList(time=times)
+        return EventList(time=times, gti=lc.gti)
 
     def simulate_times(self, lc, use_spline=False, bin_time=None):
         """
@@ -232,6 +232,7 @@ class EventList(object):
         
         self.time = EventList(time).time
         self.ncounts = len(self.time)
+        self.gti = lc.gti
 
     def simulate_energies(self, spectrum):
         """
