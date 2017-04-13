@@ -6,7 +6,7 @@ from astropy.tests.helper import pytest
 np.random.seed(20150907)
 
 
-class TestPowerspectrum(object):
+class TestVarEnergySpectrum(object):
 
     @classmethod
     def setup_class(cls):
