@@ -115,10 +115,10 @@ class TestVarEnergySpectrum(object):
         test_ev1.pha = np.random.uniform(0.3, 9, len(test_ev1.time))
         test_ev2.pha = np.random.uniform(9, 12, len(test_ev2.time))
 
-        lag = LagEnergySpectrum(test_ev1, [0., 1],
-                                [0.3, 9, 5], [9, 12],
-                                bin_time=0.01,
-                                segment_size=20,
+        lag = LagEnergySpectrum(test_ev1, [0., 0.5],
+                                [0.3, 9, 4], [9, 12],
+                                bin_time=0.1,
+                                segment_size=30,
                                 events2=test_ev2)
 
         assert np.all(np.abs(lag.spectrum - 0.2) < 3 * lag.spectrum_error)
