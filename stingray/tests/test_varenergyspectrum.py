@@ -1,6 +1,8 @@
 import numpy as np
 from stingray.events import EventList
 from stingray.varenergyspectrum import VarEnergySpectrum, RmsEnergySpectrum
+from stingray.varenergyspectrum import LagEnergySpectrum
+from stingray.lightcurve import Lightcurve
 
 from astropy.tests.helper import pytest
 np.random.seed(20150907)
@@ -98,3 +100,25 @@ class TestVarEnergySpectrum(object):
         # Assert that it is close to 0.4 (since we don't have infinite spectral
         # coverage, it will be a little less!)
         assert np.allclose(rms.spectrum, 0.37, 0.05)
+
+    def test_lagspectrum(self):
+        from ..simulator.simulator import Simulator
+        simulator = Simulator(0.1, 10000, rms=0.2, mean=2000)
+        test_lc1 = simulator.simulate(2)
+        test_lc2 = Lightcurve(test_lc1.time,
+                              np.array(np.roll(test_lc1.counts, 2)),
+                              err_dist=test_lc1.err_dist)
+
+        test_ev1, test_ev2 = EventList(), EventList()
+        test_ev1.simulate_times(test_lc1)
+        test_ev2.simulate_times(test_lc2)
+        test_ev1.pha = np.random.uniform(0.3, 8, len(test_ev1.time))
+        test_ev2.pha = np.random.uniform(8, 12, len(test_ev2.time))
+
+        lag = LagEnergySpectrum(test_ev1, [0., 1],
+                                [0.3, 8, 5], [8, 12],
+                                bin_time=0.01,
+                                segment_size=30,
+                                events2=test_ev2)
+
+        assert np.all(np.abs(lag.spectrum - 0.1) < 2 * lag.spectrum_error)

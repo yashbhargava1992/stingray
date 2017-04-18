@@ -141,3 +141,29 @@ class RmsEnergySpectrum(VarEnergySpectrum):
             rms_spec_err[i] = 1 / (2 * rms_spec[i])  * root_sq_err_sum
 
         return rms_spec, rms_spec_err
+
+
+class LagEnergySpectrum(VarEnergySpectrum):
+
+    def _spectrum_function(self):
+        if six.PY2:
+            _ = super(LagEnergySpectrum, self)._spectrum_function()
+        else:
+            _ = super()._spectrum_function()
+
+        lag_spec = np.zeros(len(self.energy_intervals))
+        lag_spec_err = np.zeros_like(lag_spec)
+        for i, eint in enumerate(self.energy_intervals):
+            base_lc, ref_lc = self._construct_lightcurves(eint)
+            xspect = AveragedCrossspectrum(base_lc, ref_lc,
+                                           segment_size=self.segment_size)
+            good = (xspect.freq >= self.freq_interval[0]) & \
+                   (xspect.freq < self.freq_interval[1])
+            lag, lag_err = xspect.time_lag()
+            good_lag, good_lag_err = lag[good], lag_err[good]
+            lag_spec[i] = np.mean(good_lag)
+
+            # Root squared sum of errors of the spectrum
+            lag_spec_err[i] = np.sqrt(np.sum(good_lag_err**2)) / len(good_lag)
+
+        return lag_spec, lag_spec_err
