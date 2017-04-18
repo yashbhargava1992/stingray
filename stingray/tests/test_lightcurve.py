@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
+from stingray.gti import create_gti_mask
 
 np.random.seed(20150907)
 
@@ -566,9 +567,6 @@ class TestLightcurveRebin(object):
         assert np.allclose(lc_binned.counts, counts_test)
 
     def rebin_several(self, dt):
-        """
-        TODO: Not sure how to write tests for the rebin method!
-        """
         lc_binned = self.lc.rebin(dt)
         assert len(lc_binned.time) == len(lc_binned.counts)
 
@@ -576,3 +574,14 @@ class TestLightcurveRebin(object):
         dt_all = [2, 3, np.pi, 5]
         for dt in dt_all:
             self.rebin_several(dt)
+
+    def test_lc_baseline(self):
+        times = np.arange(0, 100, 0.01)
+        counts = np.random.normal(100, 0.1, len(times)) + \
+            0.001 * times
+        gti = [[-0.005, 50.005], [59.005, 100.005]]
+        good = create_gti_mask(times, gti)
+        counts[np.logical_not(good)] = 0
+        lc = Lightcurve(times, counts, gti=gti)
+        baseline = lc.baseline(10000, 0.01)
+        assert np.all(lc.counts - baseline < 1)
