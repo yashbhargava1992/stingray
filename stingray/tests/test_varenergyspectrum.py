@@ -103,22 +103,22 @@ class TestVarEnergySpectrum(object):
 
     def test_lagspectrum(self):
         from ..simulator.simulator import Simulator
-        simulator = Simulator(0.1, 10000, rms=0.2, mean=2000)
+        simulator = Simulator(0.1, 10000, rms=0.4, mean=2000)
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
-                              np.array(np.roll(test_lc1.counts, 2)),
+                              np.array(np.roll(test_lc1.counts, 4)),
                               err_dist=test_lc1.err_dist)
 
         test_ev1, test_ev2 = EventList(), EventList()
         test_ev1.simulate_times(test_lc1)
         test_ev2.simulate_times(test_lc2)
-        test_ev1.pha = np.random.uniform(0.3, 8, len(test_ev1.time))
-        test_ev2.pha = np.random.uniform(8, 12, len(test_ev2.time))
+        test_ev1.pha = np.random.uniform(0.3, 9, len(test_ev1.time))
+        test_ev2.pha = np.random.uniform(9, 12, len(test_ev2.time))
 
         lag = LagEnergySpectrum(test_ev1, [0., 1],
-                                [0.3, 8, 5], [8, 12],
+                                [0.3, 9, 5], [9, 12],
                                 bin_time=0.01,
-                                segment_size=30,
+                                segment_size=20,
                                 events2=test_ev2)
 
-        assert np.all(np.abs(lag.spectrum - 0.1) < 2 * lag.spectrum_error)
+        assert np.all(np.abs(lag.spectrum - 0.2) < 3 * lag.spectrum_error)
