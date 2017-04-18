@@ -9,9 +9,9 @@ import numpy as np
 import stingray.io as io
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
-from stingray.utils import simon, assign_value_if_none
+from stingray.utils import simon, assign_value_if_none, baseline_als
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
-from stingray.gti import check_gtis
+from stingray.gti import check_gtis, create_gti_mask
 from astropy.stats import poisson_conf_interval
 
 __all__ = ["Lightcurve"]
@@ -392,6 +392,25 @@ class Lightcurve(object):
         else:
             raise IndexError("The index must be either an integer or a slice "
                              "object !")
+
+    def baseline(self, lam, p, niter=10):
+        """Calculate the baseline of the light curve, accounting for GTIs.
+
+        Parameters
+        ----------
+        lam : float
+            "smoothness" parameter. Larger values make the baseline stiffer
+            Typically 1e2 < lam < 1e9
+        p : float
+            "asymmetry" parameter. Smaller values make the baseline more 
+            "horizontal". Typically 0.001 < p < 0.1, but not necessary.
+        """
+        baseline = np.zeros_like(self.time)
+        for g in self.gti:
+            good = create_gti_mask(self.time, [g])
+            baseline[good] = baseline_als(self.counts[good], lam, p, niter)
+
+        return baseline
 
     @staticmethod
     def make_lightcurve(toa, dt, tseg=None, tstart=None, gti=None):
