@@ -121,4 +121,4 @@ class TestVarEnergySpectrum(object):
                                 segment_size=30,
                                 events2=test_ev2)
 
-        assert np.all(np.abs(lag.spectrum - 0.2) < 3 * lag.spectrum_error)
+        assert np.all(np.abs(lag.spectrum - 0.2) < 0.1)

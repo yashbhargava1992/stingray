@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from stingray.gti import check_separate, cross_two_gtis
 from stingray.lightcurve import Lightcurve
-from stingray.utils import assign_value_if_none
+from stingray.utils import assign_value_if_none, simon
 from stingray.crossspectrum import AveragedCrossspectrum
 import six
 
@@ -161,7 +161,13 @@ class LagEnergySpectrum(VarEnergySpectrum):
                    (xspect.freq < self.freq_interval[1])
             lag, lag_err = xspect.time_lag()
             good_lag, good_lag_err = lag[good], lag_err[good]
+            coh, coh_err = xspect.coherence()
             lag_spec[i] = np.mean(good_lag)
+            coh_check = coh > 1.2 / (1 + 0.2 * xspect.m)
+            if not np.all(coh_check[good]):
+                simon("Coherence is not ideal over the specified energy range. "
+                      "Lag values and uncertainties might be underestimated. "
+                      "See Epitropakis and Papadakis, A\&A 591, 1113, 2016")
 
             # Root squared sum of errors of the spectrum
             lag_spec_err[i] = np.sqrt(np.sum(good_lag_err**2)) / len(good_lag)
