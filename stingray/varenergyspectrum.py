@@ -170,6 +170,7 @@ class LagEnergySpectrum(VarEnergySpectrum):
                       "See Epitropakis and Papadakis, A\&A 591, 1113, 2016")
 
             # Root squared sum of errors of the spectrum
-            lag_spec_err[i] = np.sqrt(np.sum(good_lag_err**2)) / len(good_lag)
+            # Verified!
+            lag_spec_err[i] = np.sqrt(np.sum(good_lag_err**2) / len(good_lag))
 
         return lag_spec, lag_spec_err
