@@ -3,9 +3,17 @@ import numpy as np
 from astropy.modeling import models
 
 from stingray.modeling import PSDParEst, PSDPosterior, PSDLogLikelihood
+from stingray.modeling.parameterestimation import LogLHBoundFitter
 from stingray import Powerspectrum
 
 __all__ = ["fit_powerspectrum", "fit_lorentzians"]
+
+
+def fit_powerspectrum_bounds(ps, model, starting_pars):
+    fitter = LogLHBoundFitter()
+    model_out = fitter(model, ps.freq, ps.power, m=ps.m)
+
+    return model_out
 
 
 def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,

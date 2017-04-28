@@ -38,8 +38,11 @@ try:
 except ImportError:
     comp_hessian = False
 
-from stingray.modeling.posterior import Posterior, PSDPosterior, LogLikelihood
-from astropy.modeling.fitting import _fitter_to_model_params
+from stingray.modeling.posterior import Posterior, LogLikelihood
+from stingray.modeling.posterior import PSDLogLikelihoodBound
+from astropy.modeling.fitting import _fitter_to_model_params, \
+    _model_to_fit_params, _validate_model, _convert_input
+from astropy.modeling.optimizers import Simplex
 
 
 class OptimizationResults(object):
@@ -794,3 +797,77 @@ class PSDParEst(ParameterEstimation):
                 plt.savefig(namestr + '_ps_fit.png', format='png')
 
         return
+
+def calc_likelihood(measured_vals, updated_model, weights, x, m=1):
+    pll = PSDLogLikelihoodBound(x, measured_vals, updated_model, m=m)
+    res = pll(updated_model.parameters, neg=True)
+    return res
+
+from astropy.modeling.fitting import Fitter
+class LogLHBoundFitter(Fitter):
+    """
+    SLSQP optimization algorithm and PSDLogLikelihood statistic.
+
+
+    Raises
+    ------
+    ModelLinearityError
+        A linear model is passed to a nonlinear fitter
+
+    """
+
+    supported_constraints = Simplex.supported_constraints
+
+    def __init__(self):
+        super(LogLHBoundFitter, self).__init__(optimizer=Simplex,
+                                               statistic=calc_likelihood)
+        self.fit_info = {}
+
+    def __call__(self, model, x, y, weights=None, m=1):
+        """
+        Fit data to this model.
+
+        Parameters
+        ----------
+        model : `~astropy.modeling.FittableModel`
+            model to fit to x, y, z
+        x : array
+            input coordinates
+        y : array
+            input coordinates
+        z : array (optional)
+            input coordinates
+        weights : array (optional)
+            weights
+        kwargs : dict
+            optional keyword arguments to be passed to the optimizer or the statistic
+
+        verblevel : int
+            0-silent
+            1-print summary upon completion,
+            2-print summary after each iteration
+        maxiter : int
+            maximum number of iterations
+        epsilon : float
+            the step size for finite-difference derivative estimates
+        acc : float
+            Requested accuracy
+
+        Returns
+        -------
+        model_copy : `~astropy.modeling.FittableModel`
+            a copy of the input model with parameters set by the fitter
+        """
+
+        # print(model)
+        model_copy = _validate_model(model,
+                                     self._opt_method.supported_constraints)
+        farg = _convert_input(x, y)
+        farg = (model_copy, weights, ) + farg
+        p0, _ = _model_to_fit_params(model_copy)
+
+        fitparams, self.fit_info = self._opt_method(
+            self.objective_function, p0, farg)
+        _fitter_to_model_params(model_copy, fitparams)
+
+        return model_copy.parameters
