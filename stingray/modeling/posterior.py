@@ -339,10 +339,6 @@ class PSDLogLikelihoodBound(PSDLogLikelihood):
 
     def evaluate(self, pars, neg=False):
 
-        if np.size(pars) != self.npar:
-            raise IncorrectParameterError("Input parameters must" +
-                                          " match model parameters!")
-
         mean_model = self.model(self.x)
 
         if self.m == 1:

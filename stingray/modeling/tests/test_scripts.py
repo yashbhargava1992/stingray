@@ -65,9 +65,6 @@ class TestFitLorentzians(object):
                      self.amplitude_2, self.x_0_2, self.fwhm_2,
                      self.whitenoise]
 
-        for t, p in zip(true_pars, self.res.p_opt):
-            print(str(t) + "\t" + str(p))
-
         assert np.all(np.isclose(true_pars, self.res.p_opt, rtol=0.5))
 
 
@@ -108,7 +105,7 @@ class TestFitBoundPowerspectrum(object):
         cls.ps.df = cls.ps.freq[1] - cls.ps.freq[0]
         cls.ps.m = 1
 
-        cls.t0 = [200.0, 2, 0.1, 100.0, 4., 0.1, 50.0, 6, 0.3, 2.0]
+        cls.t0 = np.array([200.0, 2, 0.1, 100.0, 4., 0.1, 50.0, 6, 0.3, 2.0])
 
     def test_fitting_with_bounds(self):
         double_f = lambda model : model.x_0_0 * 2
@@ -121,7 +118,8 @@ class TestFitBoundPowerspectrum(object):
         # model.bounds = {}
 
         p_opt = fit_powerspectrum_bounds(self.ps, model,
-                                         self.t0)
+                                         np.random.normal(self.t0,
+                                                          self.t0 / 10))
 
         true_pars = [self.amplitude_0,
                      self.x_0_0, self.fwhm_0,
@@ -129,11 +127,25 @@ class TestFitBoundPowerspectrum(object):
                      self.amplitude_2, self.x_0_2, self.fwhm_2,
                      self.whitenoise]
 
-        for t, p in zip(true_pars, p_opt):
-            print(str(t) + "\t" + str(p))
-
         assert np.all(np.isclose(true_pars, p_opt, rtol=0.5))
 
 
+    def test_fitting_with_fixed_pars(self):
+        model = self.model.copy()
+        model.amplitude_0 = self.t0[0]
+        model.amplitude_0.fixed = True
+        # model.bounds = {}
+
+        p_opt = fit_powerspectrum_bounds(self.ps, model,
+                                         np.random.normal(self.t0,
+                                                          self.t0 / 10))
+
+        true_pars = [self.amplitude_0,
+                     self.x_0_0, self.fwhm_0,
+                     self.amplitude_1, self.x_0_1, self.fwhm_1,
+                     self.amplitude_2, self.x_0_2, self.fwhm_2,
+                     self.whitenoise]
+
+        assert np.all(np.isclose(true_pars, p_opt, rtol=0.5))
 
 

@@ -903,7 +903,7 @@ class LogLHBoundFitter(Fitter):
                                                statistic=calc_likelihood)
         self.fit_info = {}
 
-    def __call__(self, model, x, y, weights=None, m=1):
+    def __call__(self, model, x, y, weights=None, z=None, m=1, **kwargs):
         """
         Fit data to this model.
 
@@ -939,16 +939,14 @@ class LogLHBoundFitter(Fitter):
             a copy of the input model with parameters set by the fitter
         """
 
-        # print(model)
         model_copy = _validate_model(model,
                                      self._opt_method.supported_constraints)
-        farg = _convert_input(x, y)
+        farg = _convert_input(x, y, z)
         farg = (model_copy, weights, ) + farg
         p0, _ = _model_to_fit_params(model_copy)
 
         fitparams, self.fit_info = self._opt_method(
-            self.objective_function, p0, farg)
+            self.objective_function, p0, farg, **kwargs)
         _fitter_to_model_params(model_copy, fitparams)
 
-        print(fitparams, self.fit_info)
         return model_copy.parameters
