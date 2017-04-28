@@ -130,11 +130,6 @@ class TestFitBoundPowerspectrum(object):
         for t, p in zip(true_pars, p_opt):
             print(str(t) + "\t" + str(p))
 
-        import matplotlib.pyplot as plt
-        plt.plot(self.ps.freq, self.ps.power)
-        model.parameters = p_opt
-        plt.plot(self.ps.freq, model(self.ps.freq))
-        plt.show()
         assert np.all(np.isclose(true_pars, p_opt, rtol=0.5))
 
 
