@@ -42,7 +42,87 @@ from stingray.modeling.posterior import Posterior, LogLikelihood
 from stingray.modeling.posterior import PSDLogLikelihoodBound
 from astropy.modeling.fitting import _fitter_to_model_params, \
     _model_to_fit_params, _validate_model, _convert_input
-from astropy.modeling.optimizers import Simplex
+from astropy.modeling.optimizers import Simplex, Optimization
+from astropy.logger import warnings, AstropyUserWarning
+
+
+class BfgsWithErrors(Optimization):
+    """
+    Extend Astropy's power in the Neald-Mead (downhill simplex) algorithm [1].
+
+    This algorithm only uses function values, not derivatives.
+    Uses `scipy.optimize.fmin`.
+
+    .. [1] Nelder, J.A. and Mead, R. (1965), "A simplex method for function
+           minimization", The Computer Journal, 7, pp. 308-313
+    """
+
+    supported_constraints = ['bounds', 'fixed', 'tied']
+
+    def __init__(self):
+        from scipy.optimize import minimize
+        super(BfgsWithErrors, self).__init__(minimize)
+        self.fit_info = {
+            'final_func_val': None,
+            'numiter': None,
+            'exit_mode': None,
+            'num_function_calls': None
+        }
+
+    def __call__(self, objfunc, initval, fargs, **kwargs):
+        """
+        Run the solver.
+
+        Parameters
+        ----------
+        objfunc : callable
+            objection function
+        initval : iterable
+            initial guess for the parameter values
+        fargs : tuple
+            other arguments to be passed to the statistic function
+        kwargs : dict
+            other keyword arguments to be passed to the solver
+
+        """
+        # kwargs['iter'] = kwargs.pop('maxiter', self._maxiter)
+
+        # if 'epsilon' not in kwargs:
+        #     kwargs['epsilon'] = self._eps
+        # if 'acc' not in kwargs:
+        #     kwargs['acc'] = self._acc
+        # Get the verbosity level
+        disp = kwargs.pop('verblevel', None)
+
+        # set the values of constraints to match the requirements of fmin_slsqp
+        model = fargs[0]
+        pars = [getattr(model, name) for name in model.param_names]
+        bounds = [par.bounds for par in pars if not (par.fixed or par.tied)]
+        bounds = np.asarray(bounds)
+        for i in bounds:
+            if i[0] is None:
+                i[0] = -np.inf
+            if i[1] is None:
+                i[1] = np.inf
+        # older versions of scipy require this array to be float
+        bounds = np.asarray(bounds, dtype=np.float)
+
+        res = self.opt_method(
+            objfunc, initval, args=fargs,
+            bounds=bounds,
+            **kwargs)
+
+        # self.fit_info['final_func_val'] = final_func_val
+        # self.fit_info['numiter'] = numiter
+        # self.fit_info['exit_mode'] = exit_mode
+        # self.fit_info['message'] = mess
+
+        # if exit_mode != 0:
+        #     warnings.warn("The fit may be unsuccessful; check "
+        #                   "fit_info['message'] for more information.",
+        #                   AstropyUserWarning)
+
+        return res.x, res
 
 
 class OptimizationResults(object):
@@ -816,10 +896,10 @@ class LogLHBoundFitter(Fitter):
 
     """
 
-    supported_constraints = Simplex.supported_constraints
+    supported_constraints = BfgsWithErrors.supported_constraints
 
     def __init__(self):
-        super(LogLHBoundFitter, self).__init__(optimizer=Simplex,
+        super(LogLHBoundFitter, self).__init__(optimizer=BfgsWithErrors,
                                                statistic=calc_likelihood)
         self.fit_info = {}
 
@@ -870,4 +950,5 @@ class LogLHBoundFitter(Fitter):
             self.objective_function, p0, farg)
         _fitter_to_model_params(model_copy, fitparams)
 
+        print(fitparams, self.fit_info)
         return model_copy.parameters

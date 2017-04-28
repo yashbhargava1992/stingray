@@ -114,15 +114,17 @@ class TestFitBoundPowerspectrum(object):
         double_f = lambda model : model.x_0_0 * 2
         triple_f = lambda model : model.x_0_0 * 3
         model = self.model.copy()
-        model.x_0_0.fixed = False
         model.x_0_1.tied = double_f
         model.x_0_2.tied = triple_f
+        model.amplitude_0 = self.t0[0]
+        model.amplitude_0.fixed = False
         # model.bounds = {}
 
         p_opt = fit_powerspectrum_bounds(self.ps, model,
                                          self.t0)
 
-        true_pars = [self.amplitude_0, self.x_0_0, self.fwhm_0,
+        true_pars = [self.amplitude_0,
+                     self.x_0_0, self.fwhm_0,
                      self.amplitude_1, self.x_0_1, self.fwhm_1,
                      self.amplitude_2, self.x_0_2, self.fwhm_2,
                      self.whitenoise]
