@@ -615,6 +615,47 @@ class TestPSDParEst(object):
         cls.t0 = [cls.x_0_0, cls.fwhm_0, cls.amplitude_0, cls.amplitude_1]
         cls.neg = True
 
+    def test_fitting_with_ties_and_bounds(self):
+        double_f = lambda model : model.x_0_0 * 2
+        model = self.model.copy()
+        model =  self.model + models.Lorentz1D(amplitude=model.amplitude_0,
+                                   x_0 = model.x_0_0 * 2,
+                                   fwhm = model.fwhm_0)
+        model.x_0_0 = self.model.x_0_0
+        model.amplitude_0 = self.model.amplitude_0
+        model.amplitude_1 = self.model.amplitude_1
+        model.fwhm_0 = self.model.fwhm_0
+        model.x_0_2.tied = double_f
+        model.fwhm_0.bounds = [0, 10]
+        model.amplitude_0.fixed = True
+
+        p = model(self.ps.freq)
+
+        noise = np.random.exponential(size=len(p))
+        power = noise*p
+
+        ps = Powerspectrum()
+        ps.freq = self.ps.freq
+        ps.power = power
+        ps.m = self.ps.m
+        ps.df = self.ps.df
+        ps.norm = "leahy"
+
+        pe = PSDParEst(ps)
+        llike = PSDLogLikelihood(ps.freq, ps.power, model)
+
+        true_pars = [self.amplitude_0, self.x_0_0, self.fwhm_0,
+                     self.amplitude_1,
+                     model.amplitude_2.value, model.x_0_2.value,
+                     model.fwhm_2.value]
+        res = pe.fit(llike, true_pars)
+
+        compare_pars = [self.x_0_0, self.fwhm_0,
+                        self.amplitude_1,
+                        model.amplitude_2.value,
+                        model.fwhm_2.value]
+
+        assert np.all(np.isclose(compare_pars, res.p_opt, rtol=0.5))
 
     def test_par_est_initializes(self):
         pe = PSDParEst(self.ps)
@@ -768,44 +809,3 @@ class TestPSDParEst(object):
         assert sample_res.acceptance > 0.25
         assert isinstance(sample_res, SamplingResults)
 
-    def test_fitting_with_ties_and_bounds(self):
-        double_f = lambda model : model.x_0_0 * 2
-        model = self.model.copy()
-        model =  self.model + models.Lorentz1D(amplitude=model.amplitude_0,
-                                   x_0 = model.x_0_0 * 2,
-                                   fwhm = model.fwhm_0)
-        model.x_0_0 = self.model.x_0_0
-        model.amplitude_0 = self.model.amplitude_0
-        model.amplitude_1 = self.model.amplitude_1
-        model.fwhm_0 = self.model.fwhm_0
-        model.x_0_2.tied = double_f
-        model.fwhm_0.bounds = [0, 10]
-        model.amplitude_0.fixed = True
-
-        p = model(self.ps.freq)
-
-        noise = np.random.exponential(size=len(p))
-        power = noise*p
-
-        ps = Powerspectrum()
-        ps.freq = self.ps.freq
-        ps.power = power
-        ps.m = self.ps.m
-        ps.df = self.ps.df
-        ps.norm = "leahy"
-
-        pe = PSDParEst(ps)
-        llike = PSDLogLikelihood(ps.freq, ps.power, model)
-
-        true_pars = [self.amplitude_0, self.x_0_0, self.fwhm_0,
-                     self.amplitude_1,
-                     model.amplitude_2.value, model.x_0_2.value,
-                     model.fwhm_2.value]
-        res = pe.fit(llike, true_pars)
-
-        compare_pars = [self.x_0_0, self.fwhm_0,
-                        self.amplitude_1,
-                        model.amplitude_2.value,
-                        model.fwhm_2.value]
-
-        assert np.all(np.isclose(compare_pars, res.p_opt, rtol=0.5))
