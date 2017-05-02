@@ -133,11 +133,27 @@ class OptimizationResults(object):
         print("The best-fit model parameters plus errors are:")
 
         fixed = [lpost.model.fixed[n] for n in lpost.model.param_names]
-        parnames = [n for n, f in zip(lpost.model.param_names, fixed) \
+        tied = [lpost.model.tied[n] for n in lpost.model.param_names]
+        bounds = [lpost.model.bounds[n] for n in lpost.model.param_names]
+
+        parnames = [n for n, f in zip(lpost.model.param_names,
+                                      np.logical_or(fixed, tied)) \
                     if f is False]
 
-        for i, (x, y, p) in enumerate(zip(self.p_opt, self.err, parnames)):
-            print("%i) Parameter %s: %f.5 +/- %f.5f"%(i, p, x, y))
+        all_parnames = [n for n in lpost.model.param_names]
+        for i, par in enumerate(all_parnames):
+            print("{:3}) Parameter {:<20}: ".format(i, par), end="")
+
+            if par in parnames:
+                idx = parnames.index(par)
+                print("{:<20.5f} +/- {:<20.5f} ".format(self.p_opt[idx],
+                                                  self.err[idx]), end="")
+                print("[{:>10} {:>10}]".format(str(bounds[i][0]),
+                                               str(bounds[i][1])))
+            elif fixed[i]:
+                print("{:<20.5f} (Fixed) ".format(lpost.model.parameters[i]))
+            elif tied[i]:
+                print("{:<20.5f} (Tied) ".format(lpost.model.parameters[i]))
 
         print("\n")
 
