@@ -10,11 +10,14 @@ import six
 
 @six.add_metaclass(ABCMeta)
 class VarEnergySpectrum(object):
-    def __init__(self, events, freq_interval, energy_spec, ref_band,
+    def __init__(self, events, freq_interval, energy_spec, ref_band=None,
                  bin_time=1, use_pi=False, log_distr=False,
                  segment_size=None, events2=None):
 
-        """Generic variability-energy spectrum.
+        """Base variability-energy spectrum.
+        
+        This class is only a base for the various variability spectra, and it's
+        not to be instantiated by itself.
         
         Parameters
         ----------
@@ -25,14 +28,15 @@ class VarEnergySpectrum(object):
         energy_spec : [emin, emax, N]
             minimum and maximum energy, and number of intervals, of the final 
             spectrum
-        ref_band : [emin, emax]
-            minimum and maximum energy of the reference band
-            
+         
         Other Parameters
         ----------------
-        use_pi : boolean
+        ref_band : [emin, emax], floats; default None
+            minimum and maximum energy of the reference band. If None, the 
+            full band is used.
+        use_pi : boolean, default False
             Use channel instead of energy
-        log_distr : boolean
+        log_distr : boolean, default False
             distribute the energy interval logarithmically
         events2 : stingray.events.EventList object
             event list for the second channel, if not the same. Useful if the
@@ -52,7 +56,8 @@ class VarEnergySpectrum(object):
                                    energy_spec[2] + 1)
 
         self.energy_intervals = list(zip(energies[0: -1], energies[1:]))
-        self.ref_band = ref_band
+
+        self.ref_band = assign_value_if_none(ref_band, [0, np.inf])
 
         self.segment_size = segment_size
         self.spectrum, self.spectrum_error = self._spectrum_function()

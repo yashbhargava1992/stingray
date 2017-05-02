@@ -42,6 +42,14 @@ class TestVarEnergySpectrum(object):
         ref_int = self.vespec._decide_ref_intervals([6, 11], [0.3, 5])
         np.testing.assert_allclose(ref_int, [[0.3, 5]])
 
+    def test_ref_band_none(self):
+        events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
+                           pha=[0,0,0,0,1,1],
+                           gti=[[0, 0.65]])
+        vespec = DummyVarEnergy(events, [0., 10000],
+                                   [0, 1, 2],
+                                   bin_time=0.1)
+
     def test_construct_lightcurves(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
                            pha=[0,0,0,0,1,1],
@@ -82,8 +90,12 @@ class TestVarEnergySpectrum(object):
         np.testing.assert_allclose(base_lc.counts, [1, 0, 2, 1, 0, 0])
         np.testing.assert_allclose(ref_lc.counts, [0, 0, 0, 1, 0, 1])
 
-    def test_rmsspectrum(self):
+
+class TestRMSEnergySpectrum(object):
+    @classmethod
+    def setup_class(cls):
         from ..simulator.simulator import Simulator
+
         simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
         test_lc = simulator.simulate(1)
         test_ev1, test_ev2 = EventList(), EventList()
@@ -92,21 +104,28 @@ class TestVarEnergySpectrum(object):
         test_ev1.pha = np.random.uniform(0.3, 12, len(test_ev1.time))
         test_ev2.pha = np.random.uniform(0.3, 12, len(test_ev2.time))
 
-        rms = RmsEnergySpectrum(test_ev1, [0., 100],
-                                [0.3, 12, 5], [0.3, 12],
+        cls.rms = RmsEnergySpectrum(test_ev1, [0., 100],
+                                [0.3, 12, 5],
                                 bin_time=0.01,
                                 segment_size=100,
                                 events2=test_ev2)
 
-        # Assert that the rms measured at all energies is the same
-        assert np.all(
-            np.abs(rms.spectrum - rms.spectrum[0]) < rms.spectrum_error)
-
+    def test_correct_rms_values(self):
         # Assert that it is close to 0.4 (since we don't have infinite spectral
         # coverage, it will be a little less!)
-        assert np.allclose(rms.spectrum, 0.37, 0.05)
+        assert np.allclose(self.rms.spectrum, 0.37, 0.05)
 
-    def test_lagspectrum(self):
+    def test_correct_rms_errorbars(self):
+
+        # Assert that the rms measured at all energies is the same
+        assert np.all(
+            np.abs(self.rms.spectrum - self.rms.spectrum[0]) < \
+                self.rms.spectrum_error)
+
+
+class TestLagEnergySpectrum(object):
+    @classmethod
+    def setup_class(cls):
         from ..simulator.simulator import Simulator
         simulator = Simulator(0.1, 10000, rms=0.4, mean=2000)
         test_lc1 = simulator.simulate(2)
@@ -120,10 +139,13 @@ class TestVarEnergySpectrum(object):
         test_ev1.pha = np.random.uniform(0.3, 9, len(test_ev1.time))
         test_ev2.pha = np.random.uniform(9, 12, len(test_ev2.time))
 
-        lag = LagEnergySpectrum(test_ev1, [0., 0.5],
-                                [0.3, 9, 4], [9, 12],
-                                bin_time=0.1,
-                                segment_size=30,
-                                events2=test_ev2)
+        cls.lag = LagEnergySpectrum(test_ev1, [0., 0.5],
+                                    [0.3, 9, 4], [9, 12],
+                                    bin_time=0.1,
+                                    segment_size=30,
+                                    events2=test_ev2)
 
-        assert np.all(np.abs(lag.spectrum - 0.2) < 3 * lag.spectrum_error)
+    def test_lagspectrum_values_and_errors(self):
+
+        assert np.all(np.abs(self.lag.spectrum - 0.2) < \
+                      3 * self.lag.spectrum_error)
