@@ -4,9 +4,11 @@ from stingray.gti import check_separate, cross_two_gtis
 from stingray.lightcurve import Lightcurve
 from stingray.utils import assign_value_if_none, simon
 from stingray.crossspectrum import AveragedCrossspectrum
+from abc import ABCMeta, abstractmethod
 import six
 
 
+@six.add_metaclass(ABCMeta)
 class VarEnergySpectrum(object):
     def __init__(self, events, freq_interval, energy_spec, ref_band,
                  bin_time=1, use_pi=False, log_distr=False,
@@ -54,7 +56,6 @@ class VarEnergySpectrum(object):
 
         self.segment_size = segment_size
         self.spectrum, self.spectrum_error = self._spectrum_function()
-
 
     def _decide_ref_intervals(self, channel_band, ref_band):
         """Eliminate channel_band from ref_band."""
@@ -110,17 +111,14 @@ class VarEnergySpectrum(object):
 
         return base_lc, ref_lc
 
+    @abstractmethod
     def _spectrum_function(self):
-        return None, None
+        pass
 
 
 class RmsEnergySpectrum(VarEnergySpectrum):
 
     def _spectrum_function(self):
-        if six.PY2:
-            _ = super(RmsEnergySpectrum, self)._spectrum_function()
-        else:
-            _ = super()._spectrum_function()
 
         rms_spec = np.zeros(len(self.energy_intervals))
         rms_spec_err = np.zeros_like(rms_spec)
@@ -146,10 +144,6 @@ class RmsEnergySpectrum(VarEnergySpectrum):
 class LagEnergySpectrum(VarEnergySpectrum):
 
     def _spectrum_function(self):
-        if six.PY2:
-            _ = super(LagEnergySpectrum, self)._spectrum_function()
-        else:
-            _ = super()._spectrum_function()
 
         lag_spec = np.zeros(len(self.energy_intervals))
         lag_spec_err = np.zeros_like(lag_spec)

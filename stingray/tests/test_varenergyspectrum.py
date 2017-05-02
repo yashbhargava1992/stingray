@@ -8,6 +8,11 @@ from astropy.tests.helper import pytest
 np.random.seed(20150907)
 
 
+class DummyVarEnergy(VarEnergySpectrum):
+    def _spectrum_function(self):
+        return None, None
+
+
 class TestVarEnergySpectrum(object):
 
     @classmethod
@@ -20,11 +25,11 @@ class TestVarEnergySpectrum(object):
         cls.events = EventList(alltimes,
                                pha=np.random.uniform(0.3, 12, nphot),
                                gti = [[tstart, tend]])
-        cls.vespec = VarEnergySpectrum(cls.events, [0., 10000],
+        cls.vespec = DummyVarEnergy(cls.events, [0., 10000],
                                        [0.5, 5, 10], [0.3, 10],
                                        bin_time=0.1)
         cls.vespeclog = \
-            VarEnergySpectrum(cls.events, [0., 10000],
+            DummyVarEnergy(cls.events, [0., 10000],
                               [0.5, 5, 10], [0.3, 10], log_distr=True)
 
     def test_intervals_overlapping(self):
@@ -41,7 +46,7 @@ class TestVarEnergySpectrum(object):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
                            pha=[0,0,0,0,1,1],
                            gti=[[0, 0.65]])
-        vespec = VarEnergySpectrum(events, [0., 10000],
+        vespec = DummyVarEnergy(events, [0., 10000],
                                    [0, 1, 2], [0.5, 1.1],
                                    bin_time=0.1)
         base_lc, ref_lc = \
@@ -55,7 +60,7 @@ class TestVarEnergySpectrum(object):
                            pha=[0,0,0,0,1,1],
                            gti=[[0, 0.65]])
 
-        vespec = VarEnergySpectrum(events, [0., 10000],
+        vespec = DummyVarEnergy(events, [0., 10000],
                                    [0, 1, 2], [0, 0.5],
                                    bin_time=0.1)
         base_lc, ref_lc = \
@@ -68,7 +73,7 @@ class TestVarEnergySpectrum(object):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
                            pi=np.asarray([0, 0, 0, 0, 1, 1]),
                            gti=[[0, 0.65]])
-        vespec = VarEnergySpectrum(events, [0., 10000],
+        vespec = DummyVarEnergy(events, [0., 10000],
                                    [0, 1, 2], [0.5, 1.1], use_pi=True,
                                    bin_time=0.1)
         base_lc, ref_lc = \
