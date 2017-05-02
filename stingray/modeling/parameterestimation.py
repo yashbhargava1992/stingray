@@ -48,13 +48,7 @@ from astropy.logger import warnings, AstropyUserWarning
 
 class BfgsWithErrors(Optimization):
     """
-    Extend Astropy's power in the Neald-Mead (downhill simplex) algorithm [1].
-
-    This algorithm only uses function values, not derivatives.
-    Uses `scipy.optimize.fmin`.
-
-    .. [1] Nelder, J.A. and Mead, R. (1965), "A simplex method for function
-           minimization", The Computer Journal, 7, pp. 308-313
+    Interface with scipy's minimize
     """
 
     supported_constraints = ['bounds', 'fixed', 'tied']
@@ -85,13 +79,7 @@ class BfgsWithErrors(Optimization):
             other keyword arguments to be passed to the solver
 
         """
-        # kwargs['iter'] = kwargs.pop('maxiter', self._maxiter)
 
-        # if 'epsilon' not in kwargs:
-        #     kwargs['epsilon'] = self._eps
-        # if 'acc' not in kwargs:
-        #     kwargs['acc'] = self._acc
-        # Get the verbosity level
         disp = kwargs.pop('verblevel', None)
 
         # set the values of constraints to match the requirements of fmin_slsqp
@@ -111,16 +99,6 @@ class BfgsWithErrors(Optimization):
             objfunc, initval, args=fargs,
             bounds=bounds,
             **kwargs)
-
-        # self.fit_info['final_func_val'] = final_func_val
-        # self.fit_info['numiter'] = numiter
-        # self.fit_info['exit_mode'] = exit_mode
-        # self.fit_info['message'] = mess
-
-        # if exit_mode != 0:
-        #     warnings.warn("The fit may be unsuccessful; check "
-        #                   "fit_info['message'] for more information.",
-        #                   AstropyUserWarning)
 
         return res.x, res
 
@@ -886,7 +864,7 @@ def calc_likelihood(measured_vals, updated_model, weights, x, m=1):
 from astropy.modeling.fitting import Fitter
 class LogLHBoundFitter(Fitter):
     """
-    SLSQP optimization algorithm and PSDLogLikelihood statistic.
+    Optimization algorithm and PSDLogLikelihood statistic.
 
 
     Raises
