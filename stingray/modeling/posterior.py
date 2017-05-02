@@ -3,6 +3,7 @@ from __future__ import division
 import abc
 
 import numpy as np
+import six
 from scipy.special import gamma as scipy_gamma
 from scipy.special import gammaln as scipy_gammaln
 from astropy.modeling.fitting import _fitter_to_model_params
@@ -139,8 +140,8 @@ def set_logprior(lpost, priors):
     return logprior
 
 
+@six.add_metaclass(abc.ABCMeta)
 class LogLikelihood(object):
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, x, y, model):
         """
