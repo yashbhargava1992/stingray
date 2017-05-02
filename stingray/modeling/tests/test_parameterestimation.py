@@ -590,22 +590,22 @@ class TestPSDParEst(object):
         cls.a_mean, cls.a_var = 2.0, 1.0
         cls.a2_mean, cls.a2_var = 100.0, 10.0
 
-        cls.p_amplitude_1 = lambda amplitude: \
+        p_amplitude_1 = lambda amplitude: \
             scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
 
-        cls.p_x_0_0 = lambda alpha: \
+        p_x_0_0 = lambda alpha: \
             scipy.stats.uniform(0.0, 5.0).pdf(alpha)
 
-        cls.p_fwhm_0 = lambda alpha: \
+        p_fwhm_0 = lambda alpha: \
             scipy.stats.uniform(0.0, 0.5).pdf(alpha)
 
-        cls.p_amplitude_0 = lambda amplitude: \
+        p_amplitude_0 = lambda amplitude: \
             scipy.stats.norm(loc=cls.a2_mean, scale=cls.a2_var).pdf(amplitude)
 
-        cls.priors = {"amplitude_1": cls.p_amplitude_1,
-                      "amplitude_0": cls.p_amplitude_0,
-                      "x_0_0": cls.p_x_0_0,
-                      "fwhm_0": cls.p_fwhm_0}
+        cls.priors = {"amplitude_1": p_amplitude_1,
+                      "amplitude_0": p_amplitude_0,
+                      "x_0_0": p_x_0_0,
+                      "fwhm_0": p_fwhm_0}
 
         cls.lpost = PSDPosterior(cls.ps, cls.model)
         cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
