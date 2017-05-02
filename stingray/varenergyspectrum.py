@@ -11,33 +11,31 @@ import six
 @six.add_metaclass(ABCMeta)
 class VarEnergySpectrum(object):
     def __init__(self, events, freq_interval, energy_spec, ref_band=None,
-                 bin_time=1, use_pi=False, log_distr=False,
-                 segment_size=None, events2=None):
+                 bin_time=1, use_pi=False, segment_size=None, events2=None):
 
         """Base variability-energy spectrum.
-        
+
         This class is only a base for the various variability spectra, and it's
         not to be instantiated by itself.
-        
+
         Parameters
         ----------
-        events : stingray.events.EventList object 
+        events : stingray.events.EventList object
             event list
         freq_interval : [f0, f1], floats
             the frequency range over which calculating the variability quantity
-        energy_spec : [emin, emax, N]
-            minimum and maximum energy, and number of intervals, of the final 
-            spectrum
-         
+        energy_spec : list or tuple (emin, emax, N, type)
+            if a list is specified, this is interpreted as a list of bin edges;
+            if a tuple is provided, this will encode the minimum and maximum
+            energies, the number of intervals, and "lin" or "log".
+
         Other Parameters
         ----------------
         ref_band : [emin, emax], floats; default None
-            minimum and maximum energy of the reference band. If None, the 
+            minimum and maximum energy of the reference band. If None, the
             full band is used.
         use_pi : boolean, default False
             Use channel instead of energy
-        log_distr : boolean, default False
-            distribute the energy interval logarithmically
         events2 : stingray.events.EventList object
             event list for the second channel, if not the same. Useful if the
             reference band has to be taken from another detector.
@@ -47,13 +45,21 @@ class VarEnergySpectrum(object):
         self.freq_interval = freq_interval
         self.use_pi = use_pi
         self.bin_time = bin_time
-        if log_distr:
-            energies = np.logspace(np.log10(energy_spec[0]),
-                                   np.log10(energy_spec[1]),
-                                   energy_spec[2] + 1)
+        if isinstance(energy_spec, tuple):
+            if energy_spec[-1] not in ["lin", "log"]:
+                raise ValueError("Incorrect energy specification")
+
+            log_distr = True if energy_spec[-1] == "log" else False
+
+            if log_distr:
+                energies = np.logspace(np.log10(energy_spec[0]),
+                                       np.log10(energy_spec[1]),
+                                       energy_spec[2] + 1)
+            else:
+                energies = np.linspace(energy_spec[0], energy_spec[1],
+                                       energy_spec[2] + 1)
         else:
-            energies = np.linspace(energy_spec[0], energy_spec[1],
-                                   energy_spec[2] + 1)
+            energies = np.asarray(energy_spec)
 
         self.energy_intervals = list(zip(energies[0: -1], energies[1:]))
 
@@ -86,8 +92,8 @@ class VarEnergySpectrum(object):
                                       np.max([self.events1.time[0],
                                               self.events2.time[0]]))
         tstop = assign_value_if_none(tstop,
-                                      np.min([self.events1.time[-1],
-                                              self.events2.time[-1]]))
+                                     np.min([self.events1.time[-1],
+                                             self.events2.time[-1]]))
 
         good = (energies1 >= channel_band[0]) & (energies1 < channel_band[1])
         base_lc = Lightcurve.make_lightcurve(self.events1.time[good],
@@ -141,7 +147,7 @@ class RmsEnergySpectrum(VarEnergySpectrum):
             root_sq_err_sum = np.sqrt(np.sum(xspect.power[good]**2))*xspect.df
             # But the rms is the squared root. So,
             # Error propagation
-            rms_spec_err[i] = 1 / (2 * rms_spec[i])  * root_sq_err_sum
+            rms_spec_err[i] = 1 / (2 * rms_spec[i]) * root_sq_err_sum
 
         return rms_spec, rms_spec_err
 
@@ -164,8 +170,8 @@ class LagEnergySpectrum(VarEnergySpectrum):
             lag_spec[i] = np.mean(good_lag)
             coh_check = coh > 1.2 / (1 + 0.2 * xspect.m)
             if not np.all(coh_check[good]):
-                simon("Coherence is not ideal over the specified energy range. "
-                      "Lag values and uncertainties might be underestimated. "
+                simon("Coherence is not ideal over the specified energy range."
+                      " Lag values and uncertainties might be underestimated. "
                       "See Epitropakis and Papadakis, A\&A 591, 1113, 2016")
 
             # Root squared sum of errors of the spectrum

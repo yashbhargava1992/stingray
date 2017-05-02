@@ -26,11 +26,11 @@ class TestVarEnergySpectrum(object):
                                pha=np.random.uniform(0.3, 12, nphot),
                                gti = [[tstart, tend]])
         cls.vespec = DummyVarEnergy(cls.events, [0., 10000],
-                                       [0.5, 5, 10], [0.3, 10],
-                                       bin_time=0.1)
+                                    (0.5, 5, 10, "lin"), [0.3, 10],
+                                    bin_time=0.1)
         cls.vespeclog = \
             DummyVarEnergy(cls.events, [0., 10000],
-                              [0.5, 5, 10], [0.3, 10], log_distr=True)
+                           (0.5, 5, 10, "log"), [0.3, 10])
 
     def test_intervals_overlapping(self):
         ref_int = self.vespec._decide_ref_intervals([0.5, 6], [0.3, 10])
@@ -47,16 +47,36 @@ class TestVarEnergySpectrum(object):
                            pha=[0,0,0,0,1,1],
                            gti=[[0, 0.65]])
         vespec = DummyVarEnergy(events, [0., 10000],
-                                   [0, 1, 2],
-                                   bin_time=0.1)
+                                (0, 1, 2, "lin"),
+                                bin_time=0.1)
+
+    def test_energy_spec_wrong_list_not_tuple(self):
+        events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
+                           pha=[0, 0, 0, 0, 1, 1],
+                           gti=[[0, 0.65]])
+        # Test using a list instead of tuple
+        # with pytest.raises(ValueError):
+        vespec = DummyVarEnergy(events, [0., 10000],
+                                [0, 1, 2, "lin"],
+                                bin_time=0.1)
+
+    def test_energy_spec_wrong_str(self):
+        events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
+                           pha=[0, 0, 0, 0, 1, 1],
+                           gti=[[0, 0.65]])
+        # Test using a list instead of tuple
+        with pytest.raises(ValueError):
+            vespec = DummyVarEnergy(events, [0., 10000],
+                                    (0, 1, 2, "xxx"),
+                                    bin_time=0.1)
 
     def test_construct_lightcurves(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
                            pha=[0,0,0,0,1,1],
                            gti=[[0, 0.65]])
         vespec = DummyVarEnergy(events, [0., 10000],
-                                   [0, 1, 2], [0.5, 1.1],
-                                   bin_time=0.1)
+                                (0, 1, 2, "lin"), [0.5, 1.1],
+                                bin_time=0.1)
         base_lc, ref_lc = \
             vespec._construct_lightcurves([0, 0.5],
                                           tstart=0, tstop=0.65)
@@ -69,8 +89,8 @@ class TestVarEnergySpectrum(object):
                            gti=[[0, 0.65]])
 
         vespec = DummyVarEnergy(events, [0., 10000],
-                                   [0, 1, 2], [0, 0.5],
-                                   bin_time=0.1)
+                                (0, 1, 2, "lin"), [0, 0.5],
+                                bin_time=0.1)
         base_lc, ref_lc = \
             vespec._construct_lightcurves([0, 0.5],
                                           tstart=0, tstop=0.65,
@@ -82,7 +102,7 @@ class TestVarEnergySpectrum(object):
                            pi=np.asarray([0, 0, 0, 0, 1, 1]),
                            gti=[[0, 0.65]])
         vespec = DummyVarEnergy(events, [0., 10000],
-                                   [0, 1, 2], [0.5, 1.1], use_pi=True,
+                                (0, 1, 2, "lin"), [0.5, 1.1], use_pi=True,
                                    bin_time=0.1)
         base_lc, ref_lc = \
             vespec._construct_lightcurves([0, 0.5],
@@ -105,10 +125,10 @@ class TestRMSEnergySpectrum(object):
         test_ev2.pha = np.random.uniform(0.3, 12, len(test_ev2.time))
 
         cls.rms = RmsEnergySpectrum(test_ev1, [0., 100],
-                                [0.3, 12, 5],
-                                bin_time=0.01,
-                                segment_size=100,
-                                events2=test_ev2)
+                                    (0.3, 12, 5, "lin"),
+                                    bin_time=0.01,
+                                    segment_size=100,
+                                    events2=test_ev2)
 
     def test_correct_rms_values(self):
         # Assert that it is close to 0.4 (since we don't have infinite spectral
@@ -140,7 +160,7 @@ class TestLagEnergySpectrum(object):
         test_ev2.pha = np.random.uniform(9, 12, len(test_ev2.time))
 
         cls.lag = LagEnergySpectrum(test_ev1, [0., 0.5],
-                                    [0.3, 9, 4], [9, 12],
+                                    (0.3, 9, 4, "lin"), [9, 12],
                                     bin_time=0.1,
                                     segment_size=30,
                                     events2=test_ev2)
