@@ -39,6 +39,22 @@ class VarEnergySpectrum(object):
         events2 : stingray.events.EventList object
             event list for the second channel, if not the same. Useful if the
             reference band has to be taken from another detector.
+            
+        Attributes
+        ----------
+        events1 : array-like
+            list of events used to produce the spectrum
+        events2 : array-like
+            if the spectrum requires it, second list of events
+        freq_interval : array-like
+            interval of frequencies used to calculate the spectrum
+        energy_intervals : [[e00, e01], [e10, e11], ...]
+            energy intervals used for the spectrum
+        spectrum : array-like
+            the spectral values, corresponding to each energy interval
+        spectrum_error : array-like
+            the errorbars corresponding to spectrum
+        
         """
         self.events1 = events
         self.events2 = assign_value_if_none(events2, events)
