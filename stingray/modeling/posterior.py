@@ -301,7 +301,7 @@ class PSDLogLikelihood(LogLikelihood):
         self.m = m
         self.npar = 0
         for pname in self.model.param_names:
-            if not self.model.fixed[pname]:
+            if not self.model.fixed[pname] and not self.model.tied[pname]:
                 self.npar += 1
 
     def evaluate(self, pars, neg=False):

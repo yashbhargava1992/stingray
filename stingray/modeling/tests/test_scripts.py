@@ -5,7 +5,7 @@ from astropy.modeling import models
 from stingray import Powerspectrum
 
 from stingray.modeling.scripts import fit_lorentzians, fit_powerspectrum_bounds
-
+from stingray.modeling.scripts import fit_powerspectrum
 
 class TestFitLorentzians(object):
 
@@ -45,7 +45,8 @@ class TestFitLorentzians(object):
         cls.ps.df = cls.ps.freq[1] - cls.ps.freq[0]
         cls.ps.m = 1
 
-        cls.t0 = [200.0, 0.5, 0.1, 100.0, 2.0, 1.0, 50.0, 7.5, 0.5, 2.0]
+        cls.t0 = np.asarray([200.0, 0.5, 0.1, 100.0, 2.0, 1.0,
+                             50.0, 7.5, 0.5, 2.0])
 
         cls.parest, cls.res = fit_lorentzians(cls.ps, cls.nlor, cls.t0)
 
@@ -66,6 +67,45 @@ class TestFitLorentzians(object):
                      self.whitenoise]
 
         assert np.all(np.isclose(true_pars, self.res.p_opt, rtol=0.5))
+
+    def test_fitting_with_tied_pars(self):
+        double_f = lambda model : model.x_0_0 * 4
+        triple_f = lambda model : model.x_0_0 * 15
+        model = self.model.copy()
+        model.x_0_1.tied = double_f
+        model.x_0_2.tied = triple_f
+        model.amplitude_0 = self.t0[0]
+        # model.bounds = {}
+
+        parest, res = fit_powerspectrum(self.ps, model,
+                                np.random.normal(self.t0,
+                                                 self.t0 / 10))
+
+        true_pars = [self.amplitude_0,
+                     self.x_0_0, self.fwhm_0,
+                     self.amplitude_1, self.fwhm_1,
+                     self.amplitude_2, self.fwhm_2,
+                     self.whitenoise]
+
+        assert np.all(np.isclose(true_pars, res.p_opt, rtol=0.5))
+
+
+    def test_fitting_with_fixed_pars(self):
+        model = self.model.copy()
+        model.amplitude_0 = self.t0[0]
+        model.amplitude_0.fixed = True
+        # model.bounds = {}
+
+        parest, res = fit_powerspectrum(self.ps, model,
+                                  np.random.normal(self.t0,
+                                                   self.t0 / 10))
+
+        true_pars = [self.x_0_0, self.fwhm_0,
+                     self.amplitude_1, self.x_0_1, self.fwhm_1,
+                     self.amplitude_2, self.x_0_2, self.fwhm_2,
+                     self.whitenoise]
+
+        assert np.all(np.isclose(true_pars, res.p_opt, rtol=0.5))
 
 
 
