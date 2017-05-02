@@ -572,6 +572,7 @@ class TestPSDParEst(object):
         cls.model.fwhm_0 = cls.fwhm_0
         cls.model.amplitude_0 = cls.amplitude_0
         cls.model.amplitude_1 = cls.amplitude_1
+        cls.model.x_0_0.fixed = True
 
         p = cls.model(freq)
 
@@ -589,22 +590,22 @@ class TestPSDParEst(object):
         cls.a_mean, cls.a_var = 2.0, 1.0
         cls.a2_mean, cls.a2_var = 100.0, 10.0
 
-        p_amplitude_1 = lambda amplitude: \
+        cls.p_amplitude_1 = lambda amplitude: \
             scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
 
-        p_x_0_0 = lambda alpha: \
+        cls.p_x_0_0 = lambda alpha: \
             scipy.stats.uniform(0.0, 5.0).pdf(alpha)
 
-        p_fwhm_0 = lambda alpha: \
+        cls.p_fwhm_0 = lambda alpha: \
             scipy.stats.uniform(0.0, 0.5).pdf(alpha)
 
-        p_amplitude_0 = lambda amplitude: \
+        cls.p_amplitude_0 = lambda amplitude: \
             scipy.stats.norm(loc=cls.a2_mean, scale=cls.a2_var).pdf(amplitude)
 
-        cls.priors = {"amplitude_1": p_amplitude_1,
-                      "amplitude_0": p_amplitude_0,
-                      "x_0_0": p_x_0_0,
-                      "fwhm_0": p_fwhm_0}
+        cls.priors = {"amplitude_1": cls.p_amplitude_1,
+                      "amplitude_0": cls.p_amplitude_0,
+                      "x_0_0": cls.p_x_0_0,
+                      "fwhm_0": cls.p_fwhm_0}
 
         cls.lpost = PSDPosterior(cls.ps, cls.model)
         cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
@@ -754,7 +755,7 @@ class TestPSDParEst(object):
 
         assert np.absolute(delta_deviance) < 1.5e-4
 
-    def test_sampler_runs(self):
+    # def test_sampler_runs(self):
 
         pe = PSDParEst(self.ps)
         lpost = PSDPosterior(self.ps, self.model, self.priors)
@@ -766,3 +767,43 @@ class TestPSDParEst(object):
         os.unlink("test_corner.pdf")
         assert sample_res.acceptance > 0.25
         assert isinstance(sample_res, SamplingResults)
+
+    def test_fitting_with_ties(self):
+        double_f = lambda model : model.x_0_0 * 2
+        model = self.model.copy()
+        model =  self.model + models.Lorentz1D(amplitude=model.amplitude_0,
+                                   x_0 = model.x_0_0 * 2,
+                                   fwhm = model.fwhm_0)
+        model.x_0_0 = self.model.x_0_0
+        model.amplitude_0 = self.model.amplitude_0
+        model.amplitude_1 = self.model.amplitude_1
+        model.fwhm_0 = self.model.fwhm_0
+        model.x_0_2.tied = double_f
+
+        p = model(self.ps.freq)
+
+        noise = np.random.exponential(size=len(p))
+        power = noise*p
+
+        ps = Powerspectrum()
+        ps.freq = self.ps.freq
+        ps.power = power
+        ps.m = self.ps.m
+        ps.df = self.ps.df
+        ps.norm = "leahy"
+
+        pe = PSDParEst(ps)
+        llike = PSDLogLikelihood(ps.freq, ps.power, model)
+
+        true_pars = [self.amplitude_0, self.x_0_0, self.fwhm_0,
+                     self.amplitude_1,
+                     model.amplitude_2.value, model.x_0_2.value,
+                     model.fwhm_2.value]
+        res = pe.fit(llike, true_pars)
+
+        compare_pars = [self.amplitude_0, self.x_0_0, self.fwhm_0,
+                     self.amplitude_1,
+                     model.amplitude_2.value,
+                     model.fwhm_2.value]
+
+        assert np.all(np.isclose(compare_pars, res.p_opt, rtol=0.5))
