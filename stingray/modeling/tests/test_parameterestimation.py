@@ -755,7 +755,7 @@ class TestPSDParEst(object):
 
         assert np.absolute(delta_deviance) < 1.5e-4
 
-    # def test_sampler_runs(self):
+    def test_sampler_runs(self):
 
         pe = PSDParEst(self.ps)
         lpost = PSDPosterior(self.ps, self.model, self.priors)
