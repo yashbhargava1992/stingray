@@ -311,9 +311,6 @@ class ParameterEstimation(object):
                                                   args=args, tol=1.e-10,
                                                   bounds=bounds,
                                                   **scipy_optimize_options)
-                else:
-                    raise TypeError("lpost must be a Posterior or LogLikelihood"
-                                    " object.")
 
             funcval = opt.fun
             i += 1
