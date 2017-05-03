@@ -2,6 +2,7 @@ from __future__ import division, print_function
 import numpy as np
 import scipy.stats
 import os
+import re
 
 from astropy.tests.helper import pytest
 from astropy.modeling import models
@@ -616,7 +617,7 @@ class TestPSDParEst(object):
         cls.t0 = [cls.x_0_0, cls.fwhm_0, cls.amplitude_0, cls.amplitude_1]
         cls.neg = True
 
-    def test_fitting_with_ties_and_bounds(self):
+    def test_fitting_with_ties_and_bounds(self, capsys):
         double_f = lambda model : model.x_0_0 * 2
         model = self.model.copy()
         model =  self.model + models.Lorentz1D(amplitude=model.amplitude_0,
@@ -650,6 +651,13 @@ class TestPSDParEst(object):
                      model.amplitude_2.value, model.x_0_2.value,
                      model.fwhm_2.value]
         res = pe.fit(llike, true_pars)
+
+        res.print_summary(llike)
+        out, err = capsys.readouterr()
+        assert "100.00000            (Fixed)" in out
+        pattern = \
+            re.compile(r"5\) Parameter x_0_2\s+: [0-9]\.[0-9]{5}\s+\(Tied\)")
+        assert pattern.search(out)
 
         compare_pars = [self.x_0_0, self.fwhm_0,
                         self.amplitude_1,
