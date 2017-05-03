@@ -715,7 +715,7 @@ class TestPSDParEst(object):
         assert isinstance(res, OptimizationResults), "res must be of type " \
                                                      "OptimizationResults"
 
-    def test_plotfits(self):
+    def test_plotfits_leahy(self):
         pe = PSDParEst(self.ps)
         t0 = [2.0, 1, 1, 1]
         lpost = PSDPosterior(self.ps, self.model, self.priors)
@@ -727,7 +727,7 @@ class TestPSDParEst(object):
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 
-    def test_plotfits_log(self):
+    def test_plotfits_log_leahy(self):
         pe = PSDParEst(self.ps)
         t0 = [2.0, 1, 1, 1]
         lpost = PSDPosterior(self.ps, self.model, self.priors)
@@ -739,7 +739,7 @@ class TestPSDParEst(object):
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 
-    def test_plotfits2(self):
+    def test_plotfits_rms(self):
         t0 = [2.0, 1, 1, 1]
         ps = Powerspectrum()
         ps.freq = self.ps.freq
@@ -757,13 +757,49 @@ class TestPSDParEst(object):
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 
-    def test_plotfits_log2(self):
+    def test_plotfits_log_rms(self):
         ps = Powerspectrum()
         ps.freq = self.ps.freq
         ps.power = self.ps.power
         ps.m = self.ps.m
         ps.df = self.ps.df
         ps.norm = "rms"
+        pe = PSDParEst(ps)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
+
+        t0 = [2.0, 1, 1, 1]
+        res = pe.fit(self.lpost, t0)
+
+        pe.plotfits(res, res2=res, save_plot=True, log=True)
+
+        assert os.path.exists("test_ps_fit.png")
+        os.unlink("test_ps_fit.png")
+
+    def test_plotfits_pow(self):
+        t0 = [2.0, 1, 1, 1]
+        ps = Powerspectrum()
+        ps.freq = self.ps.freq
+        ps.power = self.ps.power
+        ps.m = self.ps.m
+        ps.df = self.ps.df
+        ps.norm = "none"
+        pe = PSDParEst(ps)
+        lpost = PSDPosterior(self.ps, self.model, self.priors)
+
+        res = pe.fit(self.lpost, t0)
+
+        pe.plotfits(res, res2=res, save_plot=True)
+
+        assert os.path.exists("test_ps_fit.png")
+        os.unlink("test_ps_fit.png")
+
+    def test_plotfits_log_pow(self):
+        ps = Powerspectrum()
+        ps.freq = self.ps.freq
+        ps.power = self.ps.power
+        ps.m = self.ps.m
+        ps.df = self.ps.df
+        ps.norm = "none"
         pe = PSDParEst(ps)
         lpost = PSDPosterior(self.ps, self.model, self.priors)
 
