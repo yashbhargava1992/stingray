@@ -62,10 +62,10 @@ class VarEnergySpectrum(object):
         self.use_pi = use_pi
         self.bin_time = bin_time
         if isinstance(energy_spec, tuple):
-            if energy_spec[-1] not in ["lin", "log"]:
+            if energy_spec[-1].lower() not in ["lin", "log"]:
                 raise ValueError("Incorrect energy specification")
 
-            log_distr = True if energy_spec[-1] == "log" else False
+            log_distr = True if energy_spec[-1].lower() == "log" else False
 
             if log_distr:
                 energies = np.logspace(np.log10(energy_spec[0]),
