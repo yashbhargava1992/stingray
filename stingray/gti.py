@@ -567,6 +567,9 @@ def bin_intervals_from_gtis(gtis, chunk_length, time):
     bintime = time[1] - time[0]
     nbin = np.long(chunk_length / bintime)
 
+    if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
+        raise ValueError("Invalid time interval for the given GTIs")
+
     spectrum_start_bins = np.array([], dtype=np.long)
     for g in gtis:
         if g[1] - g[0] < chunk_length:
