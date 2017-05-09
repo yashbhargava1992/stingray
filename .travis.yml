@@ -81,9 +81,9 @@ matrix:
           env: NUMPY_VERSION=1.6
         # Try older scipy versions
         - python: 2.7
-          SCIPY_VERSION=0.16.0
+          env: SCIPY_VERSION=0.16.0
         - python: 2.7
-          SCIPY_VERSION=0.14.0
+          env: SCIPY_VERSION=0.14.0
         - python: 2.6
           env: SETUP_CMD='test'
         - python: 3.3
@@ -99,9 +99,9 @@ matrix:
           env: NUMPY_VERSION=1.6
         # Try older scipy versions
         - python: 2.7
-          SCIPY_VERSION=0.16.0
+          env: SCIPY_VERSION=0.16.0
         - python: 2.7
-          SCIPY_VERSION=0.14.0
+          env: SCIPY_VERSION=0.14.0
         - python: 2.6
           env: SETUP_CMD='test'
         - python: 3.3
