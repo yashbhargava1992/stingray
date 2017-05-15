@@ -190,7 +190,7 @@ class TransferFunction(object):
 
         Parameter
         ---------
-        format_ : str
+        format\_ : str
             the format of the file to be retrieved - accepts 'pickle'.
 
         Returns
@@ -213,7 +213,7 @@ class TransferFunction(object):
 
         Parameters
         ----------
-        format_ : str
+        format\_ : str
             the format of the file to be saved - accepts 'pickle'
         """
 
@@ -256,10 +256,10 @@ def simple_ir(dt=0.125, start=0, width=1000, intensity=1):
     """
 
     # Fill in 0 entries until the start time
-    h_zeros = np.zeros(start/dt)
+    h_zeros = np.zeros(int(start/dt))
 
     # Define constant impulse response
-    h_ones = np.ones(width/dt) * intensity
+    h_ones = np.ones(int(width/dt)) * intensity
 
     return np.append(h_zeros, h_ones)
 

@@ -85,6 +85,7 @@ class TestCrossspectrum(object):
         assert cs.nphots2 is None
         assert cs.m == 1
         assert cs.n is None
+        assert cs.power_err is None
 
     def test_init_with_one_lc_none(self):
         with pytest.raises(TypeError):
@@ -136,6 +137,10 @@ class TestCrossspectrum(object):
         new_cs = self.cs.rebin(df=1.5)
         assert new_cs.df == 1.5
 
+    def test_rebin_log(self):
+        # For now, just verify that it doesn't crash
+        _ = self.cs.rebin_log(f=0.01)
+
     def test_norm_leahy(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
         assert len(cs.power) == 4999
@@ -164,6 +169,9 @@ class TestCrossspectrum(object):
         time_lag = self.cs.time_lag()
         assert max(time_lag) <= np.pi
         assert min(time_lag) >= -np.pi
+
+    def test_nonzero_err(self):
+        assert np.all(self.cs.power_err > 0)
 
     def test_timelag_error(self):
         class Child(Crossspectrum):
@@ -298,7 +306,7 @@ class TestAveragedCrossspectrum(object):
             assert len(coh[0]) == 4999
             assert len(coh[1]) == 4999
 
-            assert len(w) == 1
+            assert len(w) == 3
             assert issubclass(w[-1].category, UserWarning)
 
     def test_failure_when_normalization_not_recognized(self):
@@ -306,3 +314,28 @@ class TestAveragedCrossspectrum(object):
             self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
                                             segment_size=1,
                                             norm="wrong")
+
+    def test_timelag(self):
+        from ..simulator.simulator import Simulator
+        simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
+        test_lc1 = simulator.simulate(2)
+        test_lc2 = Lightcurve(test_lc1.time,
+                              np.array(np.roll(test_lc1.counts, 2)),
+                              err_dist=test_lc1.err_dist)
+
+        cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
+                                   norm="none")
+
+        time_lag, time_lag_err = cs.time_lag()
+
+        assert np.all(np.abs(time_lag[:10] - 0.1) < 3 * time_lag_err[:10])
+
+    def test_errorbars(self):
+        time = np.arange(10000) * 0.1
+        test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
+        test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
+
+        cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
+                                   norm="leahy")
+
+        assert np.allclose(cs.power_err, np.sqrt(2/cs.m))

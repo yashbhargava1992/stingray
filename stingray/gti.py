@@ -467,11 +467,11 @@ def join_gtis(gti0, gti1):
 
     g0 = gti0.flatten()
     # Opening GTI: type = 1; Closing: type = -1
-    g0_type = np.asarray(list(zip(-np.ones(len(g0) / 2),
-                                  np.ones(len(g0) / 2))))
+    g0_type = np.asarray(list(zip(-np.ones(int(len(g0) / 2)),
+                                  np.ones(int(len(g0) / 2)))))
     g1 = gti1.flatten()
-    g1_type = np.asarray(list(zip(-np.ones(len(g1) / 2),
-                                  np.ones(len(g1) / 2))))
+    g1_type = np.asarray(list(zip(-np.ones(int(len(g1) / 2)),
+                                  np.ones(int(len(g1) / 2)))))
 
     g_all = np.append(g0, g1)
     g_type_all = np.append(g0_type, g1_type)
@@ -566,6 +566,9 @@ def bin_intervals_from_gtis(gtis, chunk_length, time):
     """
     bintime = time[1] - time[0]
     nbin = np.long(chunk_length / bintime)
+
+    if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
+        raise ValueError("Invalid time interval for the given GTIs")
 
     spectrum_start_bins = np.array([], dtype=np.long)
     for g in gtis:

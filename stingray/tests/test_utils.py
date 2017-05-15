@@ -15,46 +15,53 @@ class TestRebinData(object):
         cls.counts = 2.0
         cls.x = np.arange(cls.dx/2, cls.dx/2+cls.n*cls.dx, cls.dx)
         cls.y = np.zeros_like(cls.x)+cls.counts
+        cls.yerr = np.sqrt(cls.y)
 
     def test_new_stepsize(self):
         dx_new = 2.0
-        xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
+        xbin, ybin, yerr, step_size = utils.rebin_data(self.x, self.y, dx_new,
+                                                       self.yerr)
         assert step_size == dx_new/self.dx
 
     def test_arrays(self):
         dx_new = 2.0
-        xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
+        xbin, ybin, yerr, step_size = utils.rebin_data(self.x, self.y, dx_new,
+                                                       self.yerr)
         assert isinstance(xbin, np.ndarray)
         assert isinstance(ybin, np.ndarray)
 
     def test_length_matches(self):
         dx_new = 2.0
-        xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
+        xbin, ybin, yerr, step_size = utils.rebin_data(self.x, self.y, dx_new,
+                                                       self.yerr)
         assert xbin.shape[0] == ybin.shape[0]
 
     def test_binned_counts(self):
         dx_new = 2.0
 
-        xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
+        xbin, ybin, yerr, step_size = utils.rebin_data(self.x, self.y, dx_new,
+                                                       self.yerr)
 
         ybin_test = np.zeros_like(xbin) + self.counts*dx_new/self.dx
         assert np.allclose(ybin, ybin_test)
 
     def test_uneven_bins(self):
         dx_new = 1.5
-        xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
+        xbin, ybin, yerr, step_size = utils.rebin_data(self.x, self.y, dx_new,
+                                                       self.yerr)
         assert np.isclose(xbin[1]-xbin[0], dx_new)
 
     def test_uneven_binned_counts(self):
         dx_new = 1.5
-        xbin, ybin, step_size = utils.rebin_data(self.x, self.y, dx_new)
+        xbin, ybin, yerr, step_size = utils.rebin_data(self.x, self.y, dx_new,
+                                                       self.yerr)
         ybin_test = np.zeros_like(xbin) + self.counts*dx_new/self.dx
         assert np.allclose(ybin_test, ybin)
 
     def test_rebin_data_should_raise_error_when_method_is_different_than_allowed(self):
         dx_new = 2.0
         with pytest.raises(ValueError):
-            utils.rebin_data(self.x, self.y, dx_new,
+            utils.rebin_data(self.x, self.y, dx_new, self.yerr,
                              method='not_allowed_method')
 
 
@@ -95,3 +102,15 @@ class TestUtils(object):
         cont = utils.contiguous_regions(array)
         assert np.all(cont == np.array([[1, 3], [4, 7]])), \
             'Contiguous region wrong'
+
+    def test_get_random_state(self):
+        # Life, Universe and Everything
+        lue = 42
+        random_state = np.random.RandomState(lue)
+
+        assert utils.get_random_state(None) is np.random.mtrand._rand
+        assert np.all(utils.get_random_state(lue).randn(lue) == np.random.RandomState(lue).randn(lue))
+        assert np.all(utils.get_random_state(np.random.RandomState(lue)).randn(lue) == np.random.RandomState(lue).randn(lue))
+
+        with pytest.raises(ValueError):
+            utils.get_random_state('foobar')

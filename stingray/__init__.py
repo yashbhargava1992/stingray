@@ -1,9 +1,5 @@
 # Licensed under MIT license - see LICENSE.rst
 
-"""
-Library of Time Series Methods For Astronomical X-ray Data.
-"""
-
 # Affiliated packages may add whatever they like to this file, but
 # should keep this content at the top.
 # ----------------------------------------------------------------------------
@@ -16,5 +12,6 @@ if not _ASTROPY_SETUP_:
     from stingray.utils import *
     from stingray.powerspectrum import *
     from stingray.crossspectrum import *
+    from stingray import *
     from stingray.exceptions import *
     from stingray.covariancespectrum import *

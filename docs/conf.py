@@ -44,7 +44,10 @@ except ImportError:
 from astropy_helpers.sphinx.conf import *
 
 # Get configuration information from setup.cfg
-from distutils import config
+try:
+    import configparser as config
+except ImportError:
+    from distutils import config
 conf = config.ConfigParser()
 conf.read([os.path.join(os.path.dirname(__file__), '..', 'setup.cfg')])
 setup_cfg = dict(conf.items('metadata'))
@@ -131,6 +134,8 @@ html_theme_options = {
     'logotext3': ':docs'   # white,  light
     }
 
+extensions += ['matplotlib.sphinxext.plot_directive','sphinx.ext.autodoc']
+
 # -- Options for LaTeX output --------------------------------------------------
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -161,3 +166,4 @@ if eval(setup_cfg.get('edit_on_github')):
 
     edit_on_github_source_root = ""
     edit_on_github_doc_root = "docs"
+

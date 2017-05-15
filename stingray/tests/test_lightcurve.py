@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
+from stingray.gti import create_gti_mask
 
 np.random.seed(20150907)
 
@@ -22,8 +23,8 @@ class TestLightcurve(object):
 
     @classmethod
     def setup_class(cls):
-        cls.times = [1, 2, 3, 4]
-        cls.counts = [2, 2, 2, 2]
+        cls.times = np.array([1, 2, 3, 4])
+        cls.counts = np.array([2, 2, 2, 2])
         cls.dt = 1.0
         cls.gti = [[0.5, 4.5]]
 
@@ -45,12 +46,55 @@ class TestLightcurve(object):
                     "transforms. Please make the input time evenly sampled.")
 
         with warnings.catch_warnings(record=True) as w:
-            lc = Lightcurve(times, counts)
+            lc = Lightcurve(times, counts, err_dist="poisson")
             assert str(w[0].message) == warn_str
+
+    def test_unrecognize_err_dist_warning(self):
+        """
+        Check if a non-poisson error_dist throws the correct warning.
+        """
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, 2, 2, 2]
+        warn_str = ("SIMON says: Stingray only uses poisson err_dist at "
+                    "the moment, We are setting your errors to zero. Sorry for "
+                    "the inconvenience.")
+
+        with warnings.catch_warnings(record=True) as w:
+            lc = Lightcurve(times, counts, err_dist='gauss')
+            assert str(w[0].message) == warn_str
+
+    def test_dummy_err_dist_fail(self):
+        """
+        Check if inputting an irregularly spaced time iterable throws out
+        a warning.
+        """
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, 2, 2, 2]
+
+        with pytest.raises(StingrayError):
+            lc = Lightcurve(times, counts, err_dist='joke')
+
+    def test_invalid_data(self):
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, np.nan, 2, 2]
+        counts_err = [1, 2, 3, np.nan, 2]
+
+        with pytest.raises(ValueError):
+            lc = Lightcurve(times, counts)
+
+        with pytest.raises(ValueError):
+            lc = Lightcurve(times, [2]*5, err=counts_err)
 
     def test_n(self):
         lc = Lightcurve(self.times, self.counts)
         assert lc.n == 4
+
+    def test_bin_edges(self):
+        bin_lo = [0.5,  1.5,  2.5,  3.5]
+        bin_hi = [1.5,  2.5,  3.5,  4.5]
+        lc = Lightcurve(self.times, self.counts)
+        assert np.allclose(lc.bin_lo, bin_lo)
+        assert np.allclose(lc.bin_hi, bin_hi)
 
     def test_lightcurve_from_toa(self):
         lc = Lightcurve.make_lightcurve(self.times, self.dt)
@@ -180,6 +224,14 @@ class TestLightcurve(object):
 
             lc = lc1 + lc2
 
+    def test_add_with_different_err_dist(self):
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
+                         err_dist="gauss")
+        with warnings.catch_warnings(record=True) as w:
+            lc = lc1 + lc2
+            assert "ightcurves have different statistics" in str(w[0].message)
+
     def test_add_with_same_gtis(self):
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
         lc2 = Lightcurve(self.times, self.counts, gti=self.gti)
@@ -222,6 +274,14 @@ class TestLightcurve(object):
             lc2 = Lightcurve(_times, _counts)
 
             lc = lc1 - lc2
+
+    def test_sub_with_different_err_dist(self):
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
+                         err_dist="gauss")
+        with warnings.catch_warnings(record=True) as w:
+            lc = lc1 - lc2
+            assert "ightcurves have different statistics" in str(w[0].message)
 
     def test_subtraction(self):
         _counts = [3, 4, 5, 6]
@@ -507,13 +567,21 @@ class TestLightcurveRebin(object):
         assert np.allclose(lc_binned.counts, counts_test)
 
     def rebin_several(self, dt):
-        """
-        TODO: Not sure how to write tests for the rebin method!
-        """
         lc_binned = self.lc.rebin(dt)
         assert len(lc_binned.time) == len(lc_binned.counts)
 
     def test_rebin_equal_numbers(self):
         dt_all = [2, 3, np.pi, 5]
         for dt in dt_all:
-            yield self.rebin_several, dt
+            self.rebin_several(dt)
+
+    def test_lc_baseline(self):
+        times = np.arange(0, 100, 0.01)
+        counts = np.random.normal(100, 0.1, len(times)) + \
+            0.001 * times
+        gti = [[-0.005, 50.005], [59.005, 100.005]]
+        good = create_gti_mask(times, gti)
+        counts[np.logical_not(good)] = 0
+        lc = Lightcurve(times, counts, gti=gti)
+        baseline = lc.baseline(10000, 0.01)
+        assert np.all(lc.counts - baseline < 1)
