@@ -254,7 +254,8 @@ class ParameterEstimation(object):
         newmod = lpost.model.copy()
         newmod.parameters = t0
         p0, _ = _model_to_fit_params(newmod)
-
+        # p0 will be shorter than t0, if there are any frozen/tied parameters
+        # this has to match with the npar attribute.
         if not len(p0) == lpost.npar:
             raise ValueError("Parameter set t0 must be of right "
                              "length for model in lpost.")
