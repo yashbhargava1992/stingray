@@ -446,6 +446,11 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         dyn_ps : np.ndarray
             The matrix with fourier frequencies in the first column and time
             in the second column.
+        time: np.ndarray
+            The timestamps of the segments that correspond to each line of the
+             `dyn_ps` matrix
+       freq: np.ndarray
+            The frequency bins` label for the frequency axis of `dyn_ps`
         """
         if segment_size < 2*lc.dt:
             raise ValueError("Length of the segment is too short to form a "
