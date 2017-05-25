@@ -106,11 +106,11 @@ def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
     >>> model_to_test.x_0_0.fixed = True
 
     We're ready for doing the fit:
-    >>> parest, res = fit_powerspectrum(ps, model_to_test, t0)
+    >>> parest, res = fit_powerspectrum(ps, model_to_test, t0) # doctest: +SKIP
 
     `res` contains a whole array of useful information about the fit, for
     example the parameters at the optimum:
-    >>> p_opt = res.p_opt
+    >>> p_opt = res.p_opt # doctest: +SKIP
 
     """
     if priors:
@@ -242,4 +242,3 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
 
     return fit_powerspectrum(ps, model, starting_pars, max_post=max_post,
                              priors=priors, fitmethod=fitmethod)
-
