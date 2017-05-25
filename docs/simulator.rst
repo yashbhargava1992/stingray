@@ -7,7 +7,7 @@ Stingray Simulator (`stingray.simulator`)
 Introduction
 ============
 
-`stingray.simulator` provides a framework to simulate light curves with given variability distributions. In time series experiments, understanding the certainty is crucial to interpret the derived results in context of physical models. The simulator module provides tools to assess this uncertainty by simulating time series and spectral data. 
+`stingray.simulator` provides a framework to simulate light curves with given variability distributions. In time series experiments, understanding the certainty is crucial to interpret the derived results in context of physical models. The simulator module provides tools to assess this uncertainty by simulating time series and spectral data.
 
 Stingray simulator supports multiple methods to carry out these simulation. Light curves can be simulated through power-law spectrum, through a user-defined or pre-defined model, or through impulse responses. The module is designed in a way such that all these methods can be accessed using similar set of commands.
 
@@ -24,7 +24,7 @@ Getting started
 ===============
 
 The examples here assume that the following libraries and modules have been imported::
-	
+
 	>>> import numpy as np
 	>>> from stingray import Lightcurve, sampledata
 	>>> from stingray.simulator import simulator, models
@@ -51,7 +51,7 @@ Simulate Method
 Stingray provides multiple ways to simulate a light curve. However, all these methods follow a common recipe::
 
   >>> sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
-  >>> simulator.simulate(...)
+  >>> simulator.simulate(...) # doctest: +SKIP
 
 Using Power-Law Spectrum
 ------------------------
@@ -155,21 +155,22 @@ Channel Simulation
 ==================
 
 The `simulator` class provides the functionality to simulate light curves independently for each channel. This is useful, for example, when dealing with energy dependent impulse responses where we can create a di↵erent simulation channel for each energy range. The module provides options to count, retrieve and delete channels.::
-  
+
   >>> sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
   >>> sim.simulate_channel('3.5 - 4.5', 2)
   >>> sim.count_channels()
   1
   >>> lc = sim.get_channel('3.5 - 4.5')
   >>> sim.delete_channel('3.5 - 4.5')
+  >>> sim.count_channels()
   0
 
-Alternatively, assume that we have light curves in the simulated energy channels `3.5 - 4.5`, `4.5 - 5.5` and `5.5 - 6.5`. These channels can be retreived or deleted in single commands. 
+Alternatively, assume that we have light curves in the simulated energy channels `3.5 - 4.5`, `4.5 - 5.5` and `5.5 - 6.5`. These channels can be retreived or deleted in single commands.
 
-  >>> sim.countchannels()
+  >>> sim.countchannels() # doctest: +SKIP
   3
-  >>> sim.get_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5'])
-  >>> sim.delete_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5'])
+  >>> sim.get_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5']) # doctest: +SKIP
+  >>> sim.delete_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5']) # doctest: +SKIP
 
 Reference/API
 =============
@@ -177,4 +178,3 @@ Reference/API
 .. autoclass:: stingray.simulator.simulator.Simulator
    :members:
    :undoc-members:
-
