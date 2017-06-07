@@ -521,9 +521,17 @@ class TestClassicalSignificances(object):
 class TestDynamicalPowerspectrum(object):
 
     def setup_class(self):
-        lc = Lightcurve([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-                        [4, 5, 6, 2, 10, 5, 12, 16, 18, 10, 2, 0, 22, 25, 30])
-
+        # generate timestamps
+        timestamps = np.linspace(1, 100, 10000)
+        # noise component
+        nois = np.random.poisson(100, 10000)
+        # time evolution of frequency
+        freq = 25 + 1.2*np.sin(2*np.pi*timestamps/130)
+        # variability signal with drifiting frequency
+        vari = 25*np.sin(2*np.pi*freq*timestamps)
+        signal = nois+vari
+        # create a lightcurve
+        lc = Lightcurve(timestamps, signal)
         self.lc = lc
 
     def test_with_short_seg_size(self):
@@ -535,8 +543,30 @@ class TestDynamicalPowerspectrum(object):
             dps = DynamicalPowerspectrum(self.lc, segment_size=1000)
 
     def test_matrix(self):
-        dps = DynamicalPowerspectrum(self.lc, segment_size=5)
+        dps = DynamicalPowerspectrum(self.lc, segment_size=3)
         nsegs = int(self.lc.tseg/dps.segment_size)
         nfreq = int((1/self.lc.dt)/(2*(dps.freq[1]-dps.freq[0])) -
                     (1/self.lc.tseg))
         assert dps.dyn_ps.shape == (nsegs, nfreq)
+
+    def test_trace_maximum_without_boundaries(self):
+        dps = DynamicalPowerspectrum(self.lc, segment_size=3)
+        max_pos = dps.trace_maximum()
+
+        assert max(dps.freq[max_pos]) <= 1/self.lc.dt
+        assert min(dps.freq[max_pos]) >= 1/dps.segment_size
+
+    def test_trace_maximum_with_boundaries(self):
+        dps = DynamicalPowerspectrum(self.lc, segment_size=3)
+        minfreq = 21
+        maxfreq = 24
+        max_pos = dps.trace_maximum(min_freq=minfreq, max_freq=maxfreq)
+
+        assert max(dps.freq[max_pos]) <= maxfreq
+        assert min(dps.freq[max_pos]) >= minfreq
+
+    def test_size_of_trace_maximum(self):
+        dps = DynamicalPowerspectrum(self.lc, segment_size=3)
+        max_pos = dps.trace_maximum()
+        nsegs = int(self.lc.tseg/dps.segment_size)
+        assert len(max_pos) == nsegs
