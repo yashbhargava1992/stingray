@@ -238,6 +238,12 @@ class TestLightcurve(object):
         lc = lc1 + lc2
         np.testing.assert_almost_equal(lc.gti, self.gti)
 
+    def test_add_with_different_mjdref(self):
+        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.raises(ValueError):
+            lc1 + lc2
+
     def test_add_with_different_gtis(self):
         gti = [[0., 3.5]]
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
@@ -264,6 +270,7 @@ class TestLightcurve(object):
 
         assert np.all(lc.counts == lc1.counts + lc2.counts)
         assert np.all(lc.countrate == lc1.countrate + lc2.countrate)
+        assert lc1.mjdref == lc.mjdref
 
     def test_sub_with_diff_time_arrays(self):
         _times = [1, 2, 3, 4, 5]
@@ -283,6 +290,12 @@ class TestLightcurve(object):
             lc = lc1 - lc2
             assert "ightcurves have different statistics" in str(w[0].message)
 
+    def test_sub_with_different_mjdref(self):
+        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.raises(ValueError):
+            lc1 - lc2
+
     def test_subtraction(self):
         _counts = [3, 4, 5, 6]
 
@@ -293,6 +306,7 @@ class TestLightcurve(object):
 
         expected_counts = np.array([1, 2, 3, 4])
         assert np.all(lc.counts == expected_counts)
+        assert lc1.mjdref == lc.mjdref
 
     def test_negation(self):
         lc = Lightcurve(self.times, self.counts)
@@ -300,6 +314,7 @@ class TestLightcurve(object):
         _lc = lc + (-lc)
 
         assert not np.all(_lc.counts)
+        assert _lc.mjdref == lc.mjdref
 
     def test_len_function(self):
         lc = Lightcurve(self.times, self.counts)
@@ -324,6 +339,8 @@ class TestLightcurve(object):
         assert np.all(lc[:2].counts == np.array([2, 2]))
         assert np.all(lc[2:].counts == np.array([2, 2]))
         assert np.all(lc[:].counts == np.array([2, 2, 2, 2]))
+        assert lc[:].mjdref == lc.mjdref
+
 
     def test_slicing_index_error(self):
         lc = Lightcurve(self.times, self.counts)
@@ -342,6 +359,12 @@ class TestLightcurve(object):
             lc1.join(lc2)
             assert "different bin widths" in str(w[0].message)
 
+    def test_join_with_different_mjdref(self):
+        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.raises(ValueError):
+            lc1.join(lc2)
+
     def test_join_disjoint_time_arrays(self):
         _times = [5, 6, 7, 8]
         _counts = [2, 2, 2, 2]
@@ -353,6 +376,7 @@ class TestLightcurve(object):
 
         assert len(lc.counts) == len(lc.time) == 8
         assert np.all(lc.counts == 2)
+        assert lc.mjdref == lc1.mjdref
 
     def test_join_overlapping_time_arrays(self):
         _times = [3, 4, 5, 6]
@@ -375,11 +399,13 @@ class TestLightcurve(object):
         assert np.all(lc1.time == np.array([2, 3, 4]))
         assert np.all(lc1.counts == np.array([2, 2, 2]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
+        assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=2)
         assert np.all(lc2.time == np.array([1, 2]))
         assert np.all(lc2.counts == np.array([2, 2]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
+        assert lc2.mjdref == lc.mjdref
 
     def test_truncate_by_time_stop_less_than_start(self):
         lc = Lightcurve(self.times, self.counts)
@@ -399,26 +425,31 @@ class TestLightcurve(object):
         assert np.all(lc1.time == np.array([1, 2, 3, 4]))
         assert np.all(lc1.counts == np.array([2, 2, 2, 2]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 0.5)
+        assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=3, method='time')
         assert np.all(lc2.time == np.array([1, 2]))
         assert np.all(lc2.counts == np.array([2, 2]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
+        assert lc2.mjdref == lc.mjdref
 
     def test_sort(self):
         _times = [1, 2, 3, 4]
         _counts = [40, 10, 20, 5]
-        lc = Lightcurve(_times, _counts)
+        lc = Lightcurve(_times, _counts, mjdref=57000)
+        mjdref = lc.mjdref
 
         lc.sort()
 
         assert np.all(lc.counts == np.array([5, 10, 20, 40]))
         assert np.all(lc.time == np.array([4, 2, 3, 1]))
+        assert lc.mjdref == mjdref
 
         lc.sort(reverse=True)
 
         assert np.all(lc.counts == np.array([40, 20, 10,  5]))
         assert np.all(lc.time == np.array([1, 3, 2, 4]))
+        assert lc.mjdref == mjdref
 
     def test_plot_matplotlib_not_installed(self):
         try:
