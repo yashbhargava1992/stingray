@@ -116,7 +116,8 @@ class VarEnergySpectrum(object):
                                              self.bin_time,
                                              tstart=tstart,
                                              tseg=tstop - tstart,
-                                             gti=gti)
+                                             gti=gti,
+                                             mjdref=self.events1.mjdref)
 
         if exclude:
             ref_intervals = self._decide_ref_intervals(channel_band,
@@ -125,7 +126,7 @@ class VarEnergySpectrum(object):
             ref_intervals = [self.ref_band]
 
         ref_lc = Lightcurve(base_lc.time, np.zeros_like(base_lc.counts),
-                            gti=base_lc.gti)
+                            gti=base_lc.gti, mjdref=base_lc.mjdref)
 
         for i in ref_intervals:
             good = (energies2 >= i[0]) & (energies2 < i[1])
@@ -133,7 +134,8 @@ class VarEnergySpectrum(object):
                                                 self.bin_time,
                                                 tstart=tstart,
                                                 tseg=tstop - tstart,
-                                                gti=gti)
+                                                gti=gti,
+                                                mjdref=self.events2.mjdref)
             ref_lc = ref_lc + new_lc
 
         return base_lc, ref_lc
