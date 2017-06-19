@@ -202,6 +202,22 @@ class Lightcurve(object):
                                               self.tstart + self.tseg]]))
         check_gtis(self.gti)
 
+    def change_mjdref(self, new_mjdref):
+        """Change the MJDREF of the light curve.
+
+        Times will be now referred to this new MJDREF
+
+        Parameters
+        ----------
+        new_mjdref : float
+            New MJDREF
+        """
+        time_shift = (new_mjdref - self.mjdref) * 86400
+
+        new_lc = self.shift(time_shift)
+        new_lc.mjdref = new_mjdref
+        return new_lc
+
     def shift(self, time_shift):
         """
         Shift the light curve and the GTIs in time.
