@@ -122,7 +122,8 @@ class EventList(object):
             tseg = self.gti[-1][1] - tstart
 
         return Lightcurve.make_lightcurve(self.time, dt, tstart=tstart,
-                                          gti=self.gti, tseg=tseg)
+                                          gti=self.gti, tseg=tseg,
+                                          mjdref=self.mjdref)
 
     @staticmethod
     def from_lc(lc):

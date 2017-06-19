@@ -133,6 +133,7 @@ class Crossspectrum(object):
         self.gti = gti
         self.lc1 = lc1
         self.lc2 = lc2
+
         self._make_crossspectrum(lc1, lc2)
 
     def _make_crossspectrum(self, lc1, lc2):
@@ -143,6 +144,9 @@ class Crossspectrum(object):
 
         if not isinstance(lc2, Lightcurve):
             raise TypeError("lc2 must be a lightcurve.Lightcurve object")
+
+        if self.lc2.mjdref != self.lc1.mjdref:
+            raise ValueError("MJDref is different in the two light curves")
 
         # Then check that GTIs make sense
         if self.gti is None:
