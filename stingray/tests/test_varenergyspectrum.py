@@ -2,6 +2,7 @@ import numpy as np
 from stingray.events import EventList
 from stingray.varenergyspectrum import VarEnergySpectrum, RmsEnergySpectrum
 from stingray.varenergyspectrum import LagEnergySpectrum
+from stingray.varenergyspectrum import ExcessVarianceSpectrum
 from stingray.lightcurve import Lightcurve
 
 from astropy.tests.helper import pytest
@@ -11,6 +12,29 @@ np.random.seed(20150907)
 class DummyVarEnergy(VarEnergySpectrum):
     def _spectrum_function(self):
         return None, None
+
+
+class TestExcVarEnergySpectrum(object):
+    @classmethod
+    def setup_class(cls):
+        from ..simulator.simulator import Simulator
+
+        simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
+        test_lc = simulator.simulate(1)
+        test_ev1, test_ev2 = EventList(), EventList()
+        test_ev1.simulate_times(test_lc)
+        test_ev2.simulate_times(test_lc)
+        test_ev1.pha = np.random.uniform(0.3, 12, len(test_ev1.time))
+        test_ev2.pha = np.random.uniform(0.3, 12, len(test_ev2.time))
+
+        cls.rms = ExcessVarianceSpectrum(test_ev1, [0., 100],
+                                         (0.3, 12, 5, "lin"),
+                                         bin_time=0.01,
+                                         segment_size=100,
+                                         events2=test_ev2)
+
+    def test_allocate(self):
+        pass
 
 
 class TestVarEnergySpectrum(object):
@@ -49,6 +73,7 @@ class TestVarEnergySpectrum(object):
         vespec = DummyVarEnergy(events, [0., 10000],
                                 (0, 1, 2, "lin"),
                                 bin_time=0.1)
+        assert np.all(vespec.ref_band == np.array([[0, np.inf]]))
 
     def test_energy_spec_wrong_list_not_tuple(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
@@ -169,3 +194,4 @@ class TestLagEnergySpectrum(object):
 
         assert np.all(np.abs(self.lag.spectrum - 0.2) < \
                       3 * self.lag.spectrum_error)
+
