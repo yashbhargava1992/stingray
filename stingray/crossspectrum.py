@@ -569,14 +569,17 @@ class AveragedCrossspectrum(Crossspectrum):
             counts_2 = lc2.counts[start_ind:end_ind]
             counts_2_err = lc2.counts_err[start_ind:end_ind]
             lc1_seg = Lightcurve(time_1, counts_1, err=counts_1_err,
-                                 err_dist=lc1.err_dist)
+                                 err_dist=lc1.err_dist,
+                                 gti=[[time_1[0] - lc1.dt/2,
+                                       time_1[-1] + lc1.dt / 2]])
             lc2_seg = Lightcurve(time_2, counts_2, err=counts_2_err,
-                                 err_dist=lc2.err_dist)
+                                 err_dist=lc2.err_dist,
+                                 gti=[[time_2[0] - lc2.dt/2,
+                                       time_2[-1] + lc2.dt / 2]])
             cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm)
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
             nphots2_all.append(np.sum(lc2_seg.counts))
-
         return cs_all, nphots1_all, nphots2_all
 
     def _make_crossspectrum(self, lc1, lc2):

@@ -574,15 +574,17 @@ def bin_intervals_from_gtis(gtis, chunk_length, time):
     for g in gtis:
         if g[1] - g[0] < chunk_length:
             continue
-        good = (time - bintime / 2 > g[0])&(time + bintime / 2 < g[1])
+        good = (time - bintime / 2 >= g[0])&(time + bintime / 2 <= g[1])
         t_good = time[good]
         if len(t_good) == 0:
             continue
         startbin = np.argmin(np.abs(time - bintime / 2 - g[0]))
-        stopbin = np.argmin(np.abs(time + bintime / 2 - g[1]))
+        stopbin = np.argmin(np.abs(time + bintime / 2 - g[1])) + 1
 
-        if time[startbin] < g[0]: startbin += 1
-        if time[stopbin] < g[1] + bintime/2: stopbin += 1
+        if time[startbin] < g[0] + bintime/2: startbin += 1
+        # Would be g[1] - bintime/2, but stopbin is the end of an interval
+        # so one has to add one bin
+        if time[stopbin - 1] > g[1] + bintime/2: stopbin -= 1
 
         newbins = np.arange(startbin, stopbin - nbin + 1, nbin,
                             dtype=np.long)
@@ -641,10 +643,12 @@ def gti_border_bins(gtis, time):
         if len(t_good) == 0:
             continue
         startbin = np.argmin(np.abs(time - bintime / 2 - g[0]))
-        stopbin = np.argmin(np.abs(time + bintime / 2 - g[1]))
+        stopbin = np.argmin(np.abs(time + bintime / 2 - g[1])) + 1
 
-        if time[startbin] < g[0]: startbin += 1
-        if time[stopbin] < g[1] + bintime/2: stopbin += 1
+        if time[startbin] < g[0] + bintime/2: startbin += 1
+        # Would be g[1] - bintime/2, but stopbin is the end of an interval
+        # so one has to add one bin
+        if time[stopbin - 1] > g[1] + bintime/2: stopbin -= 1
 
         spectrum_start_bins = \
             np.append(spectrum_start_bins,
