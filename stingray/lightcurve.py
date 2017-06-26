@@ -185,16 +185,17 @@ class Lightcurve(object):
 
         good = create_gti_mask(self.time, self.gti)
 
+        self.time = self.time[good]
         if input_counts:
-            self.counts = np.asarray(counts[good])
-            self.countrate = self.counts[good] / self.dt
-            self.counts_err = np.asarray(err[good])
-            self.countrate_err = np.asarray(err[good]) / self.dt
+            self.counts = np.asarray(counts)[good]
+            self.countrate = self.counts / self.dt
+            self.counts_err = np.asarray(err)[good]
+            self.countrate_err = np.asarray(err)[good] / self.dt
         else:
-            self.countrate = np.asarray(counts[good])
-            self.counts = self.countrate[good] * self.dt
-            self.counts_err = np.asarray(err[good]) * self.dt
-            self.countrate_err = np.asarray(err[good])
+            self.countrate = np.asarray(counts)[good]
+            self.counts = self.countrate * self.dt
+            self.counts_err = np.asarray(err)[good] * self.dt
+            self.countrate_err = np.asarray(err)[good]
 
         self.meanrate = np.mean(self.countrate)
         self.meancounts = np.mean(self.counts)
@@ -243,6 +244,46 @@ class Lightcurve(object):
         new_lc.meancounts = np.mean(new_lc.counts)
         return new_lc
 
+    def _operation_with_other_lc(self, other, operation):
+        if self.mjdref != other.mjdref:
+            raise ValueError("MJDref is different in the two light curves")
+
+        common_gti = cross_two_gtis(self.gti, other.gti)
+        mask_self = create_gti_mask(self.time, common_gti)
+        mask_other = create_gti_mask(other.time, common_gti)
+
+        # ValueError is raised by Numpy while asserting np.equal over arrays
+        # with different dimensions.
+        try:
+            assert np.all(np.equal(self.time[mask_self],
+                                   other.time[mask_other]))
+        except (ValueError, AssertionError):
+            raise ValueError("GTI-filtered time arrays of both light curves "
+                             "must be of same dimension and equal.")
+
+        new_time = self.time[mask_self]
+        new_counts = operation(self.counts[mask_self],
+                               other.counts[mask_other])
+
+        if self.err_dist.lower() != other.err_dist.lower():
+            simon("Lightcurves have different statistics!"
+                  "We are setting the errors to zero to avoid complications.")
+            new_counts_err = np.zeros_like(new_counts)
+        elif self.err_dist.lower() in valid_statistics:
+                new_counts_err = np.sqrt(np.add(self.counts_err[mask_self]**2,
+                                                other.counts_err[mask_other]**2))
+            # More conditions can be implemented for other statistics
+        else:
+            raise StingrayError("Statistics not recognized."
+                                " Please use one of these: "
+                                "{}".format(valid_statistics))
+
+        lc_new = Lightcurve(new_time, new_counts,
+                            err=new_counts_err, gti=common_gti,
+                            mjdref=self.mjdref)
+
+        return lc_new
+
     def __add__(self, other):
         """
         Add two light curves element by element having the same time array.
@@ -266,39 +307,7 @@ class Lightcurve(object):
         array([ 900, 1300, 1200])
         """
 
-        # ValueError is raised by Numpy while asserting np.equal over arrays
-        # with different dimensions.
-        try:
-            assert np.all(np.equal(self.time, other.time))
-        except (ValueError, AssertionError):
-            raise ValueError("Time arrays of both light curves must be "
-                             "of same dimension and equal.")
-
-        if self.mjdref != other.mjdref:
-            raise ValueError("MJDref is different in the two light curves")
-
-        new_counts = np.add(self.counts, other.counts)
-
-        if self.err_dist.lower() != other.err_dist.lower():
-            simon("Lightcurves have different statistics!"
-                  "We are setting the errors to zero to avoid complications.")
-            new_counts_err = np.zeros_like(new_counts)
-        elif self.err_dist.lower() in valid_statistics:
-                new_counts_err = np.sqrt(np.add(self.counts_err**2,
-                                                other.counts_err**2))
-            # More conditions can be implemented for other statistics
-        else:
-            raise StingrayError("Statistics not recognized."
-                                " Please use one of these: "
-                                "{}".format(valid_statistics))
-
-        common_gti = cross_two_gtis(self.gti, other.gti)
-
-        lc_new = Lightcurve(self.time, new_counts,
-                            err=new_counts_err, gti=common_gti,
-                            mjdref=self.mjdref)
-
-        return lc_new
+        return self._operation_with_other_lc(other, np.add)
 
     def __sub__(self, other):
         """
@@ -324,40 +333,7 @@ class Lightcurve(object):
         array([ 300, 1100,  400])
         """
 
-        # ValueError is raised by Numpy while asserting np.equal over arrays
-        # with different dimensions.
-        try:
-            assert np.all(np.equal(self.time, other.time))
-        except (ValueError, AssertionError):
-            raise ValueError("Time arrays of both light curves must be "
-                             "of same dimension and equal.")
-
-        if self.mjdref != other.mjdref:
-            raise ValueError("MJDref is different in the two light curves")
-
-
-        new_counts = np.subtract(self.counts, other.counts)
-
-        if self.err_dist.lower() != other.err_dist.lower():
-            simon("Lightcurves have different statistics!"
-                  "We are setting the errors to zero to avoid complications.")
-            new_counts_err = np.zeros_like(new_counts)
-        elif self.err_dist.lower() in valid_statistics:
-            new_counts_err = np.sqrt(np.add(self.counts_err**2,
-                                            other.counts_err**2))
-            # More conditions can be implemented for other statistics
-        else:
-            raise StingrayError("Statistics not recognized."
-                                " Please use one of these: "
-                                "{}".format(valid_statistics))
-
-        common_gti = cross_two_gtis(self.gti, other.gti)
-
-        lc_new = Lightcurve(self.time, new_counts,
-                            err=new_counts_err, gti=common_gti,
-                            mjdref=self.mjdref)
-
-        return lc_new
+        return self._operation_with_other_lc(other, np.subtract)
 
     def __neg__(self):
         """
