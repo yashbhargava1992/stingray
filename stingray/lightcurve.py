@@ -174,16 +174,27 @@ class Lightcurve(object):
 
         self.err_dist = err_dist
 
+        self.tseg = self.time[-1] - self.time[0] + self.dt
+        self.tstart = self.time[0] - 0.5*self.dt
+
+        self.gti = \
+            np.asarray(assign_value_if_none(gti,
+                                            [[self.tstart,
+                                              self.tstart + self.tseg]]))
+        check_gtis(self.gti)
+
+        good = create_gti_mask(self.time, self.gti)
+
         if input_counts:
-            self.counts = np.asarray(counts)
-            self.countrate = self.counts / self.dt
-            self.counts_err = np.asarray(err)
-            self.countrate_err = np.asarray(err) / self.dt
+            self.counts = np.asarray(counts[good])
+            self.countrate = self.counts[good] / self.dt
+            self.counts_err = np.asarray(err[good])
+            self.countrate_err = np.asarray(err[good]) / self.dt
         else:
-            self.countrate = np.asarray(counts)
-            self.counts = self.countrate * self.dt
-            self.counts_err = np.asarray(err) * self.dt
-            self.countrate_err = np.asarray(err)
+            self.countrate = np.asarray(counts[good])
+            self.counts = self.countrate[good] * self.dt
+            self.counts_err = np.asarray(err[good]) * self.dt
+            self.countrate_err = np.asarray(err[good])
 
         self.meanrate = np.mean(self.countrate)
         self.meancounts = np.mean(self.counts)
@@ -197,13 +208,6 @@ class Lightcurve(object):
                   "This could cause problems with Fourier transforms. "
                   "Please make the input time evenly sampled.")
 
-        self.tseg = self.time[-1] - self.time[0] + self.dt
-        self.tstart = self.time[0] - 0.5*self.dt
-        self.gti = \
-            np.asarray(assign_value_if_none(gti,
-                                            [[self.tstart,
-                                              self.tstart + self.tseg]]))
-        check_gtis(self.gti)
 
     def change_mjdref(self, new_mjdref):
         """Change the MJDREF of the light curve.
@@ -941,3 +945,7 @@ class Lightcurve(object):
             list_of_lcs.append(new_lc)
 
         return list_of_lcs
+
+    def apply_gtis(self):
+        good = create_gti_mask(self.time, lc.gti)
+
