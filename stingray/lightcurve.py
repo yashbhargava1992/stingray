@@ -502,7 +502,7 @@ class Lightcurve(object):
 
         counts = np.asarray(counts)
 
-        return Lightcurve(time, counts, gti=gti, mjdref=mjdref)
+        return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt)
 
     def rebin(self, dt_new, method='sum'):
         """
@@ -537,7 +537,7 @@ class Lightcurve(object):
                              yerr=self.counts_err, method=method)
 
         lc_new = Lightcurve(bin_time, bin_counts, err=bin_err,
-                            mjdref=self.mjdref)
+                            mjdref=self.mjdref, dt=dt_new)
         return lc_new
 
     def join(self, other):
@@ -643,7 +643,7 @@ class Lightcurve(object):
         gti = join_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(new_time, new_counts, err=new_counts_err, gti=gti,
-                            mjdref=self.mjdref)
+                            mjdref=self.mjdref, dt=self.dt)
 
         return lc_new
 
@@ -716,7 +716,8 @@ class Lightcurve(object):
                            np.asarray([[self.time[start] - 0.5 * self.dt,
                                         time_new[-1] + 0.5 * self.dt]]))
 
-        return Lightcurve(time_new, counts_new, err=counts_err_new, gti=gti)
+        return Lightcurve(time_new, counts_new, err=counts_err_new, gti=gti,
+                          dt=self.dt)
 
     def _truncate_by_time(self, start, stop):
         """Private method for truncation using time values."""
@@ -920,7 +921,8 @@ class Lightcurve(object):
             # Note: GTIs are consistent with default in this case!
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
                                 err=self.counts_err[start:stop],
-                                mjdref=self.mjdref, gti=[self.gti[i]])
+                                mjdref=self.mjdref, gti=[self.gti[i]],
+                                dt=self.dt)
             list_of_lcs.append(new_lc)
 
         return list_of_lcs

@@ -134,8 +134,8 @@ class TestGTI(object):
         start_bins, stop_bins = \
             bin_intervals_from_gtis([[0, 5], [6, 8]], 2, times)
 
-        assert np.all(start_bins == np.array([0, 2]))
-        assert np.all(stop_bins == np.array([2, 4]))
+        assert np.all(start_bins == np.array([0, 2, 6]))
+        assert np.all(stop_bins == np.array([2, 4, 8]))
 
     def test_decide_spectrum_lc_intervals_invalid(self):
         with pytest.raises(ValueError):
