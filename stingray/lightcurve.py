@@ -153,7 +153,7 @@ class Lightcurve(object):
             if err_dist.lower() == 'poisson':
                 err_low, err_high = poisson_conf_interval(np.asarray(counts),
                     interval='frequentist-confidence', sigma=1)
-                # calculate approximately symetric uncertainties
+                # calculate approximately symmetric uncertainties
                 err = (np.absolute(err_low) + np.absolute(err_high) -
                        2 * np.asarray(counts))/2.0
                 # other estimators can be implemented for other statistics
