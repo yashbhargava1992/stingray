@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from stingray.gti import check_separate, cross_two_gtis, create_gti_mask
 from stingray.lightcurve import Lightcurve
-from stingray.utils import assign_value_if_none, simon
+from stingray.utils import assign_value_if_none, simon, excess_variance
 from stingray.crossspectrum import AveragedCrossspectrum
 from abc import ABCMeta, abstractmethod
 import six
@@ -251,27 +251,7 @@ class ExcessVarianceSpectrum(VarEnergySpectrum):
         for i, eint in enumerate(self.energy_intervals):
             lc = self._construct_lightcurves(eint, exclude=False,
                                              only_base=True)
-            good = create_gti_mask(lc.time, lc.gti)
-            lc_mean_var = np.mean(lc.counts_err[good] ** 2)
-            lc_actual_var = np.var(lc.counts[good])
-            var_xs = lc_actual_var - lc_mean_var
-            mean_lc = np.mean(lc.counts[good])
-            mean_ctvar = np.mean(mean_lc ** 2)
 
-            fvar = var_xs / mean_ctvar
-
-            N = len(lc.counts)
-            var_xs_err_A = np.sqrt(2 / N) * lc_mean_var / mean_lc ** 2
-            var_xs_err_B = np.sqrt(mean_lc ** 2 / N) * 2 * fvar / mean_lc
-            var_xs_err = np.sqrt(var_xs_err_A**2 + var_xs_err_B**2)
-
-            fvar_err = var_xs_err / (2 * fvar)
-
-            if self.normalization == 'fvar':
-                spec[i] = fvar
-                spec_err[i] = fvar_err
-            elif self.normalization == 'none':
-                spec[i] = var_xs
-                spec_err[i] = var_xs_err
+            spec[i], spec_err[i] = excess_variance(lc, self.normalization)
 
         return spec, spec_err
