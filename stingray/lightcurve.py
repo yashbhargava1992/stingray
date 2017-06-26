@@ -21,7 +21,7 @@ valid_statistics = ["poisson", "gauss", None]
 
 class Lightcurve(object):
     def __init__(self, time, counts, err=None, input_counts=True,
-                 gti=None, err_dist='poisson', mjdref=0):
+                 gti=None, err_dist='poisson', mjdref=0, dt=None):
         """
         Make a light curve object from an array of time stamps and an
         array of counts.
@@ -167,7 +167,10 @@ class Lightcurve(object):
 
         self.mjdref = mjdref
         self.time = np.asarray(time)
-        self.dt = time[1] - time[0]
+        if dt is None:
+            self.dt = np.median(self.time[1:] - self.time[:-1])
+        else:
+            self.dt = dt
 
         self.bin_lo = self.time - 0.5 * self.dt
         self.bin_hi = self.time + 0.5 * self.dt
@@ -917,7 +920,7 @@ class Lightcurve(object):
             # Note: GTIs are consistent with default in this case!
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
                                 err=self.counts_err[start:stop],
-                                mjdref=self.mjdref)
+                                mjdref=self.mjdref, gti=[self.gti[i]])
             list_of_lcs.append(new_lc)
 
         return list_of_lcs
