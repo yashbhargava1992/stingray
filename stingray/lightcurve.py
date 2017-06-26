@@ -151,10 +151,13 @@ class Lightcurve(object):
                                     "Please select one of these: ",
                                     "{}".format(valid_statistics))
             if err_dist.lower() == 'poisson':
+                # Instead of the simple square root, we use confidence
+                # intervals (should be valid for low fluxes too)
                 err_low, err_high = poisson_conf_interval(np.asarray(counts),
                     interval='frequentist-confidence', sigma=1)
-                # calculate approximately symetric uncertainties
-                err = (np.absolute(err_low)+np.absolute(err_high))/2.0
+                # calculate approximately symmetric uncertainties
+                err = (np.absolute(err_low) + np.absolute(err_high) -
+                       2 * np.asarray(counts))/2.0
                 # other estimators can be implemented for other statistics
             else:
                 simon("Stingray only uses poisson err_dist at the moment, "
