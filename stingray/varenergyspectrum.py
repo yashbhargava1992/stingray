@@ -165,7 +165,7 @@ class VarEnergySpectrum(object):
                                                 self.bin_time,
                                                 tstart=tstart,
                                                 tseg=tstop - tstart,
-                                                gti=gti,
+                                                gti=base_lc.gti,
                                                 mjdref=self.events2.mjdref)
             ref_lc = ref_lc + new_lc
 

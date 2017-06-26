@@ -30,7 +30,6 @@ class TestExcVarEnergySpectrum(object):
                                      (0.3, 12, 5, "lin"),
                                      bin_time=1,
                                      segment_size=100)
-        print(exv.spectrum, exv.spectrum_error)
 
 
 class TestVarEnergySpectrum(object):
@@ -172,7 +171,8 @@ class TestLagEnergySpectrum(object):
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
                               np.array(np.roll(test_lc1.counts, 4)),
-                              err_dist=test_lc1.err_dist)
+                              err_dist=test_lc1.err_dist,
+                              gti=test_lc1.gti)
 
         test_ev1, test_ev2 = EventList(), EventList()
         test_ev1.simulate_times(test_lc1)
