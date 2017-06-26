@@ -21,20 +21,16 @@ class TestExcVarEnergySpectrum(object):
 
         simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
         test_lc = simulator.simulate(1)
-        test_ev1, test_ev2 = EventList(), EventList()
-        test_ev1.simulate_times(test_lc)
-        test_ev2.simulate_times(test_lc)
-        test_ev1.pha = np.random.uniform(0.3, 12, len(test_ev1.time))
-        test_ev2.pha = np.random.uniform(0.3, 12, len(test_ev2.time))
-
-        cls.rms = ExcessVarianceSpectrum(test_ev1, [0., 100],
-                                         (0.3, 12, 5, "lin"),
-                                         bin_time=0.01,
-                                         segment_size=100,
-                                         events2=test_ev2)
+        cls.test_ev1, cls.test_ev2 = EventList(), EventList()
+        cls.test_ev1.simulate_times(test_lc)
+        cls.test_ev1.pha = np.random.uniform(0.3, 12, len(cls.test_ev1.time))
 
     def test_allocate(self):
-        pass
+        exv = ExcessVarianceSpectrum(self.test_ev1, [0., 100],
+                                     (0.3, 12, 5, "lin"),
+                                     bin_time=1,
+                                     segment_size=100)
+        print(exv.spectrum, exv.spectrum_error)
 
 
 class TestVarEnergySpectrum(object):

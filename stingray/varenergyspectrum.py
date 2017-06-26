@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-from stingray.gti import check_separate, cross_two_gtis
+from stingray.gti import check_separate, cross_two_gtis, create_gti_mask
 from stingray.lightcurve import Lightcurve
 from stingray.utils import assign_value_if_none, simon
 from stingray.crossspectrum import AveragedCrossspectrum
@@ -126,7 +126,7 @@ class VarEnergySpectrum(object):
         return cross_two_gtis(ref_band, not_channel_band)
 
     def _construct_lightcurves(self, channel_band, tstart=None, tstop=None,
-                               exclude=True):
+                               exclude=True, only_base=False):
         if self.use_pi:
             energies1 = self.events1.pi
             energies2 = self.events2.pi
@@ -136,12 +136,8 @@ class VarEnergySpectrum(object):
 
         gti = cross_two_gtis(self.events1.gti, self.events2.gti)
 
-        tstart = assign_value_if_none(tstart,
-                                      np.max([self.events1.time[0],
-                                              self.events2.time[0]]))
-        tstop = assign_value_if_none(tstop,
-                                     np.min([self.events1.time[-1],
-                                             self.events2.time[-1]]))
+        tstart = assign_value_if_none(tstart, gti[0, 0])
+        tstop = assign_value_if_none(tstop, gti[-1, -1])
 
         good = (energies1 >= channel_band[0]) & (energies1 < channel_band[1])
         base_lc = Lightcurve.make_lightcurve(self.events1.time[good],
@@ -150,6 +146,9 @@ class VarEnergySpectrum(object):
                                              tseg=tstop - tstart,
                                              gti=gti,
                                              mjdref=self.events1.mjdref)
+
+        if only_base:
+            return base_lc
 
         if exclude:
             ref_intervals = self._decide_ref_intervals(channel_band,
@@ -233,15 +232,46 @@ class LagEnergySpectrum(VarEnergySpectrum):
 
 class ExcessVarianceSpectrum(VarEnergySpectrum):
     def __init__(self, events, freq_interval, energy_spec,
-                 bin_time=1, use_pi=False, segment_size=None, events2=None):
-        if isinstance(energy_spec, tuple):
-            energies = _decode_energy_specification(energy_spec)
-        else:
-            energies = np.asarray(energy_spec)
+                 bin_time=1, use_pi=False, segment_size=None,
+                 normalization='fvar'):
 
-        VarEnergySpectrum.__init__(self, events, freq_interval, energies,
-                                   ref_band=energies, bin_time=1, use_pi=False,
-                                   segment_size=None, events2=None)
+        self.normalization = normalization
+        accepted_normalizations = ['fvar', 'none']
+        if normalization not in accepted_normalizations:
+            raise ValueError('The normalization of excess variance must be '
+                             'one of {}'.format(accepted_normalizations))
+
+        VarEnergySpectrum.__init__(self, events, freq_interval, energy_spec,
+                                   bin_time=bin_time, use_pi=use_pi,
+                                   segment_size=segment_size)
 
     def _spectrum_function(self):
-        return None, None
+        spec = np.zeros(len(self.energy_intervals))
+        spec_err = np.zeros_like(spec)
+        for i, eint in enumerate(self.energy_intervals):
+            lc = self._construct_lightcurves(eint, exclude=False,
+                                             only_base=True)
+            good = create_gti_mask(lc.time, lc.gti)
+            lc_mean_var = np.mean(lc.counts_err[good] ** 2)
+            lc_actual_var = np.var(lc.counts[good])
+            var_xs = lc_actual_var - lc_mean_var
+            mean_lc = np.mean(lc.counts[good])
+            mean_ctvar = np.mean(mean_lc ** 2)
+
+            fvar = var_xs / mean_ctvar
+
+            N = len(lc.counts)
+            var_xs_err_A = np.sqrt(2 / N) * lc_mean_var / mean_lc ** 2
+            var_xs_err_B = np.sqrt(mean_lc ** 2 / N) * 2 * fvar / mean_lc
+            var_xs_err = np.sqrt(var_xs_err_A**2 + var_xs_err_B**2)
+
+            fvar_err = var_xs_err / (2 * fvar)
+
+            if self.normalization == 'fvar':
+                spec[i] = fvar
+                spec_err[i] = fvar_err
+            elif self.normalization == 'none':
+                spec[i] = var_xs
+                spec_err[i] = var_xs_err
+
+        return spec, spec_err
