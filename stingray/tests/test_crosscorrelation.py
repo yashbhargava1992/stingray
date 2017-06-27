@@ -1,186 +1,117 @@
-from __future__ import division
 import numpy as np
-from scipy import signal
 
-from stingray import lightcurve
+import pytest
+import matplotlib.pyplot as plt
+import warnings
+import os
+
+from stingray import Lightcurve
+from stingray import CrossCorrelation
 from stingray.exceptions import StingrayError
-import stingray.utils as utils
 
 
-class CrossCorrelation(object):
-    def __init__(self, lc1=None, lc2=None):
+class TestCrossCorrelation(object):
 
-        """
-        Make a cross-correlation from a light curves.
-        You can also make an empty Crosscorrelation object to populate with your
-        own cross-correlation data.
+    @classmethod
+    def setup_class(cls):
+        cls.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        cls.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+        # Smaller Light curve
+        cls.lc_s = Lightcurve([1, 2, 3], [5, 3, 2])
+        # lc with different time resolution
+        cls.lc_u = Lightcurve([1, 3, 5, 7, 9], [4, 8, 1, 9, 11])
 
-        Parameters
-        ----------
-        lc1: lightcurve.Lightcurve object, optional, default None
-            The first light curve data for correlation calculations.
+    def test_empty_cross_correlation(self):
+        cr = CrossCorrelation()
+        assert cr.corr is None
+        assert cr.time_shift is None
+        assert cr.time_lags is None
+        assert cr.dt is None
 
-        lc2: lightcurve.Lightcurve object, optional, default None
-            The light curve data for the correlation calculations.
+    def test_empty_cross_correlation_with_dt(self):
+        cr = CrossCorrelation()
+        with pytest.raises(StingrayError):
+            cr.cal_timeshift(dt = 2.0)
+        assert cr.dt == 2.0
 
-        Attributes
-        ----------
-         corr: numpy.ndarray
-             An array of correlation data calculated from two lighcurves
+    def test_cross_correlation_with_unequal_lc(self):
+        with pytest.raises(StingrayError):
+            cr = CrossCorrelation(self.lc1,self.lc_s)
 
-         time_lags: numpy.ndarray
-             An array of all possible time lags against which each point in corr is calculated 
+    def test_init_with_invalid_lc1(self):
+        data = np.array([[2,3,2,4,1]])
+        with pytest.raises(TypeError):
+            cr = CrossCorrelation(data,self.lc2)
 
-         dt: float
-             The time resolution of each lightcurve (used in time_lag calculations)
+    def test_init_with_invalid_lc2(self):
+        data = np.array([[2, 3, 2, 4, 1]])
+        with pytest.raises(TypeError):
+            cr = CrossCorrelation(self.lc1,data)
 
-         time_shift: float
-             Time lag that gives maximum value of correlation between two lightcurves.
-             There will be maximum correlation between lightcurves if one of the lightcurve is shifted by time_shift.
-                 
-         n: int
-             Number of points in self.corr(Length of cross-correlation data) 
-        """
+    def test_init_with_diff_time_bin(self):
+        with pytest.raises(StingrayError):
+            cr = CrossCorrelation(self.lc_u, self.lc2)
 
-        ## Populate all attributes by None if user passes no lightcurve data
-        if lc1 is None and lc2 is None:
-            self.corr = None
-            self.time_shift = None
-            self.time_lags = None
-            self.dt = None
-            self.n = None
-            return
-        else:
-            self._make_corr(lc1, lc2)
 
-    def _make_corr(self, lc1, lc2):
+    def test_corr_is_correct(self):
+        result = np.array([22, 51, 51, 81, 81, 41, 41, 24, 4])
+        lags_result = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
+        cr = CrossCorrelation(self.lc1, self.lc2)
+        assert np.array_equal(cr.corr,result)
+        assert cr.dt == self.lc1.dt
+        assert cr.n == 9
+        assert np.array_equal(cr.time_lags,lags_result)
+        assert cr.time_shift == -1.0
 
-        """
-        Creates Crosscorrelation Object.
-
-        Parameters
-        ----------
-        lc1: lightcurve.Lightcurve object
-            The first light curve data.
-
-        lc2: lightcurve.Lightcurve object
-            The second light curve data.
-
-        Returns
-        ----------
-        None
-        """
-
-        if not isinstance(lc1, lightcurve.Lightcurve):
-            raise TypeError("lc1 must be a lightcurve.Lightcurve object")
-        if not isinstance(lc2, lightcurve.Lightcurve):
-            raise TypeError("lc2 must be a lightcurve.Lightcurve object")
-
-        # Sizes of both light curves are assumed to be equal for now
-        if lc1.n != lc2.n:
-            raise StingrayError('Both lightcurves should be of same length')
-
-        if lc1.dt != lc2.dt:
-            raise StingrayError("Light curves do not have "
-                                "same time binning dt.")
-        else:
-            self.dt = lc1.dt
-
-        # Calculates cross-correlation of two lightcurves
-        self.corr = signal.correlate(lc1.counts, lc2.counts)
-        self.n = len(self.corr)
-
-        self.time_shift, self.time_lags, self.n = self.cal_timeshift(dt=self.dt)
-
-    def cal_timeshift(self, dt=1.0):
-        """
-        Creates Crosscorrelation Object.
-
-        Parameters
-        ----------
-        dt: float , optional, default 1.0
-            Time resolution of lightcurve, should be passed when object is populated with correlation data
-            and no information about light curve can be extracted. Used to calculate time_lags.
-
-        Returns
-        ----------
-        self.time_shift: float
-             Value of time lag that gives maximum value of correlation between two lightcurves. 
-
-        self.time_lags: numpy.ndarray
-             An array of time_lags calculated from correlation data 
-        """
-
-        if self.dt is None:
-            self.dt = dt
-        self.n = len(self.corr)
-        dur = int(self.n / 2)
-        # Correlation against all possible lags, positive as well as negative lags are stored
-        x_lags = np.linspace(-dur, dur, self.n)
-        self.time_lags = x_lags * self.dt
-        # time_shift is the time lag for max. correlation
-        self.time_shift = self.time_lags[np.argmax(self.corr)]
-
-        return self.time_shift, self.time_lags, self.n
-
-    def plot(self, labels=None, axis=None, title=None, marker='-', save=False, filename=None):
-        """
-        Plot the :class:`Crosscorrelation` as function using Matplotlib.
-
-        Plot the Crosscorrelation object on a graph ``self.time_lags`` on x-axis and
-        ``self.corr`` on y-axis
-
-        Parameters
-        ----------
-        labels : iterable, default None
-            A list of tuple with xlabel and ylabel as strings.
-        axis : list, tuple, string, default None
-            Parameter to set axis properties of Matplotlib figure. For example
-            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
-            acceptable argument for `matplotlib.pyplot.axis()` function.
-        title : str, default None
-            The title of the plot.
-        marker : str, default '-'
-            Line style and color of the plot. Line styles and colors are
-            combined in a single format string, as in ``'bo'`` for blue
-            circles. See `matplotlib.pyplot.plot` for more options.
-        save : boolean, optional (default=False)
-            If True, save the figure with specified filename.
-        filename : str
-            File name of the image to save. Depends on the boolean ``save``.
-        """
-
+    def test_plot_matplotlib_not_installed(self):
         try:
             import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for plot()")
+        except Exception as e:
 
-        fig = plt.figure()
-
-        fig = plt.plot(self.time_lags, self.corr, marker)
-
-        if labels is not None:
+            cr = CrossCorrelation(self.lc1, self.lc2)
             try:
-                plt.xlabel(labels[0])
-                plt.ylabel(labels[1])
-            except TypeError:
-                utils.simon("``labels`` must be either a list or tuple with "
-                            "x and y labels.")
-                raise
-            except IndexError:
-                utils.simon("``labels`` must have two labels for x and y "
-                            "axes.")
-                # Not raising here because in case of len(labels)==1, only
-                # x-axis will be labelled.
+                cr.plot()
+            except Exception as e:
+                assert type(e) is ImportError
+                assert str(e) == "Matplotlib required for plot()"
 
-        if axis is not None:
-            plt.axis(axis)
+    def test_simple_plot(self):
+        cr = CrossCorrelation(self.lc1, self.lc2)
+        cr.plot()
+        assert plt.fignum_exists(1)
 
-        if title is not None:
-            plt.title(title)
+    def test_plot_wrong_label_type(self):
+        cr = CrossCorrelation(self.lc1, self.lc2)
 
-        if save:
-            if filename is None:
-                plt.savefig('corr.png')
-            else:
-                plt.savefig(filename)
+        with pytest.raises(TypeError):
+            with warnings.catch_warnings(record=True) as w:
+                cr.plot(labels=123)
+                assert "must be either a list or tuple" in str(w[0].message)
+
+    def test_plot_labels_index_error(self):
+        cr = CrossCorrelation(self.lc1, self.lc2)
+        with warnings.catch_warnings(record=True) as w:
+            cr.plot(labels=('x'))
+            assert "must have two labels" in str(w[0].message)
+
+    def test_plot_axis(self):
+        cr = CrossCorrelation(self.lc1, self.lc2)
+        cr.plot(axis=[0, 1, 0, 100])
+        assert plt.fignum_exists(1)
+
+    def test_plot_title(self):
+        cr = CrossCorrelation(self.lc1, self.lc2)
+        cr.plot(title="Test for Cross Correlation")
+        assert plt.fignum_exists(1)
+
+    def test_plot_default_filename(self):
+        cr = CrossCorrelation(self.lc1, self.lc2)
+        cr.plot(save=True)
+        assert os.path.isfile('corr.png')
+        os.unlink('corr.png')
+
+    def test_plot_custom_filename(self):
+        cr = CrossCorrelation(self.lc1, self.lc2)
+        cr.plot(save=True, filename='cr.png')
+        assert os.path.isfile('cr.png')
+        os.unlink('cr.png')
