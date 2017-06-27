@@ -167,12 +167,13 @@ class TestLagEnergySpectrum(object):
     @classmethod
     def setup_class(cls):
         from ..simulator.simulator import Simulator
-        simulator = Simulator(0.1, 10000, rms=0.4, mean=2000)
+        dt = 0.1
+        simulator = Simulator(dt, 10000, rms=0.4, mean=200)
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
-                              np.array(np.roll(test_lc1.counts, 4)),
+                              np.array(np.roll(test_lc1.counts, 2)),
                               err_dist=test_lc1.err_dist,
-                              gti=test_lc1.gti)
+                              dt=dt)
 
         test_ev1, test_ev2 = EventList(), EventList()
         test_ev1.simulate_times(test_lc1)

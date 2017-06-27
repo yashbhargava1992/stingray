@@ -177,8 +177,8 @@ class Lightcurve(object):
 
         self.err_dist = err_dist
 
-        self.tseg = self.time[-1] - self.time[0] + self.dt
         self.tstart = self.time[0] - 0.5*self.dt
+        self.tseg = self.time[-1] - self.time[0] + self.dt
 
         self.gti = \
             np.asarray(assign_value_if_none(gti,
@@ -914,7 +914,7 @@ class Lightcurve(object):
         """
         list_of_lcs = []
 
-        start_bins, stop_bins = gti_border_bins(self.gti, self.time)
+        start_bins, stop_bins = gti_border_bins(self.gti, self.time, self.dt)
         for i in range(len(start_bins)):
             start = start_bins[i]
             stop = stop_bins[i]
