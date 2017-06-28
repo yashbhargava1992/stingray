@@ -36,7 +36,7 @@ class TestCrossCorrelation(object):
         cr = CrossCorrelation()
         with pytest.raises(StingrayError):
             cr.cal_timeshift(dt=2.0)
-        assert cr.dt == 2.0
+        assert np.isclose(cr.dt, 2.0)
 
     def test_cross_correlation_with_unequal_lc(self):
         with pytest.raises(StingrayError):
@@ -61,10 +61,10 @@ class TestCrossCorrelation(object):
         lags_result = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
         cr = CrossCorrelation(self.lc1, self.lc2)
         assert np.array_equal(cr.corr, result)
-        assert cr.dt == self.lc1.dt
+        assert np.isclose(cr.dt,self.lc1.dt)
         assert cr.n == 9
         assert np.array_equal(cr.time_lags, lags_result)
-        assert cr.time_shift == -1.0
+        assert np.isclose(cr.time_shift, -1.0)
 
     @pytest.mark.skipif(HAS_MPL, reason='Matplotlib is already installed if condition is met')
     def test_plot_matplotlib_not_installed(self):
