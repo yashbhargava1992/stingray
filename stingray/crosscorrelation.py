@@ -80,7 +80,7 @@ class CrossCorrelation(object):
         if lc1.n != lc2.n:
             raise StingrayError('Both lightcurves should be of same length')
 
-        if lc1.dt != lc2.dt:
+        if not np.isclose(lc1.dt, lc2.dt):
             raise StingrayError("Light curves do not have "
                                 "same time binning dt.")
         else:
