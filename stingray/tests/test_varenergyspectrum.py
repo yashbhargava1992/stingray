@@ -2,6 +2,7 @@ import numpy as np
 from stingray.events import EventList
 from stingray.varenergyspectrum import VarEnergySpectrum, RmsEnergySpectrum
 from stingray.varenergyspectrum import LagEnergySpectrum
+from stingray.varenergyspectrum import ExcessVarianceSpectrum
 from stingray.lightcurve import Lightcurve
 
 from astropy.tests.helper import pytest
@@ -11,6 +12,24 @@ np.random.seed(20150907)
 class DummyVarEnergy(VarEnergySpectrum):
     def _spectrum_function(self):
         return None, None
+
+
+class TestExcVarEnergySpectrum(object):
+    @classmethod
+    def setup_class(cls):
+        from ..simulator.simulator import Simulator
+
+        simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
+        test_lc = simulator.simulate(1)
+        cls.test_ev1, cls.test_ev2 = EventList(), EventList()
+        cls.test_ev1.simulate_times(test_lc)
+        cls.test_ev1.pha = np.random.uniform(0.3, 12, len(cls.test_ev1.time))
+
+    def test_allocate(self):
+        exv = ExcessVarianceSpectrum(self.test_ev1, [0., 100],
+                                     (0.3, 12, 5, "lin"),
+                                     bin_time=1,
+                                     segment_size=100)
 
 
 class TestVarEnergySpectrum(object):
@@ -49,6 +68,7 @@ class TestVarEnergySpectrum(object):
         vespec = DummyVarEnergy(events, [0., 10000],
                                 (0, 1, 2, "lin"),
                                 bin_time=0.1)
+        assert np.all(vespec.ref_band == np.array([[0, np.inf]]))
 
     def test_energy_spec_wrong_list_not_tuple(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
@@ -147,11 +167,13 @@ class TestLagEnergySpectrum(object):
     @classmethod
     def setup_class(cls):
         from ..simulator.simulator import Simulator
-        simulator = Simulator(0.1, 10000, rms=0.4, mean=2000)
+        dt = 0.1
+        simulator = Simulator(dt, 10000, rms=0.4, mean=200)
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
-                              np.array(np.roll(test_lc1.counts, 4)),
-                              err_dist=test_lc1.err_dist)
+                              np.array(np.roll(test_lc1.counts, 2)),
+                              err_dist=test_lc1.err_dist,
+                              dt=dt)
 
         test_ev1, test_ev2 = EventList(), EventList()
         test_ev1.simulate_times(test_lc1)
@@ -169,3 +191,4 @@ class TestLagEnergySpectrum(object):
 
         assert np.all(np.abs(self.lag.spectrum - 0.2) < \
                       3 * self.lag.spectrum_error)
+

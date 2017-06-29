@@ -176,11 +176,9 @@ class TestLightcurve(object):
         lc = [5, 5, 0, 5, 5]
         gtis = [[0, 2], [3, 5]]
         lc = Lightcurve(t, lc, gti=gtis)
-        ## This test assumes that the GTI is not automatically applied,
-        ## and that meanrate and meancounts are only recalculated once the GTI
-        ## has been applied.
-        assert lc.meanrate == 4
-        assert lc.meancounts == 4
+
+        assert lc.meanrate == 5
+        assert lc.meancounts == 5
 
     def test_creating_lightcurve_raises_type_error_when_input_is_none(self):
         dt = 0.5
@@ -214,7 +212,7 @@ class TestLightcurve(object):
             lc = Lightcurve(time, counts)
 
     def test_add_with_different_time_arrays(self):
-        _times = [1, 2, 3, 4, 5]
+        _times = [1.1, 2.1, 3.1, 4.1, 5.1]
         _counts = [2, 2, 2, 2, 2]
 
         with pytest.raises(ValueError):
@@ -273,7 +271,7 @@ class TestLightcurve(object):
         assert lc1.mjdref == lc.mjdref
 
     def test_sub_with_diff_time_arrays(self):
-        _times = [1, 2, 3, 4, 5]
+        _times = [1.1, 2.1, 3.1, 4.1, 5.1]
         _counts = [2, 2, 2, 2, 2]
 
         with pytest.raises(ValueError):

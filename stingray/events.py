@@ -161,7 +161,7 @@ class EventList(object):
         times = lc.time
         counts = lc.counts
 
-        bin_time = assign_value_if_none(bin_time, times[1] - times[0])
+        bin_time = assign_value_if_none(bin_time, np.median(np.diff(times)))
         n_bin = len(counts)
         bin_start = 0
         maxlc = np.max(counts)

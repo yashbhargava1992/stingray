@@ -1,11 +1,45 @@
 from __future__ import division
 import numpy as np
-from stingray.gti import check_separate, cross_two_gtis
+from stingray.gti import check_separate, cross_two_gtis, create_gti_mask
 from stingray.lightcurve import Lightcurve
-from stingray.utils import assign_value_if_none, simon
+from stingray.utils import assign_value_if_none, simon, excess_variance
 from stingray.crossspectrum import AveragedCrossspectrum
 from abc import ABCMeta, abstractmethod
 import six
+
+
+def _decode_energy_specification(energy_spec):
+    """Decode the energy specification tuple.
+
+    Examples
+    --------
+    >>> _decode_energy_specification([0, 2, 2, 'lin'])
+    Traceback (most recent call last):
+     ...
+    ValueError: Energy specification must be a tuple
+    >>> a = _decode_energy_specification((0, 2, 2, 'lin'))
+    >>> np.all(a == [0, 1, 2])
+    True
+    >>> a = _decode_energy_specification((1, 4, 2, 'log'))
+    >>> np.all(a == [1, 2, 4])
+    """
+    if not isinstance(energy_spec, tuple):
+        raise ValueError("Energy specification must be a tuple")
+
+    if energy_spec[-1].lower() not in ["lin", "log"]:
+        raise ValueError("Incorrect energy specification")
+
+    log_distr = True if energy_spec[-1].lower() == "log" else False
+
+    if log_distr:
+        energies = np.logspace(np.log10(energy_spec[0]),
+                               np.log10(energy_spec[1]),
+                               energy_spec[2] + 1)
+    else:
+        energies = np.linspace(energy_spec[0], energy_spec[1],
+                               energy_spec[2] + 1)
+
+    return energies
 
 
 @six.add_metaclass(ABCMeta)
@@ -62,39 +96,37 @@ class VarEnergySpectrum(object):
         self.use_pi = use_pi
         self.bin_time = bin_time
         if isinstance(energy_spec, tuple):
-            if energy_spec[-1].lower() not in ["lin", "log"]:
-                raise ValueError("Incorrect energy specification")
-
-            log_distr = True if energy_spec[-1].lower() == "log" else False
-
-            if log_distr:
-                energies = np.logspace(np.log10(energy_spec[0]),
-                                       np.log10(energy_spec[1]),
-                                       energy_spec[2] + 1)
-            else:
-                energies = np.linspace(energy_spec[0], energy_spec[1],
-                                       energy_spec[2] + 1)
+            energies = _decode_energy_specification(energy_spec)
         else:
             energies = np.asarray(energy_spec)
 
         self.energy_intervals = list(zip(energies[0: -1], energies[1:]))
 
-        self.ref_band = assign_value_if_none(ref_band, [0, np.inf])
+        self.ref_band = np.asarray(assign_value_if_none(ref_band,
+                                                        [0, np.inf]))
+
+        if len(self.ref_band.shape) <= 1:
+            self.ref_band = np.asarray([self.ref_band])
 
         self.segment_size = segment_size
         self.spectrum, self.spectrum_error = self._spectrum_function()
 
     def _decide_ref_intervals(self, channel_band, ref_band):
         """Eliminate channel_band from ref_band."""
-        if check_separate([ref_band], [channel_band]):
-            return np.asarray([ref_band])
+        channel_band = np.asarray(channel_band)
+        ref_band = np.asarray(ref_band)
+        if len(ref_band.shape) <= 1:
+            ref_band = np.asarray([ref_band])
+        if check_separate(ref_band, [channel_band]):
+            return np.asarray(ref_band)
         not_channel_band = [[0, channel_band[0]],
-                            [channel_band[1], np.max([ref_band[-1],
+                            [channel_band[1], np.max([np.max(ref_band),
                                                       channel_band[1] + 1])]]
-        return cross_two_gtis([ref_band], not_channel_band)
+
+        return cross_two_gtis(ref_band, not_channel_band)
 
     def _construct_lightcurves(self, channel_band, tstart=None, tstop=None,
-                               exclude=True):
+                               exclude=True, only_base=False):
         if self.use_pi:
             energies1 = self.events1.pi
             energies2 = self.events2.pi
@@ -104,12 +136,8 @@ class VarEnergySpectrum(object):
 
         gti = cross_two_gtis(self.events1.gti, self.events2.gti)
 
-        tstart = assign_value_if_none(tstart,
-                                      np.max([self.events1.time[0],
-                                              self.events2.time[0]]))
-        tstop = assign_value_if_none(tstop,
-                                     np.min([self.events1.time[-1],
-                                             self.events2.time[-1]]))
+        tstart = assign_value_if_none(tstart, gti[0, 0])
+        tstop = assign_value_if_none(tstop, gti[-1, -1])
 
         good = (energies1 >= channel_band[0]) & (energies1 < channel_band[1])
         base_lc = Lightcurve.make_lightcurve(self.events1.time[good],
@@ -119,11 +147,14 @@ class VarEnergySpectrum(object):
                                              gti=gti,
                                              mjdref=self.events1.mjdref)
 
+        if only_base:
+            return base_lc
+
         if exclude:
             ref_intervals = self._decide_ref_intervals(channel_band,
                                                        self.ref_band)
         else:
-            ref_intervals = [self.ref_band]
+            ref_intervals = self.ref_band
 
         ref_lc = Lightcurve(base_lc.time, np.zeros_like(base_lc.counts),
                             gti=base_lc.gti, mjdref=base_lc.mjdref)
@@ -134,7 +165,7 @@ class VarEnergySpectrum(object):
                                                 self.bin_time,
                                                 tstart=tstart,
                                                 tseg=tstop - tstart,
-                                                gti=gti,
+                                                gti=base_lc.gti,
                                                 mjdref=self.events2.mjdref)
             ref_lc = ref_lc + new_lc
 
@@ -197,3 +228,30 @@ class LagEnergySpectrum(VarEnergySpectrum):
             lag_spec_err[i] = np.sqrt(np.sum(good_lag_err**2) / len(good_lag))
 
         return lag_spec, lag_spec_err
+
+
+class ExcessVarianceSpectrum(VarEnergySpectrum):
+    def __init__(self, events, freq_interval, energy_spec,
+                 bin_time=1, use_pi=False, segment_size=None,
+                 normalization='fvar'):
+
+        self.normalization = normalization
+        accepted_normalizations = ['fvar', 'none']
+        if normalization not in accepted_normalizations:
+            raise ValueError('The normalization of excess variance must be '
+                             'one of {}'.format(accepted_normalizations))
+
+        VarEnergySpectrum.__init__(self, events, freq_interval, energy_spec,
+                                   bin_time=bin_time, use_pi=use_pi,
+                                   segment_size=segment_size)
+
+    def _spectrum_function(self):
+        spec = np.zeros(len(self.energy_intervals))
+        spec_err = np.zeros_like(spec)
+        for i, eint in enumerate(self.energy_intervals):
+            lc = self._construct_lightcurves(eint, exclude=False,
+                                             only_base=True)
+
+            spec[i], spec_err[i] = excess_variance(lc, self.normalization)
+
+        return spec, spec_err
