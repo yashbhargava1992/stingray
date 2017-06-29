@@ -132,8 +132,8 @@ class VarEnergySpectrum(object):
             energies1 = self.events1.pi
             energies2 = self.events2.pi
         else:
-            energies2 = self.events2.pha
-            energies1 = self.events1.pha
+            energies2 = self.events2.energy
+            energies1 = self.events1.energy
 
         gti = cross_two_gtis(self.events1.gti, self.events2.gti)
 

@@ -42,7 +42,7 @@ class TestVarEnergySpectrum(object):
         alltimes = np.random.uniform(tstart, tend, nphot)
         alltimes.sort()
         cls.events = EventList(alltimes,
-                               pha=np.random.uniform(0.3, 12, nphot),
+                               energy=np.random.uniform(0.3, 12, nphot),
                                gti = [[tstart, tend]])
         cls.vespec = DummyVarEnergy(cls.events, [0., 10000],
                                     (0.5, 5, 10, "lin"), [0.3, 10],
@@ -63,7 +63,7 @@ class TestVarEnergySpectrum(object):
 
     def test_ref_band_none(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
-                           pha=[0,0,0,0,1,1],
+                           energy=[0,0,0,0,1,1],
                            gti=[[0, 0.65]])
         vespec = DummyVarEnergy(events, [0., 10000],
                                 (0, 1, 2, "lin"),
@@ -72,7 +72,7 @@ class TestVarEnergySpectrum(object):
 
     def test_energy_spec_wrong_list_not_tuple(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
-                           pha=[0, 0, 0, 0, 1, 1],
+                           energy=[0, 0, 0, 0, 1, 1],
                            gti=[[0, 0.65]])
         # Test using a list instead of tuple
         # with pytest.raises(ValueError):
@@ -82,7 +82,7 @@ class TestVarEnergySpectrum(object):
 
     def test_energy_spec_wrong_str(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
-                           pha=[0, 0, 0, 0, 1, 1],
+                           energy=[0, 0, 0, 0, 1, 1],
                            gti=[[0, 0.65]])
         # Test using a list instead of tuple
         with pytest.raises(ValueError):
@@ -92,7 +92,7 @@ class TestVarEnergySpectrum(object):
 
     def test_construct_lightcurves(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
-                           pha=[0,0,0,0,1,1],
+                           energy=[0,0,0,0,1,1],
                            gti=[[0, 0.65]])
         vespec = DummyVarEnergy(events, [0., 10000],
                                 (0, 1, 2, "lin"), [0.5, 1.1],
@@ -105,7 +105,7 @@ class TestVarEnergySpectrum(object):
 
     def test_construct_lightcurves_no_exclude(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
-                           pha=[0,0,0,0,1,1],
+                           energy=[0,0,0,0,1,1],
                            gti=[[0, 0.65]])
 
         vespec = DummyVarEnergy(events, [0., 10000],
@@ -141,8 +141,8 @@ class TestRMSEnergySpectrum(object):
         test_ev1, test_ev2 = EventList(), EventList()
         test_ev1.simulate_times(test_lc)
         test_ev2.simulate_times(test_lc)
-        test_ev1.pha = np.random.uniform(0.3, 12, len(test_ev1.time))
-        test_ev2.pha = np.random.uniform(0.3, 12, len(test_ev2.time))
+        test_ev1.energy = np.random.uniform(0.3, 12, len(test_ev1.time))
+        test_ev2.energy = np.random.uniform(0.3, 12, len(test_ev2.time))
 
         cls.rms = RmsEnergySpectrum(test_ev1, [0., 100],
                                     (0.3, 12, 5, "lin"),
@@ -178,8 +178,8 @@ class TestLagEnergySpectrum(object):
         test_ev1, test_ev2 = EventList(), EventList()
         test_ev1.simulate_times(test_lc1)
         test_ev2.simulate_times(test_lc2)
-        test_ev1.pha = np.random.uniform(0.3, 9, len(test_ev1.time))
-        test_ev2.pha = np.random.uniform(9, 12, len(test_ev2.time))
+        test_ev1.energy = np.random.uniform(0.3, 9, len(test_ev1.time))
+        test_ev2.energy = np.random.uniform(9, 12, len(test_ev2.time))
 
         cls.lag = LagEnergySpectrum(test_ev1, [0., 0.5],
                                     (0.3, 9, 4, "lin"), [9, 12],
