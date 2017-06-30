@@ -23,7 +23,8 @@ class TestExcVarEnergySpectrum(object):
         test_lc = simulator.simulate(1)
         cls.test_ev1, cls.test_ev2 = EventList(), EventList()
         cls.test_ev1.simulate_times(test_lc)
-        cls.test_ev1.pha = np.random.uniform(0.3, 12, len(cls.test_ev1.time))
+        cls.test_ev1.energy = np.random.uniform(0.3, 12,
+                                                len(cls.test_ev1.time))
 
     def test_allocate(self):
         exv = ExcessVarianceSpectrum(self.test_ev1, [0., 100],
@@ -191,4 +192,3 @@ class TestLagEnergySpectrum(object):
 
         assert np.all(np.abs(self.lag.spectrum - 0.2) < \
                       3 * self.lag.spectrum_error)
-
