@@ -181,10 +181,7 @@ class CrossCorrelation(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        fig = plt.figure()
-
-        fig = plt.plot(self.time_lags, self.corr, marker)
-
+        plt.plot(self.time_lags, self.corr, marker)
         if labels is not None:
             try:
                 plt.xlabel(labels[0])
