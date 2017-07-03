@@ -68,11 +68,11 @@ class TestCrossCorrelation(object):
         assert np.isclose(cr.time_shift, -1.0)
         assert cr.mode == 'same'
 
-    def test_mode_with_wrong_input(self):
+    def test_mode_with_bad_input(self):
         with pytest.raises(TypeError):
             CrossCorrelation(self.lc1, self.lc2, mode=123)
 
-    def test_mode_with_bad_input(self):
+    def test_mode_with_wrong_input(self):
         with pytest.raises(ValueError):
             CrossCorrelation(self.lc1, self.lc2, mode='default')
 
