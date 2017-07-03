@@ -87,15 +87,11 @@ class CrossCorrelation(object):
         if not isinstance(lc2, lightcurve.Lightcurve):
             raise TypeError("lc2 must be a lightcurve.Lightcurve object")
 
-        # Sizes of both light curves are assumed to be equal for now
-        if lc1.n != lc2.n:
-            raise StingrayError('Both lightcurves should be of same length')
-
         if not np.isclose(lc1.dt, lc2.dt):
             raise StingrayError("Light curves do not have "
                                 "same time binning dt.")
         else:
-            # ignore very small differences in dt
+            # ignore very small differences in dt neglected by np.isclose()
             lc1.dt = lc2.dt
             self.dt = lc1.dt
 
