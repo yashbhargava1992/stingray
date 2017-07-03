@@ -10,6 +10,7 @@ from stingray.exceptions import StingrayError
 
 try:
     import matplotlib.pyplot as plt
+
     HAS_MPL = True
 except ImportError:
     HAS_MPL = False
@@ -40,29 +41,48 @@ class TestCrossCorrelation(object):
 
     def test_cross_correlation_with_unequal_lc(self):
         with pytest.raises(StingrayError):
-            cr = CrossCorrelation(self.lc1, self.lc_s)
+            CrossCorrelation(self.lc1, self.lc_s)
 
     def test_init_with_invalid_lc1(self):
         data = np.array([[2, 3, 2, 4, 1]])
         with pytest.raises(TypeError):
-            cr = CrossCorrelation(data, self.lc2)
+            CrossCorrelation(data, self.lc2)
 
     def test_init_with_invalid_lc2(self):
         data = np.array([[2, 3, 2, 4, 1]])
         with pytest.raises(TypeError):
-            cr = CrossCorrelation(self.lc1, data)
+            CrossCorrelation(self.lc1, data)
 
     def test_init_with_diff_time_bin(self):
         with pytest.raises(StingrayError):
-            cr = CrossCorrelation(self.lc_u, self.lc2)
+            CrossCorrelation(self.lc_u, self.lc2)
 
     def test_corr_is_correct(self):
-        result = np.array([22, 51, 51, 81, 81, 41, 41, 24, 4])
-        lags_result = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
+        result = np.array([51, 81, 81, 41, 41])
+        lags_result = np.array([-2, -1, 0, 1, 2])
         cr = CrossCorrelation(self.lc1, self.lc2)
         assert np.array_equal(cr.corr, result)
-        assert np.isclose(cr.dt,self.lc1.dt)
+        assert np.isclose(cr.dt, self.lc1.dt)
+        assert cr.n == 5
+        assert np.array_equal(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift, -1.0)
+        assert cr.mode == 'same'
+
+    def test_mode_with_wrong_input(self):
+        with pytest.raises(TypeError):
+            CrossCorrelation(self.lc1, self.lc2, mode=123)
+
+    def test_mode_with_bad_input(self):
+        with pytest.raises(ValueError):
+            CrossCorrelation(self.lc1, self.lc2, mode='default')
+
+    def test_full_mode_is_correct(self):
+        result = np.array([22, 51, 51, 81, 81, 41, 41, 24, 4])
+        lags_result = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
+        cr = CrossCorrelation(self.lc1, self.lc2, mode='full')
+        assert cr.mode == 'full'
         assert cr.n == 9
+        assert np.array_equal(cr.corr, result)
         assert np.array_equal(cr.time_lags, lags_result)
         assert np.isclose(cr.time_shift, -1.0)
 

@@ -8,32 +8,31 @@ import stingray.utils as utils
 
 
 class CrossCorrelation(object):
-    def __init__(self, lc1=None, lc2=None):
+    def __init__(self, lc1=None, lc2=None, mode='same'):
 
         """
         Make a cross-correlation from a light curves.
         You can also make an empty Crosscorrelation object to populate with your
         own cross-correlation data.
-
         Parameters
         ----------
         lc1: lightcurve.Lightcurve object, optional, default None
             The first light curve data for correlation calculations.
-
         lc2: lightcurve.Lightcurve object, optional, default None
             The light curve data for the correlation calculations.
-
+        mode: {'full', 'valid', 'same'}, optional, default 'same'
+            A string indicating the size of the correlation output.
+            See https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
+            for more details.
+            
         Attributes
         ----------
          corr: numpy.ndarray
              An array of correlation data calculated from two lighcurves
-
          time_lags: numpy.ndarray
              An array of all possible time lags against which each point in corr is calculated 
-
          dt: float
              The time resolution of each lightcurve (used in time_lag calculations)
-
          time_shift: float
              Time lag that gives maximum value of correlation between two lightcurves.
              There will be maximum correlation between lightcurves if one of the lightcurve is shifted by time_shift.
@@ -42,7 +41,15 @@ class CrossCorrelation(object):
              Number of points in self.corr(Length of cross-correlation data) 
         """
 
-        ## Populate all attributes by None if user passes no lightcurve data
+        if isinstance(mode, str) is False:
+            raise TypeError("mode must be a string")
+
+        if mode.lower() not in ["full", "valid", "same"]:
+            raise ValueError("mode must be 'full', 'valid' or 'same'!")
+
+        self.mode = mode.lower()
+
+        # Populate all attributes by None if user passes no lightcurve data
         if lc1 is None and lc2 is None:
             self.corr = None
             self.time_shift = None
@@ -57,15 +64,12 @@ class CrossCorrelation(object):
 
         """
         Creates Crosscorrelation Object.
-
         Parameters
         ----------
         lc1: lightcurve.Lightcurve object
             The first light curve data.
-
         lc2: lightcurve.Lightcurve object
             The second light curve data.
-
         Returns
         ----------
         None
@@ -84,29 +88,27 @@ class CrossCorrelation(object):
             raise StingrayError("Light curves do not have "
                                 "same time binning dt.")
         else:
+            # ignore very small differences in dt
+            lc1.dt = lc2.dt
             self.dt = lc1.dt
 
         # Calculates cross-correlation of two lightcurves
-        self.corr = signal.correlate(lc1.counts, lc2.counts)
+        self.corr = signal.correlate(lc1.counts, lc2.counts, self.mode)
         self.n = len(self.corr)
-
         self.time_shift, self.time_lags, self.n = self.cal_timeshift(dt=self.dt)
 
     def cal_timeshift(self, dt=1.0):
         """
         Creates Crosscorrelation Object.
-
         Parameters
         ----------
         dt: float , optional, default 1.0
             Time resolution of lightcurve, should be passed when object is populated with correlation data
             and no information about light curve can be extracted. Used to calculate time_lags.
-
         Returns
         ----------
         self.time_shift: float
              Value of time lag that gives maximum value of correlation between two lightcurves. 
-
         self.time_lags: numpy.ndarray
              An array of time_lags calculated from correlation data 
         """
@@ -130,10 +132,8 @@ class CrossCorrelation(object):
     def plot(self, labels=None, axis=None, title=None, marker='-', save=False, filename=None):
         """
         Plot the :class:`Crosscorrelation` as function using Matplotlib.
-
         Plot the Crosscorrelation object on a graph ``self.time_lags`` on x-axis and
         ``self.corr`` on y-axis
-
         Parameters
         ----------
         labels : iterable, default None
