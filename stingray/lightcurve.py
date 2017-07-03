@@ -408,7 +408,7 @@ class Lightcurve(object):
         lc_new = Lightcurve(bin_time, bin_counts)
         return lc_new
 
-    def join(self, other):
+def join(self, other):
         """
         Join two lightcurves into a single object.
 
@@ -448,43 +448,49 @@ class Lightcurve(object):
         if self.dt != other.dt:
             utils.simon("The two light curves have different bin widths.")
 
-        if self.tstart <= other.tstart:
-            new_time = np.unique(np.concatenate([self.time, other.time]))
+        if( self.tstart < other.tstart ):
+            first_lc = self
+            second_lc = other
         else:
-            new_time = np.unique(np.concatenate([other.time, self.time]))
+            first_lc = other
+            second_lc = self
 
-        if len(new_time) != len(self.time) + len(other.time):
+        if len(np.intersect1d(self.time, other.time) > 0):
+            
             utils.simon("The two light curves have overlapping time ranges. "
                         "In the common time range, the resulting count will "
                         "be the average of the counts in the two light "
                         "curves. If you wish to sum, use `lc_sum = lc1 + "
                         "lc2`.")
 
-        new_counts = []
 
-        # For every time stamp, get the individual time counts and add them.
-        for time in new_time:
-            try:
-                count1 = self.counts[np.where(self.time == time)[0][0]]
-            except IndexError:
-                count1 = None
+            from collections import Counter
+            counter = Counter()
 
-            try:
-                count2 = other.counts[np.where(other.time == time)[0][0]]
-            except IndexError:
-                count2 = None
+            for i, time in enumerate(first_lc.time):
+                counter[time] = first_lc.counts[i]
 
-            if count1 is not None:
-                if count2 is not None:
-                    # Average the overlapping counts
-                    new_counts.append((count1 + count2) / 2)
+            for i, time in enumerate(second_lc.time):
+            
+                if (counter[time] != 0):
+                    counter[time] = (counter[time] + second_lc.counts[i]) / 2
                 else:
-                    new_counts.append(count1)
-            else:
-                new_counts.append(count2)
+                    counter[time] = second_lc.counts[i]
 
+            new_time = list(counter.keys())
+            new_counts = list(counter.values())
+
+            del[counter]
+
+        else:
+
+            new_time = np.concatenate([first_lc.time, second_lc.time])
+            new_counts = np.concatenate([first_lc.counts, second_lc.counts])
+        
+        new_time = np.asarray(new_time)
         new_counts = np.asarray(new_counts)
-
+        # print(new_time)
+        # print(new_counts)
         gti = join_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(new_time, new_counts, gti=gti)
