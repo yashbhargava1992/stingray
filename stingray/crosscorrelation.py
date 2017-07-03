@@ -27,17 +27,20 @@ class CrossCorrelation(object):
             
         Attributes
         ----------
-         corr: numpy.ndarray
+        lc1: lightcurve.Lightcurve 
+            The first light curve data for correlation calculations.
+        lc2: lightcurve.Lightcurve
+            The light curve data for the correlation calculations.        
+        corr: numpy.ndarray
              An array of correlation data calculated from two lighcurves
-         time_lags: numpy.ndarray
+        time_lags: numpy.ndarray
              An array of all possible time lags against which each point in corr is calculated 
-         dt: float
+        dt: float
              The time resolution of each lightcurve (used in time_lag calculations)
-         time_shift: float
+        time_shift: float
              Time lag that gives maximum value of correlation between two lightcurves.
              There will be maximum correlation between lightcurves if one of the lightcurve is shifted by time_shift.
-                 
-         n: int
+        n: int
              Number of points in self.corr(Length of cross-correlation data) 
         """
 
