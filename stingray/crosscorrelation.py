@@ -48,15 +48,22 @@ class CrossCorrelation(object):
             raise ValueError("mode must be 'full', 'valid' or 'same'!")
 
         self.mode = mode.lower()
+        self.lc1 = None
+        self.lc2 = None
 
         # Populate all attributes by None if user passes no lightcurve data
-        if lc1 is None and lc2 is None:
-            self.corr = None
-            self.time_shift = None
-            self.time_lags = None
-            self.dt = None
-            self.n = None
-            return
+        if lc1 is None or lc2 is None:
+            if lc1 is not None or lc2 is not None:
+                raise TypeError("You can't do a cross correlation with just one "
+                                "light curve!")
+            else:
+                # both lc1 and lc2 are None.
+                self.corr = None
+                self.time_shift = None
+                self.time_lags = None
+                self.dt = None
+                self.n = None
+                return
         else:
             self._make_corr(lc1, lc2)
 
@@ -92,8 +99,18 @@ class CrossCorrelation(object):
             lc1.dt = lc2.dt
             self.dt = lc1.dt
 
+        # self.lc1 and self.lc2 may get assigned values explicitly in which case there is no need to copy data
+        if self.lc1 is None:
+            self.lc1 = lc1
+        if self.lc2 is None:
+            self.lc2 = lc2
+
+        # Subtract means before passing scipy.signal.correlate into correlation
+        lc1_counts = self.lc1.counts - np.mean(self.lc1.counts)
+        lc2_counts = self.lc2.counts - np.mean(self.lc2.counts)
+
         # Calculates cross-correlation of two lightcurves
-        self.corr = signal.correlate(lc1.counts, lc2.counts, self.mode)
+        self.corr = signal.correlate(lc1_counts, lc2_counts, self.mode)
         self.n = len(self.corr)
         self.time_shift, self.time_lags, self.n = self.cal_timeshift(dt=self.dt)
 
@@ -112,12 +129,18 @@ class CrossCorrelation(object):
         self.time_lags: numpy.ndarray
              An array of time_lags calculated from correlation data 
         """
-
         if self.dt is None:
             self.dt = dt
 
         if self.corr is None:
-            raise StingrayError('Time Shift cannot be calculated without correlation data')
+            if self.lc1 is None or self.lc2 is None:
+                raise StingrayError('lc1 and lc2 should be provided to calculate correlation and time_shift')
+            else:
+                # This will cover very rare case of assigning self.lc1 and self.lc2 and self.corr = None.
+                # In this case, correlation is calculated using self.lc1 and self.lc2 and using that correlation data,
+                # time_shift is calculated.
+                self._make_corr(self.lc1, self.lc2)
+                return self.time_shift, self.time_lags, self.n
 
         self.n = len(self.corr)
         dur = int(self.n / 2)

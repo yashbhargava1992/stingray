@@ -28,10 +28,13 @@ class TestCrossCorrelation(object):
 
     def test_empty_cross_correlation(self):
         cr = CrossCorrelation()
+        assert cr.lc1 is None
+        assert cr.lc2 is None
         assert cr.corr is None
         assert cr.time_shift is None
         assert cr.time_lags is None
         assert cr.dt is None
+        assert cr.n is None
 
     def test_empty_cross_correlation_with_dt(self):
         cr = CrossCorrelation()
@@ -42,6 +45,10 @@ class TestCrossCorrelation(object):
     def test_cross_correlation_with_unequal_lc(self):
         with pytest.raises(StingrayError):
             CrossCorrelation(self.lc1, self.lc_s)
+
+    def test_init_with_only_one_lc(self):
+        with pytest.raises(TypeError):
+            CrossCorrelation(self.lc1)
 
     def test_init_with_invalid_lc1(self):
         data = np.array([[2, 3, 2, 4, 1]])
@@ -58,14 +65,16 @@ class TestCrossCorrelation(object):
             CrossCorrelation(self.lc_u, self.lc2)
 
     def test_corr_is_correct(self):
-        result = np.array([51, 81, 81, 41, 41])
+        result = np.array([1.92, 2.16, 1.8, -14.44, 11.12])
         lags_result = np.array([-2, -1, 0, 1, 2])
         cr = CrossCorrelation(self.lc1, self.lc2)
-        assert np.array_equal(cr.corr, result)
+        assert np.allclose(cr.lc1, self.lc1)
+        assert np.allclose(cr.lc2, self.lc2)
+        assert np.allclose(cr.corr, result)
         assert np.isclose(cr.dt, self.lc1.dt)
         assert cr.n == 5
-        assert np.array_equal(cr.time_lags, lags_result)
-        assert np.isclose(cr.time_shift, -1.0)
+        assert np.allclose(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift, 2.0)
         assert cr.mode == 'same'
 
     def test_mode_with_bad_input(self):
@@ -77,14 +86,49 @@ class TestCrossCorrelation(object):
             CrossCorrelation(self.lc1, self.lc2, mode='default')
 
     def test_full_mode_is_correct(self):
-        result = np.array([22, 51, 51, 81, 81, 41, 41, 24, 4])
+        result = np.array([-1.76, 1.68, 1.92, 2.16, 1.8, -14.44, 11.12, -6.12, 3.64])
         lags_result = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
         cr = CrossCorrelation(self.lc1, self.lc2, mode='full')
+        assert np.allclose(cr.lc1, self.lc1)
+        assert np.allclose(cr.lc2, self.lc2)
         assert cr.mode == 'full'
         assert cr.n == 9
-        assert np.array_equal(cr.corr, result)
-        assert np.array_equal(cr.time_lags, lags_result)
-        assert np.isclose(cr.time_shift, -1.0)
+        assert np.allclose(cr.corr, result)
+        assert np.allclose(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift, 2.0)
+
+    def test_timeshift_with_no_corr_but_lc_assigned(self):
+        result = np.array([1.92, 2.16, 1.8, -14.44, 11.12])
+        lags_result = np.array([-2, -1, 0, 1, 2])
+        cr = CrossCorrelation()
+        cr.lc1 = self.lc1
+        cr.lc2 = self.lc2
+        cr.cal_timeshift(dt=1.0)
+        assert np.allclose(cr.lc1, self.lc1)
+        assert np.allclose(cr.lc2, self.lc2)
+        assert np.allclose(cr.corr, result)
+        assert np.isclose(cr.dt, self.lc1.dt)
+        assert cr.n == 5
+        assert np.allclose(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift, 2.0)
+        assert cr.mode == 'same'
+
+    def test_timeshift_with_corr_and_lc_assigned(self):
+        result = np.array([1.92, 2.16, 1.8, -14.44, 11.12])
+        lags_result = np.array([-2, -1, 0, 1, 2])
+        cr = CrossCorrelation()
+        cr.lc1 = self.lc1
+        cr.lc2 = self.lc2
+        cr.corr = result
+        cr.cal_timeshift(dt=1.0)
+        assert np.allclose(cr.lc1, self.lc1)
+        assert np.allclose(cr.lc2, self.lc2)
+        assert np.allclose(cr.corr, result)
+        assert np.isclose(cr.dt, self.lc1.dt)
+        assert cr.n == 5
+        assert np.allclose(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift, 2.0)
+        assert cr.mode == 'same'
 
     @pytest.mark.skipif(HAS_MPL, reason='Matplotlib is already installed if condition is met')
     def test_plot_matplotlib_not_installed(self):
