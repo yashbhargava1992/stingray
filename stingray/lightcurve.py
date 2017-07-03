@@ -408,7 +408,7 @@ class Lightcurve(object):
         lc_new = Lightcurve(bin_time, bin_counts)
         return lc_new
 
-def join(self, other):
+    def join(self, other):
         """
         Join two lightcurves into a single object.
 
@@ -456,7 +456,7 @@ def join(self, other):
             second_lc = self
 
         if len(np.intersect1d(self.time, other.time) > 0):
-            
+
             utils.simon("The two light curves have overlapping time ranges. "
                         "In the common time range, the resulting count will "
                         "be the average of the counts in the two light "
@@ -489,8 +489,7 @@ def join(self, other):
         
         new_time = np.asarray(new_time)
         new_counts = np.asarray(new_counts)
-        # print(new_time)
-        # print(new_counts)
+
         gti = join_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(new_time, new_counts, gti=gti)
