@@ -445,6 +445,9 @@ class Lightcurve(object):
         >>> lc.counts
         array([ 300,  100,  400,  600, 1200,  800])
         """
+        if self.mjdref != other.mjdref:
+            raise ValueError("MJDref is different in the two light curves")
+
         if self.dt != other.dt:
             utils.simon("The two light curves have different bin widths.")
 
@@ -465,34 +468,55 @@ class Lightcurve(object):
 
 
             from collections import Counter
-            counter = Counter()
+            counts = Counter()
+            counts_err = Counter()
 
             for i, time in enumerate(first_lc.time):
-                counter[time] = first_lc.counts[i]
+                counts[time] = first_lc.counts[i]
+                counts_err[time] = first_lc.counts_err[i]
 
             for i, time in enumerate(second_lc.time):
             
-                if (counter[time] != 0):
-                    counter[time] = (counter[time] + second_lc.counts[i]) / 2
+                if (counts[time] != 0): #Common time
+
+                    counts[time] = (counts[time] + second_lc.counts[i]) / 2  #avg
+
+                    if self.err_dist.lower() != other.err_dist.lower():
+                        simon("Lightcurves have different statistics!"
+                              "We are setting the errors to zero.")
+                        new_counts_err = np.zeros_like(new_counts)
+
+                    elif self.err_dist.lower() in valid_statistics:
+                        counts_err[time] = np.sqrt(( ((counts_err[time]**2) + (second_lc.counts_err[i] **2)) / 2))
+                    # More conditions can be implemented for other statistics 
+                    else:
+                        raise StingrayError("Statistics not recognized."
+                                            " Please use one of these: "
+                                            "{}".format(valid_statistics))
                 else:
-                    counter[time] = second_lc.counts[i]
+                    counts[time] = second_lc.counts[i]
+                    counts_err[time] = second_lc.counts_err[i]
 
-            new_time = list(counter.keys())
-            new_counts = list(counter.values())
-
-            del[counter]
+            new_time = list(counts.keys())
+            new_counts = list(counts.values())
+            new_counts_err = list(counts_err.values())
+            
+            del[counts]
+            del[counts_err]
 
         else:
 
             new_time = np.concatenate([first_lc.time, second_lc.time])
             new_counts = np.concatenate([first_lc.counts, second_lc.counts])
-        
+            new_counts_err = np.concatenate([first_lc.counts_err, second_lc.counts_err])
+
         new_time = np.asarray(new_time)
         new_counts = np.asarray(new_counts)
-
+        new_counts_err = np.asarray(new_counts_err)
         gti = join_gtis(self.gti, other.gti)
 
-        lc_new = Lightcurve(new_time, new_counts, gti=gti)
+        lc_new = Lightcurve(new_time, new_counts, err=new_counts_err, gti=gti,
+                            mjdref=self.mjdref, dt=self.dt)
 
         return lc_new
 
