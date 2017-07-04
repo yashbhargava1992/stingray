@@ -9,7 +9,8 @@ import stingray.simulator.models as models
 
 class Simulator(object):
 
-    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1, seed=None):
+    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
+                 random_state=None):
         """
         Methods to simulate and visualize light curves.
 
@@ -25,7 +26,7 @@ class Simulator(object):
             fractional rms of the simulated light curve,
             actual rms is calculated by mean*rms
         red_noise: int, default 1
-            multiple of real length of light curve, by 
+            multiple of real length of light curve, by
             which to simulate, to avoid red noise leakage
         seed: int, default None
             seed value for random processes
@@ -40,9 +41,8 @@ class Simulator(object):
 
         # Initialize a tuple of energy ranges with corresponding light curves
         self.channels = []
-        
-        if seed is not None:
-            np.random.seed(seed)
+
+        self.random_state = utils.get_random_state(random_state)
 
         assert rms<=1, 'Fractional rms must be less than 1.'
         assert dt>0, 'Time resolution must be greater than 0'
@@ -65,7 +65,7 @@ class Simulator(object):
             Returns
             -------
             lightCurve: `LightCurve` object
-        
+
         - x = simulate(s)
             For generating a light curve from user-provided spectrum.
 
@@ -89,7 +89,7 @@ class Simulator(object):
             Returns
             -------
             lightCurve: `LightCurve` object
-        
+
         - x = simulate('model', params)
             For generating a light curve from pre-defined model
 
@@ -142,15 +142,15 @@ class Simulator(object):
             lightCurve: `LightCurve` object
         """
 
-        if isinstance(args[0], numbers.Integral) and len(args) == 1: 
+        if isinstance(args[0], numbers.Integral) and len(args) == 1:
             return  self._simulate_power_law(args[0])
 
         elif isinstance(args[0], astropy.modeling.Model) and len(args) == 1:
             return self._simulate_model(args[0])
-        
+
         elif utils.is_string(args[0]) and len(args) == 2:
             return self._simulate_model_string(args[0], args[1])
-        
+
         elif len(args) == 1:
             return self._simulate_power_spectrum(args[0])
 
@@ -166,7 +166,7 @@ class Simulator(object):
 
     def simulate_channel(self, channel, *args):
         """
-        Simulate a lightcurve and add it to corresponding energy 
+        Simulate a lightcurve and add it to corresponding energy
         channel.
 
         Parameters
@@ -174,7 +174,7 @@ class Simulator(object):
         channel: str
             range of energy channel (e.g., 3.5-4.5)
 
-        *args: 
+        *args:
             see description of simulate() for details
 
         Returns
@@ -200,7 +200,7 @@ class Simulator(object):
         """
         Get multiple light curves belonging to the energy channels.
         """
-        
+
         return [lc[1] for lc in self.channels if lc[0] in channels]
 
     def get_all_channels(self):
@@ -216,7 +216,7 @@ class Simulator(object):
         """
 
         channel = [lc for lc in self.channels if lc[0] == channel]
-        
+
         if len(channel) == 0:
             raise KeyError('This channel does not exist or has already been deleted.')
         else:
@@ -242,12 +242,12 @@ class Simulator(object):
         """
         Return total number of energy channels.
         """
-        
+
         return len(self.channels)
 
     def simple_ir(self, start=0, width=1000, intensity=1):
         """
-        Construct a simple impulse response using start time, 
+        Construct a simple impulse response using start time,
         width and scaling intensity.
         To create a delta impulse response, set width to 1.
 
@@ -315,21 +315,21 @@ class Simulator(object):
         # Create a rising exponential of user-provided slope
         x = np.linspace(t1/dt, t2/dt, (t2-t1)/dt)
         h_rise = np.exp(rise*x)
-        
+
         # Evaluate a factor for scaling exponential
         factor = np.max(h_rise)/(p2-p1)
         h_secondary = (h_rise/factor) + p1
 
         # Create a decaying exponential until the end time
         x = np.linspace(t2/dt, t3/dt, (t3-t2)/dt)
-        h_decay = (np.exp((-decay)*(x-4/dt))) 
+        h_decay = (np.exp((-decay)*(x-4/dt)))
 
         # Add the three responses
         h = np.append(h_primary, h_secondary)
         h = np.append(h, h_decay)
 
         return h
-        
+
     def _simulate_power_law(self, B):
         """
         Generate LightCurve from a power law spectrum.
@@ -346,10 +346,10 @@ class Simulator(object):
 
         # Define frequencies at which to compute PSD
         w = np.fft.rfftfreq(self.red_noise*self.N, d=self.dt)[1:]
-        
+
         # Draw two set of 'N' guassian distributed numbers
-        a1 = np.random.normal(size=len(w))
-        a2 = np.random.normal(size=len(w))
+        a1 = self.random_state.normal(size=len(w))
+        a2 = self.random_state.normal(size=len(w))
 
         # Multiply by (1/w)^B to get real and imaginary parts
         real = a1 * np.power((1/w),B/2)
@@ -357,7 +357,8 @@ class Simulator(object):
 
         # Obtain time series
         long_lc = self._find_inverse(real, imaginary)
-        lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+        lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
+                        err_dist='gauss', dt=self.dt)
 
         return lc
 
@@ -381,15 +382,16 @@ class Simulator(object):
         self.red_noise = 1
 
         # Draw two set of 'N' guassian distributed numbers
-        a1 = np.random.normal(size=len(s))
-        a2 = np.random.normal(size=len(s))
+        a1 = self.random_state.normal(size=len(s))
+        a2 = self.random_state.normal(size=len(s))
 
         lc = self._find_inverse(a1*s, a2*s)
-        lc = Lightcurve(self.time, self._extract_and_scale(lc))
+        lc = Lightcurve(self.time, self._extract_and_scale(lc),
+                        err_dist='gauss', dt=self.dt)
 
         return lc
 
-            
+
     def _simulate_model(self, model):
         """
         For generating a light curve from a pre-defined model
@@ -397,38 +399,39 @@ class Simulator(object):
         Parameters
         ----------
         model: astropy.modeling.Model derived function
-            the pre-defined model 
+            the pre-defined model
             (library-based, available in astropy.modeling.models or custom-defined)
-        
+
         Returns
         -------
         lightCurve: `LightCurve` object
         """
 
-        # Frequencies at which the PSD is to be computed 
+        # Frequencies at which the PSD is to be computed
         # (only positive frequencies, since the signal is real)
         nbins = self.red_noise*self.N
         simfreq = np.fft.rfftfreq(nbins, d=self.dt)[1:]
-        
+
         # Compute PSD from model
         simpsd = model(simfreq)
-        
+
         fac = np.sqrt(simpsd/2.)
-        pos_real   = np.random.normal(size=nbins//2)*fac
-        pos_imag   = np.random.normal(size=nbins//2)*fac
-        
+        pos_real   = self.random_state.normal(size=nbins//2)*fac
+        pos_imag   = self.random_state.normal(size=nbins//2)*fac
+
         pos_freq_transform = pos_real + 1j * pos_imag
 
         # Simulate light curve from its Fourier transform
         arg  = np.concatenate(([self.mean], pos_freq_transform))
-    
+
         # Inverse Fourier transform
         long_lc = np.fft.irfft(arg)
-        
-        lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+
+        lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
+                        err_dist='gauss', dt=self.dt)
         return lc
-        
-        
+
+
     def _simulate_model_string(self, model_str, params):
         """
         For generating a light curve from a pre-defined model
@@ -436,20 +439,20 @@ class Simulator(object):
         Parameters
         ----------
         model_str: string
-            name of the pre-defined model 
+            name of the pre-defined model
         params: list or dictionary
             parameters of the pre-defined model
-        
+
         Returns
         -------
         lightCurve: `LightCurve` object
         """
 
-        # Frequencies at which the PSD is to be computed 
+        # Frequencies at which the PSD is to be computed
         # (only positive frequencies, since the signal is real)
         nbins = self.red_noise*self.N
         simfreq = np.fft.rfftfreq(nbins, d=self.dt)[1:]
-        
+
         if model_str in dir(models):
             if isinstance(params, dict):
                 model = eval('models.' + model_str + '(**params)')
@@ -458,31 +461,32 @@ class Simulator(object):
             elif isinstance(params, list):
                 simpsd = eval('models.' + model_str + '(simfreq, params)')
             else:
-                raise ValueError('Params should be list or dictionary!')    
-        
+                raise ValueError('Params should be list or dictionary!')
+
             fac = np.sqrt(simpsd/2.)
-            pos_real   = np.random.normal(size=nbins//2)*fac
-            pos_imag   = np.random.normal(size=nbins//2)*fac
-            
+            pos_real   = self.random_state.normal(size=nbins//2)*fac
+            pos_imag   = self.random_state.normal(size=nbins//2)*fac
+
             pos_freq_transform = pos_real + 1j * pos_imag
 
             # Simulate light curve from its Fourier transform
             arg  = np.concatenate(([self.mean], pos_freq_transform))
-    
+
             # Inverse Fourier transform
             long_lc = np.fft.irfft(arg)
-        
-            lc = Lightcurve(self.time, self._extract_and_scale(long_lc))
+
+            lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
+                            err_dist='gauss', dt=self.dt)
             return lc
         else:
             raise ValueError('Model is not defined!')
-        
-        
+
+
 
     def _simulate_impulse_response(self, s, h, mode='same'):
         """
         Generate LightCurve from impulse response. To get
-        accurate results, binning intervals (dt) of variability 
+        accurate results, binning intervals (dt) of variability
         signal 's' and impulse response 'h' must be equal.
 
         Parameters
@@ -510,10 +514,10 @@ class Simulator(object):
             lc = lc[:-(len(h) - 1)]
         elif mode == 'filtered':
             lc = lc[(len(h) - 1):-(len(h) - 1)]
-        
+
         time = self.dt * np.arange(len(lc))
-        return Lightcurve(time, lc)
-        
+        return Lightcurve(time, lc, err_dist='gauss', dt=self.dt)
+
     def _find_inverse(self, real, imaginary):
         """
         Forms complex numbers corresponding to real and imaginary
@@ -537,7 +541,7 @@ class Simulator(object):
         f = [complex(r, i) for r,i in zip(real,imaginary)]
 
         f = np.hstack([self.mean, f])
-        
+
         # Obtain real valued time series
         f_conj = np.conjugate(np.array(f))
 
@@ -567,8 +571,8 @@ class Simulator(object):
             lc = long_lc
         else:
             # Make random cut and extract light curve of length 'N'
-            extract = np.random.randint(self.N-1, self.red_noise*self.N - self.N+1)
-            lc = np.take(long_lc, range(extract, extract + self.N)) 
+            extract = self.random_state.randint(self.N-1, self.red_noise*self.N - self.N+1)
+            lc = np.take(long_lc, range(extract, extract + self.N))
 
         avg = np.mean(lc)
         std = np.std(lc)
@@ -589,7 +593,7 @@ class Simulator(object):
         -------
         power: numpy.ndarray
             The array of normalized squared absolute values of Fourier
-            amplitudes    
+            amplitudes
 
         """
         if seg_size is None:
@@ -616,7 +620,7 @@ class Simulator(object):
         """
 
         if format_ == 'pickle':
-            data = io.read(filename, 'pickle')        
+            data = io.read(filename, 'pickle')
             return data
         else:
             raise KeyError("Format not supported.")

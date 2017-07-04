@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
+from stingray.gti import create_gti_mask
 
 np.random.seed(20150907)
 
@@ -22,8 +23,8 @@ class TestLightcurve(object):
 
     @classmethod
     def setup_class(cls):
-        cls.times = [1, 2, 3, 4]
-        cls.counts = [2, 2, 2, 2]
+        cls.times = np.array([1, 2, 3, 4])
+        cls.counts = np.array([2, 2, 2, 2])
         cls.dt = 1.0
         cls.gti = [[0.5, 4.5]]
 
@@ -45,8 +46,44 @@ class TestLightcurve(object):
                     "transforms. Please make the input time evenly sampled.")
 
         with warnings.catch_warnings(record=True) as w:
-            lc = Lightcurve(times, counts)
+            lc = Lightcurve(times, counts, err_dist="poisson")
             assert str(w[0].message) == warn_str
+
+    def test_unrecognize_err_dist_warning(self):
+        """
+        Check if a non-poisson error_dist throws the correct warning.
+        """
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, 2, 2, 2]
+        warn_str = ("SIMON says: Stingray only uses poisson err_dist at "
+                    "the moment, We are setting your errors to zero. Sorry for "
+                    "the inconvenience.")
+
+        with warnings.catch_warnings(record=True) as w:
+            lc = Lightcurve(times, counts, err_dist='gauss')
+            assert str(w[0].message) == warn_str
+
+    def test_dummy_err_dist_fail(self):
+        """
+        Check if inputting an irregularly spaced time iterable throws out
+        a warning.
+        """
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, 2, 2, 2]
+
+        with pytest.raises(StingrayError):
+            lc = Lightcurve(times, counts, err_dist='joke')
+
+    def test_invalid_data(self):
+        times = [1, 2, 3, 4, 5]
+        counts = [2, 2, np.nan, 2, 2]
+        counts_err = [1, 2, 3, np.nan, 2]
+
+        with pytest.raises(ValueError):
+            lc = Lightcurve(times, counts)
+
+        with pytest.raises(ValueError):
+            lc = Lightcurve(times, [2]*5, err=counts_err)
 
     def test_n(self):
         lc = Lightcurve(self.times, self.counts)
@@ -139,11 +176,9 @@ class TestLightcurve(object):
         lc = [5, 5, 0, 5, 5]
         gtis = [[0, 2], [3, 5]]
         lc = Lightcurve(t, lc, gti=gtis)
-        ## This test assumes that the GTI is not automatically applied,
-        ## and that meanrate and meancounts are only recalculated once the GTI
-        ## has been applied.
-        assert lc.meanrate == 4
-        assert lc.meancounts == 4
+
+        assert lc.meanrate == 5
+        assert lc.meancounts == 5
 
     def test_creating_lightcurve_raises_type_error_when_input_is_none(self):
         dt = 0.5
@@ -177,7 +212,7 @@ class TestLightcurve(object):
             lc = Lightcurve(time, counts)
 
     def test_add_with_different_time_arrays(self):
-        _times = [1, 2, 3, 4, 5]
+        _times = [1.1, 2.1, 3.1, 4.1, 5.1]
         _counts = [2, 2, 2, 2, 2]
 
         with pytest.raises(ValueError):
@@ -187,11 +222,25 @@ class TestLightcurve(object):
 
             lc = lc1 + lc2
 
+    def test_add_with_different_err_dist(self):
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
+                         err_dist="gauss")
+        with warnings.catch_warnings(record=True) as w:
+            lc = lc1 + lc2
+            assert "ightcurves have different statistics" in str(w[0].message)
+
     def test_add_with_same_gtis(self):
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
         lc2 = Lightcurve(self.times, self.counts, gti=self.gti)
         lc = lc1 + lc2
         np.testing.assert_almost_equal(lc.gti, self.gti)
+
+    def test_add_with_different_mjdref(self):
+        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.raises(ValueError):
+            lc1 + lc2
 
     def test_add_with_different_gtis(self):
         gti = [[0., 3.5]]
@@ -219,9 +268,10 @@ class TestLightcurve(object):
 
         assert np.all(lc.counts == lc1.counts + lc2.counts)
         assert np.all(lc.countrate == lc1.countrate + lc2.countrate)
+        assert lc1.mjdref == lc.mjdref
 
     def test_sub_with_diff_time_arrays(self):
-        _times = [1, 2, 3, 4, 5]
+        _times = [1.1, 2.1, 3.1, 4.1, 5.1]
         _counts = [2, 2, 2, 2, 2]
 
         with pytest.raises(ValueError):
@@ -229,6 +279,20 @@ class TestLightcurve(object):
             lc2 = Lightcurve(_times, _counts)
 
             lc = lc1 - lc2
+
+    def test_sub_with_different_err_dist(self):
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
+                         err_dist="gauss")
+        with warnings.catch_warnings(record=True) as w:
+            lc = lc1 - lc2
+            assert "ightcurves have different statistics" in str(w[0].message)
+
+    def test_sub_with_different_mjdref(self):
+        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.raises(ValueError):
+            lc1 - lc2
 
     def test_subtraction(self):
         _counts = [3, 4, 5, 6]
@@ -240,6 +304,7 @@ class TestLightcurve(object):
 
         expected_counts = np.array([1, 2, 3, 4])
         assert np.all(lc.counts == expected_counts)
+        assert lc1.mjdref == lc.mjdref
 
     def test_negation(self):
         lc = Lightcurve(self.times, self.counts)
@@ -247,6 +312,7 @@ class TestLightcurve(object):
         _lc = lc + (-lc)
 
         assert not np.all(_lc.counts)
+        assert _lc.mjdref == lc.mjdref
 
     def test_len_function(self):
         lc = Lightcurve(self.times, self.counts)
@@ -271,6 +337,8 @@ class TestLightcurve(object):
         assert np.all(lc[:2].counts == np.array([2, 2]))
         assert np.all(lc[2:].counts == np.array([2, 2]))
         assert np.all(lc[:].counts == np.array([2, 2, 2, 2]))
+        assert lc[:].mjdref == lc.mjdref
+
 
     def test_slicing_index_error(self):
         lc = Lightcurve(self.times, self.counts)
@@ -289,6 +357,12 @@ class TestLightcurve(object):
             lc1.join(lc2)
             assert "different bin widths" in str(w[0].message)
 
+    def test_join_with_different_mjdref(self):
+        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.raises(ValueError):
+            lc1.join(lc2)
+
     def test_join_disjoint_time_arrays(self):
         _times = [5, 6, 7, 8]
         _counts = [2, 2, 2, 2]
@@ -300,6 +374,7 @@ class TestLightcurve(object):
 
         assert len(lc.counts) == len(lc.time) == 8
         assert np.all(lc.counts == 2)
+        assert lc.mjdref == lc1.mjdref
 
     def test_join_overlapping_time_arrays(self):
         _times = [3, 4, 5, 6]
@@ -322,11 +397,13 @@ class TestLightcurve(object):
         assert np.all(lc1.time == np.array([2, 3, 4]))
         assert np.all(lc1.counts == np.array([2, 2, 2]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
+        assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=2)
         assert np.all(lc2.time == np.array([1, 2]))
         assert np.all(lc2.counts == np.array([2, 2]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
+        assert lc2.mjdref == lc.mjdref
 
     def test_truncate_by_time_stop_less_than_start(self):
         lc = Lightcurve(self.times, self.counts)
@@ -346,26 +423,31 @@ class TestLightcurve(object):
         assert np.all(lc1.time == np.array([1, 2, 3, 4]))
         assert np.all(lc1.counts == np.array([2, 2, 2, 2]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 0.5)
+        assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=3, method='time')
         assert np.all(lc2.time == np.array([1, 2]))
         assert np.all(lc2.counts == np.array([2, 2]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
+        assert lc2.mjdref == lc.mjdref
 
     def test_sort(self):
         _times = [1, 2, 3, 4]
         _counts = [40, 10, 20, 5]
-        lc = Lightcurve(_times, _counts)
+        lc = Lightcurve(_times, _counts, mjdref=57000)
+        mjdref = lc.mjdref
 
         lc.sort()
 
         assert np.all(lc.counts == np.array([5, 10, 20, 40]))
         assert np.all(lc.time == np.array([4, 2, 3, 1]))
+        assert lc.mjdref == mjdref
 
         lc.sort(reverse=True)
 
         assert np.all(lc.counts == np.array([40, 20, 10,  5]))
         assert np.all(lc.time == np.array([1, 3, 2, 4]))
+        assert lc.mjdref == mjdref
 
     def test_plot_matplotlib_not_installed(self):
         try:
@@ -514,13 +596,21 @@ class TestLightcurveRebin(object):
         assert np.allclose(lc_binned.counts, counts_test)
 
     def rebin_several(self, dt):
-        """
-        TODO: Not sure how to write tests for the rebin method!
-        """
         lc_binned = self.lc.rebin(dt)
         assert len(lc_binned.time) == len(lc_binned.counts)
 
     def test_rebin_equal_numbers(self):
         dt_all = [2, 3, np.pi, 5]
         for dt in dt_all:
-            yield self.rebin_several, dt
+            self.rebin_several(dt)
+
+    def test_lc_baseline(self):
+        times = np.arange(0, 100, 0.01)
+        counts = np.random.normal(100, 0.1, len(times)) + \
+            0.001 * times
+        gti = [[-0.005, 50.005], [59.005, 100.005]]
+        good = create_gti_mask(times, gti)
+        counts[np.logical_not(good)] = 0
+        lc = Lightcurve(times, counts, gti=gti)
+        baseline = lc.baseline(10000, 0.01)
+        assert np.all(lc.counts - baseline < 1)

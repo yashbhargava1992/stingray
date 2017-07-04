@@ -1,4 +1,4 @@
-
+from __future__ import division
 import numpy as np
 from astropy.modeling import models
 
@@ -9,7 +9,7 @@ __all__ = ["fit_powerspectrum", "fit_lorentzians"]
 
 
 def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
-              fitmethod="L-BFGS-B"):
+                      fitmethod="L-BFGS-B"):
     """
     Fit a number of Lorentzians to a power spectrum, possibly including white
     noise. Each Lorentzian has three parameters (amplitude, centroid position,
@@ -29,8 +29,9 @@ def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
     ps : Powerspectrum
         A Powerspectrum object with the data to be fit
 
-    nlor : int
-        The number of Lorentzians to fit
+    model: astropy.modeling.models class instance
+        The parametric model supposed to represent the data. For details
+        see the astropy.modeling documentation
 
     starting_pars : iterable
         The list of starting guesses for the optimizer. See explanation above
@@ -98,11 +99,11 @@ def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
     Now we have to guess starting parameters. For each Lorentzian, we have
     amplitude, centroid position and fwhm, and this pattern repeats for each
     Lorentzian in the fit. The white noise level is the last parameter.
-    >>> t0 = [80, 1.5, 2.5]
+    >>> t0 = [80, 1., 1.5, 2.5]
 
     Let's also make a model to test:
     >>> model_to_test = models.PowerLaw1D() + models.Const1D()
-    >>> model_to_test.x_0_0.fixed = True
+    >>> model_to_test.amplitude_1.fixed = True
 
     We're ready for doing the fit:
     >>> parest, res = fit_powerspectrum(ps, model_to_test, t0)

@@ -1,11 +1,7 @@
 language: python
 
 python:
-    - 2.6
     - 2.7
-    - 3.3
-    - 3.4
-    - 3.5
     - 3.6
 
 # Setting sudo to false opts in to Travis-CI container-based builds.
@@ -23,6 +19,10 @@ addons:
             - texlive-latex-extra
             - dvipng
 
+branches:
+  only:
+    - "master"
+
 env:
     global:
         # The following versions are the 'default' for tests, unless
@@ -39,9 +39,10 @@ env:
         # Make sure that egg_info works without dependencies
         - SETUP_CMD='egg_info'
         # Try all python versions with the latest numpy
-        - SETUP_CMD='test'
+        - SETUP_CMD='test --coverage'
 
 matrix:
+    fast_finish: true
     include:
 
         #Try without importing h5py
@@ -55,23 +56,28 @@ matrix:
         - python: 3.5
           env: PIP_DEPENDENCIES='emcee statsmodels' SETUP_CMD='test --coverage'
 
-        # Do a coverage test in Python 2.
+        - python: 3.4
+          env: NUMPY_VERSION=1.11
+
+        ## Here allowed failures start
+        # Try older numpy versions
         - python: 2.7
-          env: SETUP_CMD='test --coverage'
+          env: NUMPY_VERSION=1.8
+        - python: 2.7
+          env: NUMPY_VERSION=1.7
+        # Try older scipy versions
+        - python: 2.7
+          env: SCIPY_VERSION=0.16.0
+        - python: 2.7
+          env: SCIPY_VERSION=0.14.0
+        - python: 2.6
+          env: SETUP_CMD='test'
 
-        # Do a coverage test in Python 3.
-        - python: 3.5
-          env: SETUP_CMD='test --coverage'
-
-        # Check for sphinx doc build warnings - we do this first because it
-        # may run for a long time
         - python: 2.7
           env: SETUP_CMD='build_sphinx -w'
-
         # Try Astropy development version
         - python: 2.7
           env: ASTROPY_VERSION=development
-
         - python: 3.5
           env: ASTROPY_VERSION=development
 
@@ -81,21 +87,21 @@ matrix:
           env: NUMPY_VERSION=1.8
         - python: 2.7
           env: NUMPY_VERSION=1.7
-        - python: 2.7
-          env: NUMPY_VERSION=1.6
         # Try older scipy versions
         - python: 2.7
           env: SCIPY_VERSION=0.16.0
         - python: 2.7
-          env: SCIPY_VERSION=0.15.0
-        - python: 2.7
           env: SCIPY_VERSION=0.14.0
-
         - python: 2.6
-        - python: 3.3
+          env: SETUP_CMD='test'
 
         - python: 2.7
           env: SETUP_CMD='build_sphinx -w'
+        # Try Astropy development version
+        - python: 2.7
+          env: ASTROPY_VERSION=development
+        - python: 3.5
+          env: ASTROPY_VERSION=development
 
 
 before_install:
