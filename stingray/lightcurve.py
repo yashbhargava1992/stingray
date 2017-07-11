@@ -637,8 +637,7 @@ class Lightcurve(object):
             if(valid_err):
                 new_counts_err = list(counts_err.values())
             
-            del[counts]
-            del[counts_err]
+            del[counts, counts_err]
 
         else:
 
