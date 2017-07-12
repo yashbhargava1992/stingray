@@ -7,7 +7,7 @@ from stingray import lightcurve
 
 
 class Bispectrum(object):
-    def __init__(self, lc, maxlag, scale=None):
+    def __init__(self, lc, maxlag=None, scale='biased'):
     	"""
             Makes a :class:`Bispectrum` object from a given :class:`Lightcurve`.
             
@@ -69,7 +69,7 @@ class Bispectrum(object):
 
     def _make_bispetrum(self, lc, maxlag, scale):
         if not isinstance(lc, lightcurve.Lightcurve):
-            raise TypeError('lc must be a lightcurve.ightcurve object')
+            raise TypeError('lc must be a lightcurve.Lightcurve object')
 
         self.lc = lc
         self.fs = 1 / lc.dt
@@ -77,6 +77,10 @@ class Bispectrum(object):
 
         if not isinstance(maxlag, int):
             raise ValueError('maxlag must be an integer')
+
+        # if maxlag is not specified, it is set to half of length of lightcurve
+        if maxlag is None:
+            self.maxlag = np.ceil(self.lc.n / 2)
 
         # if negative maxlag is entered, convert it to +ve
         if maxlag < 0:
