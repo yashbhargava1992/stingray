@@ -67,7 +67,29 @@ class Bispectrum(object):
                 
                 [3] Matlab version of bispectrum under following link. 
                 https://www.mathworks.com/matlabcentral/fileexchange/60-bisp3cum
-                                 
+                
+                Example
+                -------
+                >> from stingray.lightcurve import Lightcurve
+                >> from stingray.bispectrum import Bispectrum
+                >> lc = Lightcurve([1,2,3,4,5],[2,3,1,1,2])
+                >> bs = Bispectrum(lc,maxlag=1)
+                >> bs.lags
+                array([-1.,  0.,  1.])
+                >> bs.freq
+                array([-0.5,  0. ,  0.5])
+                >> bs.cum3
+                array([[-0.2976,  0.1024,  0.1408],
+                    [ 0.1024,  0.144 , -0.2976],
+                    [ 0.1408, -0.2976,  0.1024]])
+                >> bs.bispec_mag
+                array([[ 1.26336794,  0.0032    ,  0.0032    ],
+                    [ 0.0032    ,  0.16      ,  0.0032    ],
+                    [ 0.0032    ,  0.0032    ,  1.26336794]])
+                >> bs.bispec_phase
+                array([[ -9.65946229e-01,   2.25347190e-14,   3.46944695e-14],
+                    [  0.00000000e+00,   3.14159265e+00,   0.00000000e+00],
+                    [ -3.46944695e-14,  -2.25347190e-14,   9.65946229e-01]])                  
         """
 
         # Function call to create Bispectrum Object
@@ -234,6 +256,10 @@ class Bispectrum(object):
                 If True, save the figure with specified filename.
             filename : str
                 File name of the image to save. Depends on the boolean ``save``.
+            Returns
+ +          ---------
+            plt : matplotlib.pyplot object
+                Reference to plot, call show() to display it
         """
 
         try:
@@ -273,13 +299,16 @@ class Bispectrum(object):
                 If True, save the figure with specified filename.
             filename : str
                 File name of the image to save. Depends on the boolean ``save``.
+            Returns
+            ---------
+            plt : matplotlib.pyplot object
+                Reference to plot, call show() to display it
         """
         try:
             import matplotlib.pyplot as plt
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        fig = plt.figure()
         cont = plt.contourf(self.freq, self.freq, self.bispec_mag, 100, cmap=plt.cm.Spectral_r)
         plt.colorbar(cont)
         plt.title('Bispectrum Magnitude')
@@ -288,7 +317,7 @@ class Bispectrum(object):
 
         if axis is not None:
             plt.axis(axis)
-        
+
         if save:
             if filename is None:
                 plt.savefig('bispec_mag.png')
@@ -312,6 +341,10 @@ class Bispectrum(object):
                 If True, save the figure with specified filename.
             filename : str
                 File name of the image to save. Depends on the boolean ``save``.
+            Returns
+ +          ---------
+            plt : matplotlib.pyplot object
+                Reference to plot, call show() to display it
         """
         try:
             import matplotlib.pyplot as plt
@@ -334,3 +367,8 @@ class Bispectrum(object):
             else:
                 plt.savefig(filename)
         return plt
+
+
+lc = lightcurve.Lightcurve([1, 2, 3, 4, 5], [2, 3, 1, 1, 2])
+bs = Bispectrum(lc)
+print(bs.bispec_mag)
