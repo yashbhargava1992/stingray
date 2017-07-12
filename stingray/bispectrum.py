@@ -111,6 +111,7 @@ class Bispectrum(object):
 
         self._cumulant3()
         self._normalize_cumulant3()
+        self._cal_bispec()
 
         def _cumulant3(self):
         """
@@ -192,3 +193,17 @@ class Bispectrum(object):
             # Set numbers less than 1 to be equal to 1
             scal_matrix[scal_matrix < 1] = 1
             self.cum3 = np.divide(self.cum3, scal_matrix)
+
+        def _cal_bispec(self):
+        """
+            Calculates bispectrum as a fourier transform of 3rd Order Cumulant.
+            Assigns: 
+            self.freq
+            self.bispec
+            self.bispec_mag
+            self.bispec_phase
+        """
+        self.freq = (1 / 2) * self.fs * (self.lags / self.lc.dt) / self.maxlag
+        self.bispec = fftshift(fft2(ifftshift(self.cum3)))
+        self.bispec_mag = np.abs(self.bispec)
+        self.bispec_phase = np.angle((self.bispec))
