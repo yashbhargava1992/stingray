@@ -5,14 +5,42 @@ from stingray import lightcurve
 
 class Bispectrum(object):
     def __init__(self, lc, maxlag, scale=None):
-    	self.lc = lc
-        # change to fs = 1/lc.dt
-        self.maxlag = maxlag
-        self.scale = scale
-        self.fs = None
-        
-        # Outputs
+    	    def __init__(self, lc, maxlag, scale=None):
+
+        self._make_bispetrum(lc, maxlag, scale)
+
+    def _make_bispetrum(self, lc, maxlag, scale):
+        if not isinstance(lc, lightcurve.Lightcurve):
+            raise TypeError('lc must be a lightcurve.ightcurve object')
+
+        self.lc = lc
+        self.fs = 1 / lc.dt
+        self.n = self.lc.n
+
+        if not isinstance(maxlag, int):
+            raise ValueError('maxlag must be an integer')
+
+        # if negative maxlag is entered, convert it to +ve
+        if maxlag < 0:
+            self.maxlag = -maxlag
+        else:
+            self.maxlag = maxlag
+
+        if isinstance(scale, str) is False:
+            raise TypeError("scale must be a string")
+
+        if scale.lower() not in ["biased", "unbiased"]:
+            raise ValueError("scale can only be either 'biased' or 'unbiased'.")
+        self.scale = scale.lower()
+
+        # Other Atributes
         self.bispec = None
         self.freq = None
         self.cum3 = None
-        self.lag = None
+        self.lags = None
+
+        # converting to a row vector to apply matrix operations
+        self.signal = np.reshape(lc, (1, len(self.lc.counts)))
+        # Mean subtraction before bispecrum calculation
+        self.signal = self.signal - np.mean(lc.counts)
+
