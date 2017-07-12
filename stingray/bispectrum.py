@@ -1,7 +1,10 @@
 from __future__ import division
 import numpy as np
+from scipy.linalg import toeplitz
+from scipy.fftpack import fftshift, fft2, ifftshift, fftfreq
 
 from stingray import lightcurve
+
 
 class Bispectrum(object):
     def __init__(self, lc, maxlag, scale=None):
@@ -101,3 +104,39 @@ class Bispectrum(object):
         
         # Mean subtraction before bispecrum calculation
         self.signal = self.signal - np.mean(lc.counts)
+
+        self._cumulant3()
+
+        def _cumulant3(self):
+        """
+            Calculates the 3rd Order cummulant of the lightcurve.
+            Assigns: 
+            self.cum3, 
+            self.lags
+        """
+        # Initialize square cumulant matrix if zeros
+        cum3_dim = 2 * self.maxlag + 1
+        self.cum3 = np.zeros((cum3_dim, cum3_dim))
+
+        # calculate lags for different values of 3rd order cumulant
+        lagindex = np.arange(-self.maxlag, self.maxlag + 1)
+        self.lags = lagindex * self.lc.dt
+
+        # Defines indices for matrices
+        ind = np.arange((self.n - self.maxlag) - 1, self.n)
+        ind_t = np.arange(self.maxlag, self.n)
+        zero_maxlag = np.zeros((1, self.maxlag))
+        zero_maxlag_t = zero_maxlag.transpose()
+
+        sig = self.signal.transpose()
+
+        rev_signal = np.array([self.signal[0][::-1]])
+        col = np.concatenate((sig[ind], zero_maxlag_t), axis=0)
+        row = np.concatenate((rev_signal[0][ind_t], zero_maxlag[0]), axis=0)
+
+        # converts row and column into a toeplitz matrix
+        toep = toeplitz(col, row)
+        rev_signal = np.repeat(rev_signal, [2 * self.maxlag + 1], axis=0)
+
+        # Calulates Cummulant of 1D signal i.e. Lightcurve counts
+        self.cum3 = self.cum3 + np.matmul(np.multiply(toep, rev_signal), toep.transpose())
