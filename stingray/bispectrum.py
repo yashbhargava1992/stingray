@@ -34,13 +34,15 @@ class Bispectrum(object):
         self.scale = scale.lower()
 
         # Other Atributes
-        self.bispec = None
-        self.freq = None
-        self.cum3 = None
         self.lags = None
+        self.cum3 = None
+        self.freq = None
+        self.bispec = None
+        self.bispec_mag = None
+        self.bispec_phase = None
 
         # converting to a row vector to apply matrix operations
         self.signal = np.reshape(lc, (1, len(self.lc.counts)))
+        
         # Mean subtraction before bispecrum calculation
         self.signal = self.signal - np.mean(lc.counts)
-
