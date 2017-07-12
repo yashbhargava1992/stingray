@@ -110,6 +110,7 @@ class Bispectrum(object):
         self.signal = self.signal - np.mean(lc.counts)
 
         self._cumulant3()
+        self._normalize_cumulant3()
 
         def _cumulant3(self):
         """
@@ -144,3 +145,50 @@ class Bispectrum(object):
 
         # Calulates Cummulant of 1D signal i.e. Lightcurve counts
         self.cum3 = self.cum3 + np.matmul(np.multiply(toep, rev_signal), toep.transpose())
+
+        def _normalize_cumulant3(self):
+        """
+        Scales (biased or ubiased) the 3rd Order cumulant of the lightcurve .
+        Updates: 
+        self.cum3
+        """
+
+        # Biased scaling of cummulant
+        if self.scale == 'biased':
+            self.cum3 = self.cum3 / self.n
+        else:
+            # unbiased Scaling of cummulant
+            maxlag1 = self.maxlag + 1
+
+            # Scaling matrix initialized used to do unbiased normalization of cumulant
+            scal_matrix = np.zeros((maxlag1, maxlag1), dtype='int64')
+
+            # Calculate scaling matrix for unbiased normalization
+            for k in range(maxlag1):
+                maxlag1k = (maxlag1 - (k + 1))
+                scal_matrix[k, k:maxlag1] = np.tile(self.n - maxlag1k, (1, maxlag1k + 1))
+            scal_matrix += np.triu(scal_matrix, k=1).transpose()
+
+            maxlag1ind = np.arange(self.maxlag - 1, -1, -1)
+            lagdiff = self.n - maxlag1
+
+            # Rows and columns for Toeplitz matrix
+            col = np.arange(lagdiff, self.n - 1)
+            col = np.reshape(col, (1, len(col))).transpose()
+            row = np.arange(lagdiff, (self.n - 2 * self.maxlag) - 1, -1)
+            row = np.reshape(row, (1, len(row)))
+
+            # Toeplitz matrix
+            toep_matrix = toeplitz(col, row)
+            # Matrix used to concatenate with scaling matrix
+            conc_mat = np.array([scal_matrix[self.maxlag, maxlag1ind]])
+            join_matrix = np.concatenate((toep_matrix, conc_mat), axis=0)
+            scal_matrix = np.concatenate((scal_matrix, join_matrix), axis=1)
+            co_mat = scal_matrix[maxlag1ind, :]
+            co_mat = co_mat[:, np.arange(2 * self.maxlag, -1, -1)]
+
+            # Scaling matrix calculated
+            scal_matrix = np.concatenate((scal_matrix, co_mat), axis=0)
+            # Set numbers less than 1 to be equal to 1
+            scal_matrix[scal_matrix < 1] = 1
+            self.cum3 = np.divide(self.cum3, scal_matrix)
