@@ -6,6 +6,7 @@ from scipy.fftpack import fftshift, fft2, ifftshift, fftfreq
 
 from stingray import lightcurve
 from stingray.utils import simon
+import matplotlib.pyplot as plt
 
 
 class Bispectrum(object):
@@ -254,6 +255,7 @@ class Bispectrum(object):
                 plt.savefig('bispec_cum3.png')
             else:
                 plt.savefig(filename)
+        return plt
 
     def plot_mag(self, axis=None, save=False, filename=None):
 
@@ -286,12 +288,13 @@ class Bispectrum(object):
 
         if axis is not None:
             plt.axis(axis)
-
+        
         if save:
             if filename is None:
                 plt.savefig('bispec_mag.png')
             else:
                 plt.savefig(filename)
+        return plt
 
     def plot_phase(self, axis=None, save=False, filename=None):
 
@@ -324,8 +327,10 @@ class Bispectrum(object):
         if axis is not None:
             plt.axis(axis)
 
+        # Save figure
         if save:
             if filename is None:
                 plt.savefig('bispec_phase.png')
             else:
                 plt.savefig(filename)
+        return plt
