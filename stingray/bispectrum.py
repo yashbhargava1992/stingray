@@ -217,7 +217,7 @@ class Bispectrum(object):
         self.bispec_mag = np.abs(self.bispec)
         self.bispec_phase = np.angle((self.bispec))
 
-        def plot_cum3(self, axis=None, save=False, filename=False):
+    def plot_cum3(self, axis=None, save=False, filename=None):
 
         """
             Plot the 3rd order cumulant as function of time lags using Matplotlib.
@@ -240,15 +240,14 @@ class Bispectrum(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        if axis is not None:
-            plt.axis(axis)
-
         cont = plt.contourf(self.lags, self.lags, self.cum3, 100, cmap=plt.cm.Spectral_r)
         plt.colorbar(cont)
         plt.title('3rd Order Cumulant')
         plt.xlabel('lags 1')
         plt.ylabel('lags 2')
-        plt.show()
+
+        if axis is not None:
+            plt.axis(axis)
 
         if save:
             if filename is None:
@@ -256,8 +255,8 @@ class Bispectrum(object):
             else:
                 plt.savefig(filename)
 
-    def plot_mag(self, axis=None, save=False, filename=False):
-        
+    def plot_mag(self, axis=None, save=False, filename=None):
+
         """
             Plot the Magnitude of Bispectrum as function of freq using Matplotlib.
             Plot the self.bispec_mag on a graph with ``self.freq`` on x-axis and y-axis and
@@ -278,15 +277,15 @@ class Bispectrum(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        if axis is not None:
-            plt.axis(axis)
-
+        fig = plt.figure()
         cont = plt.contourf(self.freq, self.freq, self.bispec_mag, 100, cmap=plt.cm.Spectral_r)
         plt.colorbar(cont)
         plt.title('Bispectrum Magnitude')
         plt.xlabel('freq 1')
         plt.ylabel('freq 2')
-        plt.show()
+
+        if axis is not None:
+            plt.axis(axis)
 
         if save:
             if filename is None:
@@ -294,8 +293,8 @@ class Bispectrum(object):
             else:
                 plt.savefig(filename)
 
-    def plot_phase(self, axis=None, save=False, filename=False):
-        
+    def plot_phase(self, axis=None, save=False, filename=None):
+
         """
             Plot the Phase of Bispectrum as function of freq using Matplotlib.
             Plot the self.bispec_phase on a graph with ``self.phase`` on x-axis and y-axis and
@@ -316,19 +315,17 @@ class Bispectrum(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        if axis is not None:
-            plt.axis(axis)
-
         cont = plt.contourf(self.freq, self.freq, self.bispec_phase, 100, cmap=plt.cm.Spectral_r)
         plt.colorbar(cont)
         plt.title('Bispectrum Phase')
         plt.xlabel('freq 1')
         plt.ylabel('freq 2')
-        plt.show()
+
+        if axis is not None:
+            plt.axis(axis)
 
         if save:
             if filename is None:
                 plt.savefig('bispec_phase.png')
             else:
                 plt.savefig(filename)
-
