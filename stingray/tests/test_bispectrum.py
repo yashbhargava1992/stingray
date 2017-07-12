@@ -10,7 +10,6 @@ from stingray.exceptions import StingrayError
 
 try:
     import matplotlib.pyplot as plt
-
     HAS_MPL = True
 except ImportError:
     HAS_MPL = False
@@ -236,3 +235,91 @@ class TestBispectrum(object):
         assert np.allclose(bs.bispec, bispec)
         assert np.allclose(bs.bispec_mag, bispec_mag)
         assert np.allclose(bs.bispec_phase, bispec_phase)
+
+    @pytest.mark.skipif(HAS_MPL, reason='Matplotlib is already installed if condition is met')
+    def test_plot_matplotlib_not_installed(self):
+        bs = Bispectrum(self.lc)
+        with pytest.raises(ImportError) as excinfo:
+            bs.plot_cum3()
+            bs.plot_mag()
+            bs.plot_phase()
+        message = str(excinfo.value)
+        assert "Matplotlib required for plot()" in message
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_cum3(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_cum3()
+        assert plt.fignum_exists(1)
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_mag(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_mag()
+        assert plt.fignum_exists(1)
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_phase(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_phase()
+        assert plt.fignum_exists(1)
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_cum3_axis(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_cum3(axis=[0, 1, 0, 100])
+        assert plt.fignum_exists(1)
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_mag_axis(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_mag(axis=[0, 1, 0, 100])
+        assert plt.fignum_exists(1)
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_phase_axis(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_phase(axis=[0, 1, 0, 100])
+        assert plt.fignum_exists(1)
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_cum3_default_filename(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_cum3(save=True)
+        assert os.path.isfile('bispec_cum3.png')
+        os.unlink('bispec_cum3.png')
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_mag_default_filename(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_mag(save=True)
+        assert os.path.isfile('bispec_mag.png')
+        os.unlink('bispec_mag.png')
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_phase_default_filename(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_phase(save=True)
+        assert os.path.isfile('bispec_phase.png')
+        os.unlink('bispec_phase.png')
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_cum3_custom_filename(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_cum3(save=True, filename='cum3.png')
+        assert os.path.isfile('cum3.png')
+        os.unlink('cum3.png')
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_mag_custom_filename(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_phase(save=True, filename='mag.png')
+        assert os.path.isfile('mag.png')
+        os.unlink('mag.png')
+
+    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
+    def test_plot_phase_custom_filename(self):
+        bs = Bispectrum(self.lc)
+        bs.plot_phase(save=True, filename='phase.png')
+        assert os.path.isfile('phase.png')
+        os.unlink('phase.png')
