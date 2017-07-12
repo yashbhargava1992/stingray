@@ -1,92 +1,101 @@
 from __future__ import division
+
 import numpy as np
 from scipy.linalg import toeplitz
 from scipy.fftpack import fftshift, fft2, ifftshift, fftfreq
 
 from stingray import lightcurve
+from stingray.utils import simon
 
 
 class Bispectrum(object):
     def __init__(self, lc, maxlag=None, scale='biased'):
-    	"""
-            Makes a :class:`Bispectrum` object from a given :class:`Lightcurve`.
-            
-            Bispectrum is a higher order time series analysis method and is calculated by indirect method as
-            fourier transform of triple auto-correlation function also called as 3rd Order cumulant.
-            
-            Parameters
-            ----------
-            lc: lightcurve.Lightcurve object
-                The light curve data for bispectrum calculation.
-            maxlag: int, optional, default None
-                Maximum lag on both positive and negative sides of 
-                3rd order cumulant (Similar to lags in correlation).
-                if None, max lag is set to one-half of length of lightcurve.
-            scale: {'biased', 'unbiased'}, optional, default 'biased'
-                Flag to decide biased or unbiased normalization for 3rd order cumulant function.
-
-            Attributes
-            ----------
-            lc: lightcurve.Lightcurve 
-                The light curve data for bispectrum.
-            fs: float
-                Sampling freq of light curve.        
-            n: int
-                Total Number of samples of light curve observations.
-            maxlag: int
-                Maximum lag on both positive and negative sides of 
-                3rd order cumulant (Similar to lags in correlation)
-            scale: {'biased', 'unbiased'}
-                Flag to decide biased or unbiased normalization for 3rd order cumulant function. 
-            lags: numpy.ndarray
-                An array of time lags for which 3rd order cumulant is calculated
-            freq: numpy.ndarray
-                An array of freq values for bispectrum.
-            cum3: numpy.ndarray
-                A maxlag*2+1 x maxlag*2+1 matrix containing 3rd order cumulant data for different lags.
-            bispec: numpy.ndarray
-                A maxlag*2+1 x maxlag*2+1 matrix containing bispectrum data for different frequencies.
-            bispec_mag: numpy.ndarray
-                Magnitude of Bispectrum
-            bispec: numpy.ndarray
-                Phase of Bispectrum
-            References
-            ----------     
-            [1] The biphase explained: understanding the asymmetries invcoupled Fourier components of astronomical timeseries
-            by Thomas J. Maccarone Department of Physics, Box 41051, Science Building, Texas Tech University, Lubbock TX 79409-1051
-            School of Physics and Astronomy, University of Southampton, SO16 4ES
+        """
+                Makes a :class:`Bispectrum` object from a given :class:`Lightcurve`.
                 
-            [2] T. S. Rao, M. M. Gabr, An Introduction to Bispectral Analysis and Bilinear Time
-            Series Models, Lecture Notes in Statistics, Volume 24, D. Brillinger, S. Fienberg,
-            J. Gani, J. Hartigan, K. Krickeberg, Editors, Springer-Verlag, New York, NY, 1984.
-            
-            [3] Matlab version of bispectrum under following link. 
-            https://www.mathworks.com/matlabcentral/fileexchange/60-bisp3cum
+                Bispectrum is a higher order time series analysis method and is calculated by indirect method as
+                fourier transform of triple auto-correlation function also called as 3rd Order cumulant.
+                
+                Parameters
+                ----------
+                lc: lightcurve.Lightcurve object
+                    The light curve data for bispectrum calculation.
+                maxlag: int, optional, default None
+                    Maximum lag on both positive and negative sides of 
+                    3rd order cumulant (Similar to lags in correlation).
+                    if None, max lag is set to one-half of length of lightcurve.
+                scale: {'biased', 'unbiased'}, optional, default 'biased'
+                    Flag to decide biased or unbiased normalization for 3rd order cumulant function.
+
+                Attributes
+                ----------
+                lc: lightcurve.Lightcurve 
+                    The light curve data for bispectrum.
+                fs: float
+                    Sampling freq of light curve.        
+                n: int
+                    Total Number of samples of light curve observations.
+                maxlag: int
+                    Maximum lag on both positive and negative sides of 
+                    3rd order cumulant (Similar to lags in correlation)
+                signal: numpy.ndarray
+                    Row vector of lightcurve counts for matrix operations
+                scale: {'biased', 'unbiased'}
+                    Flag to decide biased or unbiased normalization for 3rd order cumulant function. 
+                lags: numpy.ndarray
+                    An array of time lags for which 3rd order cumulant is calculated
+                freq: numpy.ndarray
+                    An array of freq values for bispectrum.
+                cum3: numpy.ndarray
+                    A maxlag*2+1 x maxlag*2+1 matrix containing 3rd order cumulant data for different lags.
+                bispec: numpy.ndarray
+                    A maxlag*2+1 x maxlag*2+1 matrix containing bispectrum data for different frequencies.
+                bispec_mag: numpy.ndarray
+                    Magnitude of Bispectrum
+                bispec: numpy.ndarray
+                    Phase of Bispectrum
+                References
+                ----------     
+                [1] The biphase explained: understanding the asymmetries invcoupled Fourier components of astronomical timeseries
+                by Thomas J. Maccarone Department of Physics, Box 41051, Science Building, Texas Tech University, Lubbock TX 79409-1051
+                School of Physics and Astronomy, University of Southampton, SO16 4ES
+                    
+                [2] T. S. Rao, M. M. Gabr, An Introduction to Bispectral Analysis and Bilinear Time
+                Series Models, Lecture Notes in Statistics, Volume 24, D. Brillinger, S. Fienberg,
+                J. Gani, J. Hartigan, K. Krickeberg, Editors, Springer-Verlag, New York, NY, 1984.
+                
+                [3] Matlab version of bispectrum under following link. 
+                https://www.mathworks.com/matlabcentral/fileexchange/60-bisp3cum
                                  
         """
 
+        # Function call to create Bispectrum Object
         self._make_bispetrum(lc, maxlag, scale)
 
     def _make_bispetrum(self, lc, maxlag, scale):
+        """
+            Makes a Bispectrum Object with given lighcurve, maxlag and scale. 
+        """
+
         if not isinstance(lc, lightcurve.Lightcurve):
-            raise TypeError('lc must be a lightcurve.Lightcurve object')
+            raise TypeError('lc must be a lightcurve.ightcurve object')
 
         self.lc = lc
         self.fs = 1 / lc.dt
         self.n = self.lc.n
 
-        if not isinstance(maxlag, int):
-            raise ValueError('maxlag must be an integer')
-
-        # if maxlag is not specified, it is set to half of length of lightcurve
         if maxlag is None:
-            self.maxlag = np.ceil(self.lc.n / 2)
-
-        # if negative maxlag is entered, convert it to +ve
-        if maxlag < 0:
-            self.maxlag = -maxlag
+            # if maxlag is not specified, it is set to half of length of lightcurve
+            self.maxlag = np.int(self.lc.n / 2)
         else:
-            self.maxlag = maxlag
+            if not (isinstance(maxlag, int)):
+                raise ValueError('maxlag must be an integer')
+
+            # if negative maxlag is entered, convert it to +ve
+            if maxlag < 0:
+                self.maxlag = -maxlag
+            else:
+                self.maxlag = maxlag
 
         if isinstance(scale, str) is False:
             raise TypeError("scale must be a string")
@@ -105,7 +114,7 @@ class Bispectrum(object):
 
         # converting to a row vector to apply matrix operations
         self.signal = np.reshape(lc, (1, len(self.lc.counts)))
-        
+
         # Mean subtraction before bispecrum calculation
         self.signal = self.signal - np.mean(lc.counts)
 
@@ -113,7 +122,7 @@ class Bispectrum(object):
         self._normalize_cumulant3()
         self._cal_bispec()
 
-        def _cumulant3(self):
+    def _cumulant3(self):
         """
             Calculates the 3rd Order cummulant of the lightcurve.
             Assigns: 
@@ -147,7 +156,7 @@ class Bispectrum(object):
         # Calulates Cummulant of 1D signal i.e. Lightcurve counts
         self.cum3 = self.cum3 + np.matmul(np.multiply(toep, rev_signal), toep.transpose())
 
-        def _normalize_cumulant3(self):
+    def _normalize_cumulant3(self):
         """
         Scales (biased or ubiased) the 3rd Order cumulant of the lightcurve .
         Updates: 
@@ -194,7 +203,7 @@ class Bispectrum(object):
             scal_matrix[scal_matrix < 1] = 1
             self.cum3 = np.divide(self.cum3, scal_matrix)
 
-        def _cal_bispec(self):
+    def _cal_bispec(self):
         """
             Calculates bispectrum as a fourier transform of 3rd Order Cumulant.
             Assigns: 
