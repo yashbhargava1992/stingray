@@ -1,7 +1,7 @@
 from __future__ import division, print_function
 import numpy as np
 from .pulsar import stat, fold_events, z_n
-from ..utils import jit
+from ..utils import jit, HAS_NUMBA
 
 
 @jit(nopython=True)
@@ -53,10 +53,11 @@ def _profile_fast(phase, nbin=128):
 
 def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
                          expocorr=False):
-    if expocorr:
-        return _folding_search(lambda x: stat(fold_events(np.sort(x), 1,
-                                                          nbin=nbin,
-                                                          expocorr=True)[1]),
+    if expocorr or not HAS_NUMBA:
+        return \
+            _folding_search(lambda x: stat(fold_events(np.sort(x), 1,
+                                                       nbin=nbin,
+                                                       expocorr=expocorr)[1]),
                                times, frequencies, segment_size=segment_size)
 
     return _folding_search(lambda x: stat(_profile_fast(x, nbin=nbin)),
