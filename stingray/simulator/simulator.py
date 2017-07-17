@@ -59,7 +59,7 @@ class Simulator(object):
 
             Parameters
             ----------
-            beta: int
+            beta: float
                 Defines the shape of spectrum
 
             Returns
@@ -142,7 +142,7 @@ class Simulator(object):
             lightCurve: `LightCurve` object
         """
 
-        if isinstance(args[0], numbers.Integral) and len(args) == 1:
+        if isinstance(args[0], (numbers.Integral, float)) and len(args) == 1:
             return  self._simulate_power_law(args[0])
 
         elif isinstance(args[0], astropy.modeling.Model) and len(args) == 1:
