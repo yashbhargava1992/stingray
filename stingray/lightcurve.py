@@ -583,69 +583,78 @@ class Lightcurve(object):
         if self.dt != other.dt:
             utils.simon("The two light curves have different bin widths.")
 
-        if self.tstart <= other.tstart:
-            new_time = np.unique(np.concatenate([self.time, other.time]))
+        if( self.tstart < other.tstart ):
+            first_lc = self
+            second_lc = other
         else:
-            new_time = np.unique(np.concatenate([other.time, self.time]))
+            first_lc = other
+            second_lc = self
 
-        if len(new_time) != len(self.time) + len(other.time):
+        if len(np.intersect1d(self.time, other.time) > 0):
+
             utils.simon("The two light curves have overlapping time ranges. "
                         "In the common time range, the resulting count will "
                         "be the average of the counts in the two light "
                         "curves. If you wish to sum, use `lc_sum = lc1 + "
                         "lc2`.")
+            valid_err = False
 
-        new_counts = []
-        new_counts_err = []
-        # For every time stamp, get the individual time counts and add them.
-        for time in new_time:
-            try:
-                count1 = self.counts[np.where(self.time == time)[0][0]]
-                count1_err = self.counts_err[np.where(self.time == time)[0][0]]
-            except IndexError:
-                count1 = None
-                count1_err = None
+            if self.err_dist.lower() != other.err_dist.lower():
+                simon("Lightcurves have different statistics!"
+                      "We are setting the errors to zero.")
+                new_counts_err = np.zeros_like(new_counts)
 
-            try:
-                count2 = other.counts[np.where(other.time == time)[0][0]]
-                count2_err = other.counts_err[np.where(other.time == time)[0][0]]
-            except IndexError:
-                count2 = None
-                count2_err = None
-
-            if count1 is not None:
-                if count2 is not None:
-                    # Average the overlapping counts
-                    new_counts.append((count1 + count2) / 2)
-
-                    if self.err_dist.lower() != other.err_dist.lower():
-                        simon("Lightcurves have different statistics!"
-                              "We are setting the errors to zero.")
-                        new_counts_err = np.zeros_like(new_counts)
-                    elif self.err_dist.lower() in valid_statistics:
-                        new_counts_err.append(np.sqrt(((count1_err**2) +
-                                                      (count2_err**2)) / 2))
-                    # More conditions can be implemented for other statistics
-                    else:
-                        raise StingrayError("Statistics not recognized."
-                                            " Please use one of these: "
-                                            "{}".format(valid_statistics))
-                else:
-                    new_counts.append(count1)
-                    new_counts_err.append(count1_err)
+            elif self.err_dist.lower() in valid_statistics:
+                valid_err = True
+            # More conditions can be implemented for other statistics 
             else:
-                new_counts.append(count2)
-                new_counts_err.append(count2_err)
+                raise StingrayError("Statistics not recognized."
+                                    " Please use one of these: "
+                                    "{}".format(valid_statistics))
 
+
+            from collections import Counter
+            counts = Counter()
+            counts_err = Counter()
+
+            for i, time in enumerate(first_lc.time):
+                counts[time] = first_lc.counts[i]
+                counts_err[time] = first_lc.counts_err[i]
+
+            for i, time in enumerate(second_lc.time):
+            
+                if (counts[time] != 0): #Common time
+
+                    counts[time] = (counts[time] + second_lc.counts[i]) / 2  #avg
+                    counts_err[time] = np.sqrt(( ((counts_err[time]**2) + (second_lc.counts_err[i] **2)) / 2))
+
+                else:
+                    counts[time] = second_lc.counts[i]
+                    counts_err[time] = second_lc.counts_err[i]
+
+            new_time = list(counts.keys())
+            new_counts = list(counts.values())
+            if(valid_err):
+                new_counts_err = list(counts_err.values())
+            
+            del[counts, counts_err]
+
+        else:
+
+            new_time = np.concatenate([first_lc.time, second_lc.time])
+            new_counts = np.concatenate([first_lc.counts, second_lc.counts])
+            new_counts_err = np.concatenate([first_lc.counts_err, second_lc.counts_err])
+
+        new_time = np.asarray(new_time)
         new_counts = np.asarray(new_counts)
         new_counts_err = np.asarray(new_counts_err)
-
         gti = join_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(new_time, new_counts, err=new_counts_err, gti=gti,
                             mjdref=self.mjdref, dt=self.dt)
 
         return lc_new
+
 
     def truncate(self, start=0, stop=None, method="index"):
         """
