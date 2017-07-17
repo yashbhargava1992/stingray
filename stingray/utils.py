@@ -12,8 +12,10 @@ import numpy as np
 
 try:
     from numba import jit
-except:
-    def jit(fun):
+except ImportError:
+    warnings.warn("Numba not installed. Faking it")
+
+    def jit(fun, **kwargs):
         return fun
 
 
