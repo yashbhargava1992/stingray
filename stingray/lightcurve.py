@@ -773,17 +773,9 @@ class Lightcurve(object):
             The :class:`Lightcurve` object with truncated time and counts
             arrays.
         """
-        new_counts = sorted(self.counts, reverse=reverse)
-        new_time = []
-        new_counts_err = []
-        for count in np.unique(new_counts):
-            for index in np.where(self.counts == count)[0]:
-                new_time.append(self.time[index])
-                new_counts_err.append(self.counts_err[index])
 
-        if reverse:
-            new_time.reverse()
-            new_counts_err.reverse()
+        new_counts, new_time, new_counts_err = zip(*sorted(zip(self.counts, self.time, self.counts_err) , reverse=reverse))
+
 
         self.time = np.asarray(new_time)
         self.counts = np.asarray(new_counts)
