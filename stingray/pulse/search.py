@@ -2,6 +2,7 @@ from __future__ import division, print_function
 import numpy as np
 from .pulsar import stat, fold_events, z_n
 from ..utils import jit, HAS_NUMBA
+from ..utils import contiguous_regions
 
 
 @jit(nopython=True)
@@ -69,3 +70,38 @@ def z_n_search(times, frequencies, nbin=128, n=4, segment_size=5000):
     return _folding_search(lambda x: z_n(phase, n=n,
                                          norm=_profile_fast(x, nbin=nbin)),
                            times, frequencies, segment_size=segment_size)
+
+
+def search_best_peaks(x, stat, threshold):
+    """Search peaks in an epoch folding periodogram.
+
+    Examples
+    --------
+    >>> # Test multiple peaks
+    >>> x = np.arange(10)
+    >>> stat = [0, 0, 0.5, 0, 0, 1, 1, 2, 1, 0]
+    >>> best = search_best_peaks(x, stat, 0.5)
+    >>> len(best)
+    2
+    >>> best[0]
+    2.0
+    >>> best[1]
+    7.0
+    >>> # Test no peak above threshold
+    >>> x = np.arange(10)
+    >>> stat = [0, 0, 0.4, 0, 0, 0, 0, 0, 0, 0]
+    >>> search_best_peaks(x, stat, 0.5)
+    []
+
+    """
+    stat = np.asarray(stat)
+    x = np.asarray(x)
+    peaks = stat >= threshold
+    regions = contiguous_regions(peaks)
+    if len(regions) == 0:
+        return []
+    frequencies = np.zeros(len(regions))
+    for i, r in enumerate(regions):
+        frequencies[i] = x[r[0]:r[1]][np.argmax(stat[r[0]:r[1]])]
+
+    return frequencies
