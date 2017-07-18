@@ -11,12 +11,12 @@ class TestAll(object):
     def setup_class(cls):
         cls.pulse_frequency = 1/0.101
         cls.tstart = 0
-        cls.tend = 101
+        cls.tend = 25.25
         cls.tseg = cls.tend - cls.tstart
-        cls.dt = 0.0101
+        cls.dt = 0.0202
         cls.times = np.arange(cls.tstart, cls.tend, cls.dt) + cls.dt / 2
         cls.counts = \
-            100 + 10 * np.cos(2 * np.pi * cls.times * cls.pulse_frequency)
+            100 + 20 * np.cos(2 * np.pi * cls.times * cls.pulse_frequency)
         lc = Lightcurve(cls.times, cls.counts, gti=[[cls.tstart, cls.tend]])
         events = EventList()
         events.simulate_times(lc)
@@ -42,7 +42,7 @@ class TestAll(object):
 
     def test_epoch_folding_search_expocorr(self):
         """Test pulse phase calculation, frequency only."""
-        frequencies = np.arange(9.87, 9.92, 0.3/self.tseg)
+        frequencies = np.arange(9.89, 9.91, 0.1/self.tseg)
         freq, stat = epoch_folding_search(self.event_times, frequencies,
                                           nbin=16, expocorr=True)
 
@@ -52,7 +52,7 @@ class TestAll(object):
 
     def test_z_n_search(self):
         """Test pulse phase calculation, frequency only."""
-        frequencies = np.arange(9.85, 9.95, 0.1/self.tseg)
+        frequencies = np.arange(9.85, 9.95, 0.3/self.tseg)
         freq, stat = z_n_search(self.event_times, frequencies, nbin=16, n=1)
 
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))
