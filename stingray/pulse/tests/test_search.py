@@ -54,7 +54,8 @@ class TestAll(object):
     def test_z_n_search(self):
         """Test pulse phase calculation, frequency only."""
         frequencies = np.arange(9.85, 9.95, 0.3/self.tseg)
-        freq, stat = z_n_search(self.event_times, frequencies, nbin=16, n=1)
+        freq, stat = z_n_search(self.event_times, frequencies, nbin=16,
+                                nharm=1)
 
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))
         maxstatbin = freq[np.argmax(stat)]
@@ -63,8 +64,8 @@ class TestAll(object):
     def test_z_n_search_expocorr(self):
         """Test pulse phase calculation, frequency only."""
         frequencies = np.arange(9.89, 9.91, 0.1/self.tseg)
-        freq, stat = z_n_search(self.event_times, frequencies, nbin=16, n=1,
-                                expocorr=True)
+        freq, stat = z_n_search(self.event_times, frequencies, nbin=16,
+                                nharm=1, expocorr=True)
 
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))
         maxstatbin = freq[np.argmax(stat)]
