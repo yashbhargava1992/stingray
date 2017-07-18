@@ -54,6 +54,31 @@ def _profile_fast(phase, nbin=128):
 
 def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
                          expocorr=False):
+    """Performs epoch folding at trial frequencies in photon data.
+
+    If no exposure correction is needed and numba is installed, it uses a fast
+    algorithm to perform the folding. Otherwise, it runs a *much* slower
+    algorithm, which however yields a more precise result.
+    The search can be done in segments and the results averaged. Use
+    segment_size to control this
+
+    Parameters
+    ----------
+    times : array-like
+        the event arrival times
+    frequencies : array-like
+        the trial values for the frequencies
+
+    Other Parameters
+    ----------------
+    nbin : int
+        the number of bins of the folded profiles
+    segment_size : float
+        the length of the segments to be averaged in the periodogram
+    expocorr : bool
+        correct for the exposure (Use it if the period is comparable to the
+        length of the good time intervals.)
+    """
     if expocorr or not HAS_NUMBA:
         return \
             _folding_search(lambda x: stat(fold_events(np.sort(x), 1,
@@ -65,15 +90,67 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
                            times, frequencies, segment_size=segment_size)
 
 
-def z_n_search(times, frequencies, nbin=128, n=4, segment_size=5000):
+def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
+               expocorr=False):
+    """Calculates the Z^2_n statistics at trial frequencies in photon data.
+
+    The "real" Z^2_n statistics is very slow. Therefore, in this function data
+    are folded first, and then the statistics is calculated using the value of
+    the profile as an additional normalization term.
+    The two methods are mostly equivalent. However, the number of bins has to
+    be chosen wisely: if the number of bins is too small, the search for high
+    harmonics is ineffective.
+    If no exposure correction is needed and numba is installed, it uses a fast
+    algorithm to perform the folding. Otherwise, it runs a *much* slower
+    algorithm, which however yields a more precise result.
+    The search can be done in segments and the results averaged. Use
+    segment_size to control this
+
+    Parameters
+    ----------
+    times : array-like
+        the event arrival times
+    frequencies : array-like
+        the trial values for the frequencies
+
+    Other Parameters
+    ----------------
+    nbin : int
+        the number of bins of the folded profiles
+    segment_size : float
+        the length of the segments to be averaged in the periodogram
+    expocorr : bool
+        correct for the exposure (Use it if the period is comparable to the
+        length of the good time intervals.)
+    """
     phase = np.arange(0, 1, 1 / nbin)
-    return _folding_search(lambda x: z_n(phase, n=n,
+    if expocorr or not HAS_NUMBA:
+        return \
+            _folding_search(
+                lambda x: z_n(phase, n=nharm,
+                              norm=fold_events(np.sort(x), 1, nbin=nbin,
+                                               expocorr=expocorr)[1]),
+                               times, frequencies, segment_size=segment_size)
+
+    return _folding_search(lambda x: z_n(phase, n=nharm,
                                          norm=_profile_fast(x, nbin=nbin)),
                            times, frequencies, segment_size=segment_size)
 
 
 def search_best_peaks(x, stat, threshold):
-    """Search peaks in an epoch folding periodogram.
+    """Search peaks above threshold in an epoch folding periodogram.
+
+    If more values of stat are above threshold and are contiguous, only the
+    largest one is returned (see Examples).
+
+    Parameters
+    ----------
+    x : array-like
+        The x axis of the periodogram (frequencies, periods, ...)
+    stat : array-like
+        The y axis. It must have the same shape as x
+    threshold : float
+        The threshold value over which we look for peaks in the stat array
 
     Examples
     --------
@@ -93,6 +170,11 @@ def search_best_peaks(x, stat, threshold):
     >>> search_best_peaks(x, stat, 0.5)
     []
 
+    Returns
+    -------
+    best_x : array-like
+        the array containing the peaks above threshold. If no peaks are above
+        threshold, an empty list is returned.
     """
     stat = np.asarray(stat)
     x = np.asarray(x)
@@ -100,8 +182,8 @@ def search_best_peaks(x, stat, threshold):
     regions = contiguous_regions(peaks)
     if len(regions) == 0:
         return []
-    frequencies = np.zeros(len(regions))
+    best_x = np.zeros(len(regions))
     for i, r in enumerate(regions):
-        frequencies[i] = x[r[0]:r[1]][np.argmax(stat[r[0]:r[1]])]
+        best_x[i] = x[r[0]:r[1]][np.argmax(stat[r[0]:r[1]])]
 
-    return frequencies
+    return best_x
