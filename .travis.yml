@@ -45,12 +45,12 @@ matrix:
     fast_finish: true
     include:
 
-        #Try without importing h5py
+        #Try without importing h5py but importing numba
         - python: 2.7
-          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba'
 
         - python: 3.5
-          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib'
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba'
 
         # Try without using corner
         - python: 3.5
