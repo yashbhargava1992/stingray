@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 from stingray.pulse.search import epoch_folding_search, z_n_search, _profile_fast
 import numpy as np
 from stingray import Lightcurve
