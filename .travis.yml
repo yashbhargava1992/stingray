@@ -50,7 +50,7 @@ matrix:
           env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba'
 
         - python: 3.5
-          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba'
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba' SETUP_CMD='test --coverage'
 
         # Try without using corner
         - python: 3.5

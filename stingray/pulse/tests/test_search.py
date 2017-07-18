@@ -70,4 +70,3 @@ class TestAll(object):
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))
         maxstatbin = freq[np.argmax(stat)]
         assert maxstatbin == frequencies[minbin]
-
