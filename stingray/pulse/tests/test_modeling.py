@@ -11,5 +11,5 @@ def test_sinc_function():
     s = fitSinc(x,y)
     
     assert np.abs(s.mean) < 0.1 
-    assert np.abs(s.amplitude - 1) < 0.1 
+    assert np.abs(s.amplitude - 2) < 0.1 
     assert np.abs(s.width - 1) < 0.1
