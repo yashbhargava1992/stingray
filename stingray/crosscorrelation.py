@@ -240,8 +240,8 @@ class AutoCorrelation(CrossCorrelation):
              An array of all possible time lags against which each point in corr is calculated 
         dt: float
              The time resolution of each lightcurve (used in time_lag calculations)
-        time_shift: float
-             Time lag that gives maximum value of correlation.
+        time_shift: float, zero
+             Max. Value of AutoCorrelation is always at zero lag.           
         n: int
              Number of points in self.corr(Length of auto-correlation data) 
         """
