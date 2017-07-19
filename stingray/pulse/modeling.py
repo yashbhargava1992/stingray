@@ -1,3 +1,4 @@
+import numpy as np
 from astropy.modeling import models, fitting
 
 def sinc(x):
