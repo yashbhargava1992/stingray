@@ -182,6 +182,9 @@ def fold_events(times, *frequency_derivatives, **opts):
 
     gtis -= ref_time
     times -= ref_time
+    # This dt has not the same meaning as in the Lightcurve case.
+    # it's just to define stop_time as a meaningful value after
+    # the last event.
     dt = np.abs(times[1] - times[0])
     start_time = times[0]
     stop_time = times[-1] + dt
