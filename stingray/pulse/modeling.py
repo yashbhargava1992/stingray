@@ -125,3 +125,37 @@ def fitSinc(x, y, amp=1.5, mean=0., width=1.):
     fit_sinc = fitting.LevMarLSQFitter()
     sincfit = fit_sinc(sinc_in, x, y)
     return sincfit
+
+
+def fit_gaussian(x, y, amplitude=1.5,mean=0.,stddev=2.):
+    """
+    Fit a gaussian function to x,y values.
+     
+    Parameters
+    ----------
+    x : array-like
+    y : array-like
+    
+    Other Parameters
+    ----------------
+    amplitude : float
+        The initial value for the amplitude
+    mean : float
+        The initial value for the mean of the gaussian function
+    stddev : float
+        The initial value for the standard deviation of the gaussian function
+      
+    Returns
+    -------
+    g : function
+        The best-fit function, accepting x as input
+        and returning the best-fit model as output
+         
+    """
+    g_in = models.Gaussian1D(amplitude=amplitude,mean=mean,stddev=stddev)
+    fit_g = fitting.LevMarLSQFitter()
+    g = fit_g(g_in, x, y)
+    return g
+
+
+
