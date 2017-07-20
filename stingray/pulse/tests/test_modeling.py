@@ -1,5 +1,5 @@
 import numpy as np
-from stingray.pulse.modeling import fitSinc
+from stingray.pulse.modeling import fitSinc, fit_gaussian
 
 np.random.seed(0)
 
