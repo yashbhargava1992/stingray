@@ -218,6 +218,10 @@ class LagEnergySpectrum(VarEnergySpectrum):
             try:
                 xspect = AveragedCrossspectrum(base_lc, ref_lc,
                                                segment_size=self.segment_size)
+            except AssertionError as e:
+                # Avoid assertions in AveragedCrossspectrum.
+                simon("AssertionError: " + str(e))
+            else:
                 good = (xspect.freq >= self.freq_interval[0]) & \
                        (xspect.freq < self.freq_interval[1])
                 lag, lag_err = xspect.time_lag()
@@ -226,17 +230,15 @@ class LagEnergySpectrum(VarEnergySpectrum):
                 lag_spec[i] = np.mean(good_lag)
                 coh_check = coh > 1.2 / (1 + 0.2 * xspect.m)
                 if not np.all(coh_check[good]):
-                    simon("Coherence is not ideal over the specified energy range."
-                          " Lag values and uncertainties might be underestimated. "
-                          "See Epitropakis and Papadakis, A\&A 591, 1113, 2016")
+                    simon("Coherence is not ideal over the specified energy "
+                          "range. Lag values and uncertainties might be "
+                          "underestimated. See Epitropakis and Papadakis, "
+                          "A\&A 591, 1113, 2016")
 
                 # Root squared sum of errors of the spectrum
                 # Verified!
-                lag_spec_err[i] = np.sqrt(np.sum(good_lag_err**2) / len(good_lag))
-
-            except AssertionError as e:
-                # Avoid "Mean count rate is <= 0. Something went wrong" assertion.
-                simon("AssertionError: " + str(e))
+                lag_spec_err[i] = \
+                    np.sqrt(np.sum(good_lag_err**2) / len(good_lag))
 
         return lag_spec, lag_spec_err
 
