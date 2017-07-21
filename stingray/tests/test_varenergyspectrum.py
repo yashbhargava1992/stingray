@@ -204,3 +204,15 @@ class TestLagEnergySpectrum(object):
 
         assert np.all(np.abs(self.lag.spectrum - 0.2) < \
                       3 * self.lag.spectrum_error)
+
+    def test_lag_invalid_evlist_warns(self):
+        ev = EventList(time=[], energy=[], gti=self.lag.events1.gti)
+        with pytest.warns(UserWarning) as record:
+            lag = LagEnergySpectrum(ev, [0., 0.5],
+                                    (0.3, 9, 4, "lin"), [9, 12],
+                                    bin_time=0.1,
+                                    segment_size=30,
+                                    events2=self.lag.events2)
+
+        assert np.allclose(lag.spectrum, 0)
+        assert np.allclose(lag.spectrum_error, 0)
