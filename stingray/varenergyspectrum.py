@@ -190,6 +190,10 @@ class RmsEnergySpectrum(VarEnergySpectrum):
                 xspect = AveragedCrossspectrum(base_lc, ref_lc,
                                                segment_size=self.segment_size,
                                                norm='frac')
+            except AssertionError as e:
+                # Avoid "Mean count rate is <= 0. Something went wrong" assertion.
+                simon("AssertionError: " + str(e))
+            else:
                 good = (xspect.freq >= self.freq_interval[0]) & \
                        (xspect.freq < self.freq_interval[1])
                 rms_spec[i] = np.sqrt(np.sum(xspect.power[good]*xspect.df))
@@ -199,10 +203,6 @@ class RmsEnergySpectrum(VarEnergySpectrum):
                 # But the rms is the squared root. So,
                 # Error propagation
                 rms_spec_err[i] = 1 / (2 * rms_spec[i]) * root_sq_err_sum
-
-            except AssertionError as e:
-                # Avoid "Mean count rate is <= 0. Something went wrong" assertion.
-                simon("AssertionError: " + str(e))
 
         return rms_spec, rms_spec_err
 
