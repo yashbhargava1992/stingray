@@ -163,18 +163,17 @@ class TestRMSEnergySpectrum(object):
             np.abs(self.rms.spectrum - self.rms.spectrum[0]) < \
                 self.rms.spectrum_error)
 
-    def test_rms_empty_evlist_warns(self):
-        import copy
-        ev = EventList(time=[], energy=[], gti=test_ev1.gti)
+    def test_rms_invalid_evlist_warns(self):
+        ev = EventList(time=[], energy=[], gti=self.rms.events1.gti)
         with pytest.warns(UserWarning) as record:
             rms = RmsEnergySpectrum(ev, [0., 100],
                                     (0.3, 12, 5, "lin"),
                                     bin_time=0.01,
                                     segment_size=100,
-                                    events2=test_ev2)
-        assert "Mean count rate is <= 0" in record[0].message.args[0]
-        assert np.allclose(rms_spec.spectrum, 0)
-        assert np.allclose(rms_spec.spectrum_error, 0)
+                                    events2=self.rms.events2)
+
+        assert np.allclose(rms.spectrum, 0)
+        assert np.allclose(rms.spectrum_error, 0)
 
 
 class TestLagEnergySpectrum(object):
