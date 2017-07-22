@@ -26,6 +26,19 @@ def test_sinc_fixed():
     assert not sf.amplitude.fixed
 
 
+def test_sinc_obs():
+    obs_length = 0.32
+    x = np.linspace(-5., 5., 200)
+    w = 1 / (np.pi*obs_length)
+    y = 2 * (np.sin(x / w) / (x / w))**2
+    y += np.random.normal(0., 0.1, x.shape)
+
+    s = fit_sinc(x, y, obs_length=obs_length )
+
+    assert np.abs(1 / (np.pi*obs_length) - s.width) < 0.1
+    assert s.width.fixed
+
+
 def test_gaussian_function():
     x = np.linspace(-5., 5., 200)
     y = 2 * np.exp(-0.5 * (x - 1.3)**2 / 0.7**2)
