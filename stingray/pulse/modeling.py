@@ -97,7 +97,8 @@ SincModel = models.custom_model(sinc_square_model,
                                 fit_deriv=sinc_square_deriv)
 
 
-def fit_sinc(x, y, amp=1.5, mean=0., width=1., tied={}, fixed={}, bounds={}):
+def fit_sinc(x, y, amp=1.5, mean=0., width=1., tied={}, fixed={}, bounds={},
+             obs_length=None):
     """
     Fit a sinc function to x,y values.
 
@@ -112,8 +113,13 @@ def fit_sinc(x, y, amp=1.5, mean=0., width=1., tied={}, fixed={}, bounds={}):
         The initial value for the amplitude
     mean : float
         The initial value for the mean of the sinc
+    obs_length : float
+        The length of the observation. Default None. If it's defined, it
+        fixes width to 1/(pi*obs_length), as expected from epoch folding 
+        periodograms
     width : float
-        The initial value for the width of the sinc
+        The initial value for the width of the sinc. Only valid if 
+        obs_length is 0
     tied : dict
     fixed : dict
     bounds : dict
@@ -126,6 +132,10 @@ def fit_sinc(x, y, amp=1.5, mean=0., width=1., tied={}, fixed={}, bounds={}):
         The best-fit function, accepting x as input
         and returning the best-fit model as output
     """
+    if obs_length is not None:
+        width = 1 / (np.pi * obs_length)
+        fixed["width"] = True
+
     sinc_in = SincModel(amplitude=amp, mean=mean,width=width, tied=tied,
                         fixed=fixed, bounds=bounds)
     fit_sinc = fitting.LevMarLSQFitter()
