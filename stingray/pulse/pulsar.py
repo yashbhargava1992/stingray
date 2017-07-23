@@ -314,15 +314,22 @@ def z_n(phase, n=2, norm=1):
         A normalization factor that gets multiplied as a weight.
     '''
     nbin = len(phase)
+
     if nbin == 0:
         return 0
+
+    norm = np.asarray(norm)
+    if norm.size == 1:
+        total_norm = nbin * norm
+    else:
+        total_norm = np.sum(norm)
     phase = phase * 2 * np.pi
-    return 2 / nbin * \
+    return 2 / total_norm * \
         np.sum([np.sum(np.cos(k * phase) * norm) ** 2 +
                 np.sum(np.sin(k * phase) * norm) ** 2
                 for k in range(1, n + 1)])
 
-
+    
 def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     """Return the detection level for the Z^2_n statistics.
 
