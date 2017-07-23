@@ -55,14 +55,17 @@ class TestSimulator(object):
         """
         Simulate an energy channel.
         """
-        self.simulator.simulate_channel('3.5-4.5', 'lorenzian', [1, 2, 3, 4])
+        self.simulator.simulate_channel('3.5-4.5',
+                                        'generalized_lorentzian', [1, 2, 3, 4])
         self.simulator.delete_channel('3.5-4.5')
 
     def test_simulate_channel_odd(self):
         """
         Simulate an energy channel.
         """
-        self.simulator_odd.simulate_channel('3.5-4.5', 'lorenzian', [1, 2, 3, 4])
+        self.simulator_odd.simulate_channel('3.5-4.5',
+                                            'generalized_lorentzian',
+                                            [1, 2, 3, 4])
         self.simulator_odd.delete_channel('3.5-4.5')
 
     def test_incorrect_simulate_channel(self):
@@ -164,33 +167,35 @@ class TestSimulator(object):
         s = np.random.rand(1024)
         assert len(self.simulator.simulate(s)), 1024
 
-    def test_simulate_lorenzian(self):
+    def test_simulate_lorentzian(self):
         """
-        Simulate light curve using lorenzian model.
+        Simulate light curve using lorentzian model.
         """
-        assert len(self.simulator.simulate('lorenzian', [1, 2, 3, 4])), 1024
+        assert len(self.simulator.simulate('generalized_lorentzian',
+                                           [1, 2, 3, 4])), 1024
 
-    def test_simulate_lorenzian_odd(self):
+    def test_simulate_lorentzian_odd(self):
         """
-        Simulate light curve using lorenzian model.
+        Simulate light curve using lorentzian model.
         """
-        assert len(self.simulator_odd.simulate('lorenzian',
+        assert len(self.simulator_odd.simulate('generalized_lorentzian',
                                                [1, 2, 3, 4])), 1024
 
-    def test_compare_lorenzian(self):
+    def test_compare_lorentzian(self):
         """
-        Compare simulated lorenzian spectrum with original spectrum.
+        Compare simulated lorentzian spectrum with original spectrum.
         """
         N, red_noise, dt = 1024, 10, 1
 
         self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1,
                                              rms=0.4, red_noise=red_noise)
-        lc = [self.simulator.simulate('lorenzian', [0.3, 0.9, 0.6, 0.5])
+        lc = [self.simulator.simulate('generalized_lorentzian',
+                                      [0.3, 0.9, 0.6, 0.5])
               for i in range(1, 30)]
         simulated = self.simulator.powerspectrum(lc, lc[0].tseg)
 
         w = np.fft.rfftfreq(N, d=dt)[1:]
-        actual = models.lorenzian(w, [0.3, 0.9, 0.6, 0.5])[:-1]
+        actual = models.generalized_lorentzian(w, [0.3, 0.9, 0.6, 0.5])[:-1]
 
         actual_prob = actual/float(sum(actual))
         simulated_prob = simulated/float(sum(simulated))
@@ -259,14 +264,18 @@ class TestSimulator(object):
         Simulate a light curve using SmoothBrokenPowerLaw model
         called as a string
         """
-        assert len(self.simulator.simulate('SmoothBrokenPowerLaw', {'norm':1., 'gamma_low':1., 'gamma_high':2., 'break_freq':1.})), 1024
+        assert len(
+            self.simulator.simulate('SmoothBrokenPowerLaw',
+                                    {'norm':1., 'gamma_low':1.,
+                                     'gamma_high':2., 'break_freq':1.})), 1024
     
     def test_simulate_SmoothBrokenPowerLaw(self):
         """
         Simulate a light curve using SmoothBrokenPowerLaw model
         called as a astropy.modeling.Model class
         """
-        mod = models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2., break_freq=1.)
+        mod = models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2.,
+                                          break_freq=1.)
         assert len(self.simulator.simulate(mod)), 1024
         
         
@@ -275,7 +284,8 @@ class TestSimulator(object):
         Simulate a light curve using a generic model
         called as a astropy.modeling.Model class
         """
-        mod = astropy.modeling.models.Gaussian1D(amplitude=10., mean=1., stddev=2.)
+        mod = astropy.modeling.models.Gaussian1D(amplitude=10., mean=1.,
+                                                 stddev=2.)
         assert len(self.simulator.simulate(mod)), 1024
 
     def test_simulate_generic_model_odd(self):
@@ -298,8 +308,11 @@ class TestSimulator(object):
         m = 30000.
         
         self.simulator = simulator.Simulator(N=N, mean=m, dt=dt)
-        smoothbknpo = models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2., break_freq=1.)
-        lorentzian = models.GeneralizedLorentz1D(x_0=10, fwhm=1., value=10., power_coeff=2.)
+        smoothbknpo = \
+            models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2.,
+                                        break_freq=1.)
+        lorentzian = models.GeneralizedLorentz1D(x_0=10, fwhm=1., value=10.,
+                                                 power_coeff=2.)
         myModel = smoothbknpo + lorentzian
         
         lc = [self.simulator.simulate(myModel) for i in range(1, 50)]
@@ -312,7 +325,8 @@ class TestSimulator(object):
         actual_prob = actual/float(sum(actual))
         simulated_prob = simulated/float(sum(simulated))
 
-        assert np.all(np.abs(actual_prob - simulated_prob) < 3*np.sqrt(actual_prob))
+        assert np.all(np.abs(actual_prob - simulated_prob) <
+                      3*np.sqrt(actual_prob))
         
         
     def test_simulate_wrong_model(self):
