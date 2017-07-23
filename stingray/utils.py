@@ -10,11 +10,23 @@ import numpy as np
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
 
+HAS_NUMBA = False
 try:
     from numba import jit
-except:
-    def jit(fun):
-        return fun
+    HAS_NUMBA = True
+except ImportError:
+    warnings.warn("Numba not installed. Faking it")
+
+    class jit(object):
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __call__(self, func):
+            def wrapped_f(*args, **kwargs):
+                return func(*args, **kwargs)
+
+            return wrapped_f
 
 
 def simon(message, **kwargs):

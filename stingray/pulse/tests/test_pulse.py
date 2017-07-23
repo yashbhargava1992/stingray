@@ -119,17 +119,35 @@ class TestAll(object):
 
     def test_pulse_profile2(self):
         nbin = 16
-        times = np.arange(0, 1, 1/nbin)
+        dt = 1/nbin
+        times = np.arange(0, 2, dt)
+        gtis = np.array([[-0.5*dt, 2 + 0.5*dt]])
 
         period = 1
-        ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True)
+        ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True, gtis=gtis)
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
                                              0.5/nbin)
-        np.testing.assert_array_almost_equal(p, np.ones(nbin))
-        np.testing.assert_array_almost_equal(pe, np.ones(nbin))
+        np.testing.assert_array_almost_equal(p, 2 * np.ones(nbin))
+        np.testing.assert_array_almost_equal(pe, 2**0.5 * np.ones(nbin))
 
-    def test_zn(self):
+    def test_pulse_profile3(self):
+        nbin = 16
+        dt = 1/nbin
+        times = np.arange(0, 2 - dt, dt)
+        gtis = np.array([[-0.5*dt, 2 - dt]])
+
+        ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True,
+                                gtis=gtis)
+
+        np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
+                                             0.5/nbin)
+        np.testing.assert_array_almost_equal(p, 2 * np.ones(nbin))
+        expected_err = 2**0.5 * np.ones(nbin)
+        expected_err[-1] = 2  # Because of the change of exposure
+        np.testing.assert_array_almost_equal(pe, expected_err)
+
+    def test_zn_2(self):
         np.testing.assert_almost_equal(z_n(np.arange(1), n=1, norm=1), 2)
         np.testing.assert_almost_equal(z_n(np.arange(1), n=2, norm=1), 4)
         np.testing.assert_almost_equal(z_n(np.arange(2), n=2, norm=1), 8)

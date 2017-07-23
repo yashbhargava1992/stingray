@@ -5,7 +5,7 @@ import warnings
 import os
 
 from stingray import Lightcurve
-from stingray.crosscorrelation import CrossCorrelation
+from stingray.crosscorrelation import CrossCorrelation, AutoCorrelation
 from stingray.exceptions import StingrayError
 
 try:
@@ -35,6 +35,7 @@ class TestCrossCorrelation(object):
         assert cr.time_lags is None
         assert cr.dt is None
         assert cr.n is None
+        assert cr.auto is False
 
     def test_empty_cross_correlation_with_dt(self):
         cr = CrossCorrelation()
@@ -72,6 +73,7 @@ class TestCrossCorrelation(object):
         assert np.allclose(cr.time_lags, lags_result)
         assert np.isclose(cr.time_shift, 2.0)
         assert cr.mode == 'same'
+        assert cr.auto is False
 
     def test_cross_correlation_with_unequal_lc(self):
         result = np.array([-0.66666667, -0.33333333, -1., 0.66666667, 3.13333333])
@@ -85,6 +87,7 @@ class TestCrossCorrelation(object):
         assert np.allclose(cr.time_lags, lags_result)
         assert np.isclose(cr.time_shift, 2.0)
         assert cr.mode == 'same'
+        assert cr.auto is False
 
     def test_mode_with_bad_input(self):
         with pytest.raises(TypeError):
@@ -105,6 +108,7 @@ class TestCrossCorrelation(object):
         assert np.allclose(cr.corr, result)
         assert np.allclose(cr.time_lags, lags_result)
         assert np.isclose(cr.time_shift, 2.0)
+        assert cr.auto is False
 
     def test_timeshift_with_no_corr_but_lc_assigned(self):
         result = np.array([1.92, 2.16, 1.8, -14.44, 11.12])
@@ -121,6 +125,7 @@ class TestCrossCorrelation(object):
         assert np.allclose(cr.time_lags, lags_result)
         assert np.isclose(cr.time_shift, 2.0)
         assert cr.mode == 'same'
+        assert cr.auto is False
 
     def test_timeshift_with_corr_and_lc_assigned(self):
         result = np.array([1.92, 2.16, 1.8, -14.44, 11.12])
@@ -138,6 +143,7 @@ class TestCrossCorrelation(object):
         assert np.allclose(cr.time_lags, lags_result)
         assert np.isclose(cr.time_shift, 2.0)
         assert cr.mode == 'same'
+        assert cr.auto is False
 
     @pytest.mark.skipif(HAS_MPL, reason='Matplotlib is already installed if condition is met')
     def test_plot_matplotlib_not_installed(self):
@@ -193,3 +199,31 @@ class TestCrossCorrelation(object):
         cr.plot(save=True, filename='cr.png')
         assert os.path.isfile('cr.png')
         os.unlink('cr.png')
+
+    def test_auto_correlation(self):
+        result = np.array([1.68, -3.36, 5.2, -3.36, 1.68])
+        lags_result = np.array([-2, -1, 0, 1, 2])
+        ac = AutoCorrelation(self.lc1)
+        assert np.allclose(ac.lc1, self.lc1)
+        assert np.allclose(ac.lc2, self.lc1)
+        assert np.allclose(ac.corr, result)
+        assert np.isclose(ac.dt, self.lc1.dt)
+        assert ac.n == 5
+        assert np.allclose(ac.time_lags, lags_result)
+        assert np.isclose(ac.time_shift, 0.0)
+        assert ac.mode == 'same'
+        assert ac.auto is True
+
+    def test_auto_correlation_with_full_mode(self):
+        result = np.array([0.56, -1.48, 1.68, -3.36, 5.2, -3.36, 1.68, -1.48, 0.56])
+        lags_result = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
+        ac = AutoCorrelation(self.lc1, mode='full')
+        assert np.allclose(ac.lc1, self.lc1)
+        assert np.allclose(ac.lc2, self.lc1)
+        assert np.allclose(ac.corr, result)
+        assert np.isclose(ac.dt, self.lc1.dt)
+        assert ac.n == 9
+        assert np.allclose(ac.time_lags, lags_result)
+        assert np.isclose(ac.time_shift, 0.0)
+        assert ac.mode == 'full'
+        assert ac.auto is True

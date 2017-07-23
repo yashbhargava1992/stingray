@@ -125,7 +125,7 @@ def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
             l0 = l[0]
             l1 = l[1]
             # Discards bins untouched by these limits
-            goodbins = np.logical_and(phs[:, 0] < l1, phs[:, 1] > l0)
+            goodbins = np.logical_and(phs[:, 0] <= l1, phs[:, 1] >= l0)
             idxs = np.arange(len(phs), dtype=int)[goodbins]
             for i in idxs:
                 start = max([phs[i, 0], l0])
@@ -165,6 +165,9 @@ def fold_events(times, *frequency_derivatives, **opts):
         Good time intervals
     ref_time : float, optional, default 0
         Reference time for the timing solution
+    expocorr : bool, default False
+        Correct each bin for exposure (use when the period of the pulsar is
+        comparable to that of GTIs)
 
     '''
     nbin = _default_value_if_no_key(opts, "nbin", 16)
@@ -179,7 +182,10 @@ def fold_events(times, *frequency_derivatives, **opts):
 
     gtis -= ref_time
     times -= ref_time
-    dt = times[1] - times[0]
+    # This dt has not the same meaning as in the Lightcurve case.
+    # it's just to define stop_time as a meaningful value after
+    # the last event.
+    dt = np.abs(times[1] - times[0])
     start_time = times[0]
     stop_time = times[-1] + dt
 
@@ -194,12 +200,14 @@ def fold_events(times, *frequency_derivatives, **opts):
                                      weights=weights)
 
     if expocorr:
-        expo_norm = phase_exposure(start_phase, stop_phase, 1, nbin)
+        expo_norm = phase_exposure(start_phase, stop_phase, 1, nbin,
+                                   gtis=gti_phases)
         simon("For exposure != 1, the uncertainty might be incorrect")
     else:
         expo_norm = 1
 
     # TODO: this is wrong. Need to extend this to non-1 weights
+
     raw_profile_err = np.sqrt(raw_profile)
 
     return bins[:-1] + np.diff(bins) / 2, raw_profile / expo_norm, \
@@ -306,15 +314,22 @@ def z_n(phase, n=2, norm=1):
         A normalization factor that gets multiplied as a weight.
     '''
     nbin = len(phase)
+
     if nbin == 0:
         return 0
+
+    norm = np.asarray(norm)
+    if norm.size == 1:
+        total_norm = nbin * norm
+    else:
+        total_norm = np.sum(norm)
     phase = phase * 2 * np.pi
-    return 2 / nbin * \
+    return 2 / total_norm * \
         np.sum([np.sum(np.cos(k * phase) * norm) ** 2 +
                 np.sum(np.sin(k * phase) * norm) ** 2
                 for k in range(1, n + 1)])
 
-
+    
 def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     """Return the detection level for the Z^2_n statistics.
 

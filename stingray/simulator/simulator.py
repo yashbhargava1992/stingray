@@ -419,13 +419,7 @@ class Simulator(object):
         pos_real   = self.random_state.normal(size=nbins//2)*fac
         pos_imag   = self.random_state.normal(size=nbins//2)*fac
 
-        pos_freq_transform = pos_real + 1j * pos_imag
-
-        # Simulate light curve from its Fourier transform
-        arg  = np.concatenate(([self.mean], pos_freq_transform))
-
-        # Inverse Fourier transform
-        long_lc = np.fft.irfft(arg)
+        long_lc = self._find_inverse(pos_real, pos_imag)
 
         lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
                         err_dist='gauss', dt=self.dt)
@@ -467,21 +461,13 @@ class Simulator(object):
             pos_real   = self.random_state.normal(size=nbins//2)*fac
             pos_imag   = self.random_state.normal(size=nbins//2)*fac
 
-            pos_freq_transform = pos_real + 1j * pos_imag
-
-            # Simulate light curve from its Fourier transform
-            arg  = np.concatenate(([self.mean], pos_freq_transform))
-
-            # Inverse Fourier transform
-            long_lc = np.fft.irfft(arg)
+            long_lc = self._find_inverse(pos_real, pos_imag)
 
             lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
                             err_dist='gauss', dt=self.dt)
             return lc
         else:
             raise ValueError('Model is not defined!')
-
-
 
     def _simulate_impulse_response(self, s, h, mode='same'):
         """
