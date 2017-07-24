@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
-from .pulsar import stat, fold_events, z_n
+from .pulsar import stat, fold_events, z_n, pulse_phase
 from ..utils import jit, HAS_NUMBA
 from ..utils import contiguous_regions
 
@@ -206,3 +206,117 @@ def search_best_peaks(x, stat, threshold):
 
     return best_x[order], best_stat[order]
 
+
+def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None,
+               fdot=0, fddot=0, pepoch=None, return_plot=False,
+               out_filename='phaseogram.png'):
+    """
+    Calculate and plot the phaseogram of a pulsar observation.
+
+    The phaseogram is a 2-D histogram where the x axis is the pulse phase and
+    the y axis is the time. It shows how the pulse phase changes with time, and
+    it is very useful to see if the pulse solution is correct and/or if there
+    are additional frequency derivatives appearing in the data (due to spin up
+    or down, or even orbital motion)
+
+    Parameters
+    ----------
+    times : array
+        Event arrival times
+    f : float
+        Pulse frequency
+
+    Other parameters
+    ----------------
+    nph : int
+        Number of phase bins
+    nt : int
+        Number of time bins
+    ph0 : float
+        The starting phase of the pulse
+    mjdref : float
+        MJD reference time. If given, the y axis of the plot will be in MJDs,
+        otherwise it will be in seconds.
+    fdot : float
+        First frequency derivative
+    fddot : float
+        Second frequency derivative
+    pepoch : float
+        If the input pulse solution is referred to a given time, give it here.
+        It has no effect (just a phase shift of the pulse) if `fdot` is zero.
+        if `mjdref` is specified, pepoch MUST be in MJD
+    return_plot : bool
+        Return the axes in the additional_info, and don't close the plot, so
+        that the user can add information to it.
+    out_filename : str
+        Output file name for the plot
+
+    Returns
+    -------
+    phaseogr : 2-D matrix
+        The phaseogram
+    phases : array-like
+        The x axis of the phaseogram (the x bins of the histogram),
+        corresponding to the pulse phase in each column
+    times : array-like
+        The y axis of the phaseogram (the y bins of the histogram),
+        corresponding to the time at each row
+    additional_info : dict
+        Additional information, like the pulse profile and the axes to modify
+        the plot (the latter, only if `return_plot` is True)
+    """
+
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+
+    use_mjdref = False
+    if mjdref is not None:
+        use_mjdref = True
+
+    if pepoch is None:
+        pepoch = (times[-1] + times[0]) / 2
+        if use_mjdref:
+            pepoch /= 86400
+
+    if use_mjdref:
+        pepoch = (pepoch - mjdref) * 86400
+
+    phases = pulse_phase((times - pepoch), f, fdot, fddot, to_1=True, ph0=ph0)
+
+    ph, prof, prof_err = fold_events(phases, 1, nbin=nph)
+
+    fig = plt.figure()
+    gs = mpl.gridspec.GridSpec(2, 1, height_ratios=(1, 3))
+    ax0 = plt.subplot(gs[0])
+    ax1 = plt.subplot(gs[1], sharex=ax0)
+
+    ax0.plot(np.concatenate((ph, ph + 1)),
+             np.concatenate((prof, prof)),
+             drawstyle='steps-mid', label="All corrections")
+    m = np.mean(prof)
+    s = np.sqrt(m)
+    ax0.axhspan(m - s, m + s, alpha=0.5)
+
+    allphases = np.concatenate([phases, phases + 1]).astype('float64')
+    allts = \
+        np.concatenate([times, times]).astype('float64')
+
+    if use_mjdref:
+        allts = allts / 86400 + mjdref
+
+    phas, binx, biny, _ = ax1.hist2d(allphases, allts,
+               bins=(np.linspace(0, 2, nph * 2 + 1),
+                     np.linspace(np.min(allts),
+                                 np.max(allts), nt + 1)),
+               vmin=np.mean(prof) / nt)
+
+    ax1.axvline(ph[np.argmax(prof)])
+    plt.savefig(out_filename)
+    if return_plot:
+        additional_info = {'ax0': ax0, 'ax1': ax1,
+                           'profile': prof, 'profile_err': prof_err}
+    else:
+        plt.close(fig)
+        additional_info = {'profile': prof, 'profile_err': prof_err}
+
+    return phas, binx, biny, additional_info

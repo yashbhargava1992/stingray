@@ -1,5 +1,6 @@
 from __future__ import division, print_function
-from stingray.pulse.search import epoch_folding_search, z_n_search, _profile_fast
+from stingray.pulse.search import epoch_folding_search, z_n_search
+from stingray.pulse.search import _profile_fast, phaseogram
 import numpy as np
 from stingray import Lightcurve
 from stingray.events import EventList
@@ -14,7 +15,7 @@ class TestAll(object):
         cls.tstart = 0
         cls.tend = 25.25
         cls.tseg = cls.tend - cls.tstart
-        cls.dt = 0.0202
+        cls.dt = 0.00606
         cls.times = np.arange(cls.tstart, cls.tend, cls.dt) + cls.dt / 2
         cls.counts = \
             100 + 20 * np.cos(2 * np.pi * cls.times * cls.pulse_frequency)
@@ -25,6 +26,28 @@ class TestAll(object):
 
     def test_prepare(self):
         pass
+
+    def test_phaseogram(self):
+        phaseogr, phases, times, additional_info = \
+            phaseogram(self.event_times, self.pulse_frequency)
+        assert np.all(times < 25.6)
+        assert np.any(times > 25)
+        assert np.all((phases >= 0)&(phases <= 2))
+
+    def test_phaseogram_mjdref(self):
+        phaseogr, phases, times, additional_info = \
+            phaseogram(self.event_times, self.pulse_frequency,
+                       mjdref=57000, out_filename='phaseogram_mjdref.png')
+        assert np.all(times >= 57000)
+        assert np.all((phases >= 0)&(phases <= 2))
+
+    def test_phaseogram_mjdref_pepoch(self):
+        phaseogr, phases, times, additional_info = \
+            phaseogram(self.event_times, self.pulse_frequency,
+                       mjdref=57000, out_filename='phaseogram_mjdref.png',
+                       pepoch=57000)
+        assert np.all(times >= 57000)
+        assert np.all((phases >= 0)&(phases <= 2))
 
     def test_profile_fast(self):
         test_phase = np.arange(0, 1, 1/16)
