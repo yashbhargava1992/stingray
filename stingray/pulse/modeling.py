@@ -2,6 +2,10 @@ import numpy as np
 from astropy.modeling import models, fitting
 
 
+__all__ = ["sinc_square_model", "sinc_square_deriv", "fit_sinc",
+           "fit_gaussian", "SincModel"]
+
+
 def sinc(x):
     """
     Calculate a sinc function.
@@ -115,10 +119,10 @@ def fit_sinc(x, y, amp=1.5, mean=0., width=1., tied={}, fixed={}, bounds={},
         The initial value for the mean of the sinc
     obs_length : float
         The length of the observation. Default None. If it's defined, it
-        fixes width to 1/(pi*obs_length), as expected from epoch folding 
+        fixes width to 1/(pi*obs_length), as expected from epoch folding
         periodograms
     width : float
-        The initial value for the width of the sinc. Only valid if 
+        The initial value for the width of the sinc. Only valid if
         obs_length is 0
     tied : dict
     fixed : dict
