@@ -3,6 +3,11 @@ import numpy as np
 from .pulsar import stat, fold_events, z_n, pulse_phase
 from ..utils import jit, HAS_NUMBA
 from ..utils import contiguous_regions
+from astropy.stats import poisson_conf_interval
+
+
+__all__ = ['epoch_folding_search', 'z_n_search', 'search_best_peaks',
+           'plot_profile', 'plot_phaseogram', 'phaseogram']
 
 
 @jit(nopython=True)
@@ -207,9 +212,39 @@ def search_best_peaks(x, stat, threshold):
     return best_x[order], best_stat[order]
 
 
-def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None,
-               fdot=0, fddot=0, pepoch=None, return_plot=False,
-               out_filename='phaseogram.png'):
+def plot_profile(phase, profile, ax=None):
+    import matplotlib.pyplot as plt
+    if ax is None:
+        plt.figure('Pulse profile')
+        ax = plt.subplot()
+    mean = np.mean(profile)
+    if np.all(phase < 1.5):
+        phase = np.concatenate((phase, phase + 1))
+        profile = np.concatenate((profile, profile))
+    ax.plot(phase, profile, drawstyle='steps-mid', label="All corrections")
+    err_low, err_high = \
+        poisson_conf_interval(mean, interval='frequentist-confidence', sigma=1)
+    ax.axhspan(err_low, err_high, alpha=0.5)
+    return ax
+
+
+def plot_phaseogram(phaseogram, phase_bins, time_bins, unit_str='s', ax=None,
+                    **plot_kwargs):
+    import matplotlib.pyplot as plt
+    if ax is None:
+        plt.figure('Phaseogram')
+        ax = plt.subplot()
+
+    ax.pcolormesh(phase_bins, time_bins, phaseogram.T, **plot_kwargs)
+    ax.set_ylabel('Time ({})'.format(unit_str))
+    ax.set_xlabel('Phase')
+    ax.set_xlim([0, np.max(phase_bins)])
+    ax.set_ylim([np.min(time_bins), np.max(time_bins)])
+    return ax
+
+
+def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
+               pepoch=None, plot=False, phaseogram_ax=None, **plot_kwargs):
     """
     Calculate and plot the phaseogram of a pulsar observation.
 
@@ -245,11 +280,9 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None,
         If the input pulse solution is referred to a given time, give it here.
         It has no effect (just a phase shift of the pulse) if `fdot` is zero.
         if `mjdref` is specified, pepoch MUST be in MJD
-    return_plot : bool
+    plot : bool
         Return the axes in the additional_info, and don't close the plot, so
         that the user can add information to it.
-    out_filename : str
-        Output file name for the plot
 
     Returns
     -------
@@ -266,9 +299,6 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None,
         the plot (the latter, only if `return_plot` is True)
     """
 
-    import matplotlib.pyplot as plt
-    import matplotlib as mpl
-
     use_mjdref = False
     if mjdref is not None:
         use_mjdref = True
@@ -278,24 +308,12 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None,
         if use_mjdref:
             pepoch /= 86400
 
+    plot_unit = 's'
     if use_mjdref:
         pepoch = (pepoch - mjdref) * 86400
+        plot_unit='MJD'
 
     phases = pulse_phase((times - pepoch), f, fdot, fddot, to_1=True, ph0=ph0)
-
-    ph, prof, prof_err = fold_events(phases, 1, nbin=nph)
-
-    fig = plt.figure()
-    gs = mpl.gridspec.GridSpec(2, 1, height_ratios=(1, 3))
-    ax0 = plt.subplot(gs[0])
-    ax1 = plt.subplot(gs[1], sharex=ax0)
-
-    ax0.plot(np.concatenate((ph, ph + 1)),
-             np.concatenate((prof, prof)),
-             drawstyle='steps-mid', label="All corrections")
-    m = np.mean(prof)
-    s = np.sqrt(m)
-    ax0.axhspan(m - s, m + s, alpha=0.5)
 
     allphases = np.concatenate([phases, phases + 1]).astype('float64')
     allts = \
@@ -304,19 +322,16 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None,
     if use_mjdref:
         allts = allts / 86400 + mjdref
 
-    phas, binx, biny, _ = ax1.hist2d(allphases, allts,
+    phas, binx, biny = np.histogram2d(allphases, allts,
                bins=(np.linspace(0, 2, nph * 2 + 1),
                      np.linspace(np.min(allts),
-                                 np.max(allts), nt + 1)),
-               vmin=np.mean(prof) / nt)
+                                 np.max(allts), nt + 1)))
 
-    ax1.axvline(ph[np.argmax(prof)])
-    plt.savefig(out_filename)
-    if return_plot:
-        additional_info = {'ax0': ax0, 'ax1': ax1,
-                           'profile': prof, 'profile_err': prof_err}
+    if plot:
+        phaseogram_ax = plot_phaseogram(phas, binx, biny, ax=phaseogram_ax,
+                                        unit_str=plot_unit, **plot_kwargs)
+        additional_info = {'ax': phaseogram_ax}
     else:
-        plt.close(fig)
-        additional_info = {'profile': prof, 'profile_err': prof_err}
+        additional_info = {}
 
     return phas, binx, biny, additional_info
