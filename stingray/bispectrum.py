@@ -53,7 +53,7 @@ class Bispectrum(object):
                     A maxlag*2+1 x maxlag*2+1 matrix containing bispectrum data for different frequencies.
                 bispec_mag: numpy.ndarray
                     Magnitude of Bispectrum
-                bispec: numpy.ndarray
+                bispec_phase: numpy.ndarray
                     Phase of Bispectrum
                 References
                 ----------     
