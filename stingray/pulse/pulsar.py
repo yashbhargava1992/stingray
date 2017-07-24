@@ -8,6 +8,12 @@ from ..utils import simon, jit
 from scipy.optimize import minimize, basinhopping, curve_fit
 
 
+__all__ = ['pulse_phase', 'phase_exposure', 'fold_events', 'stat',
+           'fold_profile_probability', 'fold_detection_level',
+           'z_n', 'z2_n_detection_level', 'z2_n_probability', 'fftfit_fun',
+           'fftfit', 'fftfit_error', 'get_TOA']
+
+
 def _default_value_if_no_key(dictionary, key, default):
     try:
         return dictionary[key]
