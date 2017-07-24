@@ -157,33 +157,52 @@ def search_best_peaks(x, stat, threshold):
     >>> # Test multiple peaks
     >>> x = np.arange(10)
     >>> stat = [0, 0, 0.5, 0, 0, 1, 1, 2, 1, 0]
-    >>> best = search_best_peaks(x, stat, 0.5)
-    >>> len(best)
+    >>> best_x, best_stat = search_best_peaks(x, stat, 0.5)
+    >>> len(best_x)
     2
-    >>> best[0]
-    2.0
-    >>> best[1]
+    >>> best_x[0]
     7.0
+    >>> best_x[1]
+    2.0
+    >>> stat = [0, 0, 2.5, 0, 0, 1, 1, 2, 1, 0]
+    >>> best_x, best_stat = search_best_peaks(x, stat, 0.5)
+    >>> best_x[0]
+    2.0
     >>> # Test no peak above threshold
     >>> x = np.arange(10)
     >>> stat = [0, 0, 0.4, 0, 0, 0, 0, 0, 0, 0]
-    >>> search_best_peaks(x, stat, 0.5)
+    >>> best_x, best_stat = search_best_peaks(x, stat, 0.5)
+    >>> best_x
+    []
+    >>> best_stat
     []
 
     Returns
     -------
     best_x : array-like
-        the array containing the peaks above threshold. If no peaks are above
-        threshold, an empty list is returned.
+        the array containing the x position of the peaks above threshold. If no
+        peaks are above threshold, an empty list is returned. The array is
+        sorted by inverse value of stat
+    best_stat : array-like
+        for each best_x, give the corresponding stat value. Empty if no peaks a
+        bove threshold.
     """
     stat = np.asarray(stat)
     x = np.asarray(x)
     peaks = stat >= threshold
     regions = contiguous_regions(peaks)
     if len(regions) == 0:
-        return []
+        return [], []
     best_x = np.zeros(len(regions))
+    best_stat = np.zeros(len(regions))
     for i, r in enumerate(regions):
-        best_x[i] = x[r[0]:r[1]][np.argmax(stat[r[0]:r[1]])]
+        stat_filt = stat[r[0]:r[1]]
+        x_filt = x[r[0]:r[1]]
+        max_arg = np.argmax(stat_filt)
+        best_stat[i] = stat_filt[max_arg]
+        best_x[i] = x_filt[max_arg]
 
-    return best_x
+    order = np.argsort(best_stat)[::-1]
+
+    return best_x[order], best_stat[order]
+
