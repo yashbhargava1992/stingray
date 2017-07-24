@@ -3,7 +3,7 @@ from astropy.modeling import models, fitting
 
 
 __all__ = ["sinc_square_model", "sinc_square_deriv", "fit_sinc",
-           "fit_gaussian", "SincModel"]
+           "fit_gaussian", "SincSquareModel"]
 
 
 def sinc(x):
@@ -20,9 +20,7 @@ def sinc(x):
     -------
     values : array-like
     """
-    x_is_zero = x == 0
-    values = np.sin(x) / x
-    values[x_is_zero] = 1.
+    values = np.sinc(x/np.pi)
     return values
 
 
@@ -49,6 +47,11 @@ def sinc_square_model(x, amplitude=1., mean=0., width=1.):
     -------
     sqvalues : array-like
          Return square of sinc function
+
+    Examples
+    --------
+    >>> sinc_square_model(0, amplitude=2.)
+    2.0
     """
     sqvalues = amplitude * sinc((x-mean)/width) ** 2
     return sqvalues
@@ -82,23 +85,28 @@ def sinc_square_deriv(x, amplitude=1., mean=0., width=1.):
     d_width : array-like
          partial derivative of sinc-squared function
          with respect to the width
-    """
 
+    Examples
+    --------
+    >>> np.all(sinc_square_deriv(0, amplitude=2.) == [1., 0., 0.])
+    True
+    """
     x_is_zero = x == mean
 
     d_x = 2 * amplitude * sinc((x-mean)/width) * (x * np.cos((x-mean)/width) \
         - np.sin((x-mean)/width)) / ((x-mean)/width)**2
+    d_x = np.asarray(d_x)
     d_amplitude = sinc((x-mean)/width)**2
+    d_x[x_is_zero] = 0
+
     d_mean = d_x*(-1/width)
     d_width = d_x*(-(x-mean)/(width)**2)
-
-    d_x[x_is_zero] = 0
 
     return [d_amplitude, d_mean, d_width]
 
 
-SincModel = models.custom_model(sinc_square_model,
-                                fit_deriv=sinc_square_deriv)
+SincSquareModel = models.custom_model(sinc_square_model,
+                                      fit_deriv=sinc_square_deriv)
 
 
 def fit_sinc(x, y, amp=1.5, mean=0., width=1., tied={}, fixed={}, bounds={},
@@ -140,10 +148,10 @@ def fit_sinc(x, y, amp=1.5, mean=0., width=1., tied={}, fixed={}, bounds={},
         width = 1 / (np.pi * obs_length)
         fixed["width"] = True
 
-    sinc_in = SincModel(amplitude=amp, mean=mean,width=width, tied=tied,
-                        fixed=fixed, bounds=bounds)
-    fit_sinc = fitting.LevMarLSQFitter()
-    sincfit = fit_sinc(sinc_in, x, y)
+    sinc_in = SincSquareModel(amplitude=amp, mean=mean,width=width, tied=tied,
+                              fixed=fixed, bounds=bounds)
+    fit_s = fitting.LevMarLSQFitter()
+    sincfit = fit_s(sinc_in, x, y)
     return sincfit
 
 
