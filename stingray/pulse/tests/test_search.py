@@ -1,6 +1,8 @@
 from __future__ import division, print_function
 from stingray.pulse.search import epoch_folding_search, z_n_search
-from stingray.pulse.search import _profile_fast, phaseogram
+from stingray.pulse.search import _profile_fast, phaseogram, plot_phaseogram
+from stingray.pulse.search import plot_profile
+from stingray.pulse.pulsar import fold_events
 import numpy as np
 from stingray import Lightcurve
 from stingray.events import EventList
@@ -48,6 +50,38 @@ class TestAll(object):
                        pepoch=57000)
         assert np.all(times >= 57000)
         assert np.all((phases >= 0)&(phases <= 2))
+
+    def test_plot_phaseogram_fromfunc(self):
+        import matplotlib.pyplot as plt
+        plt.figure('Phaseogram from func')
+        ax = plt.subplot()
+        phaseogr, phases, times, additional_info = \
+            phaseogram(self.event_times, self.pulse_frequency, mjdref=57000,
+                       pepoch=57000, phaseogram_ax=ax, plot=True)
+        plt.savefig('phaseogram_fromfunc.png')
+
+    def test_plot_phaseogram_direct(self):
+        import matplotlib.pyplot as plt
+        phaseogr, phases, times, additional_info = \
+            phaseogram(self.event_times, self.pulse_frequency)
+        plot_phaseogram(phaseogr, phases, times)
+        plt.savefig('phaseogram_direct.png')
+
+    def test_plot_profile(self):
+        import matplotlib.pyplot as plt
+        phase, prof, _ = fold_events(self.event_times,
+                                            self.pulse_frequency)
+        ax = plot_profile(phase, prof)
+        plt.savefig('profile_direct.png')
+
+    def test_plot_profile_existing_ax(self):
+        import matplotlib.pyplot as plt
+        plt.figure('Pulse profile')
+        ax = plt.subplot()
+        phase, prof, _ = fold_events(self.event_times,
+                                     self.pulse_frequency, ax=ax)
+        ax = plot_profile(phase, prof)
+        plt.savefig('profile_existing_ax.png')
 
     def test_profile_fast(self):
         test_phase = np.arange(0, 1, 1/16)
