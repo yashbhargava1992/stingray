@@ -53,12 +53,13 @@ class TestAll(object):
 
     def test_plot_phaseogram_fromfunc(self):
         import matplotlib.pyplot as plt
-        plt.figure('Phaseogram from func')
+        fig = plt.figure('Phaseogram from func')
         ax = plt.subplot()
         phaseogr, phases, times, additional_info = \
             phaseogram(self.event_times, self.pulse_frequency, mjdref=57000,
                        pepoch=57000, phaseogram_ax=ax, plot=True)
         plt.savefig('phaseogram_fromfunc.png')
+        plt.close(fig)
 
     def test_plot_phaseogram_direct(self):
         import matplotlib.pyplot as plt
@@ -66,6 +67,7 @@ class TestAll(object):
             phaseogram(self.event_times, self.pulse_frequency)
         plot_phaseogram(phaseogr, phases, times)
         plt.savefig('phaseogram_direct.png')
+        plt.close(plt.gcf())
 
     def test_plot_profile(self):
         import matplotlib.pyplot as plt
@@ -73,15 +75,28 @@ class TestAll(object):
                                             self.pulse_frequency)
         ax = plot_profile(phase, prof)
         plt.savefig('profile_direct.png')
+        plt.close(plt.gcf())
 
     def test_plot_profile_existing_ax(self):
         import matplotlib.pyplot as plt
-        plt.figure('Pulse profile')
+        fig = plt.figure('Pulse profile')
         ax = plt.subplot()
         phase, prof, _ = fold_events(self.event_times,
                                      self.pulse_frequency, ax=ax)
-        ax = plot_profile(phase, prof)
+        ax = plot_profile(phase, prof, ax=ax)
         plt.savefig('profile_existing_ax.png')
+        plt.close(fig)
+
+    def test_plot_profile_errorbars(self):
+        import matplotlib.pyplot as plt
+        fig = plt.figure('Pulse profile')
+        ax = plt.subplot()
+        phase, prof, err = fold_events(self.event_times,
+                                       self.pulse_frequency, ax=ax)
+
+        ax = plot_profile(phase, prof, err=err, ax=ax)
+        plt.savefig('profile_errorbars.png')
+        plt.close(fig)
 
     def test_profile_fast(self):
         test_phase = np.arange(0, 1, 1/16)

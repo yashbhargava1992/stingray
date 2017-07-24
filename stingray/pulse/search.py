@@ -212,7 +212,29 @@ def search_best_peaks(x, stat, threshold):
     return best_x[order], best_stat[order]
 
 
-def plot_profile(phase, profile, ax=None):
+def plot_profile(phase, profile, err=None, ax=None):
+    """Plot a pulse profile showing some stats.
+
+    If err is None, the profile is assumed in counts and the Poisson confidence
+    level is plotted. Otherwise, err is shown as error bars
+
+    Parameters
+    ----------
+    phase : array-like
+        The bins on the x-axis
+    profile : array-like
+        The pulsed profile
+
+    Other Parameters
+    ----------------
+    ax : `matplotlib.pyplot.axis` instance
+        Axis to plot to. If None, create a new one.
+
+    Returns
+    -------
+    ax : `matplotlib.pyplot.axis` instance
+        Axis where the profile was plotted.
+    """
     import matplotlib.pyplot as plt
     if ax is None:
         plt.figure('Pulse profile')
@@ -221,15 +243,48 @@ def plot_profile(phase, profile, ax=None):
     if np.all(phase < 1.5):
         phase = np.concatenate((phase, phase + 1))
         profile = np.concatenate((profile, profile))
-    ax.plot(phase, profile, drawstyle='steps-mid', label="All corrections")
-    err_low, err_high = \
-        poisson_conf_interval(mean, interval='frequentist-confidence', sigma=1)
-    ax.axhspan(err_low, err_high, alpha=0.5)
+    ax.plot(phase, profile, drawstyle='steps-mid')
+    if err is None:
+        err_low, err_high = \
+            poisson_conf_interval(mean, interval='frequentist-confidence',
+                                  sigma=1)
+        ax.axhspan(err_low, err_high, alpha=0.5)
+    else:
+        err = np.concatenate((err, err))
+        ax.errorbar(phase, profile, yerr=err, fmt='none')
+
+    ax.set_ylabel('Counts')
+    ax.set_xlabel('Phase')
     return ax
 
 
 def plot_phaseogram(phaseogram, phase_bins, time_bins, unit_str='s', ax=None,
                     **plot_kwargs):
+    """Plot a phaseogram.
+
+    Parameters
+    ----------
+    phaseogram : NxM array
+        The phaseogram to be plotted
+    phase_bins : array of M + 1 elements
+        The bins on the x-axis
+    time_bins : array of N + 1 elements
+        The bins on the y-axis
+
+    Other Parameters
+    ----------------
+    unit_str : str
+        String indicating the time unit (e.g. 's', 'MJD', etc)
+    ax : `matplotlib.pyplot.axis` instance
+        Axis to plot to. If None, create a new one.
+    plot_kwargs : dict
+        Additional arguments to be passed to pcolormesh
+
+    Returns
+    -------
+    ax : `matplotlib.pyplot.axis` instance
+        Axis where the phaseogram was plotted.
+    """
     import matplotlib.pyplot as plt
     if ax is None:
         plt.figure('Phaseogram')
