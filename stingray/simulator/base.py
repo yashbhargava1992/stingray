@@ -2,7 +2,7 @@ from __future__ import division, print_function
 import numpy as np
 import numpy.random as ra
 import scipy.interpolate as sci
-from ..utils import simon, assign_value_if_none
+from ..utils import assign_value_if_none
 
 
 def simulate_times(lc, use_spline=False, bin_time=None):

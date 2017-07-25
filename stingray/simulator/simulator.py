@@ -7,6 +7,7 @@ import astropy.modeling.models
 from stingray import Lightcurve, AveragedPowerspectrum, io, utils
 import stingray.simulator.models as models
 
+
 class Simulator(object):
 
     def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
@@ -218,7 +219,8 @@ class Simulator(object):
         channel = [lc for lc in self.channels if lc[0] == channel]
 
         if len(channel) == 0:
-            raise KeyError('This channel does not exist or has already been deleted.')
+            raise KeyError('This channel does not exist or has already been '
+                           'deleted.')
         else:
             index = self.channels.index(channel[0])
             del self.channels[index]
@@ -231,8 +233,8 @@ class Simulator(object):
         channels = [lc for lc in self.channels if lc[0] in channels]
 
         if len(channels) != n:
-            raise KeyError('One of more of the channels do not exist or have already been'
-                'deleted.')
+            raise KeyError('One of more of the channels do not exist or have '
+                           'already been deleted.')
         else:
             indices = [self.channels.index(channel) for channel in channels]
             for i in sorted(indices, reverse=True):
@@ -275,7 +277,8 @@ class Simulator(object):
 
         return np.append(h_zeros, h_ones)
 
-    def relativistic_ir(self, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6, decay=0.1):
+    def relativistic_ir(self, t1=3, t2=4, t3=10, p1=1, p2=1.4, rise=0.6,
+                        decay=0.1):
         """
         Construct a realistic impulse response considering the relativistic
         effects.
@@ -400,7 +403,8 @@ class Simulator(object):
         ----------
         model: astropy.modeling.Model derived function
             the pre-defined model
-            (library-based, available in astropy.modeling.models or custom-defined)
+            (library-based, available in astropy.modeling.models or
+            custom-defined)
 
         Returns
         -------
@@ -557,7 +561,9 @@ class Simulator(object):
             lc = long_lc
         else:
             # Make random cut and extract light curve of length 'N'
-            extract = self.random_state.randint(self.N-1, self.red_noise*self.N - self.N+1)
+            extract = \
+                self.random_state.randint(self.N-1,
+                                          self.red_noise*self.N - self.N+1)
             lc = np.take(long_lc, range(extract, extract + self.N))
 
         avg = np.mean(lc)
