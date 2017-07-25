@@ -148,6 +148,27 @@ class EventList(object):
         return EventList(time=times, gti=lc.gti)
 
     def simulate_times(self, lc, use_spline=False, bin_time=None):
+        """
+        Assign (simulate) photon arrival times to event list, using the
+        acceptance-rejection method.
+
+        Parameters
+        ----------
+        lc: `Lightcurve` object
+
+        Other Parameters
+        ----------------
+        use_spline : bool
+            Approximate the light curve with a spline to avoid binning effects
+        bin_time : float
+            The bin time of the light curve, if it needs to be specified for
+            improved precision
+
+        Return
+        ------
+        times : array-like
+            Simulated photon arrival times
+        """
         from stingray.simulator.base import simulate_times
         self.time = simulate_times(lc, use_spline=use_spline,
                                    bin_time=bin_time)
