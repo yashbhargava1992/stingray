@@ -45,6 +45,10 @@ matrix:
     fast_finish: true
     include:
 
+        # Try with pint
+        - python: 3.6
+          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --coverage --remote-data'
+
         #Try without importing h5py but importing numba
         - python: 2.7
           env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba'
@@ -55,10 +59,6 @@ matrix:
         # Try without using corner
         - python: 3.5
           env: PIP_DEPENDENCIES='emcee statsmodels' SETUP_CMD='test --coverage'
-
-        # Try with pint
-        - python: 3.6
-          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --coverage --remote-data'
 
         - python: 3.4
           env: NUMPY_VERSION=1.11
