@@ -1,8 +1,13 @@
 from __future__ import division, print_function
 import numpy as np
-from .pulsar import stat, fold_events, z_n
+from .pulsar import stat, fold_events, z_n, pulse_phase
 from ..utils import jit, HAS_NUMBA
 from ..utils import contiguous_regions
+from astropy.stats import poisson_conf_interval
+
+
+__all__ = ['epoch_folding_search', 'z_n_search', 'search_best_peaks',
+           'plot_profile', 'plot_phaseogram', 'phaseogram']
 
 
 @jit(nopython=True)
@@ -157,33 +162,231 @@ def search_best_peaks(x, stat, threshold):
     >>> # Test multiple peaks
     >>> x = np.arange(10)
     >>> stat = [0, 0, 0.5, 0, 0, 1, 1, 2, 1, 0]
-    >>> best = search_best_peaks(x, stat, 0.5)
-    >>> len(best)
+    >>> best_x, best_stat = search_best_peaks(x, stat, 0.5)
+    >>> len(best_x)
     2
-    >>> best[0]
-    2.0
-    >>> best[1]
+    >>> best_x[0]
     7.0
+    >>> best_x[1]
+    2.0
+    >>> stat = [0, 0, 2.5, 0, 0, 1, 1, 2, 1, 0]
+    >>> best_x, best_stat = search_best_peaks(x, stat, 0.5)
+    >>> best_x[0]
+    2.0
     >>> # Test no peak above threshold
     >>> x = np.arange(10)
     >>> stat = [0, 0, 0.4, 0, 0, 0, 0, 0, 0, 0]
-    >>> search_best_peaks(x, stat, 0.5)
+    >>> best_x, best_stat = search_best_peaks(x, stat, 0.5)
+    >>> best_x
+    []
+    >>> best_stat
     []
 
     Returns
     -------
     best_x : array-like
-        the array containing the peaks above threshold. If no peaks are above
-        threshold, an empty list is returned.
+        the array containing the x position of the peaks above threshold. If no
+        peaks are above threshold, an empty list is returned. The array is
+        sorted by inverse value of stat
+    best_stat : array-like
+        for each best_x, give the corresponding stat value. Empty if no peaks a
+        bove threshold.
     """
     stat = np.asarray(stat)
     x = np.asarray(x)
     peaks = stat >= threshold
     regions = contiguous_regions(peaks)
     if len(regions) == 0:
-        return []
+        return [], []
     best_x = np.zeros(len(regions))
+    best_stat = np.zeros(len(regions))
     for i, r in enumerate(regions):
-        best_x[i] = x[r[0]:r[1]][np.argmax(stat[r[0]:r[1]])]
+        stat_filt = stat[r[0]:r[1]]
+        x_filt = x[r[0]:r[1]]
+        max_arg = np.argmax(stat_filt)
+        best_stat[i] = stat_filt[max_arg]
+        best_x[i] = x_filt[max_arg]
 
-    return best_x
+    order = np.argsort(best_stat)[::-1]
+
+    return best_x[order], best_stat[order]
+
+
+def plot_profile(phase, profile, err=None, ax=None):
+    """Plot a pulse profile showing some stats.
+
+    If err is None, the profile is assumed in counts and the Poisson confidence
+    level is plotted. Otherwise, err is shown as error bars
+
+    Parameters
+    ----------
+    phase : array-like
+        The bins on the x-axis
+    profile : array-like
+        The pulsed profile
+
+    Other Parameters
+    ----------------
+    ax : `matplotlib.pyplot.axis` instance
+        Axis to plot to. If None, create a new one.
+
+    Returns
+    -------
+    ax : `matplotlib.pyplot.axis` instance
+        Axis where the profile was plotted.
+    """
+    import matplotlib.pyplot as plt
+    if ax is None:
+        plt.figure('Pulse profile')
+        ax = plt.subplot()
+    mean = np.mean(profile)
+    if np.all(phase < 1.5):
+        phase = np.concatenate((phase, phase + 1))
+        profile = np.concatenate((profile, profile))
+    ax.plot(phase, profile, drawstyle='steps-mid')
+    if err is None:
+        err_low, err_high = \
+            poisson_conf_interval(mean, interval='frequentist-confidence',
+                                  sigma=1)
+        ax.axhspan(err_low, err_high, alpha=0.5)
+    else:
+        err = np.concatenate((err, err))
+        ax.errorbar(phase, profile, yerr=err, fmt='none')
+
+    ax.set_ylabel('Counts')
+    ax.set_xlabel('Phase')
+    return ax
+
+
+def plot_phaseogram(phaseogram, phase_bins, time_bins, unit_str='s', ax=None,
+                    **plot_kwargs):
+    """Plot a phaseogram.
+
+    Parameters
+    ----------
+    phaseogram : NxM array
+        The phaseogram to be plotted
+    phase_bins : array of M + 1 elements
+        The bins on the x-axis
+    time_bins : array of N + 1 elements
+        The bins on the y-axis
+
+    Other Parameters
+    ----------------
+    unit_str : str
+        String indicating the time unit (e.g. 's', 'MJD', etc)
+    ax : `matplotlib.pyplot.axis` instance
+        Axis to plot to. If None, create a new one.
+    plot_kwargs : dict
+        Additional arguments to be passed to pcolormesh
+
+    Returns
+    -------
+    ax : `matplotlib.pyplot.axis` instance
+        Axis where the phaseogram was plotted.
+    """
+    import matplotlib.pyplot as plt
+    if ax is None:
+        plt.figure('Phaseogram')
+        ax = plt.subplot()
+
+    ax.pcolormesh(phase_bins, time_bins, phaseogram.T, **plot_kwargs)
+    ax.set_ylabel('Time ({})'.format(unit_str))
+    ax.set_xlabel('Phase')
+    ax.set_xlim([0, np.max(phase_bins)])
+    ax.set_ylim([np.min(time_bins), np.max(time_bins)])
+    return ax
+
+
+def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
+               pepoch=None, plot=False, phaseogram_ax=None, **plot_kwargs):
+    """
+    Calculate and plot the phaseogram of a pulsar observation.
+
+    The phaseogram is a 2-D histogram where the x axis is the pulse phase and
+    the y axis is the time. It shows how the pulse phase changes with time, and
+    it is very useful to see if the pulse solution is correct and/or if there
+    are additional frequency derivatives appearing in the data (due to spin up
+    or down, or even orbital motion)
+
+    Parameters
+    ----------
+    times : array
+        Event arrival times
+    f : float
+        Pulse frequency
+
+    Other parameters
+    ----------------
+    nph : int
+        Number of phase bins
+    nt : int
+        Number of time bins
+    ph0 : float
+        The starting phase of the pulse
+    mjdref : float
+        MJD reference time. If given, the y axis of the plot will be in MJDs,
+        otherwise it will be in seconds.
+    fdot : float
+        First frequency derivative
+    fddot : float
+        Second frequency derivative
+    pepoch : float
+        If the input pulse solution is referred to a given time, give it here.
+        It has no effect (just a phase shift of the pulse) if `fdot` is zero.
+        if `mjdref` is specified, pepoch MUST be in MJD
+    plot : bool
+        Return the axes in the additional_info, and don't close the plot, so
+        that the user can add information to it.
+
+    Returns
+    -------
+    phaseogr : 2-D matrix
+        The phaseogram
+    phases : array-like
+        The x axis of the phaseogram (the x bins of the histogram),
+        corresponding to the pulse phase in each column
+    times : array-like
+        The y axis of the phaseogram (the y bins of the histogram),
+        corresponding to the time at each row
+    additional_info : dict
+        Additional information, like the pulse profile and the axes to modify
+        the plot (the latter, only if `return_plot` is True)
+    """
+
+    use_mjdref = False
+    if mjdref is not None:
+        use_mjdref = True
+
+    if pepoch is None:
+        pepoch = (times[-1] + times[0]) / 2
+        if use_mjdref:
+            pepoch /= 86400
+
+    plot_unit = 's'
+    if use_mjdref:
+        pepoch = (pepoch - mjdref) * 86400
+        plot_unit='MJD'
+
+    phases = pulse_phase((times - pepoch), f, fdot, fddot, to_1=True, ph0=ph0)
+
+    allphases = np.concatenate([phases, phases + 1]).astype('float64')
+    allts = \
+        np.concatenate([times, times]).astype('float64')
+
+    if use_mjdref:
+        allts = allts / 86400 + mjdref
+
+    phas, binx, biny = np.histogram2d(allphases, allts,
+               bins=(np.linspace(0, 2, nph * 2 + 1),
+                     np.linspace(np.min(allts),
+                                 np.max(allts), nt + 1)))
+
+    if plot:
+        phaseogram_ax = plot_phaseogram(phas, binx, biny, ax=phaseogram_ax,
+                                        unit_str=plot_unit, **plot_kwargs)
+        additional_info = {'ax': phaseogram_ax}
+    else:
+        additional_info = {}
+
+    return phas, binx, biny, additional_info
