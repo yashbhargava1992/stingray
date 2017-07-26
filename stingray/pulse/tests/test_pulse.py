@@ -1,13 +1,64 @@
 from __future__ import division, print_function, absolute_import
 from ..pulsar import *
+from ..pulsar import HAS_PINT
+import pytest
+import os
 
 def _template_fun(phase, ph0, amplitude, baseline=0):
     return baseline + amplitude * np.cos((phase - ph0) * 2 * np.pi)
 
 
 class TestAll(object):
-
     """Unit tests for the stingray.pulsar module."""
+    @classmethod
+    def setup_class(cls):
+        cls.curdir = os.path.abspath(os.path.dirname(__file__))
+        cls.datadir = os.path.join(cls.curdir, 'data')
+
+    @pytest.mark.skipif('not HAS_PINT')
+    def test_pint_installed_correctly(self):
+        from pint.residuals import resids
+        import pint.models.model_builder as mb
+        import astropy.units as u
+        parfile = os.path.join(self.datadir, 'example_pint.par')
+        timfile = os.path.join(self.datadir, 'example_pint.tim')
+
+        toas = toa.get_TOAs(timfile, ephem="DE405",
+                            planets=False, include_bipm=False)
+        model = mb.get_model(parfile)
+
+        pint_resids_us = resids(toas, model, False).time_resids.to(u.s)
+
+        # Due to the gps2utc clock correction. We are at 3e-8 seconds level.
+        assert np.all(np.abs(pint_resids_us.value) < 3e-6)
+
+    @pytest.mark.skipif('not HAS_PINT')
+    def test_orbit_from_parfile(self):
+        parfile = os.path.join(self.datadir, 'example_pint.par')
+        timfile = os.path.join(self.datadir, 'example_pint.tim')
+
+        toas = toa.get_TOAs(timfile, ephem="DE405",
+                            planets=False, include_bipm=False)
+        mjds = np.array([m.value for m in toas.get_mjds(high_precision=True)])
+
+        mjdstart, mjdstop = mjds[0] - 1, mjds[-1] + 1
+
+        correction_sec, correction_mjd = \
+            get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop,
+                                                       parfile, ntimes=1000)
+
+        mjdref = 50000
+        toa_sec = (mjds - mjdref) * 86400
+        corr = correction_mjd(mjds)
+        corr_s = correction_sec (toa_sec, mjdref)
+        assert np.allclose(corr, corr_s / 86400 + mjdref)
+
+    @pytest.mark.skipif('HAS_PINT')
+    def test_orbit_from_parfile_raises(self):
+        print("Doesn't have pint")
+        with pytest.raises(ImportError):
+            get_orbital_correction_from_ephemeris_file(0, 0,
+                                                       parfile='ciaociao')
 
     def test_stat(self):
         """Test pulse phase calculation, frequency only."""
