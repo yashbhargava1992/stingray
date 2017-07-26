@@ -5,6 +5,7 @@ from stingray.pulse.pulsar import fold_events, get_TOA
 from stingray.pulse.pulsar import stat, z_n, pulse_phase, phase_exposure
 from stingray.pulse.pulsar import fold_detection_level, z2_n_detection_level
 from stingray.pulse.pulsar import fold_profile_probability, z2_n_probability
+from stingray.pulse.pulsar import get_orbital_correction_from_ephemeris_file
 from ..pulsar import HAS_PINT
 from astropy.tests.helper import remote_data
 import pytest
@@ -24,6 +25,7 @@ class TestAll(object):
     @remote_data
     @pytest.mark.skipif('not HAS_PINT')
     def test_pint_installed_correctly(self):
+        import pint.toa as toa
         from pint.residuals import resids
         import pint.models.model_builder as mb
         import astropy.units as u
@@ -42,6 +44,7 @@ class TestAll(object):
     @remote_data
     @pytest.mark.skipif('not HAS_PINT')
     def test_orbit_from_parfile(self):
+        import pint.toa as toa
         parfile = os.path.join(self.datadir, 'example_pint.par')
         timfile = os.path.join(self.datadir, 'example_pint.tim')
 
