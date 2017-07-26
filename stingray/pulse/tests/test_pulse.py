@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 from ..pulsar import *
 from ..pulsar import HAS_PINT
+from astropy.tests.helper import remote_data
 import pytest
 import os
 
@@ -15,6 +16,7 @@ class TestAll(object):
         cls.curdir = os.path.abspath(os.path.dirname(__file__))
         cls.datadir = os.path.join(cls.curdir, 'data')
 
+    @remote_data
     @pytest.mark.skipif('not HAS_PINT')
     def test_pint_installed_correctly(self):
         from pint.residuals import resids
@@ -32,6 +34,7 @@ class TestAll(object):
         # Due to the gps2utc clock correction. We are at 3e-8 seconds level.
         assert np.all(np.abs(pint_resids_us.value) < 3e-6)
 
+    @remote_data
     @pytest.mark.skipif('not HAS_PINT')
     def test_orbit_from_parfile(self):
         parfile = os.path.join(self.datadir, 'example_pint.par')

@@ -58,7 +58,7 @@ matrix:
 
         # Try with pint
         - python: 3.6
-          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --coverage'
+          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --coverage --remote-data'
 
         - python: 3.4
           env: NUMPY_VERSION=1.11
