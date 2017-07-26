@@ -10,6 +10,7 @@ from .utils import simon, assign_value_if_none
 from .gti import cross_gtis, append_gtis, check_separate
 
 from .lightcurve import Lightcurve
+from stingray.simulator.base import simulate_times
 
 import numpy as np
 import numpy.random as ra
@@ -169,7 +170,6 @@ class EventList(object):
         times : array-like
             Simulated photon arrival times
         """
-        from stingray.simulator.base import simulate_times
         self.time = simulate_times(lc, use_spline=use_spline,
                                    bin_time=bin_time)
         self.gti = lc.gti
