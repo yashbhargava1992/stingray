@@ -1,5 +1,9 @@
 from __future__ import division, print_function, absolute_import
-from ..pulsar import *
+import numpy as np
+from stingray.pulse.pulsar import fold_events, get_TOA
+from stingray.pulse.pulsar import stat, z_n, pulse_phase, phase_exposure
+from stingray.pulse.pulsar import fold_detection_level, z2_n_detection_level
+from stingray.pulse.pulsar import fold_profile_probability, z2_n_probability
 
 def _template_fun(phase, ph0, amplitude, baseline=0):
     return baseline + amplitude * np.cos((phase - ph0) * 2 * np.pi)
