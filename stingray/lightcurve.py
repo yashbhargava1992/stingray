@@ -11,7 +11,7 @@ import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none, baseline_als
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
-from stingray.gti import check_gtis, create_gti_mask
+from stingray.gti import check_gtis, create_gti_mask, bin_intervals_from_gtis
 from astropy.stats import poisson_conf_interval
 
 __all__ = ["Lightcurve"]
@@ -156,8 +156,9 @@ class Lightcurve(object):
                 err_low, err_high = poisson_conf_interval(np.asarray(counts),
                     interval='frequentist-confidence', sigma=1)
                 # calculate approximately symmetric uncertainties
-                err = (np.absolute(err_low) + np.absolute(err_high) -
-                       2 * np.asarray(counts))/2.0
+                err_low -= np.asarray(counts)
+                err_high -= np.asarray(counts)
+                err = (np.absolute(err_low) + np.absolute(err_high))/2.0
                 # other estimators can be implemented for other statistics
             else:
                 simon("Stingray only uses poisson err_dist at the moment, "
@@ -776,10 +777,57 @@ class Lightcurve(object):
 
         new_counts, new_time, new_counts_err = zip(*sorted(zip(self.counts, self.time, self.counts_err) , reverse=reverse))
 
-
         self.time = np.asarray(new_time)
         self.counts = np.asarray(new_counts)
         self.counts_err = np.asarray(new_counts_err)
+
+    def analyze_lc_chunks(self, chunk_length, func, **kwargs):
+        """Analyze chunks of the light curve with any function.
+
+        Parameters
+        ----------
+        chunk_length : float
+            Length in seconds of the light curve chunks
+        func : function
+            Function accepting a `Lightcurve` object as single argument, plus
+            possible additional keyword arguments, and returning a number or a
+            tuple - e.g., (result, error) where both result and error are
+            numbers.
+
+        Other parameters
+        ----------------
+        kwargs : keyword arguments
+            These additional keyword arguments, if present, they will be passed
+            to `func`
+
+        Returns
+        -------
+        start_times : array
+            Lower time boundaries of all chunks.
+        stop_times : array
+            Higher time boundaries of all chunks.
+        result : array of N elements
+            The result of `func` for each chunk of the light curve
+        """
+        start, stop = bin_intervals_from_gtis(self.gti, chunk_length,
+                                              self.time, dt=self.dt)
+        start_times = self.time[start] - self.dt * 0.5
+
+        # Remember that stop is one element above the last element, because
+        # it's defined to be used in intervals start:stop
+        stop_times = self.time[stop - 1] + self.dt * 1.5
+
+        results = []
+        for i, (st, sp) in enumerate(zip(start, stop)):
+            lc_filt = self[st:sp]
+            res = func(lc_filt, **kwargs)
+            results.append(res)
+
+        results = np.array(results)
+
+        if len(results.shape) == 2:
+            results = [results[:, i] for i in range(results.shape[1])]
+        return start_times, stop_times, results
 
     def plot(self, witherrors=False, labels=None, axis=None, title=None,
              marker='-', save=False, filename=None):
