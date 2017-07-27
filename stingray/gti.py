@@ -501,7 +501,7 @@ def join_gtis(gti0, gti1):
     return np.sort(final_gti, axis=0)
 
 
-def time_intervals_from_gtis(gtis, chunk_length):
+def time_intervals_from_gtis(gtis, chunk_length, epsilon=1e-5):
     """Returns equal time intervals compatible with GTIs.
 
     Used to start each FFT/PDS/cospectrum from the start of a GTI,
@@ -525,10 +525,10 @@ def time_intervals_from_gtis(gtis, chunk_length):
     """
     spectrum_start_times = np.array([], dtype=np.longdouble)
     for g in gtis:
-        if g[1] - g[0] < chunk_length:
+        if g[1] - g[0] + epsilon < chunk_length:
             continue
 
-        newtimes = np.arange(g[0], g[1] - chunk_length,
+        newtimes = np.arange(g[0], g[1] - chunk_length + epsilon,
                              np.longdouble(chunk_length),
                              dtype=np.longdouble)
         spectrum_start_times = \
