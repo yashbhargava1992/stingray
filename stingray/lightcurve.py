@@ -781,7 +781,7 @@ class Lightcurve(object):
         self.counts = np.asarray(new_counts)
         self.counts_err = np.asarray(new_counts_err)
 
-    def analyze_lc_chunks(self, chunk_length, func, **kwargs):
+    def analyze_lc_chunks(self, chunk_length, func, fraction_step=1, **kwargs):
         """Analyze chunks of the light curve with any function.
 
         Parameters
@@ -796,6 +796,10 @@ class Lightcurve(object):
 
         Other parameters
         ----------------
+        fraction_step : float
+            If the step is not a full chunk_length but less (e.g. a moving window),
+            this indicates the ratio between step step and `chunk_length` (e.g.
+            0.5 means that the window shifts of half chunk_length)
         kwargs : keyword arguments
             These additional keyword arguments, if present, they will be passed
             to `func`
@@ -810,7 +814,9 @@ class Lightcurve(object):
             The result of `func` for each chunk of the light curve
         """
         start, stop = bin_intervals_from_gtis(self.gti, chunk_length,
-                                              self.time, dt=self.dt)
+                                              self.time,
+                                              fraction_step=fraction_step,
+                                              dt=self.dt)
         start_times = self.time[start] - self.dt * 0.5
 
         # Remember that stop is one element above the last element, because

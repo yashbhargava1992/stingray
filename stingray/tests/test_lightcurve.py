@@ -98,7 +98,7 @@ class TestLightcurve(object):
         assert start[0] == 0.5
         assert np.all(start + lc.dt / 2 == res)
 
-    def test_analyze_lc_chunks_fvar(self):
+    def test_analyze_lc_chunks_fvar_fracstep(self):
         dt = 0.1
         tstart = 0
         tstop = 100
@@ -114,7 +114,7 @@ class TestLightcurve(object):
             from stingray.utils import excess_variance
             return excess_variance(lc, normalization='fvar')
 
-        start, stop, res = lc.analyze_lc_chunks(20, excvar)
+        start, stop, res = lc.analyze_lc_chunks(20, excvar, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         res, res_err = res
 
