@@ -477,6 +477,13 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def _make_matrix(self, lc):
         """Create the matrix with freq and time columns."""
+        ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
+            self, lc, self.segment_size)
+        self.dyn_ps = np.array([ps.power for ps in ps_all]).T
+        self.freq = ps_all[0].freq
+        self.time = np.arange(lc.time[0] - 0.5*lc.dt + 0.5*self.segment_size,
+                              lc.time[-1] + 0.5*lc.dt, self.segment_size)
+
         # Assign zero resolution if only one value
         if len(self.time) > 1:
             self.dt = self.time[1] - self.time[0]
@@ -488,14 +495,6 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             self.df = self.freq[1] - self.freq[0]
         else:
             self.df = 0
-
-        ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
-            self, lc, self.segment_size)
-        self.freq = ps_all[0].freq
-        self.time = np.arange(lc.time[0] - 0.5*lc.dt + 0.5*self.segment_size,
-                              lc.time[-1] + 0.5*lc.dt, self.segment_size)
-
-        self.dyn_ps = np.array([ps.power for ps in ps_all]).T
 
         if len(self.time) > self.dyn_ps.shape[0]:
             self.time = self.time[:-1]
@@ -565,16 +564,17 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     def rebin_time(self, dt_new, method='sum'):
 
         """
-        Rebin the Dynamic Power Spectrum to a new time resolution. While the new
-        resolution need not be an integer multiple of the previous time
-        resolution, be aware that if it is not, the last bin will be cut
-        off by the fraction left over by the integer division.
+        Rebin the Dynamic Power Spectrum to a new time resolution.
+        While the new resolution need not be an integer multiple of the
+        previous time resolution, be aware that if it is not, the last bin
+        will be cut off by the fraction left over by the integer division.
 
         Parameters
         ----------
         dt_new: float
-            The new time resolution of the Dynamica Power Spectrum. Must be larger than
-            the time resolution of the old Dynamical Power Spectrum!
+            The new time resolution of the Dynamica Power Spectrum.
+            Must be larger than the time resolution of the old Dynamical Power
+            Spectrum!
 
         method: {"sum" | "mean" | "average"}, optional, default "sum"
             This keyword argument sets whether the counts in the new bins
@@ -589,7 +589,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         dynspec_new: numpy.ndarray
             New rebinned Dynamical Power Spectrum.
         """
-        
+
         if dt_new < self.dt:
             raise ValueError("New time resolution must be larger than "
                              "old time resolution!")
@@ -598,7 +598,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         for data in self.dyn_ps:
             time_new, bin_counts, bin_err, _ = \
                 utils.rebin_data(self.time, data, dt_new,
-                                 yerr=self.lc.counts_err, method=method)
+                                 method=method)
             dynspec_new.append(bin_counts)
 
         self.time = time_new
