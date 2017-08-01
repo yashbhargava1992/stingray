@@ -12,7 +12,6 @@ from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.utils import simon
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
 
-
 __all__ = ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]
 
 
@@ -79,7 +78,7 @@ def classical_pvalue(power, nspec):
 
     # If the power is really big, it's safe to say it's significant,
     # and the p-value will be nearly zero
-    if (power*nspec) > 30000:
+    if (power * nspec) > 30000:
         simon("Probability of no signal too miniscule to calculate.")
         return 0.0
 
@@ -100,10 +99,10 @@ def _pavnosigfun(power, nspec):
     while m >= 0:
 
         s = 0.0
-        for i in range(int(m)-1):
-            s += np.log(float(m-i))
+        for i in range(int(m) - 1):
+            s += np.log(float(m - i))
 
-        logterm = m*np.log(pn/2) - pn/2 - s
+        logterm = m * np.log(pn / 2) - pn / 2 - s
         term = np.exp(logterm)
         ratio = sum / term
 
@@ -117,7 +116,6 @@ def _pavnosigfun(power, nspec):
 
 
 class Powerspectrum(Crossspectrum):
-
     def __init__(self, lc=None, norm='frac', gti=None):
         """
         Make a Periodogram (power spectrum) from a (binned) light curve.
@@ -209,10 +207,10 @@ class Powerspectrum(Crossspectrum):
         powers = self.power[minind:maxind]
 
         if self.norm.lower() == 'leahy':
-            rms = np.sqrt(np.sum(powers)/self.nphots)
+            rms = np.sqrt(np.sum(powers) / self.nphots)
 
         elif self.norm.lower() == "frac":
-            rms = np.sqrt(np.sum(powers*self.df))
+            rms = np.sqrt(np.sum(powers * self.df))
         else:
             raise TypeError("Normalization not recognized!")
 
@@ -238,9 +236,9 @@ class Powerspectrum(Crossspectrum):
         delta_rms: float
             the error on the fractional rms amplitude
         """
-        p_err = scipy.stats.chi2(2.0*self.m).var() * powers / self.m
-        drms_dp = 1 / (2*np.sqrt(np.sum(powers)*self.df))
-        delta_rms = np.sum(p_err*drms_dp*self.df)
+        p_err = scipy.stats.chi2(2.0 * self.m).var() * powers / self.m
+        drms_dp = 1 / (2 * np.sqrt(np.sum(powers) * self.df))
+        delta_rms = np.sum(p_err * drms_dp * self.df)
         return delta_rms
 
     def classical_significances(self, threshold=1, trial_correction=False):
@@ -298,7 +296,7 @@ class Powerspectrum(Crossspectrum):
         # calculate p-values for all powers
         # leave out zeroth power since it just encodes the number of photons!
         pv = np.array([classical_pvalue(power, self.m)
-                      for power in self.power])
+                       for power in self.power])
 
         # if trial correction is used, then correct the threshold for
         # the number of powers in the power spectrum
@@ -315,7 +313,6 @@ class Powerspectrum(Crossspectrum):
 
 
 class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
-
     def __init__(self, lc=None, segment_size=None, norm="frac", gti=None):
         """
         Make an averaged periodogram from a light curve by segmenting the light
@@ -467,7 +464,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         dt: float
             The time resolution
         """
-        if segment_size < 2*lc.dt:
+        if segment_size < 2 * lc.dt:
             raise ValueError("Length of the segment is too short to form a "
                              "light curve!")
         elif segment_size > lc.tseg:
@@ -480,6 +477,18 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def _make_matrix(self, lc):
         """Create the matrix with freq and time columns."""
+        # Assign zero resolution if only one value
+        if len(self.time) > 1:
+            self.dt = self.time[1] - self.time[0]
+        else:
+            self.dt = 0
+
+        # Assign Zero freq. resolution if only one value
+        if len(self.freq) > 1:
+            self.df = self.freq[1] - self.freq[0]
+        else:
+            self.df = 0
+
         ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
             self, lc, self.segment_size)
         self.freq = ps_all[0].freq
@@ -552,3 +561,48 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             max_positions.append(np.where(ps == max_power)[0][0])
 
         return np.array(max_positions)
+
+    def rebin_time(self, dt_new, method='sum'):
+
+        """
+        Rebin the Dynamic Power Spectrum to a new time resolution. While the new
+        resolution need not be an integer multiple of the previous time
+        resolution, be aware that if it is not, the last bin will be cut
+        off by the fraction left over by the integer division.
+
+        Parameters
+        ----------
+        dt_new: float
+            The new time resolution of the Dynamica Power Spectrum. Must be larger than
+            the time resolution of the old Dynamical Power Spectrum!
+
+        method: {"sum" | "mean" | "average"}, optional, default "sum"
+            This keyword argument sets whether the counts in the new bins
+            should be summed or averaged.
+
+
+        Returns
+        -------
+        time_new: numpy.ndarray
+            Time axis with new rebinned time resolution.
+
+        dynspec_new: numpy.ndarray
+            New rebinned Dynamical Power Spectrum.
+        """
+        
+        if dt_new < self.dt:
+            raise ValueError("New time resolution must be larger than "
+                             "old time resolution!")
+
+        dynspec_new = []
+        for data in self.dyn_ps:
+            time_new, bin_counts, bin_err, _ = \
+                utils.rebin_data(self.time, data, dt_new,
+                                 yerr=self.lc.counts_err, method=method)
+            dynspec_new.append(bin_counts)
+
+        self.time = time_new
+        self.dyn_ps = np.array(dynspec_new)
+        self.dt = dt_new
+
+        return time_new, dynspec_new

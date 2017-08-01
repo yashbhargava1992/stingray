@@ -1,25 +1,23 @@
-
 import numpy as np
 
 from astropy.tests.helper import pytest
 
 from stingray import Lightcurve
 from stingray import Powerspectrum, AveragedPowerspectrum, \
-                        DynamicalPowerspectrum
+    DynamicalPowerspectrum
 from stingray.powerspectrum import classical_pvalue
 
 np.random.seed(20150907)
 
 
 class TestPowerspectrum(object):
-
     @classmethod
     def setup_class(cls):
         tstart = 0.0
         tend = 1.0
         dt = 0.0001
 
-        time = np.linspace(tstart, tend, int((tend-tstart)/dt))
+        time = np.linspace(tstart, tend, int((tend - tstart) / dt))
 
         mean_count_rate = 100.0
         mean_counts = mean_count_rate * dt
@@ -88,9 +86,9 @@ class TestPowerspectrum(object):
         """
         ps = Powerspectrum(lc=self.lc)
         nn = ps.n
-        pp = ps.unnorm_power / np.float(nn)**2
-        p_int = np.sum(pp[:-1]*ps.df) + (pp[-1]*ps.df)/2
-        var_lc = np.var(self.lc.counts) / (2.*self.lc.tseg)
+        pp = ps.unnorm_power / np.float(nn) ** 2
+        p_int = np.sum(pp[:-1] * ps.df) + (pp[-1] * ps.df) / 2
+        var_lc = np.var(self.lc.counts) / (2. * self.lc.tseg)
         assert np.isclose(p_int, var_lc, atol=0.01, rtol=0.01)
 
     def test_frac_normalization_is_standard(self):
@@ -108,8 +106,8 @@ class TestPowerspectrum(object):
         of the light curve squared.
         """
         ps = Powerspectrum(lc=self.lc, norm="frac")
-        ps_int = np.sum(ps.power[:-1]*ps.df) + ps.power[-1]*ps.df/2
-        std_lc = np.var(self.lc.counts) / np.mean(self.lc.counts)**2
+        ps_int = np.sum(ps.power[:-1] * ps.df) + ps.power[-1] * ps.df / 2
+        std_lc = np.var(self.lc.counts) / np.mean(self.lc.counts) ** 2
         print(ps_int)
         print(std_lc)
         assert np.isclose(ps_int, std_lc, atol=0.01, rtol=0.01)
@@ -138,8 +136,8 @@ class TestPowerspectrum(object):
         square of the number of data points in the light curve
         """
         ps = Powerspectrum(lc=self.lc, norm="Leahy")
-        ps_var = (np.sum(self.lc.counts)/ps.n**2.) * \
-            (np.sum(ps.power[:-1]) + ps.power[-1]/2.)
+        ps_var = (np.sum(self.lc.counts) / ps.n ** 2.) * \
+                 (np.sum(ps.power[:-1]) + ps.power[-1] / 2.)
 
         assert np.isclose(ps_var, np.var(self.lc.counts), atol=0.01)
 
@@ -174,7 +172,7 @@ class TestPowerspectrum(object):
         # replace powers
         ps.power = np.ones_like(ps.power) * 2.0
         rebin_factor = 2.0
-        bin_ps = ps.rebin(rebin_factor*ps.df)
+        bin_ps = ps.rebin(rebin_factor * ps.df)
 
         assert bin_ps.freq is not None
         assert bin_ps.power is not None
@@ -201,9 +199,9 @@ class TestPowerspectrum(object):
         """
         ps = Powerspectrum(lc=self.lc, norm="Leahy")
         bin_ps = ps.rebin(df)
-        assert np.isclose(bin_ps.freq[1]-bin_ps.freq[0], bin_ps.df,
+        assert np.isclose(bin_ps.freq[1] - bin_ps.freq[0], bin_ps.df,
                           atol=1e-4, rtol=1e-4)
-        assert np.isclose(bin_ps.freq[0], (ps.freq[0]-ps.df*0.5+bin_ps.df*0.5),
+        assert np.isclose(bin_ps.freq[0], (ps.freq[0] - ps.df * 0.5 + bin_ps.df * 0.5),
                           atol=1e-4, rtol=1e-4)
 
     def test_rebin(self):
@@ -224,7 +222,7 @@ class TestPowerspectrum(object):
         ps = Powerspectrum(lc=self.lc, norm="leahy")
 
         # change the powers so that just one exceeds the threshold
-        ps.power = np.zeros_like(ps.power)+2.0
+        ps.power = np.zeros_like(ps.power) + 2.0
 
         index = 1
         ps.power[index] = 10.0
@@ -250,7 +248,7 @@ class TestPowerspectrum(object):
     def test_pvals_is_numpy_array(self):
         ps = Powerspectrum(lc=self.lc, norm="leahy")
         # change the powers so that just one exceeds the threshold
-        ps.power = np.zeros_like(ps.power)+2.0
+        ps.power = np.zeros_like(ps.power) + 2.0
 
         index = 1
         ps.power[index] = 10.0
@@ -265,17 +263,16 @@ class TestPowerspectrum(object):
 
 
 class TestAveragedPowerspectrum(object):
-
     @classmethod
     def setup_class(cls):
         tstart = 0.0
         tend = 10.0
         dt = 0.0001
 
-        time = np.linspace(tstart, tend, int((tend-tstart)/dt))
+        time = np.linspace(tstart, tend, int((tend - tstart) / dt))
 
         mean_count_rate = 1000.0
-        mean_counts = mean_count_rate*dt
+        mean_counts = mean_count_rate * dt
 
         poisson_counts = np.random.poisson(mean_counts,
                                            size=time.shape[0])
@@ -293,12 +290,12 @@ class TestAveragedPowerspectrum(object):
             yield self.check_segment_size, nseg
 
     def check_segment_size(self, nseg):
-        segment_size = self.lc.tseg/nseg
+        segment_size = self.lc.tseg / nseg
         ps = AveragedPowerspectrum(self.lc, segment_size)
         assert ps.m == nseg
 
     def test_segments_with_leftover(self):
-        segment_size = self.lc.tseg/2. - 1.
+        segment_size = self.lc.tseg / 2. - 1.
         ps = AveragedPowerspectrum(self.lc, segment_size)
         assert np.isclose(ps.segment_size, segment_size)
         assert ps.m == 2
@@ -334,10 +331,10 @@ class TestAveragedPowerspectrum(object):
         tend = 1.0
         dt = 0.0001
 
-        time = np.linspace(tstart, tend, int((tend-tstart)/dt))
+        time = np.linspace(tstart, tend, int((tend - tstart) / dt))
 
         mean_count_rate = 1000.0
-        mean_counts = mean_count_rate*dt
+        mean_counts = mean_count_rate * dt
 
         lc_all = []
         for n in range(n_lcs):
@@ -358,10 +355,10 @@ class TestAveragedPowerspectrum(object):
             aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
                                         norm="Leahy")
             bin_aps = aps.rebin(df)
-            assert np.isclose(bin_aps.freq[1]-bin_aps.freq[0], bin_aps.df,
+            assert np.isclose(bin_aps.freq[1] - bin_aps.freq[0], bin_aps.df,
                               atol=1e-4, rtol=1e-4)
             assert np.isclose(bin_aps.freq[0],
-                              (aps.freq[0]-aps.df*0.5+bin_aps.df*0.5),
+                              (aps.freq[0] - aps.df * 0.5 + bin_aps.df * 0.5),
                               atol=1e-4, rtol=1e-4)
 
         def test_rebin_averagedps(self):
@@ -384,10 +381,10 @@ class TestAveragedPowerspectrum(object):
         tend = 1.0
         dt = 0.0001
 
-        time = np.linspace(tstart, tend, int((tend-tstart)/dt))
+        time = np.linspace(tstart, tend, int((tend - tstart) / dt))
 
         mean_count_rate = 1000.0
-        mean_counts = mean_count_rate*dt
+        mean_counts = mean_count_rate * dt
 
         lc_all = []
         for n in range(n_lcs):
@@ -408,7 +405,7 @@ class TestAveragedPowerspectrum(object):
         n = 100
         lc_all = []
         for i in range(n):
-            time = np.arange(0.0, 10.0, 10./100000)
+            time = np.arange(0.0, 10.0, 10. / 100000)
             counts = np.random.poisson(1000, size=time.shape[0])
             lc = Lightcurve(time, counts)
             lc_all.append(lc)
@@ -416,11 +413,10 @@ class TestAveragedPowerspectrum(object):
         ps = AveragedPowerspectrum(lc_all, 10.0, norm="leahy")
 
         assert np.isclose(np.mean(ps.power), 2.0, atol=1e-3, rtol=1e-3)
-        assert np.isclose(np.std(ps.power), 2.0/np.sqrt(n), atol=0.1, rtol=0.1)
+        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(n), atol=0.1, rtol=0.1)
 
 
 class TestClassicalSignificances(object):
-
     def test_function_runs(self):
         power = 2.0
         nspec = 1.0
@@ -498,10 +494,9 @@ class TestClassicalSignificances(object):
         pval1 = classical_pvalue(power1, nspec)
         pval2 = classical_pvalue(power2, nspec)
 
-        assert pval1-pval2 > 0.0
+        assert pval1 - pval2 > 0.0
 
     def test_pvalue_must_decrease_with_increasing_nspec(self):
-
         power = 3.0
         nspec1 = 1.0
         nspec2 = 10.0
@@ -509,7 +504,7 @@ class TestClassicalSignificances(object):
         pval1 = classical_pvalue(power, nspec1)
         pval2 = classical_pvalue(power, nspec2)
 
-        assert pval1-pval2 > 0.0
+        assert pval1 - pval2 > 0.0
 
     def test_very_large_powers_produce_zero_prob(self):
         power = 31000.0
@@ -519,20 +514,25 @@ class TestClassicalSignificances(object):
 
 
 class TestDynamicalPowerspectrum(object):
-
-    def setup_class(self):
+    def setup_class(cls):
         # generate timestamps
         timestamps = np.linspace(1, 100, 10000)
         # noise component
         nois = np.random.poisson(100, 10000)
         # time evolution of frequency
-        freq = 25 + 1.2*np.sin(2*np.pi*timestamps/130)
+        freq = 25 + 1.2 * np.sin(2 * np.pi * timestamps / 130)
         # variability signal with drifiting frequency
-        vari = 25*np.sin(2*np.pi*freq*timestamps)
-        signal = nois+vari
+        vari = 25 * np.sin(2 * np.pi * freq * timestamps)
+        signal = nois + vari
         # create a lightcurve
         lc = Lightcurve(timestamps, signal)
-        self.lc = lc
+        cls.lc = lc
+
+        # Simple lc to demonstrate rebinning of dyn ps
+        # Simple lc to demonstrate rebinning of dyn ps
+        test_times = np.arange(16)
+        test_counts = [2, 3, 1, 3, 1, 5, 2, 1, 4, 2, 2, 2, 3, 4, 1, 7]
+        cls.lc_test = Lightcurve(test_times, test_counts)
 
     def test_with_short_seg_size(self):
         with pytest.raises(ValueError):
@@ -544,17 +544,17 @@ class TestDynamicalPowerspectrum(object):
 
     def test_matrix(self):
         dps = DynamicalPowerspectrum(self.lc, segment_size=3)
-        nsegs = int(self.lc.tseg/dps.segment_size)
-        nfreq = int((1/self.lc.dt)/(2*(dps.freq[1]-dps.freq[0])) -
-                    (1/self.lc.tseg))
+        nsegs = int(self.lc.tseg / dps.segment_size)
+        nfreq = int((1 / self.lc.dt) / (2 * (dps.freq[1] - dps.freq[0])) -
+                    (1 / self.lc.tseg))
         assert dps.dyn_ps.shape == (nfreq, nsegs)
 
     def test_trace_maximum_without_boundaries(self):
         dps = DynamicalPowerspectrum(self.lc, segment_size=3)
         max_pos = dps.trace_maximum()
 
-        assert max(dps.freq[max_pos]) <= 1/self.lc.dt
-        assert min(dps.freq[max_pos]) >= 1/dps.segment_size
+        assert max(dps.freq[max_pos]) <= 1 / self.lc.dt
+        assert min(dps.freq[max_pos]) >= 1 / dps.segment_size
 
     def test_trace_maximum_with_boundaries(self):
         dps = DynamicalPowerspectrum(self.lc, segment_size=3)
@@ -568,5 +568,44 @@ class TestDynamicalPowerspectrum(object):
     def test_size_of_trace_maximum(self):
         dps = DynamicalPowerspectrum(self.lc, segment_size=3)
         max_pos = dps.trace_maximum()
-        nsegs = int(self.lc.tseg/dps.segment_size)
+        nsegs = int(self.lc.tseg / dps.segment_size)
         assert len(max_pos) == nsegs
+
+    def test_rebin_small_dt(self):
+        segment_size = 3
+        dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
+        with pytest.raises(ValueError):
+            dps.rebin_time(dt_new=2.0)
+
+    def test_rebin_time_default_method(self):
+        segment_size = 3
+        dt_new = 4.0
+        rebin_time = np.array([1.5, 5.5, 9.5])
+        rebin_dps = np.array([[0.7962963, 1.16402116, 0.28571429]])
+        dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
+        dps.rebin_time(dt_new=dt_new)
+        assert np.allclose(dps.time, rebin_time)
+        assert np.allclose(dps.dyn_ps, rebin_dps)
+        assert np.isclose(dps.dt, dt_new)
+
+    def test_rebin_time_mean_method(self):
+        segment_size = 3
+        dt_new = 4.0
+        rebin_time = np.array([1.5, 5.5, 9.5])
+        rebin_dps = np.array([[0.59722222, 0.87301587, 0.21428571]])
+        dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
+        dps.rebin_time(dt_new=dt_new, method='mean')
+        assert np.allclose(dps.time, rebin_time)
+        assert np.allclose(dps.dyn_ps, rebin_dps)
+        assert np.isclose(dps.dt, dt_new)
+
+    def test_rebin_time_average_method(self):
+        segment_size = 3
+        dt_new = 4.0
+        rebin_time = np.array([1.5, 5.5, 9.5])
+        rebin_dps = np.array([[0.59722222, 0.87301587, 0.21428571]])
+        dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
+        dps.rebin_time(dt_new=dt_new, method='average')
+        assert np.allclose(dps.time, rebin_time)
+        assert np.allclose(dps.dyn_ps, rebin_dps)
+        assert np.isclose(dps.dt, dt_new)
