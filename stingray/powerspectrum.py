@@ -480,6 +480,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
             self, lc, self.segment_size)
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
+
         self.freq = ps_all[0].freq
         self.time = np.arange(lc.time[0] - 0.5*lc.dt + 0.5*self.segment_size,
                               lc.time[-1] + 0.5*lc.dt, self.segment_size)
