@@ -44,6 +44,11 @@ env:
 matrix:
     fast_finish: true
     include:
+        - python: 3.5
+          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data --coverage'
+
+        - python: 2.7
+          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data'
 
         #Try without importing h5py but importing numba
         - python: 2.7
@@ -148,4 +153,4 @@ after_success:
     # If coveralls.io is set up for this package, uncomment the line
     # below and replace "packagename" with the name of your package.
     # The coveragerc file may be customized as needed for your package.
-    - if [[ $SETUP_CMD == 'test --coverage' ]]; then coveralls --rcfile='stingray/tests/coveragerc'; fi
+    - if [[ $SETUP_CMD == *'--coverage'* ]]; then coveralls --rcfile='stingray/tests/coveragerc'; fi

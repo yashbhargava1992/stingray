@@ -602,7 +602,7 @@ class Lightcurve(object):
             if self.err_dist.lower() != other.err_dist.lower():
                 simon("Lightcurves have different statistics!"
                       "We are setting the errors to zero.")
-                new_counts_err = np.zeros_like(new_counts)
+
 
             elif self.err_dist.lower() in valid_statistics:
                 valid_err = True
@@ -623,7 +623,7 @@ class Lightcurve(object):
 
             for i, time in enumerate(second_lc.time):
             
-                if (counts[time] != 0): #Common time
+                if (counts.get(time) != None): #Common time
 
                     counts[time] = (counts[time] + second_lc.counts[i]) / 2  #avg
                     counts_err[time] = np.sqrt(( ((counts_err[time]**2) + (second_lc.counts_err[i] **2)) / 2))
@@ -636,6 +636,8 @@ class Lightcurve(object):
             new_counts = list(counts.values())
             if(valid_err):
                 new_counts_err = list(counts_err.values())
+            else:
+                new_counts_err = np.zeros_like(new_counts)
             
             del[counts, counts_err]
 

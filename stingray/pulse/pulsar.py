@@ -6,6 +6,12 @@ import numpy as np
 import collections
 from ..utils import simon, jit
 from scipy.optimize import minimize, basinhopping, curve_fit
+try:
+    import pint.toa as toa
+    import pint
+    HAS_PINT = True
+except ImportError:
+    HAS_PINT = False
 
 
 __all__ = ['pulse_phase', 'phase_exposure', 'fold_events', 'stat',
@@ -585,3 +591,57 @@ def get_TOA(prof, period, tstart, template=None, additional_phase=0,
     toa = tstart + phase_res * period
     toaerr = phase_res_err * period
     return toa, toaerr
+
+
+def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
+                                               ntimes=1000, ephem="DE405"):
+    """Get a correction for orbital motion from pulsar parameter file.
+
+    Parameters
+    ----------
+    mjdstart, mjdstop : float
+        Start and end of the time interval where we want the orbital solution
+    parfile : str
+        Any parameter file understood by PINT (Tempo or Tempo2 format)
+
+    Other parameters
+    ----------------
+    ntimes : int
+        Number of time intervals to use for interpolation. Default 1000
+
+    Returns
+    -------
+    correction_sec : function
+        Function that accepts in input an array of times in seconds and a
+        floating-point MJDref value, and returns the deorbited times
+    correction_mjd : function
+        Function that accepts times in MJDs and returns the deorbited times.
+    """
+    from scipy.interpolate import interp1d
+    simon("Assuming events are already referred to the solar system "
+          "barycenter (timescale is TDB)")
+    if not HAS_PINT:
+        raise ImportError("You need the optional dependency PINT to use this "
+                          "functionality: github.com/nanograv/pint")
+
+    mjds = np.linspace(mjdstart, mjdstop, ntimes)
+    toalist = [None] * len(mjds)
+    for i, m in enumerate(mjds):
+        toalist[i] = toa.TOA(m, obs='Barycenter', scale='tdb')
+
+    toalist = toa.TOAs(toalist = toalist)
+    if 'tdb' not in toalist.table.colnames:
+        toalist.compute_TDBs()
+    if 'ssb_obs_pos' not in toalist.table.colnames:
+        toalist.compute_posvels(ephem, False)
+
+    m = pint.models.get_model(parfile)
+    tdbtimes = m.get_barycentric_toas(toalist.table)
+
+    correction_mjd = interp1d(mjds, tdbtimes)
+
+    def correction_sec(times, mjdref):
+        deorb_mjds = correction_mjd(times / 86400 + mjdref)
+        return np.array((deorb_mjds - mjdref) * 86400)
+
+    return correction_sec, correction_mjd
