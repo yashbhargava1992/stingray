@@ -547,7 +547,7 @@ class TestDynamicalPowerspectrum(object):
         nsegs = int(self.lc.tseg/dps.segment_size)
         nfreq = int((1/self.lc.dt)/(2*(dps.freq[1]-dps.freq[0])) -
                     (1/self.lc.tseg))
-        assert dps.dyn_ps.shape == (nsegs, nfreq)
+        assert dps.dyn_ps.shape == (nfreq, nsegs)
 
     def test_trace_maximum_without_boundaries(self):
         dps = DynamicalPowerspectrum(self.lc, segment_size=3)
