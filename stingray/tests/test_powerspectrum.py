@@ -514,13 +514,10 @@ class TestDynamicalPowerspectrum(object):
     def setup_class(cls):
         # generate timestamps
         timestamps = np.linspace(1, 100, 10000)
-        # noise component
-        nois = np.random.poisson(100, 10000)
-        # time evolution of frequency
         freq = 25 + 1.2 * np.sin(2 * np.pi * timestamps / 130)
         # variability signal with drifiting frequency
         vari = 25 * np.sin(2 * np.pi * freq * timestamps)
-        signal = nois + vari
+        signal = vari + 50
         # create a lightcurve
         lc = Lightcurve(timestamps, signal)
         cls.lc = lc
@@ -574,6 +571,12 @@ class TestDynamicalPowerspectrum(object):
         with pytest.raises(ValueError):
             dps.rebin_time(dt_new=2.0)
 
+    def test_rebin_small_df(self):
+        segment_size = 3
+        dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
+        with pytest.raises(ValueError):
+            dps.rebin_frequency(df_new=dps.df/2.0)
+
     def test_rebin_time_default_method(self):
         segment_size = 3
         dt_new = 4.0
@@ -584,6 +587,22 @@ class TestDynamicalPowerspectrum(object):
         assert np.allclose(dps.time, rebin_time)
         assert np.allclose(dps.dyn_ps, rebin_dps)
         assert np.isclose(dps.dt, dt_new)
+
+    def test_rebin_frequency_default_method(self):
+        segment_size = 50
+        df_new = 10.0
+        rebin_freq = np.array([5.01000198, 15.01000198, 25.01000198,
+                               35.01000198, 45.01000198])
+        rebin_dps = np.array([[5.76369293e-06],
+                              [7.07524761e-05],
+                              [6.24846189e+00],
+                              [5.77470465e-05],
+                              [1.76918128e-05]])
+        dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
+        dps.rebin_frequency(df_new=df_new)
+        assert np.allclose(dps.freq, rebin_freq)
+        assert np.allclose(dps.dyn_ps, rebin_dps)
+        assert np.isclose(dps.df, df_new)
 
     def test_rebin_time_mean_method(self):
         segment_size = 3
@@ -596,6 +615,22 @@ class TestDynamicalPowerspectrum(object):
         assert np.allclose(dps.dyn_ps, rebin_dps)
         assert np.isclose(dps.dt, dt_new)
 
+    def test_rebin_frequency_mean_method(self):
+        segment_size = 50
+        df_new = 10.0
+        rebin_freq = np.array([5.01000198, 15.01000198, 25.01000198,
+                               35.01000198, 45.01000198])
+        rebin_dps = np.array([[1.15296690e-08],
+                              [1.41532979e-07],
+                              [1.24993989e-02],
+                              [1.15516968e-07],
+                              [3.53906336e-08]])
+        dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
+        dps.rebin_frequency(df_new=df_new, method="mean")
+        assert np.allclose(dps.freq, rebin_freq)
+        assert np.allclose(dps.dyn_ps, rebin_dps)
+        assert np.isclose(dps.df, df_new)
+
     def test_rebin_time_average_method(self):
         segment_size = 3
         dt_new = 4.0
@@ -606,3 +641,19 @@ class TestDynamicalPowerspectrum(object):
         assert np.allclose(dps.time, rebin_time)
         assert np.allclose(dps.dyn_ps, rebin_dps)
         assert np.isclose(dps.dt, dt_new)
+
+    def test_rebin_frequency_average_method(self):
+        segment_size = 50
+        df_new = 10.0
+        rebin_freq = np.array([5.01000198, 15.01000198, 25.01000198,
+                               35.01000198, 45.01000198])
+        rebin_dps = np.array([[1.15296690e-08],
+                              [1.41532979e-07],
+                              [1.24993989e-02],
+                              [1.15516968e-07],
+                              [3.53906336e-08]])
+        dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
+        dps.rebin_frequency(df_new=df_new, method="average")
+        assert np.allclose(dps.freq, rebin_freq)
+        assert np.allclose(dps.dyn_ps, rebin_dps)
+        assert np.isclose(dps.df, df_new)
