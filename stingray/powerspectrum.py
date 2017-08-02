@@ -482,20 +482,20 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
 
         self.freq = ps_all[0].freq
-        self.time = np.arange(lc.time[0] - 0.5*lc.dt + 0.5*self.segment_size,
-                              lc.time[-1] + 0.5*lc.dt, self.segment_size)
+        self.time = np.arange(lc.time[0] - 0.5 * lc.dt + 0.5 * self.segment_size,
+                              lc.time[-1] + 0.5 * lc.dt, self.segment_size)
 
         # Assign zero resolution if only one value
         if len(self.time) > 1:
             self.dt = self.time[1] - self.time[0]
         else:
-            self.dt = 0
+            self.dt = lc.n
 
         # Assign Zero freq. resolution if only one value
         if len(self.freq) > 1:
             self.df = self.freq[1] - self.freq[0]
         else:
-            self.df = 0
+            self.df = 1 / lc.n
 
         if len(self.time) > self.dyn_ps.shape[0]:
             self.time = self.time[:-1]
