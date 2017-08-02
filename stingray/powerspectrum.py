@@ -605,5 +605,3 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.time = time_new
         self.dyn_ps = np.array(dynspec_new)
         self.dt = dt_new
-
-        return time_new, dynspec_new
