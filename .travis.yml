@@ -30,7 +30,7 @@ env:
         # to repeat them for all configurations.
         - ASTROPY_VERSION=stable
         - SETUP_CMD='test'
-        - PIP_DEPENDENCIES='emcee statsmodels corner'
+        - PIP_DEPENDENCIES='emcee statsmodels corner pytest-catchlog'
         # For this package-template, we include examples of Cython modules,
         # so Cython is required for testing. If your package does not include
         # Cython code, you can set CONDA_DEPENDENCIES=''
@@ -45,10 +45,10 @@ matrix:
     fast_finish: true
     include:
         - python: 3.5
-          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data --coverage'
+          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner pytest-catchlog' SETUP_CMD='test --remote-data --coverage'
 
         - python: 2.7
-          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data'
+          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner pytest-catchlog' SETUP_CMD='test --remote-data'
 
         #Try without importing h5py but importing numba
         - python: 2.7
@@ -59,7 +59,15 @@ matrix:
 
         # Try without using corner
         - python: 3.5
-          env: PIP_DEPENDENCIES='emcee statsmodels' SETUP_CMD='test --coverage'
+          env: PIP_DEPENDENCIES='emcee statsmodels pytest-catchlog' SETUP_CMD='test --coverage'
+
+        # Try without using emcee
+        - python: 3.5
+          env: PIP_DEPENDENCIES='statsmodels pytest-catchlog' SETUP_CMD='test --coverage'
+
+        # Try without using statsmodels
+        - python: 3.5
+          env: PIP_DEPENDENCIES='emcee pytest-catchlog' SETUP_CMD='test --coverage'
 
         - python: 3.4
           env: NUMPY_VERSION=1.11
