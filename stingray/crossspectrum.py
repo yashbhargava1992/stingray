@@ -63,6 +63,7 @@ class Crossspectrum(object):
             The first light curve data for the channel/band of interest.
 
         lc2: lightcurve.Lightcurve object, optional, default None
+        lc2: lightcurve.Lightcurve object, optional, default None
             The light curve data for the reference band.
 
         norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
@@ -703,7 +704,7 @@ class AveragedCrossspectrum(Crossspectrum):
         .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
 
         """
-        if self.m < 50:
+        if np.any(self.m < 50):
             simon("Number of segments used in averaging is "
                   "significantly low. The result might not follow the "
                   "expected statistical distributions.")
