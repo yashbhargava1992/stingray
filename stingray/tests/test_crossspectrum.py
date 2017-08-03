@@ -51,10 +51,13 @@ class TestCoherence(object):
         assert np.abs(np.mean(coh)) < 1
 
     def test_high_coherence(self):
+        import copy
         t = np.arange(1280)
         a = np.random.poisson(100, len(t))
         lc = Lightcurve(t, a)
-        c = AveragedCrossspectrum(lc, lc, 128)
+        lc2 = Lightcurve(t, copy.copy(a))
+        c = AveragedCrossspectrum(lc, lc2, 128)
+
         coh, _ = c.coherence()
         np.testing.assert_almost_equal(np.mean(coh).real, 1.0)
 
@@ -136,15 +139,18 @@ class TestCrossspectrum(object):
     def test_rebin(self):
         new_cs = self.cs.rebin(df=1.5)
         assert new_cs.df == 1.5
+        new_cs.time_lag()
 
     def test_rebin_factor(self):
         new_cs = self.cs.rebin(f=1.5)
         assert new_cs.df == self.cs.df * 1.5
+        new_cs.time_lag()
 
     def test_rebin_log(self):
         # For now, just verify that it doesn't crash
         new_cs = self.cs.rebin_log(f=0.1)
         assert type(new_cs) == type(self.cs)
+        new_cs.time_lag()
 
     def test_norm_leahy(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
@@ -310,8 +316,6 @@ class TestAveragedCrossspectrum(object):
 
             assert len(coh[0]) == 4999
             assert len(coh[1]) == 4999
-
-            assert len(w) == 3
             assert issubclass(w[-1].category, UserWarning)
 
     def test_failure_when_normalization_not_recognized(self):
@@ -319,6 +323,22 @@ class TestAveragedCrossspectrum(object):
             self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
                                             segment_size=1,
                                             norm="wrong")
+
+    def test_rebin(self):
+        new_cs = self.cs.rebin(df=1.5)
+        assert new_cs.df == 1.5
+        new_cs.time_lag()
+
+    def test_rebin_factor(self):
+        new_cs = self.cs.rebin(f=1.5)
+        assert new_cs.df == self.cs.df * 1.5
+        new_cs.time_lag()
+
+    def test_rebin_log(self):
+        # For now, just verify that it doesn't crash
+        new_cs = self.cs.rebin_log(f=0.1)
+        assert type(new_cs) == type(self.cs)
+        new_cs.time_lag()
 
     def test_timelag(self):
         from ..simulator.simulator import Simulator
