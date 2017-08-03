@@ -93,9 +93,9 @@ class Bispectrum(object):
         """
 
         # Function call to create Bispectrum Object
-        self._make_bispetrum(lc, maxlag, scale)
+        self._make_bispectrum(lc, maxlag, scale)
 
-    def _make_bispetrum(self, lc, maxlag, scale):
+    def _make_bispectrum(self, lc, maxlag, scale):
         """
             Makes a Bispectrum Object with given lighcurve, maxlag and scale. 
         """
