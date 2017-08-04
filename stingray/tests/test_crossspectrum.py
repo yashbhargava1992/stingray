@@ -5,6 +5,7 @@ import warnings
 from stingray import Lightcurve, AveragedPowerspectrum
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence
 from stingray import StingrayError
+import copy
 
 np.random.seed(20160528)
 
@@ -123,6 +124,26 @@ class TestCrossspectrum(object):
         lc_ = Lightcurve(time, counts)
         with pytest.raises(StingrayError):
             cs = Crossspectrum(self.lc1, lc_)
+
+    def test_make_crossspectrum_diff_lc_stat(self):
+        lc_ = copy.copy(self.lc1)
+        lc_.err_dist = 'gauss'
+
+        with pytest.warns(UserWarning) as record:
+            cs = Crossspectrum(self.lc1, lc_)
+        assert np.any(["different statistics" in r.message.args[0]
+                       for r in record])
+
+    def test_make_crossspectrum_bad_lc_stat(self):
+        lc1 = copy.copy(self.lc1)
+        lc1.err_dist = 'gauss'
+        lc2 = copy.copy(self.lc1)
+        lc2.err_dist = 'gauss'
+
+        with pytest.warns(UserWarning) as record:
+            cs = Crossspectrum(lc1, lc2)
+        assert np.any(["is not poisson" in r.message.args[0]
+                       for r in record])
 
     def test_make_crossspectrum_diff_dt(self):
         counts = np.array([1]*10000)
