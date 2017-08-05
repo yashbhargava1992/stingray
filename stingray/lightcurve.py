@@ -504,7 +504,7 @@ class Lightcurve(object):
 
         return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt)
 
-    def rebin(self, dt_new, method='sum'):
+    def rebin(self, dt_new=None, f=None, method='sum'):
         """
         Rebin the light curve to a new time resolution. While the new
         resolution need not be an integer multiple of the previous time
@@ -521,12 +521,23 @@ class Lightcurve(object):
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
 
+        Other Parameters
+        ----------------
+        f: float
+            the rebin factor. If specified, it substitutes dt_new with
+            f*self.dt
 
         Returns
         -------
         lc_new: :class:`Lightcurve` object
             The :class:`Lightcurve` object with the new, binned light curve.
         """
+
+        if f is None and dt_new is None:
+            raise ValueError('You need to specify at least one between f and '
+                             'dt_new')
+        elif f is not None:
+            dt_new = f * self.dt
 
         if dt_new < self.dt:
             raise ValueError("New time resolution must be larger than "
@@ -925,7 +936,7 @@ class Lightcurve(object):
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
                                 err=self.counts_err[start:stop],
                                 mjdref=self.mjdref, gti=[self.gti[i]],
-                                dt=self.dt)
+                                dt=self.dt, err_dist=self.err_dist)
             list_of_lcs.append(new_lc)
 
         return list_of_lcs
