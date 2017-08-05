@@ -232,6 +232,10 @@ class TestAveragedCrossspectrum(object):
 
         self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
 
+    def test_no_segment_size(self):
+        with pytest.raises(ValueError):
+            cs = AveragedCrossspectrum(self.lc1, self.lc2)
+
     def test_invalid_type_attribute(self):
         with pytest.raises(ValueError):
             cs_test = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)

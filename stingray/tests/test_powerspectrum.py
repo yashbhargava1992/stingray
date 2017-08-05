@@ -278,9 +278,13 @@ class TestAveragedPowerspectrum(object):
         cls.lc = Lightcurve(time, counts=poisson_counts, gti=[[tstart, tend]],
                             dt=dt)
 
+    def test_no_segment_size(self):
+        with pytest.raises(ValueError):
+            cs = AveragedPowerspectrum(self.lc)
+
     def test_one_segment(self):
         segment_size = self.lc.tseg
-        print(segment_size, self.lc.tseg, self.lc.gti)
+
         ps = AveragedPowerspectrum(self.lc, segment_size)
         assert np.isclose(ps.segment_size, segment_size)
 
