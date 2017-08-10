@@ -781,6 +781,56 @@ class Lightcurve(object):
         self.counts = np.asarray(new_counts)
         self.counts_err = np.asarray(new_counts_err)
 
+    def estimate_chunk_length(self, min_total_counts=100, min_time_bins=100):
+        """Choose a reasonable chunk length.
+
+        The user specifies a condition on the total counts in each chunk and
+        the minimum number of time bins.
+
+        Other Parameters
+        ----------------
+        min_total_counts : int
+            Minimum number of counts for each chunk
+        min_time_bins : int
+            Minimum number of time bins
+
+        Returns
+        -------
+        chunk_length : float
+            The length of the light curve chunks that satisfies the conditions
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> time = np.arange(150)
+        >>> count = np.zeros_like(time) + 3
+        >>> lc = Lightcurve(time, count)
+        >>> lc.estimate_chunk_length(min_total_counts=10, min_time_bins=3)
+        4.0
+        >>> lc.estimate_chunk_length(min_total_counts=10, min_time_bins=5)
+        5.0
+        >>> count[2:4] = 1
+        >>> lc = Lightcurve(time, count)
+        >>> lc.estimate_chunk_length(min_total_counts=3, min_time_bins=1)
+        4.0
+        """
+
+        rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt
+
+        chunk_length = np.max([rough_estimate, min_time_bins * self.dt])
+
+        keep_searching = True
+        while keep_searching:
+            start_times, stop_times, results = \
+                self.analyze_lc_chunks(chunk_length, np.sum)
+            mincounts = np.min(results)
+            if mincounts >= min_total_counts:
+                keep_searching = False
+            else:
+                chunk_length *= np.ceil(min_total_counts / mincounts) * self.dt
+
+        return chunk_length
+
     def analyze_lc_chunks(self, chunk_length, func, fraction_step=1, **kwargs):
         """Analyze chunks of the light curve with any function.
 
