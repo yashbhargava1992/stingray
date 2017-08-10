@@ -652,4 +652,16 @@ class TestLightcurveRebin(object):
     def test_change_mjdref(self):
         lc_new = self.lc.change_mjdref(57000)
         assert lc_new.mjdref == 57000
-    
+
+    def test_apply_gtis(self):
+        time = np.arange(150)
+        count = np.zeros_like(time) + 3
+        lc = Lightcurve(time, count, gti=[[-0.5, 150.5]])
+        lc.gti = [[-0.5, 2.5], [12.5, 14.5]]
+        lc._apply_gtis()
+        assert lc.n == 5
+        assert np.all(lc.time == np.array([0, 1, 2, 13, 14]))
+        lc.gti = [[-0.5, 10.5]]
+        lc._apply_gtis()
+        assert lc.n == 3
+        assert np.all(lc.time == np.array([0, 1, 2]))

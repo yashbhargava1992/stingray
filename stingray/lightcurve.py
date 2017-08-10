@@ -1033,27 +1033,7 @@ class Lightcurve(object):
         return list_of_lcs
 
     def _apply_gtis(self):
-        """Apply GTIs to a light curve after modification.
-
-        Examples
-        --------
-        >>> import numpy as np
-        >>> time = np.arange(150)
-        >>> count = np.zeros_like(time) + 3
-        >>> lc = Lightcurve(time, count, gti=[[-0.5, 150.5]])
-        >>> lc.gti = [[-0.5, 2.5], [12.5, 14.5]]
-        >>> lc._apply_gtis()
-        >>> lc.n
-        5
-        >>> np.all(lc.time == np.array([0, 1, 2, 13, 14]))
-        True
-        >>> lc.gti = [[-0.5, 10.5]]
-        >>> lc._apply_gtis()
-        >>> lc.n
-        3
-        >>> np.all(lc.time == np.array([0, 1, 2]))
-        True
-        """
+        """Apply GTIs to a light curve after modification."""
         check_gtis(self.gti)
 
         good = create_gti_mask(self.time, self.gti)
