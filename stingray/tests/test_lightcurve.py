@@ -424,6 +424,30 @@ class TestLightcurve(object):
         assert len(lc.counts) == len(lc.time) == 6
         assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
 
+    def test_join_different_err_dist_disjoint_times(self):
+        _times = [5 , 6, 7, 8]
+        _counts =[2, 2, 2, 2]
+
+        lc1 = Lightcurve(self.times, self.counts, err_dist = "poisson")
+        lc2 = Lightcurve(_times, _counts, err_dist = "gauss")
+
+        lc3 = lc1.join(lc2)
+
+        assert np.all(lc3.counts_err[:len(self.times)] == lc1.counts_err)
+        assert np.all(lc3.counts_err[len(self.times):] == np.zeros_like(lc2.counts))
+
+    def test_join_different_err_dist_overlapping_times(self):
+        _times = [3, 4, 5, 6]
+        _counts = [4, 4, 4, 4]
+
+        lc1 = Lightcurve(self.times, self.counts, err_dist = "poisson")
+        lc2 = Lightcurve(_times, _counts, err_dist = "gauss")
+        
+        with warnings.catch_warnings(record=True) as w:
+            lc3 = lc1.join(lc2)
+            assert "We are setting the errors to zero." in str(w[1].message)
+            assert np.all(lc3.counts_err == np.zeros_like(lc3.time))
+
     def test_truncate_by_index(self):
         lc = Lightcurve(self.times, self.counts, gti=self.gti)
 
@@ -620,11 +644,29 @@ class TestLightcurveRebin(object):
             self.lc.counts[0]*dt_new/self.lc.dt
         assert np.allclose(lc_binned.counts, counts_test)
 
+    def test_rebin_even_factor(self):
+        f = 200
+        dt_new = f * self.lc.dt
+        lc_binned = self.lc.rebin(f=f)
+        assert np.isclose(dt_new, f * self.lc.dt)
+        counts_test = np.zeros_like(lc_binned.time) + \
+            self.lc.counts[0]*dt_new/self.lc.dt
+        assert np.allclose(lc_binned.counts, counts_test)
+
     def test_rebin_odd(self):
         dt_new = 1.5
         lc_binned = self.lc.rebin(dt_new)
         assert np.isclose(lc_binned.dt, dt_new)
 
+        counts_test = np.zeros_like(lc_binned.time) + \
+            self.lc.counts[0]*dt_new/self.lc.dt
+        assert np.allclose(lc_binned.counts, counts_test)
+
+    def test_rebin_odd_factor(self):
+        f = 100.5
+        dt_new = f * self.lc.dt
+        lc_binned = self.lc.rebin(f=f)
+        assert np.isclose(dt_new, f * self.lc.dt)
         counts_test = np.zeros_like(lc_binned.time) + \
             self.lc.counts[0]*dt_new/self.lc.dt
         assert np.allclose(lc_binned.counts, counts_test)

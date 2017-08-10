@@ -506,7 +506,7 @@ class Lightcurve(object):
 
         return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt)
 
-    def rebin(self, dt_new, method='sum'):
+    def rebin(self, dt_new=None, f=None, method='sum'):
         """
         Rebin the light curve to a new time resolution. While the new
         resolution need not be an integer multiple of the previous time
@@ -523,12 +523,23 @@ class Lightcurve(object):
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
 
+        Other Parameters
+        ----------------
+        f: float
+            the rebin factor. If specified, it substitutes dt_new with
+            f*self.dt
 
         Returns
         -------
         lc_new: :class:`Lightcurve` object
             The :class:`Lightcurve` object with the new, binned light curve.
         """
+
+        if f is None and dt_new is None:
+            raise ValueError('You need to specify at least one between f and '
+                             'dt_new')
+        elif f is not None:
+            dt_new = f * self.dt
 
         if dt_new < self.dt:
             raise ValueError("New time resolution must be larger than "
@@ -604,7 +615,7 @@ class Lightcurve(object):
             if self.err_dist.lower() != other.err_dist.lower():
                 simon("Lightcurves have different statistics!"
                       "We are setting the errors to zero.")
-                new_counts_err = np.zeros_like(new_counts)
+
 
             elif self.err_dist.lower() in valid_statistics:
                 valid_err = True
@@ -625,7 +636,7 @@ class Lightcurve(object):
 
             for i, time in enumerate(second_lc.time):
             
-                if (counts[time] != 0): #Common time
+                if (counts.get(time) != None): #Common time
 
                     counts[time] = (counts[time] + second_lc.counts[i]) / 2  #avg
                     counts_err[time] = np.sqrt(( ((counts_err[time]**2) + (second_lc.counts_err[i] **2)) / 2))
@@ -638,6 +649,8 @@ class Lightcurve(object):
             new_counts = list(counts.values())
             if(valid_err):
                 new_counts_err = list(counts_err.values())
+            else:
+                new_counts_err = np.zeros_like(new_counts)
             
             del[counts, counts_err]
 
@@ -1028,7 +1041,7 @@ class Lightcurve(object):
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
                                 err=self.counts_err[start:stop],
                                 mjdref=self.mjdref, gti=[self.gti[i]],
-                                dt=self.dt)
+                                dt=self.dt, err_dist=self.err_dist)
             list_of_lcs.append(new_lc)
 
         return list_of_lcs
