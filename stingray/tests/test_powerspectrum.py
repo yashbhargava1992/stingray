@@ -283,6 +283,16 @@ class TestAveragedPowerspectrum(object):
         ps = AveragedPowerspectrum(self.lc, segment_size)
         assert np.isclose(ps.segment_size, segment_size)
 
+    def test_make_empty_periodogram(self):
+        ps = AveragedPowerspectrum()
+        assert ps.norm == "frac"
+        assert ps.freq is None
+        assert ps.power is None
+        assert ps.power_err is None
+        assert ps.df is None
+        assert ps.m == 1
+        assert ps.n is None
+
     @pytest.mark.parametrize('nseg', [1, 2, 3, 5, 10, 20, 100])
     def test_n_segments(self, nseg):
         segment_size = self.lc.tseg/nseg
