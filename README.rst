@@ -61,6 +61,8 @@ Contents
 - coherence
 - cross spectra, r.m.s. spectra and lags (time vs energy, time vs frequency)
 - covariance spectra
+- bispectra
+- Bayesian QPO searches
 - simulate a light curve with a given power spectrum
 - simulate a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
 - simulate an event list from a given light curve _and_ with a given energy spectrum
@@ -70,9 +72,8 @@ Contents
 
 Future Additions
 ----------------
-- bispectra, bicoherence
+- bicoherence
 - spectral-timing functionality
-- Bayesian QPO searches
 - power colours
 - full HEASARC-compatible mission support
 - graphical interface (see StingraySoftware/DAVE)
