@@ -121,7 +121,7 @@ class TestPowerspectrum(object):
         assert np.isclose(rms_ps, rms_lc, atol=0.01)
 
     def test_leahy_norm_correct(self):
-        time = np.linspace(0, 10.0, 1e6)
+        time = np.linspace(0, 10.0, 1e5)
         counts = np.random.poisson(1000, size=time.shape[0])
 
         lc = Lightcurve(time, counts)
@@ -417,18 +417,18 @@ class TestAveragedPowerspectrum(object):
 
     def test_leahy_correct_for_multiple(self):
 
-        n = 100
+        n = 10
         lc_all = []
         for i in range(n):
-            time = np.arange(0.0, 10.0, 10. / 100000)
+            time = np.arange(0.0, 10.0, 10. / 10000)
             counts = np.random.poisson(1000, size=time.shape[0])
             lc = Lightcurve(time, counts)
             lc_all.append(lc)
 
-        ps = AveragedPowerspectrum(lc_all, 10.0, norm="leahy")
+        ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy")
 
-        assert np.isclose(np.mean(ps.power), 2.0, atol=1e-3, rtol=1e-3)
-        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(n), atol=0.1, rtol=0.1)
+        assert np.isclose(np.mean(ps.power), 2.0, atol=1e-2, rtol=1e-2)
+        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(n*10), atol=0.1, rtol=0.1)
 
 
 class TestClassicalSignificances(object):
