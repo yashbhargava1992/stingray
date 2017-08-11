@@ -163,8 +163,17 @@ class Lightcurve(object):
 
         self.mjdref = mjdref
         self.time = np.asarray(time)
+        dt_array = np.diff(np.sort(self.time))
+
         if dt is None:
-            self.dt = np.median(self.time[1:] - self.time[:-1])
+            if np.any(np.diff(self.time) < 0):
+                logging.warning("The light curve is unordered! This may cause "
+                                "unexpected behaviour in some methods! Use "
+                                "sort() to order the light curve in time and "
+                                "check that the time resolution `dt` is "
+                                "calculated correctly!")
+
+            self.dt = np.median(dt_array)
         else:
             self.dt = dt
 
@@ -173,8 +182,8 @@ class Lightcurve(object):
 
         self.err_dist = err_dist
 
-        self.tstart = self.time[0] - 0.5*self.dt
-        self.tseg = self.time[-1] - self.time[0] + self.dt
+        self.tstart = np.min(self.time) - 0.5*self.dt
+        self.tseg = np.max(self.time) - np.min(self.time) + self.dt
 
         self.gti = \
             np.asarray(assign_value_if_none(gti,
@@ -847,7 +856,48 @@ class Lightcurve(object):
 
     def sort(self, reverse=False):
         """
-        Sort a Lightcurve object in accordance with its counts array.
+        Sort a Lightcurve object in accordance by time.
+
+        A Lightcurve can be sorted in either increasing or decreasing order
+        using this method. The time array gets sorted and the counts array is
+        changed accordingly.
+
+        Parameters
+        ----------
+        reverse : boolean, default False
+            If True then the object is sorted in reverse order.
+
+        Example
+        -------
+        >>> time = [2, 1, 3]
+        >>> count = [200, 100, 300]
+        >>> lc = Lightcurve(time, count)
+        >>> lc_new = lc.sort()
+        >>> lc_new.time
+        array([1, 2, 3])
+        >>> lc_new.counts
+        array([100, 200, 300])
+
+        Returns
+        -------
+        lc_new: :class:`Lightcurve` object
+            The :class:`Lightcurve` object with sorted time and counts
+            arrays.
+        """
+
+        new_time, new_counts, new_counts_err = zip(*sorted(zip(self.time,
+                                                               self.counts,
+                                                               self.counts_err)
+                                                           , reverse=reverse))
+
+        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
+                            gti=self.gti, dt=self.dt, mjdref=self.mjdref)
+
+        return new_lc
+
+    def sort_counts(self, reverse=False):
+        """
+        Sort a Lightcurve object in accordance by counts.
 
         A Lightcurve can be sorted in either increasing or decreasing order
         using this method. The counts array gets sorted and the time array is
@@ -863,25 +913,27 @@ class Lightcurve(object):
         >>> time = [1, 2, 3]
         >>> count = [200, 100, 300]
         >>> lc = Lightcurve(time, count)
-        >>> lc.sort()
-        >>> lc.counts
-        array([100, 200, 300])
-        >>> lc.time
+        >>> lc_new = lc.sort_counts()
+        >>> lc_new.time
         array([2, 1, 3])
+        >>> lc_new.counts
+        array([100, 200, 300])
 
         Returns
         -------
         lc_new: :class:`Lightcurve` object
-            The :class:`Lightcurve` object with truncated time and counts
+            The :class:`Lightcurve` object with sorted time and counts
             arrays.
         """
 
-        new_counts, new_time, new_counts_err = zip(*sorted(zip(self.counts, self.time, self.counts_err) , reverse=reverse))
+        new_counts, new_time, new_counts_err = \
+            zip(*sorted(zip(self.counts, self.time, self.counts_err),
+                        reverse=reverse))
 
-        self.time = np.asarray(new_time)
-        self.counts = np.asarray(new_counts)
-        self.counts_err = np.asarray(new_counts_err)
+        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
+                            gti=self.gti, dt=self.dt, mjdref=self.mjdref)
 
+        return new_lc
     def estimate_chunk_length(self, min_total_counts=100, min_time_bins=100):
         """Choose a reasonable chunk length.
 

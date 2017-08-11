@@ -564,22 +564,42 @@ class TestLightcurve(object):
         assert lc2.mjdref == lc.mjdref
 
     def test_sort(self):
+        _times = [2, 1, 3, 4]
+        _counts = [40, 10, 20, 5]
+        lc = Lightcurve(_times, _counts, mjdref=57000)
+        mjdref = lc.mjdref
+
+        lc_new = lc.sort()
+
+        assert np.all(lc_new.counts == np.array([10, 40, 20, 5]))
+        assert np.all(lc_new.time == np.array([1, 2, 3, 4]))
+        assert lc_new.mjdref == mjdref
+
+        lc_new = lc.sort(reverse=True)
+
+        assert np.all(lc_new.counts == np.array([5, 20, 40,  10]))
+        assert np.all(lc_new.time == np.array([4, 3, 2, 1]))
+        assert lc_new.mjdref == mjdref
+
+    def test_sort_counts(self):
         _times = [1, 2, 3, 4]
         _counts = [40, 10, 20, 5]
         lc = Lightcurve(_times, _counts, mjdref=57000)
         mjdref = lc.mjdref
 
-        lc.sort()
+        lc_new = lc.sort_counts()
 
-        assert np.all(lc.counts == np.array([5, 10, 20, 40]))
-        assert np.all(lc.time == np.array([4, 2, 3, 1]))
-        assert lc.mjdref == mjdref
+        assert np.all(lc_new.counts == np.array([5, 10, 20, 40]))
+        assert np.all(lc_new.time == np.array([4, 2, 3, 1]))
+        assert lc_new.mjdref == mjdref
 
-        lc.sort(reverse=True)
+        lc_new = lc.sort_counts(reverse=True)
 
-        assert np.all(lc.counts == np.array([40, 20, 10,  5]))
-        assert np.all(lc.time == np.array([1, 3, 2, 4]))
-        assert lc.mjdref == mjdref
+        assert np.all(lc_new.counts == np.array([40, 20, 10,  5]))
+        assert np.all(lc_new.time == np.array([1, 3, 2, 4]))
+        assert lc_new.mjdref == mjdref
+
+
 
     def test_sort_reverse(self):
         times = np.arange(1000)
