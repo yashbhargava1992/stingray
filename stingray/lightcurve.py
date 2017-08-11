@@ -876,6 +876,21 @@ class Lightcurve(object):
             Higher time boundaries of all chunks.
         result : array of N elements
             The result of `func` for each chunk of the light curve
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> time = np.arange(0, 10, 0.1)
+        >>> counts = np.zeros_like(time) + 10
+        >>> lc = Lightcurve(time, counts)
+        >>> # Define a function that calculates the mean
+        >>> mean_func = lambda x: np.mean(x)
+        >>> # Calculate the mean in chunks of 5 seconds
+        >>> start, stop, res = lc.analyze_lc_chunks(5, mean_func)
+        >>> len(res) == 2
+        True
+        >>> np.all(res == 10)
+        True
         """
         start, stop = bin_intervals_from_gtis(self.gti, chunk_length,
                                               self.time,
