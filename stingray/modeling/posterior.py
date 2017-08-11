@@ -328,6 +328,7 @@ class PSDLogLikelihood(LogLikelihood):
 
         _fitter_to_model_params(self.model, pars)
 
+
         mean_model = self.model(self.x)
 
         with warnings.catch_warnings(record=True) as out:
@@ -423,7 +424,14 @@ class Posterior(object):
             raise LikelihoodUndefinedError("There is no likelihood implemented. " +
                                            "Cannot calculate posterior!")
 
-        lpost = self.loglikelihood(t0) + self.logprior(t0)
+
+        logpr = self.logprior(t0)
+        loglike = self.loglikelihood(t0)
+
+        if np.isclose(logpr, logmin):
+            lpost = logmin
+        else:
+            lpost = logpr + loglike
 
         if neg is True:
             return -lpost
