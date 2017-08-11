@@ -164,9 +164,11 @@ class Lightcurve(object):
         self.mjdref = mjdref
         self.time = np.asarray(time)
         dt_array = np.diff(np.sort(self.time))
+        dt_array_unsorted = np.diff(self.time)
+        unsorted = np.any(dt_array_unsorted < 0)
 
         if dt is None:
-            if np.any(np.diff(self.time) < 0):
+            if unsorted:
                 logging.warning("The light curve is unordered! This may cause "
                                 "unexpected behaviour in some methods! Use "
                                 "sort() to order the light curve in time and "
@@ -182,8 +184,13 @@ class Lightcurve(object):
 
         self.err_dist = err_dist
 
-        self.tstart = np.min(self.time) - 0.5*self.dt
-        self.tseg = np.max(self.time) - np.min(self.time) + self.dt
+
+        if unsorted:
+            self.tstart = np.min(self.time) - 0.5 * self.dt
+            self.tseg = np.max(self.time) - np.min(self.time) + self.dt
+        else:
+            self.tstart = self.time[0] - 0.5*self.dt
+            self.tseg = self.time[-1] - self.time[0] + self.dt
 
         self.gti = \
             np.asarray(assign_value_if_none(gti,
