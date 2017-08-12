@@ -460,3 +460,23 @@ def create_window(N, window_type='uniform'):
         windlag1 = 1 - np.arange(N2_plus_1, N) / N_minus_1
         window[:N2_plus_1] = 1 - (1 - windlag0) * windlag0 * windlag0 * 6;
         window[N2_plus_1:] = windlag1 * windlag1 * windlag1 * 2
+
+    if window_type == 'hamming':
+    window = 0.54 - 0.46 * np.cos((2 * np.pi * n) / N_minus_1)
+
+    if window_type == 'hanning':
+        window = 0.5 * (1 - np.cos(2 * np.pi * n / N_minus_1))
+
+    if window_type == 'triangular':
+        window = 1 - np.abs((n - (N_by_2)) / N)
+
+    if window_type == 'welch':
+        N_minus_1_by_2 = N_minus_1 / 2
+        window = 1 - np.square((n - N_minus_1_by_2) / N_minus_1_by_2)
+        return window
+
+    if window_type == 'blackmann':
+        a0 = 0.42659
+        a1 = 0.49656
+        a2 = 0.076849
+        window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + a2 * np.cos((4 * np.pi * n) / N_minus_1)
