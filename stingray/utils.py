@@ -480,3 +480,5 @@ def create_window(N, window_type='uniform'):
         a1 = 0.49656
         a2 = 0.076849
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + a2 * np.cos((4 * np.pi * n) / N_minus_1)
+
+    return window
