@@ -13,9 +13,11 @@ import numpy as np
 HAS_NUMBA = False
 try:
     from numba import jit
+
     HAS_NUMBA = True
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
+
 
     class jit(object):
 
@@ -30,7 +32,7 @@ except ImportError:
 
 
 def _root_squared_mean(array):
-    return np.sqrt(np.sum(array**2)) / len(array)
+    return np.sqrt(np.sum(array ** 2)) / len(array)
 
 
 def simon(message, **kwargs):
@@ -52,7 +54,6 @@ def simon(message, **kwargs):
 
 
 def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
-
     """Rebin some data to an arbitrary new data resolution. Either sum
     the data points in the new bins or average them.
 
@@ -116,17 +117,17 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         prev_frac = int_i + 1 - i
         prev_bin = int_i
         total += prev_frac * y[prev_bin]
-        totalerr += prev_frac * (yerr[prev_bin]**2)
+        totalerr += prev_frac * (yerr[prev_bin] ** 2)
 
         if i + step_size < len(x):
             # Fractional part of next bin:
             next_frac = i + step_size - int(i + step_size)
             next_bin = int(i + step_size)
             total += next_frac * y[next_bin]
-            totalerr += next_frac * (yerr[next_bin]**2)
+            totalerr += next_frac * (yerr[next_bin] ** 2)
 
-        total += sum(y[int(i+1):int(i+step_size)])
-        totalerr += sum(yerr[int(i+1):int(step_size)]**2)
+        total += sum(y[int(i + 1):int(i + step_size)])
+        totalerr += sum(yerr[int(i + 1):int(step_size)] ** 2)
         output.append(total)
         outputerr.append(np.sqrt(totalerr))
 
@@ -151,7 +152,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         ybin = ybin[:-1]
         ybinerr = ybinerr[:-1]
 
-    new_x0 = (x[0] - (0.5*dx_old)) + (0.5*dx_new)
+    new_x0 = (x[0] - (0.5 * dx_old)) + (0.5 * dx_new)
     xbin = np.arange(ybin.shape[0]) * dx_new + new_x0
 
     return xbin, ybin, ybinerr, step_size
@@ -214,7 +215,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     # until we reach the maximum frequency, increase the width of each
     # frequency bin by f
     while binx[-1] <= maxx:
-        binx.append(binx[-1] + dx*(1.0+f))
+        binx.append(binx[-1] + dx * (1.0 + f))
         dx = binx[-1] - binx[-2]
 
     # compute the mean of the ys that fall into each new frequency bin.
@@ -324,7 +325,7 @@ def is_int(obj):
     return isinstance(obj, (numbers.Integral, np.integer))
 
 
-def get_random_state(random_state = None):
+def get_random_state(random_state=None):
     if not random_state:
         random_state = np.random.mtrand._rand
     else:
@@ -332,7 +333,7 @@ def get_random_state(random_state = None):
             random_state = np.random.RandomState(random_state)
         elif not isinstance(random_state, np.random.RandomState):
             raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
-                value = random_state
+                value=random_state
             ))
 
     return random_state
@@ -345,7 +346,7 @@ def baseline_als(y, lam, p, niter=10):
     https://www.researchgate.net/publication/228961729_Technical_Report_Baseline_Correction_with_Asymmetric_Least_Squares_Smoothing
     The Python translation is partly from
     http://stackoverflow.com/questions/29156532/python-baseline-correction-library
-    
+
     Parameters
     ----------
     y : array of floats
@@ -364,8 +365,8 @@ def baseline_als(y, lam, p, niter=10):
     for i in range(niter):
         W = sparse.spdiags(w, 0, L, L)
         Z = W + lam * D.dot(D.transpose())
-        z = sparse.linalg.spsolve(Z, w*y)
-        w = p * (y > z) + (1-p) * (y < z)
+        z = sparse.linalg.spsolve(Z, w * y)
+        w = p * (y > z) + (1 - p) * (y < z)
     return z
 
 
@@ -406,8 +407,9 @@ def excess_variance(lc, normalization='fvar'):
     elif normalization == 'none' or normalization is None:
         return var_xs, var_xs_err
 
+
 def create_window(N, window_type='uniform'):
-	""" A method to create window functions commonly used in signal processing.
+    """ A method to create window functions commonly used in signal processing.
         Windows supported are:
         Hamming, Hanning, uniform(rectangular window), triangular window, blackmann window among others.
 
@@ -422,8 +424,8 @@ def create_window(N, window_type='uniform'):
         window: numpy.ndarray
             Window function of length N.
     """
-	
-	if not isinstance(N, int):
+
+    if not isinstance(N, int):
         raise TypeError('N (window length) must be an integer')
 
     WINDOWS = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
@@ -462,7 +464,7 @@ def create_window(N, window_type='uniform'):
         window[N2_plus_1:] = windlag1 * windlag1 * windlag1 * 2
 
     if window_type == 'hamming':
-    window = 0.54 - 0.46 * np.cos((2 * np.pi * n) / N_minus_1)
+        window = 0.54 - 0.46 * np.cos((2 * np.pi * n) / N_minus_1)
 
     if window_type == 'hanning':
         window = 0.5 * (1 - np.cos(2 * np.pi * n / N_minus_1))
@@ -473,15 +475,14 @@ def create_window(N, window_type='uniform'):
     if window_type == 'welch':
         N_minus_1_by_2 = N_minus_1 / 2
         window = 1 - np.square((n - N_minus_1_by_2) / N_minus_1_by_2)
-        return window
-
+        
     if window_type == 'blackmann':
         a0 = 0.42659
         a1 = 0.49656
         a2 = 0.076849
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + a2 * np.cos((4 * np.pi * n) / N_minus_1)
 
-      if window_type == 'flat-top':
+    if window_type == 'flat-top':
         a0 = 1
         a1 = 1.93
         a2 = 1.29
