@@ -406,3 +406,15 @@ def excess_variance(lc, normalization='fvar'):
     elif normalization == 'none' or normalization is None:
         return var_xs, var_xs_err
 
+def create_window(N, window_type='uniform'):
+	if not isinstance(N, int):
+        raise TypeError('N (window length) must be an integer')
+
+    WINDOWS = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
+
+    if not isinstance(window_type, str):
+        raise TypeError('type of window must be specified as string!')
+
+    window_type = window_type.lower()
+    if window_type not in WINDOWS:
+        raise ValueError("Wrong window type specified or window function is not available")
