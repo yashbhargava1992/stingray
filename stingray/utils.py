@@ -434,3 +434,29 @@ def create_window(N, window_type='uniform'):
     window_type = window_type.lower()
     if window_type not in WINDOWS:
         raise ValueError("Wrong window type specified or window function is not available")
+
+    # Return empty array as window if N = 0
+    if N == 0:
+        return np.array([])
+
+    window = None
+    N = abs(N)
+
+    # Window samples index
+    n = np.arange(N)
+
+    # Constants
+    N_minus_1 = N - 1
+    N_by_2 = np.int((np.floor((N_minus_1) / 2)))
+    N2_plus_1 = N_by_2 + 1
+
+    # Create Windows
+    if window_type == 'uniform':
+        window = np.ones(N)
+
+    if window_type == 'parzen':
+        window = np.zeros(N)
+        windlag0 = np.arange(0, N2_plus_1) / N_minus_1
+        windlag1 = 1 - np.arange(N2_plus_1, N) / N_minus_1
+        window[:N2_plus_1] = 1 - (1 - windlag0) * windlag0 * windlag0 * 6;
+        window[N2_plus_1:] = windlag1 * windlag1 * windlag1 * 2
