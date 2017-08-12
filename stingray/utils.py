@@ -407,6 +407,22 @@ def excess_variance(lc, normalization='fvar'):
         return var_xs, var_xs_err
 
 def create_window(N, window_type='uniform'):
+	""" A method to create window functions commonly used in signal processing.
+        Windows supported are:
+        Hamming, Hanning, uniform(rectangular window), triangular window, blackmann window among others.
+
+        Parameters
+        ----------
+        N : int
+            Total number of data points in window. If negative, abs is taken.
+        window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
+            Type of window to create.
+         Returns
+        -------
+        window: numpy.ndarray
+            Window function of length N.
+    """
+	
 	if not isinstance(N, int):
         raise TypeError('N (window length) must be an integer')
 
