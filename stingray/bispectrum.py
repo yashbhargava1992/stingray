@@ -121,9 +121,11 @@ class Bispectrum(object):
 
         if window is None:
             self.window_name = 'No Window'
+            self.window = None
         else:
             self.window_name = window
-            self.window = None
+            self.window = self._get_window()
+
 
         if maxlag is None:
             # if maxlag is not specified, it is set to half of length of lightcurve
@@ -144,9 +146,6 @@ class Bispectrum(object):
         if scale.lower() not in ["biased", "unbiased"]:
             raise ValueError("scale can only be either 'biased' or 'unbiased'.")
         self.scale = scale.lower()
-
-        if window is not None:
-            self.window = self._get_window()
 
         # Other Atributes
         self.lags = None
