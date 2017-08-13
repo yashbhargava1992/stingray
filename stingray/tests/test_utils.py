@@ -154,7 +154,7 @@ class TestCreateWindow(object):
         assert np.allclose(window, result)
 
     def test_parzen_window(self):
-        result = np.array([1, 0.71875, 0.25, 0.03125, 0])
+        result = np.array([0, 0.25, 1, 0.25, 0])
         window = utils.create_window(self.N, self.parzen_window)
         assert np.allclose(window, result)
 
