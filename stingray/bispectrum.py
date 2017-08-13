@@ -10,7 +10,7 @@ import stingray.utils as utils
 
 
 class Bispectrum(object):
-    def __init__(self, lc, maxlag=None, window = 'uniform', scale='biased'):
+    def __init__(self, lc, maxlag=None, window=None, scale='biased'):
         """
                 Makes a :class:`Bispectrum` object from a given :class:`Lightcurve`.
                 
@@ -118,7 +118,12 @@ class Bispectrum(object):
         self.lc = lc
         self.fs = 1 / lc.dt
         self.n = self.lc.n
-        self.window_name = window
+
+        if window is None:
+            self.window_name = 'No Window'
+        else:
+            self.window_name = window
+            self.window = None
 
         if maxlag is None:
             # if maxlag is not specified, it is set to half of length of lightcurve
@@ -139,7 +144,9 @@ class Bispectrum(object):
         if scale.lower() not in ["biased", "unbiased"]:
             raise ValueError("scale can only be either 'biased' or 'unbiased'.")
         self.scale = scale.lower()
-        self.window = self._get_window()
+
+        if window is not None:
+            self.window = self._get_window()
 
         # Other Atributes
         self.lags = None
@@ -167,7 +174,7 @@ class Bispectrum(object):
         window_even = utils.create_window(N, self.window_name)
 
         # 2d even window
-        window2d = np.array([window_even,] * N)
+        window2d = np.array([window_even, ] * N)
 
         ## One-sided window with zero padding
         window = np.zeros(N)
@@ -175,8 +182,8 @@ class Bispectrum(object):
         window[self.maxlag:] = 0
 
         # 2d window function to apply to bispectrum
-        row = np.concatenate(([window[0]],np.zeros(2 * self.maxlag)))
-        toep_matrix = toeplitz(window,row)
+        row = np.concatenate(([window[0]], np.zeros(2 * self.maxlag)))
+        toep_matrix = toeplitz(window, row)
         toep_matrix += np.tril(toep_matrix, -1).transpose()
         window = np.flip(toep_matrix, axis=1) * window2d * window2d.transpose()
         return window
@@ -272,7 +279,13 @@ class Bispectrum(object):
             self.bispec_phase
         """
         self.freq = (1 / 2) * self.fs * (self.lags / self.lc.dt) / self.maxlag
-        self.bispec = fftshift(fft2(ifftshift(self.cum3 * self.window)))
+
+        # Apply window if specified otherwise calculate with applying window
+        if self.window is None:
+            self.bispec = fftshift(fft2(ifftshift(self.cum3)))
+        else:
+            self.bispec = fftshift(fft2(ifftshift(self.cum3 * self.window)))
+
         self.bispec_mag = np.abs(self.bispec)
         self.bispec_phase = np.angle((self.bispec))
 
@@ -403,4 +416,3 @@ class Bispectrum(object):
             else:
                 plt.savefig(filename)
         return plt
-
