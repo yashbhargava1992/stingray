@@ -106,26 +106,19 @@ class Bispectrum(object):
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError('lc must be a lightcurve.ightcurve object')
 
-        if not isinstance(window, str):
-            raise TypeError('Window must be specified as string!')
-
+        # Available Windows. Used to resolve window paramneter
         WINDOWS = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
-        window = window.lower()
 
-        if window not in WINDOWS:
-            raise ValueError("Wrong window specified or window function is not available")
+        if window:
+            if not isinstance(window, str):
+                raise TypeError('Window must be specified as string!')
+            window = window.lower()
+            if window not in WINDOWS:
+                raise ValueError("Wrong window specified or window function is not available")
 
         self.lc = lc
         self.fs = 1 / lc.dt
         self.n = self.lc.n
-
-        if window is None:
-            self.window_name = 'No Window'
-            self.window = None
-        else:
-            self.window_name = window
-            self.window = self._get_window()
-
 
         if maxlag is None:
             # if maxlag is not specified, it is set to half of length of lightcurve
@@ -146,6 +139,13 @@ class Bispectrum(object):
         if scale.lower() not in ["biased", "unbiased"]:
             raise ValueError("scale can only be either 'biased' or 'unbiased'.")
         self.scale = scale.lower()
+
+        if window is None:
+            self.window_name = 'No Window'
+            self.window = None
+        else:
+            self.window_name = window
+            self.window = self._get_window()
 
         # Other Atributes
         self.lags = None
