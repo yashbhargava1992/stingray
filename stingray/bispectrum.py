@@ -2,15 +2,15 @@ from __future__ import division
 
 import numpy as np
 from scipy.linalg import toeplitz
-from scipy.fftpack import fftshift, fft2, ifftshift, fftfreq
+from scipy.fftpack import fftshift, fft2, ifftshift, fft
+from  scipy.linalg import hankel
 
 from stingray import lightcurve
-from stingray.utils import simon
-import matplotlib.pyplot as plt
+import stingray.utils as utils
 
 
 class Bispectrum(object):
-    def __init__(self, lc, maxlag=None, scale='biased'):
+    def __init__(self, lc, maxlag=None, window = 'uniform', scale='biased'):
         """
                 Makes a :class:`Bispectrum` object from a given :class:`Lightcurve`.
                 
@@ -25,8 +25,11 @@ class Bispectrum(object):
                     Maximum lag on both positive and negative sides of 
                     3rd order cumulant (Similar to lags in correlation).
                     if None, max lag is set to one-half of length of lightcurve.
+                window : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
+                    Type of Window to apply for Bispectrum.
                 scale: {'biased', 'unbiased'}, optional, default 'biased'
                     Flag to decide biased or unbiased normalization for 3rd order cumulant function.
+                    
 
                 Attributes
                 ----------
@@ -93,9 +96,9 @@ class Bispectrum(object):
         """
 
         # Function call to create Bispectrum Object
-        self._make_bispectrum(lc, maxlag, scale)
+        self._make_bispetrum(lc, maxlag, window, scale)
 
-    def _make_bispectrum(self, lc, maxlag, scale):
+    def _make_bispetrum(self, lc, maxlag, window, scale):
         """
             Makes a Bispectrum Object with given lighcurve, maxlag and scale. 
         """
@@ -103,9 +106,19 @@ class Bispectrum(object):
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError('lc must be a lightcurve.ightcurve object')
 
+        if not isinstance(window, str):
+            raise TypeError('Window must be specified as string!')
+
+        WINDOWS = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
+        window = window.lower()
+
+        if window not in WINDOWS:
+            raise ValueError("Wrong window specified or window function is not available")
+
         self.lc = lc
         self.fs = 1 / lc.dt
         self.n = self.lc.n
+        self.window_name = window
 
         if maxlag is None:
             # if maxlag is not specified, it is set to half of length of lightcurve
@@ -126,6 +139,7 @@ class Bispectrum(object):
         if scale.lower() not in ["biased", "unbiased"]:
             raise ValueError("scale can only be either 'biased' or 'unbiased'.")
         self.scale = scale.lower()
+        self.window = self._get_window()
 
         # Other Atributes
         self.lags = None
@@ -144,6 +158,28 @@ class Bispectrum(object):
         self._cumulant3()
         self._normalize_cumulant3()
         self._cal_bispec()
+
+    def _get_window(self):
+        """
+            Returns a window function of self.window_name type
+        """
+        N = 2 * self.maxlag + 1
+        window_even = utils.create_window(N, self.window_name)
+
+        # 2d even window
+        window2d = np.array([window_even,] * N)
+
+        ## One-sided window with zero padding
+        window = np.zeros(N)
+        window[:self.maxlag + 1] = window_even[self.maxlag:]
+        window[self.maxlag:] = 0
+
+        # 2d window function to apply to bispectrum
+        row = np.concatenate(([window[0]],np.zeros(2 * self.maxlag)))
+        toep_matrix = toeplitz(window,row)
+        toep_matrix += np.tril(toep_matrix, -1).transpose()
+        window = np.flip(toep_matrix, axis=1) * window2d * window2d.transpose()
+        return window
 
     def _cumulant3(self):
         """
@@ -236,7 +272,7 @@ class Bispectrum(object):
             self.bispec_phase
         """
         self.freq = (1 / 2) * self.fs * (self.lags / self.lc.dt) / self.maxlag
-        self.bispec = fftshift(fft2(ifftshift(self.cum3)))
+        self.bispec = fftshift(fft2(ifftshift(self.cum3 * self.window)))
         self.bispec_mag = np.abs(self.bispec)
         self.bispec_phase = np.angle((self.bispec))
 
@@ -368,7 +404,3 @@ class Bispectrum(object):
                 plt.savefig(filename)
         return plt
 
-
-lc = lightcurve.Lightcurve([1, 2, 3, 4, 5], [2, 3, 1, 1, 2])
-bs = Bispectrum(lc)
-print(bs.bispec_mag)
