@@ -450,18 +450,23 @@ def create_window(N, window_type='uniform'):
     # Constants
     N_minus_1 = N - 1
     N_by_2 = np.int((np.floor((N_minus_1) / 2)))
-    N2_plus_1 = N_by_2 + 1
 
     # Create Windows
     if window_type == 'uniform':
         window = np.ones(N)
 
     if window_type == 'parzen':
-        window = np.zeros(N)
-        windlag0 = np.arange(0, N2_plus_1) / N_minus_1
-        windlag1 = 1 - np.arange(N2_plus_1, N) / N_minus_1
-        window[:N2_plus_1] = 1 - (1 - windlag0) * windlag0 * windlag0 * 6;
+        N_parzen = np.int(np.ceil((N + 1) / 2))
+        N2_plus_1 = np.int(np.floor((N_parzen / 2))) + 1
+
+        window = np.zeros(N_parzen)
+        windlag0 = np.arange(0, N2_plus_1) / (N_parzen - 1)
+        windlag1 = 1 - np.arange(N2_plus_1, N_parzen) / (N_parzen - 1)
+        window[:N2_plus_1] = 1 - (1 - windlag0) * windlag0 * windlag0 * 6
         window[N2_plus_1:] = windlag1 * windlag1 * windlag1 * 2
+        lagindex = np.arange(N_parzen - 1, 0, -1)
+        window = np.concatenate((window[lagindex], window))
+        window = window[:N]
 
     if window_type == 'hamming':
         window = 0.54 - 0.46 * np.cos((2 * np.pi * n) / N_minus_1)
