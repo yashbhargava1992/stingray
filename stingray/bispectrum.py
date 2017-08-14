@@ -184,7 +184,7 @@ class Bispectrum(object):
         row = np.concatenate(([window[0]], np.zeros(2 * self.maxlag)))
         toep_matrix = toeplitz(window, row)
         toep_matrix += np.tril(toep_matrix, -1).transpose()
-        window = np.flip(toep_matrix, axis=1) * window2d * window2d.transpose()
+        window = toep_matrix[:,:,::-1] * window2d * window2d.transpose()
         return window
 
     def _cumulant3(self):
