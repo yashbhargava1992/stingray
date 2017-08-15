@@ -73,13 +73,13 @@ Contents
 Future Additions
 ----------------
 - bicoherence
-- spectral-timing functionality
+- phase-resolved spectroscopy of QPOs
+- Fourier-frequency-resolved spectroscopy
 - power colours
 - full HEASARC-compatible mission support
-- graphical interface (see StingraySoftware/DAVE)
-- (...) Feel free to propose! Use the `Issues`_ page!
 - pulsar searches with $H$-test
 - binary pulsar searches
+- (...) Feel free to propose! Use the `Issues`_ page!
 
 Installation
 ------------
