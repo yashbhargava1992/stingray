@@ -680,6 +680,8 @@ class ParameterEstimation(object):
                                                neg=neg,
                                                max_post=max_post)
 
+        rng = np.random.RandomState(seed)
+
         if sample is None:
             # simulate parameter sets from the simpler model
             if not max_post:
@@ -688,7 +690,7 @@ class ParameterEstimation(object):
 
                 # set up the distribution
                 mvn = scipy.stats.multivariate_normal(mean=res1.p_opt,
-                                                      cov=res1.cov)
+                                                      cov=res1.cov, seed=seed)
 
 
                 # sample parameters
@@ -699,13 +701,13 @@ class ParameterEstimation(object):
             else:
                 # sample the posterior using MCMC
                 s_mcmc = self.sample(lpost1, res1.p_opt, cov=res1.cov,
-                                       nwalkers=nwalkers, niter=niter,
-                                       burnin=burnin, namestr=namestr)
+                                     nwalkers=nwalkers, niter=niter,
+                                     burnin=burnin, namestr=namestr)
 
 
                 # pick nsim samples out of the posterior sample
                 s_all = s_mcmc.samples[
-                    np.random.choice(s_mcmc.samples.shape[0], nsim,
+                    rng.choice(s_mcmc.samples.shape[0], nsim,
                                      replace=False)]
 
                 #if lpost1.npar == 1:
@@ -713,14 +715,14 @@ class ParameterEstimation(object):
 
 
         else:
-            s_all = sample[np.random.choice(sample.shape[0], nsim,
+            s_all = sample[rng.choice(sample.shape[0], nsim,
                                      replace=False)]
 
 
         # simulate LRTs
         # this method is defined in the subclasses!
         lrt_sim = self.simulate_lrts(s_all, lpost1, t1, lpost2, t2,
-                                      max_post=max_post, seed=seed)
+                                     seed=seed)
         # now I can compute the p-value:
         pval = ParameterEstimation._compute_pvalue(lrt_obs, lrt_sim)
 
@@ -944,7 +946,6 @@ class PSDParEst(ParameterEstimation):
 
         self.lpost = lpost
 
-        print('t0: ' + str(t0))
         res = ParameterEstimation.fit(self, self.lpost, t0, neg=neg)
 
         res.maxpow, res.maxfreq, res.maxind = \
@@ -1008,7 +1009,7 @@ class PSDParEst(ParameterEstimation):
 
         return sim_ps
 
-    def simulate_lrts(self, s_all, lpost1, t1, lpost2, t2, max_post=True,
+    def simulate_lrts(self, s_all, lpost1, t1, lpost2, t2,
                       seed=None):
         """
         Simulate likelihood ratios for two given models based on MCMC samples
@@ -1063,10 +1064,10 @@ class PSDParEst(ParameterEstimation):
         # now I can loop over all simulated parameter sets to generate a PSD
         for i, s in enumerate(s_all):
 
-            print("s: " + str(s))
-
             # generate fake PSD
             sim_ps = self._generate_data(lpost1, s, rng)
+
+            neg=True
 
             # make LogLikelihood objects for both:
             if isinstance(lpost1, LogLikelihood):
@@ -1074,7 +1075,7 @@ class PSDParEst(ParameterEstimation):
                                               model=lpost1.model)
                 sim_lpost2 = PSDLogLikelihood(sim_ps.freq, sim_ps.power,
                                               model=lpost2.model, m=sim_ps.m)
-                neg = True
+                max_post = False
             else:
                 # make a Posterior object
                 sim_lpost1 = PSDPosterior(sim_ps.freq, sim_ps.power,
@@ -1085,9 +1086,10 @@ class PSDParEst(ParameterEstimation):
                                           lpost2.model, m=sim_ps.m)
 
                 sim_lpost2.logprior = lpost2.logprior
-                neg=False
+                max_post=True
 
-            parest_sim = PSDParEst(sim_ps, max_post=max_post)
+            parest_sim = PSDParEst(sim_ps, max_post=max_post,
+                                   fitmethod=self.fitmethod)
 
 
 
@@ -1096,10 +1098,9 @@ class PSDParEst(ParameterEstimation):
                                                           sim_lpost2, t2,
                                                           neg=neg,
                                                           max_post=max_post)
-
             except RuntimeError:
-                logging.warning(
-                        "Fitting was unsuccessful. Skipping this simulation!")
+                logging.warning("Fitting was unsuccessful. "
+                                "Skipping this simulation!")
                 continue
 
         return lrt_sim
@@ -1116,6 +1117,8 @@ class PSDParEst(ParameterEstimation):
         # fit the model to the data
         res = self.fit(lpost, t0, neg=True)
 
+        rng = np.random.RandomState(seed)
+
         # find the highest data/model outlier:
         out_high, _, _ = self._compute_highest_outlier(lpost, res)
         # simulate parameter sets from the simpler model
@@ -1125,7 +1128,7 @@ class PSDParEst(ParameterEstimation):
 
             # set up the distribution
             mvn = scipy.stats.multivariate_normal(mean=res.p_opt,
-                                                  cov=res.cov)
+                                                  cov=res.cov, seed=seed)
 
             if lpost.npar == 1:
                 # sample parameters
@@ -1138,17 +1141,17 @@ class PSDParEst(ParameterEstimation):
             if sample is None:
                 # sample the posterior using MCMC
                 sample = self.sample(lpost, res.p_opt, cov=res.cov,
-                                       nwalkers=nwalkers, niter=niter,
-                                       burnin=burnin, namestr=namestr)
+                                     nwalkers=nwalkers, niter=niter,
+                                     burnin=burnin, namestr=namestr)
 
             # pick nsim samples out of the posterior sample
-            s_all = sample.samples[
-                np.random.choice(sample.samples.shape[0], nsim, replace=False)]
+            s_all = sample[rng.choice(sample.shape[0], nsim, replace=False)]
 
         # simulate LRTs
         # this method is defined in the subclasses!
         out_high_sim = self.simulate_highest_outlier(s_all, lpost, t0,
-                                                max_post=max_post, seed=seed)
+                                                     max_post=max_post,
+                                                     seed=seed)
         # now I can compute the p-value:
         pval = ParameterEstimation._compute_pvalue(out_high, out_high_sim)
 
