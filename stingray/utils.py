@@ -3,6 +3,7 @@ from __future__ import (absolute_import, unicode_literals, division,
 import sys
 import collections
 import numbers
+from six import string_types
 
 import warnings
 import numpy as np
@@ -430,7 +431,7 @@ def create_window(N, window_type='uniform'):
 
     WINDOWS = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
 
-    if not isinstance(window_type, str):
+    if not isinstance(window_type, string_types):
         raise TypeError('type of window must be specified as string!')
 
     window_type = window_type.lower()
