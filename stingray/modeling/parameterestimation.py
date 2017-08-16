@@ -1145,7 +1145,8 @@ class PSDParEst(ParameterEstimation):
                                      burnin=burnin, namestr=namestr)
 
             # pick nsim samples out of the posterior sample
-            s_all = sample[rng.choice(sample.shape[0], nsim, replace=False)]
+            s_all = sample.samples[rng.choice(sample.samples.shape[0], nsim,
+                                              replace=False)]
 
         # simulate LRTs
         # this method is defined in the subclasses!
