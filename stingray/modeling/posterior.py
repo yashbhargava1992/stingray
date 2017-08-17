@@ -21,8 +21,8 @@ from stingray import Lightcurve, Powerspectrum
 #from stingray.modeling.parametricmodels import logmin
 
 __all__ = ["set_logprior", "Posterior", "PSDPosterior", "LogLikelihood",
-           "PSDLogLikelihood", "GaussianLogLikelihood",
-           "PoissonPosterior", "GaussianPosterior",
+           "PSDLogLikelihood", "GaussianLogLikelihood", "LaplaceLogLikelihood",
+           "PoissonPosterior", "GaussianPosterior", "LaplacePosterior",
            "PriorUndefinedError", "LikelihoodUndefinedError"]
 
 logmin = -10000000000000000.0
@@ -351,6 +351,59 @@ class PSDLogLikelihood(LogLikelihood):
         else:
             return loglike
 
+class LaplaceLogLikelihood(LogLikelihood):
+    def __init__(self, x, y, yerr, model):
+        """
+        A Gaussian likelihood.
+
+        Parameters
+        ----------
+        x : iterable
+            Array with independent variable
+
+        y : iterable
+            Array with dependent variable
+
+        model : an Astropy Model instance
+            The model to use in the likelihood.
+
+        yerr : iterable
+            Array with the uncertainties on `y`, in standard deviation
+
+        """
+
+        LogLikelihood.__init__(self, x, y, model)
+        self.yerr = yerr
+
+        self.npar = 0
+        for pname in self.model.param_names:
+            if not self.model.fixed[pname] and not self.model.tied[pname]:
+                self.npar += 1
+
+    def evaluate(self, pars, neg=False):
+
+        if np.size(pars) != self.npar:
+            raise IncorrectParameterError("Input parameters must" +
+                                          " match model parameters!")
+
+        _fitter_to_model_params(self.model, pars)
+
+        mean_model = self.model(self.x)
+
+        with warnings.catch_warnings(record=True) as out:
+
+                        loglike = np.sum(-np.log(2.*self.yerr) - \
+                                  (np.abs(self.y - mean_model)/self.yerr))
+
+        if not np.isfinite(loglike):
+            loglike = logmin
+
+        if neg:
+            return -loglike
+        else:
+            return loglike
+
+
 class Posterior(object):
 
     def __init__(self, x, y, model, **kwargs):
@@ -590,6 +643,41 @@ class GaussianPosterior(Posterior):
 
         """
         self.loglikelihood = GaussianLogLikelihood(x, y, yerr, model)
+
+        Posterior.__init__(self, x, y, model)
+
+        self.yerr = yerr
+
+        if not priors is None:
+            self.logprior = set_logprior(self, priors)
+
+class LaplacePosterior(Posterior):
+
+    def __init__(self, x, y, yerr, model, priors=None):
+        """
+        A general class for two-dimensional data following a Gaussian
+        sampling distribution.
+
+        Parameters
+        ----------
+        x: numpy.ndarray
+            independent variable
+
+        y: numpy.ndarray
+            dependent variable
+
+        yerr: numpy.ndarray
+            measurement uncertainties for y, in standard deviation
+
+        model: instance of any subclass of parameterclass.ParametricModel
+            The model for the power spectrum. Note that in order to define
+            the posterior properly, the ParametricModel subclass must be
+            instantiated with the hyperpars parameter set, or there won't
+            be a prior to be calculated! If all this object is used
+            for a maximum likelihood-style analysis, no prior is required.
+
+        """
+        self.loglikelihood = LaplaceLogLikelihood(x, y, yerr, model)
 
         Posterior.__init__(self, x, y, model)
 
