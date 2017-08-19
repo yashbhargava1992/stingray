@@ -8,7 +8,7 @@ import os
 from ..utils import contiguous_regions
 from ..gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
 from ..gti import check_separate, create_gti_mask, check_gtis
-from ..gti import create_gti_from_condition, gti_len
+from ..gti import create_gti_from_condition, gti_len, gti_border_bins
 from ..gti import time_intervals_from_gtis, bin_intervals_from_gtis
 
 curdir = os.path.abspath(os.path.dirname(__file__))
@@ -128,14 +128,52 @@ class TestGTI(object):
         assert np.all(start_times == np.array([0, 128, 256, 1022]))
         assert np.all(stop_times == np.array([0, 128, 256, 1022]) + 128)
 
+    def test_time_intervals_from_gtis_frac(self):
+        """Test the division of start and end times to calculate spectra."""
+        start_times, stop_times = \
+            time_intervals_from_gtis([[0, 400], [1022, 1200],
+                                      [1210, 1220]], 128, fraction_step=0.5)
+        assert np.all(start_times == np.array([0, 64, 128, 192, 256, 1022]))
+        assert np.all(stop_times == start_times + 128)
+
     def test_bin_intervals_from_gtis(self):
         """Test the division of start and end times to calculate spectra."""
         times = np.arange(0.5, 13.5)
         start_bins, stop_bins = \
             bin_intervals_from_gtis([[0, 5], [6, 8]], 2, times)
 
-        assert np.all(start_bins == np.array([0, 2]))
-        assert np.all(stop_bins == np.array([2, 4]))
+        assert np.all(start_bins == np.array([0, 2, 6]))
+        assert np.all(stop_bins == np.array([2, 4, 8]))
+
+    def test_bin_intervals_from_gtis_frac(self):
+        """Test the division of start and end times to calculate spectra."""
+        times = np.arange(0.5, 13.5)
+        start_bins, stop_bins = \
+            bin_intervals_from_gtis([[0, 5], [6, 8]], 2, times,
+                                    fraction_step=0.5)
+
+        assert np.all(start_bins == np.array([0, 1, 2, 3, 6]))
+        assert np.all(stop_bins == np.array([2, 3, 4, 5, 8]))
+
+    def test_gti_border_bins(self):
+        times = np.arange(0.5, 2.5)
+
+        start_bins, stop_bins = gti_border_bins([[0, 2]], times)
+        assert start_bins == [0]
+        assert stop_bins == [2]
+
+    def test_gti_border_bins_many_bins(self):
+        times = np.arange(0, 2, 0.0001) + 0.00005
+
+        start_bins, stop_bins = gti_border_bins([[0, 2]], times)
+        assert start_bins == [0]
+        assert stop_bins == [len(times)]
+
+    def test_decide_spectrum_lc_intervals_invalid(self):
+        with pytest.raises(ValueError):
+            a, b = bin_intervals_from_gtis([[0, 400]], 128, [500, 501])
+        with pytest.raises(ValueError):
+            a, b = bin_intervals_from_gtis([[1000, 1400]], 128, [500, 501])
 
     def test_gti_length(self):
         assert gti_len([[0, 5], [6, 7]]) == 6
