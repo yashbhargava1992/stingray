@@ -142,7 +142,7 @@ class EventList(object):
         """
 
         # Multiply times by number of counts
-        times = [[i] * j for i,j in zip(lc.time, lc.counts)]
+        times = [[i] * int(j) for i,j in zip(lc.time, lc.counts)]
         # Concatenate all lists
         times = [i for j in times for i in j]
 
