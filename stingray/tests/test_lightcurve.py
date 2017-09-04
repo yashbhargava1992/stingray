@@ -18,6 +18,70 @@ try:
 except ImportError:
     _H5PY_INSTALLED = False
 
+def fvar_fun(lc):
+    from stingray.utils import excess_variance
+    return excess_variance(lc, normalization='fvar')
+
+def nvar_fun(lc):
+    from stingray.utils import excess_variance
+    return excess_variance(lc, normalization='norm_xs')
+
+def evar_fun(lc):
+    from stingray.utils import excess_variance
+    return excess_variance(lc, normalization='none')
+
+
+class TestChunks(object):
+    @classmethod
+    def setup_class(cls):
+        dt = 0.1
+        tstart = 0
+        tstop = 100
+        times = np.arange(tstart, tstop, dt)
+        cls.gti = np.array([[tstart - dt/2, tstop - dt/2]])
+        # Simulate something *clearly* non-constant
+        counts = np.random.poisson(
+            10000 + 2000 * np.sin(2 * np.pi * times))
+
+        cls.lc = Lightcurve(times, counts, gti=cls.gti)
+
+    def test_analyze_lc_chunks_fvar_fracstep(self):
+
+        start, stop, res = self.lc.analyze_lc_chunks(20, fvar_fun,
+                                                     fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        fvar, fvar_err = res
+
+        assert np.allclose(start[0], self.gti[0, 0])
+        assert np.all(fvar > 0)
+        # This must be a clear measurement of fvar
+        assert np.all(fvar > fvar_err)
+
+    def test_analyze_lc_chunks_nvar_fracstep(self):
+        start, stop, res = self.lc.analyze_lc_chunks(20, fvar_fun,
+                                                     fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        fvar, fvar_err = res
+        start, stop, res = self.lc.analyze_lc_chunks(20, nvar_fun,
+                                                     fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        nevar, nevar_err = res
+        assert np.allclose(nevar, fvar**2, rtol=0.01)
+
+    def test_analyze_lc_chunks_nvar_fracstep(self):
+        start, stop, mean = self.lc.analyze_lc_chunks(20, np.mean,
+                                                      fraction_step=0.5)
+        start, stop, res = self.lc.analyze_lc_chunks(20, evar_fun,
+                                                     fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        evar, evar_err = res
+        start, stop, res = self.lc.analyze_lc_chunks(20, nvar_fun,
+                                                     fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        nevar, nevar_err = res
+        assert np.allclose(nevar * mean ** 2, evar, rtol=0.01)
+        assert np.allclose(nevar_err * mean ** 2, evar_err, rtol=0.01)
+
 
 class TestLightcurve(object):
 
@@ -33,7 +97,7 @@ class TestLightcurve(object):
         Demonstrate that we can create a trivial Lightcurve object.
         """
         lc = Lightcurve(self.times, self.counts)
-    
+
     def test_irregular_time_warning(self):
         """
         Check if inputting an irregularly spaced time iterable throws out
@@ -97,31 +161,6 @@ class TestLightcurve(object):
         start, stop, res = lc.analyze_lc_chunks(2, func)
         assert start[0] == 0.5
         assert np.all(start + lc.dt / 2 == res)
-
-    def test_analyze_lc_chunks_fvar_fracstep(self):
-        dt = 0.1
-        tstart = 0
-        tstop = 100
-        times = np.arange(tstart, tstop, dt)
-        gti = np.array([[tstart - dt/2, tstop - dt/2]])
-        # Simulate something *clearly* non-constant
-        counts = np.random.poisson(
-            10000 + 2000 * np.sin(2 * np.pi * times))
-
-        lc = Lightcurve(times, counts, gti=gti)
-
-        def excvar(lc):
-            from stingray.utils import excess_variance
-            return excess_variance(lc, normalization='fvar')
-
-        start, stop, res = lc.analyze_lc_chunks(20, excvar, fraction_step=0.5)
-        # excess_variance returns fvar and fvar_err
-        res, res_err = res
-
-        assert np.allclose(start[0], gti[0, 0])
-        assert np.all(res > 0)
-        # This must be a clear measurement of fvar
-        assert np.all(res > res_err)
 
     def test_bin_edges(self):
         bin_lo = [0.5,  1.5,  2.5,  3.5]
@@ -365,12 +404,16 @@ class TestLightcurve(object):
         assert lc[0] == lc[1] == lc[2] == lc[3] == 2
 
     def test_slicing(self):
-        lc = Lightcurve(self.times, self.counts)
+        lc = Lightcurve(self.times, self.counts, gti=self.gti)
 
         assert np.all(lc[1:3].counts == np.array([2, 2]))
         assert np.all(lc[:2].counts == np.array([2, 2]))
+        assert np.all(lc[:2].gti == [[0.5, 2.5]])
         assert np.all(lc[2:].counts == np.array([2, 2]))
+        assert np.all(lc[2:].gti == [[2.5, 4.5]])
         assert np.all(lc[:].counts == np.array([2, 2, 2, 2]))
+        assert np.all(lc[::2].gti == [[0.5, 1.5], [2.5, 3.5]])
+        assert np.all(lc[:].gti == lc.gti)
         assert lc[:].mjdref == lc.mjdref
 
 
@@ -442,7 +485,7 @@ class TestLightcurve(object):
 
         lc1 = Lightcurve(self.times, self.counts, err_dist = "poisson")
         lc2 = Lightcurve(_times, _counts, err_dist = "gauss")
-        
+
         with warnings.catch_warnings(record=True) as w:
             lc3 = lc1.join(lc2)
             assert "We are setting the errors to zero." in str(w[1].message)
