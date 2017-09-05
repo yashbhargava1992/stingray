@@ -72,14 +72,15 @@ matrix:
         - python: 3.4
           env: NUMPY_VERSION=1.11
 
+        - python: 3.6
+          env: SETUP_CMD='build_docs -w'
+
         # Try older scipy versions
         - python: 2.7
           env: SCIPY_VERSION=0.16.0
         - python: 2.7
           env: SCIPY_VERSION=0.14.0
 
-        - python: 2.7
-          env: SETUP_CMD='build_sphinx -w'
         # Try Astropy development version
         - python: 2.7
           env: ASTROPY_VERSION=development
@@ -93,8 +94,6 @@ matrix:
         - python: 2.7
           env: SCIPY_VERSION=0.14.0
 
-        - python: 2.7
-          env: SETUP_CMD='build_sphinx -w'
         # Try Astropy development version
         - python: 2.7
           env: ASTROPY_VERSION=development
