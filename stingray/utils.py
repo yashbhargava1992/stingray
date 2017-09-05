@@ -379,14 +379,23 @@ def baseline_als(y, lam, p, niter=10):
 
 def excess_variance(lc, normalization='fvar'):
     """Calculate the excess variance.
+
     Vaughan et al. 2003, MNRAS 345, 1271 give three measurements of source
-    intrinsic variance: the *excess variance*, defined as
-    .. math:: \sigma_{XS} = S^2 - \overline{\sigma_{err}^2}
-    the *normalized excess variance*, defined as
-    .. math:: \sigma_{NXS} = \sigma_{XS} / \overline{x^2}
-    and the *fractional mean square variability amplitude*, or
-    :math:`F_{var}`, defined as
-    .. math:: F_{var} = \sqrt{\dfrac{\sigma_{XS}}{\overline{x^2}}}
+    intrinsic variance: if a light curve has a total variance of :math:`S^2`,
+    and each point has an errorbar :math:`\sigma_{err}`, the *excess variance*
+    is defined as
+
+    .. math:: \sigma_{XS} = S^2 - \overline{\sigma_{err}}^2;
+
+    the *normalized excess variance* is the excess variance divided by the
+    square of the mean intensity:
+
+    .. math:: \sigma_{NXS} = \dfrac{\sigma_{XS}}{\overline{x}^2};
+
+    the *fractional mean square variability amplitude*, or
+    :math:`F_{var}`, is finally defined as
+
+    .. math:: F_{var} = \sqrt{\dfrac{\sigma_{XS}}{\overline{x}^2}}
 
     Parameters
     ----------
