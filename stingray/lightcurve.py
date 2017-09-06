@@ -43,8 +43,8 @@ class Lightcurve(object):
             the bins defined in `time` (note: use `input_counts=False` to
             input the count rage, i.e. counts/second, otherwise use
             counts/bin). If None, we assume the data is poisson distributed
-            and calculate the error from the average of the lower and upper 
-            1-sigma confidence intervals for the Poissonian distribution with 
+            and calculate the error from the average of the lower and upper
+            1-sigma confidence intervals for the Poissonian distribution with
             mean equal to `counts`.
 
         input_counts: bool, optional, default True
@@ -388,7 +388,11 @@ class Lightcurve(object):
 
         This method adds functionality to retrieve the count value at
         a particular index. This also can be used for slicing and generating
-        a new Lightcurve object.
+        a new Lightcurve object. GTIs are recalculated based on the new light
+        curve segment
+
+        If the slice object is of kind start:stop:step, GTIs are also sliced,
+        and rewritten as zip(time - self.dt /2, time + self.dt / 2)
 
         Parameters
         ----------
@@ -408,9 +412,23 @@ class Lightcurve(object):
         if isinstance(index, int):
             return self.counts[index]
         elif isinstance(index, slice):
-            new_counts = self.counts[index.start:index.stop:index.step]
-            new_time = self.time[index.start:index.stop:index.step]
-            return Lightcurve(new_time, new_counts, mjdref=self.mjdref)
+            start = assign_value_if_none(index.start, 0)
+            stop = assign_value_if_none(index.stop, len(self.counts))
+            step = assign_value_if_none(index.step, 1)
+
+            new_counts = self.counts[start:stop:step]
+            new_time = self.time[start:stop:step]
+            new_gti = [[self.time[start] - 0.5 * self.dt,
+                        self.time[stop - 1] + 0.5 * self.dt]]
+            new_gti = np.asarray(new_gti)
+            if step > 1:
+                new_gt1 = np.array(list(zip(new_time - self.dt / 2,
+                                            new_time + self.dt / 2)))
+                new_gti = cross_two_gtis(new_gti, new_gt1)
+
+            new_gti = cross_two_gtis(self.gti, new_gti)
+            return Lightcurve(new_time, new_counts, mjdref=self.mjdref,
+                              gti=new_gti)
         else:
             raise IndexError("The index must be either an integer or a slice "
                              "object !")
@@ -424,7 +442,7 @@ class Lightcurve(object):
             "smoothness" parameter. Larger values make the baseline stiffer
             Typically 1e2 < lam < 1e9
         p : float
-            "asymmetry" parameter. Smaller values make the baseline more 
+            "asymmetry" parameter. Smaller values make the baseline more
             "horizontal". Typically 0.001 < p < 0.1, but not necessary.
         """
         baseline = np.zeros_like(self.time)
@@ -619,7 +637,7 @@ class Lightcurve(object):
 
             elif self.err_dist.lower() in valid_statistics:
                 valid_err = True
-            # More conditions can be implemented for other statistics 
+            # More conditions can be implemented for other statistics
             else:
                 raise StingrayError("Statistics not recognized."
                                     " Please use one of these: "
@@ -635,7 +653,7 @@ class Lightcurve(object):
                 counts_err[time] = first_lc.counts_err[i]
 
             for i, time in enumerate(second_lc.time):
-            
+
                 if (counts.get(time) != None): #Common time
 
                     counts[time] = (counts[time] + second_lc.counts[i]) / 2  #avg
@@ -651,7 +669,7 @@ class Lightcurve(object):
                 new_counts_err = list(counts_err.values())
             else:
                 new_counts_err = np.zeros_like(new_counts)
-            
+
             del[counts, counts_err]
 
         else:

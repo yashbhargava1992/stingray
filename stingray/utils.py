@@ -32,6 +32,12 @@ except ImportError:
             return wrapped_f
 
 
+__all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
+           'is_string', 'is_iterable', 'order_list_of_arrays',
+           'optimal_bin_time', 'contiguous_regions', 'is_int',
+           'get_random_state', 'baseline_als', 'excess_variance',
+           'create_window']
+
 def _root_squared_mean(array):
     return np.sqrt(np.sum(array ** 2)) / len(array)
 
@@ -356,7 +362,7 @@ def baseline_als(y, lam, p, niter=10):
         "smoothness" parameter. Larger values make the baseline stiffer
         Typically 1e2 < lam < 1e9
     p : float
-        "asymmetry" parameter. Smaller values make the baseline more 
+        "asymmetry" parameter. Smaller values make the baseline more
         "horizontal". Typically 0.001 < p < 0.1, but not necessary.
     """
     from scipy import sparse
@@ -374,15 +380,31 @@ def baseline_als(y, lam, p, niter=10):
 def excess_variance(lc, normalization='fvar'):
     """Calculate the excess variance.
 
-    Vaughan+03
+    Vaughan et al. 2003, MNRAS 345, 1271 give three measurements of source
+    intrinsic variance: if a light curve has a total variance of :math:`S^2`,
+    and each point has an errorbar :math:`\sigma_{err}`, the *excess variance*
+    is defined as
+
+    .. math:: \sigma_{XS} = S^2 - \overline{\sigma_{err}}^2;
+
+    the *normalized excess variance* is the excess variance divided by the
+    square of the mean intensity:
+
+    .. math:: \sigma_{NXS} = \dfrac{\sigma_{XS}}{\overline{x}^2};
+
+    the *fractional mean square variability amplitude*, or
+    :math:`F_{var}`, is finally defined as
+
+    .. math:: F_{var} = \sqrt{\dfrac{\sigma_{XS}}{\overline{x}^2}}
 
     Parameters
     ----------
     lc : a :class:`Lightcurve` object
     normalization : str
-        if 'fvar', return normalized square-root excess variance. If 'none',
-        return the unnormalized variance
-
+        if 'fvar', return the fractional mean square variability :math:`F_{var}`.
+        If 'none', return the unnormalized excess variance variance
+        :math:`\sigma_{XS}`. If 'norm_xs', return the normalized excess variance
+        :math:`\sigma_{XS}`
     Returns
     -------
     var_xs : float
@@ -393,37 +415,42 @@ def excess_variance(lc, normalization='fvar'):
     var_xs = lc_actual_var - lc_mean_var
     mean_lc = np.mean(lc.counts)
     mean_ctvar = mean_lc ** 2
+    var_nxs = var_xs / mean_lc ** 2
 
     fvar = np.sqrt(var_xs / mean_ctvar)
 
     N = len(lc.counts)
-    var_xs_err_A = np.sqrt(2 / N) * lc_mean_var / mean_lc ** 2
-    var_xs_err_B = np.sqrt(mean_lc ** 2 / N) * 2 * fvar / mean_lc
-    var_xs_err = np.sqrt(var_xs_err_A ** 2 + var_xs_err_B ** 2)
+    var_nxs_err_A = np.sqrt(2 / N) * lc_mean_var / mean_lc ** 2
+    var_nxs_err_B = np.sqrt(mean_lc ** 2 / N) * 2 * fvar / mean_lc
+    var_nxs_err = np.sqrt(var_nxs_err_A ** 2 + var_nxs_err_B ** 2)
 
-    fvar_err = var_xs_err / (2 * fvar)
+    fvar_err = var_nxs_err / (2 * fvar)
 
     if normalization == 'fvar':
         return fvar, fvar_err
+    elif normalization == 'norm_xs':
+        return var_nxs, var_nxs_err
     elif normalization == 'none' or normalization is None:
-        return var_xs, var_xs_err
+        return var_xs, var_nxs_err * mean_lc **2
 
 
 def create_window(N, window_type='uniform'):
     """ A method to create window functions commonly used in signal processing.
-        Windows supported are:
-        Hamming, Hanning, uniform(rectangular window), triangular window, blackmann window among others.
 
-        Parameters
-        ----------
-        N : int
-            Total number of data points in window. If negative, abs is taken.
-        window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
-            Type of window to create.
-         Returns
-        -------
-        window: numpy.ndarray
-            Window function of length N.
+    Windows supported are:
+    Hamming, Hanning, uniform(rectangular window), triangular window, blackmann window among others.
+
+    Parameters
+    ----------
+    N : int
+        Total number of data points in window. If negative, abs is taken.
+    window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
+        Type of window to create.
+
+    Returns
+    -------
+    window: numpy.ndarray
+        Window function of length N.
     """
 
     if not isinstance(N, int):
@@ -481,7 +508,7 @@ def create_window(N, window_type='uniform'):
     if window_type == 'welch':
         N_minus_1_by_2 = N_minus_1 / 2
         window = 1 - np.square((n - N_minus_1_by_2) / N_minus_1_by_2)
-        
+
     if window_type == 'blackmann':
         a0 = 0.42659
         a1 = 0.49656
