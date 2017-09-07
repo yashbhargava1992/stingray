@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 import numpy as np
+import collections
 from .pulsar import stat, fold_events, z_n, pulse_phase
 from ..utils import jit, HAS_NUMBA
 from ..utils import contiguous_regions
@@ -18,7 +19,8 @@ def _pulse_phase_fast(time, f, buffer_array):
     return buffer_array
 
 
-def _folding_search(stat_func, times, frequencies, segment_size=5000):
+def _folding_search(stat_func, times, frequencies, segment_size=5000,
+                    use_times=False, **kwargs):
     stats = np.zeros_like(frequencies)
     times = (times - times[0]).astype(np.float64)
     length = times[-1]
@@ -27,13 +29,25 @@ def _folding_search(stat_func, times, frequencies, segment_size=5000):
     start_times = np.arange(times[0], times[-1], segment_size)
     count = 0
     for s in start_times:
-        ts = times[(times >=s) & (times < s + segment_size)]
-        buffer = np.zeros_like(ts)
+        good = (times >=s) & (times < s + segment_size)
+        ts = times[good]
         if len(ts) < 1 or ts[-1] - ts[0] < 0.2 * segment_size:
             continue
         for i, f in enumerate(frequencies):
-            phases = _pulse_phase_fast(ts, f, buffer)
-            stats[i] += stat_func(phases)
+            if use_times:
+                kwargs_copy = {}
+                for key in kwargs.keys():
+                    if isinstance(kwargs[key], collections.Iterable) and \
+                        len(kwargs[key]) == len(times):
+
+                        kwargs_copy[key] = kwargs[key][good]
+                    else:
+                        kwargs_copy[key] = kwargs[key]
+                stats[i] += stat_func(ts, f, **kwargs_copy)
+            else:
+                buffer = np.zeros_like(ts)
+                phases = _pulse_phase_fast(ts, f, buffer)
+                stats[i] += stat_func(phases)
         count += 1
     return frequencies, stats / count
 
@@ -58,7 +72,7 @@ def _profile_fast(phase, nbin=128):
 
 
 def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
-                         expocorr=False):
+                         expocorr=False, gti=None, weights=1):
     """Performs epoch folding at trial frequencies in photon data.
 
     If no exposure correction is needed and numba is installed, it uses a fast
@@ -84,19 +98,25 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
         correct for the exposure (Use it if the period is comparable to the
         length of the good time intervals.)
     """
-    if expocorr or not HAS_NUMBA:
+    if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
+        if expocorr and gti is None:
+            raise ValueError('To calculate exposure correction, you need to'
+                             ' specify the GTIs')
+
+        def fun(t, f, **kwargs):
+            return stat(fold_events(t, f, **kwargs)[1])
+
         return \
-            _folding_search(lambda x: stat(fold_events(np.sort(x), 1,
-                                                       nbin=nbin,
-                                                       expocorr=expocorr)[1]),
-                               times, frequencies, segment_size=segment_size)
+            _folding_search(fun, times, frequencies, segment_size=segment_size,
+                            use_times=True, expocorr=expocorr, weights=weights,
+                            gti=gti)
 
     return _folding_search(lambda x: stat(_profile_fast(x, nbin=nbin)),
                            times, frequencies, segment_size=segment_size)
 
 
 def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
-               expocorr=False):
+               expocorr=False, weights=1, gti=None):
     """Calculates the Z^2_n statistics at trial frequencies in photon data.
 
     The "real" Z^2_n statistics is very slow. Therefore, in this function data
@@ -129,13 +149,17 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
         length of the good time intervals.)
     """
     phase = np.arange(0, 1, 1 / nbin)
-    if expocorr or not HAS_NUMBA:
+    if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
+        if expocorr and gti is None:
+            raise ValueError('To calculate exposure correction, you need to'
+                             ' specify the GTIs')
+        def fun(t, f, **kwargs):
+            return z_n(phase, n=nharm,
+                       norm=fold_events(t, f, **kwargs)[1])
         return \
-            _folding_search(
-                lambda x: z_n(phase, n=nharm,
-                              norm=fold_events(np.sort(x), 1, nbin=nbin,
-                                               expocorr=expocorr)[1]),
-                               times, frequencies, segment_size=segment_size)
+            _folding_search(fun, times, frequencies, segment_size=segment_size,
+                            use_times=True, expocorr=expocorr, weights=weights,
+                            gti=gti)
 
     return _folding_search(lambda x: z_n(phase, n=nharm,
                                          norm=_profile_fast(x, nbin=nbin)),
