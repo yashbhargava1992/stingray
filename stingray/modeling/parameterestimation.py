@@ -876,9 +876,9 @@ class SamplingResults(object):
         """
         assert can_plot, "Need to have matplotlib installed for plotting"
         if use_corner:
-            corner.corner(self.samples, labels=None, fig=fig, bins=int(20),
-                          quantiles=[0.16, 0.5, 0.84],
-                          show_titles=True, title_args={"fontsize": 12})
+            fig = corner.corner(self.samples, labels=None, fig=fig, bins=int(20),
+                                quantiles=[0.16, 0.5, 0.84],
+                                show_titles=True, title_args={"fontsize": 12})
 
         else:
             if fig is None:
