@@ -323,7 +323,8 @@ def plot_phaseogram(phaseogram, phase_bins, time_bins, unit_str='s', ax=None,
 
 
 def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
-               pepoch=None, plot=False, phaseogram_ax=None, **plot_kwargs):
+               pepoch=None, plot=False, phaseogram_ax=None,
+               weights=None, **plot_kwargs):
     """
     Calculate and plot the phaseogram of a pulsar observation.
 
@@ -359,6 +360,8 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
         If the input pulse solution is referred to a given time, give it here.
         It has no effect (just a phase shift of the pulse) if `fdot` is zero.
         if `mjdref` is specified, pepoch MUST be in MJD
+    weights : array
+        Weight for each time
     plot : bool
         Return the axes in the additional_info, and don't close the plot, so
         that the user can add information to it.
@@ -397,6 +400,12 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
     allphases = np.concatenate([phases, phases + 1]).astype('float64')
     allts = \
         np.concatenate([times, times]).astype('float64')
+    if weights is not None and isinstance(weights, collections.Iterable):
+        if len(weights) != len(times):
+            raise ValueError('The length of weights must match the length of '
+                             'times')
+        weights = \
+            np.concatenate([weights, weights]).astype('float64')
 
     if use_mjdref:
         allts = allts / 86400 + mjdref
@@ -404,7 +413,8 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
     phas, binx, biny = np.histogram2d(allphases, allts,
                bins=(np.linspace(0, 2, nph * 2 + 1),
                      np.linspace(np.min(allts),
-                                 np.max(allts), nt + 1)))
+                                 np.max(allts), nt + 1)),
+               weights=weights)
 
     if plot:
         phaseogram_ax = plot_phaseogram(phas, binx, biny, ax=phaseogram_ax,

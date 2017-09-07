@@ -39,6 +39,26 @@ class TestAll(object):
         assert np.any(times > 25)
         assert np.all((phases >= 0)&(phases <= 2))
 
+    def test_phaseogram_bad_weights(self):
+        with pytest.raises(ValueError) as excinfo:
+            phaseogr, phases, times, additional_info = \
+                phaseogram(self.event_times, self.pulse_frequency,
+                           weights=[0, 2])
+        assert 'must match' in str(excinfo)
+
+    def test_phaseogram_weights(self):
+        phaseogr, phases, times, additional_info = \
+            phaseogram(self.times, self.pulse_frequency, weights=self.counts,
+                       nph=16)
+        assert np.all(times < 25.6)
+        assert np.any(times > 25)
+        assert np.all((phases >= 0)&(phases <= 2))
+        import matplotlib.pyplot as plt
+        fig = plt.figure('Phaseogram direct weights')
+        plot_phaseogram(phaseogr, phases, times)
+        plt.savefig('phaseogram_weights.png')
+        plt.close(fig)
+
     def test_phaseogram_mjdref(self):
         phaseogr, phases, times, additional_info = \
             phaseogram(self.event_times, self.pulse_frequency,
