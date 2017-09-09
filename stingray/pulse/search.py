@@ -96,7 +96,13 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
         the length of the segments to be averaged in the periodogram
     expocorr : bool
         correct for the exposure (Use it if the period is comparable to the
-        length of the good time intervals.)
+        length of the good time intervals). If True, GTIs have to be specified
+        via the ``gti`` keyword
+    gti : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good time intervals
+    weights : array-like
+        weight for each time. This might be, for example, the number of counts
+        if the times array contains the time bins of a light curve
     """
     if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
         if expocorr and gti is None:
@@ -147,6 +153,11 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
     expocorr : bool
         correct for the exposure (Use it if the period is comparable to the
         length of the good time intervals.)
+    gti : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good time intervals
+    weights : array-like
+        weight for each time. This might be, for example, the number of counts
+        if the times array contains the time bins of a light curve
     """
     phase = np.arange(0, 1, 1 / nbin)
     if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
