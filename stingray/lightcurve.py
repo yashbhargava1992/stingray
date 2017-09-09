@@ -434,26 +434,26 @@ class Lightcurve(object):
                              "object !")
 
     def __eq__(self,other_lc):
-    """
-        Compares two :class:`Lightcurve` objects.
-        
-        Light curves are equal only if their counts as well as times at which those counts occur equal.
-        
-        Example
-        -------
-        >>> time = [1, 2, 3]
-        >>> count1 = [100, 200, 300]
-        >>> count2 = [100, 200, 300]
-        >>> lc1 = Lightcurve(time, count1)
-        >>> lc2 = Lightcurve(time, count2)
-        >>> lc1 == lc2
-        True
-    """
-    if not isinstance(other_lc, Lightcurve):
-        raise ValueError('Lightcurve can only be compared with a Lightcurve Object')
-    if (np.allclose(self.time, other_lc.time) and np.allclose(self.counts, other_lc.counts)):
-        return True
-    return False
+	    """
+	        Compares two :class:`Lightcurve` objects.
+	        
+	        Light curves are equal only if their counts as well as times at which those counts occur equal.
+	        
+	        Example
+	        -------
+	        >>> time = [1, 2, 3]
+	        >>> count1 = [100, 200, 300]
+	        >>> count2 = [100, 200, 300]
+	        >>> lc1 = Lightcurve(time, count1)
+	        >>> lc2 = Lightcurve(time, count2)
+	        >>> lc1 == lc2
+	        True
+	    """
+	    if not isinstance(other_lc, Lightcurve):
+	        raise ValueError('Lightcurve can only be compared with a Lightcurve Object')
+	    if (np.allclose(self.time, other_lc.time) and np.allclose(self.counts, other_lc.counts)):
+	        return True
+	    return False
 
     def baseline(self, lam, p, niter=10):
         """Calculate the baseline of the light curve, accounting for GTIs.
