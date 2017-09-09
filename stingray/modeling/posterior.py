@@ -58,7 +58,7 @@ def set_logprior(lpost, priors):
         A dictionary containing the prior definitions. Keys are parameter
         names as defined by the model used in `lpost`. Items are functions
         that take a parameter as input and return the log-prior probability
-         of that parameter.
+        of that parameter.
 
     Returns
     -------

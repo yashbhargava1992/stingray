@@ -64,13 +64,12 @@ def pulse_phase(times, *frequency_derivatives, **opts):
 
 
 def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
-    '''
-    Calculate the exposure on each phase of a pulse profile.
+    """Calculate the exposure on each phase of a pulse profile.
 
     Parameters
     ----------
     start_time, stop_time : float
-        Starting and stopping time (or phase if ``period``==1)
+        Starting and stopping time (or phase if ``period==1``)
     period : float
         The pulse period (if 1, equivalent to phases)
 
@@ -84,9 +83,9 @@ def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
     ----------------
     nbin : int, optional, default 16
         The number of bins in the profile
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...], optional, default None
+    gtis : [[gti00, gti01], [gti10, gti11], ...], optional, default None
         Good Time Intervals
-    '''
+    """
     if gtis is None:
         gtis = np.array([[start_time, stop_time]])
 

@@ -614,8 +614,7 @@ class ParameterEstimation(object):
                       nsim=1000, niter=200, nwalkers=500, burnin=200,
                       namestr="test", seed=None):
 
-        """
-        Calibrate the outcome of a Likelihood Ratio Test via MCMC.
+        """Calibrate the outcome of a Likelihood Ratio Test via MCMC.
 
         In order to compare models via likelihood ratio test, one generally
         aims to compute a p-value for the null hypothesis (generally the
@@ -623,15 +622,17 @@ class ParameterEstimation(object):
         distribution used to compute that p-value analytically given the
         observed likelihood ratio (a chi-square distribution) is not
         applicable:
+
         * the models are not nested (i.e. Model 1 is not a special, simpler
-        case of Model 2),
+          case of Model 2),
+
         * the parameter values fixed in Model 2 to retrieve Model 1 are at the
-        edges of parameter space (e.g. if one must set, say, an amplitude to
-        zero in order to remove a component in the more complex model, and
-        negative amplitudes are excluded a priori)
+          edges of parameter space (e.g. if one must set, say, an amplitude to
+          zero in order to remove a component in the more complex model, and
+          negative amplitudes are excluded a priori)
 
         In these cases, the observed likelihood ratio must be calibrated via
-         simulations of the simpler model (Model 1), using MCMC to take into
+        simulations of the simpler model (Model 1), using MCMC to take into
         account the uncertainty in the parameters. This function does
         exactly that: it computes the likelihood ratio for the observed data,
         and produces simulations to calibrate the likelihood ratio and
@@ -666,12 +667,10 @@ class ParameterEstimation(object):
             If True, set the internal state to do the optimization with the
             log-likelihood rather than the log-posterior.
 
-
         Returns
         -------
         pvalue : float [0,1]
             p-value 'n stuff
-
         """
 
         # compute the observed likelihood ratio
@@ -1020,7 +1019,7 @@ class PSDParEst(ParameterEstimation):
         s_all : numpy.ndarray of shape (nsamples, lpost1.npar)
             An array with MCMC samples derived from the null hypothesis model in
             `lpost1`. Its second dimension must match the number of free
-             parameters in `lpost1.model`.
+            parameters in `lpost1.model`.
 
         lpost1 : LogLikelihood or Posterior subclass object
             Object containing the null hypothesis model
@@ -1049,7 +1048,6 @@ class PSDParEst(ParameterEstimation):
         lrt_sim : numpy.ndarray
             An array with the simulated likelihood ratios for the simulated
             data
-
         """
 
         assert lpost1.__class__ == lpost2.__class__, "Both LogLikelihood or " \
