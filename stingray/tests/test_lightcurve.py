@@ -750,3 +750,36 @@ class TestLightcurveRebin(object):
         lc._apply_gtis()
         assert lc.n == 3
         assert np.all(lc.time == np.array([0, 1, 2]))
+
+    def test_eq_operator(self):
+        time = [1, 2, 3]
+        count1 = [100, 200, 300]
+        count2 = [100, 200, 300]
+        lc1 = Lightcurve(time, count1)
+        lc2 = Lightcurve(time, count2)
+        assert lc1 == lc2
+
+    def test_eq_bad_lc(self):
+        time = [1, 2, 3]
+        count1 = [100, 200, 300]
+        count2 = [100, 200, 300]
+        lc1 = Lightcurve(time, count1)
+        with pytest.raises(ValueError):
+            lc1 == count2
+
+    def test_eq_different_times(self):
+        time1 = [1, 2, 3]
+        time2 = [2, 3, 4]
+        count1 = [100, 200, 300]
+        count2 = [100, 200, 300]
+        lc1 = Lightcurve(time1, count1)
+        lc2 = Lightcurve(time2, count2)
+        assert not lc1 == lc2
+
+    def test_eq_different_counts(self):
+        time = [1, 2, 3, 4]
+        count1 = [5, 10, 15, 20]
+        count2 = [2, 4, 5, 8]
+        lc1 = Lightcurve(time, count1)
+        lc2 = Lightcurve(time, count2)
+        assert not lc1 == lc2
