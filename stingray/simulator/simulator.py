@@ -29,7 +29,7 @@ class Simulator(object):
         red_noise : int, default 1
             multiple of real length of light curve, by
             which to simulate, to avoid red noise leakage
-        seed : int, default None
+        random_state : int, default None
             seed value for random processes
         """
 
