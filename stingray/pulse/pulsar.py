@@ -632,7 +632,7 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
         Function that accepts times in MJDs and returns the deorbited times.
     """
     from scipy.interpolate import interp1d
-    import astropy.units as u
+    from astropy import units
     simon("Assuming events are already referred to the solar system "
           "barycenter (timescale is TDB)")
     if not HAS_PINT:
@@ -644,7 +644,7 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
     m = get_model(parfile)
     delays = m.delay(toalist.table)
     correction_mjd = \
-        interp1d(mjds, (toalist.table['tdbld'] * u.d - delays).to(u.d).value)
+        interp1d(mjds, (toalist.table['tdbld'] * units.d - delays).to(units.d).value)
 
     def correction_sec(times, mjdref):
         deorb_mjds = correction_mjd(times / 86400 + mjdref)
