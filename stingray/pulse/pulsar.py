@@ -9,6 +9,7 @@ from scipy.optimize import minimize, basinhopping, curve_fit
 try:
     import pint.toa as toa
     import pint
+    from pint.models import get_model
     HAS_PINT = True
 except ImportError:
     HAS_PINT = False
@@ -592,8 +593,22 @@ def get_TOA(prof, period, tstart, template=None, additional_phase=0,
     return toa, toaerr
 
 
+def _load_and_prepare_TOAs(mjds, ephem="DE405"):
+    toalist = [None] * len(mjds)
+    for i, m in enumerate(mjds):
+        toalist[i] = toa.TOA(m, obs='Barycenter', scale='tdb')
+
+    toalist = toa.TOAs(toalist = toalist)
+    if 'tdb' not in toalist.table.colnames:
+        toalist.compute_TDBs()
+    if 'ssb_obs_pos' not in toalist.table.colnames:
+        toalist.compute_posvels(ephem, False)
+    return toalist
+
+
 def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
-                                               ntimes=1000, ephem="DE405"):
+                                               ntimes=1000, ephem="DE405",
+                                               return_pint_model=False):
     """Get a correction for orbital motion from pulsar parameter file.
 
     Parameters
@@ -617,6 +632,7 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
         Function that accepts times in MJDs and returns the deorbited times.
     """
     from scipy.interpolate import interp1d
+    from astropy import units
     simon("Assuming events are already referred to the solar system "
           "barycenter (timescale is TDB)")
     if not HAS_PINT:
@@ -624,23 +640,17 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
                           "functionality: github.com/nanograv/pint")
 
     mjds = np.linspace(mjdstart, mjdstop, ntimes)
-    toalist = [None] * len(mjds)
-    for i, m in enumerate(mjds):
-        toalist[i] = toa.TOA(m, obs='Barycenter', scale='tdb')
-
-    toalist = toa.TOAs(toalist = toalist)
-    if 'tdb' not in toalist.table.colnames:
-        toalist.compute_TDBs()
-    if 'ssb_obs_pos' not in toalist.table.colnames:
-        toalist.compute_posvels(ephem, False)
-
-    m = pint.models.get_model(parfile)
-    tdbtimes = m.get_barycentric_toas(toalist.table)
-
-    correction_mjd = interp1d(mjds, tdbtimes)
+    toalist = _load_and_prepare_TOAs(mjds, ephem=ephem)
+    m = get_model(parfile)
+    delays = m.delay(toalist.table)
+    correction_mjd = \
+        interp1d(mjds, (toalist.table['tdbld'] * units.d - delays).to(units.d).value)
 
     def correction_sec(times, mjdref):
         deorb_mjds = correction_mjd(times / 86400 + mjdref)
         return np.array((deorb_mjds - mjdref) * 86400)
 
-    return correction_sec, correction_mjd
+    retvals = [correction_sec, correction_mjd]
+    if return_pint_model:
+        retvals.append(m)
+    return retvals

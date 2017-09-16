@@ -130,7 +130,7 @@ class TestAll(object):
         """Test pulse phase calculation, frequency only."""
         frequencies = np.arange(9.8, 9.99, 0.1/self.tseg)
         freq, stat = epoch_folding_search(self.event_times, frequencies,
-                                          nbin=16)
+                                          nbin=43)
 
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))
         maxstatbin = freq[np.argmax(stat)]
@@ -141,14 +141,14 @@ class TestAll(object):
         frequencies = np.arange(9.8, 9.99, 0.1/self.tseg)
         with pytest.raises(ValueError) as excinfo:
             freq, stat = epoch_folding_search(self.event_times, frequencies,
-                                              nbin=16, expocorr=True)
+                                              nbin=23, expocorr=True)
         assert 'To calculate exposure correction' in str(excinfo)
 
     def test_epoch_folding_search_expocorr_(self):
         """Test pulse phase calculation, frequency only."""
         frequencies = np.arange(9.8, 9.99, 0.1/self.tseg)
         freq, stat = epoch_folding_search(self.event_times, frequencies,
-                                          nbin=16, expocorr=True, gti=self.gti)
+                                          nbin=42, expocorr=True, gti=self.gti)
 
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))
         maxstatbin = freq[np.argmax(stat)]
@@ -167,8 +167,8 @@ class TestAll(object):
     def test_z_n_search(self):
         """Test pulse phase calculation, frequency only."""
         frequencies = np.arange(9.8, 9.99, 0.1/self.tseg)
-        freq, stat = z_n_search(self.event_times, frequencies, nbin=16,
-                                nharm=1)
+        freq, stat = z_n_search(self.event_times, frequencies, nbin=25,
+                                nharm=2)
 
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))
         maxstatbin = freq[np.argmax(stat)]
@@ -177,8 +177,8 @@ class TestAll(object):
     def test_z_n_search_expocorr(self):
         """Test pulse phase calculation, frequency only."""
         frequencies = np.arange(9.8, 9.99, 0.1/self.tseg)
-        freq, stat = z_n_search(self.event_times, frequencies, nbin=16,
-                                nharm=1, expocorr=True, gti=self.gti)
+        freq, stat = z_n_search(self.event_times, frequencies, nbin=64,
+                                nharm=2, expocorr=True, gti=self.gti)
 
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))
         maxstatbin = freq[np.argmax(stat)]
@@ -189,13 +189,13 @@ class TestAll(object):
         frequencies = np.arange(9.8, 9.99, 0.1/self.tseg)
         with pytest.raises(ValueError) as excinfo:
             freq, stat = z_n_search(self.event_times, frequencies, nharm=1,
-                                    nbin=16, expocorr=True)
+                                    nbin=35, expocorr=True)
         assert 'To calculate exposure correction' in str(excinfo)
 
     def test_z_n_search_weights(self):
         """Test pulse phase calculation, frequency only."""
         frequencies = np.arange(9.8, 9.99, 0.1/self.tseg)
-        freq, stat = z_n_search(self.times, frequencies, nbin=16,
+        freq, stat = z_n_search(self.times, frequencies, nbin=44,
                                 nharm=1, weights=self.counts)
 
         minbin = np.argmin(np.abs(frequencies - self.pulse_frequency))

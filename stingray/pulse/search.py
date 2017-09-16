@@ -115,7 +115,7 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
         return \
             _folding_search(fun, times, frequencies, segment_size=segment_size,
                             use_times=True, expocorr=expocorr, weights=weights,
-                            gti=gti)
+                            gti=gti, nbin=nbin)
 
     return _folding_search(lambda x: stat(_profile_fast(x, nbin=nbin)),
                            times, frequencies, segment_size=segment_size)
@@ -166,7 +166,7 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
                              ' specify the GTIs')
         def fun(t, f, **kwargs):
             return z_n(phase, n=nharm,
-                       norm=fold_events(t, f, **kwargs)[1])
+                       norm=fold_events(t, f, nbin=nbin, **kwargs)[1])
         return \
             _folding_search(fun, times, frequencies, segment_size=segment_size,
                             use_times=True, expocorr=expocorr, weights=weights,
