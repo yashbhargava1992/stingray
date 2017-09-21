@@ -603,6 +603,9 @@ class AveragedCrossspectrum(Crossspectrum):
 
         if self.gti is None:
             self.gti = cross_two_gtis(lc1.gti, lc2.gti)
+            lc1.gti = lc2.gti = self.gti
+            lc1._apply_gtis()
+            lc2._apply_gtis()
 
         check_gtis(self.gti)
 
@@ -621,15 +624,17 @@ class AveragedCrossspectrum(Crossspectrum):
             time_2 = lc2.time[start_ind:end_ind]
             counts_2 = lc2.counts[start_ind:end_ind]
             counts_2_err = lc2.counts_err[start_ind:end_ind]
+            gti1 = np.array([[time_1[0] - lc1.dt / 2,
+                             time_1[-1] + lc1.dt / 2]])
+            gti2 = np.array([[time_2[0] - lc2.dt / 2,
+                             time_2[-1] + lc2.dt / 2]])
             lc1_seg = Lightcurve(time_1, counts_1, err=counts_1_err,
                                  err_dist=lc1.err_dist,
-                                 gti=[[time_1[0] - lc1.dt / 2,
-                                       time_1[-1] + lc1.dt / 2]],
+                                 gti=gti1,
                                  dt=lc1.dt)
             lc2_seg = Lightcurve(time_2, counts_2, err=counts_2_err,
                                  err_dist=lc2.err_dist,
-                                 gti=[[time_2[0] - lc2.dt / 2,
-                                       time_2[-1] + lc2.dt / 2]],
+                                 gti=gti2,
                                  dt=lc2.dt)
             cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm)
             cs_all.append(cs_seg)
