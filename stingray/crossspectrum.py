@@ -473,7 +473,7 @@ class Crossspectrum(object):
     def _phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
 
-        return np.angle(self.power)
+        return np.angle(self.unnorm_power)
 
     def time_lag(self):
         """
