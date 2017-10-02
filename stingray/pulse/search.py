@@ -22,8 +22,8 @@ def _pulse_phase_fast(time, f, fdot, buffer_array):
 def _folding_search(stat_func, times, frequencies, segment_size=5000,
                     use_times=False, fdots=0, **kwargs):
 
-    FF, FD = np.meshgrid(frequencies, fdots)
-    stats = np.zeros_like(FF)
+    fgrid, fdgrid = np.meshgrid(frequencies, fdots)
+    stats = np.zeros_like(fgrid)
     times = (times - times[0]).astype(np.float64)
     length = times[-1]
     if length < segment_size:
@@ -38,8 +38,8 @@ def _folding_search(stat_func, times, frequencies, segment_size=5000,
         buffer = np.zeros_like(ts)
         for i in range(stats.shape[0]):
             for j in range(stats.shape[1]):
-                f = FF[i, j]
-                fd = FD[i, j]
+                f = fgrid[i, j]
+                fd = fdgrid[i, j]
                 if use_times:
                     kwargs_copy = {}
                     for key in kwargs.keys():
@@ -55,10 +55,10 @@ def _folding_search(stat_func, times, frequencies, segment_size=5000,
                     stats[i, j] += stat_func(phases)
         count += 1
 
-    if FF.shape[0] == 1:
-        return FF.flatten(), stats.flatten() / count
+    if fgrid.shape[0] == 1:
+        return fgrid.flatten(), stats.flatten() / count
     else:
-        return FF, FD, stats / count
+        return fgrid, fdgrid, stats / count
 
 
 @jit(nopython=True)
@@ -103,6 +103,8 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
         the number of bins of the folded profiles
     segment_size : float
         the length of the segments to be averaged in the periodogram
+    fdots : array-like
+        trial values of the first frequency derivative (optional)
     expocorr : bool
         correct for the exposure (Use it if the period is comparable to the
         length of the good time intervals). If True, GTIs have to be specified
@@ -118,11 +120,12 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
             raise ValueError('To calculate exposure correction, you need to'
                              ' specify the GTIs')
 
-        def fun(t, f, fd=0, **kwargs):
+        def stat_fun(t, f, fd=0, **kwargs):
             return stat(fold_events(t, f, fd, **kwargs)[1])
 
         return \
-            _folding_search(fun, times, frequencies, segment_size=segment_size,
+            _folding_search(stat_fun, times, frequencies,
+                            segment_size=segment_size,
                             use_times=True, expocorr=expocorr, weights=weights,
                             gti=gti, nbin=nbin, fdots=fdots)
 
@@ -160,6 +163,8 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
         the number of bins of the folded profiles
     segment_size : float
         the length of the segments to be averaged in the periodogram
+    fdots : array-like
+        trial values of the first frequency derivative (optional)
     expocorr : bool
         correct for the exposure (Use it if the period is comparable to the
         length of the good time intervals.)
@@ -174,11 +179,12 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
         if expocorr and gti is None:
             raise ValueError('To calculate exposure correction, you need to'
                              ' specify the GTIs')
-        def fun(t, f, fd=0, **kwargs):
+        def stat_fun(t, f, fd=0, **kwargs):
             return z_n(phase, n=nharm,
                        norm=fold_events(t, f, fd, nbin=nbin, **kwargs)[1])
         return \
-            _folding_search(fun, times, frequencies, segment_size=segment_size,
+            _folding_search(stat_fun, times, frequencies,
+                            segment_size=segment_size,
                             use_times=True, expocorr=expocorr, weights=weights,
                             gti=gti, fdots=fdots)
 
