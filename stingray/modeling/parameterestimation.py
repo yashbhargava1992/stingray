@@ -903,7 +903,7 @@ class SamplingResults(object):
                         ntemp, binstemp, patchestemp = \
                             ax.hist(samples[:, i], 30, normed=True,
                                     histtype='stepfilled')
-                        ax.axis([ymin, ymax, 0, max(ntemp)*1.2])
+                        ax.axis([ymin, ymax, 0, np.max(ntemp)*1.2])
 
                     else:
 
@@ -1243,8 +1243,8 @@ class PSDParEst(ParameterEstimation):
 
                 p1, = s1.plot(logx, logy, color='black', linestyle='steps-mid')
                 p2, = s1.plot(logx, logpar1, color='blue', lw=2)
-                s1.set_xlim([min(logx), max(logx)])
-                s1.set_ylim([min(logy)-1.0, max(logy)+1])
+                s1.set_xlim([np.min(logx), np.max(logx)])
+                s1.set_ylim([np.min(logy)-1.0, np.max(logy)+1])
                 if self.ps.norm == "leahy":
                     s1.set_ylabel('log(Leahy-Normalized Power)', fontsize=18)
                 elif self.ps.norm == "rms":
@@ -1261,9 +1261,9 @@ class PSDParEst(ParameterEstimation):
                 s1.set_xscale("log")
                 s1.set_yscale("log")
 
-                s1.set_xlim([min(self.ps.freq), max(self.ps.freq)])
-                s1.set_ylim([min(self.ps.freq)/10.0,
-                             max(self.ps.power)*10.0])
+                s1.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
+                s1.set_ylim([np.min(self.ps.freq)/10.0,
+                             np.max(self.ps.power)*10.0])
 
                 if self.ps.norm == "leahy":
                     s1.set_ylabel('Leahy-Normalized Power', fontsize=18)
@@ -1297,8 +1297,8 @@ class PSDParEst(ParameterEstimation):
                 s2.plot(logx, pldif, color='black', linestyle='steps-mid')
                 s2.plot(logx, np.ones(self.ps.freq.shape[0]),
                         color='blue', lw=2)
-                s2.set_xlim([min(logx), max(logx)])
-                s2.set_ylim([min(pldif), max(pldif)])
+                s2.set_xlim([np.min(logx), np.max(logx)])
+                s2.set_ylim([np.min(pldif), np.max(pldif)])
 
             else:
                 s2.plot(self.ps.freq, pldif, color='black',
@@ -1308,8 +1308,8 @@ class PSDParEst(ParameterEstimation):
 
                 s2.set_xscale("log")
                 s2.set_yscale("log")
-                s2.set_xlim([min(self.ps.freq), max(self.ps.freq)])
-                s2.set_ylim([min(pldif), max(pldif)])
+                s2.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
+                s2.set_ylim([np.min(pldif), np.max(pldif)])
 
             if res2 is not None:
                 bpldif = self.ps.power/res2.mfit
@@ -1321,7 +1321,7 @@ class PSDParEst(ParameterEstimation):
                     s3.plot(logx, bpldif, color='black', linestyle='steps-mid')
                     s3.plot(logx, np.ones(len(self.ps.freq)),
                             color='red', lw=2)
-                    s3.axis([min(logx), max(logx), min(bpldif), max(bpldif)])
+                    s3.axis([np.min(logx), np.max(logx), np.min(bpldif), np.max(bpldif)])
                     s3.set_xlabel("log(Frequency) [Hz]", fontsize=18)
 
                 else:
@@ -1331,8 +1331,8 @@ class PSDParEst(ParameterEstimation):
                             color='red', lw=2)
                     s3.set_xscale("log")
                     s3.set_yscale("log")
-                    s3.set_xlim([min(self.ps.freq), max(self.ps.freq)])
-                    s3.set_ylim([min(bpldif), max(bpldif)])
+                    s3.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
+                    s3.set_ylim([np.min(bpldif), np.max(bpldif)])
                     s3.set_xlabel("Frequency [Hz]", fontsize=18)
 
                 s3.set_ylabel("Residuals, \n second model",

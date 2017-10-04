@@ -199,8 +199,8 @@ class TestCrossspectrum(object):
 
     def test_timelag(self):
         time_lag = self.cs.time_lag()
-        assert max(time_lag) <= np.pi
-        assert min(time_lag) >= -np.pi
+        assert np.max(time_lag) <= np.pi
+        assert np.min(time_lag) >= -np.pi
 
     def test_nonzero_err(self):
         assert np.all(self.cs.power_err > 0)

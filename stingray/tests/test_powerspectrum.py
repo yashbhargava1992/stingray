@@ -203,7 +203,8 @@ class TestPowerspectrum(object):
         bin_ps = ps.rebin(df)
         assert np.isclose(bin_ps.freq[1] - bin_ps.freq[0], bin_ps.df,
                           atol=1e-4, rtol=1e-4)
-        assert np.isclose(bin_ps.freq[0], (ps.freq[0] - ps.df * 0.5 + bin_ps.df * 0.5),
+        assert np.isclose(bin_ps.freq[0],
+                          (ps.freq[0] - ps.df * 0.5 + bin_ps.df * 0.5),
                           atol=1e-4, rtol=1e-4)
 
     def test_classical_significances_runs(self):
@@ -437,7 +438,8 @@ class TestAveragedPowerspectrum(object):
         ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy")
 
         assert np.isclose(np.mean(ps.power), 2.0, atol=1e-2, rtol=1e-2)
-        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(n*10), atol=0.1, rtol=0.1)
+        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(n*10), atol=0.1,
+                          rtol=0.1)
 
 
 class TestClassicalSignificances(object):
@@ -574,8 +576,8 @@ class TestDynamicalPowerspectrum(object):
         dps = DynamicalPowerspectrum(self.lc, segment_size=3)
         max_pos = dps.trace_maximum()
 
-        assert max(dps.freq[max_pos]) <= 1 / self.lc.dt
-        assert min(dps.freq[max_pos]) >= 1 / dps.segment_size
+        assert np.max(dps.freq[max_pos]) <= 1 / self.lc.dt
+        assert np.min(dps.freq[max_pos]) >= 1 / dps.segment_size
 
     def test_trace_maximum_with_boundaries(self):
         dps = DynamicalPowerspectrum(self.lc, segment_size=3)
@@ -583,8 +585,8 @@ class TestDynamicalPowerspectrum(object):
         maxfreq = 24
         max_pos = dps.trace_maximum(min_freq=minfreq, max_freq=maxfreq)
 
-        assert max(dps.freq[max_pos]) <= maxfreq
-        assert min(dps.freq[max_pos]) >= minfreq
+        assert np.max(dps.freq[max_pos]) <= maxfreq
+        assert np.min(dps.freq[max_pos]) >= minfreq
 
     def test_size_of_trace_maximum(self):
         dps = DynamicalPowerspectrum(self.lc, segment_size=3)

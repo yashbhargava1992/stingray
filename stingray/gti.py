@@ -263,7 +263,7 @@ def cross_two_gtis(gti0, gti1):
             st = gti_start[this_series][st_pos]
             so = gti_start[other_series][so_pos]
 
-            s = max([st, so])
+            s = np.max([st, so])
         except:  # pragma: no cover
             continue
 
@@ -429,8 +429,8 @@ def append_gtis(gti0, gti1):
 def join_gtis(gti0, gti1):
     """Union of two GTIs.
 
-    If GTIs are mutually exclusive, it calls `append_gtis`. Otherwise we put the
-    extremes of partially overlapping GTIs on an ideal line and look at the
+    If GTIs are mutually exclusive, it calls `append_gtis`. Otherwise we put
+    the extremes of partially overlapping GTIs on an ideal line and look at the
     number of opened and closed intervals. When the number of closed and opened
     intervals is the same, the full GTI is complete and we close it.
 
