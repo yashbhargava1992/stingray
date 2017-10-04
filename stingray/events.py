@@ -19,8 +19,8 @@ __all__ = ['EventList']
 
 
 class EventList(object):
-    def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0, notes="",
-            gti=None, pi=None):
+    def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
+                 notes="", gti=None, pi=None):
         """
         Make an event list object from an array of time stamps
 
@@ -208,12 +208,13 @@ class EventList(object):
         # Calculate cumulative probability
         cum_prob = np.cumsum(prob)
 
-        # Draw N random numbers between 0 and 1, where N is the size of event list
+        # Draw N random numbers between 0 and 1, where N is the size of event
+        # list
         R = ra.uniform(0, 1, self.ncounts)
 
         # Assign energies to events corresponding to the random numbers drawn
         self.energy = np.array([energy[np.argwhere(cum_prob ==
-            min(cum_prob[(cum_prob - r) > 0]))] for r in R])
+            np.min(cum_prob[(cum_prob - r) > 0]))] for r in R])
 
     def join(self, other):
         """
@@ -274,7 +275,8 @@ class EventList(object):
         if (self.energy is None) and (other.energy is None):
             ev_new.energy = None
         elif (self.energy is None) or (other.energy is None):
-            self.energy = assign_value_if_none(self.energy, np.zeros_like(self.time))
+            self.energy = assign_value_if_none(self.energy,
+                                               np.zeros_like(self.time))
             other.energy = assign_value_if_none(other.energy,
                                              np.zeros_like(other.time))
 
@@ -284,14 +286,14 @@ class EventList(object):
 
         if self.gti is None and other.gti is not None and len(self.time) > 0:
             self.gti = \
-                assign_value_if_none(self.gti,
-                                     np.asarray([[self.time[0] - self.dt / 2,
-                                                  self.time[-1] + self.dt / 2]]))
+                assign_value_if_none(
+                    self.gti, np.asarray([[self.time[0] - self.dt / 2,
+                                           self.time[-1] + self.dt / 2]]))
         if other.gti is None and self.gti is not None and len(other.time) > 0:
             other.gti = \
-                assign_value_if_none(other.gti,
-                                     np.asarray([[other.time[0] - other.dt / 2,
-                                                  other.time[-1] + other.dt / 2]]))
+                assign_value_if_none(
+                    other.gti, np.asarray([[other.time[0] - other.dt / 2,
+                                            other.time[-1] + other.dt / 2]]))
 
         if (self.gti is None) and (other.gti is None):
             ev_new.gti = None
@@ -345,8 +347,9 @@ class EventList(object):
                 else:
                     values.append(None)
                     
-            return EventList(time=values[0], energy=values[1], ncounts=values[2],
-                mjdref=values[3], dt=values[4], notes=values[5], gti=values[6], pi=values[7])
+            return EventList(time=values[0], energy=values[1],
+                             ncounts=values[2], mjdref=values[3], dt=values[4],
+                             notes=values[5], gti=values[6], pi=values[7])
 
         elif format_ == 'pickle':
             return data
