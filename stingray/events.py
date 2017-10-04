@@ -50,6 +50,9 @@ class EventList(object):
         pi : integer, numpy.ndarray
             PI channels
 
+        notes : str
+            Any useful annotations
+
         Attributes
         ----------
         time: numpy.ndarray
