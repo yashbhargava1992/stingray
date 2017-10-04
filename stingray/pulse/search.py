@@ -12,16 +12,18 @@ __all__ = ['epoch_folding_search', 'z_n_search', 'search_best_peaks',
 
 
 @jit(nopython=True)
-def _pulse_phase_fast(time, f, buffer_array):
+def _pulse_phase_fast(time, f, fdot, buffer_array):
     for i in range(len(time)):
-        buffer_array[i] = time[i] * f
+        buffer_array[i] = time[i] * f + 0.5 * time[i]**2 * fdot
         buffer_array[i] -= np.floor(buffer_array[i])
     return buffer_array
 
 
 def _folding_search(stat_func, times, frequencies, segment_size=5000,
-                    use_times=False, **kwargs):
-    stats = np.zeros_like(frequencies)
+                    use_times=False, fdots=0, **kwargs):
+
+    fgrid, fdgrid = np.meshgrid(frequencies, fdots)
+    stats = np.zeros_like(fgrid)
     times = (times - times[0]).astype(np.float64)
     length = times[-1]
     if length < segment_size:
@@ -33,23 +35,30 @@ def _folding_search(stat_func, times, frequencies, segment_size=5000,
         ts = times[good]
         if len(ts) < 1 or ts[-1] - ts[0] < 0.2 * segment_size:
             continue
-        for i, f in enumerate(frequencies):
-            if use_times:
-                kwargs_copy = {}
-                for key in kwargs.keys():
-                    if isinstance(kwargs[key], collections.Iterable) and \
-                        len(kwargs[key]) == len(times):
+        buffer = np.zeros_like(ts)
+        for i in range(stats.shape[0]):
+            for j in range(stats.shape[1]):
+                f = fgrid[i, j]
+                fd = fdgrid[i, j]
+                if use_times:
+                    kwargs_copy = {}
+                    for key in kwargs.keys():
+                        if isinstance(kwargs[key], collections.Iterable) and \
+                            len(kwargs[key]) == len(times):
 
-                        kwargs_copy[key] = kwargs[key][good]
-                    else:
-                        kwargs_copy[key] = kwargs[key]
-                stats[i] += stat_func(ts, f, **kwargs_copy)
-            else:
-                buffer = np.zeros_like(ts)
-                phases = _pulse_phase_fast(ts, f, buffer)
-                stats[i] += stat_func(phases)
+                            kwargs_copy[key] = kwargs[key][good]
+                        else:
+                            kwargs_copy[key] = kwargs[key]
+                    stats[i, j] += stat_func(ts, f, fd, **kwargs_copy)
+                else:
+                    phases = _pulse_phase_fast(ts, f, fd, buffer)
+                    stats[i, j] += stat_func(phases)
         count += 1
-    return frequencies, stats / count
+
+    if fgrid.shape[0] == 1:
+        return fgrid.flatten(), stats.flatten() / count
+    else:
+        return fgrid, fdgrid, stats / count
 
 
 @jit(nopython=True)
@@ -72,7 +81,7 @@ def _profile_fast(phase, nbin=128):
 
 
 def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
-                         expocorr=False, gti=None, weights=1):
+                         expocorr=False, gti=None, weights=1, fdots=0):
     """Performs epoch folding at trial frequencies in photon data.
 
     If no exposure correction is needed and numba is installed, it uses a fast
@@ -94,6 +103,8 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
         the number of bins of the folded profiles
     segment_size : float
         the length of the segments to be averaged in the periodogram
+    fdots : array-like
+        trial values of the first frequency derivative (optional)
     expocorr : bool
         correct for the exposure (Use it if the period is comparable to the
         length of the good time intervals). If True, GTIs have to be specified
@@ -109,20 +120,22 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
             raise ValueError('To calculate exposure correction, you need to'
                              ' specify the GTIs')
 
-        def fun(t, f, **kwargs):
-            return stat(fold_events(t, f, **kwargs)[1])
+        def stat_fun(t, f, fd=0, **kwargs):
+            return stat(fold_events(t, f, fd, **kwargs)[1])
 
         return \
-            _folding_search(fun, times, frequencies, segment_size=segment_size,
+            _folding_search(stat_fun, times, frequencies,
+                            segment_size=segment_size,
                             use_times=True, expocorr=expocorr, weights=weights,
-                            gti=gti, nbin=nbin)
+                            gti=gti, nbin=nbin, fdots=fdots)
 
     return _folding_search(lambda x: stat(_profile_fast(x, nbin=nbin)),
-                           times, frequencies, segment_size=segment_size)
+                           times, frequencies, segment_size=segment_size,
+                           fdots=fdots)
 
 
 def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
-               expocorr=False, weights=1, gti=None):
+               expocorr=False, weights=1, gti=None, fdots=0):
     """Calculates the Z^2_n statistics at trial frequencies in photon data.
 
     The "real" Z^2_n statistics is very slow. Therefore, in this function data
@@ -150,6 +163,8 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
         the number of bins of the folded profiles
     segment_size : float
         the length of the segments to be averaged in the periodogram
+    fdots : array-like
+        trial values of the first frequency derivative (optional)
     expocorr : bool
         correct for the exposure (Use it if the period is comparable to the
         length of the good time intervals.)
@@ -164,17 +179,19 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
         if expocorr and gti is None:
             raise ValueError('To calculate exposure correction, you need to'
                              ' specify the GTIs')
-        def fun(t, f, **kwargs):
+        def stat_fun(t, f, fd=0, **kwargs):
             return z_n(phase, n=nharm,
-                       norm=fold_events(t, f, nbin=nbin, **kwargs)[1])
+                       norm=fold_events(t, f, fd, nbin=nbin, **kwargs)[1])
         return \
-            _folding_search(fun, times, frequencies, segment_size=segment_size,
+            _folding_search(stat_fun, times, frequencies,
+                            segment_size=segment_size,
                             use_times=True, expocorr=expocorr, weights=weights,
-                            gti=gti)
+                            gti=gti, fdots=fdots)
 
     return _folding_search(lambda x: z_n(phase, n=nharm,
                                          norm=_profile_fast(x, nbin=nbin)),
-                           times, frequencies, segment_size=segment_size)
+                           times, frequencies, segment_size=segment_size,
+                           fdots=fdots)
 
 
 def search_best_peaks(x, stat, threshold):
