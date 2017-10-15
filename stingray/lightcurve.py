@@ -298,8 +298,8 @@ class Lightcurve(object):
 
         GTIs are crossed, so that only common intervals are saved.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [5, 10, 15]
         >>> count1 = [300, 100, 400]
         >>> count2 = [600, 1200, 800]
@@ -324,8 +324,8 @@ class Lightcurve(object):
 
         GTIs are crossed, so that only common intervals are saved.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [10, 20, 30]
         >>> count1 = [600, 1200, 800]
         >>> count2 = [300, 100, 400]
@@ -347,8 +347,8 @@ class Lightcurve(object):
         The negation operator ``-`` is supposed to invert the sign of the count
         values of a light curve object.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [1, 2, 3]
         >>> count1 = [100, 200, 300]
         >>> count2 = [200, 300, 400]
@@ -371,8 +371,8 @@ class Lightcurve(object):
         This method implements overrides the len function over a Lightcurve
         object and returns the length of the time and count arrays.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [1, 2, 3]
         >>> count = [100, 200, 300]
         >>> lc = Lightcurve(time, count)
@@ -399,8 +399,8 @@ class Lightcurve(object):
         index : int or slice instance
             Index value of the time array or a slice object.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         >>> lc = Lightcurve(time, count)
@@ -436,11 +436,11 @@ class Lightcurve(object):
     def __eq__(self,other_lc):
 	    """
 	        Compares two :class:`Lightcurve` objects.
-	        
+
 	        Light curves are equal only if their counts as well as times at which those counts occur equal.
-	        
-	        Example
-	        -------
+
+	        Examples
+	        --------
 	        >>> time = [1, 2, 3]
 	        >>> count1 = [100, 200, 300]
 	        >>> count2 = [100, 200, 300]
@@ -616,8 +616,8 @@ class Lightcurve(object):
         lc_new : Lightcurve object
             The resulting lightcurve object.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time1 = [5, 10, 15]
         >>> count1 = [300, 100, 400]
         >>> time2 = [20, 25, 30]
@@ -733,8 +733,8 @@ class Lightcurve(object):
             the values are treated as indices of the counts array, or
             if set to "time", the values are treated as actual time values.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
         >>> lc = Lightcurve(time, count)
@@ -811,8 +811,8 @@ class Lightcurve(object):
         reverse : boolean, default False
             If True then the object is sorted in reverse order.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [1, 2, 3]
         >>> count = [200, 100, 300]
         >>> lc = Lightcurve(time, count)

@@ -214,13 +214,13 @@ class ParameterEstimation(object):
         this is required, define (uniform) priors in the ParametricModel
         instances to be used below.
 
-        Parameters:
-        -----------
-        fitmethod: string, optional, default "L-BFGS-B"
+        Parameters
+        ----------
+        fitmethod : string, optional, default "L-BFGS-B"
             Any of the strings allowed in scipy.optimize.minimize in
             the method keyword. Sets the fit method to be used.
 
-        max_post: bool, optional, default True
+        max_post : bool, optional, default True
             If True, then compute the Maximum-A-Posteriori estimate. If False,
             compute a Maximum Likelihood estimate.
         """
@@ -234,9 +234,9 @@ class ParameterEstimation(object):
         Do either a Maximum A Posteriori or Maximum Likelihood
         fit to the data.
 
-        Parameters:
+        Parameters
         -----------
-        lpost: Posterior (or subclass) instance
+        lpost : Posterior (or subclass) instance
             and instance of class Posterior or one of its subclasses
             that defines the function to be minized (either in loglikelihood
             or logposterior)
@@ -253,9 +253,9 @@ class ParameterEstimation(object):
             A dictionary with options for `scipy.optimize.minimize`,
             directly passed on as keyword arguments.
 
-        Returns:
+        Returns
         --------
-        fitparams: dict
+        fitparams : dict
             A dictionary with the fit results
             TODO: Add description of keywords in the class!
         """
@@ -858,18 +858,18 @@ class SamplingResults(object):
         Parameters
         ----------
 
-        nsamples: int, default 1000
+        nsamples : int, default 1000
             The maximum number of samples used for plotting.
 
-        fig: matplotlib.Figure instance, default None
+        fig : matplotlib.Figure instance, default None
             If created externally, you can pass a Figure instance to this method.
             If none is passed, the method will create one internally.
 
-        save_plot: bool, default False
+        save_plot : bool, default False
             If True, save the plot to file with a file name specified by the
             keyword `filename`. If False, just return the `Figure` object
 
-        filename: str
+        filename : str
             Name of the output file with the figure
 
         """
@@ -974,7 +974,7 @@ class PSDParEst(ParameterEstimation):
         """
         Generate a fake power spectrum from a model.
 
-        Parameters:
+        Parameters
         ----------
         lpost : instance of a Posterior or LogLikelihood subclass
             The object containing the relevant information about the
