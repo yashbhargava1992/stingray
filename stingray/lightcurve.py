@@ -434,28 +434,28 @@ class Lightcurve(object):
                              "object !")
 
     def __eq__(self,other_lc):
-	    """
-	        Compares two :class:`Lightcurve` objects.
-	        
-	        Light curves are equal only if their counts as well as times at which those counts occur equal.
-	        
-	        Example
-	        -------
-	        >>> time = [1, 2, 3]
-	        >>> count1 = [100, 200, 300]
-	        >>> count2 = [100, 200, 300]
-	        >>> lc1 = Lightcurve(time, count1)
-	        >>> lc2 = Lightcurve(time, count2)
-	        >>> lc1 == lc2
-	        True
-	    """
-	    if not isinstance(other_lc, Lightcurve):
-	        raise ValueError('Lightcurve can only be compared with a Lightcurve Object')
-	    if (np.allclose(self.time, other_lc.time) and np.allclose(self.counts, other_lc.counts)):
-	        return True
-	    return False
+        """
+            Compares two :class:`Lightcurve` objects.
 
-    def baseline(self, lam, p, niter=10):
+            Light curves are equal only if their counts as well as times at which those counts occur equal.
+
+            Example
+            -------
+            >>> time = [1, 2, 3]
+            >>> count1 = [100, 200, 300]
+            >>> count2 = [100, 200, 300]
+            >>> lc1 = Lightcurve(time, count1)
+            >>> lc2 = Lightcurve(time, count2)
+            >>> lc1 == lc2
+            True
+        """
+        if not isinstance(other_lc, Lightcurve):
+            raise ValueError('Lightcurve can only be compared with a Lightcurve Object')
+        if (np.allclose(self.time, other_lc.time) and np.allclose(self.counts, other_lc.counts)):
+            return True
+        return False
+
+    def baseline(self, lam, p, niter=10, offset_correction=False):
         """Calculate the baseline of the light curve, accounting for GTIs.
 
         Parameters
@@ -466,11 +466,22 @@ class Lightcurve(object):
         p : float
             "asymmetry" parameter. Smaller values make the baseline more
             "horizontal". Typically 0.001 < p < 0.1, but not necessary.
+
+        Other parameters
+        ----------------
+        offset_correction : bool, default False
+            by default, this method does not align to the running mean of the
+            light curve, but it goes below the light curve. Setting align to
+            True, an additional step is done to shift the baseline so that it
+            is shifted to the middle of the light curve noise distribution.
         """
         baseline = np.zeros_like(self.time)
         for g in self.gti:
             good = create_gti_mask(self.time, [g])
-            baseline[good] = baseline_als(self.counts[good], lam, p, niter)
+            _, baseline[good] = \
+                baseline_als(self.time[good], self.counts[good], lam, p,
+                             niter, offset_correction=offset_correction,
+                             return_baseline=True)
 
         return baseline
 
