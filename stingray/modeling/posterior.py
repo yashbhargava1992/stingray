@@ -65,8 +65,8 @@ def set_logprior(lpost, priors):
         logprior : function
             The function definition for the prior
 
-    Example
-    -------
+    Examples
+    --------
     Make a light curve and power spectrum
 
     >>> photon_arrivals = np.sort(np.random.uniform(0,1000, size=10000))
@@ -105,14 +105,14 @@ def set_logprior(lpost, priors):
         The logarithm of the prior distribution for the
         model defined in self.model.
 
-        Parameters:
-        ------------
-        t0: {list | numpy.ndarray}
+        Parameters
+        ----------
+        t0 : {list | numpy.ndarray}
             The list with parameters for the model
 
-        Returns:
-        --------
-        logp: float
+        Returns
+        -------
+        logp : float
             The logarithm of the prior distribution for the model and
             parameters given.
         """

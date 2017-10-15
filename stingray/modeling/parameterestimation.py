@@ -214,9 +214,9 @@ class ParameterEstimation(object):
         this is required, define (uniform) priors in the ParametricModel
         instances to be used below.
 
-        Parameters:
-        -----------
-        fitmethod: string, optional, default "L-BFGS-B"
+        Parameters
+        ----------
+        fitmethod : string, optional, default "L-BFGS-B"
             Any of the strings allowed in scipy.optimize.minimize in
             the method keyword. Sets the fit method to be used.
 
@@ -234,7 +234,7 @@ class ParameterEstimation(object):
         Do either a Maximum A Posteriori or Maximum Likelihood
         fit to the data.
 
-        Parameters:
+        Parameters
         -----------
         lpost: Posterior (or subclass) instance
             and instance of class Posterior or one of its subclasses
@@ -253,7 +253,7 @@ class ParameterEstimation(object):
             A dictionary with options for `scipy.optimize.minimize`,
             directly passed on as keyword arguments.
 
-        Returns:
+        Returns
         --------
         fitparams: dict
             A dictionary with the fit results
@@ -974,7 +974,7 @@ class PSDParEst(ParameterEstimation):
         """
         Generate a fake power spectrum from a model.
 
-        Parameters:
+        Parameters
         ----------
         lpost : instance of a Posterior or LogLikelihood subclass
             The object containing the relevant information about the

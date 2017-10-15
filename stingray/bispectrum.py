@@ -70,9 +70,9 @@ class Bispectrum(object):
                 
                 [3] Matlab version of bispectrum under following link. 
                 https://www.mathworks.com/matlabcentral/fileexchange/60-bisp3cum
-                
-                Example
-                -------
+
+                Examples
+                --------
                 >> from stingray.lightcurve import Lightcurve
                 >> from stingray.bispectrum import Bispectrum
                 >> lc = Lightcurve([1,2,3,4,5],[2,3,1,1,2])
