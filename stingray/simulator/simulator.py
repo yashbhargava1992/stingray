@@ -150,7 +150,6 @@ class Simulator(object):
         else:
             raise ValueError("Length of arguments must be 1, 2 or 3.")
 
-
     def simulate_channel(self, channel, *args):
         """
         Simulate a lightcurve and add it to corresponding energy

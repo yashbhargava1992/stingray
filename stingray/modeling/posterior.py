@@ -200,10 +200,10 @@ class GaussianLogLikelihood(LogLikelihood):
         y : iterable
             y-coordinte of the data
 
-        yerr: iterable
+        yerr : iterable
             the uncertainty on the data, as standard deviation
 
-        model: an Astropy Model instance
+        model : an Astropy Model instance
             The model to use in the likelihood.
 
         """
@@ -254,7 +254,7 @@ class PoissonLogLikelihood(LogLikelihood):
         y : iterable
             y-coordinte of the data
 
-        model: an Astropy Model instance
+        model : an Astropy Model instance
             The model to use in the likelihood.
 
         """
@@ -297,14 +297,14 @@ class PSDLogLikelihood(LogLikelihood):
 
         Parameters
         ----------
-        freq: iterable
+        freq : iterable
             Array with frequencies
 
-        power: iterable
+        power : iterable
             Array with (averaged/singular) powers corresponding to the
             frequencies in `freq`
 
-        model: an Astropy Model instance
+        model : an Astropy Model instance
             The model to use in the likelihood.
 
         m : int
@@ -436,7 +436,7 @@ class Posterior(object):
         y : iterable
             The ordinate or dependent variable of the data.
 
-        model: astropy.modeling.models class instance
+        model : astropy.modeling.models class instance
             The parametric model supposed to represent the data. For details
             see the astropy.modeling documentation
 
@@ -507,10 +507,10 @@ class PSDPosterior(Posterior):
 
         Parameters
         ----------
-        ps: {Powerspectrum | AveragedPowerspectrum} instance
+        ps : {Powerspectrum | AveragedPowerspectrum} instance
             the Powerspectrum object containing the data
 
-        model: instance of any subclass of parameterclass.ParametricModel
+        model : instance of any subclass of parameterclass.ParametricModel
             The model for the power spectrum. Note that in order to define
             the posterior properly, the ParametricModel subclass must be
             instantiated with the hyperpars parameter set, or there won't
@@ -528,23 +528,23 @@ class PSDPosterior(Posterior):
             this module. Note that it is impossible to call the posterior object
             itself or the `self.logposterior` method without defining a prior.
 
-        m: int, default 1
+        m : int, default 1
             The number of averaged periodograms or frequency bins in ps.
             Useful for binned/averaged periodograms, since the value of
             m will change the likelihood function!
 
         Attributes
         ----------
-        ps: {Powerspectrum | AveragedPowerspectrum} instance
+        ps : {Powerspectrum | AveragedPowerspectrum} instance
             the Powerspectrum object containing the data
 
-        x: numpy.ndarray
+        x : numpy.ndarray
             The independent variable (list of frequencies) stored in ps.freq
 
-        y: numpy.ndarray
+        y : numpy.ndarray
             The dependent variable (list of powers) stored in ps.power
 
-        model: instance of any subclass of parameterclass.ParametricModel
+        model : instance of any subclass of parameterclass.ParametricModel
                The model for the power spectrum. Note that in order to define
                the posterior properly, the ParametricModel subclass must be
                instantiated with the hyperpars parameter set, or there won't
@@ -579,7 +579,7 @@ class PoissonPosterior(Posterior):
         y : numpy.ndarray
             The dependent variable (e.g. counts per bin of a light curve)
 
-        model: instance of any subclass of parameterclass.ParametricModel
+        model : instance of any subclass of parameterclass.ParametricModel
             The model for the power spectrum. Note that in order to define
             the posterior properly, the ParametricModel subclass must be
             instantiated with the hyperpars parameter set, or there won't
@@ -599,13 +599,13 @@ class PoissonPosterior(Posterior):
 
         Attributes
         ----------
-        x: numpy.ndarray
+        x : numpy.ndarray
             The independent variable (list of frequencies) stored in ps.freq
 
-        y: numpy.ndarray
+        y : numpy.ndarray
             The dependent variable (list of powers) stored in ps.power
 
-        model: instance of any subclass of parameterclass.ParametricModel
+        model : instance of any subclass of parameterclass.ParametricModel
                The model for the power spectrum. Note that in order to define
                the posterior properly, the ParametricModel subclass must be
                instantiated with the hyperpars parameter set, or there won't
@@ -633,16 +633,16 @@ class GaussianPosterior(Posterior):
 
         Parameters
         ----------
-        x: numpy.ndarray
+        x : numpy.ndarray
             independent variable
 
-        y: numpy.ndarray
+        y : numpy.ndarray
             dependent variable
 
-        yerr: numpy.ndarray
+        yerr : numpy.ndarray
             measurement uncertainties for y
 
-        model: instance of any subclass of parameterclass.ParametricModel
+        model : instance of any subclass of parameterclass.ParametricModel
             The model for the power spectrum. Note that in order to define
             the posterior properly, the ParametricModel subclass must be
             instantiated with the hyperpars parameter set, or there won't
@@ -668,16 +668,16 @@ class LaplacePosterior(Posterior):
 
         Parameters
         ----------
-        x: numpy.ndarray
+        x : numpy.ndarray
             independent variable
 
-        y: numpy.ndarray
+        y : numpy.ndarray
             dependent variable
 
-        yerr: numpy.ndarray
+        yerr : numpy.ndarray
             measurement uncertainties for y, in standard deviation
 
-        model: instance of any subclass of parameterclass.ParametricModel
+        model : instance of any subclass of parameterclass.ParametricModel
             The model for the power spectrum. Note that in order to define
             the posterior properly, the ParametricModel subclass must be
             instantiated with the hyperpars parameter set, or there won't
