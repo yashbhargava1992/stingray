@@ -82,8 +82,6 @@ matrix:
           env: SCIPY_VERSION=0.14.0
 
         # Try Astropy development version
-        - python: 2.7
-          env: ASTROPY_VERSION=development
         - python: 3.5
           env: ASTROPY_VERSION=development
 
@@ -95,8 +93,6 @@ matrix:
           env: SCIPY_VERSION=0.14.0
 
         # Try Astropy development version
-        - python: 2.7
-          env: ASTROPY_VERSION=development
         - python: 3.5
           env: ASTROPY_VERSION=development
 
