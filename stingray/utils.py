@@ -465,6 +465,14 @@ def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False,
         The initial time series, subtracted from the trend
     baseline : array-like, same size as y
         Fitted baseline. Only returned if return_baseline is True
+
+    Examples
+    --------
+    >>> x = np.arange(0, 10, 0.01)
+    >>> y = np.zeros_like(x) + 10
+    >>> ysub = baseline_als(x, y)
+    >>> np.all(ysub < 0.001)
+    True
     """
 
     if lam is None:
