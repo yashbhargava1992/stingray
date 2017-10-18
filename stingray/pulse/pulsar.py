@@ -140,8 +140,8 @@ def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
             goodbins = np.logical_and(phs[:, 0] <= l1, phs[:, 1] >= l0)
             idxs = np.arange(len(phs), dtype=int)[goodbins]
             for i in idxs:
-                start = max([phs[i, 0], l0])
-                stop = min([phs[i, 1], l1])
+                start = np.max([phs[i, 0], l0])
+                stop = np.min([phs[i, 1], l1])
                 w = stop - start
                 expo[i] += w
 

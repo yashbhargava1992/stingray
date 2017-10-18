@@ -58,6 +58,33 @@ class Covariancespectrum(object):
             float as input, the same is used as the standard deviation which
             is also used as the std. And if the std is an iterable of
             numbers, their mean is used for the same purpose.
+
+        Attributes
+        ----------
+
+        unnorm_covar : np.ndarray
+            An array of arrays with mid point band_interest and their
+            covariance. It is the array-form of the dictionary `energy_covar`.
+            The covariance values are unnormalized.
+
+        covar : np.ndarray
+            Normalized covariance spectrum.
+
+        covar_error : np.ndarray
+            Errors of the normalized covariance spectrum.
+
+        References
+        ----------
+        [1] Wilkinson, T. and Uttley, P. (2009), Accretion disc variability
+            in the hard state of black hole X-ray binaries. Monthly Notices
+            of the Royal Astronomical Society, 397: 666–676.
+            doi: 10.1111/j.1365-2966.2009.15008.x
+
+        Examples
+        --------
+        See https://github.com/StingraySoftware/notebooks repository for
+        detailed notebooks on the code.
+
         """
 
         self.dt = dt
@@ -342,6 +369,75 @@ class AveragedCovariancespectrum(Covariancespectrum):
     def __init__(self, data, segment_size, dt=None, band_interest=None,
                  ref_band_interest=None, std=None):
 
+        """
+        Compute a covariance spectrum for the data.
+
+        Parameters
+        ----------
+        data : {numpy.ndarray | list of Lightcurve objects}
+            `data` contains the time series data, either in the form of a
+            2-D array of (time stamp, energy) pairs for event data, or as a
+            list of light curves.
+            Note : The event list must be in sorted order with respect to the
+            times of arrivals.
+
+        segment_size : float
+            The length of each segment in the averaged covariance spectrum.
+            The number of segments will be calculated automatically using the
+            total length of the data set and the segment_size defined here.
+
+        dt : float
+            The time resolution of the Lightcurve formed from the energy bin.
+            Only used if `data` is an event list.
+
+        band_interest : {None, iterable of tuples}
+            If None, all possible energy values will be assumed to be of
+            interest, and a covariance spectrum in the highest resolution
+            will be produced.
+            Note;
+            If the input is a list of Lightcurve objects, then the user may
+            supply their energy values here, for construction of a
+            reference band.
+
+        ref_band_interest : {None | tuple | Lightcurve object |
+                             list of Lightcurve objects}
+            Defines the reference band to be used for comparison with the
+            bands of interest. If None, all bands *except* the band of
+            interest will be used for each band of interest, respectively.
+            Alternatively, a tuple can be given for event list data, which will
+            extract the reference band (always excluding the band of interest),
+            or one may put in a single Lightcurve object to be used (the same
+            for each band of interest) or a list of Lightcurve objects, one for
+            each band of interest.
+
+        std : float or np.array or list of numbers
+            The term std is used to calculate the excess variance of a band.
+            If std is set to None, default Poisson case is taken and the
+            std is calculated as `mean(lc)**0.5`. In the case of a single
+            float as input, the same is used as the standard deviation which
+            is also used as the std. And if the std is an iterable of
+            numbers, their mean is used for the same purpose.
+
+        Attributes
+        ----------
+
+        unnorm_covar : np.ndarray
+            An array of arrays with mid point band_interest and their
+            covariance. It is the array-form of the dictionary `energy_covar`.
+            The covariance values are unnormalized.
+
+        covar : np.ndarray
+            Normalized covariance spectrum.
+
+        covar_error : np.ndarray
+            Errors of the normalized covariance spectrum.
+
+        References
+        ----------
+        http://arxiv.org/pdf/1405.6575v2.pdf Equation 15
+
+        """
+
         self.segment_size = segment_size
 
         Covariancespectrum.__init__(self, data, dt=dt,
@@ -392,6 +488,7 @@ class AveragedCovariancespectrum(Covariancespectrum):
 
                 tstart += self.segment_size
                 tend += self.segment_size
+
 
             covar[i] = cv/self.nbins
             covar_err[i] = cv_err/self.nbins
