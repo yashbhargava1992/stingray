@@ -40,8 +40,7 @@ class Covariancespectrum(object):
             supply their energy values here, for construction of a
             reference band.
 
-        ref_band_interest : {None | tuple | Lightcurve object |
-                             list of Lightcurve objects}
+        ref_band_interest : {None, tuple, Lightcurve, list of Lightcurves}
             Defines the reference band to be used for comparison with the
             bands of interest. If None, all bands *except* the band of
             interest will be used for each band of interest, respectively.
@@ -61,7 +60,6 @@ class Covariancespectrum(object):
 
         Attributes
         ----------
-
         unnorm_covar : np.ndarray
             An array of arrays with mid point band_interest and their
             covariance. It is the array-form of the dictionary `energy_covar`.
@@ -399,8 +397,7 @@ class AveragedCovariancespectrum(Covariancespectrum):
             supply their energy values here, for construction of a
             reference band.
 
-        ref_band_interest : {None | tuple | Lightcurve object |
-                             list of Lightcurve objects}
+        ref_band_interest : {None, tuple, Lightcurve, list of Lightcurve}
             Defines the reference band to be used for comparison with the
             bands of interest. If None, all bands *except* the band of
             interest will be used for each band of interest, respectively.
@@ -420,7 +417,6 @@ class AveragedCovariancespectrum(Covariancespectrum):
 
         Attributes
         ----------
-
         unnorm_covar : np.ndarray
             An array of arrays with mid point band_interest and their
             covariance. It is the array-form of the dictionary `energy_covar`.
