@@ -12,7 +12,7 @@ import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none, baseline_als
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
-from stingray.gti import check_gtis, create_gti_mask, bin_intervals_from_gtis
+from stingray.gti import check_gtis, create_gti_mask_complete, create_gti_mask, bin_intervals_from_gtis
 from astropy.stats import poisson_conf_interval
 
 __all__ = ["Lightcurve"]
@@ -475,7 +475,8 @@ class Lightcurve(object):
         return baseline
 
     @staticmethod
-    def make_lightcurve(toa, dt, tseg=None, tstart=None, gti=None, mjdref=0):
+    def make_lightcurve(toa, dt, tseg=None, tstart=None, gti=None, mjdref=0,
+                        use_hist=False):
 
         """
         Make a light curve out of photon arrival times.
@@ -507,11 +508,14 @@ class Lightcurve(object):
             [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time Intervals
 
+        use_hist : bool
+            Use `np.histogram` instead of `np.bincounts`. Might be advantageous
+            for very short datasets.
+
         Returns
         -------
         lc: :class:`Lightcurve` object
             A light curve object with the binned light curve
-
         """
 
         # tstart is an optional parameter to set a starting time for
@@ -530,14 +534,23 @@ class Lightcurve(object):
 
         logging.info("make_lightcurve: tseg: " + str(tseg))
 
-        timebin = np.int(tseg/dt)
+        timebin = int(tseg/dt)
         logging.info("make_lightcurve: timebin:  " + str(timebin))
 
-        counts = np.bincount(((toa - tstart) // dt).astype(np.int64),
-                             minlength=timebin)
-        time = tstart + np.arange(0.5, 0.5 + len(counts)) * dt
+        if not use_hist:
+            delta = 0
+            counts = \
+                np.bincount(((toa - tstart + delta) // dt).astype(np.int64),
+                            minlength=timebin)[:timebin]
+            time = tstart + np.arange(0.5, 0.5 + timebin) * dt
 
-        counts = np.asarray(counts)
+            counts = np.asarray(counts)
+        else:
+            tend = tstart + timebin * dt
+            counts, histbins = np.histogram(toa, bins=timebin,
+                                            range = [tstart, tend])
+            dt = histbins[1] - histbins[0]
+            time = histbins[:-1] + 0.5 * dt
 
         return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt)
 
@@ -1100,10 +1113,11 @@ class Lightcurve(object):
         """Apply GTIs to a light curve after modification."""
         check_gtis(self.gti)
 
-        good = create_gti_mask(self.time, self.gti)
+        good = create_gti_mask(self.time, self.gti, dt=self.dt)
 
         self.time = self.time[good]
         self.counts = self.counts[good]
+
         self.counts_err = self.counts_err[good]
         self.countrate = self.countrate[good]
         self.countrate_err = self.countrate_err[good]
