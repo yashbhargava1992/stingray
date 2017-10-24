@@ -6,7 +6,7 @@ import logging
 
 from astropy.io import fits
 from .io import assign_value_if_none
-from .utils import contiguous_regions
+from .utils import contiguous_regions, jit
 from stingray.exceptions import StingrayError
 
 def load_gtis(fits_file, gtistring=None):
@@ -85,6 +85,35 @@ def check_gtis(gti):
 
     return
 
+@jit(nopython=True)
+def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):
+    gti_el = -1
+    next_gti = False
+    for i, t in enumerate(time):
+        if i == 0 or t > gtis[gti_el, 1] or next_gti:
+            gti_el += 1
+
+            limmin = gtis[gti_el, 0]
+            limmax = gtis[gti_el, 1]
+            length = limmax - limmin
+
+            if length < min_length:
+                next_gti = True
+                continue
+
+            next_gti = False
+            gti_mask[gti_el] = 1
+
+        if t < limmin:
+            continue
+
+        if t >= limmin:
+            if t < limmax:
+                mask[i] = 1
+
+    return mask, gti_mask
+
+
 def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
                     return_new_gtis=False, dt=None, epsilon=0.001):
     """Create GTI mask.
@@ -113,38 +142,31 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
         fraction of dt that is tolerated at the borders of a GTI
     """
     import collections
+    import copy
 
     check_gtis(gtis)
 
-    dt = assign_value_if_none(dt,
-                              np.zeros_like(time) +
-                              np.median(np.diff(time)) / 2)
+    dt = assign_value_if_none(dt, np.median(np.diff(time)) / 2)
 
     mask = np.zeros(len(time), dtype=bool)
 
     if not isinstance(safe_interval, collections.Iterable):
-        safe_interval = [safe_interval, safe_interval]
+        safe_interval = np.array([safe_interval, safe_interval])
+    gti_mask = np.zeros(len(gtis), dtype=bool)
+    gtis_new = copy.deepcopy(gtis)
+    gtis_new[:, 0] = gtis[:, 0] + safe_interval[0] + dt - epsilon*dt
+    gtis_new[:, 1] = gtis[:, 1] - safe_interval[1] - dt + epsilon*dt
+    
+    mask, gtimask = create_gti_mask_jit((time - time[0]).astype(np.float64),
+                                        (gtis_new - time[0]).astype(np.float64),
+                                        mask,
+                                        gti_mask=gti_mask,
+                                        min_length=min_length)
 
-    newgtis = np.zeros_like(gtis)
-    # Whose GTIs, including safe intervals, are longer than min_length
-    newgtimask = np.zeros(len(newgtis), dtype=np.bool)
-
-    for ig, gti in enumerate(gtis):
-        limmin, limmax = gti
-        limmin += safe_interval[0]
-        limmax -= safe_interval[1]
-        if limmax - limmin >= min_length:
-            newgtis[ig][:] = [limmin, limmax]
-            cond1 = time - dt + epsilon*dt >= limmin
-            cond2 = time + dt - epsilon*dt <= limmax
-            good = np.logical_and(cond1, cond2)
-            mask[good] = True
-            newgtimask[ig] = True
-
-    res = mask
     if return_new_gtis:
-        res = [res, newgtis[newgtimask]]
-    return res
+        return mask, gtis[gtimask]
+    return mask
+
 
 def create_gti_from_condition(time, condition,
                               safe_interval=0, dt=None):

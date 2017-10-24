@@ -533,14 +533,9 @@ class Lightcurve(object):
         timebin = np.int(tseg/dt)
         logging.info("make_lightcurve: timebin:  " + str(timebin))
 
-        tend = tstart + timebin*dt
-
-        counts, histbins = np.histogram(toa, bins=timebin,
-                                        range=[tstart, tend])
-
-        dt = histbins[1] - histbins[0]
-
-        time = histbins[:-1] + 0.5*dt
+        counts = np.bincount(((toa - tstart) // dt).astype(np.int64),
+                             minlength=timebin)
+        time = tstart + np.arange(0.5, 0.5 + len(counts)) * dt
 
         counts = np.asarray(counts)
 
