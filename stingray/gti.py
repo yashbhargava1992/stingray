@@ -152,9 +152,11 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     try:
         from numba import jit
     except ImportError:
-        return create_gti_mask_complete(time, gtis, safe_interval=0,
-                                        min_length=0, return_new_gtis=False,
-                                        dt=None, epsilon=0.001)
+        return create_gti_mask_complete(time, gtis,
+                                        safe_interval=safe_interval,
+                                        min_length=min_length,
+                                        return_new_gtis=return_new_gtis,
+                                        dt=dt, epsilon=epsilon)
 
     check_gtis(gtis)
 
