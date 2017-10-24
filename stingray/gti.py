@@ -9,6 +9,7 @@ from .io import assign_value_if_none
 from .utils import contiguous_regions, jit
 from stingray.exceptions import StingrayError
 
+
 def load_gtis(fits_file, gtistring=None):
     """Load GTI from HDU EVENTS of file fits_file."""
 
@@ -24,6 +25,7 @@ def load_gtis(fits_file, gtistring=None):
                         dtype=np.longdouble)
     lchdulist.close()
     return gti_list
+
 
 def _get_gti_from_extension(lchdulist, accepted_gtistrings=['GTI']):
     hdunames = [h.name for h in lchdulist]
@@ -46,6 +48,7 @@ def _get_gti_from_extension(lchdulist, accepted_gtistrings=['GTI']):
                                          gtistop)],
                         dtype=np.longdouble)
     return gti_list
+
 
 def check_gtis(gti):
     """Check if GTIs are well-behaved.
@@ -85,8 +88,10 @@ def check_gtis(gti):
 
     return
 
+
 @jit(nopython=True)
 def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):
+    """Compiled and fast function to create gti mask."""
     gti_el = -1
     next_gti = False
     for i, t in enumerate(time):
@@ -144,6 +149,13 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     import collections
     import copy
 
+    try:
+        from numba import jit
+    except ImportError:
+        return create_gti_mask_complete(time, gtis, safe_interval=0,
+                                        min_length=0, return_new_gtis=False,
+                                        dt=None, epsilon=0.001)
+
     check_gtis(gtis)
 
     dt = assign_value_if_none(dt, np.median(np.diff(time)) / 2)
@@ -157,15 +169,76 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     gtis_new[:, 0] = gtis[:, 0] + safe_interval[0] + dt - epsilon*dt
     gtis_new[:, 1] = gtis[:, 1] - safe_interval[1] - dt + epsilon*dt
     
-    mask, gtimask = create_gti_mask_jit((time - time[0]).astype(np.float64),
-                                        (gtis_new - time[0]).astype(np.float64),
-                                        mask,
-                                        gti_mask=gti_mask,
-                                        min_length=min_length)
+    mask, gtimask = \
+        create_gti_mask_jit((time - time[0]).astype(np.float64),
+                            (gtis_new - time[0]).astype(np.float64),
+                            mask, gti_mask=gti_mask, min_length=min_length)
 
     if return_new_gtis:
         return mask, gtis[gtimask]
     return mask
+
+
+def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
+                             return_new_gtis=False, dt=None, epsilon=0.001):
+    """Create GTI mask, allowing for non-constant dt.
+
+    Assumes that no overlaps are present between GTIs
+
+    Parameters
+    ----------
+    time : float array
+    gtis : [[g0_0, g0_1], [g1_0, g1_1], ...], float array-like
+
+    Returns
+    -------
+    mask : boolean array
+    new_gtis : Nx2 array
+
+    Other parameters
+    ----------------
+    safe_interval : float or [float, float]
+        A safe interval to exclude at both ends (if single float) or the start
+        and the end (if pair of values) of GTIs.
+    min_length : float
+    return_new_gtis : bool
+    dt : float
+    epsilon : float
+        fraction of dt that is tolerated at the borders of a GTI
+    """
+    import collections
+
+    check_gtis(gtis)
+
+    dt = assign_value_if_none(dt,
+                              np.zeros_like(time) +
+                              np.median(np.diff(time)) / 2)
+
+    mask = np.zeros(len(time), dtype=bool)
+
+    if not isinstance(safe_interval, collections.Iterable):
+        safe_interval = [safe_interval, safe_interval]
+
+    newgtis = np.zeros_like(gtis)
+    # Whose GTIs, including safe intervals, are longer than min_length
+    newgtimask = np.zeros(len(newgtis), dtype=np.bool)
+
+    for ig, gti in enumerate(gtis):
+        limmin, limmax = gti
+        limmin += safe_interval[0]
+        limmax -= safe_interval[1]
+        if limmax - limmin >= min_length:
+            newgtis[ig][:] = [limmin, limmax]
+            cond1 = time - dt + epsilon*dt >= limmin
+            cond2 = time + dt - epsilon*dt <= limmax
+            good = np.logical_and(cond1, cond2)
+            mask[good] = True
+            newgtimask[ig] = True
+
+    res = mask
+    if return_new_gtis:
+        res = [res, newgtis[newgtimask]]
+    return res
 
 
 def create_gti_from_condition(time, condition,
@@ -380,6 +453,7 @@ def gti_len(gti):
     """Return the total good time from a list of GTIs."""
     return np.sum([g[1] - g[0] for g in gti])
 
+
 def check_separate(gti0, gti1):
     """Check if two GTIs do not overlap.
 
@@ -415,6 +489,7 @@ def check_separate(gti0, gti1):
         return True
     else:
         return False
+
 
 def append_gtis(gti0, gti1):
     """Union of two non-overlapping GTIs.
