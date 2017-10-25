@@ -68,6 +68,14 @@ class TestGTI(object):
         # bin at times 0, 2, 4 and 5 are not in.
         assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
 
+    def test_gti_mask_compare(self):
+        arr = np.array([ 0.5, 1.5, 2.5, 3.5])
+        gti = np.array([[0, 4]])
+        mask_c, new_gtis_c = \
+            create_gti_mask_complete(arr, gti, return_new_gtis=True)
+        mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True)
+        assert np.all(mask == mask_c)
+
     def test_gti_from_condition1(self):
         t = np.array([0, 1, 2, 3, 4, 5, 6])
         condition = np.array([1, 1, 0, 0, 1, 0, 0], dtype=bool)
