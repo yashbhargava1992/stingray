@@ -187,7 +187,6 @@ class Lightcurve(object):
                                             [[self.tstart,
                                               self.tstart + self.tseg]]))
         check_gtis(self.gti)
-
         good = create_gti_mask(self.time, self.gti)
 
         self.time = self.time[good]
@@ -543,8 +542,8 @@ class Lightcurve(object):
         if not use_hist:
             binned_toas = ((toa[good] - tstart) // dt).astype(np.int64)
             counts = \
-                np.bincount(binned_toas, minlength=timebin)[:timebin]
-            time = tstart + np.arange(0.5, 0.5 + timebin) * dt
+                np.bincount(binned_toas, minlength=timebin)
+            time = tstart + np.arange(0.5, 0.5 + len(counts)) * dt
         else:
             counts, histbins = np.histogram(toa[good],
                                             bins=np.linspace(tstart, tend, 1 + timebin))
