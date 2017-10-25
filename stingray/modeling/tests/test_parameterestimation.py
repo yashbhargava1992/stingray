@@ -1069,7 +1069,7 @@ class TestPSDParEst(object):
     def test_calibrate_lrt_works_as_expected(self):
 
         m = 1
-        nfreq = 100000
+        nfreq = 10000
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(100)
         noise = rng.exponential(size=nfreq)
@@ -1105,7 +1105,7 @@ class TestPSDParEst(object):
     def test_calibrate_lrt_works_with_mvn(self):
 
         m = 1
-        nfreq = 100000
+        nfreq = 10000
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(100)
         noise = rng.exponential(size=nfreq)
@@ -1139,7 +1139,7 @@ class TestPSDParEst(object):
     @pytest.mark.skipif("not can_sample")
     def test_calibrate_lrt_works_with_sampling(self):
         m = 1
-        nfreq = 100000
+        nfreq = 10000
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(100)
         noise = rng.exponential(size=nfreq)
@@ -1285,7 +1285,7 @@ class TestPSDParEst(object):
 
     def test_calibrate_highest_outlier_works(self):
         m = 1
-        nfreq = 100000
+        nfreq = 10000
         seed = 100
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(seed)
@@ -1317,7 +1317,7 @@ class TestPSDParEst(object):
 
     def test_calibrate_highest_outlier_works_with_mvn(self):
         m = 1
-        nfreq = 100000
+        nfreq = 10000
         seed = 100
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(seed)
