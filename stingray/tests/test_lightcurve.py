@@ -177,6 +177,25 @@ class TestLightcurve(object):
         assert np.allclose(lc.time, lc2.time)
         assert np.all(lc.counts == lc2.counts)
 
+    def test_lightcurve_from_toa_halfbin(self):
+        lc = Lightcurve.make_lightcurve(self.times + 0.5, self.dt,
+                                        use_hist=True,
+                                        tstart=0.5)
+        lc2 = Lightcurve.make_lightcurve(self.times + 0.5, self.dt,
+                                         use_hist=False,
+                                         tstart=0.5)
+        assert np.allclose(lc.time, lc2.time)
+        assert np.all(lc.counts == lc2.counts)
+
+    def test_lightcurve_from_toa_random_nums(self):
+        times = np.random.uniform(0, 10, 1000)
+        lc = Lightcurve.make_lightcurve(times, self.dt, use_hist=True,
+                                        tstart=0.5)
+        lc2 = Lightcurve.make_lightcurve(times, self.dt, use_hist=False,
+                                        tstart=0.5)
+        assert np.allclose(lc.time, lc2.time)
+        assert np.all(lc.counts == lc2.counts)
+
     def test_tstart(self):
         tstart = 0.0
         lc = Lightcurve.make_lightcurve(self.times, self.dt, tstart=0.0)
