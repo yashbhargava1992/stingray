@@ -102,7 +102,6 @@ def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):
             limmin = gtis[gti_el, 0]
             limmax = gtis[gti_el, 1]
             length = limmax - limmin
-
             if length < min_length:
                 next_gti = True
                 continue
@@ -158,7 +157,7 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
                                         min_length=min_length,
                                         return_new_gtis=return_new_gtis,
                                         dt=dt, epsilon=epsilon)
-    gtis = np.asarray(gtis)
+    gtis = np.array(gtis, dtype=np.longdouble)
     check_gtis(gtis)
 
     dt = assign_value_if_none(dt, np.median(np.diff(time)))
@@ -171,12 +170,10 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     gtis_new = copy.deepcopy(gtis)
     gtis_new[:, 0] = gtis[:, 0] + safe_interval[0] + dt / 2 - epsilon*dt
     gtis_new[:, 1] = gtis[:, 1] - safe_interval[1] - dt / 2 + epsilon*dt
-
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
                             (gtis_new - time[0]).astype(np.float64),
                             mask, gti_mask=gti_mask, min_length=min_length)
-
     if return_new_gtis:
         return mask, gtis[gtimask]
     return mask
@@ -234,6 +231,7 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
             newgtis[ig][:] = [limmin, limmax]
             cond1 = time >= limmin + dt / 2 - epsilon*dt
             cond2 = time <= limmax - dt / 2 + epsilon*dt
+
             good = np.logical_and(cond1, cond2)
             mask[good] = True
             newgtimask[ig] = True
