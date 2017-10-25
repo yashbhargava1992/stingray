@@ -79,7 +79,7 @@ class EventList(object):
             PI channels
 
         """
-        
+
         self.energy = None if energy is None else np.array(energy)
         self.notes = notes
         self.dt = dt
@@ -195,16 +195,16 @@ class EventList(object):
             return
 
         if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
-            
+
             energy = np.array(spectrum)[0]
             fluxes = np.array(spectrum)[1]
 
             if not isinstance(energy, np.ndarray):
                 raise IndexError("Spectrum must be a 2-d array or list")
-        
+
         else:
             raise TypeError("Spectrum must be a 2-d array or list")
-        
+
         # Create a set of probability values
         prob = fluxes / float(sum(fluxes))
 
@@ -262,7 +262,7 @@ class EventList(object):
 
         ev_new.time = np.concatenate([self.time, other.time])
         order = np.argsort(ev_new.time)
-        ev_new.time = ev_new.time[order] 
+        ev_new.time = ev_new.time[order]
 
         if (self.pi is None) and (other.pi is None):
             ev_new.pi = None
@@ -335,11 +335,11 @@ class EventList(object):
         if format_ == 'ascii':
             time = np.array(data.columns[0])
             return EventList(time=time)
-        
+
         elif format_ == 'hdf5' or format_ == 'fits':
             keys = data.keys()
             values = []
-            
+
             if format_ == 'fits':
                 attributes = [a.upper() for a in attributes]
 
@@ -349,7 +349,7 @@ class EventList(object):
 
                 else:
                     values.append(None)
-                    
+
             return EventList(time=values[0], energy=values[1],
                              ncounts=values[2], mjdref=values[3], dt=values[4],
                              notes=values[5], gti=values[6], pi=values[7])
@@ -383,8 +383,8 @@ class EventList(object):
             write(self, filename, format_)
 
         elif format_ == 'fits':
-            write(self, filename, format_, tnames=['EVENTS', 'GTI'], 
-                colsassign={'gti':'GTI'})
+            write(self, filename, format_, tnames=['EVENTS', 'GTI'],
+                  colsassign={'gti':'GTI'})
 
         else:
             raise KeyError("Format not understood.")
