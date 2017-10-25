@@ -260,8 +260,8 @@ class Lightcurve(object):
         # ValueError is raised by Numpy while asserting np.equal over arrays
         # with different dimensions.
         try:
-            assert np.all(np.equal(self.time[mask_self],
-                                   other.time[mask_other]))
+            diff = np.abs((self.time[mask_self] - other.time[mask_other]))
+            assert np.all(diff < self.dt / 100)
         except (ValueError, AssertionError):
             raise ValueError("GTI-filtered time arrays of both light curves "
                              "must be of same dimension and equal.")
@@ -518,6 +518,7 @@ class Lightcurve(object):
             A light curve object with the binned light curve
         """
 
+        toa = np.asarray(toa)
         # tstart is an optional parameter to set a starting time for
         # the light curve in case this does not coincide with the first photon
         if tstart is None:
@@ -530,26 +531,23 @@ class Lightcurve(object):
         # are not throwing away good events.
 
         if tseg is None:
-            tseg = toa[-1] - toa[0]
+            tseg = toa[-1] - tstart
 
         logging.info("make_lightcurve: tseg: " + str(tseg))
 
-        timebin = int(tseg/dt)
+        timebin = np.int64(tseg/dt)
         logging.info("make_lightcurve: timebin:  " + str(timebin))
 
+        tend = tstart + timebin * dt
+        good = (tstart <= toa) & (toa < tend)
         if not use_hist:
-            delta = 0
+            binned_toas = ((toa[good] - tstart) // dt).astype(np.int64)
             counts = \
-                np.bincount(((toa - tstart + delta) // dt).astype(np.int64),
-                            minlength=timebin)[:timebin]
+                np.bincount(binned_toas, minlength=timebin)[:timebin]
             time = tstart + np.arange(0.5, 0.5 + timebin) * dt
-
-            counts = np.asarray(counts)
         else:
-            tend = tstart + timebin * dt
-            counts, histbins = np.histogram(toa, bins=timebin,
-                                            range = [tstart, tend])
-            dt = histbins[1] - histbins[0]
+            counts, histbins = np.histogram(toa[good],
+                                            bins=np.linspace(tstart, tend, 1 + timebin))
             time = histbins[:-1] + 0.5 * dt
 
         return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt)
