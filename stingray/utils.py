@@ -550,7 +550,8 @@ def poisson_symmetrical_errors(counts):
     >>> assert np.all(err_thisfun == err)
     """
     from astropy.stats import poisson_conf_interval
-    count_values = np.unique(np.asarray(counts, dtype=np.int64))
+    counts_int = np.asarray(counts, dtype=np.int64)
+    count_values = np.unique(counts_int)
     err_low, err_high = \
         poisson_conf_interval(count_values,
                               interval='frequentist-confidence', sigma=1)
@@ -559,5 +560,5 @@ def poisson_symmetrical_errors(counts):
     err_high -= np.asarray(count_values)
     err = (np.absolute(err_low) + np.absolute(err_high))/2.0
 
-    idxs = np.searchsorted(count_values, counts)
+    idxs = np.searchsorted(count_values, counts_int)
     return err[idxs]

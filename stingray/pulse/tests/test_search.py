@@ -24,7 +24,7 @@ class TestAll(object):
         cls.counts = \
             100 + 20 * np.cos(2 * np.pi * cls.times * cls.pulse_frequency)
         cls.gti = [[cls.tstart, cls.tend]]
-        lc = Lightcurve(cls.times, cls.counts, gti=cls.gti)
+        lc = Lightcurve(cls.times, cls.counts, gti=cls.gti, err_dist='gauss')
         events = EventList()
         events.simulate_times(lc)
         cls.event_times = events.time
