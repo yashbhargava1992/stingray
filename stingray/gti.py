@@ -90,7 +90,7 @@ def check_gtis(gti):
 
 
 @jit(nopython=True)
-def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):
+def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):  # pragma: no cover
     """Compiled and fast function to create gti mask."""
     gti_el = -1
     next_gti = False
