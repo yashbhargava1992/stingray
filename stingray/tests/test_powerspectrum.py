@@ -548,7 +548,7 @@ class TestDynamicalPowerspectrum(object):
         vari = 25 * np.sin(2 * np.pi * freq * timestamps)
         signal = vari + 50
         # create a lightcurve
-        lc = Lightcurve(timestamps, signal)
+        lc = Lightcurve(timestamps, signal, err_dist='gauss')
         cls.lc = lc
 
         # Simple lc to demonstrate rebinning of dyn ps
