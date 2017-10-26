@@ -11,9 +11,9 @@ import stingray.io as io
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none, baseline_als
+from stingray.utils import poisson_symmetrical_errors
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
 from stingray.gti import check_gtis, create_gti_mask_complete, create_gti_mask, bin_intervals_from_gtis
-from astropy.stats import poisson_conf_interval
 
 __all__ = ["Lightcurve"]
 
@@ -154,13 +154,7 @@ class Lightcurve(object):
             if err_dist.lower() == 'poisson':
                 # Instead of the simple square root, we use confidence
                 # intervals (should be valid for low fluxes too)
-                err_low, err_high = poisson_conf_interval(np.asarray(counts),
-                    interval='frequentist-confidence', sigma=1)
-                # calculate approximately symmetric uncertainties
-                err_low -= np.asarray(counts)
-                err_high -= np.asarray(counts)
-                err = (np.absolute(err_low) + np.absolute(err_high))/2.0
-                # other estimators can be implemented for other statistics
+                err = poisson_symmetrical_errors(counts)
             else:
                 simon("Stingray only uses poisson err_dist at the moment, "
                       "We are setting your errors to zero. "
