@@ -5,6 +5,7 @@ import collections
 import numpy as np
 
 from stingray import Lightcurve
+from stingray.events import EventList
 import stingray.utils as utils
 
 __all__ = ['Covariancespectrum', 'AveragedCovariancespectrum']
@@ -20,7 +21,7 @@ class Covariancespectrum(object):
 
         Parameters
         ----------
-        data : {numpy.ndarray | list of Lightcurve objects}
+        data : {numpy.ndarray | EventList object | list of Lightcurve objects}
             `data` contains the time series data, either in the form of a
             2-D array of (time stamp, energy) pairs for event data, or as a
             list of light curves.
@@ -86,20 +87,11 @@ class Covariancespectrum(object):
         """
 
         self.dt = dt
-
-        # if band_interest is None, extract the energy bins and make an array
-        # with the lower and upper bounds of the energy bins
-        if not band_interest:
-            self._create_band_interest(data)
-        else:
-            if np.size(band_interest) < 2:
-                raise ValueError('band_interest must contain at least 2 values '
-                                 '(minimum and maximum values for each band) '
-                                 'and be a 2D array!')
-
-            self.band_interest = np.atleast_2d(band_interest)
-
         self.std = std
+
+        # check whether data is an EventList object:
+        if isinstance(data, EventList):
+            data = np.vstack([data.time, data.energy]).T
 
         # check whether the data contains a list of Lightcurve objects
         if isinstance(data[0], Lightcurve):
@@ -107,6 +99,22 @@ class Covariancespectrum(object):
             self.lcs = data
         else:
             self.use_lc = False
+
+        # if band_interest is None, extract the energy bins and make an array
+        # with the lower and upper bounds of the energy bins
+        if not band_interest:
+            if not self.use_lc:
+                self._create_band_interest(data)
+            else:
+                self.band_interest = np.vstack([np.arange(len(data)),
+                                                np.arange(1, len(data)+1, 1)]).T
+        else:
+            if np.size(band_interest) < 2:
+                raise ValueError('band_interest must contain at least 2 values '
+                                 '(minimum and maximum values for each band) '
+                                 'and be a 2D array!')
+
+            self.band_interest = np.atleast_2d(band_interest)
 
         if self.use_lc is False and not dt:
             raise ValueError("If the input data is event data, the dt keyword "
@@ -132,7 +140,7 @@ class Covariancespectrum(object):
             elif ref_band_interest is None:
                 if self.use_lc:
                     self.ref_band_lcs = \
-                        self._make_reference_bands_from_lightcurves(data)
+                        self._make_reference_bands_from_lightcurves(ref_band_interest)
                 else:
                     self.ref_band_lcs = \
                         self._make_reference_bands_from_event_data(data)
@@ -156,10 +164,13 @@ class Covariancespectrum(object):
             # curves
             else:
                 if self.use_lc:
+                    print("I am in use_lc")
+                    print("bounds in intro: " + str(ref_band_interest))
                     self.ref_band_lcs = \
                         self._make_reference_bands_from_lightcurves(bounds=
                                                                     ref_band_interest)
                 else:
+                    print("I am in the wrong place!")
                     self.ref_band_lcs = \
                         self._make_reference_bands_from_event_data(data)
 
@@ -210,6 +221,8 @@ class Covariancespectrum(object):
 
     def _make_reference_bands_from_lightcurves(self, bounds=None):
 
+
+        print("bounds: " + str(bounds))
         if not bounds:
             bounds_idx = [0, len(self.band_interest)]
 
