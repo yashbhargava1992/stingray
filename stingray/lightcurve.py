@@ -861,7 +861,7 @@ class Lightcurve(object):
 
     def sort(self, reverse=False):
         """
-        Sort a Lightcurve object in accordance by time.
+        Sort a Lightcurve object by time.
 
         A Lightcurve can be sorted in either increasing or decreasing order
         using this method. The time array gets sorted and the counts array is
@@ -902,7 +902,7 @@ class Lightcurve(object):
 
     def sort_counts(self, reverse=False):
         """
-        Sort a Lightcurve object in accordance by counts.
+        Sort a Lightcurve object by counts.
 
         A Lightcurve can be sorted in either increasing or decreasing order
         using this method. The counts array gets sorted and the time array is
