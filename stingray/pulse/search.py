@@ -22,7 +22,8 @@ def _pulse_phase_fast(time, f, fdot, buffer_array):
 def _folding_search(stat_func, times, frequencies, segment_size=5000,
                     use_times=False, fdots=0, **kwargs):
 
-    fgrid, fdgrid = np.meshgrid(frequencies, fdots)
+    fgrid, fdgrid = np.meshgrid(np.asarray(frequencies).astype(np.float64),
+                                np.asarray(fdots).astype(np.float64))
     stats = np.zeros_like(fgrid)
     times = (times - times[0]).astype(np.float64)
     length = times[-1]
