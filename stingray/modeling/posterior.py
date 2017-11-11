@@ -405,7 +405,7 @@ class LaplaceLogLikelihood(LogLikelihood):
             return loglike
 
 
-class Posterior(object):
+class Posterior(obGaject):
 
     def __init__(self, x, y, model, **kwargs):
         """
