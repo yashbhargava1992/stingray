@@ -49,7 +49,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'is_string', 'is_iterable', 'order_list_of_arrays',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
-           'create_window']
+           'create_window', 'poisson_symmetrical_errors']
 
 def _root_squared_mean(array):
     return np.sqrt(np.sum(array ** 2)) / len(array)
@@ -647,3 +647,38 @@ def create_window(N, window_type='uniform'):
                  a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
+
+
+def poisson_symmetrical_errors(counts):
+    """Optimized version of frequentist symmetrical errors.
+
+    Uses a lookup table in order to limit the calls to poisson_conf_interval
+
+    Example
+    -------
+    >>> from astropy.stats import poisson_conf_interval
+    >>> counts = np.random.randint(0, 1000, 100)
+    >>> # ---- Do it without the lookup table ----
+    >>> err_low, err_high = poisson_conf_interval(np.asarray(counts),
+    ...                 interval='frequentist-confidence', sigma=1)
+    >>> err_low -= np.asarray(counts)
+    >>> err_high -= np.asarray(counts)
+    >>> err = (np.absolute(err_low) + np.absolute(err_high))/2.0
+    >>> # Do it with this function
+    >>> err_thisfun = poisson_symmetrical_errors(counts)
+    >>> # Test that results are always the same
+    >>> assert np.all(err_thisfun == err)
+    """
+    from astropy.stats import poisson_conf_interval
+    counts_int = np.asarray(counts, dtype=np.int64)
+    count_values = np.unique(counts_int)
+    err_low, err_high = \
+        poisson_conf_interval(count_values,
+                              interval='frequentist-confidence', sigma=1)
+    # calculate approximately symmetric uncertainties
+    err_low -= np.asarray(count_values)
+    err_high -= np.asarray(count_values)
+    err = (np.absolute(err_low) + np.absolute(err_high))/2.0
+
+    idxs = np.searchsorted(count_values, counts_int)
+    return err[idxs]

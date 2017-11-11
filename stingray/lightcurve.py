@@ -11,9 +11,9 @@ import stingray.io as io
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none, baseline_als
+from stingray.utils import poisson_symmetrical_errors
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
-from stingray.gti import check_gtis, create_gti_mask, bin_intervals_from_gtis
-from astropy.stats import poisson_conf_interval
+from stingray.gti import check_gtis, create_gti_mask_complete, create_gti_mask, bin_intervals_from_gtis
 
 __all__ = ["Lightcurve"]
 
@@ -154,13 +154,7 @@ class Lightcurve(object):
             if err_dist.lower() == 'poisson':
                 # Instead of the simple square root, we use confidence
                 # intervals (should be valid for low fluxes too)
-                err_low, err_high = poisson_conf_interval(np.asarray(counts),
-                    interval='frequentist-confidence', sigma=1)
-                # calculate approximately symmetric uncertainties
-                err_low -= np.asarray(counts)
-                err_high -= np.asarray(counts)
-                err = (np.absolute(err_low) + np.absolute(err_high))/2.0
-                # other estimators can be implemented for other statistics
+                err = poisson_symmetrical_errors(counts)
             else:
                 simon("Stingray only uses poisson err_dist at the moment, "
                       "We are setting your errors to zero. "
@@ -187,7 +181,6 @@ class Lightcurve(object):
                                             [[self.tstart,
                                               self.tstart + self.tseg]]))
         check_gtis(self.gti)
-
         good = create_gti_mask(self.time, self.gti)
 
         self.time = self.time[good]
@@ -260,8 +253,8 @@ class Lightcurve(object):
         # ValueError is raised by Numpy while asserting np.equal over arrays
         # with different dimensions.
         try:
-            assert np.all(np.equal(self.time[mask_self],
-                                   other.time[mask_other]))
+            diff = np.abs((self.time[mask_self] - other.time[mask_other]))
+            assert np.all(diff < self.dt / 100)
         except (ValueError, AssertionError):
             raise ValueError("GTI-filtered time arrays of both light curves "
                              "must be of same dimension and equal.")
@@ -435,19 +428,19 @@ class Lightcurve(object):
 
     def __eq__(self,other_lc):
         """
-            Compares two :class:`Lightcurve` objects.
+        Compares two :class:`Lightcurve` objects.
 
-            Light curves are equal only if their counts as well as times at which those counts occur equal.
+        Light curves are equal only if their counts as well as times at which those counts occur equal.
 
-            Example
-            -------
-            >>> time = [1, 2, 3]
-            >>> count1 = [100, 200, 300]
-            >>> count2 = [100, 200, 300]
-            >>> lc1 = Lightcurve(time, count1)
-            >>> lc2 = Lightcurve(time, count2)
-            >>> lc1 == lc2
-            True
+        Example
+        -------
+        >>> time = [1, 2, 3]
+        >>> count1 = [100, 200, 300]
+        >>> count2 = [100, 200, 300]
+        >>> lc1 = Lightcurve(time, count1)
+        >>> lc2 = Lightcurve(time, count2)
+        >>> lc1 == lc2
+        True
         """
         if not isinstance(other_lc, Lightcurve):
             raise ValueError('Lightcurve can only be compared with a Lightcurve Object')
@@ -486,7 +479,8 @@ class Lightcurve(object):
         return baseline
 
     @staticmethod
-    def make_lightcurve(toa, dt, tseg=None, tstart=None, gti=None, mjdref=0):
+    def make_lightcurve(toa, dt, tseg=None, tstart=None, gti=None, mjdref=0,
+                        use_hist=False):
 
         """
         Make a light curve out of photon arrival times.
@@ -518,13 +512,17 @@ class Lightcurve(object):
             [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time Intervals
 
+        use_hist : bool
+            Use `np.histogram` instead of `np.bincounts`. Might be advantageous
+            for very short datasets.
+
         Returns
         -------
         lc: :class:`Lightcurve` object
             A light curve object with the binned light curve
-
         """
 
+        toa = np.asarray(toa)
         # tstart is an optional parameter to set a starting time for
         # the light curve in case this does not coincide with the first photon
         if tstart is None:
@@ -537,23 +535,24 @@ class Lightcurve(object):
         # are not throwing away good events.
 
         if tseg is None:
-            tseg = toa[-1] - toa[0]
+            tseg = toa[-1] - tstart
 
         logging.info("make_lightcurve: tseg: " + str(tseg))
 
-        timebin = np.int(tseg/dt)
+        timebin = np.int64(tseg/dt)
         logging.info("make_lightcurve: timebin:  " + str(timebin))
 
-        tend = tstart + timebin*dt
-
-        counts, histbins = np.histogram(toa, bins=timebin,
-                                        range=[tstart, tend])
-
-        dt = histbins[1] - histbins[0]
-
-        time = histbins[:-1] + 0.5*dt
-
-        counts = np.asarray(counts)
+        tend = tstart + timebin * dt
+        good = (tstart <= toa) & (toa < tend)
+        if not use_hist:
+            binned_toas = ((toa[good] - tstart) // dt).astype(np.int64)
+            counts = \
+                np.bincount(binned_toas, minlength=timebin)
+            time = tstart + np.arange(0.5, 0.5 + len(counts)) * dt
+        else:
+            histbins = np.arange(tstart, tend + dt, dt)
+            counts, histbins = np.histogram(toa[good], bins=histbins)
+            time = histbins[:-1] + 0.5 * dt
 
         return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt)
 
@@ -1116,10 +1115,11 @@ class Lightcurve(object):
         """Apply GTIs to a light curve after modification."""
         check_gtis(self.gti)
 
-        good = create_gti_mask(self.time, self.gti)
+        good = create_gti_mask(self.time, self.gti, dt=self.dt)
 
         self.time = self.time[good]
         self.counts = self.counts[good]
+
         self.counts_err = self.counts_err[good]
         self.countrate = self.countrate[good]
         self.countrate_err = self.countrate_err[good]
