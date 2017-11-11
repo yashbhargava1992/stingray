@@ -3,6 +3,8 @@ from __future__ import (absolute_import, unicode_literals, division,
 
 import numpy as np
 import logging
+import collections
+import copy
 
 from astropy.io import fits
 from .io import assign_value_if_none
@@ -146,9 +148,6 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     epsilon : float
         fraction of dt that is tolerated at the borders of a GTI
     """
-    import collections
-    import copy
-
     try:
         from numba import jit
     except ImportError:
@@ -206,7 +205,6 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
     epsilon : float
         fraction of dt that is tolerated at the borders of a GTI
     """
-    import collections
 
     check_gtis(gtis)
 
@@ -267,7 +265,6 @@ def create_gti_from_condition(time, condition,
     dt : float
         The width (in sec) of each bin of the time array. Can be irregular.
     """
-    import collections
 
     if len(time) != len(condition):
         raise StingrayError('The length of the condition and '
