@@ -539,8 +539,8 @@ class Lightcurve(object):
                 np.bincount(binned_toas, minlength=timebin)
             time = tstart + np.arange(0.5, 0.5 + len(counts)) * dt
         else:
-            counts, histbins = np.histogram(toa[good],
-                                            bins=np.linspace(tstart, tend, 1 + timebin))
+            histbins = np.arange(tstart, tend + dt, dt)
+            counts, histbins = np.histogram(toa[good], bins=histbins)
             time = histbins[:-1] + 0.5 * dt
 
         return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt)
