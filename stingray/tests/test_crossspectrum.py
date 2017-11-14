@@ -381,6 +381,11 @@ class TestAveragedCrossspectrum(object):
         new_cs = self.cs.rebin_log(f=0.1)
         assert isinstance(new_cs.power[0], np.complex)
 
+    def test_rebin_log_returns_complex_errors(self):
+        # For now, just verify that it doesn't crash
+        new_cs = self.cs.rebin_log(f=0.1)
+        assert isinstance(new_cs.power_err[0], np.complex)
+
     def test_timelag(self):
         from ..simulator.simulator import Simulator
         dt = 0.1
