@@ -131,7 +131,8 @@ class Covariancespectrum(object):
             self.lcs = self._make_lightcurves(data)
 
         # check whether band of interest contains a Lightcurve object:
-        if np.size(ref_band_interest) == 1:
+        if np.size(ref_band_interest) == 1  or isinstance(ref_band_interest,
+                                                          Lightcurve):
             if isinstance(ref_band_interest, Lightcurve):
                 self.ref_band_lcs = ref_band_interest
             # ref_band_interest must either be a Lightcurve, or must have
@@ -261,7 +262,8 @@ class Covariancespectrum(object):
         for i in range(len(self.lcs)):
             lc = self.lcs[i]
 
-            if np.size(self.ref_band_lcs) == 1:
+            if np.size(self.ref_band_lcs) == 1 or isinstance(self.ref_band_lcs,
+                                                             Lightcurve):
                 lc_ref = self.ref_band_lcs
             else:
                 lc_ref = self.ref_band_lcs[i]

@@ -60,6 +60,11 @@ class TestCovariancespectrumwithEvents(object):
                                ref_band_interest=(1, 10))
         assert len(c.covar) == 2
 
+    def test_with_separate_reference_band(self):
+        c = Covariancespectrum(self.event_list, dt=1,
+                               band_interest=[(2, 6)],
+                               ref_band_interest=((7, 10)))
+
     def test_with_unsorted_event_list(self):
         event_list = np.array([[2, 1], [2, 3], [1, 2], [5, 2], [4, 1]])
         with warnings.catch_warnings(record=True) as w:
@@ -81,16 +86,16 @@ class TestCovariancespectrumwithEvents(object):
 class TestCovariancewithLightcurves(object):
     def setup_class(self):
 
-        time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        counts1 = [0, 0, 1, 0, 1, 1, 0, 0, 0]
-        counts2 = [1, 0, 0, 1, 0, 0, 0, 0, 1]
-        counts3 = [0, 0, 0, 0, 1, 1, 1, 0, 0]
-        counts4 = [1, 0, 0, 1, 0, 0, 1, 0, 0]
-        counts5 = [0, 0, 0, 1, 0, 0, 1, 0, 1]
-        counts6 = [0, 0, 1, 1, 1, 0, 0, 0, 0]
-        counts7 = [0, 0, 0, 1, 1, 0, 1, 0, 0]
-        counts8 = [1, 0, 0, 0, 1, 0, 0, 1, 0]
-        counts9 = [0, 0, 0, 1, 1, 0, 0, 0, 1]
+        time = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        counts1 = np.array([0, 0, 1, 0, 1, 1, 0, 0, 0])
+        counts2 = np.array([1, 0, 0, 1, 0, 0, 0, 0, 1])
+        counts3 = np.array([0, 0, 0, 0, 1, 1, 1, 0, 0])
+        counts4 = np.array([1, 0, 0, 1, 0, 0, 1, 0, 0])
+        counts5 = np.array([0, 0, 0, 1, 0, 0, 1, 0, 1])
+        counts6 = np.array([0, 0, 1, 1, 1, 0, 0, 0, 0])
+        counts7 = np.array([0, 0, 0, 1, 1, 0, 1, 0, 0])
+        counts8 = np.array([1, 0, 0, 0, 1, 0, 0, 1, 0])
+        counts9 = np.array([0, 0, 0, 1, 1, 0, 0, 0, 1])
 
         lc1 = Lightcurve(time, counts1)
         lc2 = Lightcurve(time, counts2)
@@ -104,14 +109,47 @@ class TestCovariancewithLightcurves(object):
 
         self.lcs = [lc1, lc2, lc3, lc4, lc5, lc6, lc7, lc8, lc9]
 
+        self.ref_band_interest = Lightcurve(time,
+                                            np.array([2, 3, 1,
+                                                      4, 4, 0,
+                                                      1, 3, 2]))
 
     def test_class_initializes_with_lightcurves(self):
         c = Covariancespectrum(self.lcs)
 
-    def test_class_initializes_lightcurve_keyword_correctly(self):
+    def test_set_lc_flag_correctly(self):
         c = Covariancespectrum(self.lcs)
-        assert c.use_lc == True
+        assert c.use_lc is True
+        assert c.lcs == self.lcs
 
+    def test_single_lc_as_ref_band_interest(self):
+        c = Covariancespectrum(self.lcs,
+                               ref_band_interest=self.ref_band_interest)
+
+    def test_lc_with_no_band_interest(self):
+        c = Covariancespectrum(self.lcs,
+                               ref_band_interest=None)
+
+        band_interest = np.vstack([np.arange(len(self.lcs)),
+                        np.arange(1, len(self.lcs) + 1, 1)]).T
+
+        assert np.all(c.band_interest == band_interest)
+
+    def test_failure_without_valid_band_interest(self):
+        with pytest.raises(ValueError):
+            c = Covariancespectrum(self.lcs, band_interest=1.0)
+
+    def test_ref_band_interest_created_correctly(self):
+        c = Covariancespectrum(self.lcs, ref_band_interest=None)
+        assert len(c.ref_band_lcs) == len(self.lcs)
+
+    def test_class_fails_with_wrong_number_of_ref_band_interest_lcs(self):
+        c = Covariancespectrum(self.lcs, ref_band_interest=self.lcs[::-1])
+        assert len(c.lcs) == len(c.ref_band_lcs)
+
+    def test_ref_band_interest_get_saved_correctly(self):
+        with pytest.raises(AssertionError):
+            c = Covariancespectrum(self.lcs, ref_band_interest=self.lcs[:-1])
 
 
 class TestAveragedCovariancespectrum(object):
