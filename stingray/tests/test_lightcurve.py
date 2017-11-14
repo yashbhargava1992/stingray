@@ -68,7 +68,7 @@ class TestChunks(object):
         nevar, nevar_err = res
         assert np.allclose(nevar, fvar**2, rtol=0.01)
 
-    def test_analyze_lc_chunks_nvar_fracstep(self):
+    def test_analyze_lc_chunks_nvar_fracstep_mean(self):
         start, stop, mean = self.lc.analyze_lc_chunks(20, np.mean,
                                                       fraction_step=0.5)
         start, stop, res = self.lc.analyze_lc_chunks(20, evar_fun,
@@ -170,7 +170,31 @@ class TestLightcurve(object):
         assert np.allclose(lc.bin_hi, bin_hi)
 
     def test_lightcurve_from_toa(self):
-        lc = Lightcurve.make_lightcurve(self.times, self.dt)
+        lc = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=True,
+                                        tstart=0.5)
+        lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
+                                        tstart=0.5)
+        assert np.allclose(lc.time, lc2.time)
+        assert np.all(lc.counts == lc2.counts)
+
+    def test_lightcurve_from_toa_halfbin(self):
+        lc = Lightcurve.make_lightcurve(self.times + 0.5, self.dt,
+                                        use_hist=True,
+                                        tstart=0.5)
+        lc2 = Lightcurve.make_lightcurve(self.times + 0.5, self.dt,
+                                         use_hist=False,
+                                         tstart=0.5)
+        assert np.allclose(lc.time, lc2.time)
+        assert np.all(lc.counts == lc2.counts)
+
+    def test_lightcurve_from_toa_random_nums(self):
+        times = np.random.uniform(0, 10, 1000)
+        lc = Lightcurve.make_lightcurve(times, self.dt, use_hist=True,
+                                        tstart=0.5)
+        lc2 = Lightcurve.make_lightcurve(times, self.dt, use_hist=False,
+                                        tstart=0.5)
+        assert np.allclose(lc.time, lc2.time)
+        assert np.all(lc.counts == lc2.counts)
 
     def test_tstart(self):
         tstart = 0.0
@@ -734,6 +758,18 @@ class TestLightcurveRebin(object):
         baseline = lc.baseline(10000, 0.01)
         assert np.all(lc.counts - baseline < 1)
 
+    def test_lc_baseline_offset(self):
+        times = np.arange(0, 100, 0.01)
+        input_stdev = 0.1
+        counts = np.random.normal(100, input_stdev, len(times)) + \
+            0.001 * times
+        gti = [[-0.005, 50.005], [59.005, 100.005]]
+        good = create_gti_mask(times, gti)
+        counts[np.logical_not(good)] = 0
+        lc = Lightcurve(times, counts, gti=gti)
+        baseline = lc.baseline(10000, 0.01, offset_correction=True)
+        assert np.isclose(np.std(lc.counts - baseline), input_stdev, rtol=0.1)
+
     def test_change_mjdref(self):
         lc_new = self.lc.change_mjdref(57000)
         assert lc_new.mjdref == 57000
@@ -748,7 +784,6 @@ class TestLightcurveRebin(object):
         assert np.all(lc.time == np.array([0, 1, 2, 13, 14]))
         lc.gti = [[-0.5, 10.5]]
         lc._apply_gtis()
-        assert lc.n == 3
         assert np.all(lc.time == np.array([0, 1, 2]))
 
     def test_eq_operator(self):

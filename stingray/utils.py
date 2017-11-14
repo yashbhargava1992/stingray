@@ -32,11 +32,24 @@ except ImportError:
             return wrapped_f
 
 
+try:
+    from statsmodels.robust import mad as mad  # pylint: disable=unused-import
+except ImportError:
+    def mad(data, c=0.6745, axis=None):
+        """Straight from statsmodels's source code, adapted"""
+        data = np.asarray(data)
+        if axis is not None:
+            center = np.apply_over_axes(np.median, data, axis)
+        else:
+            center = np.median(data)
+        return np.median((np.fabs(data - center)) / c, axis=axis)
+
+
 __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'is_string', 'is_iterable', 'order_list_of_arrays',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
-           'create_window']
+           'create_window', 'poisson_symmetrical_errors']
 
 def _root_squared_mean(array):
     return np.sqrt(np.sum(array ** 2)) / len(array)
@@ -346,35 +359,142 @@ def get_random_state(random_state=None):
     return random_state
 
 
-def baseline_als(y, lam, p, niter=10):
-    """Baseline Correction with Asymmetric Least Squares Smoothing.
+def _offset(x, off):
+    """An offset."""
+    return off
 
-    Modifications to the routine from Eilers & Boelens 2005
-    https://www.researchgate.net/publication/228961729_Technical_Report_Baseline_Correction_with_Asymmetric_Least_Squares_Smoothing
-    The Python translation is partly from
-    http://stackoverflow.com/questions/29156532/python-baseline-correction-library
+
+def offset_fit(x, y, offset_start=0):
+    """Fit a constant offset to the data.
 
     Parameters
     ----------
-    y : array of floats
-        the "light curve". It assumes equal spacing.
+    x : array-like
+    y : array-like
+    offset_start : float
+        Constant offset, initial value
+
+    Returns
+    -------
+    offset : float
+        Fitted offset
+    """
+    from scipy.optimize import curve_fit
+    par, _ = curve_fit(_offset, x, y, [offset_start],
+                       maxfev=6000)
+    return par[0]
+
+
+def _als(y, lam, p, niter=10):
+    """Baseline Correction with Asymmetric Least Squares Smoothing.
+
+    Modifications to the routine from Eilers & Boelens 2005
+    https://www.researchgate.net/publication/
+        228961729_Technical_Report_Baseline_Correction_with_
+        Asymmetric_Least_Squares_Smoothing
+    The Python translation is partly from
+    http://stackoverflow.com/questions/29156532/
+        python-baseline-correction-library
+
+    Parameters
+    ----------
+    y : array-like
+        the data series corresponding to x
     lam : float
-        "smoothness" parameter. Larger values make the baseline stiffer
-        Typically 1e2 < lam < 1e9
+        the lambda parameter of the ALS method. This control how much the
+        baseline can adapt to local changes. A higher value corresponds to a
+        stiffer baseline
     p : float
-        "asymmetry" parameter. Smaller values make the baseline more
-        "horizontal". Typically 0.001 < p < 0.1, but not necessary.
+        the asymmetry parameter of the ALS method. This controls the overall
+        slope tollerated for the baseline. A higher value correspond to a
+        higher possible slope
+
+    Other parameters
+    ----------------
+    niter : int
+        The number of iterations to perform
+
+    Returns
+    -------
+    z : array-like, same size as y
+        Fitted baseline.
     """
     from scipy import sparse
     L = len(y)
     D = sparse.csc_matrix(np.diff(np.eye(L), 2))
     w = np.ones(L)
-    for i in range(niter):
+    for _ in range(niter):
         W = sparse.spdiags(w, 0, L, L)
         Z = W + lam * D.dot(D.transpose())
         z = sparse.linalg.spsolve(Z, w * y)
         w = p * (y > z) + (1 - p) * (y < z)
     return z
+
+
+def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False,
+                 offset_correction=False):
+    """Baseline Correction with Asymmetric Least Squares Smoothing.
+
+    Parameters
+    ----------
+    x : array-like
+        the sample time/number/position
+    y : array-like
+        the data series corresponding to x
+    lam : float
+        the lambda parameter of the ALS method. This control how much the
+        baseline can adapt to local changes. A higher value corresponds to a
+        stiffer baseline
+    p : float
+        the asymmetry parameter of the ALS method. This controls the overall
+        slope tollerated for the baseline. A higher value correspond to a
+        higher possible slope
+
+    Other Parameters
+    ----------------
+    niter : int
+        The number of iterations to perform
+    return_baseline : bool
+        return the baseline?
+    offset_correction : bool
+        also correct for an offset to align with the running mean of the scan
+
+    Returns
+    -------
+    y_subtracted : array-like, same size as y
+        The initial time series, subtracted from the trend
+    baseline : array-like, same size as y
+        Fitted baseline. Only returned if return_baseline is True
+
+    Examples
+    --------
+    >>> x = np.arange(0, 10, 0.01)
+    >>> y = np.zeros_like(x) + 10
+    >>> ysub = baseline_als(x, y)
+    >>> np.all(ysub < 0.001)
+    True
+    """
+
+    if lam is None:
+        lam = 1e11
+    if p is None:
+        p = 0.001
+
+    z = _als(y, lam, p, niter=niter)
+
+    ysub = y - z
+    offset = 0
+    if offset_correction:
+        std = mad(ysub)
+
+        good = np.abs(ysub) < 10 * std
+
+        offset = offset_fit(x[good], ysub[good], 0)
+
+    if return_baseline:
+        return ysub - offset, z + offset
+    else:
+        return ysub - offset
 
 
 def excess_variance(lc, normalization='fvar'):
@@ -527,3 +647,38 @@ def create_window(N, window_type='uniform'):
                  a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
+
+
+def poisson_symmetrical_errors(counts):
+    """Optimized version of frequentist symmetrical errors.
+
+    Uses a lookup table in order to limit the calls to poisson_conf_interval
+
+    Example
+    -------
+    >>> from astropy.stats import poisson_conf_interval
+    >>> counts = np.random.randint(0, 1000, 100)
+    >>> # ---- Do it without the lookup table ----
+    >>> err_low, err_high = poisson_conf_interval(np.asarray(counts),
+    ...                 interval='frequentist-confidence', sigma=1)
+    >>> err_low -= np.asarray(counts)
+    >>> err_high -= np.asarray(counts)
+    >>> err = (np.absolute(err_low) + np.absolute(err_high))/2.0
+    >>> # Do it with this function
+    >>> err_thisfun = poisson_symmetrical_errors(counts)
+    >>> # Test that results are always the same
+    >>> assert np.all(err_thisfun == err)
+    """
+    from astropy.stats import poisson_conf_interval
+    counts_int = np.asarray(counts, dtype=np.int64)
+    count_values = np.unique(counts_int)
+    err_low, err_high = \
+        poisson_conf_interval(count_values,
+                              interval='frequentist-confidence', sigma=1)
+    # calculate approximately symmetric uncertainties
+    err_low -= np.asarray(count_values)
+    err_high -= np.asarray(count_values)
+    err = (np.absolute(err_low) + np.absolute(err_high))/2.0
+
+    idxs = np.searchsorted(count_values, counts_int)
+    return err[idxs]

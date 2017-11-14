@@ -273,8 +273,12 @@ class Crossspectrum(object):
 
         Returns
         -------
-        bin_cs = Crossspectrum object
-            The newly binned cross spectrum
+        bin_cs = Crossspectrum (or one of its subclasses) object
+            The newly binned cross spectrum or power spectrum.
+            Note: this object will be of the same type as the object
+            that called this method. For example, if this method is called
+            from `AveragedPowerspectrum`, it will return an object of class
+            `AveragedPowerspectrum`, too.
         """
 
         if f is None and df is None:
@@ -398,18 +402,11 @@ class Crossspectrum(object):
 
         Returns
         -------
-        binfreq: numpy.ndarray
-            the binned frequencies
-
-        binpower: numpy.ndarray
-            the binned powers
-
-        binpower_err: numpy.ndarray
-            the uncertainties in binpower
-
-        nsamples: numpy.ndarray
-            the samples of the original periodogram included in each
-            frequency bin
+        new_spec : Crossspectrum (or one of its subclasses) object
+            The newly binned cross spectrum or power spectrum.
+            Note: this object will be of the same type as the object
+            that called this method. For example, if this method is called
+            from `AveragedPowerspectrum`, it will return an object of class
         """
 
         binfreq, binpower, binpower_err, nsamples = \

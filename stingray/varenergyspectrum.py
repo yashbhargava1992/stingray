@@ -158,7 +158,8 @@ class VarEnergySpectrum(object):
             ref_intervals = self.ref_band
 
         ref_lc = Lightcurve(base_lc.time, np.zeros_like(base_lc.counts),
-                            gti=base_lc.gti, mjdref=base_lc.mjdref)
+                            gti=base_lc.gti, mjdref=base_lc.mjdref,
+                            err_dist='gauss')
 
         for i in ref_intervals:
             good = (energies2 >= i[0]) & (energies2 < i[1])
@@ -170,6 +171,7 @@ class VarEnergySpectrum(object):
                                                 mjdref=self.events2.mjdref)
             ref_lc = ref_lc + new_lc
 
+        ref_lc.err_dist = base_lc.err_dist
         return base_lc, ref_lc
 
     @abstractmethod
