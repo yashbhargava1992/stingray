@@ -17,7 +17,23 @@ class Covariancespectrum(object):
                  ref_band_interest=None, std=None):
 
         """
-        Compute a covariance spectrum for the data.
+        Compute a covariance spectrum for the data. The input data can be
+        either in event data or pre-made light curves. Event data can either
+        be in the form of a numpy.ndarray with (time stamp, energy) pairs or
+        a `stingray.events.EventList` object. If light curves are formed ahead
+        of time, then a list of `Lightcurve` objects should be passed to the
+        object, ideally one light curve for each band of interest.
+
+        For the case where the data is input as a list of `Lightcurve` objects,
+        the reference band(s) should either be (1) a single `Lightcurve` object,
+        (2) a list of `Lightcurve` objects with the reference band for each band
+        of interest pre-made, or (3) `None`, in which case reference bands will
+        formed by combining all light curves *except* for the band of interest.
+
+        In the case of event data, `band_interest` and `ref_band_interest` can
+        be (multiple) pairs of energies, and the light curves for the bands of
+        interest and reference bands will be produced dynamically.
+
 
         Parameters
         ----------
