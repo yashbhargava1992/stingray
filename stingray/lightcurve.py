@@ -595,12 +595,34 @@ class Lightcurve(object):
             raise ValueError("New time resolution must be larger than "
                              "old time resolution!")
 
-        bin_time, bin_counts, bin_err, _ = \
-            utils.rebin_data(self.time, self.counts, dt_new,
-                             yerr=self.counts_err, method=method)
+
+        if self.gti is None:
+
+            bin_time, bin_counts, bin_err, _ = \
+                utils.rebin_data(self.time, self.counts, dt_new,
+                                 yerr=self.counts_err, method=method)
+
+        else:
+            bin_time, bin_counts, bin_err = [], [], []
+            for g  in self.gti:
+                # find start and end of GTI segment in data
+                start_ind = self.time.searchsorted(g[0])
+                end_ind = self.time.searchsorted(g[1])
+
+                t_temp = self.time[start_ind:end_ind]
+                c_temp = self.counts[start_ind:end_ind]
+                e_temp = self.counts_err[start_ind:end_ind]
+
+                bin_t, bin_c, bin_e, _ = \
+                    utils.rebin_data(t_temp, c_temp, dt_new,
+                                     yerr=e_temp, method=method)
+
+                bin_time.extend(bin_t)
+                bin_counts.extend(bin_c)
+                bin_err.extend(bin_e)
 
         lc_new = Lightcurve(bin_time, bin_counts, err=bin_err,
-                            mjdref=self.mjdref, dt=dt_new)
+                            mjdref=self.mjdref, dt=dt_new, gti=self.gti)
         return lc_new
 
     def join(self, other):
