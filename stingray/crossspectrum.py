@@ -469,7 +469,6 @@ class Crossspectrum(object):
 
     def _phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
-
         return np.angle(self.unnorm_power)
 
     def time_lag(self):
@@ -758,9 +757,18 @@ class AveragedCrossspectrum(Crossspectrum):
         """Calculate time lag and uncertainty.
 
         Formula from Bendat & Piersol 1986
+
+        Returns
+        -------
+        lag : np.ndarray
+            The time lag
+
+        lag_err : np.ndarray
+            The uncertainty in the time lag
+
         """
         lag = super(AveragedCrossspectrum, self).time_lag()
         coh, uncert = self.coherence()
         dum = (1. - coh) / (2. * coh)
         lag_err = np.sqrt(dum / self.m) / (2 * np.pi * self.freq)
-        return (lag, lag_err)
+        return lag, lag_err

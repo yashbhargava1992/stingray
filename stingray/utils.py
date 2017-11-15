@@ -7,6 +7,7 @@ from six import string_types
 
 import warnings
 import numpy as np
+import scipy
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
@@ -222,7 +223,6 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     step_size: float
         The size of the binning step
     """
-    import scipy
     dx_init = assign_value_if_none(dx, np.median(np.diff(x)))
     y = np.asarray(y)
     y_err = np.asarray(assign_value_if_none(y_err, np.zeros_like(y)))
@@ -238,15 +238,33 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
         binx.append(binx[-1] + dx * (1.0 + f))
         dx = binx[-1] - binx[-2]
 
+    real = y.real
+    real_err = y_err.real
     # compute the mean of the ys that fall into each new frequency bin.
     # we cast to np.double due to scipy's bad handling of longdoubles
     biny, bin_edges, binno = scipy.stats.binned_statistic(
-        x.astype(np.double), y.astype(np.double),
+        x.astype(np.double), real.astype(np.double),
         statistic="mean", bins=binx)
 
     biny_err, bin_edges, binno = scipy.stats.binned_statistic(
-        x.astype(np.double), y_err.astype(np.double),
+        x.astype(np.double), real_err.astype(np.double),
         statistic=_root_squared_mean, bins=binx)
+
+    if isinstance(y[0], np.complex):
+        imag = y.imag
+        biny_imag, bin_edges, binno = scipy.stats.binned_statistic(
+            x.astype(np.double), imag.astype(np.double),
+            statistic="mean", bins=binx)
+
+        biny = biny + 1j*biny_imag
+
+    if isinstance(y_err[0], np.complex):
+        imag_err = y_err.imag
+
+        biny_err_imag, bin_edges, binno = scipy.stats.binned_statistic(
+            x.astype(np.double), imag_err.astype(np.double),
+            statistic=_root_squared_mean, bins=binx)
+        biny_err = biny_err + 1j * biny_err_imag
 
     # compute the number of powers in each frequency bin
     nsamples = np.array([len(binno[np.where(binno == i)[0]])
