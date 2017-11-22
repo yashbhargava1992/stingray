@@ -604,25 +604,30 @@ class Lightcurve(object):
 
         else:
             bin_time, bin_counts, bin_err = [], [], []
+            gti_new = []
             for g  in self.gti:
-                # find start and end of GTI segment in data
-                start_ind = self.time.searchsorted(g[0])
-                end_ind = self.time.searchsorted(g[1])
+                if g[1] - g[0] < dt_new:
+                    continue
+                else:
+                    # find start and end of GTI segment in data
+                    start_ind = self.time.searchsorted(g[0])
+                    end_ind = self.time.searchsorted(g[1])
 
-                t_temp = self.time[start_ind:end_ind]
-                c_temp = self.counts[start_ind:end_ind]
-                e_temp = self.counts_err[start_ind:end_ind]
+                    t_temp = self.time[start_ind:end_ind]
+                    c_temp = self.counts[start_ind:end_ind]
+                    e_temp = self.counts_err[start_ind:end_ind]
 
-                bin_t, bin_c, bin_e, _ = \
-                    utils.rebin_data(t_temp, c_temp, dt_new,
-                                     yerr=e_temp, method=method)
+                    bin_t, bin_c, bin_e, _ = \
+                        utils.rebin_data(t_temp, c_temp, dt_new,
+                                         yerr=e_temp, method=method)
 
-                bin_time.extend(bin_t)
-                bin_counts.extend(bin_c)
-                bin_err.extend(bin_e)
+                    bin_time.extend(bin_t)
+                    bin_counts.extend(bin_c)
+                    bin_err.extend(bin_e)
+                    gti_new.append(g)
 
         lc_new = Lightcurve(bin_time, bin_counts, err=bin_err,
-                            mjdref=self.mjdref, dt=dt_new, gti=self.gti)
+                            mjdref=self.mjdref, dt=dt_new, gti=gti_new)
         return lc_new
 
     def join(self, other):
