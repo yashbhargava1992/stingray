@@ -109,7 +109,7 @@ def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):  # pragma: no
                 continue
 
             next_gti = False
-            gti_mask[gti_el] = 1
+            gti_mask[gti_el] = True
 
         if t < limmin:
             continue
@@ -166,15 +166,25 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     if not isinstance(safe_interval, collections.Iterable):
         safe_interval = np.array([safe_interval, safe_interval])
     gti_mask = np.zeros(len(gtis), dtype=bool)
+    # These are the gtis that will be returned (filtered!). They are only
+    # modified by the safe intervals
     gtis_new = copy.deepcopy(gtis)
-    gtis_new[:, 0] = gtis[:, 0] + safe_interval[0] + dt / 2 - epsilon*dt
-    gtis_new[:, 1] = gtis[:, 1] - safe_interval[1] - dt / 2 + epsilon*dt
+    gtis_new[:, 0] = gtis[:, 0] + safe_interval[0]
+    gtis_new[:, 1] = gtis[:, 1] - safe_interval[1]
+
+    # These are false gtis, they contain a few boundary modifications
+    # in order to simplify the calculation of the mask, but they will _not_
+    # be returned.
+    gtis_to_mask = copy.deepcopy(gtis_new)
+    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon*dt + dt / 2
+    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon*dt - dt / 2
+
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
-                            (gtis_new - time[0]).astype(np.float64),
+                            (gtis_to_mask - time[0]).astype(np.float64),
                             mask, gti_mask=gti_mask, min_length=min_length)
     if return_new_gtis:
-        return mask, gtis[gtimask]
+        return mask, gtis_new[gtimask]
     return mask
 
 
