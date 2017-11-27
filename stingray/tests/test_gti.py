@@ -72,9 +72,23 @@ class TestGTI(object):
         arr = np.array([ 0.5, 1.5, 2.5, 3.5])
         gti = np.array([[0, 4]])
         mask_c, new_gtis_c = \
-            create_gti_mask_complete(arr, gti, return_new_gtis=True)
-        mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True)
+            create_gti_mask_complete(arr, gti, return_new_gtis=True,
+                                     safe_interval=1)
+        mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True,
+                                         safe_interval=1)
         assert np.all(mask == mask_c)
+        assert np.all(new_gtis == new_gtis_c)
+
+    def test_gti_mask_compare2(self):
+        arr = np.array([ 0.5, 1.5, 2.5, 3.5])
+        gti = np.array([[0, 4]])
+        mask_c, new_gtis_c = \
+            create_gti_mask_complete(arr, gti, return_new_gtis=True,
+                                     safe_interval=[1, 1])
+        mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True,
+                                         safe_interval=[1, 1])
+        assert np.all(mask == mask_c)
+        assert np.all(new_gtis == new_gtis_c)
 
     def test_gti_from_condition1(self):
         t = np.array([0, 1, 2, 3, 4, 5, 6])
