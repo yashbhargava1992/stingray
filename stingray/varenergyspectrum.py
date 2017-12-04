@@ -201,7 +201,7 @@ class RmsEnergySpectrum(VarEnergySpectrum):
                 rms_spec[i] = np.sqrt(np.sum(xspect.power[good]*xspect.df))
 
                 # Root squared sum of errors of the spectrum
-                root_sq_err_sum = np.sqrt(np.sum(xspect.power[good]**2))*xspect.df
+                root_sq_err_sum = np.sqrt(np.sum((xspect.power_err[good]*xspect.df)**2))
                 # But the rms is the squared root. So,
                 # Error propagation
                 rms_spec_err[i] = 1 / (2 * rms_spec[i]) * root_sq_err_sum
