@@ -182,7 +182,7 @@ class Powerspectrum(Crossspectrum):
 
         return bin_ps
 
-    def compute_rms(self, min_freq, max_freq):
+    def compute_rms(self, min_freq, max_freq, white_noise_offset=2.):
         """
         Compute the fractional rms amplitude in the periodgram
         between two frequencies.
@@ -194,6 +194,14 @@ class Powerspectrum(Crossspectrum):
 
         max_freq: float
             The upper frequency bound for the calculation
+
+        Other parameters
+        ----------------
+        white_noise_offset : float, default 2
+            This is the white noise level, in Leahy normalization. In the ideal
+            case, this is 2. Dead time and other instrumental effects can alter
+            it. The user can fit the white noise level outside this function
+            and it will get subtracted from powers here.
 
         Returns
         -------
@@ -207,14 +215,14 @@ class Powerspectrum(Crossspectrum):
         powers = self.power[minind:maxind]
 
         if self.norm.lower() == 'leahy':
-            rms = np.sqrt(np.sum(powers) / self.nphots)
-
+            powers_leahy = powers
         elif self.norm.lower() == "frac":
-            rms = np.sqrt(np.sum(powers * self.df))
+            powers_leahy = self.unnorm_power[minind:maxind] * 2 / self.nphots
         else:
             raise TypeError("Normalization not recognized!")
 
-        rms_err = self._rms_error(powers)
+        rms = np.sqrt(np.sum(powers_leahy - white_noise_offset) / self.nphots)
+        rms_err = self._rms_error(powers_leahy)
 
         return rms, rms_err
 
