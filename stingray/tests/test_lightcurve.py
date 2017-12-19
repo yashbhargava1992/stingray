@@ -747,6 +747,21 @@ class TestLightcurveRebin(object):
         for dt in dt_all:
             self.rebin_several(dt)
 
+    def test_rebin_with_gtis(self):
+        times = np.arange(0, 100, 0.1)
+
+        counts = np.random.normal(100, 0.1, size=times.shape[0])
+        gti = [[0, 40], [60, 100]]
+
+        good = create_gti_mask(times, gti)
+
+        counts[np.logical_not(good)] = 0
+        lc = Lightcurve(times, counts, gti=gti)
+
+        lc_rebin = lc.rebin(1.0)
+
+        assert (lc_rebin.time[39] - lc_rebin.time[38]) > 1.0
+
     def test_lc_baseline(self):
         times = np.arange(0, 100, 0.01)
         counts = np.random.normal(100, 0.1, len(times)) + \
