@@ -162,12 +162,10 @@ class Covariancespectrum(object):
                     self.ref_band_lcs = \
                         self._make_reference_bands_from_event_data(data)
             else:
-                print("This is where I should be!")
                 raise ValueError("ref_band_interest must contain either "
                                  "a Lightcurve object, a list of Lightcurve "
                                  "objects or a tuple of length 2.")
         else:
-            print("I have multiple ref_band_interest!")
             # check whether ref_band_interest is a list of light curves
             if isinstance(ref_band_interest[0], Lightcurve):
                 self.ref_band_lcs = ref_band_interest
@@ -181,13 +179,10 @@ class Covariancespectrum(object):
             # curves
             else:
                 if self.use_lc:
-                    print("I am in use_lc")
-                    print("bounds in intro: " + str(ref_band_interest))
                     self.ref_band_lcs = \
                         self._make_reference_bands_from_lightcurves(bounds=
                                                                     ref_band_interest)
                 else:
-                    print("I am in the wrong place!")
                     self.ref_band_lcs = \
                         self._make_reference_bands_from_event_data(data)
 
@@ -198,8 +193,6 @@ class Covariancespectrum(object):
         if not bounds:
             bounds = [np.min(data[:, 1]), np.max(data[:, 1])]
 
-        print("Band interest: " + str(self.band_interest))
-        print("Bounds: " + str(bounds))
         if bounds[1] <= np.min(self.band_interest[:, 0]) or \
            bounds[0] >= np.max(self.band_interest[:, 1]):
             elow = bounds[0]
@@ -238,8 +231,6 @@ class Covariancespectrum(object):
 
     def _make_reference_bands_from_lightcurves(self, bounds=None):
 
-
-        print("bounds: " + str(bounds))
         if not bounds:
             bounds_idx = [0, len(self.band_interest)]
 
