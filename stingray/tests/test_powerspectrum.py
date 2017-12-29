@@ -113,11 +113,55 @@ class TestPowerspectrum(object):
         print(std_lc)
         assert np.isclose(ps_int, std_lc, atol=0.01, rtol=0.01)
 
-    def test_fractional_rms_in_frac_norm(self):
-        ps = Powerspectrum(lc=self.lc, norm="frac")
+    def test_fractional_rms_in_frac_norm_is_consistent(self):
+        time = np.arange(0, 100, 1) + 0.5
+
+        poisson_counts = np.random.poisson(100.0,
+                                           size=time.shape[0])
+
+        lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                            gti=[[0, 100]])
+        ps = Powerspectrum(lc=lc, norm="leahy")
+        rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
+                                         max_freq=ps.freq[-1], white_noise_offset=0)
+
+        ps = Powerspectrum(lc=lc, norm="frac")
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
-                                         max_freq=ps.freq[-1])
-        rms_lc = np.std(self.lc.counts) / np.mean(self.lc.counts)
+                                         max_freq=ps.freq[-1], white_noise_offset=0)
+        assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+        assert np.allclose(rms_err, rms_err_l, atol=0.01)
+
+    def test_fractional_rms_in_frac_norm_is_consistent_averaged(self):
+        time = np.arange(0, 400, 1) + 0.5
+
+        poisson_counts = np.random.poisson(100.0,
+                                           size=time.shape[0])
+
+        lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                            gti=[[0, 400]])
+        ps = AveragedPowerspectrum(lc=lc, norm="leahy", segment_size=100)
+        rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
+                                         max_freq=ps.freq[-1], white_noise_offset=0)
+
+        ps = AveragedPowerspectrum(lc=lc, norm="frac", segment_size=100)
+        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                         max_freq=ps.freq[-1], white_noise_offset=0)
+        assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+        assert np.allclose(rms_err, rms_err_l, atol=0.01)
+
+    def test_fractional_rms_in_frac_norm(self):
+        time = np.arange(0, 400, 1) + 0.5
+
+        poisson_counts = np.random.poisson(100.0,
+                                           size=time.shape[0])
+
+        lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                            gti=[[0, 400]])
+        ps = AveragedPowerspectrum(lc=lc, norm="frac", segment_size=100)
+        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                         max_freq=ps.freq[-1],
+                                         white_noise_offset=0)
+        rms_lc = np.std(lc.counts) / np.mean(lc.counts)
         assert np.isclose(rms_ps, rms_lc, atol=0.01)
 
     def test_leahy_norm_correct(self):

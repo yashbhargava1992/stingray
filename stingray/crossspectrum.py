@@ -695,6 +695,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         power_avg /= np.float(m)
         power_err_avg = np.sqrt(power_err_avg) / m
+        unnorm_power_avg /= np.float(m)
 
         self.freq = self.cs_all[0].freq
         self.power = power_avg
@@ -737,7 +738,7 @@ class AveragedCrossspectrum(Crossspectrum):
                   "expected statistical distributions.")
 
         # Calculate average coherence
-        unnorm_power_avg = self.unnorm_power / self.m
+        unnorm_power_avg = self.unnorm_power
 
         num = np.absolute(unnorm_power_avg) ** 2
 
