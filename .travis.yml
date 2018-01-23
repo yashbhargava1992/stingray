@@ -76,13 +76,13 @@ matrix:
           env: SETUP_CMD='build_docs -w'
 
         # Try older scipy versions
-        - python: 2.7
+        - python: 3.6
           env: SCIPY_VERSION=0.17.0
-        - python: 2.7
+        - python: 3.6
           env: SCIPY_VERSION=0.18.0
-        - python: 2.7
+        - python: 3.6
           env: NUMPY_VERSION=1.0.0
-        - python: 2.7
+        - python: 3.6
           env: NUMPY_VERSION=1.10.0
 
         # Try Astropy development version
@@ -91,13 +91,13 @@ matrix:
 
     allow_failures:
         # Try older scipy versions
-        - python: 2.7
+        - python: 3.6
           env: SCIPY_VERSION=0.17.0
-        - python: 2.7
+        - python: 3.6
           env: SCIPY_VERSION=0.18.0
-        - python: 2.7
+        - python: 3.6
           env: NUMPY_VERSION=1.0.0
-        - python: 2.7
+        - python: 3.6
           env: NUMPY_VERSION=1.10.0
 
 
