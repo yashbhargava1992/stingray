@@ -298,7 +298,7 @@ def is_iterable(stuff):
 
 
 def order_list_of_arrays(data, order):
-    """Convert data to a list of arrays.
+    """Sort an array according to the specified order.
 
     Parameters
     ----------
