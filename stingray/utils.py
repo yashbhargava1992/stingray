@@ -22,7 +22,6 @@ except ImportError:
 
 
     class jit(object):
-
         def __init__(self, *args, **kwargs):
             pass
 
@@ -680,9 +679,9 @@ def create_window(N, window_type='uniform'):
         a3 = 0.388
         a4 = 0.028
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + \
-                 a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
-                 a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
-                 a4 * np.cos((8 * np.pi * n) / N_minus_1)
+                                  a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
+                                  a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
+                                  a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
 
