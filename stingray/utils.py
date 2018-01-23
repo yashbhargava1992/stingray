@@ -218,7 +218,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
         The binned quantity y
 
     ybin_err: numpy.ndarray
-        The uncertainties of the binned values of y.
+        The uncertainties of the binned values of y
 
     step_size: float
         The size of the binning step
@@ -298,9 +298,18 @@ def is_iterable(stuff):
 
 
 def order_list_of_arrays(data, order):
+    """Convert data to a list of arrays.
+
+    Parameters
+    ----------
+    data : iterable
+
+    Returns
+    -------
+    data : list or dict
+    """
     if hasattr(data, 'items'):
-        data = dict([(key, value[order])
-                     for key, value in data.items()])
+        data = dict([(key, value[order]) for key, value in data.items()])
     elif is_iterable(data):
         data = [i[order] for i in data]
     else:
@@ -369,7 +378,7 @@ def get_random_state(seed=None):
 
     Parameters
     ----------
-    seed : integer, optional
+    seed : integer, optional, default None
 
     Returns
     -------
