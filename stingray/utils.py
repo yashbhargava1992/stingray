@@ -360,18 +360,29 @@ def contiguous_regions(condition):
 
 
 def is_int(obj):
+    """Test if object is an integer."""
     return isinstance(obj, (numbers.Integral, np.integer))
 
 
-def get_random_state(random_state=None):
-    if not random_state:
+def get_random_state(seed=None):
+    """Return a Mersenne Twister pseudo-random number generator.
+
+    Parameters
+    ----------
+    seed : integer, optional
+
+    Returns
+    -------
+    random_state : mtrand.RandomState object
+    """
+    if not seed:
         random_state = np.random.mtrand._rand
     else:
-        if is_int(random_state):
-            random_state = np.random.RandomState(random_state)
+        if is_int(seed):
+            random_state = np.random.RandomState(seed)
         elif not isinstance(random_state, np.random.RandomState):
             raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
-                value=random_state
+                value=seed
             ))
 
     return random_state
