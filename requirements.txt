@@ -2,5 +2,5 @@ six>=1.11.0
 numpy>=1.11
 scipy>=1.0.0
 matplotlib>=1.3
-emcee
-corner
+emcee>=2.2.1
+corner>=2.0.1
