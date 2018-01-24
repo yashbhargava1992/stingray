@@ -388,7 +388,7 @@ def get_random_state(seed=None):
     else:
         if is_int(seed):
             random_state = np.random.RandomState(seed)
-        elif not isinstance(random_state, np.random.RandomState):
+        elif not isinstance(seed, np.random.RandomState):
             raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
                 value=seed
             ))
