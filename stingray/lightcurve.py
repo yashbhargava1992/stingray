@@ -1059,15 +1059,13 @@ class Lightcurve(object):
         if title is not None:
             plt.title(title)
 
-        if save is True:
+        if save:
             if filename is None:
                 plt.savefig('out.png')
             else:
                 plt.savefig(filename)
-        elif save is False:
-            plt.show(block=False)
         else:
-            raise ValueError("'save' must be either True or False.")
+            plt.show(block=False)
 
     def write(self, filename, format_='pickle', **kwargs):
         """
