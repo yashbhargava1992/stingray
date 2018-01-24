@@ -1064,6 +1064,8 @@ class Lightcurve(object):
                 plt.savefig('out.png')
             else:
                 plt.savefig(filename)
+        else:
+            plt.show(block=False)
 
     def write(self, filename, format_='pickle', **kwargs):
         """
