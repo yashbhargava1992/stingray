@@ -372,25 +372,25 @@ def is_int(obj):
     return isinstance(obj, (numbers.Integral, np.integer))
 
 
-def get_random_state(seed=None):
+def get_random_state(random_state=None):
     """Return a Mersenne Twister pseudo-random number generator.
 
     Parameters
     ----------
-    seed : integer, optional, default None
+    seed : integer or numpy.random.RandomState, optional, default None
 
     Returns
     -------
     random_state : mtrand.RandomState object
     """
-    if not seed:
+    if not random_state:
         random_state = np.random.mtrand._rand
     else:
-        if is_int(seed):
-            random_state = np.random.RandomState(seed)
+        if is_int(random_state):
+            random_state = np.random.RandomState(random_state)
         elif not isinstance(random_state, np.random.RandomState):
             raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
-                value=seed
+                value=random_state
             ))
 
     return random_state
