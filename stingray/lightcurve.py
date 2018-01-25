@@ -402,7 +402,7 @@ class Lightcurve(object):
         >>> lc[:2].counts
         array([11, 22])
         """
-        if isinstance(index, int):
+        if isinstance(index, (int, np.integer)):
             return self.counts[index]
         elif isinstance(index, slice):
             start = assign_value_if_none(index.start, 0)
@@ -1059,11 +1059,15 @@ class Lightcurve(object):
         if title is not None:
             plt.title(title)
 
-        if save:
+        if save is True:
             if filename is None:
                 plt.savefig('out.png')
             else:
                 plt.savefig(filename)
+        elif save is False:
+            plt.show(block=False)
+        else:
+            raise ValueError("'save' must be either True or False.")
 
     def write(self, filename, format_='pickle', **kwargs):
         """
