@@ -38,7 +38,7 @@ class Lightcurve(object):
             input the count range, i.e. counts/second, otherwise use
             counts/bin).
 
-        err: iterable, optional, default None:
+        err: iterable, optional, default None
             A list or array of the uncertainties in each bin corresponding to
             the bins defined in `time` (note: use `input_counts=False` to
             input the count rage, i.e. counts/second, otherwise use
@@ -58,7 +58,7 @@ class Lightcurve(object):
             They will be used by other methods to have an indication of the
             "safe" time intervals to use during analysis.
 
-        err_dist: str, optional, default=None
+        err_dist: str, optional, default None
             Statistic of the Lightcurve, it is used to calculate the
             uncertainties and other statistical values apropriately.
             Default makes no assumptions and keep errors equal to zero.
@@ -1064,10 +1064,8 @@ class Lightcurve(object):
                 plt.savefig('out.png')
             else:
                 plt.savefig(filename)
-        elif save is False:
-            plt.show(block=False)
         else:
-            raise ValueError("'save' must be either True or False.")
+            plt.show(block=False)
 
     def write(self, filename, format_='pickle', **kwargs):
         """
