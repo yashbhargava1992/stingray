@@ -1059,7 +1059,7 @@ class Lightcurve(object):
         if title is not None:
             plt.title(title)
 
-        if save is True:
+        if save:
             if filename is None:
                 plt.savefig('out.png')
             else:
