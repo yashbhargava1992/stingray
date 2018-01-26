@@ -828,10 +828,10 @@ class Lightcurve(object):
                 raise ValueError("start time must be less than stop time!")
 
         if not start == 0:
-            start = np.where(self.time == start)[0][0]
+            start = self.time.searchsorted(start)
 
         if stop is not None:
-            stop = np.where(self.time == stop)[0][0]
+            stop = self.time.searchsorted(stop)
 
         return self._truncate_by_index(start, stop)
 
