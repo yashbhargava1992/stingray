@@ -440,12 +440,18 @@ class TestLightcurve(object):
         assert np.all(lc[:].gti == lc.gti)
         assert lc[:].mjdref == lc.mjdref
 
-
     def test_slicing_index_error(self):
         lc = Lightcurve(self.times, self.counts)
 
         with pytest.raises(StingrayError):
             lc_new = lc[1:2]
+
+    def test_index(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        index = 1
+        index_np32, index_np64 = np.int32(index), np.int64(index)
+        assert lc[index] == lc[index_np32] == lc[index_np64]
 
     def test_join_with_different_dt(self):
         _times = [5, 5.5, 6]
