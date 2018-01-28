@@ -580,6 +580,13 @@ class TestLightcurve(object):
         assert np.all(lc.time == np.array([1, 3, 2, 4]))
         assert lc.mjdref == mjdref
 
+    def test_sort_reverse(self):
+        lc = Lightcurve(np.arange(1000), np.random.rand(1000)*100)
+        new_lc = lc[:]
+        new_lc.sort(reverse=True)
+        assert new_lc.counts[0] == max(lc)
+        assert lc[new_lc.time[0]] == max(lc)
+
     def test_plot_matplotlib_not_installed(self):
         try:
             import matplotlib.pyplot as plt
