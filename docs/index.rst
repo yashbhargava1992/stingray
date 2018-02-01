@@ -7,10 +7,11 @@ Contents
 .. toctree::
    :maxdepth: 3
 
-   api
+   core
    modeling
    pulse
    simulator
+   api
 
 
 Indices and tables

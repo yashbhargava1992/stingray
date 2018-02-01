@@ -3,8 +3,8 @@ Stingray API
 
 Library of Time Series Methods For Astronomical X-ray Data.
 
-Classes
-=======
+Core Functionality
+==================
 
 Lightcurve
 ----------
@@ -59,3 +59,22 @@ Functions
 .. automodule:: stingray
    :members:
    :imported-members:
+
+Modeling
+==========
+.. automodule:: stingray
+   :members:
+   :imported-members:
+
+Pulsar
+======
+.. automodule:: stingray
+   :members:
+   :imported-members:
+
+Simulator
+=========
+.. autoclass:: stingray.simulator.simulator.Simulator
+   :members:
+   :undoc-members:
+
