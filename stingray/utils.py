@@ -222,6 +222,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     step_size: float
         The size of the binning step
     """
+
     dx_init = assign_value_if_none(dx, np.median(np.diff(x)))
     y = np.asarray(y)
     y_err = np.asarray(assign_value_if_none(y_err, np.zeros_like(y)))
@@ -267,7 +268,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
     # compute the number of powers in each frequency bin
     nsamples = np.array([len(binno[np.where(binno == i)[0]])
-                         for i in range(np.max(binno))])
+                         for i in range(1, np.max(binno)+1, 1)])
 
     return binx, biny, biny_err, nsamples
 
