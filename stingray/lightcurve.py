@@ -180,6 +180,7 @@ class Lightcurve(object):
             np.asarray(assign_value_if_none(gti,
                                             [[self.tstart,
                                               self.tstart + self.tseg]]))
+
         check_gtis(self.gti)
         good = create_gti_mask(self.time, self.gti)
 
@@ -201,7 +202,13 @@ class Lightcurve(object):
 
         # Issue a warning if the input time iterable isn't regularly spaced,
         # i.e. the bin sizes aren't equal throughout.
-        dt_array = np.diff(self.time)
+        dt_array = []
+        for g in self.gti:
+            mask = create_gti_mask(self.time, [g])
+            t = self.time[mask]
+            dt_array.extend(np.diff(t))
+        dt_array = np.asarray(dt_array)
+
         if not (np.allclose(dt_array, np.repeat(self.dt, dt_array.shape[0]))):
             simon("Bin sizes in input time array aren't equal throughout! "
                   "This could cause problems with Fourier transforms. "
