@@ -224,19 +224,27 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     """
 
     dx_init = assign_value_if_none(dx, np.median(np.diff(x)))
+    x = np.asarray(x)
     y = np.asarray(y)
     y_err = np.asarray(assign_value_if_none(y_err, np.zeros_like(y)))
 
-    minx = x[1] * 0.5  # frequency to start from
+    if x.shape[0] != y.shape[0]:
+        raise ValueError("x and y must be of the same length!")
+    if y.shape[0] != y_err.shape[0]:
+        raise ValueError("y and y_err must be of the same length!")
+
+    minx = x[0] * 0.5  # frequency to start from
     maxx = x[-1]  # maximum frequency to end
     binx = [minx, minx + dx_init]  # first
-    dx = x[1]  # the frequency resolution of the first bin
+    dx = dx_init  # the frequency resolution of the first bin
 
     # until we reach the maximum frequency, increase the width of each
     # frequency bin by f
     while binx[-1] <= maxx:
         binx.append(binx[-1] + dx * (1.0 + f))
         dx = binx[-1] - binx[-2]
+
+    binx = np.asarray(binx)
 
     real = y.real
     real_err = y_err.real
