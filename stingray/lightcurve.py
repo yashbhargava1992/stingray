@@ -21,108 +21,109 @@ valid_statistics = ["poisson", "gauss", None]
 
 
 class Lightcurve(object):
+    """
+    Make a light curve object from an array of time stamps and an
+    array of counts.
+
+    Parameters
+    ----------
+    time: iterable
+        A list or array of time stamps for a light curve
+
+    counts: iterable, optional, default None
+        A list or array of the counts in each bin corresponding to the
+        bins defined in `time` (note: use `input_counts=False` to
+        input the count range, i.e. counts/second, otherwise use
+        counts/bin).
+
+    err: iterable, optional, default None
+        A list or array of the uncertainties in each bin corresponding to
+        the bins defined in `time` (note: use `input_counts=False` to
+        input the count rage, i.e. counts/second, otherwise use
+        counts/bin). If None, we assume the data is poisson distributed
+        and calculate the error from the average of the lower and upper
+        1-sigma confidence intervals for the Poissonian distribution with
+        mean equal to `counts`.
+
+    input_counts: bool, optional, default True
+        If True, the code assumes that the input data in 'counts'
+        is in units of counts/bin. If False, it assumes the data
+        in 'counts' is in counts/second.
+
+    gti: 2-d float array, default None
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time Intervals. They are *not* applied to the data by default.
+        They will be used by other methods to have an indication of the
+        "safe" time intervals to use during analysis.
+
+    err_dist: str, optional, default None
+        Statistic of the Lightcurve, it is used to calculate the
+        uncertainties and other statistical values apropriately.
+        Default makes no assumptions and keep errors equal to zero.
+
+    mjdref: float
+        MJD reference (useful in most high-energy mission data)
+
+
+    Attributes
+    ----------
+    time: numpy.ndarray
+        The array of midpoints of time bins.
+
+    bin_lo:
+        The array of lower time stamp of time bins.
+
+    bin_hi:
+        The array of higher time stamp of time bins.
+
+    counts: numpy.ndarray
+        The counts per bin corresponding to the bins in `time`.
+
+    counts_err: numpy.ndarray
+        The uncertainties corresponding to `counts`
+
+    countrate: numpy.ndarray
+        The counts per second in each of the bins defined in `time`.
+
+    countrate_err: numpy.ndarray
+        The uncertainties corresponding to `countrate`
+
+    meanrate: float
+        The mean count rate of the light curve.
+
+    meancounts: float
+        The mean counts of the light curve.
+
+    n: int
+        The number of data points in the light curve.
+
+    dt: float
+        The time resolution of the light curve.
+
+    mjdref: float
+        MJD reference date (tstart / 86400 gives the date in MJD at the
+        start of the observation)
+
+    tseg: float
+        The total duration of the light curve.
+
+    tstart: float
+        The start time of the light curve.
+
+    gti: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time Intervals. They indicate the "safe" time intervals
+        to be used during the analysis of the light curve.
+
+    err_dist: string
+        Statistic of the Lightcurve, it is used to calculate the
+        uncertainties and other statistical values apropriately.
+        It propagates to Spectrum classes.
+
+    """
+
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None):
-        """
-        Make a light curve object from an array of time stamps and an
-        array of counts.
-
-        Parameters
-        ----------
-        time: iterable
-            A list or array of time stamps for a light curve
-
-        counts: iterable, optional, default None
-            A list or array of the counts in each bin corresponding to the
-            bins defined in `time` (note: use `input_counts=False` to
-            input the count range, i.e. counts/second, otherwise use
-            counts/bin).
-
-        err: iterable, optional, default None
-            A list or array of the uncertainties in each bin corresponding to
-            the bins defined in `time` (note: use `input_counts=False` to
-            input the count rage, i.e. counts/second, otherwise use
-            counts/bin). If None, we assume the data is poisson distributed
-            and calculate the error from the average of the lower and upper
-            1-sigma confidence intervals for the Poissonian distribution with
-            mean equal to `counts`.
-
-        input_counts: bool, optional, default True
-            If True, the code assumes that the input data in 'counts'
-            is in units of counts/bin. If False, it assumes the data
-            in 'counts' is in counts/second.
-
-        gti: 2-d float array, default None
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Good Time Intervals. They are *not* applied to the data by default.
-            They will be used by other methods to have an indication of the
-            "safe" time intervals to use during analysis.
-
-        err_dist: str, optional, default None
-            Statistic of the Lightcurve, it is used to calculate the
-            uncertainties and other statistical values apropriately.
-            Default makes no assumptions and keep errors equal to zero.
-
-        mjdref: float
-            MJD reference (useful in most high-energy mission data)
-
-
-        Attributes
-        ----------
-        time: numpy.ndarray
-            The array of midpoints of time bins.
-
-        bin_lo:
-            The array of lower time stamp of time bins.
-
-        bin_hi:
-            The array of higher time stamp of time bins.
-
-        counts: numpy.ndarray
-            The counts per bin corresponding to the bins in `time`.
-
-        counts_err: numpy.ndarray
-            The uncertainties corresponding to `counts`
-
-        countrate: numpy.ndarray
-            The counts per second in each of the bins defined in `time`.
-
-        countrate_err: numpy.ndarray
-            The uncertainties corresponding to `countrate`
-
-        meanrate: float
-            The mean count rate of the light curve.
-
-        meancounts: float
-            The mean counts of the light curve.
-
-        n: int
-            The number of data points in the light curve.
-
-        dt: float
-            The time resolution of the light curve.
-
-        mjdref: float
-            MJD reference date (tstart / 86400 gives the date in MJD at the
-            start of the observation)
-
-        tseg: float
-            The total duration of the light curve.
-
-        tstart: float
-            The start time of the light curve.
-
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Good Time Intervals. They indicate the "safe" time intervals
-            to be used during the analysis of the light curve.
-
-        err_dist: string
-            Statistic of the Lightcurve, it is used to calculate the
-            uncertainties and other statistical values apropriately.
-            It propagates to Spectrum classes.
-
-        """
 
         if not np.all(np.isfinite(time)):
             raise ValueError("There are inf or NaN values in "

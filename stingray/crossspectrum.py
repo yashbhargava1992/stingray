@@ -45,62 +45,62 @@ def coherence(lc1, lc2):
 
 
 class Crossspectrum(object):
+    """
+    Make a cross spectrum from a (binned) light curve.
+    You can also make an empty Crossspectrum object to populate with your
+    own fourier-transformed data (this can sometimes be useful when making
+    binned periodograms).
+
+    Parameters
+    ----------
+    lc1: lightcurve.Lightcurve object, optional, default None
+        The first light curve data for the channel/band of interest.
+
+    lc2: lightcurve.Lightcurve object, optional, default None
+        The light curve data for the reference band.
+
+    norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
+        The normalization of the (real part of the) cross spectrum.
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of cross spectra (complex numbers)
+
+    power_err: numpy.ndarray
+        The uncertainties of `power`.
+        An approximation for each bin given by "power_err= power/Sqrt(m)".
+        Where `m` is the number of power averaged in each bin (by frequency
+        binning, or averaging more than one spectra). Note that for a single
+        realization (m=1) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged cross-spectra amplitudes in each bin.
+
+    n: int
+        The number of data points/time bins in one segment of the light
+        curves.
+
+    nphots1: float
+        The total number of photons in light curve 1
+
+    nphots2: float
+        The total number of photons in light curve 2
+    """
     def __init__(self, lc1=None, lc2=None, norm='none', gti=None):
-        """
-        Make a cross spectrum from a (binned) light curve.
-        You can also make an empty Crossspectrum object to populate with your
-        own fourier-transformed data (this can sometimes be useful when making
-        binned periodograms).
-
-        Parameters
-        ----------
-        lc1: lightcurve.Lightcurve object, optional, default None
-            The first light curve data for the channel/band of interest.
-
-        lc2: lightcurve.Lightcurve object, optional, default None
-            The light curve data for the reference band.
-
-        norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
-            The normalization of the (real part of the) cross spectrum.
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        power: numpy.ndarray
-            The array of cross spectra (complex numbers)
-
-        power_err: numpy.ndarray
-            The uncertainties of `power`.
-            An approximation for each bin given by "power_err= power/Sqrt(m)".
-            Where `m` is the number of power averaged in each bin (by frequency
-            binning, or averaging more than one spectra). Note that for a single
-            realization (m=1) the error is equal to the power.
-
-        df: float
-            The frequency resolution
-
-        m: int
-            The number of averaged cross-spectra amplitudes in each bin.
-
-        n: int
-            The number of data points/time bins in one segment of the light
-            curves.
-
-        nphots1: float
-            The total number of photons in light curve 1
-
-        nphots2: float
-            The total number of photons in light curve 2
-        """
 
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
@@ -485,78 +485,79 @@ class Crossspectrum(object):
 
 
 class AveragedCrossspectrum(Crossspectrum):
+    """
+    Make an averaged cross spectrum from a light curve by segmenting two
+    light curves, Fourier-transforming each segment and then averaging the
+    resulting cross spectra.
+
+    Parameters
+    ----------
+    lc1: lightcurve.Lightcurve object OR
+        iterable of lightcurve.Lightcurve objects
+        One light curve data to be Fourier-transformed. This is the band
+        of interest or channel of interest.
+
+    lc2: lightcurve.Lightcurve object OR
+        iterable of lightcurve.Lightcurve objects
+        Second light curve data to be Fourier-transformed. This is the
+        reference band.
+
+    segment_size: float
+        The size of each segment to average. Note that if the total
+        duration of each Lightcurve object in lc1 or lc2 is not an
+        integer multiple of the segment_size, then any fraction left-over
+        at the end of the time series will be lost. Otherwise you introduce
+        artefacts.
+
+    norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
+        The normalization of the (real part of the) cross spectrum.
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of cross spectra
+
+    power_err: numpy.ndarray
+        The uncertainties of `power`.
+        An approximation for each bin given by "power_err= power/Sqrt(m)".
+        Where `m` is the number of power averaged in each bin (by frequency
+        binning, or averaging powerspectrum). Note that for a single
+        realization (m=1) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged cross spectra
+
+    n: int
+        The number of time bins per segment of light curve?
+
+    nphots1: float
+        The total number of photons in the first (interest) light curve
+
+    nphots2: float
+        The total number of photons in the second (reference) light curve
+
+    gti: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        They are calculated by taking the common GTI between the
+        two light curves
+
+    """
     def __init__(self, lc1=None, lc2=None, segment_size=None,
                  norm='none', gti=None):
-        """
-        Make an averaged cross spectrum from a light curve by segmenting two
-        light curves, Fourier-transforming each segment and then averaging the
-        resulting cross spectra.
 
-        Parameters
-        ----------
-        lc1: lightcurve.Lightcurve object OR
-            iterable of lightcurve.Lightcurve objects
-            One light curve data to be Fourier-transformed. This is the band
-            of interest or channel of interest.
-
-        lc2: lightcurve.Lightcurve object OR
-            iterable of lightcurve.Lightcurve objects
-            Second light curve data to be Fourier-transformed. This is the
-            reference band.
-
-        segment_size: float
-            The size of each segment to average. Note that if the total
-            duration of each Lightcurve object in lc1 or lc2 is not an
-            integer multiple of the segment_size, then any fraction left-over
-            at the end of the time series will be lost. Otherwise you introduce
-            artefacts.
-
-        norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
-            The normalization of the (real part of the) cross spectrum.
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        power: numpy.ndarray
-            The array of cross spectra
-
-        power_err: numpy.ndarray
-            The uncertainties of `power`.
-            An approximation for each bin given by "power_err= power/Sqrt(m)".
-            Where `m` is the number of power averaged in each bin (by frequency
-            binning, or averaging powerspectrum). Note that for a single
-            realization (m=1) the error is equal to the power.
-
-        df: float
-            The frequency resolution
-
-        m: int
-            The number of averaged cross spectra
-
-        n: int
-            The number of time bins per segment of light curve?
-
-        nphots1: float
-            The total number of photons in the first (interest) light curve
-
-        nphots2: float
-            The total number of photons in the second (reference) light curve
-
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            They are calculated by taking the common GTI between the
-            two light curves
-
-        """
         self.type = "crossspectrum"
 
         if segment_size is None and lc1 is not None:

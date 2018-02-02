@@ -116,63 +116,62 @@ def _pavnosigfun(power, nspec):
 
 
 class Powerspectrum(Crossspectrum):
+    """
+    Make a Periodogram (power spectrum) from a (binned) light curve.
+    Periodograms can be Leahy normalized or fractional rms normalized.
+    You can also make an empty Periodogram object to populate with your
+    own fourier-transformed data (this can sometimes be useful when making
+    binned periodograms).
+
+    Parameters
+    ----------
+    lc: lightcurve.Lightcurve object, optional, default None
+        The light curve data to be Fourier-transformed.
+
+    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
+        The normaliation of the periodogram to be used. Options are
+        "leahy", "frac", "abs" and "none", default is "frac".
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    norm: {"leahy" | "frac" | "abs" | "none"}
+        the normalization of the periodogram
+
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of normalized squared absolute values of Fourier
+        amplitudes
+
+    power_err: numpy.ndarray
+        The uncertainties of `power`.
+        An approximation for each bin given by "power_err= power/Sqrt(m)".
+        Where `m` is the number of power averaged in each bin (by frequency
+        binning, or averaging powerspectrum). Note that for a single
+        realization (m=1) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged powers in each bin
+
+    n: int
+        The number of data points in the light curve
+
+    nphots: float
+        The total number of photons in the light curve
+
+    """
     def __init__(self, lc=None, norm='frac', gti=None):
-        """
-        Make a Periodogram (power spectrum) from a (binned) light curve.
-        Periodograms can be Leahy normalized or fractional rms normalized.
-        You can also make an empty Periodogram object to populate with your
-        own fourier-transformed data (this can sometimes be useful when making
-        binned periodograms).
-
-        Parameters
-        ----------
-        lc: lightcurve.Lightcurve object, optional, default None
-            The light curve data to be Fourier-transformed.
-
-        norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-            The normaliation of the periodogram to be used. Options are
-            "leahy", "frac", "abs" and "none", default is "frac".
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        norm: {"leahy" | "frac" | "abs" | "none"}
-            the normalization of the periodogram
-
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        power: numpy.ndarray
-            The array of normalized squared absolute values of Fourier
-            amplitudes
-
-        power_err: numpy.ndarray
-            The uncertainties of `power`.
-            An approximation for each bin given by "power_err= power/Sqrt(m)".
-            Where `m` is the number of power averaged in each bin (by frequency
-            binning, or averaging powerspectrum). Note that for a single
-            realization (m=1) the error is equal to the power.
-
-        df: float
-            The frequency resolution
-
-        m: int
-            The number of averaged powers in each bin
-
-        n: int
-            The number of data points in the light curve
-
-        nphots: float
-            The total number of photons in the light curve
-
-        """
-
         Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti)
         self.nphots = self.nphots1
 
@@ -334,69 +333,68 @@ class Powerspectrum(Crossspectrum):
 
 
 class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
+    """
+    Make an averaged periodogram from a light curve by segmenting the light
+    curve, Fourier-transforming each segment and then averaging the
+    resulting periodograms.
+
+    Parameters
+    ----------
+    lc: lightcurve.Lightcurve object OR
+        iterable of lightcurve.Lightcurve objects
+        The light curve data to be Fourier-transformed.
+
+    segment_size: float
+        The size of each segment to average. Note that if the total
+        duration of each Lightcurve object in lc is not an integer multiple
+        of the segment_size, then any fraction left-over at the end of the
+        time series will be lost.
+
+    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
+        The normaliation of the periodogram to be used. Options are
+        "leahy", "frac", "abs" and "none", default is "frac".
+
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    norm: {"leahy" | "frac" | "abs" | "none"}
+        the normalization of the periodogram
+
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of normalized squared absolute values of Fourier
+        amplitudes
+
+    power_err: numpy.ndarray
+        The uncertainties of `power`.
+        An approximation for each bin given by "power_err= power/Sqrt(m)".
+        Where `m` is the number of power averaged in each bin (by frequency
+        binning, or averaging powerspectrum). Note that for a single
+        realization (m=1) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged periodograms
+
+    n: int
+        The number of data points in the light curve
+
+    nphots: float
+        The total number of photons in the light curve
+
+    """
     def __init__(self, lc=None, segment_size=None, norm="frac", gti=None):
-        """
-        Make an averaged periodogram from a light curve by segmenting the light
-        curve, Fourier-transforming each segment and then averaging the
-        resulting periodograms.
-
-        Parameters
-        ----------
-        lc: lightcurve.Lightcurve object OR
-            iterable of lightcurve.Lightcurve objects
-            The light curve data to be Fourier-transformed.
-
-        segment_size: float
-            The size of each segment to average. Note that if the total
-            duration of each Lightcurve object in lc is not an integer multiple
-            of the segment_size, then any fraction left-over at the end of the
-            time series will be lost.
-
-        norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-            The normaliation of the periodogram to be used. Options are
-            "leahy", "frac", "abs" and "none", default is "frac".
-
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        norm: {"leahy" | "frac" | "abs" | "none"}
-            the normalization of the periodogram
-
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        power: numpy.ndarray
-            The array of normalized squared absolute values of Fourier
-            amplitudes
-
-        power_err: numpy.ndarray
-            The uncertainties of `power`.
-            An approximation for each bin given by "power_err= power/Sqrt(m)".
-            Where `m` is the number of power averaged in each bin (by frequency
-            binning, or averaging powerspectrum). Note that for a single
-            realization (m=1) the error is equal to the power.
-
-        df: float
-            The frequency resolution
-
-        m: int
-            The number of averaged periodograms
-
-        n: int
-            The number of data points in the light curve
-
-        nphots: float
-            The total number of photons in the light curve
-
-
-        """
 
         self.type = "powerspectrum"
 
@@ -439,53 +437,54 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
 
 class DynamicalPowerspectrum(AveragedPowerspectrum):
+    """
+    Parameters
+    ----------
+    lc : lightcurve.Lightcurve object
+        The time series of which the Dynamical powerspectrum is
+        to be calculated.
+
+    segment_size : float, default 1
+         Length of the segment of light curve, default value is 1 second.
+
+    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
+        The normaliation of the periodogram to be used. Options are
+        "leahy", "frac", "abs" and "none", default is "frac".
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    segment_size: float
+        The size of each segment to average. Note that if the total
+        duration of each Lightcurve object in lc is not an integer multiple
+        of the segment_size, then any fraction left-over at the end of the
+        time series will be lost.
+
+    dyn_ps : np.ndarray
+        The matrix of normalized squared absolute values of Fourier
+        amplitudes. The axis are given by the `freq`
+        and `time` attirbutes
+
+    norm: {"leahy" | "frac" | "abs" | "none"}
+        the normalization of the periodogram
+
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    df: float
+        The frequency resolution
+
+    dt: float
+        The time resolution
+    """
+
     def __init__(self, lc, segment_size, norm="frac", gti=None):
-        """
-        Parameters
-        ----------
-        lc : lightcurve.Lightcurve object
-            The time series of which the Dynamical powerspectrum is
-            to be calculated.
-
-        segment_size : float, default 1
-             Length of the segment of light curve, default value is 1 second.
-
-        norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-            The normaliation of the periodogram to be used. Options are
-            "leahy", "frac", "abs" and "none", default is "frac".
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        segment_size: float
-            The size of each segment to average. Note that if the total
-            duration of each Lightcurve object in lc is not an integer multiple
-            of the segment_size, then any fraction left-over at the end of the
-            time series will be lost.
-
-        dyn_ps : np.ndarray
-            The matrix of normalized squared absolute values of Fourier
-            amplitudes. The axis are given by the `freq`
-            and `time` attirbutes
-
-        norm: {"leahy" | "frac" | "abs" | "none"}
-            the normalization of the periodogram
-
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        df: float
-            The frequency resolution
-
-        dt: float
-            The time resolution
-        """
         if segment_size < 2 * lc.dt:
             raise ValueError("Length of the segment is too short to form a "
                              "light curve!")

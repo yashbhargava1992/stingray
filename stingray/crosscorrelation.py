@@ -10,43 +10,43 @@ __all__ = ['CrossCorrelation', 'AutoCorrelation']
 
 
 class CrossCorrelation(object):
-    def __init__(self, lc1=None, lc2=None, mode='same'):
+    """
+    Make a cross-correlation from a light curves.
+    You can also make an empty Crosscorrelation object to populate with your
+    own cross-correlation data.
+    Parameters
+    ----------
+    lc1: lightcurve.Lightcurve object, optional, default None
+        The first light curve data for correlation calculations.
+    lc2: lightcurve.Lightcurve object, optional, default None
+        The light curve data for the correlation calculations.
+    mode: {'full', 'valid', 'same'}, optional, default 'same'
+        A string indicating the size of the correlation output.
+        See https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
+        for more details.
 
-        """
-        Make a cross-correlation from a light curves.
-        You can also make an empty Crosscorrelation object to populate with your
-        own cross-correlation data.
-        Parameters
-        ----------
-        lc1: lightcurve.Lightcurve object, optional, default None
-            The first light curve data for correlation calculations.
-        lc2: lightcurve.Lightcurve object, optional, default None
-            The light curve data for the correlation calculations.
-        mode: {'full', 'valid', 'same'}, optional, default 'same'
-            A string indicating the size of the correlation output.
-            See https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
-            for more details.
-            
-        Attributes
-        ----------
-        lc1: lightcurve.Lightcurve 
-            The first light curve data for correlation calculations.
-        lc2: lightcurve.Lightcurve
-            The light curve data for the correlation calculations.        
-        corr: numpy.ndarray
-             An array of correlation data calculated from two lighcurves
-        time_lags: numpy.ndarray
-             An array of all possible time lags against which each point in corr is calculated 
-        dt: float
-             The time resolution of each lightcurve (used in time_lag calculations)
-        time_shift: float
-             Time lag that gives maximum value of correlation between two lightcurves.
-             There will be maximum correlation between lightcurves if one of the lightcurve is shifted by time_shift.
-        n: int
-             Number of points in self.corr(Length of cross-correlation data) 
-        auto: Boolean
-            A flag to indicate whether correlation is auto or cross.
-        """
+    Attributes
+    ----------
+    lc1: lightcurve.Lightcurve
+        The first light curve data for correlation calculations.
+    lc2: lightcurve.Lightcurve
+        The light curve data for the correlation calculations.
+    corr: numpy.ndarray
+         An array of correlation data calculated from two lighcurves
+    time_lags: numpy.ndarray
+         An array of all possible time lags against which each point in corr is calculated
+    dt: float
+         The time resolution of each lightcurve (used in time_lag calculations)
+    time_shift: float
+         Time lag that gives maximum value of correlation between two lightcurves.
+         There will be maximum correlation between lightcurves if one of the lightcurve is shifted by time_shift.
+    n: int
+         Number of points in self.corr(Length of cross-correlation data)
+    auto: Boolean
+        A flag to indicate whether correlation is auto or cross.
+    """
+
+    def __init__(self, lc1=None, lc2=None, mode='same'):
 
         self.auto = False
         if isinstance(mode, str) is False:
@@ -216,35 +216,36 @@ class CrossCorrelation(object):
 
 
 class AutoCorrelation(CrossCorrelation):
-    def __init__(self, lc=None, mode='same'):
-        """
-        Make an auto-correlation from a light curve.
-        You can also make an empty Autocorrelation object to populate with your
-        own auto-correlation data.
-        Parameters
-        ----------
-        lc: lightcurve.Lightcurve object, optional, default None
-            The light curve data for correlation calculations.
-        mode: {'full', 'valid', 'same'}, optional, default 'same'
-            A string indicating the size of the correlation output.
-            See https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
-            for more details.
+    """
+    Make an auto-correlation from a light curve.
+    You can also make an empty Autocorrelation object to populate with your
+    own auto-correlation data.
+    Parameters
+    ----------
+    lc: lightcurve.Lightcurve object, optional, default None
+        The light curve data for correlation calculations.
+    mode: {'full', 'valid', 'same'}, optional, default 'same'
+        A string indicating the size of the correlation output.
+        See https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
+        for more details.
 
-        Attributes
-        ----------
-        lc1, lc2: lightcurve.Lightcurve 
-            The light curve data for correlation calculations.
-        corr: numpy.ndarray
-             An array of correlation data calculated from lightcurve data
-        time_lags: numpy.ndarray
-             An array of all possible time lags against which each point in corr is calculated 
-        dt: float
-             The time resolution of each lightcurve (used in time_lag calculations)
-        time_shift: float, zero
-             Max. Value of AutoCorrelation is always at zero lag.           
-        n: int
-             Number of points in self.corr(Length of auto-correlation data) 
-        """
+    Attributes
+    ----------
+    lc1, lc2: lightcurve.Lightcurve
+        The light curve data for correlation calculations.
+    corr: numpy.ndarray
+         An array of correlation data calculated from lightcurve data
+    time_lags: numpy.ndarray
+         An array of all possible time lags against which each point in corr is calculated
+    dt: float
+         The time resolution of each lightcurve (used in time_lag calculations)
+    time_shift: float, zero
+         Max. Value of AutoCorrelation is always at zero lag.
+    n: int
+         Number of points in self.corr(Length of auto-correlation data)
+    """
+
+    def __init__(self, lc=None, mode='same'):
 
         CrossCorrelation.__init__(self, lc1=lc, lc2=lc, mode=mode)
         self.auto = True

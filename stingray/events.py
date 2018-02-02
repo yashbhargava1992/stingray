@@ -19,66 +19,66 @@ __all__ = ['EventList']
 
 
 class EventList(object):
+    """
+    Make an event list object from an array of time stamps
+
+    Parameters
+    ----------
+    time: iterable
+        A list or array of time stamps
+
+    Other Parameters
+    ----------------
+    dt: float
+        The time resolution of the events. Only relevant when using events
+        to produce light curves with similar bin time.
+
+    energy: iterable
+        A list of array of photon energy values
+
+    mjdref : float
+        The MJD used as a reference for the time array.
+
+    ncounts: int
+        Number of desired data points in event list.
+
+    gtis: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time Intervals
+
+    pi : integer, numpy.ndarray
+        PI channels
+
+    notes : str
+        Any useful annotations
+
+    Attributes
+    ----------
+    time: numpy.ndarray
+        The array of event arrival times, in seconds from the reference
+        MJD (self.mjdref)
+
+    energy: numpy.ndarray
+        The array of photon energy values
+
+    ncounts: int
+        The number of data points in the event list
+
+    dt: float
+        The time resolution of the events. Only relevant when using events
+        to produce light curves with similar bin time.
+
+    mjdref : float
+        The MJD used as a reference for the time array.
+
+    gtis: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time Intervals
+
+    pi : integer, numpy.ndarray
+        PI channels
+
+    """
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
                  notes="", gti=None, pi=None):
-        """
-        Make an event list object from an array of time stamps
-
-        Parameters
-        ----------
-        time: iterable
-            A list or array of time stamps
-
-        Other Parameters
-        ----------------
-        dt: float
-            The time resolution of the events. Only relevant when using events
-            to produce light curves with similar bin time.
-
-        energy: iterable
-            A list of array of photon energy values
-
-        mjdref : float
-            The MJD used as a reference for the time array.
-
-        ncounts: int
-            Number of desired data points in event list.
-
-        gtis: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Good Time Intervals
-
-        pi : integer, numpy.ndarray
-            PI channels
-
-        notes : str
-            Any useful annotations
-
-        Attributes
-        ----------
-        time: numpy.ndarray
-            The array of event arrival times, in seconds from the reference
-            MJD (self.mjdref)
-
-        energy: numpy.ndarray
-            The array of photon energy values
-
-        ncounts: int
-            The number of data points in the event list
-
-        dt: float
-            The time resolution of the events. Only relevant when using events
-            to produce light curves with similar bin time.
-
-        mjdref : float
-            The MJD used as a reference for the time array.
-
-        gtis: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Good Time Intervals
-
-        pi : integer, numpy.ndarray
-            PI channels
-
-        """
 
         self.energy = None if energy is None else np.array(energy)
         self.notes = notes

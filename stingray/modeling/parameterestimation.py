@@ -49,23 +49,22 @@ from stingray.modeling.posterior import Posterior, PSDPosterior, \
 
 
 class OptimizationResults(object):
+    """
+    Helper class that will contain the results of the regression.
+    Less fiddly than a dictionary.
 
+    Parameters
+    ----------
+    lpost: instance of Posterior or one of its subclasses
+        The object containing the function that is being optimized
+        in the regression
+
+
+    res: instance of scipy's OptimizeResult class
+        The object containing the results from a optimization run
+
+    """
     def __init__(self, lpost, res, neg=True):
-        """
-        Helper class that will contain the results of the regression.
-        Less fiddly than a dictionary.
-
-        Parameters
-        ----------
-        lpost: instance of Posterior or one of its subclasses
-            The object containing the function that is being optimized
-            in the regression
-
-
-        res: instance of scipy's OptimizeResult class
-            The object containing the results from a optimization run
-
-        """
         self.neg = neg
         self.result = res.fun
         self.p_opt = res.x
@@ -205,25 +204,25 @@ class OptimizationResults(object):
 
 
 class ParameterEstimation(object):
+    """
+    Parameter estimation of two-dimensional data, either via
+    optimization or MCMC.
+    Note: optimization with bounds is not supported. If something like
+    this is required, define (uniform) priors in the ParametricModel
+    instances to be used below.
+
+    Parameters
+    ----------
+    fitmethod : string, optional, default "L-BFGS-B"
+        Any of the strings allowed in scipy.optimize.minimize in
+        the method keyword. Sets the fit method to be used.
+
+    max_post : bool, optional, default True
+        If True, then compute the Maximum-A-Posteriori estimate. If False,
+        compute a Maximum Likelihood estimate.
+    """
 
     def __init__(self, fitmethod='BFGS', max_post=True):
-        """
-        Parameter estimation of two-dimensional data, either via
-        optimization or MCMC.
-        Note: optimization with bounds is not supported. If something like
-        this is required, define (uniform) priors in the ParametricModel
-        instances to be used below.
-
-        Parameters
-        ----------
-        fitmethod : string, optional, default "L-BFGS-B"
-            Any of the strings allowed in scipy.optimize.minimize in
-            the method keyword. Sets the fit method to be used.
-
-        max_post : bool, optional, default True
-            If True, then compute the Maximum-A-Posteriori estimate. If False,
-            compute a Maximum Likelihood estimate.
-        """
 
         self.fitmethod = fitmethod
 
@@ -730,27 +729,27 @@ class ParameterEstimation(object):
 
 
 class SamplingResults(object):
+    """
+    Helper class that will contain the results of the sampling
+    in a handly format.
+    Less fiddly than a dictionary.
+
+    Parameters
+    ----------
+    sampler: emcee.EnsembleSampler object
+        The object containing the sampler that's done all the work.
+
+    ci_min: float out of [0,100]
+        The lower bound percentile for printing confidence intervals
+        on the parameters
+
+    ci_max: float out of [0,100]
+        The upper bound percentile for printing confidence intervals
+        on the parameters
+
+    """
 
     def __init__(self, sampler, ci_min=5, ci_max=95):
-        """
-        Helper class that will contain the results of the sampling
-        in a handly format.
-        Less fiddly than a dictionary.
-
-        Parameters
-        ----------
-        sampler: emcee.EnsembleSampler object
-            The object containing the sampler that's done all the work.
-
-        ci_min: float out of [0,100]
-            The lower bound percentile for printing confidence intervals
-            on the parameters
-
-        ci_max: float out of [0,100]
-            The upper bound percentile for printing confidence intervals
-            on the parameters
-
-        """
 
         # store all the samples
         self.samples = sampler.flatchain
@@ -934,7 +933,10 @@ class SamplingResults(object):
 
 
 class PSDParEst(ParameterEstimation):
+    """
+    TODO: Needs docstring!
 
+    """
     def __init__(self, ps, fitmethod='BFGS', max_post=True):
 
         self.ps = ps
@@ -1110,7 +1112,7 @@ class PSDParEst(ParameterEstimation):
                                   burnin=200, namestr="test", seed=None):
 
         """
-
+        TODO: Needs docstring!
         """
         # fit the model to the data
         res = self.fit(lpost, t0, neg=True)

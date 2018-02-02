@@ -45,52 +45,53 @@ def _decode_energy_specification(energy_spec):
 
 @six.add_metaclass(ABCMeta)
 class VarEnergySpectrum(object):
+    """
+    Base variability-energy spectrum.
+
+    This class is only a base for the various variability spectra, and it's
+    not to be instantiated by itself.
+
+    Parameters
+    ----------
+    events : stingray.events.EventList object
+        event list
+    freq_interval : [f0, f1], floats
+        the frequency range over which calculating the variability quantity
+    energy_spec : list or tuple (emin, emax, N, type)
+        if a list is specified, this is interpreted as a list of bin edges;
+        if a tuple is provided, this will encode the minimum and maximum
+        energies, the number of intervals, and "lin" or "log".
+
+    Other Parameters
+    ----------------
+    ref_band : [emin, emax], floats; default None
+        minimum and maximum energy of the reference band. If None, the
+        full band is used.
+    use_pi : boolean, default False
+        Use channel instead of energy
+    events2 : stingray.events.EventList object
+        event list for the second channel, if not the same. Useful if the
+        reference band has to be taken from another detector.
+
+    Attributes
+    ----------
+    events1 : array-like
+        list of events used to produce the spectrum
+    events2 : array-like
+        if the spectrum requires it, second list of events
+    freq_interval : array-like
+        interval of frequencies used to calculate the spectrum
+    energy_intervals : [[e00, e01], [e10, e11], ...]
+        energy intervals used for the spectrum
+    spectrum : array-like
+        the spectral values, corresponding to each energy interval
+    spectrum_error : array-like
+        the errorbars corresponding to spectrum
+
+    """
     def __init__(self, events, freq_interval, energy_spec, ref_band=None,
                  bin_time=1, use_pi=False, segment_size=None, events2=None):
 
-        """Base variability-energy spectrum.
-
-        This class is only a base for the various variability spectra, and it's
-        not to be instantiated by itself.
-
-        Parameters
-        ----------
-        events : stingray.events.EventList object
-            event list
-        freq_interval : [f0, f1], floats
-            the frequency range over which calculating the variability quantity
-        energy_spec : list or tuple (emin, emax, N, type)
-            if a list is specified, this is interpreted as a list of bin edges;
-            if a tuple is provided, this will encode the minimum and maximum
-            energies, the number of intervals, and "lin" or "log".
-
-        Other Parameters
-        ----------------
-        ref_band : [emin, emax], floats; default None
-            minimum and maximum energy of the reference band. If None, the
-            full band is used.
-        use_pi : boolean, default False
-            Use channel instead of energy
-        events2 : stingray.events.EventList object
-            event list for the second channel, if not the same. Useful if the
-            reference band has to be taken from another detector.
-
-        Attributes
-        ----------
-        events1 : array-like
-            list of events used to produce the spectrum
-        events2 : array-like
-            if the spectrum requires it, second list of events
-        freq_interval : array-like
-            interval of frequencies used to calculate the spectrum
-        energy_intervals : [[e00, e01], [e10, e11], ...]
-            energy intervals used for the spectrum
-        spectrum : array-like
-            the spectral values, corresponding to each energy interval
-        spectrum_error : array-like
-            the errorbars corresponding to spectrum
-
-        """
         self.events1 = events
         self.events2 = assign_value_if_none(events2, events)
         self.freq_interval = freq_interval
@@ -180,7 +181,10 @@ class VarEnergySpectrum(object):
 
 
 class RmsEnergySpectrum(VarEnergySpectrum):
+    """
+    TODO: Needs docstring!
 
+    """
     def _spectrum_function(self):
 
         rms_spec = np.zeros(len(self.energy_intervals))
@@ -210,7 +214,10 @@ class RmsEnergySpectrum(VarEnergySpectrum):
 
 
 class LagEnergySpectrum(VarEnergySpectrum):
+    """
+    TODO: Needs docstring!
 
+    """
     def _spectrum_function(self):
 
         lag_spec = np.zeros(len(self.energy_intervals))
@@ -246,6 +253,10 @@ class LagEnergySpectrum(VarEnergySpectrum):
 
 
 class ExcessVarianceSpectrum(VarEnergySpectrum):
+    """
+    TODO: Needs docstring!
+
+    """
     def __init__(self, events, freq_interval, energy_spec,
                  bin_time=1, use_pi=False, segment_size=None,
                  normalization='fvar'):
