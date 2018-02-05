@@ -51,6 +51,7 @@ def high_precision_keyword_read(hdr, keyword):
     ----------
     hdr : dict_like
         The FITS header structure, or a dictionary
+
     keyword : str
         The key to read in the header
 
@@ -103,8 +104,11 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     Parameters
     ----------
     fits_file : str
+        The file name and absolute path to the event file.
+
     return_limits: bool, optional
         Return the TSTART and TSTOP keyword values
+
     additional_columns: list of str, optional
         A list of keys corresponding to the additional columns to extract from
         the event HDU (ex.: ['PI', 'X'])
@@ -112,13 +116,17 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     Returns
     -------
     ev_list : array-like
-    gtis: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        An array of time stamps of events
+
+    gtis: list of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time Intervals
+
     additional_data: dict
         A dictionary, where each key is the one specified in additional_colums.
         The data are an array with the values of the specified column in the
         fits file.
-    t_start : float
-    t_stop : float
+    t_start, t_stop : float
+        Start and stop times of the observation
     """
 
     gtistring = assign_value_if_none(gtistring, 'GTI,STDGTI')
@@ -200,7 +208,7 @@ def mkdir_p(path):  # pragma: no cover
     Parameters
     ----------
     path : str
-        Name of the directory/ies to create
+        The absolute path to the directory to be created
 
     Notes
     -----
@@ -224,12 +232,20 @@ def read_header_key(fits_file, key, hdu=1):
     Parameters
     ----------
     fits_file: str
+        The file name and absolute path to the event file.
+
     key: str
         The keyword to be read
 
     Other Parameters
     ----------------
     hdu : int
+        Index of the HDU extension from which the header key to be read.
+
+    Returns
+    -------
+    value : object
+        The value stored under ``key`` in ``fits_file``
     """
 
     hdulist = fits.open(fits_file)
@@ -247,17 +263,18 @@ def ref_mjd(fits_file, hdu=1):
     Parameters
     ----------
     fits_file : str
+        The file name and absolute path to the event file.
+
+    Other Parameters
+    ----------------
+    hdu : int
+        Index of the HDU extension from which the header key to be read.
 
     Returns
     -------
     mjdref : numpy.longdouble
         the reference MJD
-
-    Other Parameters
-    ----------------
-    hdu : int
     """
-    import collections
 
     if isinstance(fits_file, collections.Iterable) and\
             not is_string(fits_file):  # pragma: no cover
@@ -271,7 +288,6 @@ def ref_mjd(fits_file, hdu=1):
     hdulist.close()
     return ref_mjd_val
 
-
 def common_name(str1, str2, default='common'):
     """Strip two strings of the letters not in common.
 
@@ -282,15 +298,16 @@ def common_name(str1, str2, default='common'):
     str1 : str
     str2 : str
 
+    Other Parameters
+    ----------------
+    default : str
+        The string to return if common_str is empty
+
     Returns
     -------
     common_str : str
         A string containing the parts of the two names in common
 
-    Other Parameters
-    ----------------
-    default : str
-        The string to return if common_str is empty
     """
     if not len(str1) == len(str2):
         return default
@@ -512,7 +529,7 @@ def _retrieve_ascii_object(filename, **kwargs):
     filename : str
         The name of the file with the data to be retrieved.
 
-    Additional Keyword Parameters
+    Other Parameters
     -----------------------------
     usecols : {int | iterable}
         The indices of the columns in the file to be returned.
@@ -671,7 +688,7 @@ def _retrieve_fits_object(filename, **kwargs):
     filename: str
         The name of file with which object was saved
 
-    Additional Keyword Parameters
+    Other Parameters
     -----------------------------
     cols: str iterable
         The names of columns to extract from fits tables.
@@ -727,6 +744,16 @@ def _retrieve_fits_object(filename, **kwargs):
 def _lookup_format(var):
     """
     Looks up relevant format in fits.
+
+    Parameters
+    ----------
+    var : object
+        An object to look up in the table
+
+    Returns
+    -------
+    lookup : str
+        The str describing the type of ``var``
     """
 
     lookup = {"<type 'int'>":"J", "<type 'float'>":"E", 
@@ -745,6 +772,15 @@ def _lookup_format(var):
 def _isattribute(data):
     """
     Check if data is a single number or an array.
+
+    Parameters
+    ----------
+    data : object
+        The object to be checked.
+
+    Returns:
+        bool
+        True if the data is a single number, False if it is an iterable.
     """
 
     if isinstance(data, np.ndarray) or isinstance(data, list):
@@ -806,7 +842,7 @@ def read(filename, format_='pickle', **kwargs):
     
     Returns
     -------
-    If format_ is 'pickle', a class object is returned.
+    If format_ is 'pickle', an object is returned.
     If format_ is 'ascii', astropy.table object is returned.
     If format_ is 'hdf5' or 'fits', a dictionary object is returned.
     """
