@@ -20,7 +20,8 @@ __all__ = ['EventList']
 
 class EventList(object):
     """
-    Make an event list object from an array of time stamps
+    Make an event list object from an array of time stamps and optionally energies associated
+    with each time stamp.
 
     Parameters
     ----------
@@ -110,7 +111,7 @@ class EventList(object):
         Other Parameters
         ----------------
         tstart : float
-            Initial time of the light curve
+            Start time of the light curve
 
         tseg: float
             Total duration of light curve
@@ -131,7 +132,8 @@ class EventList(object):
     @staticmethod
     def from_lc(lc):
         """
-        Loads eventlist from light curve.
+        Loads eventlist from light curve. Note that all events in a given time bin will have
+        the same time stamp.
 
         Parameters
         ----------
@@ -180,7 +182,7 @@ class EventList(object):
 
     def simulate_energies(self, spectrum):
         """
-        Assign (simulate) energies to event list.
+        Assign (simulate) energies to event list from a spectrum.
 
         Parameters
         ----------
@@ -314,7 +316,18 @@ class EventList(object):
     @staticmethod
     def read(filename, format_='pickle'):
         """
-        Imports EventList object.
+        Read an event list from a file on disk. The file must be either a Python pickle file (not recommended
+        for long-term storage), an HDF5 file, an ASCII or a FITS file. The file can have the following
+        attributes in the data or meta-data:
+            * time:  the time stamps of the photon arrivals
+            * energy: the photon energy corresponding to each time stamp
+            * ncounts: the total number of photon counts recorded
+            * mjdref: a reference time in Modified Julian Date
+            * dt: the time resolution of the data
+            * notes: other possible meta-data
+            * gti: Good Time Intervals
+            * pi: some instruments record energies as "Pulse Invariant", an integer number recorded from
+                  the Pulse Height Amplitude
 
         Parameters
         ----------
@@ -328,6 +341,7 @@ class EventList(object):
         -------
         ev: `EventList` object
         """
+
         attributes = ['time', 'energy', 'ncounts', 'mjdref', 'dt',
                 'notes', 'gti', 'pi']
         data = read(filename, format_, cols=attributes)
@@ -362,7 +376,8 @@ class EventList(object):
 
     def write(self, filename, format_='pickle'):
         """
-        Exports EventList object.
+        Write an ``EventList`` object to file. Possible file formats are ``pickle``, ``hdf5``, ``ascii``
+        or ``fits``.
 
         Parameters
         ----------
@@ -370,7 +385,8 @@ class EventList(object):
             Name of the LightCurve object to be created.
 
         format_: str
-            Available options are 'pickle', 'hdf5', 'ascii'
+            The file format to store the data in.
+            Available options are 'pickle', 'hdf5', 'ascii', 'fits'
         """
 
         if format_ == 'ascii':

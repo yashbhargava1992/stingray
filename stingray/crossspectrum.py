@@ -834,5 +834,5 @@ class AveragedCrossspectrum(Crossspectrum):
         coh, uncert = self.coherence()
         dum = (1. - coh) / (2. * coh)
         lag_err = np.sqrt(dum / self.m) / (2 * np.pi * self.freq)
-        
+
         return lag, lag_err
