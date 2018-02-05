@@ -33,7 +33,7 @@ def test_sinc_obs():
     y = 2 * (np.sin(x / w) / (x / w))**2
     y += np.random.normal(0., 0.1, x.shape)
 
-    s = fit_sinc(x, y, obs_length=obs_length )
+    s = fit_sinc(x, y, obs_length=obs_length)
 
     assert np.abs(1 / (np.pi*obs_length) - s.width) < 0.1
     assert s.width.fixed
@@ -57,7 +57,7 @@ def test_gaussian_bounds():
     y += np.random.normal(0., 0.1, x.shape)
 
     gs = fit_gaussian(x, y,
-                      bounds={"mean": [1., 1.6], "amplitude":[1.7, 2.3]})
+                      bounds={"mean": [1., 1.6], "amplitude": [1.7, 2.3]})
 
 
 def test_gaussian_fixed():

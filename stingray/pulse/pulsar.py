@@ -341,7 +341,7 @@ def z_n(phase, n=2, norm=1):
                 np.sum(np.sin(k * phase) * norm) ** 2
                 for k in range(1, n + 1)])
 
-    
+
 def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     """Return the detection level for the Z^2_n statistics.
 
@@ -566,12 +566,7 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
     ph_fit = np.zeros(nstep)
     amp_fit = np.zeros(nstep)
     # use bootstrap method to calculate errors
-    shift = 0
-    phase = np.arange(0, 1, 1 / nbin)
-    maxphase = np.argmax(template) / nbin
-
     for i in range(nstep):
-        shift = i
         newprof = np.random.normal(0, sigma, len(template)) + template
         dph = np.random.normal(0, 0.5 / nbin)
         p0 = [1, dph]
@@ -672,7 +667,7 @@ def _load_and_prepare_TOAs(mjds, ephem="DE405"):
     for i, m in enumerate(mjds):
         toalist[i] = toa.TOA(m, obs='Barycenter', scale='tdb')
 
-    toalist = toa.TOAs(toalist = toalist)
+    toalist = toa.TOAs(toalist=toalist)
     if 'tdb' not in toalist.table.colnames:
         toalist.compute_TDBs()
     if 'ssb_obs_pos' not in toalist.table.colnames:
@@ -718,7 +713,8 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
     m = get_model(parfile)
     delays = m.delay(toalist.table)
     correction_mjd = \
-        interp1d(mjds, (toalist.table['tdbld'] * units.d - delays).to(units.d).value)
+        interp1d(mjds,
+                 (toalist.table['tdbld'] * units.d - delays).to(units.d).value)
 
     def correction_sec(times, mjdref):
         deorb_mjds = correction_mjd(times / 86400 + mjdref)

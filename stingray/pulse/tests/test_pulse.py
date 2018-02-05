@@ -17,7 +17,6 @@ except ImportError:
     HAS_MPL = False
 
 
-
 def _template_fun(phase, ph0, amplitude, baseline=0):
     return baseline + amplitude * np.cos((phase - ph0) * 2 * np.pi)
 
@@ -69,7 +68,7 @@ class TestAll(object):
         mjdref = 50000
         toa_sec = (mjds - mjdref) * 86400
         corr = correction_mjd(mjds)
-        corr_s = correction_sec (toa_sec, mjdref)
+        corr_s = correction_sec(toa_sec, mjdref)
         assert np.allclose(corr, corr_s / 86400 + mjdref)
 
     @pytest.mark.skipif('HAS_PINT')
@@ -98,8 +97,9 @@ class TestAll(object):
         """Test pulse phase calculation, frequency only."""
         np.testing.assert_almost_equal(fold_detection_level(16, 0.01),
                                        30.577914166892498)
-        np.testing.assert_almost_equal(fold_detection_level(16, 0.01, ntrial=2),
-                                       fold_detection_level(16, 0.01 / 2))
+        np.testing.assert_almost_equal(
+            fold_detection_level(16, 0.01, ntrial=2),
+            fold_detection_level(16, 0.01 / 2))
 
     def test_zn_detection_level(self):
         np.testing.assert_almost_equal(z2_n_detection_level(2),
