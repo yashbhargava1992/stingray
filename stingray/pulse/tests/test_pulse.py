@@ -10,6 +10,13 @@ from ..pulsar import HAS_PINT
 from astropy.tests.helper import remote_data
 import pytest
 import os
+try:
+    import matplotlib.pyplot as plt
+    HAS_MPL = True
+except ImportError:
+    HAS_MPL = False
+
+
 
 def _template_fun(phase, ph0, amplitude, baseline=0):
     return baseline + amplitude * np.cos((phase - ph0) * 2 * np.pi)
@@ -244,6 +251,41 @@ class TestAll(object):
         toa, toaerr = \
             get_TOA(prof, period, tstart,
                     template=_template_fun(phases, 0, 1, 0), nstep=200)
+
+        real_toa = tstart + start_phase * period
+        assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
+
+    def test_get_TOA3(self):
+        np.random.seed(1234)
+        period = 1.2
+        tstart = 122
+        start_phase = 0.2123
+        phases = np.arange(0, 1, 1 / 32)
+        template = _template_fun(phases, start_phase, 10, 20)
+        prof = np.random.poisson(template)
+
+        toa, toaerr = \
+            get_TOA(prof, period, tstart,
+                    template=_template_fun(phases, 0, 1, 0), nstep=200,
+                    use_bootstrap=True)
+
+        real_toa = tstart + start_phase * period
+        assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
+
+    @pytest.mark.skipif('not HAS_MPL')
+    def test_get_TOA4(self):
+        np.random.seed(1234)
+        period = 1.2
+        tstart = 122
+        start_phase = 0.2123
+        phases = np.arange(0, 1, 1 / 32)
+        template = _template_fun(phases, start_phase, 10, 20)
+        prof = np.random.poisson(template)
+
+        toa, toaerr = \
+            get_TOA(prof, period, tstart,
+                    template=_template_fun(phases, 0, 1, 0), nstep=200,
+                    debug=True)
 
         real_toa = tstart + start_phase * period
         assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
