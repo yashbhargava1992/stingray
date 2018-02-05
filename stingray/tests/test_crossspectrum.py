@@ -389,19 +389,19 @@ class TestAveragedCrossspectrum(object):
     def test_timelag(self):
         from ..simulator.simulator import Simulator
         dt = 0.1
-        simulator = Simulator(dt, 10000, rms=0.4, mean=200)
+        simulator = Simulator(dt, 10000, rms=0.8, mean=1000)
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
                               np.array(np.roll(test_lc1.counts, 2)),
                               err_dist=test_lc1.err_dist,
                               dt=dt)
 
-        cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
+        cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5,
                                    norm="none")
 
         time_lag, time_lag_err = cs.time_lag()
 
-        assert np.all(np.abs(time_lag[:10] - 0.1) < 3 * time_lag_err[:10])
+        assert np.all(np.abs(time_lag[:6] - 0.1) < 3 * time_lag_err[:6])
 
     def test_errorbars(self):
         time = np.arange(10000) * 0.1
