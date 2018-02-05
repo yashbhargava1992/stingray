@@ -78,16 +78,16 @@ class CrossCorrelation(object):
     def _make_corr(self, lc1, lc2):
 
         """
-        Creates Crosscorrelation Object.
+        Do some checks on the light curves supplied to the method, and then calculate the time
+        shifts, time lags and cross correlation.
+
         Parameters
         ----------
         lc1: lightcurve.Lightcurve object
             The first light curve data.
         lc2: lightcurve.Lightcurve object
             The second light curve data.
-        Returns
-        ----------
-        None
+
         """
 
         if not isinstance(lc1, lightcurve.Lightcurve):
@@ -120,14 +120,16 @@ class CrossCorrelation(object):
 
     def cal_timeshift(self, dt=1.0):
         """
-        Creates Crosscorrelation Object.
+        Calculate the cross correlation against all possible time lags, both positive and negative.
+
         Parameters
         ----------
         dt: float , optional, default 1.0
             Time resolution of lightcurve, should be passed when object is populated with correlation data
             and no information about light curve can be extracted. Used to calculate time_lags.
+
         Returns
-        ----------
+        -------
         self.time_shift: float
              Value of time lag that gives maximum value of correlation between two lightcurves. 
         self.time_lags: numpy.ndarray
@@ -156,29 +158,38 @@ class CrossCorrelation(object):
 
         return self.time_shift, self.time_lags, self.n
 
-    def plot(self, labels=None, axis=None, title=None, marker='-', save=False, filename=None):
+    def plot(self, labels=None, axis=None, title=None, marker='-', save=False, filename=None, ax=None):
         """
         Plot the :class:`Crosscorrelation` as function using Matplotlib.
         Plot the Crosscorrelation object on a graph ``self.time_lags`` on x-axis and
         ``self.corr`` on y-axis
+
         Parameters
         ----------
         labels : iterable, default None
             A list of tuple with xlabel and ylabel as strings.
+
         axis : list, tuple, string, default None
             Parameter to set axis properties of Matplotlib figure. For example
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
             acceptable argument for `matplotlib.pyplot.axis()` function.
+
         title : str, default None
             The title of the plot.
+
         marker : str, default '-'
             Line style and color of the plot. Line styles and colors are
             combined in a single format string, as in ``'bo'`` for blue
             circles. See `matplotlib.pyplot.plot` for more options.
+
         save : boolean, optional (default=False)
             If True, save the figure with specified filename.
+
         filename : str
             File name of the image to save. Depends on the boolean ``save``.
+
+        ax : matplotlib.Axes object
+            An axes object to fill with the cross correlation plot.
         """
 
         try:
@@ -186,11 +197,14 @@ class CrossCorrelation(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        plt.plot(self.time_lags, self.corr, marker)
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6,4))
+
+        ax.plot(self.time_lags, self.corr, marker)
         if labels is not None:
             try:
-                plt.xlabel(labels[0])
-                plt.ylabel(labels[1])
+                ax.set_xlabel(labels[0])
+                ax.set_ylabel(labels[1])
             except TypeError:
                 utils.simon("``labels`` must be either a list or tuple with "
                             "x and y labels.")
@@ -202,17 +216,18 @@ class CrossCorrelation(object):
                 # x-axis will be labelled.
 
         if axis is not None:
-            plt.axis(axis)
+            ax.set_axis(axis)
 
         if title is not None:
-            plt.title(title)
+            axis.set_title(title)
 
         if save:
             if filename is None:
-                plt.savefig('corr.png')
+                plt.savefig('corr.pdf', format="pdf")
             else:
                 plt.savefig(filename)
-        return plt
+
+        return ax
 
 
 class AutoCorrelation(CrossCorrelation):
@@ -220,6 +235,7 @@ class AutoCorrelation(CrossCorrelation):
     Make an auto-correlation from a light curve.
     You can also make an empty Autocorrelation object to populate with your
     own auto-correlation data.
+
     Parameters
     ----------
     lc: lightcurve.Lightcurve object, optional, default None

@@ -188,6 +188,27 @@ class Covariancespectrum(object):
         self._construct_covar()
 
     def _make_reference_bands_from_event_data(self, data, bounds=None):
+        """
+        Helper method constructing reference bands for each band of interest, and constructing
+        light curves from these reference bands. This operates only if the data given to ``Covariancespectrum``
+        is event list data (i.e. photon arrival times and energies).
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            Array of shape (N, 2), where N is the number of photons. First column contains the
+            times of arrivals, second column the corresponding photon energies.
+
+        bounds : iterable
+            The energy bounds to use for the reference band. Must be of type (elow, ehigh).
+
+        Returns
+        -------
+
+        lc_all: list of ``lightcurve.Lightcurve objects``.
+            The list of ``Lightcurve`` objects containing all reference bands, between the values given in ``bounds``.
+
+        """
 
         if not bounds:
             bounds = [np.min(data[:, 1]), np.max(data[:, 1])]
@@ -229,6 +250,22 @@ class Covariancespectrum(object):
         return lc_all
 
     def _make_reference_bands_from_lightcurves(self, bounds=None):
+        '''
+        Helper class to construct reference bands for all light curves in ``band_interest``, assuming the
+        data is given to the class ``Covariancespectrum`` as a (set of) lightcurve(s). Generally sums up all
+        other light curves within ``bounds`` that are *not* the band of interest.
+
+        Parameters
+        ----------
+        bounds : iterable
+            The energy bounds to use for the reference band. Must be of type (elow, ehigh).
+
+        Returns
+        -------
+        lc_all: list of ``lightcurve.Lightcurve objects``.
+            The list of ``Lightcurve`` objects containing all reference bands, between the values given in ``bounds``.
+
+        '''
 
         if not bounds:
             bounds_idx = [0, len(self.band_interest)]
@@ -259,6 +296,9 @@ class Covariancespectrum(object):
         return lc_all
 
     def _construct_covar(self):
+        """
+        Helper method to construct the covariance attribute and fill it with values.
+        """
 
         self.avg_covar = False
         covar = np.zeros(len(self.lcs))
@@ -299,6 +339,21 @@ class Covariancespectrum(object):
         return
 
     def _make_lightcurves(self, data):
+        """
+        Create light curves for all bands of interest from ``data``. Takes the information the ``band_interest``
+        attribute and event data in ``data``, and produces a list of ``lightcurve.Lightcurve`` objects.
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            Array of shape (N, 2), where N is the number of photons. First column contains the
+            times of arrivals, second column the corresponding photon energies.
+
+        Returns
+        -------
+        lc_all : iterable of ``lightcurve.Lightcurve`` objects
+            A list of light curves of all bands of interest.
+        """
 
         self.tstart = np.min(data[:, 0])
         self.tend = np.max(data[:, 0])
@@ -322,6 +377,18 @@ class Covariancespectrum(object):
         return lc_all
 
     def _create_band_interest(self, data):
+        """
+        If no bands of interest are given, but event data is, create bands of interest for each
+        discrete enery value in the second column of ``data``.
+
+        Parameters
+        ----------
+        data : numpy.ndarray
+            Array of shape (N, 2), where N is the number of photons. First column contains the
+            times of arrivals, second column the corresponding photon energies.
+
+
+        """
 
         unique_energy = np.unique(data[:, 1])
         energ_diff = np.diff(unique_energy)
@@ -462,7 +529,9 @@ class AveragedCovariancespectrum(Covariancespectrum):
                                     std=std)
 
     def _construct_covar(self):
-
+        """
+        Helper method to construct the covariance attribute and fill it with values.
+        """
         self.avg_covar = True
 
         start_time = self.lcs[0].time[0]

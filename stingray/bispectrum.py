@@ -103,6 +103,8 @@ class Bispectrum(object):
     def _make_bispetrum(self, lc, maxlag, window, scale):
         """
             Makes a Bispectrum Object with given lighcurve, maxlag and scale.
+
+            Helper method.
         """
 
         if not isinstance(lc, lightcurve.Lightcurve):
@@ -226,7 +228,9 @@ class Bispectrum(object):
     def _normalize_cumulant3(self):
         """
         Scales (biased or ubiased) the 3rd Order cumulant of the lightcurve .
-        Updates:
+
+        Updates
+        -------
         self.cum3
         """
 
@@ -273,7 +277,9 @@ class Bispectrum(object):
     def _cal_bispec(self):
         """
             Calculates bispectrum as a fourier transform of 3rd Order Cumulant.
-            Assigns:
+
+            Assigns
+            -------
             self.freq
             self.bispec
             self.bispec_mag
@@ -293,9 +299,10 @@ class Bispectrum(object):
     def plot_cum3(self, axis=None, save=False, filename=None):
 
         """
-            Plot the 3rd order cumulant as function of time lags using Matplotlib.
+            Plot the 3rd order cumulant as function of time lags using `matplotlib`.
             Plot the self.cum3 on a graph with ``self.lags`` on x-axis and y-axis and
             ``self.cum3`` on z-axis
+
             Parameters
             ----------
             axis : list, tuple, string, default None
@@ -306,6 +313,7 @@ class Bispectrum(object):
                 If True, save the figure with specified filename.
             filename : str
                 File name of the image to save. Depends on the boolean ``save``.
+
             Returns
  +          ---------
             plt : matplotlib.pyplot object
@@ -336,9 +344,10 @@ class Bispectrum(object):
     def plot_mag(self, axis=None, save=False, filename=None):
 
         """
-            Plot the Magnitude of Bispectrum as function of freq using Matplotlib.
+            Plot the magnitude of bispectrum as function of freq using `matplotlib`.
             Plot the self.bispec_mag on a graph with ``self.freq`` on x-axis and y-axis and
-            ``self.bispec_mag`` on z-axis
+            ``self.bispec_mag`` on z-axis.
+
             Parameters
             ----------
             axis : list, tuple, string, default None
@@ -349,6 +358,7 @@ class Bispectrum(object):
                 If True, save the figure with specified filename.
             filename : str
                 File name of the image to save. Depends on the boolean ``save``.
+
             Returns
             ---------
             plt : matplotlib.pyplot object
@@ -378,9 +388,10 @@ class Bispectrum(object):
     def plot_phase(self, axis=None, save=False, filename=None):
 
         """
-            Plot the Phase of Bispectrum as function of freq using Matplotlib.
+            Plot the phase of bispectrum as function of freq using `matplotlib`.
             Plot the self.bispec_phase on a graph with ``self.phase`` on x-axis and y-axis and
-            ``self.bispec_phase`` on z-axis
+            ``self.bispec_phase`` on z-axis.
+
             Parameters
             ----------
             axis : list, tuple, string, default None
@@ -391,6 +402,7 @@ class Bispectrum(object):
                 If True, save the figure with specified filename.
             filename : str
                 File name of the image to save. Depends on the boolean ``save``.
+
             Returns
  +          ---------
             plt : matplotlib.pyplot object

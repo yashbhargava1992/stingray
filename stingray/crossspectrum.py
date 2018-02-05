@@ -1,5 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
+from itertools import izip
+
 import numpy as np
 import scipy
 import scipy.stats
@@ -21,15 +23,15 @@ def coherence(lc1, lc2):
 
     Parameters
     ----------
-    lc1: lightcurve.Lightcurve object
+    lc1: ``lightcurve.Lightcurve`` object
         The first light curve data for the channel of interest.
 
-    lc2: lightcurve.Lightcurve object
+    lc2: ``lightcurve.Lightcurve`` object
         The light curve data for reference band
 
     Returns
     -------
-    coh : np.ndarray
+    coh : ``np.ndarray``
         Coherence function
     """
 
@@ -131,16 +133,35 @@ class Crossspectrum(object):
         self.lc2 = lc2
 
         self._make_crossspectrum(lc1, lc2)
+
         # These are needed to calculate coherence
         self._make_auxil_pds(lc1, lc2)
 
     def _make_auxil_pds(self, lc1, lc2):
+        """
+        Helper method to create the power spectrum of both light curves independently.
+
+        Parameters
+        ----------
+        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+            Two light curves used for computing the cross spectrum.
+        """
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
             self.pds1 = Crossspectrum(lc1, lc1, norm='none')
             self.pds2 = Crossspectrum(lc2, lc2, norm='none')
 
     def _make_crossspectrum(self, lc1, lc2):
+        """
+        Auxiliary method computing the normalized cross spectrum from two light curves.
+        This includes checking for the presence of and applying Good Time Intervals, computing the
+        unnormalized Fourier cross-amplitude, and then renormalizing using the required normalization.
+        Also computes an uncertainty estimate on the cross spectral powers.
 
+        Parameters
+        ----------
+        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+            Two light curves used for computing the cross spectrum.
+        """
         # make sure the inputs work!
         if not isinstance(lc1, Lightcurve):
             raise TypeError("lc1 must be a lightcurve.Lightcurve object")
@@ -572,6 +593,14 @@ class AveragedCrossspectrum(Crossspectrum):
         return
 
     def _make_auxil_pds(self, lc1, lc2):
+        """
+        Helper method to create the power spectrum of both light curves independently.
+
+        Parameters
+        ----------
+        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+            Two light curves used for computing the cross spectrum.
+        """
         # A way to say that this is actually not a power spectrum
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
             self.pds1 = AveragedCrossspectrum(lc1, lc1,
@@ -582,6 +611,27 @@ class AveragedCrossspectrum(Crossspectrum):
                                               norm='none', gti=lc2.gti)
 
     def _make_segment_spectrum(self, lc1, lc2, segment_size):
+        """
+        Split the light curves into segments of size ``segment_size``, and calculate a cross spectrum for
+        each.
+
+        Parameters
+        ----------
+        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+            Two light curves used for computing the cross spectrum.
+
+        segment_size : ``numpy.float``
+            Size of each light curve segment to use for averaging.
+
+        Returns
+        -------
+        cs_all : list of `crossspectrum.Crossspectrum`` objects
+            A list of cross spectra calculated independently from each light curve segment
+
+        nphots1_all, nphots2_all : ``numpy.ndarray` for each of ``lc1`` and ``lc2``
+            Two lists containing the number of photons for all segments calculated from ``lc1`` and ``lc2``.
+
+        """
 
         # TODO: need to update this for making cross spectra.
         assert isinstance(lc1, Lightcurve)
@@ -637,9 +687,21 @@ class AveragedCrossspectrum(Crossspectrum):
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
             nphots2_all.append(np.sum(lc2_seg.counts))
+
         return cs_all, nphots1_all, nphots2_all
 
     def _make_crossspectrum(self, lc1, lc2):
+        """
+        Auxiliary method computing the normalized cross spectrum from two light curves.
+        This includes checking for the presence of and applying Good Time Intervals, computing the
+        unnormalized Fourier cross-amplitude, and then renormalizing using the required normalization.
+        Also computes an uncertainty estimate on the cross spectral powers.
+
+        Parameters
+        ----------
+        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+            Two light curves used for computing the cross spectrum.
+        """
 
         # chop light curves into segments
         if isinstance(lc1, Lightcurve) and \
@@ -658,9 +720,8 @@ class AveragedCrossspectrum(Crossspectrum):
 
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
-            # TODO: should be using izip from iterables if lc1 or lc2 could
-            # be long
-            for lc1_seg, lc2_seg in zip(lc1, lc2):
+
+            for lc1_seg, lc2_seg in izip(lc1, lc2):
 
                 if self.type == "crossspectrum":
                     cs_sep, nphots1_sep, nphots2_sep = \
@@ -725,8 +786,8 @@ class AveragedCrossspectrum(Crossspectrum):
 
         Returns
         -------
-        tuple : tuple of np.ndarray
-            Tuple of coherence function and uncertainty.
+        (coh, uncertainty) : tuple of np.ndarray
+            Tuple comprising the coherence function and uncertainty.
 
         References
         ----------
@@ -773,4 +834,5 @@ class AveragedCrossspectrum(Crossspectrum):
         coh, uncert = self.coherence()
         dum = (1. - coh) / (2. * coh)
         lag_err = np.sqrt(dum / self.m) / (2 * np.pi * self.freq)
+        
         return lag, lag_err

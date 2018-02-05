@@ -121,7 +121,6 @@ class Lightcurve(object):
         It propagates to Spectrum classes.
 
     """
-
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None):
 
