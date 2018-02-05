@@ -209,7 +209,7 @@ class Lightcurve(object):
 
 
     def change_mjdref(self, new_mjdref):
-        """Change the MJDREF of the light curve.
+        """Change the MJD reference time (MJDREF) of the light curve.
 
         Times will be now referred to this new MJDREF
 
@@ -217,6 +217,11 @@ class Lightcurve(object):
         ----------
         new_mjdref : float
             New MJDREF
+
+        Returns
+        -------
+        new_lc : lightcurve.Lightcurve object
+            The new LC shifted by MJDREF
         """
         time_shift = (new_mjdref - self.mjdref) * 86400
 
@@ -231,7 +236,14 @@ class Lightcurve(object):
         Parameters
         ----------
         time_shift: float
-            The amount of time that the light curve will be shifted
+            The time interval by which the light curve will be shifted (in
+            the same units as the time array in `Lightcurve`
+
+        Returns
+        -------
+        new_lc : lightcurve.Lightcurve object
+            The new LC shifted by ``time_shift``
+
         """
         new_lc = Lightcurve(self.time + time_shift, self.counts,
                             gti=self.gti + time_shift, mjdref=self.mjdref)
@@ -243,6 +255,24 @@ class Lightcurve(object):
         return new_lc
 
     def _operation_with_other_lc(self, other, operation):
+        """
+        Helper method to codify an operation of one light curve with another (e.g. add, subtract, ...).
+        Takes into account the GTIs correctly, and returns a new `Lightcurve` object.
+
+        Parameters
+        ----------
+        other : Lightcurve object
+            A second light curve object
+
+        operation : function
+            An operation between the `Lightcurve` object calling this method, and `other`,
+            operating on the `counts` attribute in each `Lightcurve` object
+
+        Returns
+        -------
+        lc_new : Lightcurve object
+            The new light curve calculated in `operation`
+        """
         if self.mjdref != other.mjdref:
             raise ValueError("MJDref is different in the two light curves")
 
@@ -467,6 +497,12 @@ class Lightcurve(object):
             light curve, but it goes below the light curve. Setting align to
             True, an additional step is done to shift the baseline so that it
             is shifted to the middle of the light curve noise distribution.
+
+
+        Returns
+        -------
+        baseline : numpy.ndarray
+            An array with the baseline of the light curve
         """
         baseline = np.zeros_like(self.time)
         for g in self.gti:
@@ -483,7 +519,9 @@ class Lightcurve(object):
                         use_hist=False):
 
         """
-        Make a light curve out of photon arrival times.
+        Make a light curve out of photon arrival times, with a given time resolution `dt`.
+        Note that `dt` should be larger than the native time resolution of the instrument
+        that has taken the data.
 
         Parameters
         ----------
@@ -770,6 +808,12 @@ class Lightcurve(object):
             the values are treated as indices of the counts array, or
             if set to "time", the values are treated as actual time values.
 
+        Returns
+        -------
+        lc_new: :class:`Lightcurve` object
+            The :class:`Lightcurve` object with truncated time and counts
+            arrays.
+
         Examples
         --------
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -788,11 +832,6 @@ class Lightcurve(object):
         >>> lc_new.counts
         array([60, 70, 80, 90])
 
-        Returns
-        -------
-        lc_new: :class:`Lightcurve` object
-            The :class:`Lightcurve` object with truncated time and counts
-            arrays.
         """
 
         if not isinstance(method, str):
@@ -821,7 +860,21 @@ class Lightcurve(object):
                           dt=self.dt)
 
     def _truncate_by_time(self, start, stop):
-        """Private method for truncation using time values."""
+        """Helper method for truncation using time values.
+
+        Parameters
+        ----------
+        start : float
+            start time for new light curve; all time bins before this time will be discarded
+
+        stop : float
+            stop time for new light curve; all time bins after this point will be discarded
+
+        Returns:
+            new_lc : Lightcurve
+                A new `Lightcurve` object with the truncated time bins
+
+        """
 
         if stop is not None:
             if start > stop:
@@ -848,6 +901,12 @@ class Lightcurve(object):
         reverse : boolean, default False
             If True then the object is sorted in reverse order.
 
+        Returns
+        -------
+        lc_new: :class:`Lightcurve` object
+            The :class:`Lightcurve` object with truncated time and counts
+            arrays.
+
         Examples
         --------
         >>> time = [1, 2, 3]
@@ -859,11 +918,6 @@ class Lightcurve(object):
         >>> lc.time
         array([2, 1, 3])
 
-        Returns
-        -------
-        lc_new: :class:`Lightcurve` object
-            The :class:`Lightcurve` object with truncated time and counts
-            arrays.
         """
 
         new_counts, new_time, new_counts_err = zip(*sorted(zip(self.counts, self.time, self.counts_err) , reverse=reverse))
@@ -923,12 +977,12 @@ class Lightcurve(object):
         return chunk_length
 
     def analyze_lc_chunks(self, chunk_length, func, fraction_step=1, **kwargs):
-        """Analyze chunks of the light curve with any function.
+        """Analyze segments of the light curve with any function.
 
         Parameters
         ----------
         chunk_length : float
-            Length in seconds of the light curve chunks
+            Length in seconds of the light curve segments
         func : function
             Function accepting a `Lightcurve` object as single argument, plus
             possible additional keyword arguments, and returning a number or a
@@ -948,11 +1002,11 @@ class Lightcurve(object):
         Returns
         -------
         start_times : array
-            Lower time boundaries of all chunks.
+            Lower time boundaries of all time segments.
         stop_times : array
-            Higher time boundaries of all chunks.
+            Higher time boundaries of all segments.
         result : array of N elements
-            The result of `func` for each chunk of the light curve
+            The result of `func` for each segment of the light curve
 
         Examples
         --------
@@ -962,7 +1016,7 @@ class Lightcurve(object):
         >>> lc = Lightcurve(time, counts)
         >>> # Define a function that calculates the mean
         >>> mean_func = lambda x: np.mean(x)
-        >>> # Calculate the mean in chunks of 5 seconds
+        >>> # Calculate the mean in segments of 5 seconds
         >>> start, stop, res = lc.analyze_lc_chunks(5, mean_func)
         >>> len(res) == 2
         True
@@ -994,10 +1048,10 @@ class Lightcurve(object):
     def plot(self, witherrors=False, labels=None, axis=None, title=None,
              marker='-', save=False, filename=None):
         """
-        Plot the Lightcurve using Matplotlib.
+        Plot the light curve using ``matplotlib``.
 
-        Plot the Lightcurve object on a graph ``self.time`` on x-axis and
-        ``self.counts`` on y-axis with ``self.counts_err`` optionaly
+        Plot the light curve object on a graph ``self.time`` on x-axis and
+        ``self.counts`` on y-axis with ``self.counts_err`` optionally
         as error bars.
 
         Parameters
@@ -1069,12 +1123,15 @@ class Lightcurve(object):
 
     def write(self, filename, format_='pickle', **kwargs):
         """
-        Exports LightCurve object.
+        Write a `Lightcurve` object to file. Currently supported formats are
+            * pickle (not recommended for long-term storage)
+            * HDF5
+            * ASCII
 
         Parameters
         ----------
         filename: str
-            Name of the LightCurve object to be created.
+            Path and file name for the output file.
 
         format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
@@ -1095,12 +1152,15 @@ class Lightcurve(object):
 
     def read(self, filename, format_='pickle'):
         """
-        Imports LightCurve object.
+        Read a `Lightcurve` object from file. Currently supported formats are
+            * pickle (not recommended for long-term storage)
+            * HDF5
+            * ASCII
 
         Parameters
         ----------
         filename: str
-            Name of the LightCurve object to be read.
+            Path and file name for the file to be read.
 
         format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
@@ -1123,7 +1183,13 @@ class Lightcurve(object):
 
     def split_by_gti(self):
         """
-        Splits the `LightCurve` into a list of `LightCurve`s , using GTIs.
+        Split the current `Lightcurve` object into a list of `Lightcurve` objects, one
+        for each continuous GTI segment as defined in the `gti` attribute.
+
+        Returns
+        -------
+        list_of_lcs : list
+            A list of Lightcurve objects, one for each GTI segment
         """
         list_of_lcs = []
 
@@ -1141,7 +1207,11 @@ class Lightcurve(object):
         return list_of_lcs
 
     def _apply_gtis(self):
-        """Apply GTIs to a light curve after modification."""
+        """
+        Apply GTIs to a light curve. Filters the `time`, `counts`, `countrate`, `counts_err` and
+        `countrate_err` arrays for all bins that fall into Good Time Intervals and recalculates mean
+        count(rate) and the number of bins.
+        """
         check_gtis(self.gti)
 
         good = create_gti_mask(self.time, self.gti, dt=self.dt)
