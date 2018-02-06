@@ -95,6 +95,7 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
     ----------
     times : array-like
         the event arrival times
+
     frequencies : array-like
         the trial values for the frequencies
 
@@ -102,16 +103,21 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
     ----------------
     nbin : int
         the number of bins of the folded profiles
+
     segment_size : float
         the length of the segments to be averaged in the periodogram
+
     fdots : array-like
         trial values of the first frequency derivative (optional)
+
     expocorr : bool
         correct for the exposure (Use it if the period is comparable to the
         length of the good time intervals). If True, GTIs have to be specified
         via the ``gti`` keyword
+
     gti : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good time intervals
+
     weights : array-like
         weight for each time. This might be, for example, the number of counts
         if the times array contains the time bins of a light curve
@@ -155,6 +161,7 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
     ----------
     times : array-like
         the event arrival times
+
     frequencies : array-like
         the trial values for the frequencies
 
@@ -162,15 +169,20 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
     ----------------
     nbin : int
         the number of bins of the folded profiles
+
     segment_size : float
         the length of the segments to be averaged in the periodogram
+
     fdots : array-like
         trial values of the first frequency derivative (optional)
+
     expocorr : bool
         correct for the exposure (Use it if the period is comparable to the
         length of the good time intervals.)
+
     gti : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good time intervals
+
     weights : array-like
         weight for each time. This might be, for example, the number of counts
         if the times array contains the time bins of a light curve
@@ -205,10 +217,23 @@ def search_best_peaks(x, stat, threshold):
     ----------
     x : array-like
         The x axis of the periodogram (frequencies, periods, ...)
+
     stat : array-like
         The y axis. It must have the same shape as x
+
     threshold : float
         The threshold value over which we look for peaks in the stat array
+
+    Returns
+    -------
+    best_x : array-like
+        the array containing the x position of the peaks above threshold. If no
+        peaks are above threshold, an empty list is returned. The array is
+        sorted by inverse value of stat
+
+    best_stat : array-like
+        for each best_x, give the corresponding stat value. Empty if no peaks
+        above threshold.
 
     Examples
     --------
@@ -235,15 +260,6 @@ def search_best_peaks(x, stat, threshold):
     >>> best_stat
     []
 
-    Returns
-    -------
-    best_x : array-like
-        the array containing the x position of the peaks above threshold. If no
-        peaks are above threshold, an empty list is returned. The array is
-        sorted by inverse value of stat
-    best_stat : array-like
-        for each best_x, give the corresponding stat value. Empty if no peaks a
-        bove threshold.
     """
     stat = np.asarray(stat)
     x = np.asarray(x)
@@ -275,6 +291,7 @@ def plot_profile(phase, profile, err=None, ax=None):
     ----------
     phase : array-like
         The bins on the x-axis
+
     profile : array-like
         The pulsed profile
 
@@ -319,8 +336,10 @@ def plot_phaseogram(phaseogram, phase_bins, time_bins, unit_str='s', ax=None,
     ----------
     phaseogram : NxM array
         The phaseogram to be plotted
+
     phase_bins : array of M + 1 elements
         The bins on the x-axis
+
     time_bins : array of N + 1 elements
         The bins on the y-axis
 
@@ -328,8 +347,10 @@ def plot_phaseogram(phaseogram, phase_bins, time_bins, unit_str='s', ax=None,
     ----------------
     unit_str : str
         String indicating the time unit (e.g. 's', 'MJD', etc)
+
     ax : `matplotlib.pyplot.axis` instance
         Axis to plot to. If None, create a new one.
+
     plot_kwargs : dict
         Additional arguments to be passed to pcolormesh
 
@@ -367,6 +388,7 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
     ----------
     times : array
         Event arrival times
+
     f : float
         Pulse frequency
 
@@ -374,23 +396,31 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
     ----------------
     nph : int
         Number of phase bins
+
     nt : int
         Number of time bins
+
     ph0 : float
         The starting phase of the pulse
+
     mjdref : float
         MJD reference time. If given, the y axis of the plot will be in MJDs,
         otherwise it will be in seconds.
+
     fdot : float
         First frequency derivative
+
     fddot : float
         Second frequency derivative
+
     pepoch : float
         If the input pulse solution is referred to a given time, give it here.
         It has no effect (just a phase shift of the pulse) if `fdot` is zero.
         if `mjdref` is specified, pepoch MUST be in MJD
+
     weights : array
         Weight for each time
+
     plot : bool
         Return the axes in the additional_info, and don't close the plot, so
         that the user can add information to it.
@@ -399,12 +429,15 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
     -------
     phaseogr : 2-D matrix
         The phaseogram
+
     phases : array-like
         The x axis of the phaseogram (the x bins of the histogram),
         corresponding to the pulse phase in each column
+
     times : array-like
         The y axis of the phaseogram (the y bins of the histogram),
         corresponding to the time at each row
+
     additional_info : dict
         Additional information, like the pulse profile and the axes to modify
         the plot (the latter, only if `return_plot` is True)
