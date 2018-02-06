@@ -435,24 +435,6 @@ def _fft_fun_wrap(pars, data):
     return fftfit_fun(profile, template, amplitude, phase)
 
 
-def _triple_sinusoid_model(phase, a0, ph, a1, ph1, a2, ph2):
-    twopi = np.pi * 2
-    return a0 * np.cos(twopi * (phase - ph)) + \
-        a1 * np.cos(twopi * (2 * (phase - ph - ph1))) + \
-        a2 * np.cos(twopi * (3 * (phase - ph - ph2)))
-
-
-def _pulse_template(phase, prof):
-    pres, pcov = curve_fit(_triple_sinusoid_model, phase, prof)
-
-    template = _triple_sinusoid_model(phase, *pres)
-
-    fine_phase = np.arange(0, 1, 0.0001)
-    fine_template = _triple_sinusoid_model(fine_phase, *pres)
-    additional_phase = fine_phase[np.argmax(fine_template)]
-    return template, additional_phase
-
-
 def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
            **fftfit_kwargs):
     """Align a template to a pulse profile.
@@ -480,8 +462,6 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
         Additional arguments to be passed to error calculation
     """
     prof = prof - np.mean(prof)
-    if sigma is None:
-        sigma = np.sqrt(prof)
 
     nbin = len(prof)
 
