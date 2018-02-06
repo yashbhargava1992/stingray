@@ -470,11 +470,8 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
         template = np.cos(2 * np.pi * ph)
     template = template - np.mean(template)
 
-    dph = np.float((np.argmax(prof) - np.argmax(template) - 0.2) / nbin)
-    while dph > 0.5:
-        dph -= 1.
-    while dph < -0.5:
-        dph += 1.
+    dph = normalize_phase_0d5(
+        float((np.argmax(prof) - np.argmax(template) - 0.2) / nbin))
 
     if quick:
         min_chisq = 1e32
@@ -502,10 +499,7 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
                            niter=1000,
                            niter_success=200).lowest_optimization_result
 
-    while res.x[1] > 0.5:
-        res.x[1] -= 1.
-    while res.x[1] < -0.5:
-        res.x[1] += 1.
+    res.x[1] = normalize_phase_0d5(res.x[1])
 
     if not use_bootstrap:
         return res.x[0], 0, res.x[1], 0.5 / nbin
@@ -513,6 +507,27 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
         mean_amp, std_amp, mean_ph, std_ph = \
             fftfit_error(template, sigma=mad(np.diff(prof)), **fftfit_kwargs)
         return res.x[0] + mean_amp, std_amp, res.x[1] + mean_ph, std_ph
+
+
+def normalize_phase_0d5(phase):
+    """Normalize phase between -0.5 and 0.5
+
+    Examples
+    --------
+    >>> normalize_phase_0d5(0.5)
+    0.5
+    >>> normalize_phase_0d5(-0.5)
+    0.5
+    >>> normalize_phase_0d5(4.25)
+    0.25
+    >>> normalize_phase_0d5(-3.25)
+    -0.25
+    """
+    while phase > 0.5:
+        phase -= 1
+    while phase <= -0.5:
+        phase += 1
+    return phase
 
 
 def fftfit_error(template, sigma=None, **fftfit_kwargs):
@@ -561,11 +576,8 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
                        options={'maxiter': 10000})
 
         amp_fit[i] = res.x[0]
-        while res.x[1] > 0.5:
-            res.x[1] -= 1
-        while res.x[1] < -0.5:
-            res.x[1] += 1
-        ph_fit[i] = res.x[1]
+
+        ph_fit[i] = normalize_phase_0d5(res.x[1])
 
     std_save = 1e32
     # avoid problems if phase around 0 or 1: shift, calculate std,
