@@ -154,7 +154,9 @@ def set_logprior(lpost, priors):
 class LogLikelihood(object):
     """
 
-    TODO: Finish docstring!
+    Abstract Base Class defining the structure of a `LogLikelihood` object.
+    This class cannot be called itself, since each statistical distribution
+    has its own definition for the likelihood, which should occur in subclasses.
 
     x : iterable
         x-coordinate of the data. Could be multi-dimensional.
@@ -191,7 +193,13 @@ class LogLikelihood(object):
 
 class GaussianLogLikelihood(LogLikelihood):
     """
-    A Gaussian likelihood.
+    Likelihood for data with Gaussian uncertainties.
+    Astronomers also call this likelihood `Chi-Squared`, but be aware
+    that this has *nothing* to do with the likelihood based on the
+    Chi-square distribution, which is also defined as a subclass of
+    `LogLikelihood` in this module!
+
+    Use this class here whenever your data has Gaussian uncertainties.
 
     Parameters
     ----------
@@ -207,6 +215,22 @@ class GaussianLogLikelihood(LogLikelihood):
     model : an Astropy Model instance
         The model to use in the likelihood.
 
+    Attributes
+    ----------
+    x : iterable
+        x-coordinate of the data
+
+    y : iterable
+        y-coordinte of the data
+
+    yerr : iterable
+        the uncertainty on the data, as standard deviation
+
+    model : an Astropy Model instance
+        The model to use in the likelihood.
+
+    npar : int
+        The number of free parameters in the model
     """
 
     def __init__(self, x, y, yerr, model):
@@ -223,6 +247,29 @@ class GaussianLogLikelihood(LogLikelihood):
 
 
     def evaluate(self, pars, neg=False):
+        """
+        Evaluate the Gaussian log-likelihood for a given set of parameters.
+
+        Parameters
+        ----------
+        pars : numpy.ndarray
+            An array of parameters at which to evaluate the model
+            and subsequently the log-likelihood. Note that the
+            length of this array must match the free parameters in
+            `model`, i.e. `npar`
+
+        neg : bool, optional, default False
+            If True, return the *negative* log-likelihood, i.e.
+            `-loglike`, rather than `loglike`. This is useful e.g.
+            for optimization routines, which generally minimize
+            functions.
+
+        Returns
+        -------
+        loglike : float
+            The log(likelihood) value for the data and model.
+
+        """
         if np.size(pars) != self.npar:
             raise IncorrectParameterError("Input parameters must" +
                                           " match model parameters!")
@@ -245,7 +292,8 @@ class GaussianLogLikelihood(LogLikelihood):
 
 class PoissonLogLikelihood(LogLikelihood):
     """
-    A Poisson likelihood.
+    Likelihood for data with uncertainties following a Poisson distribution.
+    This is useful e.g. for (binned) photon count data.
 
     Parameters
     ----------
@@ -258,8 +306,23 @@ class PoissonLogLikelihood(LogLikelihood):
     model : an Astropy Model instance
         The model to use in the likelihood.
 
-    """
+    Attributes
+    ----------
+    x : iterable
+        x-coordinate of the data
 
+    y : iterable
+        y-coordinte of the data
+
+    yerr : iterable
+        the uncertainty on the data, as standard deviation
+
+    model : an Astropy Model instance
+        The model to use in the likelihood.
+
+    npar : int
+        The number of free parameters in the model
+    """
     def __init__(self, x, y, model):
 
         self.x = x
@@ -271,7 +334,29 @@ class PoissonLogLikelihood(LogLikelihood):
                 self.npar += 1
 
     def evaluate(self, pars, neg=False):
+        """
+        Evaluate the log-likelihood for a given set of parameters.
 
+        Parameters
+        ----------
+        pars : numpy.ndarray
+            An array of parameters at which to evaluate the model
+            and subsequently the log-likelihood. Note that the
+            length of this array must match the free parameters in
+            `model`, i.e. `npar`
+
+        neg : bool, optional, default False
+            If True, return the *negative* log-likelihood, i.e.
+            `-loglike`, rather than `loglike`. This is useful e.g.
+            for optimization routines, which generally minimize
+            functions.
+
+        Returns
+        -------
+        loglike : float
+            The log(likelihood) value for the data and model.
+
+        """
         if np.size(pars) != self.npar:
             raise IncorrectParameterError("Input parameters must" +
                                           " match model parameters!")
@@ -294,7 +379,10 @@ class PoissonLogLikelihood(LogLikelihood):
 
 class PSDLogLikelihood(LogLikelihood):
     """
-    A Chi-Square likelihood for the periodogram.
+    A likelihood based on the Chi-square distribution, appropriate for modelling
+    (averaged) power spectra. Note that this is *not* the same as the statistic
+    astronomers commonly call `Chi-Square`, which is a fit statistic derived from
+    the Gaussian log-likelihood, defined elsewhere in this module.
 
     Parameters
     ----------
@@ -311,6 +399,22 @@ class PSDLogLikelihood(LogLikelihood):
     m : int
         1/2 of the degrees of freedom
 
+    Attributes
+    ----------
+    x : iterable
+        x-coordinate of the data
+
+    y : iterable
+        y-coordinte of the data
+
+    yerr : iterable
+        the uncertainty on the data, as standard deviation
+
+    model : an Astropy Model instance
+        The model to use in the likelihood.
+
+    npar : int
+        The number of free parameters in the model
     """
 
     def __init__(self, freq, power, model, m=1):
@@ -324,7 +428,29 @@ class PSDLogLikelihood(LogLikelihood):
                 self.npar += 1
 
     def evaluate(self, pars, neg=False):
+        """
+        Evaluate the log-likelihood for a given set of parameters.
 
+        Parameters
+        ----------
+        pars : numpy.ndarray
+            An array of parameters at which to evaluate the model
+            and subsequently the log-likelihood. Note that the
+            length of this array must match the free parameters in
+            `model`, i.e. `npar`
+
+        neg : bool, optional, default False
+            If True, return the *negative* log-likelihood, i.e.
+            `-loglike`, rather than `loglike`. This is useful e.g.
+            for optimization routines, which generally minimize
+            functions.
+
+        Returns
+        -------
+        loglike : float
+            The log(likelihood) value for the data and model.
+
+        """
         if np.size(pars) != self.npar:
             raise IncorrectParameterError("Input parameters must" +
                                           " match model parameters!")
@@ -373,6 +499,22 @@ class LaplaceLogLikelihood(LogLikelihood):
     yerr : iterable
         Array with the uncertainties on `y`, in standard deviation
 
+    Attributes
+    ----------
+    x : iterable
+        x-coordinate of the data
+
+    y : iterable
+        y-coordinte of the data
+
+    yerr : iterable
+        the uncertainty on the data, as standard deviation
+
+    model : an Astropy Model instance
+        The model to use in the likelihood.
+
+    npar : int
+        The number of free parameters in the model
     """
 
     def __init__(self, x, y, yerr, model):
@@ -385,6 +527,28 @@ class LaplaceLogLikelihood(LogLikelihood):
                 self.npar += 1
 
     def evaluate(self, pars, neg=False):
+        """
+        Evaluate the log-likelihood for a given set of parameters.
+
+        Parameters
+        ----------
+        pars : numpy.ndarray
+            An array of parameters at which to evaluate the model
+            and subsequently the log-likelihood. Note that the
+            length of this array must match the free parameters in
+            `model`, i.e. `npar`
+
+        neg : bool, optional, default False
+            If True, return the *negative* log-likelihood, i.e.
+            `-loglike`, rather than `loglike`. This is useful e.g.
+            for optimization routines, which generally minimize
+            functions.
+
+        Returns
+        -------
+        loglike : float
+            The log(likelihood) value for the data and model.
+        """
 
         if np.size(pars) != self.npar:
             raise IncorrectParameterError("Input parameters must" +
@@ -447,7 +611,6 @@ class Posterior(object):
 
     References
     ----------
-
     * Sivia, D. S., and J. Skilling. "Data Analysis:
         A Bayesian Tutorial. 2006."
     * Gelman, Andrew, et al. Bayesian data analysis. Vol. 2. Boca Raton,
@@ -471,6 +634,33 @@ class Posterior(object):
                 self.npar += 1
 
     def logposterior(self, t0, neg=False):
+        """
+        Definition of the log-posterior.
+        Requires methods `loglikelihood` and `logprior` to both
+        be defined.
+
+        Note that `loglikelihood` is set in the subclass of `Posterior`
+        appropriate for your problem at hand, as is `logprior`.
+
+        Parameters
+        ----------
+        t0 : numpy.ndarray
+            An array of parameters at which to evaluate the model
+            and subsequently the log-posterior. Note that the
+            length of this array must match the free parameters in
+            `model`, i.e. `npar`
+
+        neg : bool, optional, default False
+            If True, return the *negative* log-posterior, i.e.
+            `-lpost`, rather than `lpost`. This is useful e.g.
+            for optimization routines, which generally minimize
+            functions.
+
+        Returns
+        -------
+        lpost : float
+            The value of the log-posterior for the given parameters `t0`
+        """
 
         if not hasattr(self, "logprior"):
             raise PriorUndefinedError("There is no prior implemented. " +
@@ -569,8 +759,6 @@ class PoissonPosterior(Posterior):
     """
     Posterior for Poisson lightcurve data. Primary intended use is for
     modelling X-ray light curves, but alternative uses are conceivable.
-
-    TODO: Include astropy.modeling models
 
     Parameters
     ----------
