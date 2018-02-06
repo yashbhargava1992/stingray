@@ -439,7 +439,7 @@ class TestLightcurve(object):
         assert np.all(lc[::2].gti == [[0.5, 1.5], [2.5, 3.5]])
         assert np.all(lc[:].gti == lc.gti)
         assert lc[:].mjdref == lc.mjdref
-
+        assert lc[::2].n == 2
 
     def test_slicing_index_error(self):
         lc = Lightcurve(self.times, self.counts)

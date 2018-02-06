@@ -180,10 +180,13 @@ class Lightcurve(object):
             np.asarray(assign_value_if_none(gti,
                                             [[self.tstart,
                                               self.tstart + self.tseg]]))
+
         check_gtis(self.gti)
-        good = create_gti_mask(self.time, self.gti)
+
+        good = create_gti_mask(self.time, self.gti, dt=self.dt)
 
         self.time = self.time[good]
+
         if input_counts:
             self.counts = np.asarray(counts)[good]
             self.countrate = self.counts / self.dt
@@ -201,7 +204,13 @@ class Lightcurve(object):
 
         # Issue a warning if the input time iterable isn't regularly spaced,
         # i.e. the bin sizes aren't equal throughout.
-        dt_array = np.diff(self.time)
+        dt_array = []
+        for g in self.gti:
+            mask = create_gti_mask(self.time, [g], dt=self.dt)
+            t = self.time[mask]
+            dt_array.extend(np.diff(t))
+        dt_array = np.asarray(dt_array)
+
         if not (np.allclose(dt_array, np.repeat(self.dt, dt_array.shape[0]))):
             simon("Bin sizes in input time array aren't equal throughout! "
                   "This could cause problems with Fourier transforms. "
@@ -247,8 +256,8 @@ class Lightcurve(object):
             raise ValueError("MJDref is different in the two light curves")
 
         common_gti = cross_two_gtis(self.gti, other.gti)
-        mask_self = create_gti_mask(self.time, common_gti)
-        mask_other = create_gti_mask(other.time, common_gti)
+        mask_self = create_gti_mask(self.time, common_gti, dt=self.dt)
+        mask_other = create_gti_mask(other.time, common_gti, dt=other.dt)
 
         # ValueError is raised by Numpy while asserting np.equal over arrays
         # with different dimensions.
@@ -411,6 +420,7 @@ class Lightcurve(object):
 
             new_counts = self.counts[start:stop:step]
             new_time = self.time[start:stop:step]
+
             new_gti = [[self.time[start] - 0.5 * self.dt,
                         self.time[stop - 1] + 0.5 * self.dt]]
             new_gti = np.asarray(new_gti)
@@ -420,8 +430,9 @@ class Lightcurve(object):
                 new_gti = cross_two_gtis(new_gti, new_gt1)
 
             new_gti = cross_two_gtis(self.gti, new_gti)
+
             return Lightcurve(new_time, new_counts, mjdref=self.mjdref,
-                              gti=new_gti)
+                              gti=new_gti, dt=self.dt)
         else:
             raise IndexError("The index must be either an integer or a slice "
                              "object !")
@@ -470,7 +481,7 @@ class Lightcurve(object):
         """
         baseline = np.zeros_like(self.time)
         for g in self.gti:
-            good = create_gti_mask(self.time, [g])
+            good = create_gti_mask(self.time, [g], dt=self.dt)
             _, baseline[good] = \
                 baseline_als(self.time[good], self.counts[good], lam, p,
                              niter, offset_correction=offset_correction,
