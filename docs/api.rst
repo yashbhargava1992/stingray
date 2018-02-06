@@ -127,6 +127,49 @@ AveragedCovariancespectrum
 
 ----
 
+VarEnergySpectrum
+------------------
+Abstract base class for spectral timing products including
+both variability and spectral information.
+
+.. autoclass:: stingray.VarEnergySpectrum
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+RmsEnergySpectrum
+-----------------
+
+.. autoclass:: stingray.RmsEnergySpectrum
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+LagEnergySpectrum
+-----------------
+
+.. autoclass:: stingray.LagEnergySpectrum
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+ExcessVarianceSpectrum
+-----------------
+
+.. autoclass:: stingray.ExcessVarianceSpectrum
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+
 Utilities
 =========
 

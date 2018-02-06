@@ -8,7 +8,7 @@ from abc import ABCMeta, abstractmethod
 import six
 
 
-__all__ == ["VarEnergySpectrum", "RmsEnergySpectrum","LagEnergySpectrum", "ExcessVarianceSpectrum"]
+__all__ = ["VarEnergySpectrum", "RmsEnergySpectrum","LagEnergySpectrum", "ExcessVarianceSpectrum"]
 
 def _decode_energy_specification(energy_spec):
     """Decode the energy specification tuple.
