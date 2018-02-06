@@ -90,6 +90,15 @@ def classical_pvalue(power, nspec):
 def _pavnosigfun(power, nspec):
     """
     Helper function doing the actual calculation of the p-value.
+
+    Parameters
+    ----------
+    power : float
+        The measured candidate power
+
+    nspec : int
+        The number of power spectral bins that were averaged in `power`
+        (note: can be either through averaging spectra or neighbouring bins)
     """
     sum = 0.0
     m = nspec - 1
@@ -117,11 +126,13 @@ def _pavnosigfun(power, nspec):
 
 class Powerspectrum(Crossspectrum):
     """
-    Make a Periodogram (power spectrum) from a (binned) light curve.
-    Periodograms can be Leahy normalized or fractional rms normalized.
-    You can also make an empty Periodogram object to populate with your
+    Make a `Powerspectrum` (also called periodogram) from a (binned) light curve.
+    Periodograms can be normalized by either Leahy normalization, fractional rms
+    normalizaation, absolute rms normalization, or not at all.
+
+    You can also make an empty `Powerspectrum` object to populate with your
     own fourier-transformed data (this can sometimes be useful when making
-    binned periodograms).
+    binned power spectra).
 
     Parameters
     ----------
@@ -129,7 +140,7 @@ class Powerspectrum(Crossspectrum):
         The light curve data to be Fourier-transformed.
 
     norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-        The normaliation of the periodogram to be used. Options are
+        The normaliation of the power spectrum to be used. Options are
         "leahy", "frac", "abs" and "none", default is "frac".
 
     Other Parameters
@@ -142,7 +153,7 @@ class Powerspectrum(Crossspectrum):
     Attributes
     ----------
     norm: {"leahy" | "frac" | "abs" | "none"}
-        the normalization of the periodogram
+        the normalization of the power spectrun
 
     freq: numpy.ndarray
         The array of mid-bin frequencies that the Fourier transform samples
@@ -155,7 +166,7 @@ class Powerspectrum(Crossspectrum):
         The uncertainties of `power`.
         An approximation for each bin given by "power_err= power/Sqrt(m)".
         Where `m` is the number of power averaged in each bin (by frequency
-        binning, or averaging powerspectrum). Note that for a single
+        binning, or averaging power spectrum). Note that for a single
         realization (m=1) the error is equal to the power.
 
     df: float
@@ -176,6 +187,24 @@ class Powerspectrum(Crossspectrum):
         self.nphots = self.nphots1
 
     def rebin(self, df=None, f=None, method="mean"):
+        """
+        Rebin the power spectrum.
+
+        Parameters
+        ----------
+        df: float
+            The new frequency resolution
+
+        Other Parameters
+        ----------------
+        f: float
+            the rebin factor. If specified, it substitutes df with f*self.df
+
+        Returns
+        -------
+        bin_cs = Powerspectrum object
+            The newly binned power spectrum.
+        """
         bin_ps = Crossspectrum.rebin(self, df=df, f=f, method=method)
         bin_ps.nphots = bin_ps.nphots1
 
@@ -183,7 +212,7 @@ class Powerspectrum(Crossspectrum):
 
     def compute_rms(self, min_freq, max_freq, white_noise_offset=0.):
         """
-        Compute the fractional rms amplitude in the periodgram
+        Compute the fractional rms amplitude in the power spectrum
         between two frequencies.
 
         Parameters
@@ -410,7 +439,26 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         return
 
     def _make_segment_spectrum(self, lc, segment_size):
+        """
+        Split the light curves into segments of size ``segment_size``, and calculate a power spectrum for
+        each.
 
+        Parameters
+        ----------
+        lc  : ``lightcurve.Lightcurve`` objects\
+            The input light curve
+
+        segment_size : ``numpy.float``
+            Size of each light curve segment to use for averaging.
+
+        Returns
+        -------
+        power_all : list of `Powerspectrum`` objects
+            A list of power spectra calculated independently from each light curve segment
+
+        nphots_all : ``numpy.ndarray``
+            List containing the number of photons for all segments calculated from ``lc``
+        """
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
@@ -497,7 +545,14 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
-        """Create the matrix with freq and time columns."""
+        """
+        Create a matrix of powers for each time step (rows) and each frequency step (columns).
+
+        Parameters
+        ----------
+        lc : `Lightcurve` object
+            The `Lightcurve` object from which to generate the dynamical power spectrum
+        """
         ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
             self, lc, self.segment_size)
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
@@ -523,7 +578,8 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def rebin_frequency(self, df_new, method="sum"):
         """
-        Rebin the Dynamic Power Spectrum to a new frequency resolution.
+        Rebin the Dynamic Power Spectrum to a new frequency resolution. Rebinning is
+        an in-place operation, i.e. will replace the existing `dyn_ps` attribute.
         While the new resolution need not be an integer multiple of the
         previous frequency resolution, be aware that if it is not, the last
         bin will be cut off by the fraction left over by the integer division.

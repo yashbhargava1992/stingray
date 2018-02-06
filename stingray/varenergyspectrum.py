@@ -11,6 +11,22 @@ import six
 def _decode_energy_specification(energy_spec):
     """Decode the energy specification tuple.
 
+    Parameters
+    ----------
+    energy_spec : iterable
+        list containing the energy specification
+        Must have the following structure:
+            * energy_spec[0]: lower edge of (log) energy space
+            * energy_spec[1]: upper edge of (log) energy space
+            * energy_spec[2] +1 : energy bin edges (hence the +1)
+            * {`lin` | `log`} flat deciding whether the energy space is linear
+              or logarithmic
+
+    Returns
+    -------
+    energies : numpy.ndarray
+        An array of lower/upper bin edges for the energy array
+
     Examples
     --------
     >>> _decode_energy_specification([0, 2, 2, 'lin'])
@@ -114,7 +130,25 @@ class VarEnergySpectrum(object):
         self.spectrum, self.spectrum_error = self._spectrum_function()
 
     def _decide_ref_intervals(self, channel_band, ref_band):
-        """Eliminate channel_band from ref_band."""
+        """
+        Ensures that the `channel_band` (i.e. the band of interest) is
+        not contained within the `ref_band` (i.e. the reference band)
+
+        Parameters
+        ----------
+        channel_band : iterable of type [elow, ehigh]
+            The lower/upper limits of the energies to be contained in the band
+            of interest
+
+        ref_band : iterable
+            The lower/upper limits of the energies in the reference band
+
+        Returns
+        -------
+        ref_intervals : iterable
+            The channels that are both in the reference band in not in the
+            bands of interest
+        """
         channel_band = np.asarray(channel_band)
         ref_band = np.asarray(ref_band)
         if len(ref_band.shape) <= 1:
@@ -129,6 +163,38 @@ class VarEnergySpectrum(object):
 
     def _construct_lightcurves(self, channel_band, tstart=None, tstop=None,
                                exclude=True, only_base=False):
+        """
+        Construct light curves from event data, for each band of interest.
+
+        Parameters
+        ----------
+        channel_band : iterable of type [elow, ehigh]
+            The lower/upper limits of the energies to be contained in the band
+            of interest
+
+        tstart : float, optional, default `None`
+            A common start time (if start of observation is different from
+            the first recorded event)
+
+        tstop : float, optional, default `None`
+            A common stop time (if start of observation is different from
+            the first recorded event)
+
+        exclude : bool, optional, default `True`
+            if True, exclude the band of interest from the reference band
+
+        only_base : bool, optional, default False
+            if True, only return the light curve of the channel of interest, not
+            that of the reference band
+
+        Returns
+        -------
+        base_lc : `Lightcurve` object
+            The light curve of the channels of interest
+
+        ref_lc : `Lightcurve` object (only returned if `only_base` is `False`)
+            The reference light curve for comparison with `base_lc`
+        """
         if self.use_pi:
             energies1 = self.events1.pi
             energies2 = self.events2.pi
@@ -145,7 +211,7 @@ class VarEnergySpectrum(object):
         base_lc = Lightcurve.make_lightcurve(self.events1.time[good],
                                              self.bin_time,
                                              tstart=tstart,
-                                             tseg=tstop - tstart,
+                                             tseg=tstop-tstart,
                                              gti=gti,
                                              mjdref=self.events1.mjdref)
 

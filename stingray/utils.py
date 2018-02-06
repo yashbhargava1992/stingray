@@ -36,7 +36,23 @@ try:
     from statsmodels.robust import mad as mad  # pylint: disable=unused-import
 except ImportError:
     def mad(data, c=0.6745, axis=None):
-        """Straight from statsmodels's source code, adapted"""
+        """
+        Mean Absolute Deviation (MAD) along an axis.
+
+        Straight from statsmodels's source code, adapted
+
+        Parameters
+        ----------
+        data : iterable
+            The data along which to calculate the MAD
+
+        c : float, optional
+            The normalization constant. Defined as scipy.stats.norm.ppf(3/4.),
+            which is approximately .6745.
+
+        axis : int, optional
+            Axis along which to calculate `mad`. Default is 0, can also be `None`
+        """
         data = np.asarray(data)
         if axis is not None:
             center = np.apply_over_axes(np.median, data, axis)
@@ -99,7 +115,6 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     dx: float
         The old resolution (otherwise, calculated from median diff)
-
 
     Returns
     -------
@@ -179,9 +194,10 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
 
 def rebin_data_log(x, y, f, y_err=None, dx=None):
-    """Logarithmic rebin of the periodogram.
+    """Logarithmic rebin of some data. Particularly useful for the power spectrum.
 
-    The new frequency depends on the previous frequency modified by a factor f:
+    The new dependent variable depends on the previous dependent variable modified
+    by a factor f:
 
     dnu_j = dnu_{j-1}*(1+f)
 
@@ -273,15 +289,62 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
 
 def assign_value_if_none(value, default):
+    """
+    Assign a value to a variable if that variable has value `None` on input.
+
+    Parameters
+    ----------
+    value : object
+        A variable with either some assigned value, or `None`
+
+    default : object
+        The value to assign to the variable `value` if `value is None` returns `True`
+
+    Returns
+    -------
+        new_value : object
+            The new value of `value`
+
+    """
     return default if value is None else value
 
 
 def look_for_array_in_array(array1, array2):
+    """
+    Find a subset of values in an array.
+
+    Parameters
+    ----------
+    array1 : iterable
+        An array with values to be searched
+
+    array2 : iterable
+        A second array which potentially contains a subset of values
+        also contained in `array1`
+
+    Returns
+    -------
+    array3 : iterable
+        An array with the subset of values contained in both `array1` and `array2`
+
+    """
     return next((i for i in array1 if i in array2), None)
 
 
 def is_string(s):  # pragma : no cover
-    """Portable function to answer this question."""
+    """
+    Portable function to answer whether a variable is a string.
+
+    Parameters
+    ----------
+    s : object
+        An object that is potentially a string
+
+    Returns
+    -------
+    isstring : bool
+        A boolean decision on whether `s` is a string or not
+    """
 
     PY2 = sys.version_info[0] == 2
     if PY2:
@@ -290,10 +353,20 @@ def is_string(s):  # pragma : no cover
         return isinstance(s, str)  # NOQA
 
 
-def is_iterable(stuff):
-    """Test if stuff is an iterable."""
+def is_iterable(var):
+    """Test if a variable  is an iterable.
 
-    return isinstance(stuff, collections.Iterable)
+    Parameters
+    ----------
+    var : object
+        The variable to be tested for iterably-ness
+
+    Returns
+    -------
+    is_iter : bool
+        Returns True if `var` is an `Iterable`, false otherwise
+    """
+    return isinstance(var, collections.Iterable)
 
 
 def order_list_of_arrays(data, order):
@@ -322,6 +395,20 @@ def optimal_bin_time(fftlen, tbin):
     Given an FFT length and a proposed bin time, return a bin time
     slightly shorter than the original, that will produce a power-of-two number
     of FFT bins.
+
+    Parameters
+    ----------
+    fftlen : int
+        Number of positive frequencies in a proposed Fourier spectrum
+
+    tbin : float
+        The proposed time resolution of a light curve
+
+    Returns
+    -------
+    res : float
+        A time resolution that will produce a Fourier spectrum with `fftlen` frequencies and
+        a number of FFT bins that are a power of two
     """
 
     return fftlen / (2 ** np.ceil(np.log2(fftlen / tbin)))
@@ -595,13 +682,14 @@ def create_window(N, window_type='uniform'):
     """ A method to create window functions commonly used in signal processing.
 
     Windows supported are:
-    Hamming, Hanning, uniform(rectangular window), triangular window, blackmann window among others.
+    Hamming, Hanning, uniform (rectangular window), triangular window, blackmann window among others.
 
     Parameters
     ----------
     N : int
         Total number of data points in window. If negative, abs is taken.
-    window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
+    window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch',
+                   'blackmann', 'flat-top'}, optional, default 'uniform'
         Type of window to create.
 
     Returns
@@ -613,13 +701,13 @@ def create_window(N, window_type='uniform'):
     if not isinstance(N, int):
         raise TypeError('N (window length) must be an integer')
 
-    WINDOWS = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
+    windows = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
 
     if not isinstance(window_type, string_types):
         raise TypeError('type of window must be specified as string!')
 
     window_type = window_type.lower()
-    if window_type not in WINDOWS:
+    if window_type not in windows:
         raise ValueError("Wrong window type specified or window function is not available")
 
     # Return empty array as window if N = 0
@@ -690,6 +778,16 @@ def poisson_symmetrical_errors(counts):
     """Optimized version of frequentist symmetrical errors.
 
     Uses a lookup table in order to limit the calls to poisson_conf_interval
+
+    Parameters
+    ----------
+    counts : iterable
+        An array of Poisson-distributed numbers
+
+    Returns
+    -------
+    err : numpy.ndarray
+        An array of uncertainties associated with the Poisson counts in `counts`
 
     Example
     -------
