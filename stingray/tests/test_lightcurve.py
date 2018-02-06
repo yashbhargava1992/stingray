@@ -581,11 +581,14 @@ class TestLightcurve(object):
         assert lc.mjdref == mjdref
 
     def test_sort_reverse(self):
-        lc = Lightcurve(np.arange(1000), np.random.rand(1000)*100)
-        new_lc = lc[:]
-        new_lc.sort(reverse=True)
-        assert new_lc.counts[0] == max(lc)
-        assert lc[new_lc.time[0]] == max(lc)
+        times = np.arange(1000)
+        counts = np.random.rand(1000)*100
+        lc = Lightcurve(times, counts)
+        lc_1 = lc
+        lc_2 = Lightcurve(np.arange(1000, 2000), np.random.rand(1000)*1000)
+        lc_long = lc_1.join(lc_2)  # Or vice-versa
+        new_lc_long = lc_long[:]  # Copying into a new object
+        assert new_lc_long.n == lc_long.n
 
     def test_plot_matplotlib_not_installed(self):
         try:

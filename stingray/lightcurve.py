@@ -418,7 +418,7 @@ class Lightcurve(object):
                 new_gt1 = np.array(list(zip(new_time - self.dt / 2,
                                             new_time + self.dt / 2)))
                 new_gti = cross_two_gtis(new_gti, new_gt1)
-                new_gti = cross_two_gtis(self.gti, new_gti)
+            new_gti = cross_two_gtis(self.gti, new_gti)
             return Lightcurve(new_time, new_counts, mjdref=self.mjdref,
                               gti=new_gti)
         else:
