@@ -265,7 +265,7 @@ class TestAll(object):
         prof = np.random.poisson(template)
 
         toa, toaerr = \
-            get_TOA(prof, period, tstart,
+            get_TOA(prof, period, tstart, quick=True,
                     template=_template_fun(phases, 0, 1, 0), nstep=200,
                     use_bootstrap=True)
 
