@@ -148,6 +148,11 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     epsilon : float
         fraction of dt that is tolerated at the borders of a GTI
     """
+    if len(time) == 0:
+        raise ValueError("Passing an empty time array to create_gti_mask")
+    if len(gtis) == 0:
+        raise ValueError("Passing an empty GTI array to create_gti_mask")
+
     try:
         from numba import jit
     except ImportError:
