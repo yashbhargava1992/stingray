@@ -7,8 +7,7 @@ import collections
 import copy
 
 from astropy.io import fits
-from .io import assign_value_if_none
-from .utils import contiguous_regions, jit
+from .utils import contiguous_regions, jit, assign_value_if_none
 from stingray.exceptions import StingrayError
 
 
