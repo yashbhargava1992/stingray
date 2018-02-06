@@ -429,8 +429,7 @@ def fftfit_fun(profile, template, amplitude, phase):
 
 
 def _fft_fun_wrap(pars, data):
-    '''Wrap parameters and input data up in order to be used with minimization
-    algorithms.'''
+    '''Wrap parameters and input data up for minimization algorithms.'''
     amplitude, phase = pars
     profile, template = data
     return fftfit_fun(profile, template, amplitude, phase)
@@ -457,6 +456,7 @@ def _pulse_template(phase, prof):
 def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
            **fftfit_kwargs):
     """Align a template to a pulse profile.
+
     Parameters
     ----------
     phase : array
@@ -466,12 +466,14 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
     template : array, default None
         The template of the pulse used to perform the TOA calculation. If None,
         a simple sinusoid is used
+
     Returns
     -------
     mean_amp, std_amp : floats
         Mean and standard deviation of the amplitude
     mean_phase, std_phase : floats
         Mean and standard deviation of the phase
+
     Other Parameters
     ----------------
     fftfit_kwargs : arguments
@@ -535,6 +537,7 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
 
 def fftfit_error(template, sigma=None, **fftfit_kwargs):
     """Calculate the error on the fit parameters from FFTFIT.
+
     Parameters
     ----------
     phase : array
@@ -545,12 +548,14 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
         The template of the pulse used to perform the TOA calculation
     p0 : list
         The initial parameters for the fit
+
     Returns
     -------
     mean_amp, std_amp : floats
         Mean and standard deviation of the amplitude
     mean_phase, std_phase : floats
         Mean and standard deviation of the phase
+
     Other parameters
     ----------------
     nstep : int, optional, default 100
@@ -598,6 +603,7 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
 
 def plot_TOA_fit(profile, template, toa, mod=None, toaerr=None,
                  additional_phase=0., show=True, period=1):
+    """Plot diagnostic information on the TOA."""
     import matplotlib.pyplot as plt
     from scipy.interpolate import interp1d
     import time
@@ -626,6 +632,7 @@ def get_TOA(prof, period, tstart, template=None, additional_phase=0,
             quick=False, debug=False, use_bootstrap=False,
             **fftfit_kwargs):
     """Calculate the Time-Of-Arrival of a pulse.
+
     Parameters
     ----------
     prof : array
@@ -635,10 +642,12 @@ def get_TOA(prof, period, tstart, template=None, additional_phase=0,
         Otherwise use the default of fftfit
     tstart : float
         The time at the start of the pulse profile
+
     Returns
     -------
     toa, toastd : floats
         Mean and standard deviation of the TOA
+
     Other parameters
     ----------------
     nstep : int, optional, default 100

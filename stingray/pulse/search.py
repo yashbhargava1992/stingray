@@ -115,6 +115,17 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
     weights : array-like
         weight for each time. This might be, for example, the number of counts
         if the times array contains the time bins of a light curve
+
+    Returns
+    -------
+    (fgrid, stats) or (fgrid, fdgrid, stats), as follows:
+
+    fgrid : array-like
+        frequency grid of the epoch folding periodogram
+    fdgrid : array-like
+        frequency derivative grid. Only returned if fdots is an array.
+    stats : array-like
+        the epoch folding statistics corresponding to each frequency bin.
     """
     if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
         if expocorr and gti is None:
@@ -174,6 +185,17 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
     weights : array-like
         weight for each time. This might be, for example, the number of counts
         if the times array contains the time bins of a light curve
+
+    Returns
+    -------
+    (fgrid, stats) or (fgrid, fdgrid, stats), as follows:
+
+    fgrid : array-like
+        frequency grid of the epoch folding periodogram
+    fdgrid : array-like
+        frequency derivative grid. Only returned if fdots is an array.
+    stats : array-like
+        the Z^2_n statistics corresponding to each frequency bin.
     """
     phase = np.arange(0, 1, 1 / nbin)
     if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
