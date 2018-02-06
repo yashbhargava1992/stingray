@@ -3,8 +3,8 @@ Stingray API
 
 Library of Time Series Methods For Astronomical X-ray Data.
 
-Core Functionality
-==================
+Data Classes
+============
 
 Lightcurve
 ----------
@@ -15,6 +15,97 @@ Lightcurve
    :special-members:
 
 ----
+
+EventList
+---------
+
+.. autoclass:: stingray.EventList
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+
+Fourier Products
+================
+
+Crossspectrum
+-------------
+
+.. autoclass:: stingray.Crossspectrum
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+Powerspectrum
+-------------
+
+.. autoclass:: stingray.Powerspectrum
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+AveragedCrossspectrum
+---------------------
+
+.. autoclass:: stingray.AveragedCrossspectrum
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+
+AveragedPowerspectrum
+---------------------
+
+.. autoclass:: stingray.AveragedPowerspectrum
+   :members:
+   :private-members:
+   :special-members:
+
+
+----
+
+CrossCorrelation
+----------------
+
+.. autoclass:: stingray.CrossCorrelation
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+AutoCorrelation
+---------------
+
+.. autoclass:: stingray.AutoCorrelation
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
+
+Higher-Order Fourier and Spectral Timing Products
+=================================================
+
+Bispectrum
+----------
+
+.. autoclass:: stingray.Bispectrum
+   :members:
+   :private-members:
+   :special-members:
+
+----
+
 
 Covariancespectrum
 ------------------
@@ -36,60 +127,121 @@ AveragedCovariancespectrum
 
 ----
 
-Crossspectrum
--------------
+Utilities
+=========
 
-.. autoclass:: stingray.Crossspectrum
+GTI Functionality
+-----------------
+.. automodule:: stingray.gti
    :members:
-   :private-members:
-   :special-members:
+   :imported-members:
 
-----
+IO Functionality
+----------------
 
-AveragedCrossspectrum
----------------------
-
-.. autoclass:: stingray.AveragedCrossspectrum
+.. automodule:: stingray.io
    :members:
-   :private-members:
-   :special-members:
+   :imported-members:
 
-----
+Other Utility Functions
+-----------------------
 
-Powerspectrum
--------------
-
-.. autoclass:: stingray.Powerspectrum
-   :members:
-   :private-members:
-   :special-members:
-
-----
-
-AveragedPowerspectrum
----------------------
-
-.. autoclass:: stingray.AveragedPowerspectrum
-   :members:
-   :private-members:
-   :special-members:
-
-Functions
-===============
-
-.. automodule:: stingray
+.. automodule:: stingray.utils
    :members:
    :imported-members:
 
 Modeling
 ==========
-.. automodule:: stingray
+
+Log-Likelihood Classes
+----------------------
+
+.. autoclass:: stingray.modeling.LogLikelihood
    :members:
    :imported-members:
 
+
+.. autoclass:: stingray.modeling.GaussianLogLikelihood
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.PoissonLogLikelihood
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.PSDLogLikelihood
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.LaplaceLogLikelihood
+   :members:
+   :imported-members:
+
+----
+
+Posterior Classes
+-----------------
+
+.. autoclass:: stingray.modeling.Posterior
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.GaussianPosterior
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.PoissonPosterior
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.PSDPosterior
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.LaplacePosterior
+   :members:
+   :imported-members:
+
+----
+
+Parameter Estimation Classes
+----------------------------
+
+.. autoclass:: stingray.modeling.ParameterEstimation
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.PSDParEst
+   :members:
+   :imported-members:
+
+----
+
+Auxiliary Classes
+-----------------
+
+.. autoclass:: stingray.modeling.OptimizationResults
+   :members:
+   :imported-members:
+
+.. autoclass:: stingray.modeling.SamplingResults
+   :members:
+   :imported-members:
+
+----
+
+Convenience Functions
+---------------------
+
+.. automodule:: stingray.modeling.scripts:
+   :members:
+   :imported-members:
+
+----
+
 Pulsar
 ======
-.. automodule:: stingray
+.. automodule:: stingray.pulse
    :members:
    :imported-members:
 
@@ -99,3 +251,9 @@ Simulator
    :members:
    :undoc-members:
 
+Exceptions
+==========
+
+.. autoclass:: stingray.exceptions.StingrayError
+   :members:
+   :undoc-members:
