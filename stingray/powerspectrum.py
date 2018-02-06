@@ -146,7 +146,7 @@ class Powerspectrum(Crossspectrum):
     Other Parameters
     ----------------
     gti: 2-d float array
-        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
@@ -264,9 +264,12 @@ class Powerspectrum(Crossspectrum):
         strictly correct. We should be using the underlying power spectrum,
         but in the absence of an estimate of that, this will have to do.
 
-        $r = \sqrt{P}$
+        .. math::
 
-        $\delta r = \frac{1}{2 * \sqrt{P}} \delta P$
+            r = \sqrt{P}
+
+            \delta r = \frac{1}{2 * \sqrt{P}} \delta P
+
 
         Parameters
         ----------

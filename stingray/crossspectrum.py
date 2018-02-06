@@ -779,7 +779,7 @@ class AveragedCrossspectrum(Crossspectrum):
         Compute an averaged Coherence function of cross spectrum by computing
         coherence function of each segment and averaging them. The return type
         is a tuple with first element as the coherence function and the second
-        element as the corresponding uncertainty[1] associated with it.
+        element as the corresponding uncertainty[1]_ associated with it.
 
         Note : The uncertainty in coherence function is strictly valid for
                Gaussian statistics only.

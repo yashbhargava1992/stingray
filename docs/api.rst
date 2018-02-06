@@ -19,7 +19,7 @@ Lightcurve
 EventList
 ---------
 
-.. autoclass:: stingray.EventList
+.. autoclass:: stingray.events.EventList
    :members:
    :private-members:
    :special-members:
@@ -99,7 +99,7 @@ Higher-Order Fourier and Spectral Timing Products
 Bispectrum
 ----------
 
-.. autoclass:: stingray.Bispectrum
+.. autoclass:: stingray.bispectrum.Bispectrum
    :members:
    :private-members:
    :special-members:
@@ -132,7 +132,7 @@ VarEnergySpectrum
 Abstract base class for spectral timing products including
 both variability and spectral information.
 
-.. autoclass:: stingray.VarEnergySpectrum
+.. autoclass:: stingray.varenergyspectrum.VarEnergySpectrum
    :members:
    :private-members:
    :special-members:
@@ -142,7 +142,7 @@ both variability and spectral information.
 RmsEnergySpectrum
 -----------------
 
-.. autoclass:: stingray.RmsEnergySpectrum
+.. autoclass:: stingray.varenergyspectrum.RmsEnergySpectrum
    :members:
    :private-members:
    :special-members:
@@ -152,7 +152,7 @@ RmsEnergySpectrum
 LagEnergySpectrum
 -----------------
 
-.. autoclass:: stingray.LagEnergySpectrum
+.. autoclass:: stingray.varenergyspectrum.LagEnergySpectrum
    :members:
    :private-members:
    :special-members:
@@ -160,9 +160,9 @@ LagEnergySpectrum
 ----
 
 ExcessVarianceSpectrum
------------------
+----------------------
 
-.. autoclass:: stingray.ExcessVarianceSpectrum
+.. autoclass:: stingray.varenergyspectrum.ExcessVarianceSpectrum
    :members:
    :private-members:
    :special-members:
@@ -201,24 +201,29 @@ Log-Likelihood Classes
 
 .. autoclass:: stingray.modeling.LogLikelihood
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 
 .. autoclass:: stingray.modeling.GaussianLogLikelihood
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.PoissonLogLikelihood
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.PSDLogLikelihood
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.LaplaceLogLikelihood
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 ----
 
@@ -227,23 +232,28 @@ Posterior Classes
 
 .. autoclass:: stingray.modeling.Posterior
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.GaussianPosterior
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.PoissonPosterior
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.PSDPosterior
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.LaplacePosterior
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 ----
 
@@ -252,11 +262,13 @@ Parameter Estimation Classes
 
 .. autoclass:: stingray.modeling.ParameterEstimation
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.PSDParEst
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 ----
 
@@ -265,11 +277,13 @@ Auxiliary Classes
 
 .. autoclass:: stingray.modeling.OptimizationResults
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 .. autoclass:: stingray.modeling.SamplingResults
    :members:
-   :imported-members:
+   :private-members:
+   :special-members:
 
 ----
 

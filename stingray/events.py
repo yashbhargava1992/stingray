@@ -223,15 +223,15 @@ class EventList(object):
 
     def join(self, other):
         """
-        Join two ``EventList`` objects into one.
+        Join two `EventList` objects into one.
 
-        If both are empty, an empty ``EventList`` is returned.
+        If both are empty, an empty `EventList` is returned.
 
         GTIs are crossed if the event lists are over a common time interval,
         and appended otherwise.
 
         PI and PHA remain None if they are None in both. Otherwise, 0 is used
-        as a default value for the ``EventList``s where they were None.
+        as a default value for the `EventList` where they were None.
 
         Parameters
         ----------
@@ -240,7 +240,7 @@ class EventList(object):
 
         Returns
         -------
-        ev_new : EventList object
+        `ev_new` : EventList object
             The resulting EventList object.
         """
 

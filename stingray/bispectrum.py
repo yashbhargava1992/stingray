@@ -8,6 +8,8 @@ from  scipy.linalg import hankel
 from stingray import lightcurve
 import stingray.utils as utils
 
+__all__ = ["Bispectrum"]
+
 
 class Bispectrum(object):
     """
