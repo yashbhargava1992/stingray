@@ -23,8 +23,6 @@ EventList
 
 .. autoclass:: stingray.events.EventList
    :members:
-   :private-members:
-   :special-members:
 
 ----
 
@@ -40,8 +38,16 @@ Crossspectrum
 
 .. autoclass:: stingray.Crossspectrum
    :members:
-   :private-members:
-   :special-members:
+
+----
+
+Coherence
+---------
+
+Convenience function to compute the coherence between two :class:`stingray.Lightcurve`
+objects.
+
+.. autofunction:: stingray.coherence
 
 ----
 
@@ -51,7 +57,10 @@ Powerspectrum
 .. autoclass:: stingray.Powerspectrum
    :members:
    :private-members:
-   :special-members:
+
+----
+
+.. autofunction:: stingray.powerspectrum.classical_pvalue
 
 ----
 
@@ -61,7 +70,6 @@ AveragedCrossspectrum
 .. autoclass:: stingray.AveragedCrossspectrum
    :members:
    :private-members:
-   :special-members:
 
 ----
 
@@ -72,8 +80,6 @@ AveragedPowerspectrum
 .. autoclass:: stingray.AveragedPowerspectrum
    :members:
    :private-members:
-   :special-members:
-
 
 ----
 

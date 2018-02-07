@@ -23,16 +23,16 @@ def coherence(lc1, lc2):
 
     Parameters
     ----------
-    lc1: ``lightcurve.Lightcurve`` object
+    lc1: :class:`stingray.Lightcurve` object
         The first light curve data for the channel of interest.
 
-    lc2: ``lightcurve.Lightcurve`` object
+    lc2: :class:`stingray.Lightcurve` object
         The light curve data for reference band
 
     Returns
     -------
     coh : ``np.ndarray``
-        Coherence function
+        The array of coherence versus frequency
     """
 
     if not isinstance(lc1, Lightcurve):
@@ -49,25 +49,25 @@ def coherence(lc1, lc2):
 class Crossspectrum(object):
     """
     Make a cross spectrum from a (binned) light curve.
-    You can also make an empty Crossspectrum object to populate with your
-    own fourier-transformed data (this can sometimes be useful when making
-    binned periodograms).
+    You can also make an empty :class:`Crossspectrum` object to populate with your
+    own Fourier-transformed data (this can sometimes be useful when making
+    binned power spectra).
 
     Parameters
     ----------
-    lc1: lightcurve.Lightcurve object, optional, default None
+    lc1: :class:`stingray.Lightcurve` object, optional, default ``None``
         The first light curve data for the channel/band of interest.
 
-    lc2: lightcurve.Lightcurve object, optional, default None
+    lc2: :class:`stingray.Lightcurve` object, optional, default ``None``
         The light curve data for the reference band.
 
-    norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
         The normalization of the (real part of the) cross spectrum.
 
     Other Parameters
     ----------------
     gti: 2-d float array
-        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
@@ -80,11 +80,11 @@ class Crossspectrum(object):
         The array of cross spectra (complex numbers)
 
     power_err: numpy.ndarray
-        The uncertainties of `power`.
-        An approximation for each bin given by "power_err= power/Sqrt(m)".
-        Where `m` is the number of power averaged in each bin (by frequency
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
         binning, or averaging more than one spectra). Note that for a single
-        realization (m=1) the error is equal to the power.
+        realization (``m=1``) the error is equal to the power.
 
     df: float
         The frequency resolution
@@ -113,7 +113,7 @@ class Crossspectrum(object):
         self.norm = norm.lower()
 
         # check if input data is a Lightcurve object, if not make one or
-        # make an empty Crossspectrum object if lc1 == None or lc2 == None
+        # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
         if lc1 is None or lc2 is None:
             if lc1 is not None or lc2 is not None:
                 raise TypeError("You can't do a cross spectrum with just one "
@@ -143,7 +143,7 @@ class Crossspectrum(object):
 
         Parameters
         ----------
-        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
@@ -159,7 +159,7 @@ class Crossspectrum(object):
 
         Parameters
         ----------
-        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
         # make sure the inputs work!
@@ -256,11 +256,11 @@ class Crossspectrum(object):
 
         Parameters
         ----------
-        lc1: lightcurve.Lightcurve object
+        lc1: :class:`stingray.Lightcurve` object
             One light curve to be Fourier transformed. Ths is the band of
             interest or channel of interest.
 
-        lc2: lightcurve.Lightcurve object
+        lc2: :class:`stingray.Lightcurve` object
             Another light curve to be Fourier transformed.
             This is the reference band.
 
@@ -280,7 +280,7 @@ class Crossspectrum(object):
 
     def rebin(self, df=None, f=None, method="mean"):
         """
-        Rebin the cross spectrum to a new frequency resolution df.
+        Rebin the cross spectrum to a new frequency resolution ``df``.
 
         Parameters
         ----------
@@ -290,16 +290,16 @@ class Crossspectrum(object):
         Other Parameters
         ----------------
         f: float
-            the rebin factor. If specified, it substitutes df with f*self.df
+            the rebin factor. If specified, it substitutes df with ``f*self.df``
 
         Returns
         -------
-        bin_cs = Crossspectrum (or one of its subclasses) object
+        bin_cs = :class:`Crossspectrum` (or one of its subclasses) object
             The newly binned cross spectrum or power spectrum.
             Note: this object will be of the same type as the object
             that called this method. For example, if this method is called
-            from `AveragedPowerspectrum`, it will return an object of class
-            `AveragedPowerspectrum`, too.
+            from :class:`AveragedPowerspectrum`, it will return an object of class
+            :class:`AveragedPowerspectrum`, too.
         """
 
         if f is None and df is None:
@@ -413,21 +413,23 @@ class Crossspectrum(object):
         The new frequency depends on the previous frequency
         modified by a factor f:
 
-        dnu_j = dnu_{j-1}*(1+f)
+        .. math::
+
+            d\\nu_j = d\\nu_{j-1} (1+f)
 
         Parameters
         ----------
-        f: float, optional, default 0.01
+        f: float, optional, default ``0.01``
             parameter that steers the frequency resolution
 
 
         Returns
         -------
-        new_spec : Crossspectrum (or one of its subclasses) object
+        new_spec : :class:`Crossspectrum` (or one of its subclasses) object
             The newly binned cross spectrum or power spectrum.
             Note: this object will be of the same type as the object
             that called this method. For example, if this method is called
-            from `AveragedPowerspectrum`, it will return an object of class
+            from :class:`AveragedPowerspectrum`, it will return an object of class
         """
 
         binfreq, binpower, binpower_err, nsamples = \
@@ -468,7 +470,7 @@ class Crossspectrum(object):
 
     def coherence(self):
         """
-        Compute Coherence function of the cross spectrum. Coherence is a
+        Compute Coherence function of the cross spectrum, as defined in [1]_. Coherence is a
         Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -479,8 +481,6 @@ class Crossspectrum(object):
 
         References
         ----------
-        Here is an important reference: [1]_.
-
         .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
 
         """
@@ -515,13 +515,13 @@ class AveragedCrossspectrum(Crossspectrum):
 
     Parameters
     ----------
-    lc1: lightcurve.Lightcurve object OR
-        iterable of lightcurve.Lightcurve objects
+    lc1: :class:`stingray.Lightcurve` object OR
+        iterable of :class:`stingray.Lightcurve` objects
         One light curve data to be Fourier-transformed. This is the band
         of interest or channel of interest.
 
-    lc2: lightcurve.Lightcurve object OR
-        iterable of lightcurve.Lightcurve objects
+    lc2: :class:`stingray.Lightcurve` object OR
+        iterable of :class:`stingray.Lightcurve` objects
         Second light curve data to be Fourier-transformed. This is the
         reference band.
 
@@ -600,7 +600,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         Parameters
         ----------
-        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
         # A way to say that this is actually not a power spectrum
@@ -619,7 +619,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         Parameters
         ----------
-        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
 
         segment_size : ``numpy.float``
@@ -627,7 +627,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         Returns
         -------
-        cs_all : list of `crossspectrum.Crossspectrum`` objects
+        cs_all : list of :class:`Crossspectrum`` objects
             A list of cross spectra calculated independently from each light curve segment
 
         nphots1_all, nphots2_all : ``numpy.ndarray` for each of ``lc1`` and ``lc2``
@@ -701,7 +701,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         Parameters
         ----------
-        lc1, lc2 : ``lightcurve.Lightcurve`` objects
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
 

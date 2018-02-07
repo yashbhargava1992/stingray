@@ -26,19 +26,20 @@ def classical_pvalue(power, nspec):
 
     Important: the underlying assumptions that make this calculation valid
     are:
-    (1) the powers in the power spectrum follow a chi-square distribution
-    (2) the power spectrum is normalized according to Leahy (1984), such
-    that the powers have a mean of 2 and a variance of 4
-    (3) there is only white noise in the light curve. That is, there is no
-    aperiodic variability that would change the overall shape of the power
-    spectrum.
+
+    1. the powers in the power spectrum follow a chi-square distribution
+    2. the power spectrum is normalized according to [1]_, such
+       that the powers have a mean of 2 and a variance of 4
+    3. there is only white noise in the light curve. That is, there is no
+       aperiodic variability that would change the overall shape of the power
+       spectrum.
 
     Also note that the p-value is for a *single trial*, i.e. the power
     currently being tested. If more than one power or more than one power
     spectrum are being tested, the resulting p-value must be corrected for the
     number of trials (Bonferroni correction).
 
-    Mathematical formulation in Groth, 1975.
+    Mathematical formulation in [2]_.
     Original implementation in IDL by Anna L. Watts.
 
     Parameters
@@ -47,7 +48,7 @@ def classical_pvalue(power, nspec):
         The squared Fourier amplitude of a spectrum to be evaluated
 
     nspec : int
-        The number of spectra or frequency bins averaged in `power`.
+        The number of spectra or frequency bins averaged in ``power``.
         This matters because averaging spectra or frequency bins increases
         the signal-to-noise ratio, i.e. makes the statistical distributions
         of the noise narrower, such that a smaller power might be very
@@ -59,6 +60,12 @@ def classical_pvalue(power, nspec):
     pval : float
         The classical p-value of the observed power being consistent with
         the null hypothesis of white noise
+
+    References
+    ----------
+
+    * [1] https://ui.adsabs.harvard.edu/#abs/1983ApJ...266..160L/abstract
+    * [2] https://ui.adsabs.harvard.edu/#abs/1975ApJS...29..285G/abstract
 
     """
     if not np.isfinite(power):
@@ -126,22 +133,22 @@ def _pavnosigfun(power, nspec):
 
 class Powerspectrum(Crossspectrum):
     """
-    Make a `Powerspectrum` (also called periodogram) from a (binned) light curve.
+    Make a :class:`Powerspectrum` (also called periodogram) from a (binned) light curve.
     Periodograms can be normalized by either Leahy normalization, fractional rms
     normalizaation, absolute rms normalization, or not at all.
 
-    You can also make an empty `Powerspectrum` object to populate with your
+    You can also make an empty :class:`Powerspectrum` object to populate with your
     own fourier-transformed data (this can sometimes be useful when making
     binned power spectra).
 
     Parameters
     ----------
-    lc: lightcurve.Lightcurve object, optional, default None
+    lc: :class:`stingray.Lightcurve` object, optional, default ``None``
         The light curve data to be Fourier-transformed.
 
-    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
         The normaliation of the power spectrum to be used. Options are
-        "leahy", "frac", "abs" and "none", default is "frac".
+        ``leahy``, ``frac``, ``abs`` and ``none``, default is ``frac``.
 
     Other Parameters
     ----------------
@@ -152,7 +159,7 @@ class Powerspectrum(Crossspectrum):
 
     Attributes
     ----------
-    norm: {"leahy" | "frac" | "abs" | "none"}
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
         the normalization of the power spectrun
 
     freq: numpy.ndarray
@@ -163,11 +170,11 @@ class Powerspectrum(Crossspectrum):
         amplitudes
 
     power_err: numpy.ndarray
-        The uncertainties of `power`.
-        An approximation for each bin given by "power_err= power/Sqrt(m)".
-        Where `m` is the number of power averaged in each bin (by frequency
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
         binning, or averaging power spectrum). Note that for a single
-        realization (m=1) the error is equal to the power.
+        realization (``m=1``) the error is equal to the power.
 
     df: float
         The frequency resolution
@@ -198,11 +205,11 @@ class Powerspectrum(Crossspectrum):
         Other Parameters
         ----------------
         f: float
-            the rebin factor. If specified, it substitutes df with f*self.df
+            the rebin factor. If specified, it substitutes ``df`` with ``f*self.df``
 
         Returns
         -------
-        bin_cs = Powerspectrum object
+        bin_cs = :class:`Powerspectrum` object
             The newly binned power spectrum.
         """
         bin_ps = Crossspectrum.rebin(self, df=df, f=f, method=method)
@@ -234,8 +241,8 @@ class Powerspectrum(Crossspectrum):
         Returns
         -------
         rms: float
-            The fractional rms amplitude contained between min_freq and
-            max_freq
+            The fractional rms amplitude contained between ``min_freq`` and
+            ``max_freq``
 
         """
         minind = self.freq.searchsorted(min_freq)
@@ -303,43 +310,44 @@ class Powerspectrum(Crossspectrum):
 
         Note that this function will *only* produce correct results when the
         following underlying assumptions are fulfilled:
-        (1) The power spectrum is Leahy-normalized
-        (2) There is no source of variability in the data other than the
-        periodic signal to be determined with this method. This is important!
-        If there are other sources of (aperiodic) variability in the data, this
-        method will *not* produce correct results, but instead produce a large
-        number of spurious false positive detections!
-        (3) There are no significant instrumental effects changing the
-        statistical distribution of the powers (e.g. pile-up or dead time)
 
-        By default, the method produces (index,p-values) for all powers in
+        1. The power spectrum is Leahy-normalized
+        2. There is no source of variability in the data other than the
+           periodic signal to be determined with this method. This is important!
+           If there are other sources of (aperiodic) variability in the data, this
+           method will *not* produce correct results, but instead produce a large
+           number of spurious false positive detections!
+        3. There are no significant instrumental effects changing the
+           statistical distribution of the powers (e.g. pile-up or dead time)
+
+        By default, the method produces ``(index,p-values)`` for all powers in
         the power spectrum, where index is the numerical index of the power in
-        question. If a `threshold` is set, then only powers with p-values
+        question. If a ``threshold`` is set, then only powers with p-values
         *below* that threshold with their respective indices. If
-        `trial_correction` is set to True, then the threshold will be corrected
+        ``trial_correction`` is set to ``True``, then the threshold will be corrected
         for the number of trials (frequencies) in the power spectrum before
         being used.
 
         Parameters
         ----------
-        threshold : float
+        threshold : float, optional, default ``1``
             The threshold to be used when reporting p-values of potentially
             significant powers. Must be between 0 and 1.
-            Default is 1 (all p-values will be reported).
+            Default is ``1`` (all p-values will be reported).
 
-        trial_correction : bool
-            A Boolean flag that sets whether the `threshold` will be correted
+        trial_correction : bool, optional, default ``False``
+            A Boolean flag that sets whether the ``threshold`` will be corrected
             by the number of frequencies before being applied. This decreases
-            the threshold (p-values need to be lower to count as significant).
-            Default is False (report all powers) though for any application
-            where `threshold` is set to something meaningful, this should also
+            the ``threshold`` (p-values need to be lower to count as significant).
+            Default is ``False`` (report all powers) though for any application
+            where `threshold`` is set to something meaningful, this should also
             be applied!
 
         Returns
         -------
         pvals : iterable
-            A list of (index, p-value) tuples for all powers that have p-values
-            lower than the threshold specified in `threshold`.
+            A list of ``(index, p-value)`` tuples for all powers that have p-values
+            lower than the threshold specified in ``threshold``.
 
         """
         if not self.norm == "leahy":
@@ -373,8 +381,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     Parameters
     ----------
-    lc: lightcurve.Lightcurve object OR
-        iterable of lightcurve.Lightcurve objects
+    lc: :class:`stingray.Lightcurve`object OR
+        iterable of :class:`stingray.Lightcurve`
+objects
         The light curve data to be Fourier-transformed.
 
     segment_size: float
@@ -449,7 +458,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         Parameters
         ----------
-        lc  : ``lightcurve.Lightcurve`` objects\
+        lc  : :class:`stingray.Lightcurve` objects\
             The input light curve
 
         segment_size : ``numpy.float``
@@ -457,7 +466,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         Returns
         -------
-        power_all : list of `Powerspectrum`` objects
+        power_all : list of :class:`Powerspectrum` objects
             A list of power spectra calculated independently from each light curve segment
 
         nphots_all : ``numpy.ndarray``
@@ -492,7 +501,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     """
     Parameters
     ----------
-    lc : lightcurve.Lightcurve object
+    lc : :class:`stingray.Lightcurve`object
         The time series of which the Dynamical powerspectrum is
         to be calculated.
 
@@ -617,10 +626,10 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
         Parameters
         ----------
-        min_freq: float, default None
+        min_freq: float, default ``None``
             The lower frequency bound.
 
-        max_freq: float, default None
+        max_freq: float, default ``None``
             The upper frequency bound.
 
         Returns
