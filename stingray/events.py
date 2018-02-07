@@ -20,8 +20,10 @@ __all__ = ['EventList']
 
 class EventList(object):
     """
-    Make an event list object from an array of time stamps and optionally energies associated
-    with each time stamp.
+    Basic class for event list data. Event lists generally correspond to individual events (e.g. photons)
+    recorded by the detector, and their associated properties. For X-ray data where this type commonly occurs,
+    events are time stamps of when a photon arrived in the detector, and (optionally) the photon energy associated
+    with the event.
 
     Parameters
     ----------
@@ -43,7 +45,7 @@ class EventList(object):
     ncounts: int
         Number of desired data points in event list.
 
-    gtis: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gtis: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Good Time Intervals
 
     pi : integer, numpy.ndarray
@@ -56,7 +58,7 @@ class EventList(object):
     ----------
     time: numpy.ndarray
         The array of event arrival times, in seconds from the reference
-        MJD (self.mjdref)
+        MJD defined in ``mjdref``
 
     energy: numpy.ndarray
         The array of photon energy values
@@ -71,7 +73,7 @@ class EventList(object):
     mjdref : float
         The MJD used as a reference for the time array.
 
-    gtis: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gtis: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Good Time Intervals
 
     pi : integer, numpy.ndarray
@@ -101,7 +103,7 @@ class EventList(object):
 
     def to_lc(self, dt, tstart=None, tseg=None):
         """
-        Convert event list to a light curve object.
+        Convert event list to a :class:`stingray.Lightcurve` object.
 
         Parameters
         ----------
@@ -118,7 +120,7 @@ class EventList(object):
 
         Returns
         -------
-        lc: `Lightcurve` object
+        lc: :class:`stingray.Lightcurve` object
         """
 
         if tstart is None and self.gti is not None:
@@ -132,18 +134,18 @@ class EventList(object):
     @staticmethod
     def from_lc(lc):
         """
-        Loads eventlist from light curve. Note that all events in a given time bin will have
-        the same time stamp.
+        Create an :class:`EventList` from a :class:`stingray.Lightcurve` object. Note that all
+        events in a given time bin will have the same time stamp.
 
         Parameters
         ----------
-        lc: lightcurve.Lightcurve object
-            Light curve data to load from
+        lc: :class:`stingray.Lightcurve` object
+            Light curve to use for creation of the event list.
 
         Returns
         -------
-        ev: events.EventList object
-            Event List
+        ev: :class:`EventList` object
+            The resulting list of photon arrival times generated from the light curve.
         """
 
         # Multiply times by number of counts
@@ -155,17 +157,18 @@ class EventList(object):
 
     def simulate_times(self, lc, use_spline=False, bin_time=None):
         """
-        Assign (simulate) photon arrival times to event list, using the
-        acceptance-rejection method.
+        Randomly assign (simulate) photon arrival times to an :class:`EventList` from a
+        :class:`stingray.Lightcurve` object, using the acceptance-rejection method.
 
         Parameters
         ----------
-        lc: `Lightcurve` object
+        lc: :class:`stingray.Lightcurve` object
 
         Other Parameters
         ----------------
         use_spline : bool
             Approximate the light curve with a spline to avoid binning effects
+
         bin_time : float
             The bin time of the light curve, if it needs to be specified for
             improved precision
@@ -223,25 +226,25 @@ class EventList(object):
 
     def join(self, other):
         """
-        Join two `EventList` objects into one.
+        Join two :class:`EventList` objects into one.
 
-        If both are empty, an empty `EventList` is returned.
+        If both are empty, an empty :class:`EventList` is returned.
 
         GTIs are crossed if the event lists are over a common time interval,
         and appended otherwise.
 
-        PI and PHA remain None if they are None in both. Otherwise, 0 is used
-        as a default value for the `EventList` where they were None.
+        ``pi`` and ``pha`` remain ``None`` if they are ``None`` in both. Otherwise, 0 is used
+        as a default value for the :class:`EventList` where they were None.
 
         Parameters
         ----------
-        other : `EventList` object
-            The other `EventList` object which is supposed to be joined with.
+        other : :class:`EventList` object
+            The other :class:`EventList` object which is supposed to be joined with.
 
         Returns
         -------
-        `ev_new` : EventList object
-            The resulting EventList object.
+        `ev_new` : :class:`EventList` object
+            The resulting :class:`EventList` object.
         """
 
         ev_new = EventList()
@@ -322,27 +325,28 @@ class EventList(object):
         for long-term storage), an HDF5 file, an ASCII or a FITS file. The file can have the following
         attributes in the data or meta-data:
 
-        * time:  the time stamps of the photon arrivals
-        * energy: the photon energy corresponding to each time stamp
-        * ncounts: the total number of photon counts recorded
-        * mjdref: a reference time in Modified Julian Date
-        * dt: the time resolution of the data
-        * notes: other possible meta-data
-        * gti: Good Time Intervals
-        * pi: some instruments record energies as "Pulse Invariant", an integer number recorded from
+        * ``time``:  the time stamps of the photon arrivals
+        * ``energy``: the photon energy corresponding to each time stamp
+        * ``ncounts``: the total number of photon counts recorded
+        * ``mjdref``: a reference time in Modified Julian Date
+        * ``dt``: the time resolution of the data
+        * ``notes``: other possible meta-data
+        * ``gti``: Good Time Intervals
+        * ``pi``: some instruments record energies as "Pulse Invariant", an integer number recorded from
           the Pulse Height Amplitude
 
         Parameters
         ----------
         filename: str
-            Name of the EventList object to be read.
+            Name of the :class:`EventList` object to be read.
 
         format_: str
-            Available options are 'pickle', 'hdf5', 'ascii' and 'fits'.
+            Available options are ``pickle``, ``hdf5``, ``ascii`` and `fits``.
 
         Returns
         -------
-        ev: `EventList` object
+        ev: :class:`EventList` object
+            The :class:`EventList` object reconstructed from file
         """
 
         attributes = ['time', 'energy', 'ncounts', 'mjdref', 'dt',
@@ -379,17 +383,17 @@ class EventList(object):
 
     def write(self, filename, format_='pickle'):
         """
-        Write an ``EventList`` object to file. Possible file formats are ``pickle``, ``hdf5``, ``ascii``
+        Write an :class:`EventList` object to file. Possible file formats are ``pickle``, ``hdf5``, ``ascii``
         or ``fits``.
 
         Parameters
         ----------
         filename: str
-            Name of the LightCurve object to be created.
+            Name and path of the file to save the event list to..
 
         format_: str
             The file format to store the data in.
-            Available options are 'pickle', 'hdf5', 'ascii', 'fits'
+            Available options are ``pickle``, ``hdf5``, ``ascii``, ``fits``
         """
 
         if format_ == 'ascii':
