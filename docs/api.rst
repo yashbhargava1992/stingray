@@ -198,7 +198,6 @@ I/O Functionality
 
 .. automodule:: stingray.io
    :members:
-   :imported-members:
 
 Other Utility Functions
 -----------------------

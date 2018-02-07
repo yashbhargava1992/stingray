@@ -20,7 +20,7 @@ __all__ = ['load_gtis', 'check_gtis',
 
 def load_gtis(fits_file, gtistring=None):
     """
-    Load Good Time Intervals (GTIs) from HDU EVENTS of file fits_file.
+    Load Good Time Intervals (GTIs) from ``HDU EVENTS`` of file ``fits_file``.
     File is expected to be in FITS format.
 
     Parameters
@@ -29,13 +29,13 @@ def load_gtis(fits_file, gtistring=None):
         File name and path for the fits file with the GTIs to be loaded
 
     gtistring : str
-        If the name of the extension with the GTIs is not 'GTI', the alternative
+        If the name of the extension with the GTIs is not ``GTI``, the alternative
         name can be set with this parameter
 
     Returns
     -------
     gti_list : list
-        A list of GTI (start, stop) pairs extracted from the FITS file.
+        A list of GTI ``(start, stop)`` pairs extracted from the FITS file.
 
 
     """
@@ -81,14 +81,15 @@ def check_gtis(gti):
     """Check if GTIs are well-behaved.
 
     Check that:
-    1) the shape of the GTI array is correct;
-    2) No start>end
-    3) no overlaps.
+
+    1. the shape of the GTI array is correct;
+    2. no start > end
+    3. no overlaps.
 
     Parameters
     ----------
     gti : list
-        A list of GTI (start, stop) pairs extracted from the FITS file.
+        A list of GTI ``(start, stop)`` pairs extracted from the FITS file.
 
     Raises
     ------
@@ -131,7 +132,7 @@ def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):  # pragma: no
     time : numpy.ndarray
         An array of time stamps
 
-    gtis : iterable of (start, stop) pairs
+    gtis : iterable of ``(start, stop)`` pairs
         The list of GTIs
 
     mask : numpy.ndarray
@@ -142,7 +143,7 @@ def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):  # pragma: no
         A pre-assigned array zeros in the same shape as ``time``; records start/stop of GTIs
 
     min_length : float
-        An optional minimum length for the GTIs to be applied. Only GTIs longer than `min_length` will
+        An optional minimum length for the GTIs to be applied. Only GTIs longer than ``min_length`` will
         be considered when creating the mask.
 
     """
@@ -184,35 +185,35 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     time : numpy.ndarray
         An array of time stamps
 
-    gtis : [[g0_0, g0_1], [g1_0, g1_1], ...], float array-like
+    gtis : ``[[g0_0, g0_1], [g1_0, g1_1], ...]``, float array-like
         The list of GTIs
 
 
     Other parameters
     ----------------
-    safe_interval : float or [float, float]
+    safe_interval : float or ``[float, float]``
         A safe interval to exclude at both ends (if single float) or the start
         and the end (if pair of values) of GTIs.
 
     min_length : float
-        An optional minimum length for the GTIs to be applied. Only GTIs longer than `min_length` will
+        An optional minimum length for the GTIs to be applied. Only GTIs longer than ``min_length`` will
         be considered when creating the mask.
 
     return_new_gtis : bool
-        If True, return the list of new GTIs (if `min_length` > 0)
+        If ``True```, return the list of new GTIs (if ``min_length > 0``)
 
     dt : float
         Time resolution of the data, i.e. the interval between time stamps
 
     epsilon : float
-        fraction of dt that is tolerated at the borders of a GTI
+        fraction of ``dt`` that is tolerated at the borders of a GTI
 
     Returns
     -------
-    mask : boolean array
+    mask : bool array
         A mask labelling all time stamps that are included in the GTIs versus those that are not.
 
-    new_gtis : Nx2 array
+    new_gtis : ``Nx2`` array
         An array of new GTIs created by this function
     """
     if len(time) == 0:
@@ -264,7 +265,7 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
 def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
                              return_new_gtis=False, dt=None, epsilon=0.001):
 
-    """Create GTI mask, allowing for non-constant dt.
+    """Create GTI mask, allowing for non-constant ``dt``.
 
     Assumes that no overlaps are present between GTIs
 
@@ -273,7 +274,7 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
     time : numpy.ndarray
         An array of time stamps
 
-    gtis : [[g0_0, g0_1], [g1_0, g1_1], ...], float array-like
+    gtis : ``[[g0_0, g0_1], [g1_0, g1_1], ...]``, float array-like
         The list of GTIs
 
 
@@ -284,21 +285,21 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
         and the end (if pair of values) of GTIs.
 
     min_length : float
-        An optional minimum length for the GTIs to be applied. Only GTIs longer than `min_length` will
+        An optional minimum length for the GTIs to be applied. Only GTIs longer than ``min_length`` will
         be considered when creating the mask.
 
     return_new_gtis : bool
-        If True, return the list of new GTIs (if `min_length` > 0)
+        If ``True``, return the list of new GTIs (if ``min_length > 0``)
 
     dt : float
         Time resolution of the data, i.e. the interval between time stamps
 
     epsilon : float
-        fraction of dt that is tolerated at the borders of a GTI
+        fraction of ``dt`` that is tolerated at the borders of a GTI
 
     Returns
     -------
-    mask : boolean array
+    mask : bool array
         A mask labelling all time stamps that are included in the GTIs versus those that are not.
 
     new_gtis : Nx2 array
@@ -341,7 +342,7 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
 
 def create_gti_from_condition(time, condition,
                               safe_interval=0, dt=None):
-    """Create a GTI list from a time array and a boolean mask ("condition").
+    """Create a GTI list from a time array and a boolean mask (``condition``).
 
     Parameters
     ----------
@@ -350,16 +351,16 @@ def create_gti_from_condition(time, condition,
 
     condition : array-like
         An array of bools, of the same length of time.
-        A possible condition can be, e.g., the result of lc > 0.
+        A possible condition can be, e.g., the result of ``lc > 0``.
 
     Returns
     -------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gtis : ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         The newly created GTIs
 
     Other parameters
     ----------------
-    safe_interval : float or [float, float]
+    safe_interval : float or ``[float, float]``
         A safe interval to exclude at both ends (if single float) or the start
         and the end (if pair of values) of GTIs.
     dt : float
@@ -397,13 +398,13 @@ def cross_two_gtis(gti0, gti1):
 
     Parameters
     ----------
-    gti0 : iterable of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-    gti1 : iterable of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gti0 : iterable of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
+    gti1 : iterable of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         The two lists of GTIs to be crossed.
 
     Returns
     -------
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gtis : ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         The newly created GTIs
 
     See Also
@@ -481,18 +482,18 @@ def cross_two_gtis(gti0, gti1):
 
 
 def cross_gtis(gti_list):
-    """From multiple GTI lists, extract the common intervals *EXACTLY*.
+    """
+    From multiple GTI lists, extract the common intervals *EXACTLY*.
 
     Parameters
     ----------
     gti_list : array-like
-        List of GTI arrays, each one in the usual format [[gti0_0, gti0_1],
-        [gti1_0, gti1_1], ...]
+        List of GTI arrays, each one in the usual format ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     Returns
     -------
     gti0: 2-d float array
-        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         The newly created GTIs
 
     See Also
@@ -516,11 +517,12 @@ def cross_gtis(gti_list):
 
 
 def get_btis(gtis, start_time=None, stop_time=None):
-    """From GTIs, obtain bad time intervals, i.e. the intervals *not* covered
+    """
+    From GTIs, obtain bad time intervals, i.e. the intervals *not* covered
     by the GTIs.
 
     GTIs have to be well-behaved, in the sense that they have to pass
-    `check_gtis`.
+    ``check_gtis``.
 
     Parameters
     ----------
@@ -537,7 +539,7 @@ def get_btis(gtis, start_time=None, stop_time=None):
 
     Returns
     -------
-    btis : ``numpy.ndarray``
+    btis : numpy.ndarray
         A list of bad time intervals
     """
     # Check GTIs
@@ -586,20 +588,21 @@ def gti_len(gti):
 
 
 def check_separate(gti0, gti1):
-    """Check if two GTIs do not overlap.
+    """
+    Check if two GTIs do not overlap.
 
     Parameters
     ----------
     gti0: 2-d float array
-        List of GTIs of form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     gti1: 2-d float array
-        List of GTIs of form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     Returns
     -------
-    separate: boolean
-        True if GTIs are mutually exclusive, False if not
+    separate: bool
+        ``True`` if GTIs are mutually exclusive, ``False`` if not
     """
 
     gti0 = np.asarray(gti0)
@@ -628,10 +631,10 @@ def append_gtis(gti0, gti1):
     Parameters
     ----------
     gti0: 2-d float array
-        List of GTIs of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     gti1: 2-d float array
-        List of GTIs of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     Returns
     -------
@@ -657,13 +660,13 @@ def append_gtis(gti0, gti1):
 def join_gtis(gti0, gti1):
     """Union of two GTIs.
 
-    If GTIs are mutually exclusive, it calls `append_gtis`. Otherwise we put
+    If GTIs are mutually exclusive, it calls ``append_gtis``. Otherwise we put
     the extremes of partially overlapping GTIs on an ideal line and look at the
     number of opened and closed intervals. When the number of closed and opened
     intervals is the same, the full GTI is complete and we close it.
 
-    In practice, we assign to each opening time of a GTI the value -1, and
-    the value 1 to each closing time; when the cumulative sum is zero, the
+    In practice, we assign to each opening time of a GTI the value ``-1``, and
+    the value ``1`` to each closing time; when the cumulative sum is zero, the
     GTI has ended. The timestamp after each closed GTI is the start of a new
     one.
 
@@ -677,10 +680,10 @@ def join_gtis(gti0, gti1):
     Parameters
     ----------
     gti0: 2-d float array
-        List of GTIs of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     gti1: 2-d float array
-        List of GTIs of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     Returns
     -------
@@ -741,15 +744,15 @@ def time_intervals_from_gtis(gtis, chunk_length, fraction_step=1,
     Parameters
     ----------
     gtis : 2-d float array
-        List of GTIs of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     chunk_length : float
         Length of the time segments
 
     fraction_step : float
-        If the step is not a full `chunk_length` but less (e.g. a moving window),
-        this indicates the ratio between step step and `chunk_length` (e.g.
-        0.5 means that the window shifts of half `chunk_length`)
+        If the step is not a full ``chunk_length`` but less (e.g. a moving window),
+        this indicates the ratio between step step and ``chunk_length`` (e.g.
+        0.5 means that the window shifts of half ``chunk_length``)
 
     Returns
     -------
@@ -791,7 +794,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
     Parameters
     ----------
     gtis : 2-d float array
-        List of GTIs of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     chunk_length : float
         Length of each time segment
@@ -805,12 +808,12 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         Time resolution of the light curve.
 
     epsilon : float, default 0.001
-        The tolerance, in fraction of dt, for the comparisons at the borders
+        The tolerance, in fraction of ``dt``, for the comparisons at the borders
 
     fraction_step : float
-        If the step is not a full chunk_length but less (e.g. a moving window),
-        this indicates the ratio between step step and `chunk_length` (e.g.
-        0.5 means that the window shifts of half chunk_length)
+        If the step is not a full ``chunk_length`` but less (e.g. a moving window),
+        this indicates the ratio between step step and ``chunk_length`` (e.g.
+        ``0.5`` means that the window shifts of half ``chunk_length``)
 
     Returns
     -------
@@ -887,7 +890,7 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     Parameters
     ----------
     gtis : 2-d float array
-        List of GTIs of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
     time : array-like
         Time stamps of light curve bins

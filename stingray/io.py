@@ -58,7 +58,7 @@ def high_precision_keyword_read(hdr, keyword):
     Returns
     -------
     value : long double
-        The value of the key, or None if something went wrong
+        The value of the key, or ``None`` if something went wrong
 
     """
     try:
@@ -97,7 +97,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
 
     """Load event lists and GTIs from one or more files.
 
-    Loads event list from HDU EVENTS of file fits_file, with Good Time
+    Loads event list from HDU EVENTS of file ``fits_file``, with Good Time
     intervals. Optionally, returns additional columns of data from the same
     HDU of the events.
 
@@ -107,22 +107,22 @@ def load_events_and_gtis(fits_file, additional_columns=None,
         The file name and absolute path to the event file.
 
     return_limits: bool, optional
-        Return the TSTART and TSTOP keyword values
+        Return the ``TSTART`` and ``TSTOP`` keyword values
 
     additional_columns: list of str, optional
         A list of keys corresponding to the additional columns to extract from
-        the event HDU (ex.: ['PI', 'X'])
+        the event HDU (ex.: ``['PI', 'X']``)
 
     Returns
     -------
     ev_list : array-like
         An array of time stamps of events
 
-    gtis: list of the form [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+    gtis: list of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Good Time Intervals
 
     additional_data: dict
-        A dictionary, where each key is the one specified in additional_colums.
+        A dictionary, where each key is the one specified in ``additional_colums``.
         The data are an array with the values of the specified column in the
         fits file.
     t_start, t_stop : float
@@ -203,7 +203,7 @@ class _empty():
 
 
 def mkdir_p(path):  # pragma: no cover
-    """Safe mkdir function.
+    """Safe ``mkdir`` function.
 
     Parameters
     ----------
@@ -227,7 +227,7 @@ def mkdir_p(path):  # pragma: no cover
 
 
 def read_header_key(fits_file, key, hdu=1):
-    """Read the header key key from HDU hdu of the file fits_file.
+    """Read the header key key from HDU hdu of the file ``fits_file``.
 
     Parameters
     ----------
@@ -258,7 +258,7 @@ def read_header_key(fits_file, key, hdu=1):
 
 
 def ref_mjd(fits_file, hdu=1):
-    """Read MJDREFF+ MJDREFI or, if failed, MJDREF, from the FITS header.
+    """Read ``MJDREFF``, ``MJDREFI`` or, if failed, ``MJDREF``, from the FITS header.
 
     Parameters
     ----------
@@ -301,7 +301,7 @@ def common_name(str1, str2, default='common'):
     Other Parameters
     ----------------
     default : str
-        The string to return if common_str is empty
+        The string to return if ``common_str`` is empty
 
     Returns
     -------
@@ -791,19 +791,19 @@ def _isattribute(data):
 def write(input_, filename, format_='pickle', **kwargs):
     """
     Pickle a class instance. For parameters depending on
-    `format_`, see individual function definitions.
+    ``format_``, see individual function definitions.
 
     Parameters
     ----------
     object: a class instance
-        The object to be stored.
+        The object to be stored
 
     filename: str
-        The name of the file to be created.
+        The name of the file to be created
 
     format_: str
         The format in which to store file. Formats supported 
-        are pickle, hdf5, ascii or fits.  
+        are ``pickle``, ``hdf5``, ``ascii`` or ``fits``
     """
 
     if format_ == 'pickle':
@@ -829,7 +829,7 @@ def write(input_, filename, format_='pickle', **kwargs):
 
 def read(filename, format_='pickle', **kwargs):
     """
-    Return a pickled class instance.
+    Return a saved class instance.
 
     Parameters
     ----------
@@ -842,10 +842,11 @@ def read(filename, format_='pickle', **kwargs):
     
     Returns
     -------
-    If ``format_`` is 'pickle', an object is returned.
-    If ``format_`` is 'pickle', an object is returned.
-    If ``format_`` is 'ascii', `astropy.table` object is returned.
-    If ``format_`` is 'hdf5' or 'fits', a dictionary object is returned.
+    data : {``object`` | ``astropy.table`` | ``dict``}
+
+        * If ``format_`` is ``pickle``, an object is returned.
+        * If ``format_`` is ``ascii``, `astropy.table` object is returned.
+        * If ``format_`` is ``hdf5`` or 'fits``, a dictionary object is returned.
     """
 
     if format_ == 'pickle':
@@ -869,7 +870,7 @@ def read(filename, format_='pickle', **kwargs):
         
 def savefig(filename, **kwargs):
     """
-    Save a figure plotted by Matplotlib.
+    Save a figure plotted by ``matplotlib``.
 
     Note : This function is supposed to be used after the ``plot``
     function. Otherwise it will save a blank image with no plot.
@@ -879,7 +880,7 @@ def savefig(filename, **kwargs):
     filename : str
         The name of the image file. Extension must be specified in the
         file name. For example filename with `.png` extension will give a
-        rasterized image while `.pdf` extension will give a vectorized
+        rasterized image while ``.pdf`` extension will give a vectorized
         output.
 
     kwargs : keyword arguments

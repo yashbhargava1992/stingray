@@ -47,11 +47,11 @@ except ImportError:
             The data along which to calculate the MAD
 
         c : float, optional
-            The normalization constant. Defined as scipy.stats.norm.ppf(3/4.),
-            which is approximately .6745.
+            The normalization constant. Defined as ``scipy.stats.norm.ppf(3/4.)``,
+            which is approximately ``.6745``.
 
-        axis : int, optional
-            Axis along which to calculate `mad`. Default is 0, can also be `None`
+        axis : int, optional, default ``0``
+            Axis along which to calculate ``mad``. Default is ``0``, can also be ``None``
         """
         data = np.asarray(data)
         if axis is not None:
@@ -83,7 +83,7 @@ def simon(message, **kwargs):
         The message that is thrown
 
     kwargs : dict
-        The rest of the arguments that are passed to warnings.warn
+        The rest of the arguments that are passed to ``warnings.warn``
     """
 
     warnings.warn("SIMON says: {0}".format(message), **kwargs)
@@ -96,22 +96,22 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     Parameters
     ----------
     x: iterable
-        The dependent variable with some resolution dx_old = x[1]-x[0]
+        The dependent variable with some resolution ``dx_old = x[1]-x[0]``
 
     y: iterable
         The independent variable to be binned
 
     dx_new: float
-        The new resolution of the dependent variable x
+        The new resolution of the dependent variable ``x``
 
     Other parameters
     ----------------
     yerr: iterable, optional
-        The uncertainties of y, to be propagated during binning.
+        The uncertainties of ``y``, to be propagated during binning.
 
-    method: {"sum" | "average" | "mean"}, optional, default "sum"
-        The method to be used in binning. Either sum the samples y in
-        each new bin of x, or take the arithmetic mean.
+    method: {``sum`` | ``average`` | ``mean``}, optional, default ``sum``
+        The method to be used in binning. Either sum the samples ``y`` in
+        each new bin of ``x``, or take the arithmetic mean.
 
     dx: float
         The old resolution (otherwise, calculated from median diff)
@@ -119,13 +119,13 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     Returns
     -------
     xbin: numpy.ndarray
-        The midpoints of the new bins in x
+        The midpoints of the new bins in ``x``
 
     ybin: numpy.ndarray
-        The binned quantity y
+        The binned quantity ``y``
 
     ybin_err: numpy.ndarray
-        The uncertainties of the binned values of y.
+        The uncertainties of the binned values of ``y``.
 
     step_size: float
         The size of the binning step
@@ -199,12 +199,14 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     The new dependent variable depends on the previous dependent variable modified
     by a factor f:
 
-    dnu_j = dnu_{j-1}*(1+f)
+    .. math::
+
+        d\\nu_j = d\\nu_{j-1} (1+f)
 
     Parameters
     ----------
     x: iterable
-        The dependent variable with some resolution dx_old = x[1]-x[0]
+        The dependent variable with some resolution ``dx_old = x[1]-x[0]``
 
     y: iterable
         The independent variable to be binned
@@ -215,25 +217,25 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     Other Parameters
     ----------------
     yerr: iterable, optional
-        The uncertainties of y, to be propagated during binning.
+        The uncertainties of ``y``, to be propagated during binning.
 
-    method: {"sum" | "average" | "mean"}, optional, default "sum"
-        The method to be used in binning. Either sum the samples y in
-        each new bin of x, or take the arithmetic mean.
+    method: {``sum`` | ``average`` | ``mean``}, optional, default ``sum``
+        The method to be used in binning. Either sum the samples ``y`` in
+        each new bin of ``x``, or take the arithmetic mean.
 
     dx: float, optional
-        The binning step of the initial xs
+        The binning step of the initial ``x``s
 
     Returns
     -------
     xbin: numpy.ndarray
-        The midpoints of the new bins in x
+        The midpoints of the new bins in ``x``
 
     ybin: numpy.ndarray
-        The binned quantity y
+        The binned quantity ``y``
 
     ybin_err: numpy.ndarray
-        The uncertainties of the binned values of y
+        The uncertainties of the binned values of ``y``
 
     step_size: float
         The size of the binning step
@@ -290,20 +292,20 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
 def assign_value_if_none(value, default):
     """
-    Assign a value to a variable if that variable has value `None` on input.
+    Assign a value to a variable if that variable has value ``None`` on input.
 
     Parameters
     ----------
     value : object
-        A variable with either some assigned value, or `None`
+        A variable with either some assigned value, or ``None``
 
     default : object
-        The value to assign to the variable `value` if `value is None` returns `True`
+        The value to assign to the variable ``value`` if ``value is None`` returns ``True``
 
     Returns
     -------
         new_value : object
-            The new value of `value`
+            The new value of ``value``
 
     """
     return default if value is None else value
@@ -320,12 +322,12 @@ def look_for_array_in_array(array1, array2):
 
     array2 : iterable
         A second array which potentially contains a subset of values
-        also contained in `array1`
+        also contained in ``array1``
 
     Returns
     -------
     array3 : iterable
-        An array with the subset of values contained in both `array1` and `array2`
+        An array with the subset of values contained in both ``array1`` and ``array2``
 
     """
     return next((i for i in array1 if i in array2), None)
@@ -343,7 +345,7 @@ def is_string(s):  # pragma : no cover
     Returns
     -------
     isstring : bool
-        A boolean decision on whether `s` is a string or not
+        A boolean decision on whether ``s`` is a string or not
     """
 
     PY2 = sys.version_info[0] == 2
@@ -364,7 +366,7 @@ def is_iterable(var):
     Returns
     -------
     is_iter : bool
-        Returns True if `var` is an `Iterable`, false otherwise
+        Returns ``True`` if ``var`` is an ``Iterable``, ``False`` otherwise
     """
     return isinstance(var, collections.Iterable)
 
@@ -407,7 +409,7 @@ def optimal_bin_time(fftlen, tbin):
     Returns
     -------
     res : float
-        A time resolution that will produce a Fourier spectrum with `fftlen` frequencies and
+        A time resolution that will produce a Fourier spectrum with ``fftlen`` frequencies and
         a number of FFT bins that are a power of two
     """
 
@@ -415,19 +417,19 @@ def optimal_bin_time(fftlen, tbin):
 
 
 def contiguous_regions(condition):
-    """Find contiguous True regions of the boolean array "condition".
+    """Find contiguous ``True`` regions of the boolean array ``condition``.
 
     Return a 2D array where the first column is the start index of the region
     and the second column is the end index.
 
     Parameters
     ----------
-    condition : boolean array
+    condition : bool array
 
     Returns
     -------
-    idx : [[i0_0, i0_1], [i1_0, i1_1], ...]
-        A list of integer couples, with the start and end of each True blocks
+    idx : ``[[i0_0, i0_1], [i1_0, i1_1], ...]``
+        A list of integer couples, with the start and end of each ``True`` blocks
         in the original array
 
     Notes
@@ -435,8 +437,6 @@ def contiguous_regions(condition):
     From : http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-
     fulfilling-condition-in-a-numpy-array
     """
-
-    # NOQA
     # Find the indices of changes in "condition"
     diff = np.logical_xor(condition[1:], condition[:-1])
     idx, = diff.nonzero()
@@ -464,7 +464,7 @@ def get_random_state(random_state=None):
 
     Parameters
     ----------
-    seed : integer or numpy.random.RandomState, optional, default None
+    seed : integer or ``numpy.random.RandomState``, optional, default ``None``
 
     Returns
     -------
@@ -523,7 +523,7 @@ def _als(y, lam, p, niter=10):
     Parameters
     ----------
     y : array-like
-        the data series corresponding to x
+        the data series corresponding to ``x``
     lam : float
         the lambda parameter of the ALS method. This control how much the
         baseline can adapt to local changes. A higher value corresponds to a
@@ -540,7 +540,7 @@ def _als(y, lam, p, niter=10):
 
     Returns
     -------
-    z : array-like, same size as y
+    z : array-like, same size as ``y``
         Fitted baseline.
     """
     from scipy import sparse
@@ -564,14 +564,14 @@ def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False,
     x : array-like
         the sample time/number/position
     y : array-like
-        the data series corresponding to x
+        the data series corresponding to ``x``
     lam : float
         the lambda parameter of the ALS method. This control how much the
         baseline can adapt to local changes. A higher value corresponds to a
         stiffer baseline
     p : float
         the asymmetry parameter of the ALS method. This controls the overall
-        slope tollerated for the baseline. A higher value correspond to a
+        slope tolerated for the baseline. A higher value correspond to a
         higher possible slope
 
     Other Parameters
@@ -585,10 +585,10 @@ def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False,
 
     Returns
     -------
-    y_subtracted : array-like, same size as y
+    y_subtracted : array-like, same size as ``y``
         The initial time series, subtracted from the trend
-    baseline : array-like, same size as y
-        Fitted baseline. Only returned if return_baseline is True
+    baseline : array-like, same size as ``y``
+        Fitted baseline. Only returned if return_baseline is ``True``
 
     Examples
     --------
@@ -626,7 +626,7 @@ def excess_variance(lc, normalization='fvar'):
 
     Vaughan et al. 2003, MNRAS 345, 1271 give three measurements of source
     intrinsic variance: if a light curve has a total variance of :math:`S^2`,
-    and each point has an errorbar :math:`\sigma_{err}`, the *excess variance*
+    and each point has an error bar :math:`\sigma_{err}`, the *excess variance*
     is defined as
 
     .. math:: \sigma_{XS} = S^2 - \overline{\sigma_{err}}^2;
@@ -645,9 +645,9 @@ def excess_variance(lc, normalization='fvar'):
     ----------
     lc : a :class:`Lightcurve` object
     normalization : str
-        if 'fvar', return the fractional mean square variability :math:`F_{var}`.
-        If 'none', return the unnormalized excess variance variance
-        :math:`\sigma_{XS}`. If 'norm_xs', return the normalized excess variance
+        if ``fvar``, return the fractional mean square variability :math:`F_{var}`.
+        If ``none``, return the unnormalized excess variance variance
+        :math:`\sigma_{XS}`. If ``norm_xs``, return the normalized excess variance
         :math:`\sigma_{XS}`
     Returns
     -------
@@ -689,13 +689,14 @@ def create_window(N, window_type='uniform'):
     ----------
     N : int
         Total number of data points in window. If negative, abs is taken.
-    window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
+    window_type : {``uniform``, ``parzen``, ``hamming``, ``hanning``, ``triangular``,\
+                 ``welch``, ``blackmann``, ``flat-top``}, optional, default ``uniform``
         Type of window to create.
 
     Returns
     -------
     window: numpy.ndarray
-        Window function of length N.
+        Window function of length ``N``.
     """
 
     if not isinstance(N, int):
@@ -787,7 +788,7 @@ def poisson_symmetrical_errors(counts):
     Returns
     -------
     err : numpy.ndarray
-        An array of uncertainties associated with the Poisson counts in `counts`
+        An array of uncertainties associated with the Poisson counts in ``counts``
 
     Example
     -------
