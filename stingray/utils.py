@@ -679,17 +679,17 @@ def excess_variance(lc, normalization='fvar'):
 
 
 def create_window(N, window_type='uniform'):
-    """ A method to create window functions commonly used in signal processing.
+    """A method to create window functions commonly used in signal processing.
 
     Windows supported are:
-    Hamming, Hanning, uniform (rectangular window), triangular window, blackmann window among others.
+    Hamming, Hanning, uniform (rectangular window), triangular window,
+    blackmann window among others.
 
     Parameters
     ----------
     N : int
         Total number of data points in window. If negative, abs is taken.
-    window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch',
-                   'blackmann', 'flat-top'}, optional, default 'uniform'
+    window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
         Type of window to create.
 
     Returns

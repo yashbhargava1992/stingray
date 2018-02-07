@@ -842,10 +842,10 @@ def read(filename, format_='pickle', **kwargs):
     
     Returns
     -------
-    If format_ is 'pickle', an object is returned.
-    If format_ is 'pickle', an object is returned.
-    If format_ is 'ascii', astropy.table object is returned.
-    If format_ is 'hdf5' or 'fits', a dictionary object is returned.
+    If ``format_`` is 'pickle', an object is returned.
+    If ``format_`` is 'pickle', an object is returned.
+    If ``format_`` is 'ascii', `astropy.table` object is returned.
+    If ``format_`` is 'hdf5' or 'fits', a dictionary object is returned.
     """
 
     if format_ == 'pickle':
