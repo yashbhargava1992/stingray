@@ -121,8 +121,6 @@ Bispectrum
 
 .. autoclass:: stingray.bispectrum.Bispectrum
    :members:
-   :private-members:
-   :special-members:
 
 ----
 
@@ -204,7 +202,7 @@ GTI Functionality
    :imported-members:
 
 I/O Functionality
-----------------
+-----------------
 
 .. automodule:: stingray.io
    :members:

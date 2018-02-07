@@ -13,66 +13,67 @@ __all__ = ["Bispectrum"]
 
 class Bispectrum(object):
     """
-    Makes a :class:`Bispectrum` object from a given :class:`Lightcurve`.
+    Makes a :class:`Bispectrum` object from a given :class:`stingray.Lightcurve`.
 
-    Bispectrum is a higher order time series analysis method and is calculated by indirect method as
-    fourier transform of triple auto-correlation function also called as 3rd Order cumulant.
+    :class:`Bispectrum` is a higher order time series analysis method and is calculated by
+    indirect method as Fourier transform of triple auto-correlation function also called as
+    3rd order cumulant.
 
     Parameters
     ----------
-    lc : lightcurve.Lightcurve object
+    lc : :class:`stingray.Lightcurve` object
         The light curve data for bispectrum calculation.
 
-    maxlag : int, optional, default None
+    maxlag : int, optional, default ``None``
         Maximum lag on both positive and negative sides of
         3rd order cumulant (Similar to lags in correlation).
-        if None, max lag is set to one-half of length of lightcurve.
+        if ``None``, max lag is set to one-half of length of light curve.
 
-    window : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
-        Type of Window to apply for Bispectrum.
+    window : {``uniform``, ``parzen``, ``hamming``, ``hanning``, ``triangular``, ``welch``, ``blackman``, ``flat-top``}, optional, default 'uniform'
+        Type of window function to apply to the data.
 
-    scale : {'biased', 'unbiased'}, optional, default 'biased'
+    scale : {``biased``, ``unbiased``}, optional, default ``biased``
         Flag to decide biased or unbiased normalization for 3rd order cumulant function.
 
 
     Attributes
     ----------
-    lc : lightcurve.Lightcurve
-        The light curve data for bispectrum.
+    lc : :class:`stingray.Lightcurve` object
+        The light curve data to compute the :class:`Bispectrum`.
 
     fs : float
-        Sampling freq of light curve.
+        Sampling frequencies
 
     n : int
         Total Number of samples of light curve observations.
 
     maxlag : int
         Maximum lag on both positive and negative sides of
-        3rd order cumulant (Similar to lags in correlation)
+        3rd order cumulant (similar to lags in correlation)
 
     signal : numpy.ndarray
-        Row vector of lightcurve counts for matrix operations
+        Row vector of light curve counts for matrix operations
 
-    scale : {'biased', 'unbiased'}
+    scale : {``biased``, ``unbiased``}
         Flag to decide biased or unbiased normalization for 3rd order cumulant function.
 
     lags : numpy.ndarray
         An array of time lags for which 3rd order cumulant is calculated
 
     freq : numpy.ndarray
-        An array of freq values for bispectrum.
+        An array of freq values for :class:`Bispectrum`.
 
     cum3 : numpy.ndarray
-        A maxlag*2+1 x maxlag*2+1 matrix containing 3rd order cumulant data for different lags.
+        A ``maxlag*2+1 x maxlag*2+1`` matrix containing 3rd order cumulant data for different lags.
 
     bispec : numpy.ndarray
-        A maxlag*2+1 x maxlag*2+1 matrix containing bispectrum data for different frequencies.
+        A`` maxlag*2+1 x maxlag*2+1`` matrix containing bispectrum data for different frequencies.
 
     bispec_mag : numpy.ndarray
-        Magnitude of Bispectrum
+        Magnitude of the bispectrum
 
     bispec_phase : numpy.ndarray
-        Phase of Bispectrum
+        Phase of the bispectrum
 
     References
     ----------
@@ -320,27 +321,27 @@ class Bispectrum(object):
     def plot_cum3(self, axis=None, save=False, filename=None):
 
         """
-        Plot the 3rd order cumulant as function of time lags using `matplotlib`.
-        Plot the self.cum3 on a graph with ``self.lags`` on x-axis and y-axis and
-        ``self.cum3`` on z-axis
+        Plot the 3rd order cumulant as function of time lags using ``matplotlib``.
+        Plot the ``cum3`` attribute on a graph with the ``lags`` attribute on x-axis and y-axis and
+        ``cum3`` on z-axis
 
         Parameters
         ----------
-        axis : list, tuple, string, default None
-            Parameter to set axis properties of Matplotlib figure. For example
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of ``matplotlib`` figure. For example
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
-            acceptable argument for `matplotlib.pyplot.axis()` function.
+            acceptable argument for ``matplotlib.pyplot.axis()`` method.
 
-        save : boolean, optional (default=False)
-            If True, save the figure with specified filename.
+        save : bool, optionalm, default ``False``
+            If ``True``, save the figure with specified filename.
 
         filename : str
-            File name of the image to save. Depends on the boolean ``save``.
+            File name and path of the image to save. Depends on the boolean ``save``.
 
         Returns
         -------
-        plt : matplotlib.pyplot object
-            Reference to plot, call show() to display it
+        plt : ``matplotlib.pyplot`` object
+            Reference to plot, call ``show()`` to display it
         """
 
         try:
@@ -367,27 +368,27 @@ class Bispectrum(object):
     def plot_mag(self, axis=None, save=False, filename=None):
 
         """
-        Plot the magnitude of bispectrum as function of freq using `matplotlib`.
-        Plot the self.bispec_mag on a graph with ``self.freq`` on x-axis and y-axis and
-        ``self.bispec_mag`` on z-axis.
+        Plot the magnitude of bispectrum as function of freq using ``matplotlib``.
+        Plot the ``bispec_mag`` attribute on a graph with ``freq`` attribute on the x-axis and y-axis and
+        the ``bispec_mag`` attribute on the z-axis.
 
         Parameters
         ----------
-        axis : list, tuple, string, default None
-            Parameter to set axis properties of Matplotlib figure. For example
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of ``matplotlib`` figure. For example
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
-            acceptable argument for `matplotlib.pyplot.axis()` function.
+            acceptable argument for ``matplotlib.pyplot.axis()`` method.
 
-        save : boolean, optional (default=False)
-            If True, save the figure with specified filename.
+        save : bool, optional, default ``False``
+            If ``True``, save the figure with specified filename and path.
 
         filename : str
-            File name of the image to save. Depends on the boolean ``save``.
+            File name and path of the image to save. Depends on the bool ``save``.
 
         Returns
         -------
-        plt : matplotlib.pyplot object
-            Reference to plot, call show() to display it
+        plt : ``matplotlib.pyplot`` object
+            Reference to plot, call ``show()`` to display it
         """
         try:
             import matplotlib.pyplot as plt
@@ -413,27 +414,27 @@ class Bispectrum(object):
     def plot_phase(self, axis=None, save=False, filename=None):
 
         """
-        Plot the phase of bispectrum as function of freq using `matplotlib`.
-        Plot the self.bispec_phase on a graph with ``self.phase`` on x-axis and y-axis and
-        ``self.bispec_phase`` on z-axis.
+        Plot the phase of bispectrum as function of freq using ``matplotlib``.
+        Plot the ``bispec_phase`` attribute on a graph with ``phase`` attribute on the x-axis and
+        y-axis and the ``bispec_phase`` attribute on the z-axis.
 
         Parameters
         ----------
-        axis : list, tuple, string, default None
-            Parameter to set axis properties of Matplotlib figure. For example
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of ``matplotlib`` figure. For example
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
-            acceptable argument for `matplotlib.pyplot.axis()` function.
+            acceptable argument for ``matplotlib.pyplot.axis()`` function.
 
-        save : boolean, optional (default=False)
-            If True, save the figure with specified filename.
+        save : bool, optional, default ``False``
+            If ``True``, save the figure with specified filename and path.
 
         filename : str
-            File name of the image to save. Depends on the boolean ``save``.
+            File name and path of the image to save. Depends on the bool ``save``.
 
         Returns
         -------
-        plt : matplotlib.pyplot object
-            Reference to plot, call show() to display it
+        plt : ``matplotlib.pyplot`` object
+            Reference to plot, call ``show()`` to display it
         """
         try:
             import matplotlib.pyplot as plt
