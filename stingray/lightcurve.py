@@ -30,17 +30,17 @@ class Lightcurve(object):
     time: iterable
         A list or array of time stamps for a light curve
 
-    counts: iterable, optional, default None
+    counts: iterable, optional, default ``None``
         A list or array of the counts in each bin corresponding to the
         bins defined in `time` (note: use ``input_counts=False`` to
         input the count range, i.e. counts/second, otherwise use
         counts/bin).
 
-    err: iterable, optional, default None
+    err: iterable, optional, default ``None``
         A list or array of the uncertainties in each bin corresponding to
         the bins defined in ``time`` (note: use ``input_counts=False`` to
         input the count rage, i.e. counts/second, otherwise use
-        counts/bin). If None, we assume the data is poisson distributed
+        counts/bin). If ``None``, we assume the data is poisson distributed
         and calculate the error from the average of the lower and upper
         1-sigma confidence intervals for the Poissonian distribution with
         mean equal to ``counts``.
@@ -48,17 +48,17 @@ class Lightcurve(object):
     input_counts: bool, optional, default True
         If True, the code assumes that the input data in ``counts``
         is in units of counts/bin. If False, it assumes the data
-        in 'counts' is in counts/second.
+        in ``counts`` is in counts/second.
 
-    gti: 2-d float array, default None
+    gti: 2-d float array, default ``None``
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Good Time Intervals. They are *not* applied to the data by default.
         They will be used by other methods to have an indication of the
         "safe" time intervals to use during analysis.
 
-    err_dist: str, optional, default None
-        Statistic of the Lightcurve, it is used to calculate the
-        uncertainties and other statistical values apropriately.
+    err_dist: str, optional, default ``None``
+        Statistical distribution used to calculate the
+        uncertainties and other statistical values appropriately.
         Default makes no assumptions and keep errors equal to zero.
 
     mjdref: float
@@ -70,10 +70,10 @@ class Lightcurve(object):
     time: numpy.ndarray
         The array of midpoints of time bins.
 
-    bin_lo:
+    bin_lo: numpy.ndarray
         The array of lower time stamp of time bins.
 
-    bin_hi:
+    bin_hi: numpy.ndarray
         The array of higher time stamp of time bins.
 
     counts: numpy.ndarray
@@ -323,7 +323,8 @@ class Lightcurve(object):
 
     def __add__(self, other):
         """
-        Add two light curves element by element having the same time array.
+        Add the counts of two light curves element by element, assuming the light curves
+        have the same time array.
 
         This magic method adds two :class:`Lightcurve` objects having the same time
         array such that the corresponding counts arrays get summed up.
@@ -348,11 +349,14 @@ class Lightcurve(object):
 
     def __sub__(self, other):
         """
-        Subtract two light curves element by element having the same time array.
+        Subtract the counts/flux of one light curve from the counts/flux of another
+        light curve element by element, assuming the ``time`` arrays of the light curves
+        match exactly.
 
-        This magic method subtracts two :class:`Lightcurve` objects having the same
-        time array such that the corresponding counts arrays interferes with
-        each other.
+        This magic method takes two :class:`Lightcurve` objects having the same
+        ``time`` array and subtracts the ``counts`` of one :class:`Lightcurve` with
+        that of another, while also updating ``countrate``, ``counts_err`` and ``countrate_err``
+        correctly.
 
         GTIs are crossed, so that only common intervals are saved.
 
@@ -398,10 +402,11 @@ class Lightcurve(object):
 
     def __len__(self):
         """
-        Return the length of the data array of a light curve.
+        Return the number of time bins of a light curve.
 
-        This method implements overrides the len function over a :class:`Lightcurve`
-        object and returns the length of the time and count arrays.
+        This method implements overrides the ``len`` function for a :class:`Lightcurve`
+        object and returns the length of the ``time`` array (which should be equal to the
+        length of the ``counts`` and ``countrate`` arrays).
 
         Examples
         --------
@@ -424,7 +429,7 @@ class Lightcurve(object):
         curve segment
 
         If the slice object is of kind ``start:stop:step``, GTIs are also sliced,
-        and rewritten as zip(time - self.dt /2, time + self.dt / 2)
+        and rewritten as ``zip(time - self.dt /2, time + self.dt / 2)``
 
         Parameters
         ----------
@@ -496,10 +501,10 @@ class Lightcurve(object):
         ----------
         lam : float
             "smoothness" parameter. Larger values make the baseline stiffer
-            Typically 1e2 < lam < 1e9
+            Typically ``1e2 < lam < 1e9``
         p : float
             "asymmetry" parameter. Smaller values make the baseline more
-            "horizontal". Typically 0.001 < p < 0.1, but not necessary.
+            "horizontal". Typically ``0.001 < p < 0.1``, but not necessary.
 
         Other parameters
         ----------------
@@ -530,8 +535,8 @@ class Lightcurve(object):
                         use_hist=False):
 
         """
-        Make a light curve out of photon arrival times, with a given time resolution `dt`.
-        Note that `dt` should be larger than the native time resolution of the instrument
+        Make a light curve out of photon arrival times, with a given time resolution ``dt``.
+        Note that ``dt`` should be larger than the native time resolution of the instrument
         that has taken the data.
 
         Parameters
@@ -542,33 +547,33 @@ class Lightcurve(object):
         dt: float
             time resolution of the light curve (the bin width)
 
-        tseg: float, optional, default None
+        tseg: float, optional, default ``None``
             The total duration of the light curve.
-            If this is `None`, then the total duration of the light curve will
+            If this is ``None``, then the total duration of the light curve will
             be the interval between the arrival between the first and the last
-            photon in `toa`.
+            photon in ``toa``.
 
-                **Note**: If tseg is not divisible by dt (i.e. if tseg/dt is
+                **Note**: If ``tseg`` is not divisible by ``dt`` (i.e. if ``tseg``/``dt`` is
                 not an integer number), then the last fractional bin will be
                 dropped!
 
-        tstart: float, optional, default None
+        tstart: float, optional, default ``None``
             The start time of the light curve.
-            If this is None, the arrival time of the first photon will be used
+            If this is ``None``, the arrival time of the first photon will be used
             as the start time of the light curve.
 
         gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
             Good Time Intervals
 
         use_hist : bool
-            Use `np.histogram` instead of `np.bincounts`. Might be advantageous
+            Use ``np.histogram`` instead of ``np.bincounts``. Might be advantageous
             for very short datasets.
 
         Returns
         -------
         lc: :class:`Lightcurve` object
-            A light curve object with the binned light curve
+            A :class:`Lightcurve` object with the binned light curve
         """
 
         toa = np.asarray(toa)
@@ -618,15 +623,15 @@ class Lightcurve(object):
             The new time resolution of the light curve. Must be larger than
             the time resolution of the old light curve!
 
-        method: {"sum" | "mean" | "average"}, optional, default "sum"
+        method: {``sum`` | ``mean`` | ``average``}, optional, default ``sum``
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
 
         Other Parameters
         ----------------
         f: float
-            the rebin factor. If specified, it substitutes dt_new with
-            f*self.dt
+            the rebin factor. If specified, it substitutes ``dt_new`` with
+            ``f*self.dt``
 
         Returns
         -------
@@ -683,24 +688,24 @@ class Lightcurve(object):
         """
         Join two lightcurves into a single object.
 
-        The new Lightcurve object will contain time stamps from both the
-        objects. The count per bin in the resulting object will be the
-        individual count per bin, or the average in case of overlapping
-        time arrays of both lightcurve objects.
+        The new :class:`Lightcurve` object will contain time stamps from both the
+        objects. The ``counts`` and ``countrate`` attributes in the resulting object
+        will contain the union of the non-overlapping parts of the two individual objects,
+         or the average in case of overlapping ``time`` arrays of both :class:`Lightcurve` objects.
 
-        Good Time intervals are also joined.
+        Good Time Intervals are also joined.
 
-        Note : Time array of both lightcurves should not overlap each other.
+        Note : Ideally, the ``time`` array of both lightcurves should not overlap.
 
         Parameters
         ----------
-        other : Lightcurve object
-            The other Lightcurve object which is supposed to be joined with.
+        other : :class:`Lightcurve` object
+            The other :class:`Lightcurve` object which is supposed to be joined with.
 
         Returns
         -------
-        lc_new : Lightcurve object
-            The resulting lightcurve object.
+        lc_new : :class:`Lightcurve` object
+            The resulting :class:`Lightcurve` object.
 
         Examples
         --------
@@ -799,25 +804,29 @@ class Lightcurve(object):
 
     def truncate(self, start=0, stop=None, method="index"):
         """
-        Truncate a Lightcurve object from points on the time array.
+        Truncate a :class:`Lightcurve` object.
 
-        This method allows the truncation of a Lightcurve object and returns
-        a new light curve.
+        This method takes a ``start`` and a ``stop`` point (either as indices,
+        or as times in the same unit as those in the ``time`` attribute, and truncates
+        all bins before ``start`` and after ``stop``, then returns a new :class:`Lightcurve`
+        object with the truncated light curve.
 
         Parameters
         ----------
         start : int, default 0
-            Index of the starting point of the truncation.
+            Index (or time stamp) of the starting point of the truncation. If no value is set
+            for the start point, then all points from the first element in the ``time`` array
+            are taken into account.
 
-        stop : int, default None
-            Index of the ending point (exclusive) of the truncation. If no
+        stop : int, default ``None``
+            Index (or time stamp) of the ending point (exclusive) of the truncation. If no
             value of stop is set, then points including the last point in
             the counts array are taken in count.
 
-        method : {"index" | "time"}, optional, default "index"
-            Type of the start and stop values. If set to "index" then
+        method : {``index`` | ``time``}, optional, default ``index``
+            Type of the start and stop values. If set to ``index`` then
             the values are treated as indices of the counts array, or
-            if set to "time", the values are treated as actual time values.
+            if set to ``time``, the values are treated as actual time values.
 
         Returns
         -------
@@ -835,7 +844,6 @@ class Lightcurve(object):
         array([30, 40, 50, 60, 70, 80])
         >>> lc_new.time
         array([3, 4, 5, 6, 7, 8])
-
         # Truncation can also be done by time values
         >>> lc_new = lc.truncate(start=6, method='time')
         >>> lc_new.time
@@ -902,21 +910,21 @@ class Lightcurve(object):
 
     def sort(self, reverse=False):
         """
-        Sort a Lightcurve object in accordance with its counts array.
+        Sort a :class:`Lightcurve` object in accordance with its counts array.
 
-        A Lightcurve can be sorted in either increasing or decreasing order
+        A :class:`Lightcurve` can be sorted in either increasing or decreasing order
         using this method. The counts array gets sorted and the time array is
         changed accordingly.
 
         Parameters
         ----------
-        reverse : boolean, default False
-            If True then the object is sorted in reverse order.
+        reverse : boolean, default ``False``
+            If ``True`` then the object is sorted in reverse order.
 
         Returns
         -------
         lc_new: :class:`Lightcurve` object
-            The :class:`Lightcurve` object with truncated time and counts
+            The :class:`Lightcurve` object with sorted ``time`` and ``counts``
             arrays.
 
         Examples
@@ -939,9 +947,10 @@ class Lightcurve(object):
         self.counts_err = np.asarray(new_counts_err)
 
     def estimate_chunk_length(self, min_total_counts=100, min_time_bins=100):
-        """Choose a reasonable chunk length.
+        """Choose a reasonable length for time segments, given a minimum number of total
+        counts in the segment, and a minimum number of time bins in the segment.
 
-        The user specifies a condition on the total counts in each chunk and
+        The user specifies a condition on the total counts in each segment and
         the minimum number of time bins.
 
         Other Parameters
@@ -998,27 +1007,27 @@ class Lightcurve(object):
         func : function
             Function accepting a :class:`Lightcurve` object as single argument, plus
             possible additional keyword arguments, and returning a number or a
-            tuple - e.g., (result, error) where both result and error are
+            tuple - e.g., ``(result, error)`` where both ``result`` and ``error`` are
             numbers.
 
         Other parameters
         ----------------
         fraction_step : float
-            If the step is not a full chunk_length but less (e.g. a moving window),
-            this indicates the ratio between step step and `chunk_length` (e.g.
-            0.5 means that the window shifts of half chunk_length)
+            If the step is not a full ``chunk_length`` but less (e.g. a moving window),
+            this indicates the ratio between step step and ``chunk_length`` (e.g.
+            0.5 means that the window shifts of half ``chunk_length``)
         kwargs : keyword arguments
             These additional keyword arguments, if present, they will be passed
-            to `func`
+            to ``func``
 
         Returns
         -------
         start_times : array
             Lower time boundaries of all time segments.
         stop_times : array
-            Higher time boundaries of all segments.
+            upper time boundaries of all segments.
         result : array of N elements
-            The result of `func` for each segment of the light curve
+            The result of ``func`` for each segment of the light curve
 
         Examples
         --------
@@ -1071,24 +1080,24 @@ class Lightcurve(object):
         witherrors: boolean, default False
             Whether to plot the Lightcurve with errorbars or not
 
-        labels : iterable, default None
-            A list of tuple with xlabel and ylabel as strings.
+        labels : iterable, default ``None``
+            A list of tuple with ``xlabel`` and ``ylabel`` as strings.
 
-        axis : list, tuple, string, default None
-            Parameter to set axis properties of Matplotlib figure. For example
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of the ``matplotlib`` figure. For example
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
-            acceptable argument for `matplotlib.pyplot.axis()` function.
+            acceptable argument for the``matplotlib.pyplot.axis()`` method.
 
-        title : str, default None
+        title : str, default ``None``
             The title of the plot.
 
         marker : str, default '-'
             Line style and color of the plot. Line styles and colors are
             combined in a single format string, as in ``'bo'`` for blue
-            circles. See `matplotlib.pyplot.plot` for more options.
+            circles. See ``matplotlib.pyplot.plot`` for more options.
 
-        save : boolean, optional (default=False)
-            If True, save the figure with specified filename.
+        save : boolean, optional, default ``False``
+            If ``True``, save the figure with specified filename.
 
         filename : str
             File name of the image to save. Depends on the boolean ``save``.
@@ -1136,9 +1145,10 @@ class Lightcurve(object):
     def write(self, filename, format_='pickle', **kwargs):
         """
         Write a :class:`Lightcurve` object to file. Currently supported formats are
-            * pickle (not recommended for long-term storage)
-            * HDF5
-            * ASCII
+
+        * pickle (not recommended for long-term storage)
+        * HDF5
+        * ASCII
 
         Parameters
         ----------
@@ -1165,9 +1175,10 @@ class Lightcurve(object):
     def read(self, filename, format_='pickle'):
         """
         Read a :class:`Lightcurve` object from file. Currently supported formats are
-            * pickle (not recommended for long-term storage)
-            * HDF5
-            * ASCII
+
+        * pickle (not recommended for long-term storage)
+        * HDF5
+        * ASCII
 
         Parameters
         ----------
@@ -1179,9 +1190,10 @@ class Lightcurve(object):
 
         Returns
         --------
-        If format\_ is 'ascii': astropy.table is returned.
-        If format\_ is 'hdf5': dictionary with key-value pairs is returned.
-        If format\_ is 'pickle': class object is set.
+        lc : ``astropy.table`` or ``dict`` or :class:`Lightcurve` object
+            * If ``format\_`` is ``ascii``: ``astropy.table`` is returned.
+            * If ``format\_`` is ``hdf5``: dictionary with key-value pairs is returned.
+            * If ``format\_`` is ``pickle``: :class:`Lightcurve` object is returned.
         """
 
         if format_ == 'ascii' or format_ == 'hdf5':
