@@ -181,7 +181,6 @@ class CrossCorrelation(object):
         labels : iterable, default None
             A list of tuple with xlabel and ylabel as strings.
 
-
         axis : list, tuple, string, default None
             Parameter to set axis properties of Matplotlib figure. For example
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
@@ -228,11 +227,12 @@ class CrossCorrelation(object):
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
 
+        # axis is a tuple containing formatting information
         if axis is not None:
-            ax.set_axis(axis)
+            ax.axis(axis)
 
         if title is not None:
-            axis.set_title(title)
+            ax.set_title(title)
 
         if save:
             if filename is None:
