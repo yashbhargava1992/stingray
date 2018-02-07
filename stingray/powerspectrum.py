@@ -266,10 +266,11 @@ class Powerspectrum(Crossspectrum):
 
         .. math::
 
-            r = \sqrt{P}
+           r = \sqrt{P}
 
-            \delta r = \frac{1}{2 * \sqrt{P}} \delta P
+        .. math::
 
+           \delta r = \\frac{1}{2 * \sqrt{P}} \delta P
 
         Parameters
         ----------

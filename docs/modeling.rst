@@ -1,7 +1,4 @@
 Modeling
 ========
 
-.. automodule:: stingray.modeling
-   :members:
-   :imported-members:
-   :undoc-members:
+Modelling documentation goes here!

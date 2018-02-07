@@ -1,7 +1,4 @@
 Pulsar functions and Statistics
 ===============================
 
-.. automodule:: stingray.pulse
-   :members:
-   :imported-members:
-   :undoc-members:
+Pulsar functionality documentation goes here

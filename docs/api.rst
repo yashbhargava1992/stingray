@@ -290,7 +290,7 @@ Auxiliary Classes
 Convenience Functions
 ---------------------
 
-.. automodule:: stingray.modeling.scripts:
+.. automodule:: stingray.modeling.scripts
    :members:
    :imported-members:
 

@@ -20,7 +20,7 @@ from stingray import Lightcurve, Powerspectrum
 
 #from stingray.modeling.parametricmodels import logmin
 
-__all__ = ["set_logprior", "Posterior", "PSDPosterior", "LogLikelihood",
+__all__ = ["set_logprior", "Posterior", "PSDPosterior", "LogLikelihood", "PoissonLogLikelihood",
            "PSDLogLikelihood", "GaussianLogLikelihood", "LaplaceLogLikelihood",
            "PoissonPosterior", "GaussianPosterior", "LaplacePosterior",
            "PriorUndefinedError", "LikelihoodUndefinedError"]

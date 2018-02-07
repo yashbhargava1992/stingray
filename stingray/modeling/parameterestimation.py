@@ -912,7 +912,7 @@ class SamplingResults(object):
     ci : numpy.ndarray
         An array of shape (ndim, 2) containing the lower and upper bounds
         of the credible interval (the Bayesian equivalent of the confidence
-         interval) for each parameter using the bounds set by `ci_min` and `ci_max`
+        interval) for each parameter using the bounds set by `ci_min` and `ci_max`
     """
 
     def __init__(self, sampler, ci_min=5, ci_max=95):

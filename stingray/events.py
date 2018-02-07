@@ -319,15 +319,16 @@ class EventList(object):
         Read an event list from a file on disk. The file must be either a Python pickle file (not recommended
         for long-term storage), an HDF5 file, an ASCII or a FITS file. The file can have the following
         attributes in the data or meta-data:
-            * time:  the time stamps of the photon arrivals
-            * energy: the photon energy corresponding to each time stamp
-            * ncounts: the total number of photon counts recorded
-            * mjdref: a reference time in Modified Julian Date
-            * dt: the time resolution of the data
-            * notes: other possible meta-data
-            * gti: Good Time Intervals
-            * pi: some instruments record energies as "Pulse Invariant", an integer number recorded from
-                  the Pulse Height Amplitude
+
+        * time:  the time stamps of the photon arrivals
+        * energy: the photon energy corresponding to each time stamp
+        * ncounts: the total number of photon counts recorded
+        * mjdref: a reference time in Modified Julian Date
+        * dt: the time resolution of the data
+        * notes: other possible meta-data
+        * gti: Good Time Intervals
+        * pi: some instruments record energies as "Pulse Invariant", an integer number recorded from
+          the Pulse Height Amplitude
 
         Parameters
         ----------

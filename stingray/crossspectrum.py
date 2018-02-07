@@ -1,6 +1,6 @@
 from __future__ import division, absolute_import, print_function
 
-from itertools import izip
+#from itertools import izip
 
 import numpy as np
 import scipy
@@ -479,6 +479,8 @@ class Crossspectrum(object):
 
         References
         ----------
+        Here is an important reference: [1]_.
+
         .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
 
         """
@@ -721,7 +723,7 @@ class AveragedCrossspectrum(Crossspectrum):
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
 
-            for lc1_seg, lc2_seg in izip(lc1, lc2):
+            for lc1_seg, lc2_seg in zip(lc1, lc2):
 
                 if self.type == "crossspectrum":
                     cs_sep, nphots1_sep, nphots2_sep = \
@@ -779,7 +781,7 @@ class AveragedCrossspectrum(Crossspectrum):
         Compute an averaged Coherence function of cross spectrum by computing
         coherence function of each segment and averaging them. The return type
         is a tuple with first element as the coherence function and the second
-        element as the corresponding uncertainty[1]_ associated with it.
+        element as the corresponding uncertainty [2]_ associated with it.
 
         Note : The uncertainty in coherence function is strictly valid for
                Gaussian statistics only.
@@ -791,7 +793,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         References
         ----------
-        .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
+        .. [2] http://iopscience.iop.org/article/10.1086/310430/pdf
 
         """
         if np.any(self.m < 50):
