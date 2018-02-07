@@ -324,9 +324,21 @@ def cross_two_gtis(gti0, gti1):
     --------
     cross_gtis : From multiple GTI lists, extract common intervals *EXACTLY*
 
+    Examples
+    --------
+    >>> gti1 = np.array([[1, 2]])
+    >>> gti2 = np.array([[1, 2]])
+    >>> newgti = cross_gtis([gti1, gti2])
+    >>> np.all(newgti == [[1, 2]])
+    True
+    >>> gti1 = np.array([[1, 4]])
+    >>> gti2 = np.array([[1, 2], [2, 4]])
+    >>> newgti = cross_gtis([gti1, gti2])
+    >>> np.all(newgti == [[1, 4]])
+    True
     """
-    gti0 = np.asarray(gti0)
-    gti1 = np.asarray(gti1)
+    gti0 = join_equal_gti_boundaries(np.asarray(gti0))
+    gti1 = join_equal_gti_boundaries(np.asarray(gti1))
     # Check GTIs
     check_gtis(gti0)
     check_gtis(gti1)
@@ -504,8 +516,30 @@ def check_separate(gti0, gti1):
         return False
 
 
+def join_equal_gti_boundaries(gti):
+    """If the start of a GTI is right at the end of another, join them.
+
+    """
+    new_gtis = gti
+    touching = gti[:-1, 1] == gti[1:, 0]
+    if np.any(touching):
+        ng = []
+        count = 0
+        while count < len(gti) - 1:
+            if new_gtis[count, 1] == gti[count + 1, 0]:
+                ng.append([gti[count, 0], gti[count + 1, 1]])
+            else:
+                ng.append(gti[count])
+            count += 1
+        new_gtis = np.asarray(ng)
+    return new_gtis
+
+
 def append_gtis(gti0, gti1):
     """Union of two non-overlapping GTIs.
+
+    If the two GTIs "touch", this is tolerated and the touching GTIs are
+    joined in a single one.
 
     Parameters
     ----------
@@ -519,6 +553,13 @@ def append_gtis(gti0, gti1):
     -------
     gti: 2-d float array
         The newly created GTI
+
+    Examples
+    --------
+    >>> np.all(append_gtis([[0, 1]], [[2, 3]]) == [[0, 1], [2, 3]])
+    True
+    >>> np.all(append_gtis([[0, 1]], [[1, 3]]) == [[0, 3]])
+    True
     """
 
     gti0 = np.asarray(gti0)
@@ -533,7 +574,9 @@ def append_gtis(gti0, gti1):
         raise ValueError('In order to append, GTIs must be mutually'
             'exclusive.')
 
-    return np.concatenate([gti0, gti1])
+    new_gtis = np.sort(np.concatenate([gti0, gti1]))
+
+    return join_equal_gti_boundaries(new_gtis)
 
 
 def join_gtis(gti0, gti1):
