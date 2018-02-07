@@ -10,6 +10,13 @@ from astropy.io import fits
 from .utils import contiguous_regions, jit, assign_value_if_none
 from stingray.exceptions import StingrayError
 
+__all__ = ['load_gtis', 'check_gtis',
+           'create_gti_mask_jit', 'create_gti_mask',
+           'create_gti_mask_complete', 'create_gti_from_condition',
+           'cross_two_gtis', 'cross_gtis', 'get_btis', 'gti_len',
+           'check_separate', 'append_gtis', 'join_gtis',
+           'time_intervals_from_gtis', 'bin_intervals_from_gtis',
+           'gti_border_bins']
 
 def load_gtis(fits_file, gtistring=None):
     """
