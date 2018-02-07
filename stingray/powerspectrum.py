@@ -381,32 +381,29 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     Parameters
     ----------
-    lc: :class:`stingray.Lightcurve`object OR
-        iterable of :class:`stingray.Lightcurve`
-objects
+    lc: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
         The light curve data to be Fourier-transformed.
 
     segment_size: float
         The size of each segment to average. Note that if the total
-        duration of each Lightcurve object in lc is not an integer multiple
-        of the segment_size, then any fraction left-over at the end of the
+        duration of each :class:`Lightcurve` object in lc is not an integer multiple
+        of the ``segment_size``, then any fraction left-over at the end of the
         time series will be lost.
 
-    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-        The normaliation of the periodogram to be used. Options are
-        "leahy", "frac", "abs" and "none", default is "frac".
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
+        The normaliation of the periodogram to be used.
 
 
     Other Parameters
     ----------------
     gti: 2-d float array
-        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
     Attributes
     ----------
-    norm: {"leahy" | "frac" | "abs" | "none"}
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
         the normalization of the periodogram
 
     freq: numpy.ndarray
@@ -417,11 +414,11 @@ objects
         amplitudes
 
     power_err: numpy.ndarray
-        The uncertainties of `power`.
-        An approximation for each bin given by "power_err= power/Sqrt(m)".
-        Where `m` is the number of power averaged in each bin (by frequency
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
         binning, or averaging powerspectrum). Note that for a single
-        realization (m=1) the error is equal to the power.
+        realization (``m=1``) the error is equal to the power.
 
     df: float
         The frequency resolution
@@ -499,6 +496,16 @@ objects
 
 class DynamicalPowerspectrum(AveragedPowerspectrum):
     """
+    Create a dynamical power spectrum, also often called a *spectrogram*.
+
+    This class will divide a :class:`Lightcurve` object into segments of
+    length ``segment_size``, create a power spectrum for each segment and store
+    all powers in a matrix as a function of both time (using the mid-point of each
+    segment) and frequency.
+
+    This is often used to trace changes in period of a (quasi-)periodic signal over
+    time.
+
     Parameters
     ----------
     lc : :class:`stingray.Lightcurve`object
@@ -506,16 +513,16 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         to be calculated.
 
     segment_size : float, default 1
-         Length of the segment of light curve, default value is 1 second.
+         Length of the segment of light curve, default value is 1 (in whatever units
+         the ``time`` array in the :class:`Lightcurve`` object uses).
 
-    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-        The normaliation of the periodogram to be used. Options are
-        "leahy", "frac", "abs" and "none", default is "frac".
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
+        The normaliation of the periodogram to be used.
 
     Other Parameters
     ----------------
     gti: 2-d float array
-        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
@@ -524,15 +531,15 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     segment_size: float
         The size of each segment to average. Note that if the total
         duration of each Lightcurve object in lc is not an integer multiple
-        of the segment_size, then any fraction left-over at the end of the
+        of the ``segment_size``, then any fraction left-over at the end of the
         time series will be lost.
 
     dyn_ps : np.ndarray
         The matrix of normalized squared absolute values of Fourier
-        amplitudes. The axis are given by the `freq`
-        and `time` attirbutes
+        amplitudes. The axis are given by the ``freq``
+        and ``time`` attributes
 
-    norm: {"leahy" | "frac" | "abs" | "none"}
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none``}
         the normalization of the periodogram
 
     freq: numpy.ndarray
@@ -563,8 +570,8 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
         Parameters
         ----------
-        lc : `Lightcurve` object
-            The `Lightcurve` object from which to generate the dynamical power spectrum
+        lc : :class:`Lightcurve` object
+            The :class:`Lightcurve` object from which to generate the dynamical power spectrum
         """
         ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
             self, lc, self.segment_size)
@@ -592,7 +599,8 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     def rebin_frequency(self, df_new, method="sum"):
         """
         Rebin the Dynamic Power Spectrum to a new frequency resolution. Rebinning is
-        an in-place operation, i.e. will replace the existing `dyn_ps` attribute.
+        an in-place operation, i.e. will replace the existing ``dyn_ps`` attribute.
+
         While the new resolution need not be an integer multiple of the
         previous frequency resolution, be aware that if it is not, the last
         bin will be cut off by the fraction left over by the integer division.
@@ -600,11 +608,11 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         Parameters
         ----------
         df_new: float
-            The new frequency resolution of the Dynamica Power Spectrum.
+            The new frequency resolution of the Dynamical Power Spectrum.
             Must be larger than the frequency resolution of the old Dynamical
             Power Spectrum!
 
-        method: {"sum" | "mean" | "average"}, optional, default "sum"
+        method: {``sum`` | ``mean`` | ``average``}, optional, default ``sum``
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
         """
@@ -621,7 +629,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def trace_maximum(self, min_freq=None, max_freq=None, sigmaclip=False):
         """
-        Return the indices of the maximum powers in each segment Powerspectrum
+        Return the indices of the maximum powers in each segment :class:`Powerspectrum`
         between specified frequencies.
 
         Parameters
@@ -636,7 +644,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         -------
         max_positions : np.array
             The array of indices of the maximum power in each segment having
-            frequency between min_freq and max_freq.
+            frequency between ``min_freq`` and ``max_freq``.
         """
         if min_freq is None:
             min_freq = np.min(self.freq)

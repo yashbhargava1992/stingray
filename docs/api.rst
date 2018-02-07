@@ -57,6 +57,7 @@ Powerspectrum
 .. autoclass:: stingray.Powerspectrum
    :members:
    :private-members:
+   :inherited-members:
 
 ----
 
@@ -69,7 +70,7 @@ AveragedCrossspectrum
 
 .. autoclass:: stingray.AveragedCrossspectrum
    :members:
-   :private-members:
+   :inherited-members:
 
 ----
 
@@ -79,17 +80,22 @@ AveragedPowerspectrum
 
 .. autoclass:: stingray.AveragedPowerspectrum
    :members:
-   :private-members:
+   :inherited-members:
 
 ----
+
+Dynamical Powerspectrum
+-----------------------
+
+.. autoclass:: stingray.DynamicalPowerspectrum
+   :members:
+   :inherited-members:
 
 CrossCorrelation
 ----------------
 
 .. autoclass:: stingray.CrossCorrelation
    :members:
-   :private-members:
-   :special-members:
 
 ----
 
@@ -98,8 +104,7 @@ AutoCorrelation
 
 .. autoclass:: stingray.AutoCorrelation
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 ----
 

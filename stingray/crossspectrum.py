@@ -515,30 +515,28 @@ class AveragedCrossspectrum(Crossspectrum):
 
     Parameters
     ----------
-    lc1: :class:`stingray.Lightcurve` object OR
-        iterable of :class:`stingray.Lightcurve` objects
-        One light curve data to be Fourier-transformed. This is the band
-        of interest or channel of interest.
+    lc1: :class:`stingray.Lightcurve` object OR iterable of :class:`stingray.Lightcurve` objects
+        A light curve from which to compute the cross spectrum. In some cases, this would
+        be the light curve of the wavelength/energy/frequency band of interest.
 
-    lc2: :class:`stingray.Lightcurve` object OR
-        iterable of :class:`stingray.Lightcurve` objects
-        Second light curve data to be Fourier-transformed. This is the
-        reference band.
+    lc2: :class:`stingray.Lightcurve` object OR iterable of :class:`stingray.Lightcurve` objects
+        A second light curve to use in the cross spectrum. In some cases, this would be
+        the wavelength/energy/frequency reference band to compare the band of interest with.
 
     segment_size: float
         The size of each segment to average. Note that if the total
-        duration of each Lightcurve object in lc1 or lc2 is not an
-        integer multiple of the segment_size, then any fraction left-over
+        duration of each :class:`Lightcurve` object in ``lc1`` or ``lc2`` is not an
+        integer multiple of the ``segment_size``, then any fraction left-over
         at the end of the time series will be lost. Otherwise you introduce
-        artefacts.
+        artifacts.
 
-    norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
         The normalization of the (real part of the) cross spectrum.
 
     Other Parameters
     ----------------
     gti: 2-d float array
-        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
@@ -551,11 +549,11 @@ class AveragedCrossspectrum(Crossspectrum):
         The array of cross spectra
 
     power_err: numpy.ndarray
-        The uncertainties of `power`.
-        An approximation for each bin given by "power_err= power/Sqrt(m)".
-        Where `m` is the number of power averaged in each bin (by frequency
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
         binning, or averaging powerspectrum). Note that for a single
-        realization (m=1) the error is equal to the power.
+        realization (``m=1``) the error is equal to the power.
 
     df: float
         The frequency resolution
@@ -564,7 +562,7 @@ class AveragedCrossspectrum(Crossspectrum):
         The number of averaged cross spectra
 
     n: int
-        The number of time bins per segment of light curve?
+        The number of time bins per segment of light curve
 
     nphots1: float
         The total number of photons in the first (interest) light curve
@@ -573,7 +571,7 @@ class AveragedCrossspectrum(Crossspectrum):
         The total number of photons in the second (reference) light curve
 
     gti: 2-d float array
-        [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         They are calculated by taking the common GTI between the
         two light curves
 
@@ -781,10 +779,10 @@ class AveragedCrossspectrum(Crossspectrum):
         Compute an averaged Coherence function of cross spectrum by computing
         coherence function of each segment and averaging them. The return type
         is a tuple with first element as the coherence function and the second
-        element as the corresponding uncertainty [2]_ associated with it.
+        element as the corresponding uncertainty [3]_ associated with it.
 
-        Note : The uncertainty in coherence function is strictly valid for
-               Gaussian statistics only.
+        Note : The uncertainty in coherence function is strictly valid for Gaussian \
+               statistics only.
 
         Returns
         -------
@@ -793,7 +791,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         References
         ----------
-        .. [2] http://iopscience.iop.org/article/10.1086/310430/pdf
+        .. [3] http://iopscience.iop.org/article/10.1086/310430/pdf
 
         """
         if np.any(self.m < 50):
@@ -821,7 +819,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def time_lag(self):
         """Calculate time lag and uncertainty.
 
-        Formula from Bendat & Piersol 1986
+        Equation from [4]_.
 
         Returns
         -------
@@ -830,6 +828,11 @@ class AveragedCrossspectrum(Crossspectrum):
 
         lag_err : np.ndarray
             The uncertainty in the time lag
+
+        References
+        ----------
+
+        [4] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
 
         """
         lag = super(AveragedCrossspectrum, self).time_lag()
