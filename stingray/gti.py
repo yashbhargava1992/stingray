@@ -7,8 +7,7 @@ import collections
 import copy
 
 from astropy.io import fits
-from .io import assign_value_if_none
-from .utils import contiguous_regions, jit
+from .utils import contiguous_regions, jit, assign_value_if_none
 from stingray.exceptions import StingrayError
 
 
@@ -148,6 +147,11 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     epsilon : float
         fraction of dt that is tolerated at the borders of a GTI
     """
+    if len(time) == 0:
+        raise ValueError("Passing an empty time array to create_gti_mask")
+    if len(gtis) == 0:
+        raise ValueError("Passing an empty GTI array to create_gti_mask")
+
     try:
         from numba import jit
     except ImportError:
@@ -156,6 +160,7 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
                                         min_length=min_length,
                                         return_new_gtis=return_new_gtis,
                                         dt=dt, epsilon=epsilon)
+
     gtis = np.array(gtis, dtype=np.longdouble)
     check_gtis(gtis)
 
@@ -176,8 +181,8 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     # in order to simplify the calculation of the mask, but they will _not_
     # be returned.
     gtis_to_mask = copy.deepcopy(gtis_new)
-    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon*dt + dt / 2
-    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon*dt - dt / 2
+    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon * dt + dt / 2
+    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon * dt - dt / 2
 
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),

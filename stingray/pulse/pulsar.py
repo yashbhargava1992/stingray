@@ -192,8 +192,8 @@ def fold_events(times, *frequency_derivatives, **opts):
     if not isinstance(weights, collections.Iterable):
         weights *= np.ones(len(times))
 
-    gtis -= ref_time
-    times -= ref_time
+    gtis = gtis - ref_time
+    times = times - ref_time
     # This dt has not the same meaning as in the Lightcurve case.
     # it's just to define stop_time as a meaningful value after
     # the last event.
