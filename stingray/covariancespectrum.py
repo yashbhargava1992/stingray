@@ -15,58 +15,60 @@ class Covariancespectrum(object):
     """
           Compute a covariance spectrum for the data. The input data can be
           either in event data or pre-made light curves. Event data can either
-          be in the form of a numpy.ndarray with (time stamp, energy) pairs or
-          a `stingray.events.EventList` object. If light curves are formed ahead
-          of time, then a list of `Lightcurve` objects should be passed to the
+          be in the form of a ``numpy.ndarray`` with ``(time stamp, energy)`` pairs or
+          a :class:`stingray.events.EventList` object. If light curves are formed ahead
+          of time, then a list of :class:`stingray.Lightcurve` objects should be passed to the
           object, ideally one light curve for each band of interest.
 
-          For the case where the data is input as a list of `Lightcurve` objects,
-          the reference band(s) should either be (1) a single `Lightcurve` object,
-          (2) a list of `Lightcurve` objects with the reference band for each band
-          of interest pre-made, or (3) `None`, in which case reference bands will
+          For the case where the data is input as a list of :class:`stingray.Lightcurve` objects,
+          the reference band(s) should either be
+
+          1. a single :class:`stingray.Lightcurve` object,
+          2. a list of :class:`stingray.Lightcurve` objects with the reference band for each band
+             of interest pre-made, or
+          3. ``None``, in which case reference bands will
           formed by combining all light curves *except* for the band of interest.
 
-          In the case of event data, `band_interest` and `ref_band_interest` can
+          In the case of event data, ``band_interest`` and ``ref_band_interest`` can
           be (multiple) pairs of energies, and the light curves for the bands of
           interest and reference bands will be produced dynamically.
 
 
           Parameters
           ----------
-          data : {numpy.ndarray | EventList object | list of Lightcurve objects}
-              `data` contains the time series data, either in the form of a
-              2-D array of (time stamp, energy) pairs for event data, or as a
+          data : {``numpy.ndarray`` | :class:`stingray.events.EventList` object | list of :class:`stingray.Lightcurve` objects}
+              ``data`` contains the time series data, either in the form of a
+              2-D array of ``(time stamp, energy)`` pairs for event data, or as a
               list of light curves.
               Note : The event list must be in sorted order with respect to the
               times of arrivals.
 
           dt : float
-              The time resolution of the Lightcurve formed from the energy bin.
-              Only used if `data` is an event list.
+              The time resolution of the :class:`stingray.Lightcurve` formed from the energy bin.
+              Only used if ``data`` is an event list.
 
-          band_interest : {None, iterable of tuples}
-              If None, all possible energy values will be assumed to be of
+          band_interest : {``None``, iterable of tuples}
+              If ``None``, all possible energy values will be assumed to be of
               interest, and a covariance spectrum in the highest resolution
               will be produced.
-              Note;
-              If the input is a list of Lightcurve objects, then the user may
+              Note: if the input is a list of :class:`stingray.Lightcurve` objects, then the user may
               supply their energy values here, for construction of a
               reference band.
 
-          ref_band_interest : {None, tuple, Lightcurve, list of Lightcurves}
+          ref_band_interest : {``None``, tuple, :class:`stingray.Lightcurve`, list of :class:`stingray.Lightcurve` objects}
               Defines the reference band to be used for comparison with the
-              bands of interest. If None, all bands *except* the band of
+              bands of interest. If ``None``, all bands *except* the band of
               interest will be used for each band of interest, respectively.
               Alternatively, a tuple can be given for event list data, which will
               extract the reference band (always excluding the band of interest),
-              or one may put in a single Lightcurve object to be used (the same
-              for each band of interest) or a list of Lightcurve objects, one for
+              or one may put in a single :class:`stingray.Lightcurve` object to be used (the same
+              for each band of interest) or a list of :class:`stingray.Lightcurve` objects, one for
               each band of interest.
 
           std : float or np.array or list of numbers
-              The term std is used to calculate the excess variance of a band.
-              If std is set to None, default Poisson case is taken and the
-              std is calculated as `mean(lc)**0.5`. In the case of a single
+              The term ``std`` is used to calculate the excess variance of a band.
+              If ``std`` is set to ``None``, default Poisson case is taken and the
+              std is calculated as ``mean(lc)**0.5``. In the case of a single
               float as input, the same is used as the standard deviation which
               is also used as the std. And if the std is an iterable of
               numbers, their mean is used for the same purpose.
@@ -74,8 +76,8 @@ class Covariancespectrum(object):
           Attributes
           ----------
           unnorm_covar : np.ndarray
-              An array of arrays with mid point band_interest and their
-              covariance. It is the array-form of the dictionary `energy_covar`.
+              An array of arrays with mid point ``band_interest`` and their
+              covariance. It is the array-form of the dictionary ``energy_covar``.
               The covariance values are unnormalized.
 
           covar : np.ndarray
@@ -86,9 +88,9 @@ class Covariancespectrum(object):
 
           References
           ----------
-          [1] Wilkinson, T. and Uttley, P. (2009), Accretion disc variability
-              in the hard state of black hole X-ray binaries. Monthly Notices
-              of the Royal Astronomical Society, 397: 666–676.
+          [1] Wilkinson, T. and Uttley, P. (2009), Accretion disc variability\
+              in the hard state of black hole X-ray binaries. Monthly Notices\
+              of the Royal Astronomical Society, 397: 666–676.\
               doi: 10.1111/j.1365-2966.2009.15008.x
 
           Examples
@@ -190,23 +192,24 @@ class Covariancespectrum(object):
     def _make_reference_bands_from_event_data(self, data, bounds=None):
         """
         Helper method constructing reference bands for each band of interest, and constructing
-        light curves from these reference bands. This operates only if the data given to ``Covariancespectrum``
-        is event list data (i.e. photon arrival times and energies).
+        light curves from these reference bands. This operates only if the data given to
+        :class:`Covariancespectrum` is event list data (i.e. photon arrival times and energies).
 
         Parameters
         ----------
         data : numpy.ndarray
-            Array of shape (N, 2), where N is the number of photons. First column contains the
+            Array of shape ``(N, 2)``, where N is the number of photons. First column contains the
             times of arrivals, second column the corresponding photon energies.
 
         bounds : iterable
-            The energy bounds to use for the reference band. Must be of type (elow, ehigh).
+            The energy bounds to use for the reference band. Must be of type ``(elow, ehigh)``.
 
         Returns
         -------
 
-        lc_all: list of ``lightcurve.Lightcurve objects``.
-            The list of ``Lightcurve`` objects containing all reference bands, between the values given in ``bounds``.
+        lc_all: list of :class:`stingray.Lightcurve` objects.
+            The list of `:class:`stingray.Lightcurve` objects containing all reference
+            bands, between the values given in ``bounds``.
 
         """
 
@@ -252,18 +255,19 @@ class Covariancespectrum(object):
     def _make_reference_bands_from_lightcurves(self, bounds=None):
         '''
         Helper class to construct reference bands for all light curves in ``band_interest``, assuming the
-        data is given to the class ``Covariancespectrum`` as a (set of) lightcurve(s). Generally sums up all
-        other light curves within ``bounds`` that are *not* the band of interest.
+        data is given to the class :class:`Covariancespectrum` as a (set of) lightcurve(s). Generally
+        sums up all other light curves within ``bounds`` that are *not* the band of interest.
 
         Parameters
         ----------
         bounds : iterable
-            The energy bounds to use for the reference band. Must be of type (elow, ehigh).
+            The energy bounds to use for the reference band. Must be of type ``(elow, ehigh)``.
 
         Returns
         -------
-        lc_all: list of ``lightcurve.Lightcurve objects``.
-            The list of ``Lightcurve`` objects containing all reference bands, between the values given in ``bounds``.
+        lc_all: list of :class:`stingray.Lightcurve` objects.
+            The list of :class:`stingray.Lightcurve` objects containing all reference bands,
+            between the values given in ``bounds``.
 
         '''
 
@@ -340,19 +344,20 @@ class Covariancespectrum(object):
 
     def _make_lightcurves(self, data):
         """
-        Create light curves for all bands of interest from ``data``. Takes the information the ``band_interest``
-        attribute and event data in ``data``, and produces a list of ``lightcurve.Lightcurve`` objects.
+        Create light curves for all bands of interest from ``data``. Takes the information the
+        ``band_interest`` attribute and event data in ``data``, and produces a list of
+        :class:`stingray.Lightcurve` objects.
 
         Parameters
         ----------
         data : numpy.ndarray
-            Array of shape (N, 2), where N is the number of photons. First column contains the
+            Array of shape ``(N, 2)``, where ``N`` is the number of photons. First column contains the
             times of arrivals, second column the corresponding photon energies.
 
         Returns
         -------
-        lc_all : iterable of ``lightcurve.Lightcurve`` objects
-            A list of light curves of all bands of interest.
+        lc_all : iterable of :class:`stingray.Lightcurve` objects
+            A list of :class:`stingray.Lightcurve` objects of all bands of interest.
         """
 
         self.tstart = np.min(data[:, 0])
@@ -386,7 +391,6 @@ class Covariancespectrum(object):
         data : numpy.ndarray
             Array of shape (N, 2), where N is the number of photons. First column contains the
             times of arrivals, second column the corresponding photon energies.
-
 
         """
 
@@ -456,10 +460,10 @@ class AveragedCovariancespectrum(Covariancespectrum):
 
     Parameters
     ----------
-    data : {numpy.ndarray | list of Lightcurve objects}
-        `data` contains the time series data, either in the form of a
-        2-D array of (time stamp, energy) pairs for event data, or as a
-        list of light curves.
+    data : {numpy.ndarray | list of :class:`stingray.Lightcurve` objects}
+        ``data`` contains the time series data, either in the form of a
+        2-D array of ``(time stamp, energy)`` pairs for event data, or as a
+        list of :class:`stingray.Lightcurve` objects.
         Note : The event list must be in sorted order with respect to the
         times of arrivals.
 
@@ -469,32 +473,31 @@ class AveragedCovariancespectrum(Covariancespectrum):
         total length of the data set and the segment_size defined here.
 
     dt : float
-        The time resolution of the Lightcurve formed from the energy bin.
-        Only used if `data` is an event list.
+        The time resolution of the :class:`stingray.Lightcurve` formed
+        from the energy bin. Only used if `data` is an event list.
 
-    band_interest : {None, iterable of tuples}
-        If None, all possible energy values will be assumed to be of
+    band_interest : {``None``, iterable of tuples}
+        If ``None``, all possible energy values will be assumed to be of
         interest, and a covariance spectrum in the highest resolution
         will be produced.
-        Note;
-        If the input is a list of Lightcurve objects, then the user may
-        supply their energy values here, for construction of a
+        Note: if the input is a list of :class:`stingray.Lightcurve` objects,
+        then the user may supply their energy values here, for construction of a
         reference band.
 
-    ref_band_interest : {None, tuple, Lightcurve, list of Lightcurve}
+    ref_band_interest : {None, tuple, :class:`stingray.Lightcurve`, list of :class:`stingray.Lightcurve` objects}
         Defines the reference band to be used for comparison with the
         bands of interest. If None, all bands *except* the band of
         interest will be used for each band of interest, respectively.
         Alternatively, a tuple can be given for event list data, which will
         extract the reference band (always excluding the band of interest),
-        or one may put in a single Lightcurve object to be used (the same
-        for each band of interest) or a list of Lightcurve objects, one for
+        or one may put in a single :class:`stingray.Lightcurve` object to be used (the same
+        for each band of interest) or a list of :class:`stingray.Lightcurve` objects, one for
         each band of interest.
 
     std : float or np.array or list of numbers
-        The term std is used to calculate the excess variance of a band.
-        If std is set to None, default Poisson case is taken and the
-        std is calculated as `mean(lc)**0.5`. In the case of a single
+        The term ``std`` is used to calculate the excess variance of a band.
+        If ``std`` is set to ``None``, default Poisson case is taken and the
+        ``std`` is calculated as ``mean(lc)**0.5``. In the case of a single
         float as input, the same is used as the standard deviation which
         is also used as the std. And if the std is an iterable of
         numbers, their mean is used for the same purpose.
@@ -503,7 +506,7 @@ class AveragedCovariancespectrum(Covariancespectrum):
     ----------
     unnorm_covar : np.ndarray
         An array of arrays with mid point band_interest and their
-        covariance. It is the array-form of the dictionary `energy_covar`.
+        covariance. It is the array-form of the dictionary ``energy_covar``.
         The covariance values are unnormalized.
 
     covar : np.ndarray

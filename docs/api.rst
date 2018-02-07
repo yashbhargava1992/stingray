@@ -130,8 +130,6 @@ Covariancespectrum
 
 .. autoclass:: stingray.Covariancespectrum
    :members:
-   :private-members:
-   :special-members:
 
 ----
 
@@ -140,8 +138,7 @@ AveragedCovariancespectrum
 
 .. autoclass:: stingray.AveragedCovariancespectrum
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 ----
 
@@ -152,8 +149,6 @@ both variability and spectral information.
 
 .. autoclass:: stingray.varenergyspectrum.VarEnergySpectrum
    :members:
-   :private-members:
-   :special-members:
 
 ----
 
@@ -162,8 +157,7 @@ RmsEnergySpectrum
 
 .. autoclass:: stingray.varenergyspectrum.RmsEnergySpectrum
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 ----
 
@@ -172,8 +166,7 @@ LagEnergySpectrum
 
 .. autoclass:: stingray.varenergyspectrum.LagEnergySpectrum
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 ----
 
@@ -182,8 +175,7 @@ ExcessVarianceSpectrum
 
 .. autoclass:: stingray.varenergyspectrum.ExcessVarianceSpectrum
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 ----
 

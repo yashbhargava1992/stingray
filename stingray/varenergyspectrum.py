@@ -64,30 +64,34 @@ def _decode_energy_specification(energy_spec):
 @six.add_metaclass(ABCMeta)
 class VarEnergySpectrum(object):
     """
-    Base variability-energy spectrum.
+    Base class for variability-energy spectrum.
 
     This class is only a base for the various variability spectra, and it's
     not to be instantiated by itself.
 
     Parameters
     ----------
-    events : stingray.events.EventList object
+    events : :class:`stingray.events.EventList` object
         event list
-    freq_interval : [f0, f1], floats
+
+    freq_interval : ``[f0, f1]``, floats
         the frequency range over which calculating the variability quantity
-    energy_spec : list or tuple (emin, emax, N, type)
-        if a list is specified, this is interpreted as a list of bin edges;
-        if a tuple is provided, this will encode the minimum and maximum
-        energies, the number of intervals, and "lin" or "log".
+
+    energy_spec : list or tuple ``(emin, emax, N, type)``
+        if a ``list`` is specified, this is interpreted as a list of bin edges;
+        if a ``tuple`` is provided, this will encode the minimum and maximum
+        energies, the number of intervals, and ``lin`` or ``log``.
 
     Other Parameters
     ----------------
-    ref_band : [emin, emax], floats; default None
-        minimum and maximum energy of the reference band. If None, the
+    ref_band : ``[emin, emax``], floats; default ``None``
+        minimum and maximum energy of the reference band. If ``None``, the
         full band is used.
-    use_pi : boolean, default False
+
+    use_pi : bool, default ``False``
         Use channel instead of energy
-    events2 : stingray.events.EventList object
+
+    events2 : :class:`stingray.events.EventList` object
         event list for the second channel, if not the same. Useful if the
         reference band has to be taken from another detector.
 
@@ -95,16 +99,21 @@ class VarEnergySpectrum(object):
     ----------
     events1 : array-like
         list of events used to produce the spectrum
+
     events2 : array-like
         if the spectrum requires it, second list of events
+
     freq_interval : array-like
         interval of frequencies used to calculate the spectrum
-    energy_intervals : [[e00, e01], [e10, e11], ...]
+
+    energy_intervals : ``[[e00, e01], [e10, e11], ...]``
         energy intervals used for the spectrum
+
     spectrum : array-like
         the spectral values, corresponding to each energy interval
+
     spectrum_error : array-like
-        the errorbars corresponding to spectrum
+        the error bars corresponding to spectrum
 
     """
     def __init__(self, events, freq_interval, energy_spec, ref_band=None,
@@ -133,12 +142,12 @@ class VarEnergySpectrum(object):
 
     def _decide_ref_intervals(self, channel_band, ref_band):
         """
-        Ensures that the `channel_band` (i.e. the band of interest) is
-        not contained within the `ref_band` (i.e. the reference band)
+        Ensures that the ``channel_band`` (i.e. the band of interest) is
+        not contained within the ``ref_band`` (i.e. the reference band)
 
         Parameters
         ----------
-        channel_band : iterable of type [elow, ehigh]
+        channel_band : iterable of type ``[elow, ehigh]``
             The lower/upper limits of the energies to be contained in the band
             of interest
 
@@ -170,32 +179,32 @@ class VarEnergySpectrum(object):
 
         Parameters
         ----------
-        channel_band : iterable of type [elow, ehigh]
+        channel_band : iterable of type ``[elow, ehigh]``
             The lower/upper limits of the energies to be contained in the band
             of interest
 
-        tstart : float, optional, default `None`
+        tstart : float, optional, default ``None``
             A common start time (if start of observation is different from
             the first recorded event)
 
-        tstop : float, optional, default `None`
+        tstop : float, optional, default ``None``
             A common stop time (if start of observation is different from
             the first recorded event)
 
-        exclude : bool, optional, default `True`
-            if True, exclude the band of interest from the reference band
+        exclude : bool, optional, default ``True``
+            if ``True``, exclude the band of interest from the reference band
 
-        only_base : bool, optional, default False
-            if True, only return the light curve of the channel of interest, not
+        only_base : bool, optional, default ``False``
+            if ``True``, only return the light curve of the channel of interest, not
             that of the reference band
 
         Returns
         -------
-        base_lc : `Lightcurve` object
+        base_lc : :class:`Lightcurve` object
             The light curve of the channels of interest
 
-        ref_lc : `Lightcurve` object (only returned if `only_base` is `False`)
-            The reference light curve for comparison with `base_lc`
+        ref_lc : :class:`Lightcurve` object (only returned if ``only_base`` is ``False``)
+            The reference light curve for comparison with ``base_lc``
         """
         if self.use_pi:
             energies1 = self.events1.pi
@@ -252,28 +261,32 @@ class RmsEnergySpectrum(VarEnergySpectrum):
     """Calculate the rms-Energy spectrum.
 
     For each energy interval, calculate the power density spectrum in
-    fractional r.m.s. normalization. If events2 is specified, the cospectrum
+    fractional r.m.s. normalization. If ``events2`` is specified, the cospectrum
     is used instead of the PDS.
 
     Parameters
     ----------
-    events : stingray.events.EventList object
+    events : :class:`stingray.events.EventList` object
         event list
-    freq_interval : [f0, f1], floats
+
+    freq_interval : ``[f0, f1]``, list of float
         the frequency range over which calculating the variability quantity
-    energy_spec : list or tuple (emin, emax, N, type)
-        if a list is specified, this is interpreted as a list of bin edges;
-        if a tuple is provided, this will encode the minimum and maximum
-        energies, the number of intervals, and "lin" or "log".
+
+    energy_spec : list or tuple ``(emin, emax, N, type)``
+        if a ``list`` is specified, this is interpreted as a list of bin edges;
+        if a ``tuple`` is provided, this will encode the minimum and maximum
+        energies, the number of intervals, and ``lin`` or ``log``.
 
     Other Parameters
     ----------------
-    ref_band : [emin, emax], floats; default None
-        minimum and maximum energy of the reference band. If None, the
+    ref_band : ``[emin, emax]``, float; default ``None``
+        minimum and maximum energy of the reference band. If ``None``, the
         full band is used.
-    use_pi : boolean, default False
+
+    use_pi : bool, default ``False``
         Use channel instead of energy
-    events2 : stingray.events.EventList object
+
+    events2 : :class:`stingray.events.EventList` object
         event list for the second channel, if not the same. Useful if the
         reference band has to be taken from another detector.
 
@@ -281,14 +294,19 @@ class RmsEnergySpectrum(VarEnergySpectrum):
     ----------
     events1 : array-like
         list of events used to produce the spectrum
+
     events2 : array-like
         if the spectrum requires it, second list of events
+
     freq_interval : array-like
         interval of frequencies used to calculate the spectrum
-    energy_intervals : [[e00, e01], [e10, e11], ...]
+
+    energy_intervals : ``[[e00, e01], [e10, e11], ...]``
         energy intervals used for the spectrum
+
     spectrum : array-like
         the spectral values, corresponding to each energy interval
+
     spectrum_error : array-like
         the errorbars corresponding to spectrum
     """
@@ -321,31 +339,35 @@ class RmsEnergySpectrum(VarEnergySpectrum):
 
 
 class LagEnergySpectrum(VarEnergySpectrum):
-    """Calculate the lag-Energy spectrum.
+    """Calculate the lag-energy spectrum.
 
     For each energy interval, calculate the mean lag in the specified frequency
-    range. If events2 is specified, the reference band is taken from the second
+    range. If ``events2`` is specified, the reference band is taken from the second
     event list.
 
     Parameters
     ----------
-    events : stingray.events.EventList object
+    events : :class:`stingray.events.EventList` object
         event list
-    freq_interval : [f0, f1], floats
+
+    freq_interval : ``[f0, f1]``, list of float
         the frequency range over which calculating the variability quantity
-    energy_spec : list or tuple (emin, emax, N, type)
+
+    energy_spec : list or tuple ``(emin, emax, N, type)``
         if a list is specified, this is interpreted as a list of bin edges;
         if a tuple is provided, this will encode the minimum and maximum
-        energies, the number of intervals, and "lin" or "log".
+        energies, the number of intervals, and ``lin`` or ``log``.
 
     Other Parameters
     ----------------
-    ref_band : [emin, emax], floats; default None
-        minimum and maximum energy of the reference band. If None, the
+    ref_band : ``[emin, emax]``, float; default ``None``
+        minimum and maximum energy of the reference band. If ``None``, the
         full band is used.
-    use_pi : boolean, default False
+
+    use_pi : bool, default ``False``
         Use channel instead of energy
-    events2 : stingray.events.EventList object
+
+    events2 : :class:`stingray.events.EventList` object
         event list for the second channel, if not the same. Useful if the
         reference band has to be taken from another detector.
 
@@ -353,14 +375,19 @@ class LagEnergySpectrum(VarEnergySpectrum):
     ----------
     events1 : array-like
         list of events used to produce the spectrum
+
     events2 : array-like
         if the spectrum requires it, second list of events
+
     freq_interval : array-like
         interval of frequencies used to calculate the spectrum
-    energy_intervals : [[e00, e01], [e10, e11], ...]
+
+    energy_intervals : ``[[e00, e01], [e10, e11], ...]``
         energy intervals used for the spectrum
+
     spectrum : array-like
         the spectral values, corresponding to each energy interval
+
     spectrum_error : array-like
         the errorbars corresponding to spectrum
     """
@@ -406,33 +433,40 @@ class ExcessVarianceSpectrum(VarEnergySpectrum):
 
     Parameters
     ----------
-    events : stingray.events.EventList object
+    events : :class:`stingray.events.EventList` object
         event list
-    freq_interval : [f0, f1], floats
+
+    freq_interval : ``[f0, f1]``, list of float
         the frequency range over which calculating the variability quantity
-    energy_spec : list or tuple (emin, emax, N, type)
+
+    energy_spec : list or tuple ``(emin, emax, N, type)``
         if a list is specified, this is interpreted as a list of bin edges;
         if a tuple is provided, this will encode the minimum and maximum
-        energies, the number of intervals, and "lin" or "log".
+        energies, the number of intervals, and ``lin`` or ``log``.
 
     Other Parameters
     ----------------
-    ref_band : [emin, emax], floats; default None
-        minimum and maximum energy of the reference band. If None, the
+    ref_band : ``[emin, emax]``, floats; default ``None``
+        minimum and maximum energy of the reference band. If ``None``, the
         full band is used.
-    use_pi : boolean, default False
+
+    use_pi : bool, default ``False``
         Use channel instead of energy
 
     Attributes
     ----------
     events1 : array-like
         list of events used to produce the spectrum
+
     freq_interval : array-like
         interval of frequencies used to calculate the spectrum
-    energy_intervals : [[e00, e01], [e10, e11], ...]
+
+    energy_intervals : ``[[e00, e01], [e10, e11], ...]``
         energy intervals used for the spectrum
+
     spectrum : array-like
         the spectral values, corresponding to each energy interval
+
     spectrum_error : array-like
         the errorbars corresponding to spectrum
     """
