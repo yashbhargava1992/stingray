@@ -49,7 +49,7 @@ of the academic world, and pointing to citations is *the* best way to help us en
 continues to be supported and we can continue working on it!
 
 Currently, the best way to cite Stingray in papers and other projects is with our
-`Astrophysics Source Code Library entry <http://ascl.net/1608.001`_. Stay tuned for the first version
+`Astrophysics Source Code Library entry <http://ascl.net/1608.001>`_. Stay tuned for the first version
 release later in 2018.
 
 
@@ -59,7 +59,7 @@ How to get involved
 We encourage you to get involved with Stingray in any way you can! First, read through
 the `README <https://github.com/StingraySoftware/stingray/blob/master/README.rst>`_. Then, fork
 the `stingray <https://github.com/StingraySoftware/stingray>`_ and
-`notebooks <<https://github.com/StingraySoftware/notebooks>`_ repositories (if you need a primer on
+`notebooks <https://github.com/StingraySoftware/notebooks>`_ repositories (if you need a primer on
 GitHub and git version control, `look here <https://www.webpagefx.com/blog/web-design/git-tutorials-beginners/>`_)
 and work your way through the Jupyter notebook tutorials for the main modules. Once you've
 familiarized yourself with the basics of Stingray, go to the
