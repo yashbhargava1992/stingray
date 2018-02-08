@@ -309,6 +309,8 @@ class EventList(object):
             else:
                 ev_new.gti = cross_gtis([self.gti, other.gti])
 
+        ev_new.mjdref = self.mjdref
+
         return ev_new
 
     @staticmethod

@@ -2,9 +2,9 @@
 Stingray
 ========
 
-+------------------+-------------------------+---------------+---------+---------------------------+
-| Master           | |Build Status Master|   | |Readthedocs| | |Slack| | |Coverage Status Master|  |
-+------------------+-------------------------+---------------+---------+---------------------------+
++------------------+-------------------------+---------------+---------+---------------------------+---------------------+
+| Master           | |Build Status Master|   | |Readthedocs| | |Slack| | |Coverage Status Master|  | |Stage Pre Release| |
++------------------+-------------------------+---------------+---------+---------------------------+---------------------+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
@@ -133,6 +133,8 @@ this project, please `get in touch via the issues
 .. |Slack| image:: http://slack-invite.timelabtechnologies.com/badge.svg
     :target: http://slack-invite.timelabtechnologies.com
 .. |Coverage Status Master| image:: https://coveralls.io/repos/github/StingraySoftware/stingray/badge.svg?branch=master
+    :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
+.. |Stage Pre Release| image:: https://img.shields.io/badge/stage-pre--release-green.svg
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
 .. _Astropy: https://www.github.com/astropy/astropy
 .. _Issues: https://www.github.com/stingraysoftware/stingray/issues

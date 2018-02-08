@@ -109,8 +109,6 @@ class TestPowerspectrum(object):
         ps = Powerspectrum(lc=self.lc, norm="frac")
         ps_int = np.sum(ps.power[:-1] * ps.df) + ps.power[-1] * ps.df / 2
         std_lc = np.var(self.lc.counts) / np.mean(self.lc.counts) ** 2
-        print(ps_int)
-        print(std_lc)
         assert np.isclose(ps_int, std_lc, atol=0.01, rtol=0.01)
 
     def test_fractional_rms_in_frac_norm_is_consistent(self):
@@ -286,6 +284,14 @@ class TestPowerspectrum(object):
         pval = ps.classical_significances(threshold=threshold,
                                           trial_correction=True)
         assert np.size(pval) == 0
+
+
+    def test_classical_significances_with_logbinned_psd(self):
+        ps = Powerspectrum(lc=self.lc, norm="leahy")
+        ps_log = ps.rebin_log()
+        pval = ps_log.classical_significances(threshold=1.1, trial_correction=False)
+
+        assert len(pval[0]) == len(ps_log.power)
 
     def test_pvals_is_numpy_array(self):
         ps = Powerspectrum(lc=self.lc, norm="leahy")

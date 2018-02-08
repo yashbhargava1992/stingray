@@ -439,13 +439,20 @@ class TestLightcurve(object):
         assert np.all(lc[::2].gti == [[0.5, 1.5], [2.5, 3.5]])
         assert np.all(lc[:].gti == lc.gti)
         assert lc[:].mjdref == lc.mjdref
-
+        assert lc[::2].n == 2
 
     def test_slicing_index_error(self):
         lc = Lightcurve(self.times, self.counts)
 
         with pytest.raises(StingrayError):
             lc_new = lc[1:2]
+
+    def test_index(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        index = 1
+        index_np32, index_np64 = np.int32(index), np.int64(index)
+        assert lc[index] == lc[index_np32] == lc[index_np64]
 
     def test_join_with_different_dt(self):
         _times = [5, 5.5, 6]
@@ -573,6 +580,16 @@ class TestLightcurve(object):
         assert np.all(lc.counts == np.array([40, 20, 10,  5]))
         assert np.all(lc.time == np.array([1, 3, 2, 4]))
         assert lc.mjdref == mjdref
+
+    def test_sort_reverse(self):
+        times = np.arange(1000)
+        counts = np.random.rand(1000)*100
+        lc = Lightcurve(times, counts)
+        lc_1 = lc
+        lc_2 = Lightcurve(np.arange(1000, 2000), np.random.rand(1000)*1000)
+        lc_long = lc_1.join(lc_2)  # Or vice-versa
+        new_lc_long = lc_long[:]  # Copying into a new object
+        assert new_lc_long.n == lc_long.n
 
     def test_plot_matplotlib_not_installed(self):
         try:

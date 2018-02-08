@@ -22,7 +22,6 @@ except ImportError:
 
 
     class jit(object):
-
         def __init__(self, *args, **kwargs):
             pass
 
@@ -218,25 +217,34 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
         The binned quantity y
 
     ybin_err: numpy.ndarray
-        The uncertainties of the binned values of y.
+        The uncertainties of the binned values of y
 
     step_size: float
         The size of the binning step
     """
+
     dx_init = assign_value_if_none(dx, np.median(np.diff(x)))
+    x = np.asarray(x)
     y = np.asarray(y)
     y_err = np.asarray(assign_value_if_none(y_err, np.zeros_like(y)))
 
-    minx = x[1] * 0.5  # frequency to start from
+    if x.shape[0] != y.shape[0]:
+        raise ValueError("x and y must be of the same length!")
+    if y.shape[0] != y_err.shape[0]:
+        raise ValueError("y and y_err must be of the same length!")
+
+    minx = x[0] * 0.5  # frequency to start from
     maxx = x[-1]  # maximum frequency to end
     binx = [minx, minx + dx_init]  # first
-    dx = x[1]  # the frequency resolution of the first bin
+    dx = dx_init  # the frequency resolution of the first bin
 
     # until we reach the maximum frequency, increase the width of each
     # frequency bin by f
     while binx[-1] <= maxx:
         binx.append(binx[-1] + dx * (1.0 + f))
         dx = binx[-1] - binx[-2]
+
+    binx = np.asarray(binx)
 
     real = y.real
     real_err = y_err.real
@@ -268,7 +276,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
     # compute the number of powers in each frequency bin
     nsamples = np.array([len(binno[np.where(binno == i)[0]])
-                         for i in range(np.max(binno))])
+                         for i in range(1, np.max(binno)+1, 1)])
 
     return binx, biny, biny_err, nsamples
 
@@ -298,9 +306,18 @@ def is_iterable(stuff):
 
 
 def order_list_of_arrays(data, order):
+    """Sort an array according to the specified order.
+
+    Parameters
+    ----------
+    data : iterable
+
+    Returns
+    -------
+    data : list or dict
+    """
     if hasattr(data, 'items'):
-        data = dict([(key, value[order])
-                     for key, value in data.items()])
+        data = dict([(key, value[order]) for key, value in data.items()])
     elif is_iterable(data):
         data = [i[order] for i in data]
     else:
@@ -360,10 +377,21 @@ def contiguous_regions(condition):
 
 
 def is_int(obj):
+    """Test if object is an integer."""
     return isinstance(obj, (numbers.Integral, np.integer))
 
 
 def get_random_state(random_state=None):
+    """Return a Mersenne Twister pseudo-random number generator.
+
+    Parameters
+    ----------
+    seed : integer or numpy.random.RandomState, optional, default None
+
+    Returns
+    -------
+    random_state : mtrand.RandomState object
+    """
     if not random_state:
         random_state = np.random.mtrand._rand
     else:
@@ -660,9 +688,9 @@ def create_window(N, window_type='uniform'):
         a3 = 0.388
         a4 = 0.028
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + \
-                 a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
-                 a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
-                 a4 * np.cos((8 * np.pi * n) / N_minus_1)
+                      a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
+                      a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
+                      a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
 
