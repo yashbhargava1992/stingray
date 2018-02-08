@@ -65,6 +65,90 @@ class TestRebinData(object):
                              method='not_allowed_method')
 
 
+class TestRebinDataLog(object):
+
+    @classmethod
+    def setup_class(cls):
+        cls.dx = 1
+        cls.xmax = 21
+        cls.xmin = 1
+        cls.x = np.arange(cls.xmin, cls.xmax, cls.dx)
+        cls.y = np.arange(cls.xmin, cls.xmax, cls.dx)
+        cls.y_err = np.ones_like(cls.y)
+
+        cls.true_bins = np.array([ 1., 1.1, 1.21, 1.331, 1.4641, 1.61051, 1.771561,
+                                     1.9487171, 2.14358881, 2.35794769, 2.59374246, 2.85311671])
+
+        cls.true_bin_edges = np.array([0.5, 1.5, 2.6000000000000001, 3.81, 5.141, 6.6051, 8.21561,
+                                         9.987171, 11.9358881, 14.07947691, 16.437424601, 19.0311670611,
+                                         21.88428376721])
+
+        cls.true_values = np.array([1. , 2., 3., 4.5, 6., 7.5, 9., 10.5, 13., 15.5, 18., 20.])
+        cls.true_nsamples = np.array([1, 1, 1, 2, 1, 2, 1, 2, 3, 2, 3, 1])
+
+        cls.f = 0.1
+
+    def test_rebin_data_log_runs(self):
+        _, _, _, _ = utils.rebin_data_log(self.x, self.y, self.f, y_err=self.y_err, dx=self.dx)
+
+    def test_method_fails_if_x_and_y_of_unequal_length(self):
+        with pytest.raises(ValueError):
+            _, _, _, _ = utils.rebin_data_log(self.x[1:], self.y, self.f, y_err=self.y_err, dx=self.dx)
+
+    def test_method_fails_if_y_and_yerr_of_unequal_length(self):
+        with pytest.raises(ValueError):
+            _, _, _, _ = utils.rebin_data_log(self.x, self.y, self.f, y_err=self.y_err[1:], dx=self.dx)
+
+
+    def test_all_outputs_have_the_same_dimension_except_binx(self):
+        binx, biny, binyerr, nsamples = utils.rebin_data_log(self.x, self.y, self.f, y_err=self.y_err, dx=self.dx)
+
+        # binx describes the bin _edges_ rather than midpoints, so has one more entry
+        # than biny and the rest
+        assert binx.shape[0] == biny.shape[0]+1
+        assert biny.shape[0] == binyerr.shape[0]
+        assert binyerr.shape[0] == nsamples.shape[0]
+
+    def test_binning_works_correctly(self):
+        binx, _, _, _ = utils.rebin_data_log(self.x, self.y, self.f, y_err=self.y_err, dx=self.dx)
+
+        assert np.allclose(np.diff(binx), self.true_bins)
+
+    def test_bin_edges_are_correct(self):
+        binx, _, _, _ = utils.rebin_data_log(self.x, self.y, self.f, y_err=self.y_err, dx=self.dx)
+
+        assert np.allclose(binx, self.true_bin_edges)
+
+    def test_bin_values_are_correct(self):
+        _, biny, _, _ = utils.rebin_data_log(self.x, self.y, self.f, y_err=self.y_err, dx=self.dx)
+
+        assert np.allclose(biny, self.true_values)
+
+    def test_nsamples_are_correctly_calculated(self):
+        _, _, _, nsamples = utils.rebin_data_log(self.x, self.y, self.f, y_err=self.y_err, dx=self.dx)
+
+        assert np.allclose(nsamples, self.true_nsamples)
+
+    def test_method_works_on_complex_numbers(self):
+        re = np.arange(self.xmin, self.xmax, self.dx)
+        im = np.arange(self.xmin, self.xmax, self.dx)
+
+        y = np.zeros(re.shape[0], dtype=np.complex)
+        yerr = np.zeros(re.shape[0], dtype=np.complex)
+
+        for k, (r, i) in enumerate(zip(re, im)):
+            y[k] = r + i * 1j
+            yerr[k] = r + i * 1j
+
+        real_binned = np.zeros(self.true_values.shape[0], dtype=np.complex)
+
+        for i in range(self.true_values.shape[0]):
+            real_binned[i] = self.true_values[i] + self.true_values[i] * 1j
+
+        _, biny, _, _ = utils.rebin_data_log(self.x, y, self.f, y_err=yerr, dx=self.dx)
+
+        assert np.allclose(biny, real_binned)
+
 class TestUtils(object):
 
     def test_optimal_bin_time(self):
