@@ -691,7 +691,7 @@ class Lightcurve(object):
         The new :class:`Lightcurve` object will contain time stamps from both the
         objects. The ``counts`` and ``countrate`` attributes in the resulting object
         will contain the union of the non-overlapping parts of the two individual objects,
-         or the average in case of overlapping ``time`` arrays of both :class:`Lightcurve` objects.
+        or the average in case of overlapping ``time`` arrays of both :class:`Lightcurve` objects.
 
         Good Time Intervals are also joined.
 

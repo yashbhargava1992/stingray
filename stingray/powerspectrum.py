@@ -28,7 +28,7 @@ def classical_pvalue(power, nspec):
     are:
 
     1. the powers in the power spectrum follow a chi-square distribution
-    2. the power spectrum is normalized according to [1]_, such
+    2. the power spectrum is normalized according to [Leahy 1983]_, such
        that the powers have a mean of 2 and a variance of 4
     3. there is only white noise in the light curve. That is, there is no
        aperiodic variability that would change the overall shape of the power
@@ -39,7 +39,7 @@ def classical_pvalue(power, nspec):
     spectrum are being tested, the resulting p-value must be corrected for the
     number of trials (Bonferroni correction).
 
-    Mathematical formulation in [2]_.
+    Mathematical formulation in [Groth 1975]_.
     Original implementation in IDL by Anna L. Watts.
 
     Parameters
@@ -64,8 +64,8 @@ def classical_pvalue(power, nspec):
     References
     ----------
 
-    * [1] https://ui.adsabs.harvard.edu/#abs/1983ApJ...266..160L/abstract
-    * [2] https://ui.adsabs.harvard.edu/#abs/1975ApJS...29..285G/abstract
+    * .. [Leahy 1983] https://ui.adsabs.harvard.edu/#abs/1983ApJ...266..160L/abstract
+    * .. [Groth 1975] https://ui.adsabs.harvard.edu/#abs/1975ApJS...29..285G/abstract
 
     """
     if not np.isfinite(power):
@@ -508,7 +508,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     Parameters
     ----------
-    lc : :class:`stingray.Lightcurve`object
+    lc : :class:`stingray.Lightcurve` object
         The time series of which the Dynamical powerspectrum is
         to be calculated.
 
@@ -671,7 +671,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         Parameters
         ----------
         dt_new: float
-            The new time resolution of the Dynamica Power Spectrum.
+            The new time resolution of the Dynamical Power Spectrum.
             Must be larger than the time resolution of the old Dynamical Power
             Spectrum!
 

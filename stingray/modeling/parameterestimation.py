@@ -1064,12 +1064,11 @@ class SamplingResults(object):
 
         """
         Plot some results in a triangle plot.
-        If installed, will use ``corner``[4]_ for the plotting, if not,
-        uses its own code to make a triangle
-        plot.
+        If installed, will use ``corner`` [4]_ for the plotting, if not,
+        uses its own code to make a triangle plot.
 
         By default, this method returns a ``matplotlib.Figure`` object, but
-        if ``save_plot=True``, the plot can be saved to file automatically,
+        if ``save_plot=True`` the plot can be saved to file automatically,
 
         Parameters
         ----------
@@ -1082,8 +1081,8 @@ class SamplingResults(object):
             If none is passed, the method will create one internally.
 
         save_plot : bool, default ``False``
-            If ``True``, save the plot to file with a file name specified by the
-            keyword ``filename``. If ``False``, just return the ``Figure`` object
+            If ``True`` save the plot to file with a file name specified by the
+            keyword ``filename``. If ``False`` just return the ``Figure`` object
 
         filename : str
             Name of the output file with the figure

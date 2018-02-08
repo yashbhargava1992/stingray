@@ -872,7 +872,7 @@ class LaplacePosterior(Posterior):
         The item for each key is a function definition defining the prior
         (e.g. a lambda function or a ``scipy.stats.distribution.pdf``.
         If ``priors = None``, then no prior is set. This means priors need
-        to be added by hand using the :function:`set_logprior` function defined in
+        to be added by hand using the :func:`set_logprior` function defined in
         this module. Note that it is impossible to call a :class:`Posterior` object
         itself or the ``self.logposterior`` method without defining a prior.
 

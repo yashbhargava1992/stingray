@@ -27,7 +27,7 @@ class Covariancespectrum(object):
           2. a list of :class:`stingray.Lightcurve` objects with the reference band for each band
              of interest pre-made, or
           3. ``None``, in which case reference bands will
-          formed by combining all light curves *except* for the band of interest.
+             formed by combining all light curves *except* for the band of interest.
 
           In the case of event data, ``band_interest`` and ``ref_band_interest`` can
           be (multiple) pairs of energies, and the light curves for the bands of

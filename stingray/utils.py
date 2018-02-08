@@ -217,14 +217,14 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     Other Parameters
     ----------------
     yerr: iterable, optional
-        The uncertainties of ``y``, to be propagated during binning.
+        The uncertainties of ``y`` to be propagated during binning.
 
     method: {``sum`` | ``average`` | ``mean``}, optional, default ``sum``
         The method to be used in binning. Either sum the samples ``y`` in
-        each new bin of ``x``, or take the arithmetic mean.
+        each new bin of ``x`` or take the arithmetic mean.
 
     dx: float, optional
-        The binning step of the initial ``x``s
+        The binning step of the initial ``x``
 
     Returns
     -------

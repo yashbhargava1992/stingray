@@ -832,7 +832,7 @@ class AveragedCrossspectrum(Crossspectrum):
         References
         ----------
 
-        [4] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
+        .. [4] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
 
         """
         lag = super(AveragedCrossspectrum, self).time_lag()
