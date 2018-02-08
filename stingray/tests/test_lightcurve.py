@@ -822,6 +822,19 @@ class TestLightcurveRebin(object):
         baseline = lc.baseline(10000, 0.01, offset_correction=True)
         assert np.isclose(np.std(lc.counts - baseline), input_stdev, rtol=0.1)
 
+    def test_lc_baseline_offset_fewbins(self):
+        times = np.arange(0, 4, 1)
+        input_stdev = 0.1
+        counts = np.random.normal(100, input_stdev, len(times)) + \
+            0.001 * times
+        gti = [[-0.005, 4.005]]
+        lc = Lightcurve(times, counts, gti=gti)
+        with pytest.warns(UserWarning) as record:
+            lc.baseline(10000, 0.01, offset_correction=True)
+
+        assert np.any(["Too few bins to perform baseline offset correction"
+                       in r.message.args[0] for r in record])
+
     def test_change_mjdref(self):
         lc_new = self.lc.change_mjdref(57000)
         assert lc_new.mjdref == 57000
