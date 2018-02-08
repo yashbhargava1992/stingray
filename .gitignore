@@ -47,6 +47,8 @@ distribute-*.tar.gz
 .tox
 .*.sw[op]
 *~
+.pytetest_cache
+v
 
 # Mac OSX
 .DS_Store
