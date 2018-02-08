@@ -47,7 +47,7 @@ distribute-*.tar.gz
 .tox
 .*.sw[op]
 *~
-.pytetest_cache
+.pytest_cache
 v
 
 # Mac OSX
