@@ -411,7 +411,7 @@ class Lightcurve(object):
         >>> lc[:2].counts
         array([11, 22])
         """
-        if isinstance(index, int):
+        if isinstance(index, (int, np.integer)):
             return self.counts[index]
         elif isinstance(index, slice):
             start = assign_value_if_none(index.start, 0)
@@ -428,7 +428,6 @@ class Lightcurve(object):
                 new_gt1 = np.array(list(zip(new_time - self.dt / 2,
                                             new_time + self.dt / 2)))
                 new_gti = cross_two_gtis(new_gti, new_gt1)
-
             new_gti = cross_two_gtis(self.gti, new_gti)
 
             return Lightcurve(new_time, new_counts, mjdref=self.mjdref,
