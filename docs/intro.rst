@@ -1,0 +1,92 @@
+**************************************************
+Stingray: Next-Generation Spectral Timing Software
+**************************************************
+
+Stingray is a new community-developed spectral-timing software package in Python for astrophysical data.
+
+.. image:: stingray_logo.png
+   :height: 100px
+   :scale: 50%
+   :alt: Stingray logo, outline of a stingray on top of a graph of the power spectrum of an X-ray binary
+   :align: center
+
+
+The Vision
+==========
+
+There are a number of official software packages for X-ray spectral fitting (XSPEC, ISIS,
+Sherpa, ...). Such a widely used and standard software package does not exist for X-ray timing,
+so for now it remains mostly done with custom, proprietary software. During the 2016 workshop
+`The X-ray Spectral-Timing Revolution <http://www.lorentzcenter.nl/lc/web/2016/720/info.php3?wsid=720&venue=Oort/>`_,
+a group of X-ray astronomers and developers decided to agree on a common platform to develop a
+new software package. This software package will merge existing efforts for a timing package in
+Python and provide the basis for developing spectral-timing analysis tools, and be structured with
+the best guidelines for modern open-source programming, following the example of `Astropy <http://www.astropy.org>`_.
+This software will have an easily accessible scripting interface (possibly a GUI) and a public API for
+power users. The ultimate goal is to provide the community with a package that eases the learning curve
+for advanced spectral-timing techniques, with a correct statistical framework.
+
+
+This Documentation and Additional Resources
+===========================================
+
+These pages lay out the documentation for the `Stingray source library <https://github.com/StingraySoftware/stingray>`_.
+
+Aside from the :doc:`API reference </api>`, there are a number of tutorial-style documents covering the core
+library as well as a number of sub-modules. These tutorials are built from executable Jupuyter notebooks available
+for cloning in a separate `notebooks repository <https://github.com/StingraySoftware/notebooks>`_.
+
+Further spectral-timing functionality, in particularly command line scripts based on the API defined
+within Stingray, is available in the package `HENDRICS <https://github.com/StingraySoftware/HENDRICS>`_.
+A Graphical User Interface is under development as part of the
+project `DAVE <https://github.com/StingraySoftware/dave>`_.
+
+Citing Stingray
+===============
+
+If you use Stingray in your data analysis, **please cite us**! Citations are still the main currency
+of the academic world, and pointing to citations is *the* best way to help us ensure that Stingray
+continues to be supported and we can continue working on it!
+
+Currently, the best way to cite Stingray in papers and other projects is with our
+`Astrophysics Source Code Library entry <http://ascl.net/1608.001`_. Stay tuned for the first version
+release later in 2018.
+
+
+How to get involved
+===================
+
+We encourage you to get involved with Stingray in any way you can! First, read through
+the `README <https://github.com/StingraySoftware/stingray/blob/master/README.rst>`_. Then, fork
+the `stingray <https://github.com/StingraySoftware/stingray>`_ and
+`notebooks <<https://github.com/StingraySoftware/notebooks>`_ repositories (if you need a primer on
+GitHub and git version control, `look here <https://www.webpagefx.com/blog/web-design/git-tutorials-beginners/>`_)
+and work your way through the Jupyter notebook tutorials for the main modules. Once you've
+familiarized yourself with the basics of Stingray, go to the
+`Stingray issues page <https://github.com/StingraySoftware/stingray>`_ and try to tackle one! Other ways to
+get involved are outlined on the `project ideas <http://timelabtechnologies.com/ideas.html>`_ page,
+along with some astrophysical background/motivation. Finally, you can
+read `these slides <https://speakerdeck.com/abigailstev/stingray-pyastro16>`_ from an early talk on
+Stingray at the Python in Astronomy 2016 conference.
+
+For organizing and coordinating the software development, we have a Slack group and a mailing
+list -- please use `this link <https://stingray-slack.herokuapp.com>`_ for Slack or send
+`one of us <https://github.com/orgs/StingraySoftware/people>`_ an email to join.
+
+Previous projects being merged in Stingray
+==========================================
+
+* Daniela Huppenkothen's original Stingray
+* Matteo Bachetti's `MaLTPyNT <https://github.com/matteobachetti/MaLTPyNT>`_
+* Abigail Stevens' RXTE power spectra code and phase-resolved spectroscopy code
+* Simone Migliari's and Paul Balm's X-ray data exploration GUI commissioned by ESA
+
+Acknowledgments
+===============
+
+Thank you to JetBrains for the free use of `PyCharm <https://www.jetbrains.com/pycharm/>`_.
+
+Stingray is participating in the `Google Summer of Code <https://summerofcode.withgoogle.com>`_ in
+2017 under the `Python Software Foundation <https://www.python.org/psf/>`_, and participated in
+2016 under `Timelab <http://timelabtechnologies.com>`_.
+

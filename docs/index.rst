@@ -7,6 +7,7 @@ Contents
 .. toctree::
    :maxdepth: 3
 
+   intro
    core
    modeling
    pulse
