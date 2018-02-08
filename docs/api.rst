@@ -228,29 +228,23 @@ appropriate for (averaged) power spectra.
 
 .. autoclass:: stingray.modeling.LogLikelihood
    :members:
-   :private-members:
-   :special-members:
-
+   :inherited-members:
 
 .. autoclass:: stingray.modeling.GaussianLogLikelihood
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 .. autoclass:: stingray.modeling.PoissonLogLikelihood
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 .. autoclass:: stingray.modeling.PSDLogLikelihood
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 .. autoclass:: stingray.modeling.LaplaceLogLikelihood
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 ----
 
@@ -263,53 +257,45 @@ abstract base class laying out a basic template for defining posteriors. As with
 above, several posterior classes are defined for a variety of data types.
 
 Note that priors are **not** pre-defined in these classes, since they are problem dependent and should be
-set by the user. The convenience function :function:`stingray.modeling.set_logprior` can be useful to help set
+set by the user. The convenience function :func:`stingray.modeling.set_logprior` can be useful to help set
 priors for these posterior classes.
 
 .. autoclass:: stingray.modeling.Posterior
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 .. autoclass:: stingray.modeling.GaussianPosterior
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 .. autoclass:: stingray.modeling.PoissonPosterior
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 .. autoclass:: stingray.modeling.PSDPosterior
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 .. autoclass:: stingray.modeling.LaplacePosterior
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 ----
 
 Parameter Estimation Classes
 ----------------------------
 
-These classes implement functionality related to parameter estimation. They define basic `fit` and
-`sample` methods using `scipy.optimize` and `emcee`, respectively, for optimization and Markov Chain Monte
-Carlo sampling. :class:`stingray.modelingPSDParEst` implements some more advanced functionality for modelling
+These classes implement functionality related to parameter estimation. They define basic ``fit`` and
+``sample`` methods using ``scipy.optimize`` and ``emcee``, respectively, for optimization and Markov Chain Monte
+Carlo sampling. :class:`stingray.modeling.PSDParEst` implements some more advanced functionality for modelling
 power spectra, including both frequentist and Bayesian searches for (quasi-)periodic signals.
 
 .. autoclass:: stingray.modeling.ParameterEstimation
    :members:
-   :private-members:
-   :special-members:
 
 .. autoclass:: stingray.modeling.PSDParEst
    :members:
-   :private-members:
-   :special-members:
+   :inherited-members:
 
 ----
 
@@ -322,12 +308,10 @@ organize the results of model fitting and sampling in a more meaningful, easily 
 .. autoclass:: stingray.modeling.OptimizationResults
    :members:
    :private-members:
-   :special-members:
 
 .. autoclass:: stingray.modeling.SamplingResults
    :members:
    :private-members:
-   :special-members:
 
 ----
 
@@ -335,7 +319,7 @@ Convenience Functions
 ---------------------
 
 These functions are designed to help the user perform common tasks related to modelling and parameter
-estimation. In particular, the function :function:`stingray.modeling.set_logprior` is designed to
+estimation. In particular, the function :func:`stingray.modeling.set_logprior` is designed to
 help users set priors in their :class:`stingray.modeling.Posterior` subclass objects.
 
 .. autofunction:: stingray.modeling.set_logprior
