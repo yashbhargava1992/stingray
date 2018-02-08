@@ -1,13 +1,14 @@
 Welcome to Stingray's documentation
 ***********************************
 
+.. include:: intro
+
 Contents
 ========
 
 .. toctree::
-   :maxdepth: 3
-
-   intro
+   :maxdepth: 2
+   
    core
    modeling
    pulse
