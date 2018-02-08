@@ -441,13 +441,19 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
 
     Parameters
     ----------
-    phase : array
-        The phases corresponding to each bin of the profile
     prof : array
         The pulse profile
     template : array, default None
         The template of the pulse used to perform the TOA calculation. If None,
         a simple sinusoid is used
+
+    Other parameters
+    ----------------
+    sigma : array
+        error on profile bins (currently has no effect)
+    use_bootstrap : bool
+        Calculate errors using a bootstrap method, with `fftfit_error`
+    **fftfit_kwargs : additional arguments for `fftfit_error`
 
     Returns
     -------
@@ -555,6 +561,9 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
     ----------------
     nstep : int, optional, default 100
         Number of steps for the bootstrap method
+    sigma : array, default None
+        error on profile bins. If None, the square root of the mean profile
+        is used.
     """
     nstep = _default_value_if_no_key(fftfit_kwargs, "nstep", 100)
 
@@ -593,8 +602,8 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
     return np.mean(amp_fit), np.std(amp_fit), mean_save, std_save
 
 
-def plot_TOA_fit(profile, template, toa, mod=None, toaerr=None,
-                 additional_phase=0., show=True, period=1):
+def _plot_TOA_fit(profile, template, toa, mod=None, toaerr=None,
+                  additional_phase=0., show=True, period=1):
     """Plot diagnostic information on the TOA."""
     import matplotlib.pyplot as plt
     from scipy.interpolate import interp1d
@@ -656,9 +665,9 @@ def get_TOA(prof, period, tstart, template=None, additional_phase=0,
     toaerr = phase_res_err * period
 
     if debug:
-        plot_TOA_fit(prof, template, toa - tstart, toaerr=toaerr,
-                     additional_phase=additional_phase,
-                     period=period)
+        _plot_TOA_fit(prof, template, toa - tstart, toaerr=toaerr,
+                      additional_phase=additional_phase,
+                      period=period)
 
     return toa, toaerr
 
