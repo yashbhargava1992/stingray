@@ -5,7 +5,7 @@ formats:
 conda:
     file: docs/readthedocs-environment.yml
 
-requirements_file: requirements/docs.txt
+requirements_file: requirements.txt
 
 python:
     setup_py_install: true
