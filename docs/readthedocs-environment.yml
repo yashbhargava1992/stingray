@@ -8,9 +8,3 @@ dependencies:
   - ipykernel
   - pip:
     - nbsphinx
-
-requirements_file: requirements/docs.txt
-
-python:
-   setup_py_install: true
-
