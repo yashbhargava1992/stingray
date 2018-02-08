@@ -532,9 +532,11 @@ def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False,
     offset = 0
     if offset_correction:
         std = mad(ysub)
-
         good = np.abs(ysub) < 10 * std
-
+        if len(x[good]) < 10:
+            good = np.ones(len(x), dtype=bool)
+            warnings.warn('Too few bins to perform baseline offset correction'
+                          ' precisely. Beware of results')
         offset = offset_fit(x[good], ysub[good], 0)
 
     if return_baseline:
