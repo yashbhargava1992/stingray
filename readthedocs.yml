@@ -3,10 +3,10 @@ formats:
     - pdf
 
 conda:
-    - file: docs/readthedocs-environment.yml
+    file: docs/readthedocs-environment.yml
 
 requirements_file: requirements/docs.txt
 
 python:
-   setup_py_install: true
+    setup_py_install: true
 
