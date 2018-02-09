@@ -66,7 +66,6 @@ class Lightcurve(object):
         mjdref: float
             MJD reference (useful in most high-energy mission data)
 
-
         Attributes
         ----------
         time: numpy.ndarray
@@ -163,8 +162,19 @@ class Lightcurve(object):
 
         self.mjdref = mjdref
         self.time = np.asarray(time)
+        dt_array = np.diff(np.sort(self.time))
+        dt_array_unsorted = np.diff(self.time)
+        unsorted = np.any(dt_array_unsorted < 0)
+
         if dt is None:
-            self.dt = np.median(self.time[1:] - self.time[:-1])
+            if unsorted:
+                logging.warning("The light curve is unordered! This may cause "
+                                "unexpected behaviour in some methods! Use "
+                                "sort() to order the light curve in time and "
+                                "check that the time resolution `dt` is "
+                                "calculated correctly!")
+
+            self.dt = np.median(dt_array)
         else:
             self.dt = dt
 
@@ -173,8 +183,12 @@ class Lightcurve(object):
 
         self.err_dist = err_dist
 
-        self.tstart = self.time[0] - 0.5*self.dt
-        self.tseg = self.time[-1] - self.time[0] + self.dt
+        if unsorted:
+            self.tstart = np.min(self.time) - 0.5 * self.dt
+            self.tseg = np.max(self.time) - np.min(self.time) + self.dt
+        else:
+            self.tstart = self.time[0] - 0.5*self.dt
+            self.tseg = self.time[-1] - self.time[0] + self.dt
 
         self.gti = \
             np.asarray(assign_value_if_none(gti,
@@ -215,7 +229,6 @@ class Lightcurve(object):
             simon("Bin sizes in input time array aren't equal throughout! "
                   "This could cause problems with Fourier transforms. "
                   "Please make the input time evenly sampled.")
-
 
     def change_mjdref(self, new_mjdref):
         """Change the MJDREF of the light curve.
@@ -277,8 +290,9 @@ class Lightcurve(object):
                   "We are setting the errors to zero to avoid complications.")
             new_counts_err = np.zeros_like(new_counts)
         elif self.err_dist.lower() in valid_statistics:
-                new_counts_err = np.sqrt(np.add(self.counts_err[mask_self]**2,
-                                                other.counts_err[mask_other]**2))
+                new_counts_err = \
+                    np.sqrt(np.add(self.counts_err[mask_self]**2,
+                                   other.counts_err[mask_other]**2))
             # More conditions can be implemented for other statistics
         else:
             raise StingrayError("Statistics not recognized."
@@ -436,7 +450,7 @@ class Lightcurve(object):
             raise IndexError("The index must be either an integer or a slice "
                              "object !")
 
-    def __eq__(self,other_lc):
+    def __eq__(self, other_lc):
         """
         Compares two :class:`Lightcurve` objects.
 
@@ -454,7 +468,8 @@ class Lightcurve(object):
         """
         if not isinstance(other_lc, Lightcurve):
             raise ValueError('Lightcurve can only be compared with a Lightcurve Object')
-        if (np.allclose(self.time, other_lc.time) and np.allclose(self.counts, other_lc.counts)):
+        if (np.allclose(self.time, other_lc.time) and
+                np.allclose(self.counts, other_lc.counts)):
             return True
         return False
 
@@ -605,7 +620,6 @@ class Lightcurve(object):
             raise ValueError("New time resolution must be larger than "
                              "old time resolution!")
 
-
         if self.gti is None:
 
             bin_time, bin_counts, bin_err, _ = \
@@ -615,7 +629,7 @@ class Lightcurve(object):
         else:
             bin_time, bin_counts, bin_err = [], [], []
             gti_new = []
-            for g  in self.gti:
+            for g in self.gti:
                 if g[1] - g[0] < dt_new:
                     continue
                 else:
@@ -683,7 +697,7 @@ class Lightcurve(object):
         if self.dt != other.dt:
             utils.simon("The two light curves have different bin widths.")
 
-        if( self.tstart < other.tstart ):
+        if(self.tstart < other.tstart):
             first_lc = self
             second_lc = other
         else:
@@ -703,7 +717,6 @@ class Lightcurve(object):
                 simon("Lightcurves have different statistics!"
                       "We are setting the errors to zero.")
 
-
             elif self.err_dist.lower() in valid_statistics:
                 valid_err = True
             # More conditions can be implemented for other statistics
@@ -711,7 +724,6 @@ class Lightcurve(object):
                 raise StingrayError("Statistics not recognized."
                                     " Please use one of these: "
                                     "{}".format(valid_statistics))
-
 
             from collections import Counter
             counts = Counter()
@@ -723,10 +735,11 @@ class Lightcurve(object):
 
             for i, time in enumerate(second_lc.time):
 
-                if (counts.get(time) != None): #Common time
-
-                    counts[time] = (counts[time] + second_lc.counts[i]) / 2  #avg
-                    counts_err[time] = np.sqrt(( ((counts_err[time]**2) + (second_lc.counts_err[i] **2)) / 2))
+                if counts.get(time) is not None:  # Common time
+                    counts[time] = (counts[time] + second_lc.counts[i]) / 2
+                    counts_err[time] = \
+                        np.sqrt(((counts_err[time] **2 ) +
+                                 (second_lc.counts_err[i] ** 2)) / 2)
 
                 else:
                     counts[time] = second_lc.counts[i]
@@ -745,7 +758,8 @@ class Lightcurve(object):
 
             new_time = np.concatenate([first_lc.time, second_lc.time])
             new_counts = np.concatenate([first_lc.counts, second_lc.counts])
-            new_counts_err = np.concatenate([first_lc.counts_err, second_lc.counts_err])
+            new_counts_err = \
+                np.concatenate([first_lc.counts_err, second_lc.counts_err])
 
         new_time = np.asarray(new_time)
         new_counts = np.asarray(new_counts)
@@ -756,7 +770,6 @@ class Lightcurve(object):
                             mjdref=self.mjdref, dt=self.dt)
 
         return lc_new
-
 
     def truncate(self, start=0, stop=None, method="index"):
         """
@@ -847,7 +860,47 @@ class Lightcurve(object):
 
     def sort(self, reverse=False):
         """
-        Sort a Lightcurve object in accordance with its counts array.
+        Sort a Lightcurve object by time.
+
+        A Lightcurve can be sorted in either increasing or decreasing order
+        using this method. The time array gets sorted and the counts array is
+        changed accordingly.
+
+        Parameters
+        ----------
+        reverse : boolean, default False
+            If True then the object is sorted in reverse order.
+
+        Example
+        -------
+        >>> time = [2, 1, 3]
+        >>> count = [200, 100, 300]
+        >>> lc = Lightcurve(time, count)
+        >>> lc_new = lc.sort()
+        >>> lc_new.time
+        array([1, 2, 3])
+        >>> lc_new.counts
+        array([100, 200, 300])
+
+        Returns
+        -------
+        lc_new: :class:`Lightcurve` object
+            The :class:`Lightcurve` object with sorted time and counts
+            arrays.
+        """
+
+        new_time, new_counts, new_counts_err = \
+            zip(*sorted(zip(self.time, self.counts, self.counts_err),
+                        reverse=reverse))
+
+        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
+                            gti=self.gti, dt=self.dt, mjdref=self.mjdref)
+
+        return new_lc
+
+    def sort_counts(self, reverse=False):
+        """
+        Sort a Lightcurve object by counts.
 
         A Lightcurve can be sorted in either increasing or decreasing order
         using this method. The counts array gets sorted and the time array is
@@ -863,24 +916,27 @@ class Lightcurve(object):
         >>> time = [1, 2, 3]
         >>> count = [200, 100, 300]
         >>> lc = Lightcurve(time, count)
-        >>> lc.sort()
-        >>> lc.counts
-        array([100, 200, 300])
-        >>> lc.time
+        >>> lc_new = lc.sort_counts()
+        >>> lc_new.time
         array([2, 1, 3])
+        >>> lc_new.counts
+        array([100, 200, 300])
 
         Returns
         -------
         lc_new: :class:`Lightcurve` object
-            The :class:`Lightcurve` object with truncated time and counts
+            The :class:`Lightcurve` object with sorted time and counts
             arrays.
         """
 
-        new_counts, new_time, new_counts_err = zip(*sorted(zip(self.counts, self.time, self.counts_err) , reverse=reverse))
+        new_counts, new_time, new_counts_err = \
+            zip(*sorted(zip(self.counts, self.time, self.counts_err),
+                        reverse=reverse))
 
-        self.time = np.asarray(new_time)
-        self.counts = np.asarray(new_counts)
-        self.counts_err = np.asarray(new_counts_err)
+        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
+                            gti=self.gti, dt=self.dt, mjdref=self.mjdref)
+
+        return new_lc
 
     def estimate_chunk_length(self, min_total_counts=100, min_time_bins=100):
         """Choose a reasonable chunk length.
@@ -948,8 +1004,8 @@ class Lightcurve(object):
         Other parameters
         ----------------
         fraction_step : float
-            If the step is not a full chunk_length but less (e.g. a moving window),
-            this indicates the ratio between step step and `chunk_length` (e.g.
+            If the step is not a full chunk_length but less (e.g. a moving
+            window), this indicates the ratio between step step and `chunk_length` (e.g.
             0.5 means that the window shifts of half chunk_length)
         kwargs : keyword arguments
             These additional keyword arguments, if present, they will be passed
