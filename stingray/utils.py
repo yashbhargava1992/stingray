@@ -443,8 +443,7 @@ def contiguous_regions(condition):
 
     Notes
     -----
-    .. [so-contiguous] http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-
-    fulfilling-condition-in-a-numpy-array
+    .. [so-contiguous] http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-fulfilling-condition-in-a-numpy-array
     """
     # Find the indices of changes in "condition"
     diff = np.logical_xor(condition[1:], condition[:-1])

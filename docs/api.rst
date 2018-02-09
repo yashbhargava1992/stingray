@@ -214,9 +214,11 @@ data sets. Currently, most functionality is focused on modelling Fourier product
 power spectra and averaged power spectra), but rudimentary functionality exists for modelling
 e.g. light curves.
 
+
+.. _loglikelihoods:
+
 Log-Likelihood Classes
 ----------------------
-.. _loglikelihoods:
 
 These classes define basic log-likelihoods for modelling time series and power spectra.
 :class:`stingray.modeling.LogLikelihood` is an abstract base class, i.e. a template for creating
