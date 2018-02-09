@@ -25,8 +25,7 @@ class CrossCorrelation(object):
 
     mode: {``full``, ``valid``, ``same``}, optional, default ``same``
         A string indicating the size of the correlation output.
-        See the relevant ``scipy`` `documentation
-        <https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html>`
+        See the relevant ``scipy`` documentation [scipy-docs]_
         for more details.
 
     Attributes
@@ -56,6 +55,11 @@ class CrossCorrelation(object):
 
     auto: bool
         An internal flag to indicate whether this is a cross-correlation or an auto-correlation.
+
+    References
+    ----------
+    .. [scipy-docs] https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
+
     """
 
     def __init__(self, lc1=None, lc2=None, mode='same'):
@@ -259,8 +263,7 @@ class AutoCorrelation(CrossCorrelation):
 
     mode: {``full``, ``valid``, ``same``}, optional, default ``same``
         A string indicating the size of the correlation output.
-        See the relevant ``scipy`` `documentation
-        <https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html>`
+        See the relevant ``scipy`` documentation [scipy-docs]
         for more details.
 
     Attributes

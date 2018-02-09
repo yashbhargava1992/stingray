@@ -429,7 +429,7 @@ def contiguous_regions(condition):
     """Find contiguous ``True`` regions of the boolean array ``condition``.
 
     Return a 2D array where the first column is the start index of the region
-    and the second column is the end index.
+    and the second column is the end index, found on [so-contiguous]_.
 
     Parameters
     ----------
@@ -443,7 +443,7 @@ def contiguous_regions(condition):
 
     Notes
     -----
-    From : http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-
+    .. [so-contiguous] http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-
     fulfilling-condition-in-a-numpy-array
     """
     # Find the indices of changes in "condition"
@@ -521,13 +521,8 @@ def offset_fit(x, y, offset_start=0):
 def _als(y, lam, p, niter=10):
     """Baseline Correction with Asymmetric Least Squares Smoothing.
 
-    Modifications to the routine from Eilers & Boelens 2005
-    https://www.researchgate.net/publication/
-        228961729_Technical_Report_Baseline_Correction_with_
-        Asymmetric_Least_Squares_Smoothing
-    The Python translation is partly from
-    http://stackoverflow.com/questions/29156532/
-        python-baseline-correction-library
+    Modifications to the routine from Eilers & Boelens 2005 [eilers-2005]_.
+    The Python translation is partly from [so-als]_.
 
     Parameters
     ----------
@@ -551,6 +546,12 @@ def _als(y, lam, p, niter=10):
     -------
     z : array-like, same size as ``y``
         Fitted baseline.
+
+    References
+    ----------
+    .. [eilers-2005] https://www.researchgate.net/publication/228961729_Technical_Report_Baseline_Correction_with_Asymmetric_Least_Squares_Smoothing
+    .. [so-als] http://stackoverflow.com/questions/29156532/python-baseline-correction-library
+
     """
     from scipy import sparse
     L = len(y)

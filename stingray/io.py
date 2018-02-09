@@ -203,7 +203,7 @@ class _empty():
 
 
 def mkdir_p(path):  # pragma: no cover
-    """Safe ``mkdir`` function.
+    """Safe ``mkdir`` function, found at [so-mkdir]_.
 
     Parameters
     ----------
@@ -212,8 +212,7 @@ def mkdir_p(path):  # pragma: no cover
 
     Notes
     -----
-    Found at
-    http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+    .. [so-mkdir] http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
     """
     import os
     import errno

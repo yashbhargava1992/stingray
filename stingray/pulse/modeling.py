@@ -128,26 +128,35 @@ def fit_sinc(x, y, amp=1.5, mean=0., width=1., tied={}, fixed={}, bounds={},
     ----------------
     amp : float
         The initial value for the amplitude
+
     mean : float
         The initial value for the mean of the sinc
+
     obs_length : float
         The length of the observation. Default None. If it's defined, it
         fixes width to 1/(pi*obs_length), as expected from epoch folding
         periodograms
+
     width : float
         The initial value for the width of the sinc. Only valid if
         obs_length is 0
+
     tied : dict
+
     fixed : dict
+
     bounds : dict
-        Parameters to be passed to the astropy models
-        http://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Gaussian1D.html
+        Parameters to be passed to the [astropy models]_
 
     Returns
     -------
     sincfit : function
         The best-fit function, accepting x as input
         and returning the best-fit model as output
+
+    References
+    ----------
+    .. [astropy models] http://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Gaussian1D.html
     """
     if obs_length is not None:
         width = 1 / (np.pi * obs_length)
@@ -181,8 +190,7 @@ def fit_gaussian(x, y, amplitude=1.5,mean=0.,stddev=2., tied={}, fixed={},
     tied : dict
     fixed : dict
     bounds : dict
-        Parameters to be passed to the astropy models
-        http://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Gaussian1D.html
+        Parameters to be passed to the [astropy models]_
 
     Returns
     -------

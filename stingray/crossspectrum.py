@@ -471,8 +471,7 @@ class Crossspectrum(object):
     def coherence(self):
         """ Compute Coherence function of the cross spectrum.
 
-        Coherence is defined in
-        `this paper <http://iopscience.iop.org/article/10.1086/310430/pdf>`__.
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]_.
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -480,6 +479,11 @@ class Crossspectrum(object):
         -------
         coh : numpy.ndarray
             Coherence function
+
+        References
+        ----------
+        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
+
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -774,8 +778,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def coherence(self):
         """Averaged Coherence function.
 
-        Coherence is defined in
-        `this paper <http://iopscience.iop.org/article/10.1086/310430/pdf>`__.
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]_.
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -791,6 +794,7 @@ class AveragedCrossspectrum(Crossspectrum):
         -------
         (coh, uncertainty) : tuple of np.ndarray
             Tuple comprising the coherence function and uncertainty.
+
         """
         if np.any(self.m < 50):
             simon("Number of segments used in averaging is "
@@ -817,7 +821,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def time_lag(self):
         """Calculate time lag and uncertainty.
 
-        Equation from [4]_.
+        Equation from Bendat & Piersol, 2011 [bendat-2011]_.
 
         Returns
         -------
@@ -830,7 +834,7 @@ class AveragedCrossspectrum(Crossspectrum):
         References
         ----------
 
-        .. [4] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
+        .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
 
         """
         lag = super(AveragedCrossspectrum, self).time_lag()

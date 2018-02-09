@@ -95,7 +95,7 @@ class Covariancespectrum(object):
 
           Examples
           --------
-          See https://github.com/StingraySoftware/notebooks repository for
+          See the `notebooks repository <https://github.com/StingraySoftware/notebooks>`_ for
           detailed notebooks on the code.
 
     """
@@ -456,7 +456,7 @@ class Covariancespectrum(object):
 
 class AveragedCovariancespectrum(Covariancespectrum):
     """
-    Compute a covariance spectrum for the data.
+    Compute a covariance spectrum for the data, defined in [covar spectrum]_ Equation 15.
 
     Parameters
     ----------
@@ -517,8 +517,7 @@ class AveragedCovariancespectrum(Covariancespectrum):
 
     References
     ----------
-    http://arxiv.org/pdf/1405.6575v2.pdf Equation 15
-
+    .. [covar spectrum] http://arxiv.org/pdf/1405.6575v2.pdf
     """
 
     def __init__(self, data, segment_size, dt=None, band_interest=None,

@@ -94,14 +94,12 @@ class OptimizationResults(object):
     aic : float
         The Akaike Information Criterion, derived from the log(likelihood) and often used
         in model comparison between non-nested models;
-        For more details, see
-        `here <http://ieeexplore.ieee.org/document/1100705/?reload=true>`
+        For more details, see [aic]_
 
     bic : float
         The Bayesian Information Criterion, derived from the log(likelihood) and often used
         in model comparison between non-nested models;
-        For more details, see
-        `here <https://projecteuclid.org/euclid.aos/1176344136>`
+        For more details, see [bic]_
 
     merit : float
         sum of squared differences between data and model, normalized by the
@@ -122,6 +120,8 @@ class OptimizationResults(object):
 
     References
     ----------
+    .. [aic] http://ieeexplore.ieee.org/document/1100705/?reload=true
+    .. [bic] https://projecteuclid.org/euclid.aos/1176344136
     """
     def __init__(self, lpost, res, neg=True):
         self.neg = neg
@@ -194,8 +194,8 @@ class OptimizationResults(object):
         Compute various information criteria useful for model comparison in
         non-nested models.
 
-        Currently implemented are the Akaike Information Criterion and the
-        Bayesian Information Criterion.
+        Currently implemented are the Akaike Information Criterion [aic]_ and the
+        Bayesian Information Criterion [bic]_.
 
         Parameters
         ----------
@@ -203,10 +203,6 @@ class OptimizationResults(object):
             The object containing the function that is being optimized
             in the regression
 
-        References
-        ----------
-        * AIC: http://ieeexplore.ieee.org/document/1100705/?reload=true
-        * BIC: https://projecteuclid.org/euclid.aos/1176344136
         """
         if isinstance(lpost, Posterior):
             self.deviance = -2.0*lpost.loglikelihood(self.p_opt, neg=False)
@@ -902,8 +898,7 @@ class SamplingResults(object):
 
     rhat : float
         weighted average of between-sequence variance and within-sequence
-        variance; Gelman-Rubin convergence statistic, see
-        `here <https://projecteuclid.org/euclid.ss/1177011136>`
+        variance; Gelman-Rubin convergence statistic [gelman-rubin]_
 
     mean : numpy.ndarray
         An array of size ``ndim``, with the posterior means of the parameters
@@ -917,6 +912,10 @@ class SamplingResults(object):
         An array of shape ``(ndim, 2)`` containing the lower and upper bounds
         of the credible interval (the Bayesian equivalent of the confidence
         interval) for each parameter using the bounds set by ``ci_min`` and ``ci_max``
+
+    References
+    ----------
+    .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
     """
 
     def __init__(self, sampler, ci_min=5, ci_max=95):
@@ -944,8 +943,8 @@ class SamplingResults(object):
         converged, these present reasonable heuristics to give an
         indication whether convergence is very far off or reasonably close.
 
-        Currently implemented are the autocorrelation time and the
-        Gelman-Rubin convergence criterion.
+        Currently implemented are the autocorrelation time [autocorr]_ and the
+        Gelman-Rubin convergence criterion [gelman-rubin]_.
 
         Parameters
         ----------
@@ -953,8 +952,7 @@ class SamplingResults(object):
 
         References
         ----------
-        * autocorrelation time, see https://arxiv.org/abs/1202.3665
-        * Gelman-Rubin statistic, see https://projecteuclid.org/euclid.ss/1177011136
+        .. [autocorr] https://arxiv.org/abs/1202.3665
         """
 
         # compute and store autocorrelation time
@@ -967,15 +965,12 @@ class SamplingResults(object):
 
     def _compute_rhat(self, sampler):
         """
-        Compute Gelman-Rubin convergence criterion.
+        Compute Gelman-Rubin convergence criterion [gelman-rubin]_.
 
         Parameters
         ----------
         sampler : an `emcee.EnsembleSampler` object
 
-        References
-        ----------
-        * Gelman-Rubin statistic, see https://projecteuclid.org/euclid.ss/1177011136
         """
         # between-sequence variance
         mean_samples_iter = np.nanmean(sampler.chain, axis=1)
@@ -1059,7 +1054,7 @@ class SamplingResults(object):
 
         """
         Plot some results in a triangle plot.
-        If installed, will use `corner <https://github.com/dfm/corner.py>`
+        If installed, will use [corner]_
         for the plotting, if not,
         uses its own code to make a triangle plot.
 
@@ -1082,6 +1077,10 @@ class SamplingResults(object):
 
         filename : str
             Name of the output file with the figure
+
+        References
+        ----------
+        .. [corner] https://github.com/dfm/corner.py
         """
         assert can_plot, "Need to have matplotlib installed for plotting"
         if use_corner:
