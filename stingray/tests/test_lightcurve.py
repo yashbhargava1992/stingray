@@ -447,6 +447,13 @@ class TestLightcurve(object):
         with pytest.raises(StingrayError):
             lc_new = lc[1:2]
 
+    def test_index(self):
+        lc = Lightcurve(self.times, self.counts)
+
+        index = 1
+        index_np32, index_np64 = np.int32(index), np.int64(index)
+        assert lc[index] == lc[index_np32] == lc[index_np64]
+
     def test_join_with_different_dt(self):
         _times = [5, 5.5, 6]
         _counts = [2, 2, 2]
@@ -557,22 +564,52 @@ class TestLightcurve(object):
         assert lc2.mjdref == lc.mjdref
 
     def test_sort(self):
+        _times = [2, 1, 3, 4]
+        _counts = [40, 10, 20, 5]
+        lc = Lightcurve(_times, _counts, mjdref=57000)
+        mjdref = lc.mjdref
+
+        lc_new = lc.sort()
+
+        assert np.all(lc_new.counts == np.array([10, 40, 20, 5]))
+        assert np.all(lc_new.time == np.array([1, 2, 3, 4]))
+        assert lc_new.mjdref == mjdref
+
+        lc_new = lc.sort(reverse=True)
+
+        assert np.all(lc_new.counts == np.array([5, 20, 40,  10]))
+        assert np.all(lc_new.time == np.array([4, 3, 2, 1]))
+        assert lc_new.mjdref == mjdref
+
+    def test_sort_counts(self):
         _times = [1, 2, 3, 4]
         _counts = [40, 10, 20, 5]
         lc = Lightcurve(_times, _counts, mjdref=57000)
         mjdref = lc.mjdref
 
-        lc.sort()
+        lc_new = lc.sort_counts()
 
-        assert np.all(lc.counts == np.array([5, 10, 20, 40]))
-        assert np.all(lc.time == np.array([4, 2, 3, 1]))
-        assert lc.mjdref == mjdref
+        assert np.all(lc_new.counts == np.array([5, 10, 20, 40]))
+        assert np.all(lc_new.time == np.array([4, 2, 3, 1]))
+        assert lc_new.mjdref == mjdref
 
-        lc.sort(reverse=True)
+        lc_new = lc.sort_counts(reverse=True)
 
-        assert np.all(lc.counts == np.array([40, 20, 10,  5]))
-        assert np.all(lc.time == np.array([1, 3, 2, 4]))
-        assert lc.mjdref == mjdref
+        assert np.all(lc_new.counts == np.array([40, 20, 10,  5]))
+        assert np.all(lc_new.time == np.array([1, 3, 2, 4]))
+        assert lc_new.mjdref == mjdref
+
+
+
+    def test_sort_reverse(self):
+        times = np.arange(1000)
+        counts = np.random.rand(1000)*100
+        lc = Lightcurve(times, counts)
+        lc_1 = lc
+        lc_2 = Lightcurve(np.arange(1000, 2000), np.random.rand(1000)*1000)
+        lc_long = lc_1.join(lc_2)  # Or vice-versa
+        new_lc_long = lc_long[:]  # Copying into a new object
+        assert new_lc_long.n == lc_long.n
 
     def test_plot_matplotlib_not_installed(self):
         try:
@@ -784,6 +821,19 @@ class TestLightcurveRebin(object):
         lc = Lightcurve(times, counts, gti=gti)
         baseline = lc.baseline(10000, 0.01, offset_correction=True)
         assert np.isclose(np.std(lc.counts - baseline), input_stdev, rtol=0.1)
+
+    def test_lc_baseline_offset_fewbins(self):
+        times = np.arange(0, 4, 1)
+        input_stdev = 0.1
+        counts = np.random.normal(100, input_stdev, len(times)) + \
+            0.001 * times
+        gti = [[-0.005, 4.005]]
+        lc = Lightcurve(times, counts, gti=gti)
+        with pytest.warns(UserWarning) as record:
+            lc.baseline(10000, 0.01, offset_correction=True)
+
+        assert np.any(["Too few bins to perform baseline offset correction"
+                       in r.message.args[0] for r in record])
 
     def test_change_mjdref(self):
         lc_new = self.lc.change_mjdref(57000)

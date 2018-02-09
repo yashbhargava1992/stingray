@@ -354,10 +354,15 @@ class Powerspectrum(Crossspectrum):
             raise ValueError("This method only works on "
                              "Leahy-normalized power spectra!")
 
-        # calculate p-values for all powers
-        # leave out zeroth power since it just encodes the number of photons!
-        pv = np.array([classical_pvalue(power, self.m)
-                       for power in self.power])
+        if np.size(self.m) == 1:
+            # calculate p-values for all powers
+            # leave out zeroth power since it just encodes the number of photons!
+            pv = np.array([classical_pvalue(power, self.m)
+                           for power in self.power])
+        else:
+            pv = np.array([classical_pvalue(power, m)
+                           for power, m in zip(self.power, self.m)])
+
 
         # if trial correction is used, then correct the threshold for
         # the number of powers in the power spectrum
