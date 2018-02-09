@@ -94,12 +94,14 @@ class OptimizationResults(object):
     aic : float
         The Akaike Information Criterion, derived from the log(likelihood) and often used
         in model comparison between non-nested models;
-        For more details, see [1]_
+        For more details, see
+        `here <http://ieeexplore.ieee.org/document/1100705/?reload=true>`
 
     bic : float
         The Bayesian Information Criterion, derived from the log(likelihood) and often used
         in model comparison between non-nested models;
-        For more details, see [2]_
+        For more details, see
+        `here <https://projecteuclid.org/euclid.aos/1176344136>`
 
     merit : float
         sum of squared differences between data and model, normalized by the
@@ -120,9 +122,6 @@ class OptimizationResults(object):
 
     References
     ----------
-
-    * [1] http://ieeexplore.ieee.org/document/1100705/?reload=true
-    * [2] https://projecteuclid.org/euclid.aos/1176344136
     """
     def __init__(self, lpost, res, neg=True):
         self.neg = neg
@@ -903,8 +902,8 @@ class SamplingResults(object):
 
     rhat : float
         weighted average of between-sequence variance and within-sequence
-        variance; Gelman-Rubin convergence statistic, see [3]_
-
+        variance; Gelman-Rubin convergence statistic, see
+        `here <https://projecteuclid.org/euclid.ss/1177011136>`
 
     mean : numpy.ndarray
         An array of size ``ndim``, with the posterior means of the parameters
@@ -918,10 +917,6 @@ class SamplingResults(object):
         An array of shape ``(ndim, 2)`` containing the lower and upper bounds
         of the credible interval (the Bayesian equivalent of the confidence
         interval) for each parameter using the bounds set by ``ci_min`` and ``ci_max``
-
-    References
-    ----------
-    [3] https://projecteuclid.org/euclid.ss/1177011136
     """
 
     def __init__(self, sampler, ci_min=5, ci_max=95):
@@ -1064,7 +1059,8 @@ class SamplingResults(object):
 
         """
         Plot some results in a triangle plot.
-        If installed, will use ``corner`` [4]_ for the plotting, if not,
+        If installed, will use `corner <https://github.com/dfm/corner.py>`
+        for the plotting, if not,
         uses its own code to make a triangle plot.
 
         By default, this method returns a ``matplotlib.Figure`` object, but
@@ -1086,11 +1082,6 @@ class SamplingResults(object):
 
         filename : str
             Name of the output file with the figure
-
-        References
-        ----------
-        [4] available here https://github.com/dfm/corner.py or through pip
-
         """
         assert can_plot, "Need to have matplotlib installed for plotting"
         if use_corner:

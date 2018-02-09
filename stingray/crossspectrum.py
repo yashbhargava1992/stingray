@@ -469,20 +469,17 @@ class Crossspectrum(object):
         return new_spec
 
     def coherence(self):
-        """
-        Compute Coherence function of the cross spectrum, as defined in [1]_. Coherence is a
-        Fourier frequency dependent measure of the linear correlation
+        """ Compute Coherence function of the cross spectrum.
+
+        Coherence is defined in
+        `this paper <http://iopscience.iop.org/article/10.1086/310430/pdf>`__.
+        It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
         Returns
         -------
         coh : numpy.ndarray
             Coherence function
-
-        References
-        ----------
-        .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
-
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -775,11 +772,17 @@ class AveragedCrossspectrum(Crossspectrum):
             self.nphots2 = nphots2
 
     def coherence(self):
-        """
+        """Averaged Coherence function.
+
+        Coherence is defined in
+        `this paper <http://iopscience.iop.org/article/10.1086/310430/pdf>`__.
+        It is a Fourier frequency dependent measure of the linear correlation
+        between time series measured simultaneously in two energy channels.
+
         Compute an averaged Coherence function of cross spectrum by computing
         coherence function of each segment and averaging them. The return type
         is a tuple with first element as the coherence function and the second
-        element as the corresponding uncertainty [3]_ associated with it.
+        element as the corresponding uncertainty associated with it.
 
         Note : The uncertainty in coherence function is strictly valid for Gaussian \
                statistics only.
@@ -788,11 +791,6 @@ class AveragedCrossspectrum(Crossspectrum):
         -------
         (coh, uncertainty) : tuple of np.ndarray
             Tuple comprising the coherence function and uncertainty.
-
-        References
-        ----------
-        .. [3] http://iopscience.iop.org/article/10.1086/310430/pdf
-
         """
         if np.any(self.m < 50):
             simon("Number of segments used in averaging is "

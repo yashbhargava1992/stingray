@@ -21,7 +21,7 @@ so for now it remains mostly done with custom, proprietary software. During the 
 a group of X-ray astronomers and developers decided to agree on a common platform to develop a
 new software package. This software package will merge existing efforts for a timing package in
 Python and provide the basis for developing spectral-timing analysis tools, and be structured with
-the best guidelines for modern open-source programming, following the example of `Astropy <http://www.astropy.org>`_.
+the best guidelines for modern open-source programming, following `the example of Astropy <http://www.astropy.org>`_.
 This software will have an easily accessible scripting interface (possibly a GUI) and a public API for
 power users. The ultimate goal is to provide the community with a package that eases the learning curve
 for advanced spectral-timing techniques, with a correct statistical framework.

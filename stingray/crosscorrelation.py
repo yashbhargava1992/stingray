@@ -10,10 +10,10 @@ __all__ = ['CrossCorrelation', 'AutoCorrelation']
 
 
 class CrossCorrelation(object):
-    """
-    Make a cross-correlation from a light curves.
-    You can also make an empty :class:`Crosscorrelation` object to populate with your
-    own cross-correlation data.
+    """Make a cross-correlation from a light curves.
+
+    You can also make an empty :class:`Crosscorrelation` object to populate
+    with your own cross-correlation data.
 
     Parameters
     ----------
@@ -25,7 +25,9 @@ class CrossCorrelation(object):
 
     mode: {``full``, ``valid``, ``same``}, optional, default ``same``
         A string indicating the size of the correlation output.
-        See the relevant ``scipy`` documentation [1]_ for more details.
+        See the relevant ``scipy`` `documentation
+        <https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html>`
+        for more details.
 
     Attributes
     ----------
@@ -54,10 +56,6 @@ class CrossCorrelation(object):
 
     auto: bool
         An internal flag to indicate whether this is a cross-correlation or an auto-correlation.
-
-    References
-    ----------
-    [1] https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
     """
 
     def __init__(self, lc1=None, lc2=None, mode='same'):
@@ -261,7 +259,9 @@ class AutoCorrelation(CrossCorrelation):
 
     mode: {``full``, ``valid``, ``same``}, optional, default ``same``
         A string indicating the size of the correlation output.
-        See the relevant ``scipy`` documentation [2]_ for more details.
+        See the relevant ``scipy`` `documentation
+        <https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html>`
+        for more details.
 
     Attributes
     ----------
@@ -282,11 +282,6 @@ class AutoCorrelation(CrossCorrelation):
 
     n: int
          Number of points in self.corr(Length of auto-correlation data)
-
-    References
-    ----------
-    [2] https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
-
     """
 
     def __init__(self, lc=None, mode='same'):
