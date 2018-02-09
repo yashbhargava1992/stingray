@@ -10,6 +10,12 @@ from ..pulsar import HAS_PINT
 from astropy.tests.helper import remote_data
 import pytest
 import os
+try:
+    import matplotlib.pyplot as plt
+    HAS_MPL = True
+except ImportError:
+    HAS_MPL = False
+
 
 def _template_fun(phase, ph0, amplitude, baseline=0):
     return baseline + amplitude * np.cos((phase - ph0) * 2 * np.pi)
@@ -62,7 +68,7 @@ class TestAll(object):
         mjdref = 50000
         toa_sec = (mjds - mjdref) * 86400
         corr = correction_mjd(mjds)
-        corr_s = correction_sec (toa_sec, mjdref)
+        corr_s = correction_sec(toa_sec, mjdref)
         assert np.allclose(corr, corr_s / 86400 + mjdref)
 
     @pytest.mark.skipif('HAS_PINT')
@@ -91,8 +97,9 @@ class TestAll(object):
         """Test pulse phase calculation, frequency only."""
         np.testing.assert_almost_equal(fold_detection_level(16, 0.01),
                                        30.577914166892498)
-        np.testing.assert_almost_equal(fold_detection_level(16, 0.01, ntrial=2),
-                                       fold_detection_level(16, 0.01 / 2))
+        np.testing.assert_almost_equal(
+            fold_detection_level(16, 0.01, ntrial=2),
+            fold_detection_level(16, 0.01 / 2))
 
     def test_zn_detection_level(self):
         np.testing.assert_almost_equal(z2_n_detection_level(2),
@@ -244,6 +251,41 @@ class TestAll(object):
         toa, toaerr = \
             get_TOA(prof, period, tstart,
                     template=_template_fun(phases, 0, 1, 0), nstep=200)
+
+        real_toa = tstart + start_phase * period
+        assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
+
+    def test_get_TOA3(self):
+        np.random.seed(1234)
+        period = 1.2
+        tstart = 122
+        start_phase = 0.2123
+        phases = np.arange(0, 1, 1 / 32)
+        template = _template_fun(phases, start_phase, 10, 20)
+        prof = np.random.poisson(template)
+
+        toa, toaerr = \
+            get_TOA(prof, period, tstart, quick=True,
+                    template=_template_fun(phases, 0, 1, 0), nstep=200,
+                    use_bootstrap=True)
+
+        real_toa = tstart + start_phase * period
+        assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
+
+    @pytest.mark.skipif('not HAS_MPL')
+    def test_get_TOA4(self):
+        np.random.seed(1234)
+        period = 1.2
+        tstart = 122
+        start_phase = 0.2123
+        phases = np.arange(0, 1, 1 / 32)
+        template = _template_fun(phases, start_phase, 10, 20)
+        prof = np.random.poisson(template)
+
+        toa, toaerr = \
+            get_TOA(prof, period, tstart,
+                    template=_template_fun(phases, 0, 1, 0), nstep=200,
+                    debug=True)
 
         real_toa = tstart + start_phase * period
         assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)

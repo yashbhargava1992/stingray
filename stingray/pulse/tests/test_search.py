@@ -37,7 +37,7 @@ class TestAll(object):
             phaseogram(self.event_times, self.pulse_frequency)
         assert np.all(times < 25.6)
         assert np.any(times > 25)
-        assert np.all((phases >= 0)&(phases <= 2))
+        assert np.all((phases >= 0) & (phases <= 2))
 
     def test_phaseogram_bad_weights(self):
         with pytest.raises(ValueError) as excinfo:
@@ -52,7 +52,7 @@ class TestAll(object):
                        nph=16)
         assert np.all(times < 25.6)
         assert np.any(times > 25)
-        assert np.all((phases >= 0)&(phases <= 2))
+        assert np.all((phases >= 0) & (phases <= 2))
         import matplotlib.pyplot as plt
         fig = plt.figure('Phaseogram direct weights')
         plot_phaseogram(phaseogr, phases, times)
@@ -64,7 +64,7 @@ class TestAll(object):
             phaseogram(self.event_times, self.pulse_frequency,
                        mjdref=57000, out_filename='phaseogram_mjdref.png')
         assert np.all(times >= 57000)
-        assert np.all((phases >= 0)&(phases <= 2))
+        assert np.all((phases >= 0) & (phases <= 2))
 
     def test_phaseogram_mjdref_pepoch(self):
         phaseogr, phases, times, additional_info = \
@@ -72,7 +72,7 @@ class TestAll(object):
                        mjdref=57000, out_filename='phaseogram_mjdref.png',
                        pepoch=57000)
         assert np.all(times >= 57000)
-        assert np.all((phases >= 0)&(phases <= 2))
+        assert np.all((phases >= 0) & (phases <= 2))
 
     def test_plot_phaseogram_fromfunc(self):
         import matplotlib.pyplot as plt
