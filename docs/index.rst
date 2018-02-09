@@ -1,7 +1,7 @@
 Welcome to Stingray's documentation
 ***********************************
 
-.. include:: intro.rst
+.. include:: intro.txt
 
 Contents
 ========

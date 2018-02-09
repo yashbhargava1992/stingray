@@ -14,12 +14,13 @@ from stingray.exceptions import StingrayError
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 import copy
 
-__all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence"]
+__all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag"]
 
 
 def coherence(lc1, lc2):
     """
     Estimate coherence function of two light curves.
+    For details on the definition of the coherence, see [vaughan-1996].
 
     Parameters
     ----------
@@ -33,6 +34,11 @@ def coherence(lc1, lc2):
     -------
     coh : ``np.ndarray``
         The array of coherence versus frequency
+
+    References
+    ----------
+    .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
+
     """
 
     if not isinstance(lc1, Lightcurve):
@@ -44,6 +50,41 @@ def coherence(lc1, lc2):
     cs = Crossspectrum(lc1, lc2, norm='none')
 
     return cs.coherence()
+
+
+def time_lag(lc1, lc2):
+    """
+    Estimate the time lag of two light curves.
+    Calculate time lag and uncertainty.
+
+        Equation from Bendat & Piersol, 2011 [bendat-2011]_.
+
+        Returns
+        -------
+        lag : np.ndarray
+            The time lag
+
+        lag_err : np.ndarray
+            The uncertainty in the time lag
+
+        References
+        ----------
+
+        .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
+
+    """
+
+    if not isinstance(lc1, Lightcurve):
+        raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+    if not isinstance(lc2, Lightcurve):
+        raise TypeError("lc2 must be a lightcurve.Lightcurve object")
+
+    cs = Crossspectrum(lc1, lc2, norm='none')
+    lag = cs.time_lag()
+
+    return lag
+
 
 
 class Crossspectrum(object):
@@ -479,11 +520,6 @@ class Crossspectrum(object):
         -------
         coh : numpy.ndarray
             Coherence function
-
-        References
-        ----------
-        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
-
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -778,7 +814,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def coherence(self):
         """Averaged Coherence function.
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]_.
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]__.
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -821,7 +857,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def time_lag(self):
         """Calculate time lag and uncertainty.
 
-        Equation from Bendat & Piersol, 2011 [bendat-2011]_.
+        Equation from Bendat & Piersol, 2011 [bendat-2011]__.
 
         Returns
         -------
@@ -830,12 +866,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
         lag_err : np.ndarray
             The uncertainty in the time lag
-
-        References
-        ----------
-
-        .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
-
         """
         lag = super(AveragedCrossspectrum, self).time_lag()
         coh, uncert = self.coherence()
