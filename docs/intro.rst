@@ -26,13 +26,54 @@ This software will have an easily accessible scripting interface (possibly a GUI
 power users. The ultimate goal is to provide the community with a package that eases the learning curve
 for advanced spectral-timing techniques, with a correct statistical framework.
 
+Overview of Currently Implemented Methods
+=========================================
+
+Currently implemented functionality in this library comprises:
+
+* load event lists from fits files of a few missions (RXTE/PCA, NuSTAR/FPM, XMM-Newton/EPIC)
+* make a light curve from event data, various operations on light curves (e.g. add, subtract, join, truncate)
+* Good Time Interval operations
+* make power spectra in Leahy, rms normalization, absolute rms and no normalization
+* averaged power spectra
+* Dynamical power spectra
+* maximum likelihood fitting of periodograms/parametric models
+* (averaged) cross spectra
+* coherence, time lags
+* cross correlation functions
+* r.m.s. spectra and lags (time vs energy, time vs frequency); UNDER DEVELOPMENT
+* covariance spectra; UNDER DEVELOPMENT
+* bispectra; UNDER DEVELOPMENT
+* (Bayesian) quasi-periodic oscillation searches
+* simulate a light curve with a given power spectrum
+* simulate a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
+* simulate an event list from a given light curve _and_ with a given energy spectrum
+* pulsar searches with Epoch Folding, :math:`Z^2_n` test
+
+
+Future Additions
+----------------
+
+We welcome feature requests! If you need a particular tool that's currently not implemented or
+have a new method you think might be usefully implemented in Stingray, please :ref:`get in touch <getinvolved>`!
+
+Other future additions we are currently implementing are:
+
+* bicoherence
+* phase-resolved spectroscopy of quasi-periodic oscillations
+* Fourier-frequency-resolved spectroscopy
+* power colours
+* full HEASARC-compatible mission support
+* pulsar searches with $H$-test
+* binary pulsar searches
+
 
 This Documentation and Additional Resources
 ===========================================
 
 These pages lay out the documentation for the `Stingray source library <https://github.com/StingraySoftware/stingray>`_.
 
-Aside from the :doc:`API reference <api>`, there are a number of tutorial-style documents covering the core
+Aside from the :ref:`api` reference, there are a number of tutorial-style documents covering the core
 library as well as a number of sub-modules. These tutorials are built from executable Jupuyter notebooks available
 for cloning in a separate `notebooks repository <https://github.com/StingraySoftware/notebooks>`_.
 
@@ -52,6 +93,7 @@ Currently, the best way to cite Stingray in papers and other projects is with ou
 `Astrophysics Source Code Library entry <http://ascl.net/1608.001>`_. Stay tuned for the first version
 release later in 2018.
 
+.. _getinvolved:
 
 Reporting Bugs and Issues, Getting Help, Providing Feedback
 ===========================================================
