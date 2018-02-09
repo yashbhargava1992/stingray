@@ -8,7 +8,8 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-  
+
+   install
    simulator
    api
 
