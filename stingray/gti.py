@@ -75,7 +75,6 @@ def check_gtis(gti):
     gti_start = gti[:, 0]
     gti_end = gti[:, 1]
 
-    logging.debug('-- GTI: ' + repr(gti))
     # Check that GTIs are well-behaved
     if not np.all(gti_end >= gti_start):
         raise ValueError('This GTI end times must be larger than '
@@ -84,8 +83,6 @@ def check_gtis(gti):
     # Check that there are no overlaps in GTIs
     if not np.all(gti_start[1:] >= gti_end[:-1]):
         raise ValueError('This GTI has overlaps')
-
-    logging.debug('-- Correct')
 
     return
 
