@@ -857,7 +857,7 @@ class Lightcurve(object):
         array([30, 40, 50, 60, 70, 80])
         >>> lc_new.time
         array([3, 4, 5, 6, 7, 8])
-        # Truncation can also be done by time values
+        >>> # Truncation can also be done by time values
         >>> lc_new = lc.truncate(start=6, method='time')
         >>> lc_new.time
         array([6, 7, 8, 9])
