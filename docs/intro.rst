@@ -31,12 +31,12 @@ Overview of Currently Implemented Methods
 
 Currently implemented functionality in this library comprises:
 
-* load event lists from fits files of a few missions (RXTE/PCA, NuSTAR/FPM, XMM-Newton/EPIC)
-* make a light curve from event data, various operations on light curves (e.g. add, subtract, join, truncate)
+* loading event lists from fits files of a few missions (RXTE/PCA, NuSTAR/FPM, XMM-Newton/EPIC)
+* constructing light curves from event data, various operations on light curves (e.g. add, subtract, join, truncate)
 * Good Time Interval operations
-* make power spectra in Leahy, rms normalization, absolute rms and no normalization
+* power spectra in Leahy, rms normalization, absolute rms and no normalization
 * averaged power spectra
-* Dynamical power spectra
+* dynamical power spectra
 * maximum likelihood fitting of periodograms/parametric models
 * (averaged) cross spectra
 * coherence, time lags
@@ -45,9 +45,9 @@ Currently implemented functionality in this library comprises:
 * covariance spectra; UNDER DEVELOPMENT
 * bispectra; UNDER DEVELOPMENT
 * (Bayesian) quasi-periodic oscillation searches
-* simulate a light curve with a given power spectrum
-* simulate a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
-* simulate an event list from a given light curve _and_ with a given energy spectrum
+* simulating a light curve with a given power spectrum
+* simulating a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
+* simulating an event list from a given light curve _and_ with a given energy spectrum
 * pulsar searches with Epoch Folding, :math:`Z^2_n` test
 
 
@@ -146,6 +146,6 @@ Acknowledgments
 Thank you to JetBrains for the free use of `PyCharm <https://www.jetbrains.com/pycharm/>`_.
 
 Stingray is participating in the `Google Summer of Code <https://summerofcode.withgoogle.com>`_ in
-2017 under the `Python Software Foundation <https://www.python.org/psf/>`_, and participated in
-2016 under `Timelab <http://timelabtechnologies.com>`_.
-
+2018 under `Open Astronomy <http://openastronomy.org>`_ and has previously participated in  2017 under
+the `Python Software Foundation <https://www.python.org/psf/>`_, and in 2016 under
+`Timelab <http://timelabtechnologies.com>`_.
