@@ -12,8 +12,7 @@ __all__ = ["Bispectrum"]
 
 
 class Bispectrum(object):
-    """
-    Makes a :class:`Bispectrum` object from a given :class:`stingray.Lightcurve`.
+    """Makes a :class:`Bispectrum` object from a :class:`stingray.Lightcurve`.
 
     :class:`Bispectrum` is a higher order time series analysis method and is calculated by
     indirect method as Fourier transform of triple auto-correlation function also called as

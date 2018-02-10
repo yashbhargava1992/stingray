@@ -10,6 +10,7 @@ import six
 
 __all__ = ["VarEnergySpectrum", "RmsEnergySpectrum", "LagEnergySpectrum", "ExcessVarianceSpectrum"]
 
+
 def _decode_energy_specification(energy_spec):
     """Decode the energy specification tuple.
 
@@ -222,7 +223,7 @@ class VarEnergySpectrum(object):
         base_lc = Lightcurve.make_lightcurve(self.events1.time[good],
                                              self.bin_time,
                                              tstart=tstart,
-                                             tseg=tstop-tstart,
+                                             tseg=tstop - tstart,
                                              gti=gti,
                                              mjdref=self.events1.mjdref)
 
@@ -327,10 +328,11 @@ class RmsEnergySpectrum(VarEnergySpectrum):
             else:
                 good = (xspect.freq >= self.freq_interval[0]) & \
                        (xspect.freq < self.freq_interval[1])
-                rms_spec[i] = np.sqrt(np.sum(xspect.power[good]*xspect.df))
+                rms_spec[i] = np.sqrt(np.sum(xspect.power[good] * xspect.df))
 
                 # Root squared sum of errors of the spectrum
-                root_sq_err_sum = np.sqrt(np.sum((xspect.power_err[good]*xspect.df)**2))
+                root_sq_err_sum = \
+                    np.sqrt(np.sum((xspect.power_err[good] * xspect.df) ** 2))
                 # But the rms is the squared root. So,
                 # Error propagation
                 rms_spec_err[i] = 1 / (2 * rms_spec[i]) * root_sq_err_sum

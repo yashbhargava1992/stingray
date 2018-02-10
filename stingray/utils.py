@@ -20,7 +20,6 @@ try:
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
-
     class jit(object):
         def __init__(self, *args, **kwargs):
             pass
@@ -66,6 +65,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
            'create_window', 'poisson_symmetrical_errors']
+
 
 def _root_squared_mean(array):
     return np.sqrt(np.sum(array ** 2)) / len(array)
@@ -282,7 +282,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
             x.astype(np.double), imag.astype(np.double),
             statistic="mean", bins=binx)
 
-        biny = biny + 1j*biny_imag
+        biny = biny + 1j * biny_imag
 
     if isinstance(y_err[0], np.complex):
         imag_err = y_err.imag
@@ -294,7 +294,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
     # compute the number of powers in each frequency bin
     nsamples = np.array([len(binno[np.where(binno == i)[0]])
-                         for i in range(1, np.max(binno)+1, 1)])
+                         for i in range(1, np.max(binno) + 1, 1)])
 
     return binx, biny, biny_err, nsamples
 
@@ -686,7 +686,7 @@ def excess_variance(lc, normalization='fvar'):
     elif normalization == 'norm_xs':
         return var_nxs, var_nxs_err
     elif normalization == 'none' or normalization is None:
-        return var_xs, var_nxs_err * mean_lc **2
+        return var_xs, var_nxs_err * mean_lc ** 2
 
 
 def create_window(N, window_type='uniform'):
@@ -825,7 +825,7 @@ def poisson_symmetrical_errors(counts):
     # calculate approximately symmetric uncertainties
     err_low -= np.asarray(count_values)
     err_high -= np.asarray(count_values)
-    err = (np.absolute(err_low) + np.absolute(err_high))/2.0
+    err = (np.absolute(err_low) + np.absolute(err_high)) / 2.0
 
     idxs = np.searchsorted(count_values, counts_int)
     return err[idxs]

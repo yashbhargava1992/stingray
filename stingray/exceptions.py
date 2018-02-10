@@ -2,6 +2,6 @@
 
 __all__ = ["StingrayError"]
 
+
 class StingrayError(Exception):
     pass
-

@@ -1,7 +1,5 @@
 from __future__ import division, absolute_import, print_function
 
-#from itertools import izip
-
 import numpy as np
 import scipy
 import scipy.stats
@@ -84,7 +82,6 @@ def time_lag(lc1, lc2):
     lag = cs.time_lag()
 
     return lag
-
 
 
 class Crossspectrum(object):
@@ -849,8 +846,8 @@ class AveragedCrossspectrum(Crossspectrum):
         coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
 
         # Calculate uncertainty
-        uncertainty = (2 ** 0.5 * coh * (1 - coh)) / (
-        np.abs(coh) * self.m ** 0.5)
+        uncertainty = \
+            (2 ** 0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m ** 0.5)
 
         return (coh, uncertainty)
 

@@ -18,6 +18,7 @@ __all__ = ['load_gtis', 'check_gtis',
            'time_intervals_from_gtis', 'bin_intervals_from_gtis',
            'gti_border_bins']
 
+
 def load_gtis(fits_file, gtistring=None):
     """
     Load Good Time Intervals (GTIs) from ``HDU EVENTS`` of file ``fits_file``.
@@ -100,7 +101,7 @@ def check_gtis(gti):
     """
     gti = np.asarray(gti)
     if len(gti) != gti.shape[0] or len(gti.shape) != 2 or \
-                    len(gti) != gti.shape[0]:
+            len(gti) != gti.shape[0]:
         raise TypeError("Please check formatting of GTIs. They need to be"
                         " provided as [[gti00, gti01], [gti10, gti11], ...]")
 
@@ -324,8 +325,8 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
         limmax -= safe_interval[1]
         if limmax - limmin >= min_length:
             newgtis[ig][:] = [limmin, limmax]
-            cond1 = time >= limmin + dt / 2 - epsilon*dt
-            cond2 = time <= limmax - dt / 2 + epsilon*dt
+            cond1 = time >= limmin + dt / 2 - epsilon * dt
+            cond2 = time <= limmax - dt / 2 + epsilon * dt
 
             good = np.logical_and(cond1, cond2)
             mask[good] = True
@@ -374,7 +375,7 @@ def create_gti_from_condition(time, condition,
         safe_interval = [safe_interval, safe_interval]
 
     dt = assign_value_if_none(dt,
-                               np.zeros_like(time) + (time[1] - time[0]) / 2)
+                              np.zeros_like(time) + (time[1] - time[0]) / 2)
 
     gtis = []
     for idx in idxs:
@@ -690,7 +691,7 @@ def append_gtis(gti0, gti1):
     # Check if GTIs are mutually exclusive.
     if not check_separate(gti0, gti1):
         raise ValueError('In order to append, GTIs must be mutually'
-            'exclusive.')
+                         'exclusive.')
 
     new_gtis = np.sort(np.concatenate([gti0, gti1]))
 
@@ -905,11 +906,11 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         if stopbin > len(time):
             stopbin = len(time)
 
-        if time[startbin] < g[0] + dt/2 - epsilon*dt:
+        if time[startbin] < g[0] + dt / 2 - epsilon * dt:
             startbin += 1
         # Would be g[1] - dt/2, but stopbin is the end of an interval
         # so one has to add one bin
-        if time[stopbin - 1] > g[1] - dt/2 + epsilon*dt:
+        if time[stopbin - 1] > g[1] - dt / 2 + epsilon * dt:
             stopbin -= 1
 
         newbins = np.arange(startbin, stopbin - nbin + 1,
@@ -966,7 +967,7 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     spectrum_start_bins = np.array([], dtype=np.long)
     spectrum_stop_bins = np.array([], dtype=np.long)
     for g in gtis:
-        good = (time - dt / 2 >= g[0])&(time + dt / 2 <= g[1])
+        good = (time - dt / 2 >= g[0]) & (time + dt / 2 <= g[1])
         t_good = time[good]
         if len(t_good) == 0:
             continue
@@ -975,11 +976,11 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
         if stopbin > len(time):
             stopbin = len(time)
 
-        if time[startbin] < g[0] + dt/2 - epsilon*dt:
+        if time[startbin] < g[0] + dt / 2 - epsilon * dt:
             startbin += 1
         # Would be g[1] - dt/2, but stopbin is the end of an interval
         # so one has to add one bin
-        if time[stopbin - 1] > g[1] - dt/2 + epsilon*dt:
+        if time[stopbin - 1] > g[1] - dt / 2 + epsilon * dt:
             stopbin -= 1
         spectrum_start_bins = \
             np.append(spectrum_start_bins,

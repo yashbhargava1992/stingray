@@ -217,7 +217,7 @@ class CrossCorrelation(object):
             raise ImportError("Matplotlib required for plot()")
 
         if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(6,4))
+            fig, ax = plt.subplots(1, 1, figsize=(6, 4))
 
         ax.plot(self.time_lags, self.corr, marker)
         if labels is not None:

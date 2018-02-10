@@ -188,7 +188,7 @@ class Lightcurve(object):
             self.tstart = np.min(self.time) - 0.5 * self.dt
             self.tseg = np.max(self.time) - np.min(self.time) + self.dt
         else:
-            self.tstart = self.time[0] - 0.5*self.dt
+            self.tstart = self.time[0] - 0.5 * self.dt
             self.tseg = self.time[-1] - self.time[0] + self.dt
 
         self.gti = \
@@ -409,7 +409,7 @@ class Lightcurve(object):
         >>> lc_new.counts
         array([100, 100, 100])
         """
-        lc_new = Lightcurve(self.time, -1*self.counts,
+        lc_new = Lightcurve(self.time, -1 * self.counts,
                             err=self.counts_err, gti=self.gti,
                             mjdref=self.mjdref)
 
@@ -608,7 +608,7 @@ class Lightcurve(object):
 
         logging.info("make_lightcurve: tseg: " + str(tseg))
 
-        timebin = np.int64(tseg/dt)
+        timebin = np.int64(tseg / dt)
         logging.info("make_lightcurve: timebin:  " + str(timebin))
 
         tend = tstart + timebin * dt
@@ -782,7 +782,7 @@ class Lightcurve(object):
                 if counts.get(time) is not None:  # Common time
                     counts[time] = (counts[time] + second_lc.counts[i]) / 2
                     counts_err[time] = \
-                        np.sqrt(((counts_err[time] **2 ) +
+                        np.sqrt(((counts_err[time] ** 2) +
                                  (second_lc.counts_err[i] ** 2)) / 2)
 
                 else:
@@ -1003,7 +1003,7 @@ class Lightcurve(object):
 
     def estimate_chunk_length(self, min_total_counts=100, min_time_bins=100):
         """Estimate a reasonable segment length for chunk-by-chunk analysis.
-        
+
         Choose a reasonable length for time segments, given a minimum number of total
         counts in the segment, and a minimum number of time bins in the segment.
 

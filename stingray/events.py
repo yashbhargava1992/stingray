@@ -149,7 +149,7 @@ class EventList(object):
         """
 
         # Multiply times by number of counts
-        times = [[i] * int(j) for i,j in zip(lc.time, lc.counts)]
+        times = [[i] * int(j) for i, j in zip(lc.time, lc.counts)]
         # Concatenate all lists
         times = [i for j in times for i in j]
 
@@ -221,8 +221,10 @@ class EventList(object):
         R = ra.uniform(0, 1, self.ncounts)
 
         # Assign energies to events corresponding to the random numbers drawn
-        self.energy = np.array([energy[np.argwhere(cum_prob ==
-            np.min(cum_prob[(cum_prob - r) > 0]))] for r in R])
+        self.energy = \
+            np.array([energy[
+                np.argwhere(cum_prob == np.min(cum_prob[(cum_prob - r) > 0]))]
+                      for r in R])
 
     def join(self, other):
         """
@@ -274,7 +276,7 @@ class EventList(object):
         elif (self.pi is None) or (other.pi is None):
             self.pi = assign_value_if_none(self.pi, np.zeros_like(self.time))
             other.pi = assign_value_if_none(other.pi,
-                                             np.zeros_like(other.time))
+                                            np.zeros_like(other.time))
 
         if (self.pi is not None) and (other.pi is not None):
             ev_new.pi = np.concatenate([self.pi, other.pi])
@@ -286,7 +288,7 @@ class EventList(object):
             self.energy = assign_value_if_none(self.energy,
                                                np.zeros_like(self.time))
             other.energy = assign_value_if_none(other.energy,
-                                             np.zeros_like(other.time))
+                                                np.zeros_like(other.time))
 
         if (self.energy is not None) and (other.energy is not None):
             ev_new.energy = np.concatenate([self.energy, other.energy])
@@ -310,7 +312,7 @@ class EventList(object):
             if check_separate(self.gti, other.gti):
                 ev_new.gti = append_gtis(self.gti, other.gti)
                 simon('GTIs in these two event lists do not overlap at all.'
-                    'Merging instead of returning an overlap.')
+                      'Merging instead of returning an overlap.')
             else:
                 ev_new.gti = cross_gtis([self.gti, other.gti])
 
@@ -350,7 +352,7 @@ class EventList(object):
         """
 
         attributes = ['time', 'energy', 'ncounts', 'mjdref', 'dt',
-                'notes', 'gti', 'pi']
+                      'notes', 'gti', 'pi']
         data = read(filename, format_, cols=attributes)
 
         if format_ == 'ascii':
@@ -407,8 +409,7 @@ class EventList(object):
 
         elif format_ == 'fits':
             write(self, filename, format_, tnames=['EVENTS', 'GTI'],
-                  colsassign={'gti':'GTI'})
+                  colsassign={'gti': 'GTI'})
 
         else:
             raise KeyError("Format not understood.")
-

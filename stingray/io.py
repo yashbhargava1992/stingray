@@ -16,7 +16,7 @@ import stingray.utils as utils
 from .utils import order_list_of_arrays, is_string
 from .utils import assign_value_if_none
 
-from .gti import  _get_gti_from_extension, load_gtis
+from .gti import _get_gti_from_extension, load_gtis
 
 try:
     # Python 2
@@ -28,9 +28,10 @@ except:
 _H5PY_INSTALLED = True
 
 try:
-    import h5py 
+    import h5py
 except:
     _H5PY_INSTALLED = False
+
 
 def get_file_extension(fname):
     """Get the extension from the file name."""
@@ -74,6 +75,7 @@ def high_precision_keyword_read(hdr, keyword):
         return value
     except:
         return None
+
 
 def _get_additional_data(lctable, additional_columns):
     additional_data = {}
@@ -287,6 +289,7 @@ def ref_mjd(fits_file, hdu=1):
     hdulist.close()
     return ref_mjd_val
 
+
 def common_name(str1, str2, default='common'):
     """Strip two strings of the letters not in common.
 
@@ -324,6 +327,7 @@ def common_name(str1, str2, default='common'):
     logging.debug('common_name: %s %s -> %s' % (str1, str2, common_str))
     return common_str
 
+
 def split_numbers(number):
     """
     Split high precision number(s) into doubles.
@@ -345,12 +349,13 @@ def split_numbers(number):
 
     if isinstance(number, collections.Iterable):
         mods = [math.modf(n) for n in number]
-        number_F = [f for f,_ in mods]
-        number_I = [i for _,i in mods] 
+        number_F = [f for f, _ in mods]
+        number_I = [i for _, i in mods]
     else:
         number_F, number_I = math.modf(number)
 
     return np.double(number_I), np.double(number_F)
+
 
 def _save_pickle_object(object, filename):
     """
@@ -359,15 +364,16 @@ def _save_pickle_object(object, filename):
     Parameters
     ----------
     object: class instance
-        A class object whose attributes are saved in a 
+        A class object whose attributes are saved in a
         dictionary format
 
     filename: str
         Name of the file in which object is saved
     """
 
-    with open(filename, "wb" ) as f:
+    with open(filename, "wb") as f:
         pickle.dump(object, f)
+
 
 def _retrieve_pickle_object(filename):
     """
@@ -383,8 +389,9 @@ def _retrieve_pickle_object(filename):
     data: class object
     """
 
-    with open(filename, "rb" ) as f:
+    with open(filename, "rb") as f:
         return pickle.load(f)
+
 
 def _save_hdf5_object(object, filename):
     """
@@ -393,7 +400,7 @@ def _save_hdf5_object(object, filename):
     Parameters
     ----------
     object: class instance
-        A class object whose attributes are saved in a 
+        A class object whose attributes are saved in a
         dictionary format
 
     filename: str
@@ -403,33 +410,34 @@ def _save_hdf5_object(object, filename):
     items = vars(object)
     attrs = [name for name in items if items[name] is not None]
 
-    with h5py.File(filename, 'w') as hf:   
+    with h5py.File(filename, 'w') as hf:
         for attr in attrs:
             data = items[attr]
-            
+
             # If data is a single number, store as an attribute.
             if _isattribute(data):
                 if isinstance(data, np.longdouble):
-                    data_I, data_F= split_numbers(data)
-                    names = [attr+'_I', attr+'_F']
+                    data_I, data_F = split_numbers(data)
+                    names = [attr + '_I', attr + '_F']
                     hf.attrs[names[0]] = data_I
                     hf.attrs[names[1]] = data_F
                 else:
                     hf.attrs[attr] = data
-            
+
             # If data is an array or list, create a dataset.
             else:
                 try:
                     if isinstance(data[0], np.longdouble):
-                        data_I, data_F= split_numbers(data)
-                        names = [attr+'_I', attr+'_F']
+                        data_I, data_F = split_numbers(data)
+                        names = [attr + '_I', attr + '_F']
                         hf.create_dataset(names[0], data=data_I)
                         hf.create_dataset(names[1], data=data_F)
                     else:
-                        hf.create_dataset(attr, data=data) 
+                        hf.create_dataset(attr, data=data)
                 except IndexError:
                     # To account for numpy arrays of type 'None' (0-d)
                     pass
+
 
 def _retrieve_hdf5_object(filename):
     """
@@ -461,32 +469,33 @@ def _retrieve_hdf5_object(filename):
                 if key[-2:] in ['_I', '_F']:
                     m_key = key[:-2]
                     # Add integer and float parts
-                    data[m_key] = np.longdouble(hf[m_key+'_I'].value) 
-                    data[m_key] += np.longdouble(hf[m_key+'_F'].value)
+                    data[m_key] = np.longdouble(hf[m_key + '_I'].value)
+                    data[m_key] += np.longdouble(hf[m_key + '_F'].value)
                     # Remove integer and float parts from attributes
-                    dset_copy.remove(m_key+'_I')
-                    dset_copy.remove(m_key+'_F')
+                    dset_copy.remove(m_key + '_I')
+                    dset_copy.remove(m_key + '_F')
                 else:
                     data[key] = hf[key].value
-        
+
         attr_copy = list(attr_keys)[:]
         for key in attr_keys:
-            
+
             # Make sure key hasn't been removed
             if key in attr_copy:
                 # Longdouble case
                 if key[-2:] in ['_I', '_F']:
                     m_key = key[:-2]
                     # Add integer and float parts
-                    data[m_key] = np.longdouble(hf.attrs[m_key+'_I'])
-                    data[m_key] += np.longdouble(hf.attrs[m_key+'_F'])
+                    data[m_key] = np.longdouble(hf.attrs[m_key + '_I'])
+                    data[m_key] += np.longdouble(hf.attrs[m_key + '_F'])
                     # Remove integer and float parts from attributes
-                    attr_copy.remove(m_key+'_I')
-                    attr_copy.remove(m_key+'_F')
+                    attr_copy.remove(m_key + '_I')
+                    attr_copy.remove(m_key + '_F')
                 else:
                     data[key] = hf.attrs[key]
 
     return data
+
 
 def _save_ascii_object(object, filename, fmt="%.18e", **kwargs):
     """
@@ -513,10 +522,11 @@ def _save_ascii_object(object, filename, fmt="%.18e", **kwargs):
     try:
         np.savetxt(filename, object, fmt=fmt, **kwargs)
     except TypeError:
-        raise Exception("Formatting of columns not recognized! Use 'fmt' option to "
-              "format columns including strings or mixed types!")
+        raise Exception("Formatting of columns not recognized! Use 'fmt' "
+                        "to format columns including strings or mixed types!")
 
     pass
+
 
 def _retrieve_ascii_object(filename, **kwargs):
     """
@@ -581,6 +591,7 @@ def _retrieve_ascii_object(filename, **kwargs):
 
         return data[cols]
 
+
 def _save_fits_object(object, filename, **kwargs):
     """
     Save a class object in fits format.
@@ -596,7 +607,7 @@ def _save_fits_object(object, filename, **kwargs):
     Additional Keyword Parameters
     -----------------------------
     tnames: str iterable
-        The names of HDU tables. For instance, in case of eventlist, 
+        The names of HDU tables. For instance, in case of eventlist,
         tnames could be ['EVENTS', 'GTI']
 
     colsassign: dictionary iterable
@@ -604,7 +615,7 @@ def _save_fits_object(object, filename, **kwargs):
         to. If this is None or if a column is not provided, it/they will
         be assigned to the first table.
 
-        For example, [{'gti':'GTI'}] indicates that gti values should be 
+        For example, [{'gti':'GTI'}] indicates that gti values should be
         stored in GTI table.
     """
 
@@ -616,21 +627,21 @@ def _save_fits_object(object, filename, **kwargs):
     else:
         iscolsassigned = False
 
-    if 'tnames' in list(kwargs.keys()): 
+    if 'tnames' in list(kwargs.keys()):
         tables = kwargs['tnames']
     else:
         tables = ['MAIN']
-    
+
     items = vars(object)
     attrs = [name for name in items if items[name] is not None]
-    
+
     cols = []
     hdrs = []
 
     for t in tables:
         cols.append([])
         hdrs.append(fits.Header())
-    
+
     for attr in attrs:
         data = items[attr]
 
@@ -639,32 +650,40 @@ def _save_fits_object(object, filename, **kwargs):
             index = tables.index(colsassign[attr])
         else:
             index = 0
-        
+
         # If data is a single number, store as metadata
-        if _isattribute(data): 
+        if _isattribute(data):
             if isinstance(data, np.longdouble):
                 # Longdouble case. Split and save integer and float parts
                 data_I, data_F = split_numbers(data)
-                names = [attr+'_I', attr+'_F'] 
+                names = [attr + '_I', attr + '_F']
                 hdrs[index][names[0]] = data_I
                 hdrs[index][names[1]] = data_F
             else:
                 # Normal case. Save as it is
                 hdrs[index][attr] = data
-        
+
         # If data is an array or list, insert as table column
         else:
             try:
                 if isinstance(data[0], np.longdouble):
                     # Longdouble case. Split and save integer and float parts
-                    data_I, data_F= split_numbers(data)
-                    names = [attr+'_I', attr+'_F']
-                    cols[index].append(fits.Column(name=names[0],format='D', array=data_I))
-                    cols[index].append(fits.Column(name=names[1],format='D', array=data_F))
+                    data_I, data_F = split_numbers(data)
+                    names = [attr + '_I', attr + '_F']
+                    cols[index].append(
+                        fits.Column(name=names[0],
+                                    format='D',
+                                    array=data_I))
+                    cols[index].append(
+                        fits.Column(name=names[1],
+                                    format='D',
+                                    array=data_F))
                 else:
                     # Normal case. Save as it is
-                    cols[index].append(fits.Column(name=attr,format=_lookup_format(data[0]), 
-                        array=data))
+                    cols[index].append(
+                        fits.Column(name=attr,
+                                    format=_lookup_format(data[0]),
+                                    array=data))
             except IndexError:
                 # To account for numpy arrays of type 'None' (0-d)
                 pass
@@ -673,10 +692,13 @@ def _save_fits_object(object, filename, **kwargs):
 
     # Create binary tables
     for i in range(0, len(tables)):
-        if cols[i] != []:
-            tbhdu.append(fits.BinTableHDU.from_columns(cols[i], header=hdrs[i], name=tables[i]))
-    
+        if len(cols[i]) > 0:
+            tbhdu.append(fits.BinTableHDU.from_columns(cols[i],
+                                                       header=hdrs[i],
+                                                       name=tables[i]))
+
     tbhdu.writeto(filename)
+
 
 def _retrieve_fits_object(filename, **kwargs):
     """
@@ -710,35 +732,38 @@ def _retrieve_fits_object(filename, **kwargs):
         fits_cols = []
 
         # Get columns from all tables
-        for i in range(1,len(hdulist)):
+        for i in range(1, len(hdulist)):
             fits_cols.append([h.upper() for h in hdulist[i].data.names])
 
         for c in cols:
             for i in range(0, len(fits_cols)):
                 # .upper() is used because `fits` stores values in upper case
-                hdr_keys = [h.upper() for h in hdulist[i+1].header.keys()]
+                hdr_keys = [h.upper() for h in hdulist[i + 1].header.keys()]
 
                 # Longdouble case. Check for columns
-                if c+'_I' in fits_cols[i] or c+'_F' in fits_cols[i]:
+                if c + '_I' in fits_cols[i] or c + '_F' in fits_cols[i]:
                     if c not in data.keys():
-                        data[c] = np.longdouble(hdulist[i+1].data[c+'_I'])
-                        data[c] += np.longdouble(hdulist[i+1].data[c+'_F'])
+                        data[c] = np.longdouble(hdulist[i + 1].data[c + '_I'])
+                        data[c] += np.longdouble(hdulist[i + 1].data[c + '_F'])
 
                 # Longdouble case. Check for header keys
-                if c+'_I' in hdr_keys or c+'_F' in hdr_keys:
+                if c + '_I' in hdr_keys or c + '_F' in hdr_keys:
                     if c not in data.keys():
-                        data[c] = np.longdouble(hdulist[i+1].header[c+'_I'])
-                        data[c] += np.longdouble(hdulist[i+1].header[c+'_F'])
+                        data[c] = \
+                            np.longdouble(hdulist[i + 1].header[c + '_I'])
+                        data[c] += \
+                            np.longdouble(hdulist[i + 1].header[c + '_F'])
 
                 # Normal case. Check for columns
                 elif c in fits_cols[i]:
-                    data[c] = hdulist[i+1].data[c]
+                    data[c] = hdulist[i + 1].data[c]
 
                 # Normal case. Check for header keys
                 elif c in hdr_keys:
-                    data[c] = hdulist[i+1].header[c]
+                    data[c] = hdulist[i + 1].header[c]
 
     return data
+
 
 def _lookup_format(var):
     """
@@ -755,10 +780,10 @@ def _lookup_format(var):
         The str describing the type of ``var``
     """
 
-    lookup = {"<type 'int'>":"J", "<type 'float'>":"E", 
-        "<type 'numpy.int64'>": "K", "<type 'numpy.float64'>":"D", 
-        "<type 'numpy.float128'>":"D", "<type 'str'>":"30A", 
-        "<type 'bool'": "L"}
+    lookup = {"<type 'int'>": "J", "<type 'float'>": "E",
+              "<type 'numpy.int64'>": "K", "<type 'numpy.float64'>": "D",
+              "<type 'numpy.float128'>": "D", "<type 'str'>": "30A",
+              "<type 'bool'": "L"}
 
     form = type(var)
 
@@ -767,6 +792,7 @@ def _lookup_format(var):
     except KeyError:
         # If an entry is not contained in lookup dictionary
         return "D"
+
 
 def _isattribute(data):
     """
@@ -787,6 +813,7 @@ def _isattribute(data):
     else:
         return True
 
+
 def write(input_, filename, format_='pickle', **kwargs):
     """
     Pickle a class instance. For parameters depending on
@@ -801,7 +828,7 @@ def write(input_, filename, format_='pickle', **kwargs):
         The name of the file to be created
 
     format_: str
-        The format in which to store file. Formats supported 
+        The format in which to store file. Formats supported
         are ``pickle``, ``hdf5``, ``ascii`` or ``fits``
     """
 
@@ -812,10 +839,10 @@ def write(input_, filename, format_='pickle', **kwargs):
         if _H5PY_INSTALLED:
             _save_hdf5_object(input_, filename)
         else:
-            utils.simon('h5py not installed, using pickle instead' \
-                'to save object.')
-            _save_pickle_object(input_, filename.split('.')[0]+
-                '.pickle')
+            utils.simon('h5py not installed, using pickle instead'
+                        'to save object.')
+            _save_pickle_object(input_, filename.split('.')[0] +
+                                '.pickle')
 
     elif format_ == 'ascii':
         _save_ascii_object(input_, filename, **kwargs)
@@ -825,6 +852,7 @@ def write(input_, filename, format_='pickle', **kwargs):
 
     else:
         utils.simon('Format not understood.')
+
 
 def read(filename, format_='pickle', **kwargs):
     """
@@ -838,7 +866,7 @@ def read(filename, format_='pickle', **kwargs):
     format_: str
         The format used to store file. Supported formats are
         pickle, hdf5, ascii or fits.
-    
+
     Returns
     -------
     data : {``object`` | ``astropy.table`` | ``dict``}
@@ -855,18 +883,19 @@ def read(filename, format_='pickle', **kwargs):
         if _H5PY_INSTALLED:
             return _retrieve_hdf5_object(filename)
         else:
-            utils.simon('h5py not installed, cannot read an' \
-                'hdf5 object.')
+            utils.simon('h5py not installed, cannot read an'
+                        'hdf5 object.')
 
     elif format_ == 'ascii':
         return _retrieve_ascii_object(filename, **kwargs)
 
     elif format_ == 'fits':
         return _retrieve_fits_object(filename, **kwargs)
-    
+
     else:
         utils.simon('Format not understood.')
-        
+
+
 def savefig(filename, **kwargs):
     """
     Save a figure plotted by ``matplotlib``.

@@ -363,7 +363,6 @@ class Powerspectrum(Crossspectrum):
             pv = np.array([classical_pvalue(power, m)
                            for power, m in zip(self.power, self.m)])
 
-
         # if trial correction is used, then correct the threshold for
         # the number of powers in the power spectrum
         if trial_correction:
