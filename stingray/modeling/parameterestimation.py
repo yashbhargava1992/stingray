@@ -49,23 +49,81 @@ from stingray.modeling.posterior import Posterior, PSDPosterior, \
 
 
 class OptimizationResults(object):
+    """
+    Helper class that will contain the results of the regression.
+    Less fiddly than a dictionary.
 
+    Parameters
+    ----------
+    lpost: instance of :class:`Posterior` or one of its subclasses
+        The object containing the function that is being optimized
+        in the regression
+
+    res: instance of ``scipy.OptimizeResult``
+        The object containing the results from a optimization run
+
+    Attributes
+    ----------
+    neg : bool, optional, default ``True``
+        A flag that sets whether the log-likelihood or negative log-likelihood
+        is being used
+
+    result : float
+        The result of the optimization, i.e. the function value at the
+        minimum that the optimizer found
+
+    p_opt : iterable
+        The list of parameters at the minimum found by the optimizer
+
+    model : ``astropy.models.Model`` instance
+        The parametric model fit to the data
+
+    cov : numpy.ndarray
+        The covariance matrix for the parameters, has shape ``(len(p_opt), len(p_opt))``
+
+    err : numpy.ndarray
+        The standard deviation of the parameters, derived from the diagonal of ``cov``.
+        Has the same shape as ``p_opt``
+
+    mfit : numpy.ndarray
+        The values of the model for all ``x``
+
+    deviance : float
+        The deviance, calculated as ``-2*log(likelihood)``
+
+    aic : float
+        The Akaike Information Criterion, derived from the log(likelihood) and often used
+        in model comparison between non-nested models;
+        For more details, see [aic]_
+
+    bic : float
+        The Bayesian Information Criterion, derived from the log(likelihood) and often used
+        in model comparison between non-nested models;
+        For more details, see [bic]_
+
+    merit : float
+        sum of squared differences between data and model, normalized by the
+        model values
+
+    dof : int
+        The number of degrees of freedom in the problem, defined as the number of
+        data points - the number of parameters
+
+    sexp : int
+        ``2*(number of parameters)*(number of data points)``
+
+    ssd : float
+        ``sqrt(2*(sexp))``, expected sum of data-model residuals
+
+    sobs : float
+        sum of data-model residuals
+
+    References
+    ----------
+    .. [aic] http://ieeexplore.ieee.org/document/1100705/?reload=true
+    .. [bic] https://projecteuclid.org/euclid.aos/1176344136
+    """
     def __init__(self, lpost, res, neg=True):
-        """
-        Helper class that will contain the results of the regression.
-        Less fiddly than a dictionary.
-
-        Parameters
-        ----------
-        lpost: instance of Posterior or one of its subclasses
-            The object containing the function that is being optimized
-            in the regression
-
-
-        res: instance of scipy's OptimizeResult class
-            The object containing the results from a optimization run
-
-        """
         self.neg = neg
         self.result = res.fun
         self.p_opt = res.x
@@ -77,6 +135,24 @@ class OptimizationResults(object):
         self._compute_statistics(lpost)
 
     def _compute_covariance(self, lpost, res):
+        """
+        Compute the covariance of the parameters using inverse of the Hessian, i.e.
+        the second-order derivative of the log-likelihood. Also calculates an estimate
+        of the standard deviation in the parameters, using the square root of the diagonal
+        of the covariance matrix.
+
+        The Hessian is either estimated directly by the chosen method of fitting, or
+        approximated using the ``statsmodel`` ``approx_hess`` function.
+
+        Parameters
+        ----------
+        lpost: instance of :class:`Posterior` or one of its subclasses
+            The object containing the function that is being optimized
+            in the regression
+
+        res: instance of ``scipy``'s ``OptimizeResult`` class
+            The object containing the results from a optimization run
+        """
 
         if hasattr(res, "hess_inv"):
             if not isinstance(res.hess_inv, np.ndarray):
@@ -100,13 +176,34 @@ class OptimizationResults(object):
                 self.err = None
 
     def _compute_model(self, lpost):
+        """
+        Compute the values of the best-fit model for all ``x``.
 
+        Parameters
+        ----------
+        lpost: instance of :class:`Posterior` or one of its subclasses
+            The object containing the function that is being optimized
+            in the regression
+        """
         _fitter_to_model_params(lpost.model, self.p_opt)
 
         self.mfit = lpost.model(lpost.x)
 
     def _compute_criteria(self, lpost):
+        """
+        Compute various information criteria useful for model comparison in
+        non-nested models.
 
+        Currently implemented are the Akaike Information Criterion [aic]_ and the
+        Bayesian Information Criterion [bic]_.
+
+        Parameters
+        ----------
+        lpost: instance of :class:`Posterior` or one of its subclasses
+            The object containing the function that is being optimized
+            in the regression
+
+        """
         if isinstance(lpost, Posterior):
             self.deviance = -2.0*lpost.loglikelihood(self.p_opt, neg=False)
         elif isinstance(lpost, LogLikelihood):
@@ -122,6 +219,16 @@ class OptimizationResults(object):
         # TODO: Add Deviance Information Criterion
 
     def _compute_statistics(self, lpost):
+        """
+        Compute some useful fit statistics, like the degrees of freedom and the
+        figure of merit.
+
+        Parameters
+        ----------
+        lpost: instance of :class:`Posterior` or one of its subclasses
+            The object containing the function that is being optimized
+            in the regression
+        """
         try:
             self.mfit
         except AttributeError:
@@ -134,8 +241,19 @@ class OptimizationResults(object):
         self.sobs = np.sum(lpost.y-self.mfit)
 
     def print_summary(self, lpost, log=None):
+        """
+        Print a useful summary of the fitting procedure to screen or
+        a log file.
 
+        Parameters
+        ----------
+        lpost : instance of :class:`Posterior` or one of its subclasses
+            The object containing the function that is being optimized
+            in the regression
 
+        log : logging handler, optional, default None
+            A handler used for logging the output properly
+        """
         if log is None:
             log = logging.getLogger('Fitting summary')
             log.setLevel(logging.DEBUG)
@@ -199,31 +317,30 @@ class OptimizationResults(object):
 
         log.info(" -- Summed Residuals S = %f.5f"%self.sobs)
         log.info(" -- Expected S ~ %f.5 +/- %f.5"%(self.sexp, self.ssd))
-        log.info(" -- merit function (SSE) M = %f.5f \n\n"%self.merit)
 
         return
 
 
 class ParameterEstimation(object):
+    """
+    Parameter estimation of two-dimensional data, either via
+    optimization or MCMC.
+    Note: optimization with bounds is not supported. If something like
+    this is required, define (uniform) priors in the ParametricModel
+    instances to be used below.
+
+    Parameters
+    ----------
+    fitmethod : string, optional, default ``L-BFGS-B``
+        Any of the strings allowed in ``scipy.optimize.minimize`` in
+        the method keyword. Sets the fit method to be used.
+
+    max_post : bool, optional, default ``True``
+        If ``True``, then compute the Maximum-A-Posteriori estimate. If ``False``,
+        compute a Maximum Likelihood estimate.
+    """
 
     def __init__(self, fitmethod='BFGS', max_post=True):
-        """
-        Parameter estimation of two-dimensional data, either via
-        optimization or MCMC.
-        Note: optimization with bounds is not supported. If something like
-        this is required, define (uniform) priors in the ParametricModel
-        instances to be used below.
-
-        Parameters
-        ----------
-        fitmethod : string, optional, default "L-BFGS-B"
-            Any of the strings allowed in scipy.optimize.minimize in
-            the method keyword. Sets the fit method to be used.
-
-        max_post : bool, optional, default True
-            If True, then compute the Maximum-A-Posteriori estimate. If False,
-            compute a Maximum Likelihood estimate.
-        """
 
         self.fitmethod = fitmethod
 
@@ -231,33 +348,35 @@ class ParameterEstimation(object):
 
     def fit(self, lpost, t0, neg=True, scipy_optimize_options=None):
         """
-        Do either a Maximum A Posteriori or Maximum Likelihood
+        Do either a Maximum-A-Posteriori (MAP) or Maximum Likelihood (ML)
         fit to the data.
+
+        MAP fits include priors, ML fits do not.
 
         Parameters
         -----------
-        lpost : Posterior (or subclass) instance
-            and instance of class Posterior or one of its subclasses
-            that defines the function to be minized (either in loglikelihood
-            or logposterior)
+        lpost : :class:`Posterior` (or subclass) instance
+            and instance of class :class:`Posterior` or one of its subclasses
+            that defines the function to be minimized (either in ``loglikelihood``
+            or ``logposterior``)
 
-        t0 : {list | numpy.ndarray}
+        t0 : {``list`` | ``numpy.ndarray``}
             List/array with set of initial parameters
 
-        neg : bool, optional, default True
-            Boolean to be passed to `lpost`, setting whether to use the
-            *negative* posterior or the *negative* log-likelihood. Since
-            `Posterior` and `LogLikelihood` objects are generally defined in
+        neg : bool, optional, default ``True``
+            Boolean to be passed to ``lpost``, setting whether to use the
+            *negative* posterior or the *negative* log-likelihood. Useful for
+            optimization routines, which are generally defined as *minimization* routines.
 
-        scipy_optimize_options : dict, optional, default None
-            A dictionary with options for `scipy.optimize.minimize`,
+        scipy_optimize_options : dict, optional, default ``None``
+            A dictionary with options for ``scipy.optimize.minimize``,
             directly passed on as keyword arguments.
 
         Returns
         --------
-        fitparams : dict
-            A dictionary with the fit results
-            TODO: Add description of keywords in the class!
+        res : :class:`OptimizationResults` object
+            An object containing useful summaries of the fitting procedure.
+            For details, see documentation of class:`OptimizationResults`.
         """
 
         if not isinstance(lpost, Posterior) and not isinstance(lpost,
@@ -385,24 +504,24 @@ class ParameterEstimation(object):
 
         Parameters
         ----------
-        lpost1 : object of a subclass of Posterior
-            The posterior object for model 1
+        lpost1 : object of a subclass of :class:`Posterior`
+            The :class:`Posterior` object for model 1
 
         t1 : iterable
             The starting parameters for model 1
 
-        lpost2 : object of a subclass of Posterior
-            The posterior object for model 2
+        lpost2 : object of a subclass of :class:`Posterior`
+            The :class:`Posterior` object for model 2
 
         t2 : iterable
             The starting parameters for model 2
 
-        neg : bool, optional, default True
+        neg : bool, optional, default ``True``
             Boolean flag to decide whether to use the negative log-likelihood
             or log-posterior
 
-        max_post: bool, optional, default False
-            If True, set the internal state to do the optimization with the
+        max_post: bool, optional, default ``False``
+            If ``True``, set the internal state to do the optimization with the
             log-likelihood rather than the log-posterior.
 
         Returns
@@ -411,10 +530,10 @@ class ParameterEstimation(object):
             The likelihood ratio for model 2 and model 1
 
         res1 : OptimizationResults object
-            Contains the result of fitting `lpost1`
+            Contains the result of fitting ``lpost1``
 
         res2 : OptimizationResults object
-            Contains the results of fitting `lpost2`
+            Contains the results of fitting ``lpost2``
 
         """
 
@@ -433,57 +552,59 @@ class ParameterEstimation(object):
                nwalkers=500, niter=100, burnin=100, threads=1,
                print_results=True, plot=False, namestr="test"):
         """
-        Sample the posterior distribution defined in `lpost` using MCMC.
-        Here we use the `emcee` package, but other implementations could
+        Sample the :class:`Posterior` distribution defined in ``lpost`` using MCMC.
+        Here we use the ``emcee`` package, but other implementations could
         in principle be used.
 
         Parameters
         ----------
-        lpost : instance of a Posterior subclass
-            and instance of class Posterior or one of its subclasses
-            that defines the function to be minized (either in loglikelihood
-            or logposterior)
+        lpost : instance of a :class:`Posterior` subclass
+            and instance of class :class:`Posterior` or one of its subclasses
+            that defines the function to be minimized (either in ``loglikelihood``
+            or ``logposterior``)
 
         t0 : iterable
             list or array containing the starting parameters. Its length
-            must match `lpost.model.npar`.
+            must match ``lpost.model.npar``.
 
-        nwalkers : int
+        nwalkers : int, optional, default 500
             The number of walkers (chains) to use during the MCMC procedure.
             The more walkers are used, the slower the estimation will be, but
             the better the final distribution is likely to be.
 
-        niter : int
+        niter : int, optional, default 100
             The number of iterations to run the MCMC chains for. The larger this
             number, the longer the estimation will take, but the higher the
             chance that the walkers have actually converged on the true
             posterior distribution.
 
-        burnin : int
+        burnin : int, optional, default 100
             The number of iterations to run the walkers before convergence is
             assumed to have occurred. This part of the chain will be discarded
             before sampling from what is then assumed to be the posterior
             distribution desired.
 
-        threads : int
+        threads : int, optional, default 1
             The number of threads for parallelization.
-            Default is 1, i.e. no parallelization
+            Default is ``1``, i.e. no parallelization
 
-        print_results : bool
+        print_results : bool, optional, default ``True``
             Boolean flag setting whether the results of the MCMC run should
             be printed to standard output. Default: True
 
-        plot : bool
+        plot : bool, optional, default ``False``
             Boolean flag setting whether summary plots of the MCMC chains
             should be produced. Default: False
 
-        namestr : str
+        namestr : str, optional, default ``test``
             Optional string for output file names for the plotting.
 
         Returns
         -------
 
-        res : SamplingResults object
+        res : class:`SamplingResults` object
+            An object of class :class:`SamplingResults` summarizing the
+            results of the MCMC run.
 
         """
         if not can_sample:
@@ -531,18 +652,18 @@ class ParameterEstimation(object):
 
         Parameters
         ----------
-        lpost : instance of a Posterior or LogLikelihood subclass
+        lpost : instance of a :class:`Posterior` or :class:`LogLikelihood` subclass
             The object containing the relevant information about the
             data and the model
 
         pars : iterable
-            A list of parameters to be passed to lpost.model in oder
+            A list of parameters to be passed to ``lpost.model`` in oder
             to generate a model data set.
 
         Returns:
         --------
         model_data : numpy.ndarray
-            An array of model values for each bin in lpost.x
+            An array of model values for each bin in ``lpost.x``
 
         """
 
@@ -580,7 +701,7 @@ class ParameterEstimation(object):
 
         Returns
         -------
-        pval : float [0, 1]
+        pval : float in range [0, 1]
             The p-value for the test statistic given the simulations.
 
         """
@@ -625,7 +746,6 @@ class ParameterEstimation(object):
 
         * the models are not nested (i.e. Model 1 is not a special, simpler
           case of Model 2),
-
         * the parameter values fixed in Model 2 to retrieve Model 1 are at the
           edges of parameter space (e.g. if one must set, say, an amplitude to
           zero in order to remove a component in the more complex model, and
@@ -639,32 +759,32 @@ class ParameterEstimation(object):
         compute a p-value for observing the data under the assumption that
         Model 1 istrue.
 
-        If `max_post=True`, the code will use MCMC to sample the posterior
+        If ``max_post=True``, the code will use MCMC to sample the posterior
         of the parameters and simulate fake data from there.
 
-        If `max_post=False`, the code will use the covariance matrix derived
+        If ``max_post=False``, the code will use the covariance matrix derived
         from the fit to simulate data sets for comparison.
 
         Parameters
         ----------
-        lpost1 : object of a subclass of Posterior
-            The posterior object for model 1
+        lpost1 : object of a subclass of :class:`Posterior`
+            The :class:`Posterior` object for model 1
 
         t1 : iterable
             The starting parameters for model 1
 
-        lpost2 : object of a subclass of Posterior
-            The posterior object for model 2
+        lpost2 : object of a subclass of :class:`Posterior`
+            The :class:`Posterior` object for model 2
 
         t2 : iterable
             The starting parameters for model 2
 
-        neg : bool, optional, default True
+        neg : bool, optional, default ``True``
             Boolean flag to decide whether to use the negative
             log-likelihood or log-posterior
 
-        max_post: bool, optional, default False
-            If True, set the internal state to do the optimization with the
+        max_post: bool, optional, default ``False``
+            If ``True``, set the internal state to do the optimization with the
             log-likelihood rather than the log-posterior.
 
         Returns
@@ -698,13 +818,13 @@ class ParameterEstimation(object):
                     s_all = np.atleast_2d(s_all).T
 
             else:
-                # sample the posterior using MCMC
+                # sample the :class:`Posterior` using MCMC
                 s_mcmc = self.sample(lpost1, res1.p_opt, cov=res1.cov,
                                      nwalkers=nwalkers, niter=niter,
                                      burnin=burnin, namestr=namestr)
 
 
-                # pick nsim samples out of the posterior sample
+                # pick nsim samples out of the :class:`Posterior` sample
                 s_all = s_mcmc.samples[
                     rng.choice(s_mcmc.samples.shape[0], nsim,
                                      replace=False)]
@@ -730,27 +850,75 @@ class ParameterEstimation(object):
 
 
 class SamplingResults(object):
+    """
+    Helper class that will contain the results of the sampling
+    in a handy format.
+
+    Less fiddly than a dictionary.
+
+    Parameters
+    ----------
+    sampler: ``emcee.EnsembleSampler`` object
+        The object containing the sampler that's done all the work.
+
+    ci_min: float out of [0,100]
+        The lower bound percentile for printing credible intervals
+        on the parameters
+
+    ci_max: float out of [0,100]
+        The upper bound percentile for printing credible intervals
+        on the parameters
+
+
+    Attributes
+    ----------
+    samples : numpy.ndarray
+        An array of samples from the MCMC run, including all chains
+        flattened into one long (``nwalkers*niter``, ``ndim``) array
+
+    nwalkers : int
+        The number of chains used in the MCMC procedure
+
+    niter : int
+        The number of MCMC iterations in each chain
+
+    ndim : int
+        The dimensionality of the problem, i.e. the number of
+        parameters in the model
+
+    acceptance : float
+        The mean acceptance ratio, calculated over all chains
+
+    L : float
+        The product of acceptance ratio and number of samples
+
+    acor : float
+        The autocorrelation length for the chains; should be shorter
+        than the chains themselves for independent sampling
+
+    rhat : float
+        weighted average of between-sequence variance and within-sequence
+        variance; Gelman-Rubin convergence statistic [gelman-rubin]_
+
+    mean : numpy.ndarray
+        An array of size ``ndim``, with the posterior means of the parameters
+        derived from the MCMC chains
+
+    std : numpy.ndarray
+        An array of size ``ndim`` with the posterior standard deviations of
+        the parameters derived from the MCMC chains
+
+    ci : numpy.ndarray
+        An array of shape ``(ndim, 2)`` containing the lower and upper bounds
+        of the credible interval (the Bayesian equivalent of the confidence
+        interval) for each parameter using the bounds set by ``ci_min`` and ``ci_max``
+
+    References
+    ----------
+    .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
+    """
 
     def __init__(self, sampler, ci_min=5, ci_max=95):
-        """
-        Helper class that will contain the results of the sampling
-        in a handly format.
-        Less fiddly than a dictionary.
-
-        Parameters
-        ----------
-        sampler: emcee.EnsembleSampler object
-            The object containing the sampler that's done all the work.
-
-        ci_min: float out of [0,100]
-            The lower bound percentile for printing confidence intervals
-            on the parameters
-
-        ci_max: float out of [0,100]
-            The upper bound percentile for printing confidence intervals
-            on the parameters
-
-        """
 
         # store all the samples
         self.samples = sampler.flatchain
@@ -769,6 +937,23 @@ class SamplingResults(object):
         self._infer(ci_min, ci_max)
 
     def _check_convergence(self, sampler):
+        """
+        Compute common statistics for convergence of the MCMC
+        chains. While you can never be completely sure that your chains
+        converged, these present reasonable heuristics to give an
+        indication whether convergence is very far off or reasonably close.
+
+        Currently implemented are the autocorrelation time [autocorr]_ and the
+        Gelman-Rubin convergence criterion [gelman-rubin]_.
+
+        Parameters
+        ----------
+        sampler : an ``emcee.EnsembleSampler`` object
+
+        References
+        ----------
+        .. [autocorr] https://arxiv.org/abs/1202.3665
+        """
 
         # compute and store autocorrelation time
         try:
@@ -779,7 +964,14 @@ class SamplingResults(object):
         self.rhat = self._compute_rhat(sampler)
 
     def _compute_rhat(self, sampler):
+        """
+        Compute Gelman-Rubin convergence criterion [gelman-rubin]_.
 
+        Parameters
+        ----------
+        sampler : an `emcee.EnsembleSampler` object
+
+        """
         # between-sequence variance
         mean_samples_iter = np.nanmean(sampler.chain, axis=1)
 
@@ -803,17 +995,32 @@ class SamplingResults(object):
         return rhat
 
     def _infer(self, ci_min=5, ci_max=95):
+        """
+        Infer the :class:`Posterior` means, standard deviations and credible intervals
+        (i.e. the Bayesian equivalent to confidence intervals) from the :class:`Posterior` samples
+        for each parameter.
+
+        Parameters
+        ----------
+        ci_min : float
+            Lower bound to the credible interval, given as percentage between
+            0 and 100
+
+        ci_max : float
+            Upper bound to the credible interval, given as percentage between
+            0 and 100
+        """
         self.mean = np.mean(self.samples, axis=0)
         self.std = np.std(self.samples, axis=0)
         self.ci = np.percentile(self.samples, [ci_min, ci_max], axis=0)
 
     def print_results(self, log=None):
         """
-        Print results of the MCMC run.
+        Print results of the MCMC run on screen or to a log-file.
 
         Parameters
         ----------
-        log : a logging.getLogger() object
+        log : a ``logging.getLogger()`` object
             Object to handle logging output
 
         """
@@ -847,13 +1054,12 @@ class SamplingResults(object):
 
         """
         Plot some results in a triangle plot.
-        If installed, will use `corner` for the plotting
-        (available here https://github.com/dfm/corner.py or
-        through pip), if not, uses its own code to make a triangle
-        plot.
+        If installed, will use [corner]_
+        for the plotting, if not,
+        uses its own code to make a triangle plot.
 
-        By default, this method returns a matplotlib.Figure object, but
-        if `save_plot=True`, the plot can be saved to file automatically,
+        By default, this method returns a ``matplotlib.Figure`` object, but
+        if ``save_plot=True`` the plot can be saved to file automatically,
 
         Parameters
         ----------
@@ -865,13 +1071,16 @@ class SamplingResults(object):
             If created externally, you can pass a Figure instance to this method.
             If none is passed, the method will create one internally.
 
-        save_plot : bool, default False
-            If True, save the plot to file with a file name specified by the
-            keyword `filename`. If False, just return the `Figure` object
+        save_plot : bool, default ``False``
+            If ``True`` save the plot to file with a file name specified by the
+            keyword ``filename``. If ``False`` just return the ``Figure`` object
 
         filename : str
             Name of the output file with the figure
 
+        References
+        ----------
+        .. [corner] https://github.com/dfm/corner.py
         """
         assert can_plot, "Need to have matplotlib installed for plotting"
         if use_corner:
@@ -934,18 +1143,68 @@ class SamplingResults(object):
 
 
 class PSDParEst(ParameterEstimation):
+    """
+    Parameter estimation for parametric modelling of power spectra.
 
+    This class contains functionality that allows parameter estimation
+    and related tasks that involve fitting a parametric model to an
+    (averaged) power spectrum.
+
+    Parameters
+    ----------
+    ps : class:`stingray.Powerspectrum` or class:`stingray.AveragedPowerspectrum` object
+        The power spectrum to be modelled
+
+    fitmethod : str, optional, default ``BFGS``
+        A string allowed by ``scipy.optimize.minimize`` as a valid
+        fitting method
+
+    max_post : bool, optional, default ``True``
+        If ``True``, do a Maximum-A-Posteriori (MAP) fit, i.e. fit with
+        priors, otherwise do a Maximum Likelihood fit instead
+
+    """
     def __init__(self, ps, fitmethod='BFGS', max_post=True):
 
         self.ps = ps
         ParameterEstimation.__init__(self, fitmethod=fitmethod,
                                      max_post=max_post)
 
-    def fit(self, lpost, t0, neg=True):
+    def fit(self, lpost, t0, neg=True, scipy_optimize_options=None):
+        """
+        Do either a Maximum-A-Posteriori (MAP) or Maximum Likelihood (ML)
+        fit to the power spectrum.
+
+        MAP fits include priors, ML fits do not.
+
+        Parameters
+        -----------
+        lpost : :class:`stingray.modeling.PSDPosterior` object
+            An instance of class :class:`stingray.modeling.PSDPosterior` that defines the
+            function to be minimized (either in ``loglikelihood`` or ``logposterior``)
+
+        t0 : {list | numpy.ndarray}
+            List/array with set of initial parameters
+
+        neg : bool, optional, default ``True``
+            Boolean to be passed to ``lpost``, setting whether to use the
+            *negative* posterior or the *negative* log-likelihood.
+
+        scipy_optimize_options : dict, optional, default None
+            A dictionary with options for ``scipy.optimize.minimize``,
+            directly passed on as keyword arguments.
+
+        Returns
+        --------
+        res : :class:`OptimizationResults` object
+            An object containing useful summaries of the fitting procedure.
+            For details, see documentation of :class:`OptimizationResults`.
+        """
 
         self.lpost = lpost
 
-        res = ParameterEstimation.fit(self, self.lpost, t0, neg=neg)
+        res = ParameterEstimation.fit(self, self.lpost, t0, neg=neg,
+                                      scipy_optimize_options=scipy_optimize_options)
 
         res.maxpow, res.maxfreq, res.maxind = \
             self._compute_highest_outlier(self.lpost, res)
@@ -955,7 +1214,62 @@ class PSDParEst(ParameterEstimation):
     def sample(self, lpost, t0, cov=None,
                nwalkers=500, niter=100, burnin=100, threads=1,
                print_results=True, plot=False, namestr="test"):
+        """
+        Sample the posterior distribution defined in ``lpost`` using MCMC.
+        Here we use the ``emcee`` package, but other implementations could
+        in principle be used.
 
+        Parameters
+        ----------
+        lpost : instance of a :class:`Posterior` subclass
+            and instance of class :class:`Posterior` or one of its subclasses
+            that defines the function to be minimized (either in ``loglikelihood``
+            or ``logposterior``)
+
+        t0 : iterable
+            list or array containing the starting parameters. Its length
+            must match ``lpost.model.npar``.
+
+        nwalkers : int, optional, default 500
+            The number of walkers (chains) to use during the MCMC procedure.
+            The more walkers are used, the slower the estimation will be, but
+            the better the final distribution is likely to be.
+
+        niter : int, optional, default 100
+            The number of iterations to run the MCMC chains for. The larger this
+            number, the longer the estimation will take, but the higher the
+            chance that the walkers have actually converged on the true
+            posterior distribution.
+
+        burnin : int, optional, default 100
+            The number of iterations to run the walkers before convergence is
+            assumed to have occurred. This part of the chain will be discarded
+            before sampling from what is then assumed to be the posterior
+            distribution desired.
+
+        threads : int, optional, default 1
+            The number of threads for parallelization.
+            Default is ``1``, i.e. no parallelization
+
+        print_results : bool, optional, default True
+            Boolean flag setting whether the results of the MCMC run should
+            be printed to standard output
+
+        plot : bool, optional, default False
+            Boolean flag setting whether summary plots of the MCMC chains
+            should be produced
+
+        namestr : str, optional, default ``test``
+            Optional string for output file names for the plotting.
+
+        Returns
+        -------
+
+        res : :class:`SamplingResults` object
+            An object containing useful summaries of the
+            sampling procedure. For details see documentation of :class:`SamplingResults`.
+
+        """
         self.lpost = lpost
 
         fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
@@ -976,18 +1290,18 @@ class PSDParEst(ParameterEstimation):
 
         Parameters
         ----------
-        lpost : instance of a Posterior or LogLikelihood subclass
+        lpost : instance of a :class:`Posterior` or :class:`LogLikelihood` subclass
             The object containing the relevant information about the
             data and the model
 
         pars : iterable
-            A list of parameters to be passed to lpost.model in oder
+            A list of parameters to be passed to ``lpost.model`` in oder
             to generate a model data set.
 
         Returns:
         --------
-        sim_ps : stingray.Powerspectrum object
-            The simulated Powerspectrum object
+        sim_ps : :class:`stingray.Powerspectrum` object
+            The simulated :class:`Powerspectrum` object
 
         """
         # create own random state object
@@ -1016,31 +1330,31 @@ class PSDParEst(ParameterEstimation):
 
         Parameters
         ----------
-        s_all : numpy.ndarray of shape (nsamples, lpost1.npar)
+        s_all : numpy.ndarray of shape ``(nsamples, lpost1.npar)``
             An array with MCMC samples derived from the null hypothesis model in
-            `lpost1`. Its second dimension must match the number of free
-            parameters in `lpost1.model`.
+            ``lpost1``. Its second dimension must match the number of free
+            parameters in ``lpost1.model``.
 
-        lpost1 : LogLikelihood or Posterior subclass object
+        lpost1 : :class:`LogLikelihood` or :class:`Posterior` subclass object
             Object containing the null hypothesis model
 
-        t1 : iterable of length `lpost1.npar`
-            A starting guess for fitting the model in `lpost1`
+        t1 : iterable of length ``lpost1.npar``
+            A starting guess for fitting the model in ``lpost1``
 
-        lpost2 : LogLikelihood or Posterior subclass object
+        lpost2 : :class:`LogLikelihood` or :class:`Posterior` subclass object
             Object containing the alternative hypothesis model
 
-        t2 : iterable of length `lpost2.npar`
-            A starting guess for fitting the model in `lpost2`
+        t2 : iterable of length ``lpost2.npar``
+            A starting guess for fitting the model in ``lpost2``
 
-        max_post : bool, optional, default True
-            If True, then `lpost1` and `lpost2` should be Posterior subclass
-            objects; if False, then `lpost1` and `lpost2` should be
-            LogLikelihood subclass objects
+        max_post : bool, optional, default ``True``
+            If ``True``, then ``lpost1`` and ``lpost2`` should be :class:`Posterior` subclass
+            objects; if ``False``, then ``lpost1`` and ``lpost2`` should be
+            :class:`LogLikelihood` subclass objects
 
-        seed : int, optional default None
-            A seed to initialize the numpy.random.RandomState object to be
-            passed on to `_generate_data`. Useful for producing exactly
+        seed : int, optional default ``None``
+            A seed to initialize the ``numpy.random.RandomState`` object to be
+            passed on to ``_generate_data``. Useful for producing exactly
             reproducible results
 
         Returns
@@ -1075,7 +1389,7 @@ class PSDParEst(ParameterEstimation):
                                               model=lpost2.model, m=sim_ps.m)
                 max_post = False
             else:
-                # make a Posterior object
+                # make a :class:`Posterior` object
                 sim_lpost1 = PSDPosterior(sim_ps.freq, sim_ps.power,
                                           lpost1.model, m=sim_ps.m)
                 sim_lpost1.logprior = lpost1.logprior
@@ -1110,6 +1424,83 @@ class PSDParEst(ParameterEstimation):
                                   burnin=200, namestr="test", seed=None):
 
         """
+        Calibrate the highest outlier in a data set using MCMC-simulated
+        power spectra.
+
+        In short, the procedure does a MAP fit to the data, computes the
+        statistic
+
+        .. math::
+
+            \max{(T_R = 2(\mathrm{data}/\mathrm{model}))}
+
+        and then does an MCMC run using the data and the model, or generates parameter samples
+        from the likelihood distribution using the derived covariance in a Maximum Likelihood
+        fit.
+        From the (posterior) samples, it generates fake power spectra. Each fake spectrum is fit
+        in the same way as the data, and the highest data/model outlier extracted as for the data.
+        The observed value of :math:`T_R` can then be directly compared to the simulated
+        distribution of :math:`T_R` values in order to derive a p-value of the null
+        hypothesis that the observed :math:`T_R` is compatible with being generated by
+        noise.
+
+        Parameters
+        ----------
+        lpost : :class:`stingray.modeling.PSDPosterior` object
+            An instance of class :class:`stingray.modeling.PSDPosterior` that defines the
+            function to be minimized (either in ``loglikelihood`` or ``logposterior``)
+
+        t0 : {list | numpy.ndarray}
+            List/array with set of initial parameters
+
+        sample : :class:`SamplingResults` instance, optional, default ``None``
+            If a sampler has already been run, the :class:`SamplingResults` instance can be
+            fed into this method here, otherwise this method will run a sampler
+            automatically
+
+        max_post: bool, optional, default ``False``
+            If ``True``, do MAP fits on the power spectrum to find the highest data/model outlier
+            Otherwise, do a Maximum Likelihood fit. If ``True``, the simulated power spectra will
+            be generated from an MCMC run, otherwise the method will employ the approximated
+            covariance matrix for the parameters derived from the likelihood surface to generate
+            samples from that likelihood function.
+
+        nsim : int, optional, default ``1000``
+            Number of fake power spectra to simulate from the posterior sample. Note that this
+            number sets the resolution of the resulting p-value. For ``nsim=1000``, the highest
+            resolution that can be achieved is :math:`10^{-3}`.
+
+        niter : int, optional, default 200
+            If ``sample`` is ``None``, this variable will be used to set the number of steps in the
+            MCMC procedure *after* burn-in.
+
+        nwalkers : int, optional, default 500
+             If ``sample`` is ``None``, this variable will be used to set the number of MCMC chains
+             run in parallel in the sampler.
+
+        burnin : int, optional, default 200
+             If ``sample`` is ``None``, this variable will be used to set the number of burn-in steps
+             to be discarded in the initial phase of the MCMC run
+
+        namestr : str, optional, default ``test``
+            A string to be used for storing MCMC output and plots to disk
+
+        seed : int, optional, default ``None``
+            An optional number to seed the random number generator with, for reproducibility of
+            the results obtained with this method.
+
+        Returns
+        -------
+        pval : float
+            The p-value that the highest data/model outlier is produced by random noise, calibrated
+            using simulated power spectra from an MCMC run.
+
+        References
+        ----------
+        For more details on the procedure employed here, see
+
+            * Vaughan, 2010: https://arxiv.org/abs/0910.2706
+            * Huppenkothen et al, 2013: https://arxiv.org/abs/1212.1011
 
         """
         # fit the model to the data
@@ -1137,12 +1528,12 @@ class PSDParEst(ParameterEstimation):
 
         else:
             if sample is None:
-                # sample the posterior using MCMC
+                # sample the :class:`Posterior` using MCMC
                 sample = self.sample(lpost, res.p_opt, cov=res.cov,
                                      nwalkers=nwalkers, niter=niter,
                                      burnin=burnin, namestr=namestr)
 
-            # pick nsim samples out of the posterior sample
+            # pick nsim samples out of the :class:`Posterior` sample
             s_all = sample.samples[rng.choice(sample.samples.shape[0], nsim,
                                               replace=False)]
 
@@ -1158,7 +1549,50 @@ class PSDParEst(ParameterEstimation):
 
     def simulate_highest_outlier(self, s_all, lpost, t0, max_post=True,
                                  seed=None):
+        """
+        Simulate :math:`n` power spectra from a model and then find the highest
+        data/model outlier in each.
 
+        The data/model outlier is defined as
+
+        .. math::
+
+             \max{(T_R = 2(\mathrm{data}/\mathrm{model}))} .
+
+        Parameters
+        ----------
+        s_all : numpy.ndarray
+            A list of parameter values derived either from an approximation of the
+            likelihood surface, or from an MCMC run. Has dimensions ``(n, ndim)``, where
+            ``n`` is the number of simulated power spectra to generate, and ``ndim`` the
+            number of model parameters.
+
+        lpost : instance of a :class:`Posterior` subclass
+            an instance of class :class:`Posterior` or one of its subclasses
+            that defines the function to be minimized (either in ``loglikelihood``
+            or ``logposterior``)
+
+        t0 : iterable
+            list or array containing the starting parameters. Its length
+            must match ``lpost.model.npar``.
+
+        max_post: bool, optional, default ``False``
+            If ``True``, do MAP fits on the power spectrum to find the highest data/model outlier
+            Otherwise, do a Maximum Likelihood fit. If True, the simulated power spectra will
+            be generated from an MCMC run, otherwise the method will employ the approximated
+            covariance matrix for the parameters derived from the likelihood surface to generate
+            samples from that likelihood function.
+
+        seed : int, optional, default ``None``
+            An optional number to seed the random number generator with, for reproducibility of
+            the results obtained with this method.
+
+        Returns
+        -------
+        max_y_all : numpy.ndarray
+            An array of maximum outliers for each simulated power spectrum
+
+        """
         # the number of simulations
         nsim = s_all.shape[0]
 
@@ -1178,7 +1612,7 @@ class PSDParEst(ParameterEstimation):
                 sim_lpost = PSDLogLikelihood(sim_ps.freq, sim_ps.power,
                                               model=lpost.model, m=sim_ps.m)
             else:
-                # make a Posterior object
+                # make a :class:`Posterior` object
                 sim_lpost = PSDPosterior(sim_ps.freq, sim_ps.power,
                                          lpost.model, m=sim_ps.m)
                 sim_lpost.logprior = lpost.logprior
@@ -1198,7 +1632,45 @@ class PSDParEst(ParameterEstimation):
         return np.hstack(max_y_all)
 
     def _compute_highest_outlier(self, lpost, res, nmax=1):
+        """
+        Auxiliary method calculating the highest outlier statistic in
+        a power spectrum.
 
+        The maximum data/model outlier is defined as
+
+        .. math::
+
+             \max{(T_R = 2(\mathrm{data}/\mathrm{model}))}
+
+        Parameters
+        ----------
+        lpost : instance of a :class:`Posterior` subclass
+            and instance of class :class:`Posterior` or one of its subclasses
+            that defines the function to be minimized (either in ``loglikelihood``
+            or ``logposterior``)
+
+        res : :class:`OptimizationResults` object
+            An object containing useful summaries of the fitting procedure.
+            For details, see documentation of :class:`OptimizationResults`.
+
+        nmax : int, optional, default ``1``
+            The number of maxima to extract from the power spectra. By default,
+            only the highest data/model outlier is extracted. This number allows
+            to extract the ``nmax`` highest outliers, useful when looking for
+            multiple signals in a power spectrum.
+
+        Returns
+        -------
+        max_y : {float | numpy.ndarray}
+            The ``nmax`` highest data/model outliers
+
+        max_x : {float | numpy.ndarray}
+            The frequencies corresponding to the outliers in ``max_y``
+
+        max_ind : {int | numpy.ndarray}
+            The indices corresponding to the outliers in ``max_y``
+
+        """
         residuals = 2.0 * lpost.y/ res.mfit
 
         ratio_sort = copy.copy(residuals)
@@ -1215,6 +1687,30 @@ class PSDParEst(ParameterEstimation):
 
     @staticmethod
     def _find_outlier(xdata, ratio, max_y):
+        """
+        Small auxiliary method that finds the index where an array has
+        its maximum, and the corresponding value in ``xdata``.
+
+        Parameters
+        ----------
+        xdata : numpy.ndarray
+            A list of independent variables
+
+        ratio : Numpy.ndarray
+            A list of dependent variables corresponding to ``xdata``
+
+        max_y : float
+            The maximum value of ``ratio``
+
+        Returns
+        -------
+        max_x : float
+            The value in ``xdata`` corresponding to the entry in ``ratio`` where
+            ``ratio == `max_y``
+
+        max_ind : float
+            The index of the entry in ``ratio`` where ``ratio == max_y``
+        """
         max_ind = np.where(ratio == max_y)[0][0]
         max_x = xdata[max_ind]
 
@@ -1222,6 +1718,32 @@ class PSDParEst(ParameterEstimation):
 
     def plotfits(self, res1, res2=None, save_plot=False,
                  namestr='test', log=False):
+        """
+        Plotting method that allows to plot either one or two best-fit models
+        with the data.
+
+        Plots a power spectrum with the best-fit model, as well as the data/model
+        residuals for each model.
+
+        Parameters
+        ----------
+        res1 : :class:`OptimizationResults` object
+            Output of a successful fitting procedure
+
+        res2 : :class:`OptimizationResults` object, optional, default ``None``
+            Optional output of a second successful fitting procedure, e.g. with a
+            competing model
+
+        save_plot : bool, optional, default ``False``
+            If ``True``, the resulting figure will be saved to a file
+
+        namestr : str, optional, default ``test``
+            If ``save_plot`` is ``True``, this string defines the path and file name
+            for the output plot
+
+        log : bool, optional, default ``False``
+            If ``True``, plot the axes logarithmically.
+        """
 
         if not can_plot:
             logging.info("No matplotlib imported. Can't plot!")

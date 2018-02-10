@@ -134,7 +134,7 @@ html_theme_options = {
     'logotext3': ':docs'   # white,  light
     }
 
-extensions += ['matplotlib.sphinxext.plot_directive','sphinx.ext.autodoc']
+extensions += ['matplotlib.sphinxext.plot_directive','sphinx.ext.autodoc', 'nbsphinx', 'sphinx.ext.napoleon']
 
 # -- Options for LaTeX output --------------------------------------------------
 

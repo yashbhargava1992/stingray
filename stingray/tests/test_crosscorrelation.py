@@ -189,9 +189,9 @@ class TestCrossCorrelation(object):
     @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_default_filename(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
-        cr.plot(save=True)
-        assert os.path.isfile('corr.png')
-        os.unlink('corr.png')
+        cr.plot(save=True, title="Correlation")
+        assert os.path.isfile('corr.pdf')
+        os.unlink('corr.pdf')
 
     @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_custom_filename(self):

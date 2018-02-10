@@ -171,9 +171,3 @@ Alternatively, assume that we have light curves in the simulated energy channels
   >>> chans = sim.get_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5'])
   >>> sim.delete_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5'])
 
-Reference/API
-=============
-
-.. autoclass:: stingray.simulator.simulator.Simulator
-   :members:
-   :undoc-members:

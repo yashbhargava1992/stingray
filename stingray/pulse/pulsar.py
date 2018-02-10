@@ -39,17 +39,18 @@ def pulse_phase(times, *frequency_derivatives, **opts):
     *frequency_derivatives: floats
         List of derivatives in increasing order, starting from zero.
 
-    Returns
-    -------
-    phases : array of floats
-        The absolute pulse phase
-
     Other Parameters
     ----------------
     ph0 : float
         The starting phase
     to_1 : bool, default True
         Only return the fractional part of the phase, normalized from 0 to 1
+
+    Returns
+    -------
+    phases : array of floats
+        The absolute pulse phase
+
     """
 
     ph0 = _default_value_if_no_key(opts, "ph0", 0)
@@ -74,18 +75,18 @@ def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
     period : float
         The pulse period (if 1, equivalent to phases)
 
-    Returns
-    -------
-    expo : array of floats
-        The normalized exposure of each bin in the pulse profile (1 is the
-        highest exposure, 0 the lowest)
-
     Other parameters
     ----------------
     nbin : int, optional, default 16
         The number of bins in the profile
     gtis : [[gti00, gti01], [gti10, gti11], ...], optional, default None
         Good Time Intervals
+
+    Returns
+    -------
+    expo : array of floats
+        The normalized exposure of each bin in the pulse profile (1 is the
+        highest exposure, 0 the lowest)
     """
     if gtis is None:
         gtis = np.array([[start_time, stop_time]])
@@ -157,15 +158,6 @@ def fold_events(times, *frequency_derivatives, **opts):
     f, fdot, fddot... : float
         The frequency and any number of derivatives.
 
-    Returns
-    -------
-    phase_bins : array of floats
-    The phases corresponding to the pulse profile
-    profile : array of floats
-    The pulse profile
-    profile_err : array of floats
-    The uncertainties on the pulse profile
-
     Other Parameters
     ----------------
     nbin : int, optional, default 16
@@ -181,6 +173,14 @@ def fold_events(times, *frequency_derivatives, **opts):
         Correct each bin for exposure (use when the period of the pulsar is
         comparable to that of GTIs)
 
+    Returns
+    -------
+    phase_bins : array of floats
+    The phases corresponding to the pulse profile
+    profile : array of floats
+    The pulse profile
+    profile_err : array of floats
+    The uncertainties on the pulse profile
     '''
     nbin = _default_value_if_no_key(opts, "nbin", 16)
     weights = _default_value_if_no_key(opts, "weights", 1)
@@ -234,15 +234,15 @@ def stat(profile, err=None):
     profile : array
         The pulse profile
 
-    Returns
-    -------
-    stat : float
-        The epoch folding statistics
-
     Other Parameters
     ----------------
     err : float or array
         The uncertainties on the pulse profile
+
+    Returns
+    -------
+    stat : float
+        The epoch folding statistics
     """
     mean = np.mean(profile)
     if err is None:
@@ -260,15 +260,15 @@ def fold_profile_probability(stat, nbin, ntrial=1):
     nbin : int
         The number of bins in the profile
 
-    Returns
-    -------
-    p : float
-        The probability that the profile has been produced by noise
-
     Other Parameters
     ----------------
     ntrial : int
         The number of trials executed to find this profile
+
+    Returns
+    -------
+    p : float
+        The probability that the profile has been produced by noise
     """
     if ntrial > 1:
         simon("fold: The treatment of ntrial is very rough. Use with caution")
@@ -288,16 +288,16 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     epsilon : float, default 0.01
         The fractional probability that the signal has been produced by noise
 
+    Other Parameters
+    ----------------
+    ntrial : int
+        The number of trials executed to find this profile
+
     Returns
     -------
     detlev : float
         The epoch folding statistics corresponding to a probability
         epsilon * 100 % that the signal has been produced by noise
-
-    Other Parameters
-    ----------------
-    ntrial : int
-        The number of trials executed to find this profile
     """
     if ntrial > 1:
         simon("fold: The treatment of ntrial is very rough. Use with caution")
@@ -315,15 +315,15 @@ def z_n(phase, n=2, norm=1):
     n : int, default 2
         The ``n`` in $Z^2_n$.
 
-    Returns
-    -------
-    z2_n : float
-        The Z^2_n statistics of the events.
-
     Other Parameters
     ----------------
     norm : float or array of floats
         A normalization factor that gets multiplied as a weight.
+
+    Returns
+    -------
+    z2_n : float
+        The Z^2_n statistics of the events.
     '''
     nbin = len(phase)
 
@@ -354,16 +354,16 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     epsilon : float, default 0.01
         The fractional probability that the signal has been produced by noise
 
+    Other Parameters
+    ----------------
+    ntrial : int
+        The number of trials executed to find this profile
+
     Returns
     -------
     detlev : float
         The epoch folding statistics corresponding to a probability
         epsilon * 100 % that the signal has been produced by noise
-
-    Other Parameters
-    ----------------
-    ntrial : int
-        The number of trials executed to find this profile
     """
     if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
@@ -381,15 +381,15 @@ def z2_n_probability(z2, n=2, ntrial=1):
     n : int, default 2
         The ``n`` in $Z^2_n$
 
-    Returns
-    -------
-    p : float
-        The probability that the Z^2_n value has been produced by noise
-
     Other Parameters
     ----------------
     ntrial : int
         The number of trials executed to find this profile
+
+    Returns
+    -------
+    p : float
+        The probability that the Z^2_n value has been produced by noise
     """
     if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
@@ -461,11 +461,6 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
         Mean and standard deviation of the amplitude
     mean_phase, std_phase : floats
         Mean and standard deviation of the phase
-
-    Other Parameters
-    ----------------
-    fftfit_kwargs : arguments
-        Additional arguments to be passed to error calculation
     """
     prof = prof - np.mean(prof)
 
@@ -549,6 +544,11 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
         The template of the pulse used to perform the TOA calculation
     p0 : list
         The initial parameters for the fit
+
+    Other parameters
+    ----------------
+    nstep : int, optional, default 100
+        Number of steps for the bootstrap method
 
     Returns
     -------
@@ -644,15 +644,15 @@ def get_TOA(prof, period, tstart, template=None, additional_phase=0,
     tstart : float
         The time at the start of the pulse profile
 
-    Returns
-    -------
-    toa, toastd : floats
-        Mean and standard deviation of the TOA
-
     Other parameters
     ----------------
     nstep : int, optional, default 100
         Number of steps for the bootstrap method
+
+    Returns
+    -------
+    toa, toastd : floats
+        Mean and standard deviation of the TOA
     """
 
     mean_amp, std_amp, phase_res, phase_res_err = \

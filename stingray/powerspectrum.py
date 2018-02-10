@@ -26,19 +26,20 @@ def classical_pvalue(power, nspec):
 
     Important: the underlying assumptions that make this calculation valid
     are:
-    (1) the powers in the power spectrum follow a chi-square distribution
-    (2) the power spectrum is normalized according to Leahy (1984), such
-    that the powers have a mean of 2 and a variance of 4
-    (3) there is only white noise in the light curve. That is, there is no
-    aperiodic variability that would change the overall shape of the power
-    spectrum.
+
+    1. the powers in the power spectrum follow a chi-square distribution
+    2. the power spectrum is normalized according to [Leahy 1983]_, such
+       that the powers have a mean of 2 and a variance of 4
+    3. there is only white noise in the light curve. That is, there is no
+       aperiodic variability that would change the overall shape of the power
+       spectrum.
 
     Also note that the p-value is for a *single trial*, i.e. the power
     currently being tested. If more than one power or more than one power
     spectrum are being tested, the resulting p-value must be corrected for the
     number of trials (Bonferroni correction).
 
-    Mathematical formulation in Groth, 1975.
+    Mathematical formulation in [Groth 1975]_.
     Original implementation in IDL by Anna L. Watts.
 
     Parameters
@@ -47,7 +48,7 @@ def classical_pvalue(power, nspec):
         The squared Fourier amplitude of a spectrum to be evaluated
 
     nspec : int
-        The number of spectra or frequency bins averaged in `power`.
+        The number of spectra or frequency bins averaged in ``power``.
         This matters because averaging spectra or frequency bins increases
         the signal-to-noise ratio, i.e. makes the statistical distributions
         of the noise narrower, such that a smaller power might be very
@@ -59,6 +60,12 @@ def classical_pvalue(power, nspec):
     pval : float
         The classical p-value of the observed power being consistent with
         the null hypothesis of white noise
+
+    References
+    ----------
+
+    * .. [Leahy 1983] https://ui.adsabs.harvard.edu/#abs/1983ApJ...266..160L/abstract
+    * .. [Groth 1975] https://ui.adsabs.harvard.edu/#abs/1975ApJS...29..285G/abstract
 
     """
     if not np.isfinite(power):
@@ -90,6 +97,15 @@ def classical_pvalue(power, nspec):
 def _pavnosigfun(power, nspec):
     """
     Helper function doing the actual calculation of the p-value.
+
+    Parameters
+    ----------
+    power : float
+        The measured candidate power
+
+    nspec : int
+        The number of power spectral bins that were averaged in `power`
+        (note: can be either through averaging spectra or neighbouring bins)
     """
     sum = 0.0
     m = nspec - 1
@@ -116,67 +132,86 @@ def _pavnosigfun(power, nspec):
 
 
 class Powerspectrum(Crossspectrum):
+    """
+    Make a :class:`Powerspectrum` (also called periodogram) from a (binned) light curve.
+    Periodograms can be normalized by either Leahy normalization, fractional rms
+    normalizaation, absolute rms normalization, or not at all.
+
+    You can also make an empty :class:`Powerspectrum` object to populate with your
+    own fourier-transformed data (this can sometimes be useful when making
+    binned power spectra).
+
+    Parameters
+    ----------
+    lc: :class:`stingray.Lightcurve` object, optional, default ``None``
+        The light curve data to be Fourier-transformed.
+
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
+        The normaliation of the power spectrum to be used. Options are
+        ``leahy``, ``frac``, ``abs`` and ``none``, default is ``frac``.
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
+        the normalization of the power spectrun
+
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of normalized squared absolute values of Fourier
+        amplitudes
+
+    power_err: numpy.ndarray
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
+        binning, or averaging power spectrum). Note that for a single
+        realization (``m=1``) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged powers in each bin
+
+    n: int
+        The number of data points in the light curve
+
+    nphots: float
+        The total number of photons in the light curve
+
+    """
     def __init__(self, lc=None, norm='frac', gti=None):
-        """
-        Make a Periodogram (power spectrum) from a (binned) light curve.
-        Periodograms can be Leahy normalized or fractional rms normalized.
-        You can also make an empty Periodogram object to populate with your
-        own fourier-transformed data (this can sometimes be useful when making
-        binned periodograms).
-
-        Parameters
-        ----------
-        lc: lightcurve.Lightcurve object, optional, default None
-            The light curve data to be Fourier-transformed.
-
-        norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-            The normaliation of the periodogram to be used. Options are
-            "leahy", "frac", "abs" and "none", default is "frac".
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        norm: {"leahy" | "frac" | "abs" | "none"}
-            the normalization of the periodogram
-
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        power: numpy.ndarray
-            The array of normalized squared absolute values of Fourier
-            amplitudes
-
-        power_err: numpy.ndarray
-            The uncertainties of `power`.
-            An approximation for each bin given by "power_err= power/Sqrt(m)".
-            Where `m` is the number of power averaged in each bin (by frequency
-            binning, or averaging powerspectrum). Note that for a single
-            realization (m=1) the error is equal to the power.
-
-        df: float
-            The frequency resolution
-
-        m: int
-            The number of averaged powers in each bin
-
-        n: int
-            The number of data points in the light curve
-
-        nphots: float
-            The total number of photons in the light curve
-
-        """
-
         Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti)
         self.nphots = self.nphots1
 
     def rebin(self, df=None, f=None, method="mean"):
+        """
+        Rebin the power spectrum.
+
+        Parameters
+        ----------
+        df: float
+            The new frequency resolution
+
+        Other Parameters
+        ----------------
+        f: float
+            the rebin factor. If specified, it substitutes ``df`` with ``f*self.df``
+
+        Returns
+        -------
+        bin_cs = :class:`Powerspectrum` object
+            The newly binned power spectrum.
+        """
         bin_ps = Crossspectrum.rebin(self, df=df, f=f, method=method)
         bin_ps.nphots = bin_ps.nphots1
 
@@ -184,7 +219,7 @@ class Powerspectrum(Crossspectrum):
 
     def compute_rms(self, min_freq, max_freq, white_noise_offset=0.):
         """
-        Compute the fractional rms amplitude in the periodgram
+        Compute the fractional rms amplitude in the power spectrum
         between two frequencies.
 
         Parameters
@@ -206,8 +241,8 @@ class Powerspectrum(Crossspectrum):
         Returns
         -------
         rms: float
-            The fractional rms amplitude contained between min_freq and
-            max_freq
+            The fractional rms amplitude contained between ``min_freq`` and
+            ``max_freq``
 
         """
         minind = self.freq.searchsorted(min_freq)
@@ -236,9 +271,13 @@ class Powerspectrum(Crossspectrum):
         strictly correct. We should be using the underlying power spectrum,
         but in the absence of an estimate of that, this will have to do.
 
-        $r = \sqrt{P}$
+        .. math::
 
-        $\delta r = \frac{1}{2 * \sqrt{P}} \delta P$
+           r = \sqrt{P}
+
+        .. math::
+
+           \delta r = \\frac{1}{2 * \sqrt{P}} \delta P
 
         Parameters
         ----------
@@ -271,43 +310,44 @@ class Powerspectrum(Crossspectrum):
 
         Note that this function will *only* produce correct results when the
         following underlying assumptions are fulfilled:
-        (1) The power spectrum is Leahy-normalized
-        (2) There is no source of variability in the data other than the
-        periodic signal to be determined with this method. This is important!
-        If there are other sources of (aperiodic) variability in the data, this
-        method will *not* produce correct results, but instead produce a large
-        number of spurious false positive detections!
-        (3) There are no significant instrumental effects changing the
-        statistical distribution of the powers (e.g. pile-up or dead time)
 
-        By default, the method produces (index,p-values) for all powers in
+        1. The power spectrum is Leahy-normalized
+        2. There is no source of variability in the data other than the
+           periodic signal to be determined with this method. This is important!
+           If there are other sources of (aperiodic) variability in the data, this
+           method will *not* produce correct results, but instead produce a large
+           number of spurious false positive detections!
+        3. There are no significant instrumental effects changing the
+           statistical distribution of the powers (e.g. pile-up or dead time)
+
+        By default, the method produces ``(index,p-values)`` for all powers in
         the power spectrum, where index is the numerical index of the power in
-        question. If a `threshold` is set, then only powers with p-values
+        question. If a ``threshold`` is set, then only powers with p-values
         *below* that threshold with their respective indices. If
-        `trial_correction` is set to True, then the threshold will be corrected
+        ``trial_correction`` is set to ``True``, then the threshold will be corrected
         for the number of trials (frequencies) in the power spectrum before
         being used.
 
         Parameters
         ----------
-        threshold : float
+        threshold : float, optional, default ``1``
             The threshold to be used when reporting p-values of potentially
             significant powers. Must be between 0 and 1.
-            Default is 1 (all p-values will be reported).
+            Default is ``1`` (all p-values will be reported).
 
-        trial_correction : bool
-            A Boolean flag that sets whether the `threshold` will be correted
+        trial_correction : bool, optional, default ``False``
+            A Boolean flag that sets whether the ``threshold`` will be corrected
             by the number of frequencies before being applied. This decreases
-            the threshold (p-values need to be lower to count as significant).
-            Default is False (report all powers) though for any application
-            where `threshold` is set to something meaningful, this should also
+            the ``threshold`` (p-values need to be lower to count as significant).
+            Default is ``False`` (report all powers) though for any application
+            where `threshold`` is set to something meaningful, this should also
             be applied!
 
         Returns
         -------
         pvals : iterable
-            A list of (index, p-value) tuples for all powers that have p-values
-            lower than the threshold specified in `threshold`.
+            A list of ``(index, p-value)`` tuples for all powers that have p-values
+            lower than the threshold specified in ``threshold``.
 
         """
         if not self.norm == "leahy":
@@ -322,7 +362,6 @@ class Powerspectrum(Crossspectrum):
         else:
             pv = np.array([classical_pvalue(power, m)
                            for power, m in zip(self.power, self.m)])
-
 
         # if trial correction is used, then correct the threshold for
         # the number of powers in the power spectrum
@@ -339,69 +378,66 @@ class Powerspectrum(Crossspectrum):
 
 
 class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
+    """
+    Make an averaged periodogram from a light curve by segmenting the light
+    curve, Fourier-transforming each segment and then averaging the
+    resulting periodograms.
+
+    Parameters
+    ----------
+    lc: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        The light curve data to be Fourier-transformed.
+
+    segment_size: float
+        The size of each segment to average. Note that if the total
+        duration of each :class:`Lightcurve` object in lc is not an integer multiple
+        of the ``segment_size``, then any fraction left-over at the end of the
+        time series will be lost.
+
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
+        The normaliation of the periodogram to be used.
+
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
+        the normalization of the periodogram
+
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of normalized squared absolute values of Fourier
+        amplitudes
+
+    power_err: numpy.ndarray
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
+        binning, or averaging powerspectrum). Note that for a single
+        realization (``m=1``) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged periodograms
+
+    n: int
+        The number of data points in the light curve
+
+    nphots: float
+        The total number of photons in the light curve
+
+    """
     def __init__(self, lc=None, segment_size=None, norm="frac", gti=None):
-        """
-        Make an averaged periodogram from a light curve by segmenting the light
-        curve, Fourier-transforming each segment and then averaging the
-        resulting periodograms.
-
-        Parameters
-        ----------
-        lc: lightcurve.Lightcurve object OR
-            iterable of lightcurve.Lightcurve objects
-            The light curve data to be Fourier-transformed.
-
-        segment_size: float
-            The size of each segment to average. Note that if the total
-            duration of each Lightcurve object in lc is not an integer multiple
-            of the segment_size, then any fraction left-over at the end of the
-            time series will be lost.
-
-        norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-            The normaliation of the periodogram to be used. Options are
-            "leahy", "frac", "abs" and "none", default is "frac".
-
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        norm: {"leahy" | "frac" | "abs" | "none"}
-            the normalization of the periodogram
-
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        power: numpy.ndarray
-            The array of normalized squared absolute values of Fourier
-            amplitudes
-
-        power_err: numpy.ndarray
-            The uncertainties of `power`.
-            An approximation for each bin given by "power_err= power/Sqrt(m)".
-            Where `m` is the number of power averaged in each bin (by frequency
-            binning, or averaging powerspectrum). Note that for a single
-            realization (m=1) the error is equal to the power.
-
-        df: float
-            The frequency resolution
-
-        m: int
-            The number of averaged periodograms
-
-        n: int
-            The number of data points in the light curve
-
-        nphots: float
-            The total number of photons in the light curve
-
-
-        """
 
         self.type = "powerspectrum"
 
@@ -417,7 +453,26 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         return
 
     def _make_segment_spectrum(self, lc, segment_size):
+        """
+        Split the light curves into segments of size ``segment_size``, and calculate a power spectrum for
+        each.
 
+        Parameters
+        ----------
+        lc  : :class:`stingray.Lightcurve` objects\
+            The input light curve
+
+        segment_size : ``numpy.float``
+            Size of each light curve segment to use for averaging.
+
+        Returns
+        -------
+        power_all : list of :class:`Powerspectrum` objects
+            A list of power spectra calculated independently from each light curve segment
+
+        nphots_all : ``numpy.ndarray``
+            List containing the number of photons for all segments calculated from ``lc``
+        """
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
@@ -444,53 +499,64 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
 
 class DynamicalPowerspectrum(AveragedPowerspectrum):
+    """
+    Create a dynamical power spectrum, also often called a *spectrogram*.
+
+    This class will divide a :class:`Lightcurve` object into segments of
+    length ``segment_size``, create a power spectrum for each segment and store
+    all powers in a matrix as a function of both time (using the mid-point of each
+    segment) and frequency.
+
+    This is often used to trace changes in period of a (quasi-)periodic signal over
+    time.
+
+    Parameters
+    ----------
+    lc : :class:`stingray.Lightcurve` object
+        The time series of which the Dynamical powerspectrum is
+        to be calculated.
+
+    segment_size : float, default 1
+         Length of the segment of light curve, default value is 1 (in whatever units
+         the ``time`` array in the :class:`Lightcurve`` object uses).
+
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
+        The normaliation of the periodogram to be used.
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    segment_size: float
+        The size of each segment to average. Note that if the total
+        duration of each Lightcurve object in lc is not an integer multiple
+        of the ``segment_size``, then any fraction left-over at the end of the
+        time series will be lost.
+
+    dyn_ps : np.ndarray
+        The matrix of normalized squared absolute values of Fourier
+        amplitudes. The axis are given by the ``freq``
+        and ``time`` attributes
+
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none``}
+        the normalization of the periodogram
+
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    df: float
+        The frequency resolution
+
+    dt: float
+        The time resolution
+    """
+
     def __init__(self, lc, segment_size, norm="frac", gti=None):
-        """
-        Parameters
-        ----------
-        lc : lightcurve.Lightcurve object
-            The time series of which the Dynamical powerspectrum is
-            to be calculated.
-
-        segment_size : float, default 1
-             Length of the segment of light curve, default value is 1 second.
-
-        norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-            The normaliation of the periodogram to be used. Options are
-            "leahy", "frac", "abs" and "none", default is "frac".
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        segment_size: float
-            The size of each segment to average. Note that if the total
-            duration of each Lightcurve object in lc is not an integer multiple
-            of the segment_size, then any fraction left-over at the end of the
-            time series will be lost.
-
-        dyn_ps : np.ndarray
-            The matrix of normalized squared absolute values of Fourier
-            amplitudes. The axis are given by the `freq`
-            and `time` attirbutes
-
-        norm: {"leahy" | "frac" | "abs" | "none"}
-            the normalization of the periodogram
-
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        df: float
-            The frequency resolution
-
-        dt: float
-            The time resolution
-        """
         if segment_size < 2 * lc.dt:
             raise ValueError("Length of the segment is too short to form a "
                              "light curve!")
@@ -503,7 +569,14 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
-        """Create the matrix with freq and time columns."""
+        """
+        Create a matrix of powers for each time step (rows) and each frequency step (columns).
+
+        Parameters
+        ----------
+        lc : :class:`Lightcurve` object
+            The :class:`Lightcurve` object from which to generate the dynamical power spectrum
+        """
         ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
             self, lc, self.segment_size)
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
@@ -529,7 +602,9 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def rebin_frequency(self, df_new, method="sum"):
         """
-        Rebin the Dynamic Power Spectrum to a new frequency resolution.
+        Rebin the Dynamic Power Spectrum to a new frequency resolution. Rebinning is
+        an in-place operation, i.e. will replace the existing ``dyn_ps`` attribute.
+
         While the new resolution need not be an integer multiple of the
         previous frequency resolution, be aware that if it is not, the last
         bin will be cut off by the fraction left over by the integer division.
@@ -537,11 +612,11 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         Parameters
         ----------
         df_new: float
-            The new frequency resolution of the Dynamica Power Spectrum.
+            The new frequency resolution of the Dynamical Power Spectrum.
             Must be larger than the frequency resolution of the old Dynamical
             Power Spectrum!
 
-        method: {"sum" | "mean" | "average"}, optional, default "sum"
+        method: {``sum`` | ``mean`` | ``average``}, optional, default ``sum``
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
         """
@@ -558,22 +633,22 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def trace_maximum(self, min_freq=None, max_freq=None, sigmaclip=False):
         """
-        Return the indices of the maximum powers in each segment Powerspectrum
+        Return the indices of the maximum powers in each segment :class:`Powerspectrum`
         between specified frequencies.
 
         Parameters
         ----------
-        min_freq: float, default None
+        min_freq: float, default ``None``
             The lower frequency bound.
 
-        max_freq: float, default None
+        max_freq: float, default ``None``
             The upper frequency bound.
 
         Returns
         -------
         max_positions : np.array
             The array of indices of the maximum power in each segment having
-            frequency between min_freq and max_freq.
+            frequency between ``min_freq`` and ``max_freq``.
         """
         if min_freq is None:
             min_freq = np.min(self.freq)
@@ -600,7 +675,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         Parameters
         ----------
         dt_new: float
-            The new time resolution of the Dynamica Power Spectrum.
+            The new time resolution of the Dynamical Power Spectrum.
             Must be larger than the time resolution of the old Dynamical Power
             Spectrum!
 

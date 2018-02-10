@@ -11,14 +11,20 @@ def GeneralizedLorentz1D(x, x_0=1., fwhm=1., value=1., power_coeff=1.):
 
     Parameters
     ----------
-
     x: numpy.ndarray
         non-zero frequencies
 
-    x_0 : peak centeral frequency
-    fwhm : FWHM of the peak (gamma)
-    value : peak value at x=x0
-    power_coeff : power coefficient [n]
+    x_0 : float
+        peak central frequency
+
+    fwhm : float
+        FWHM of the peak (gamma)
+
+    value : float
+        peak value at x=x0
+
+    power_coeff : float
+        power coefficient [n]
 
     Returns
     -------
@@ -41,10 +47,17 @@ def SmoothBrokenPowerLaw(x, norm=1., gamma_low=1., gamma_high=1., break_freq=1.)
     x: numpy.ndarray
         non-zero frequencies
 
-    norm: normalization frequency
-    gamma_low: power law index for f --> zero
-    gamma_high: power law index for f --> infinity
-    break_freq: break frequency
+    norm: float
+        normalization frequency
+
+    gamma_low: float
+        power law index for f --> zero
+
+    gamma_high: float
+        power law index for f --> infinity
+
+    break_freq: float
+        break frequency
 
     Returns
     -------

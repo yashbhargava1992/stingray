@@ -9,49 +9,49 @@ transfer functions.
 """
 
 class TransferFunction(object):
+    """
+    Create or retrieve a transfer function, and form
+    time and energy averaged responses.
+
+    Parameters
+    ----------
+    data : numpy 2-d array / 2-d list
+        inner/first dimension (or column counts) represents time
+        and outer/second dimension (or rows counts) represents energy.
+
+        As an example, if you have you 2-d model defined by 'arr', then
+        arr[1][5] defines a time of 5(s) and energy of 1(keV) [assuming
+        'dt' and 'de' are 1 and 'tstart' and 'estart' are 0.]
+
+        Note that each row is a different energy channel starting from
+        the lowest to the highest.
+
+    dt : float, default 1
+        time interval
+
+    de : float, default 1
+        energy interval
+
+    tstart : float, default 0
+        initial time value across time axis
+
+    estart : float, default 0
+        initial energy value across energy axis
+
+    Attributes
+    ----------
+    time : numpy.ndarray
+        energy-averaged/time-resolved response of 2-d transfer
+        function
+
+    energy : numpy.ndarray
+        time-averaged/energy-resolved response of 2-d transfer
+        function
+    """
 
     def __init__(self, data, dt=1, de=1, tstart=0, estart=0,
                 time=None, energy=None):
-        """
-        Create or retrieve a transfer function, and form
-        time and energy averaged responses.
 
-        Parameters
-        ----------
-        data : numpy 2-d array / 2-d list
-            inner/first dimension (or column counts) represents time
-            and outer/second dimension (or rows counts) represents energy.
-
-            As an example, if you have you 2-d model defined by 'arr', then
-            arr[1][5] defines a time of 5(s) and energy of 1(keV) [assuming
-            'dt' and 'de' are 1 and 'tstart' and 'estart' are 0.]
-
-            Note that each row is a different energy channel starting from
-            the lowest to the highest.
-
-        dt : float, default 1
-            time interval
-
-        de : float, default 1
-            energy interval
-
-        tstart : float, default 0
-            initial time value across time axis
-
-        estart : float, default 0
-            initial energy value across energy axis
-
-        Attributes
-        ----------
-        time : numpy.ndarray
-            energy-averaged/time-resolved response of 2-d transfer 
-            function
-
-        energy : numpy.ndarray
-            time-averaged/energy-resolved response of 2-d transfer 
-            function
-        """
-        
         self.data = np.asarray(data)
         self.dt = dt
         self.de = de

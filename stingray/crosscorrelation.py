@@ -10,43 +10,59 @@ __all__ = ['CrossCorrelation', 'AutoCorrelation']
 
 
 class CrossCorrelation(object):
-    def __init__(self, lc1=None, lc2=None, mode='same'):
+    """Make a cross-correlation from a light curves.
 
-        """
-        Make a cross-correlation from a light curves.
-        You can also make an empty Crosscorrelation object to populate with your
-        own cross-correlation data.
-        Parameters
-        ----------
-        lc1: lightcurve.Lightcurve object, optional, default None
-            The first light curve data for correlation calculations.
-        lc2: lightcurve.Lightcurve object, optional, default None
-            The light curve data for the correlation calculations.
-        mode: {'full', 'valid', 'same'}, optional, default 'same'
-            A string indicating the size of the correlation output.
-            See https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
-            for more details.
-            
-        Attributes
-        ----------
-        lc1: lightcurve.Lightcurve 
-            The first light curve data for correlation calculations.
-        lc2: lightcurve.Lightcurve
-            The light curve data for the correlation calculations.        
-        corr: numpy.ndarray
-             An array of correlation data calculated from two lighcurves
-        time_lags: numpy.ndarray
-             An array of all possible time lags against which each point in corr is calculated 
-        dt: float
-             The time resolution of each lightcurve (used in time_lag calculations)
-        time_shift: float
-             Time lag that gives maximum value of correlation between two lightcurves.
-             There will be maximum correlation between lightcurves if one of the lightcurve is shifted by time_shift.
-        n: int
-             Number of points in self.corr(Length of cross-correlation data) 
-        auto: Boolean
-            A flag to indicate whether correlation is auto or cross.
-        """
+    You can also make an empty :class:`Crosscorrelation` object to populate
+    with your own cross-correlation data.
+
+    Parameters
+    ----------
+    lc1: :class:`stingray.Lightcurve` object, optional, default ``None``
+        The first light curve data for correlation calculations.
+
+    lc2: :class:`stingray.Lightcurve` object, optional, default ``None``
+        The light curve data for the correlation calculations.
+
+    mode: {``full``, ``valid``, ``same``}, optional, default ``same``
+        A string indicating the size of the correlation output.
+        See the relevant ``scipy`` documentation [scipy-docs]_
+        for more details.
+
+    Attributes
+    ----------
+    lc1: :class:`stingray.Lightcurve`
+        The first light curve data for correlation calculations.
+
+    lc2: :class:`stingray.Lightcurve`
+        The light curve data for the correlation calculations.
+
+    corr: numpy.ndarray
+         An array of correlation data calculated from two light curves
+
+    time_lags: numpy.ndarray
+         An array of all possible time lags against which each point in corr is calculated
+
+    dt: float
+         The time resolution of each light curve (used in ``time_lag`` calculations)
+
+    time_shift: float
+         Time lag that gives maximum value of correlation between two light curves.
+         There will be maximum correlation between light curves if one of the light curve
+         is shifted by ``time_shift``.
+
+    n: int
+         Number of points in ``self.corr`` (length of cross-correlation data)
+
+    auto: bool
+        An internal flag to indicate whether this is a cross-correlation or an auto-correlation.
+
+    References
+    ----------
+    .. [scipy-docs] https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
+
+    """
+
+    def __init__(self, lc1=None, lc2=None, mode='same'):
 
         self.auto = False
         if isinstance(mode, str) is False:
@@ -59,13 +75,13 @@ class CrossCorrelation(object):
         self.lc1 = None
         self.lc2 = None
 
-        # Populate all attributes by None if user passes no lightcurve data
+        # Populate all attributes by ``None` if user passes no lightcurve data
         if lc1 is None or lc2 is None:
             if lc1 is not None or lc2 is not None:
                 raise TypeError("You can't do a cross correlation with just one "
                                 "light curve!")
             else:
-                # both lc1 and lc2 are None.
+                # both lc1 and lc2 are ``Non.
                 self.corr = None
                 self.time_shift = None
                 self.time_lags = None
@@ -78,16 +94,17 @@ class CrossCorrelation(object):
     def _make_corr(self, lc1, lc2):
 
         """
-        Creates Crosscorrelation Object.
+        Do some checks on the light curves supplied to the method, and then calculate the time
+        shifts, time lags and cross correlation.
+
         Parameters
         ----------
-        lc1: lightcurve.Lightcurve object
+        lc1::class:`stingray.Lightcurve` object
             The first light curve data.
-        lc2: lightcurve.Lightcurve object
+
+        lc2::class:`stingray.Lightcurve` object
             The second light curve data.
-        Returns
-        ----------
-        None
+
         """
 
         if not isinstance(lc1, lightcurve.Lightcurve):
@@ -120,18 +137,22 @@ class CrossCorrelation(object):
 
     def cal_timeshift(self, dt=1.0):
         """
-        Creates Crosscorrelation Object.
+        Calculate the cross correlation against all possible time lags, both positive and negative.
+
         Parameters
         ----------
-        dt: float , optional, default 1.0
-            Time resolution of lightcurve, should be passed when object is populated with correlation data
-            and no information about light curve can be extracted. Used to calculate time_lags.
+        dt: float, optional, default ``1.0``
+            Time resolution of the light curve, should be passed when object is populated with
+            correlation data and no information about light curve can be extracted. Used to
+            calculate ``time_lags``.
+
         Returns
-        ----------
+        -------
         self.time_shift: float
-             Value of time lag that gives maximum value of correlation between two lightcurves. 
+             Value of the time lag that gives maximum value of correlation between two light curves.
+
         self.time_lags: numpy.ndarray
-             An array of time_lags calculated from correlation data 
+             An array of ``time_lags`` calculated from correlation data
         """
         if self.dt is None:
             self.dt = dt
@@ -140,7 +161,7 @@ class CrossCorrelation(object):
             if self.lc1 is None or self.lc2 is None:
                 raise StingrayError('lc1 and lc2 should be provided to calculate correlation and time_shift')
             else:
-                # This will cover very rare case of assigning self.lc1 and self.lc2 and self.corr = None.
+                # This will cover very rare case of assigning self.lc1 and self.lc2 and self.corr = ``None``.
                 # In this case, correlation is calculated using self.lc1 and self.lc2 and using that correlation data,
                 # time_shift is calculated.
                 self._make_corr(self.lc1, self.lc2)
@@ -156,29 +177,38 @@ class CrossCorrelation(object):
 
         return self.time_shift, self.time_lags, self.n
 
-    def plot(self, labels=None, axis=None, title=None, marker='-', save=False, filename=None):
+    def plot(self, labels=None, axis=None, title=None, marker='-', save=False, filename=None, ax=None):
         """
         Plot the :class:`Crosscorrelation` as function using Matplotlib.
         Plot the Crosscorrelation object on a graph ``self.time_lags`` on x-axis and
         ``self.corr`` on y-axis
+
         Parameters
         ----------
-        labels : iterable, default None
-            A list of tuple with xlabel and ylabel as strings.
-        axis : list, tuple, string, default None
-            Parameter to set axis properties of Matplotlib figure. For example
+        labels : iterable, default ``None``
+            A list of tuple with ``xlabel`` and ``ylabel`` as strings.
+
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of ``matplotlib`` figure. For example
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
-            acceptable argument for `matplotlib.pyplot.axis()` function.
-        title : str, default None
+            acceptable argument for ``matplotlib.pyplot.axis()`` function.
+
+        title : str, default ``None``
             The title of the plot.
-        marker : str, default '-'
+
+        marker : str, default ``-``
             Line style and color of the plot. Line styles and colors are
             combined in a single format string, as in ``'bo'`` for blue
-            circles. See `matplotlib.pyplot.plot` for more options.
+            circles. See ``matplotlib.pyplot.plot`` for more options.
+
         save : boolean, optional (default=False)
             If True, save the figure with specified filename.
+
         filename : str
             File name of the image to save. Depends on the boolean ``save``.
+
+        ax : ``matplotlib.Axes`` object
+            An axes object to fill with the cross correlation plot.
         """
 
         try:
@@ -186,11 +216,14 @@ class CrossCorrelation(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        plt.plot(self.time_lags, self.corr, marker)
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+
+        ax.plot(self.time_lags, self.corr, marker)
         if labels is not None:
             try:
-                plt.xlabel(labels[0])
-                plt.ylabel(labels[1])
+                ax.set_xlabel(labels[0])
+                ax.set_ylabel(labels[1])
             except TypeError:
                 utils.simon("``labels`` must be either a list or tuple with "
                             "x and y labels.")
@@ -201,50 +234,60 @@ class CrossCorrelation(object):
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
 
+        # axis is a tuple containing formatting information
         if axis is not None:
-            plt.axis(axis)
+            ax.axis(axis)
 
         if title is not None:
-            plt.title(title)
+            ax.set_title(title)
 
         if save:
             if filename is None:
-                plt.savefig('corr.png')
+                plt.savefig('corr.pdf', format="pdf")
             else:
                 plt.savefig(filename)
-        return plt
+
+        return ax
 
 
 class AutoCorrelation(CrossCorrelation):
-    def __init__(self, lc=None, mode='same'):
-        """
-        Make an auto-correlation from a light curve.
-        You can also make an empty Autocorrelation object to populate with your
-        own auto-correlation data.
-        Parameters
-        ----------
-        lc: lightcurve.Lightcurve object, optional, default None
-            The light curve data for correlation calculations.
-        mode: {'full', 'valid', 'same'}, optional, default 'same'
-            A string indicating the size of the correlation output.
-            See https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
-            for more details.
+    """
+    Make an auto-correlation from a light curve.
+    You can also make an empty Autocorrelation object to populate with your
+    own auto-correlation data.
 
-        Attributes
-        ----------
-        lc1, lc2: lightcurve.Lightcurve 
-            The light curve data for correlation calculations.
-        corr: numpy.ndarray
-             An array of correlation data calculated from lightcurve data
-        time_lags: numpy.ndarray
-             An array of all possible time lags against which each point in corr is calculated 
-        dt: float
-             The time resolution of each lightcurve (used in time_lag calculations)
-        time_shift: float, zero
-             Max. Value of AutoCorrelation is always at zero lag.           
-        n: int
-             Number of points in self.corr(Length of auto-correlation data) 
-        """
+    Parameters
+    ----------
+    lc: :class:`stingray.Lightcurve` object, optional, default ``None``
+        The light curve data for correlation calculations.
+
+    mode: {``full``, ``valid``, ``same``}, optional, default ``same``
+        A string indicating the size of the correlation output.
+        See the relevant ``scipy`` documentation [scipy-docs]
+        for more details.
+
+    Attributes
+    ----------
+    lc1, lc2::class:`stingray.Lightcurve`
+        The light curve data for correlation calculations.
+
+    corr: numpy.ndarray
+         An array of correlation data calculated from lightcurve data
+
+    time_lags: numpy.ndarray
+         An array of all possible time lags against which each point in corr is calculated
+
+    dt: float
+         The time resolution of each lightcurve (used in time_lag calculations)
+
+    time_shift: float, zero
+         Max. Value of AutoCorrelation is always at zero lag.
+
+    n: int
+         Number of points in self.corr(Length of auto-correlation data)
+    """
+
+    def __init__(self, lc=None, mode='same'):
 
         CrossCorrelation.__init__(self, lc1=lc, lc2=lc, mode=mode)
         self.auto = True

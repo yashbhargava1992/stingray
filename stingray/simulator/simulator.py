@@ -9,29 +9,31 @@ import stingray.simulator.models as models
 
 
 class Simulator(object):
+    """
+    Methods to simulate and visualize light curves.
+
+    TODO: Improve documentation
+
+    Parameters
+    ----------
+    dt : int, default 1
+        time resolution of simulated light curve
+    N : int, default 1024
+        bins count of simulated light curve
+    mean : float, default 0
+        mean value of the simulated light curve
+    rms : float, default 1
+        fractional rms of the simulated light curve,
+        actual rms is calculated by mean*rms
+    red_noise : int, default 1
+        multiple of real length of light curve, by
+        which to simulate, to avoid red noise leakage
+    random_state : int, default None
+        seed value for random processes
+    """
 
     def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
                  random_state=None):
-        """
-        Methods to simulate and visualize light curves.
-
-        Parameters
-        ----------
-        dt : int, default 1
-            time resolution of simulated light curve
-        N : int, default 1024
-            bins count of simulated light curve
-        mean : float, default 0
-            mean value of the simulated light curve
-        rms : float, default 1
-            fractional rms of the simulated light curve,
-            actual rms is calculated by mean*rms
-        red_noise : int, default 1
-            multiple of real length of light curve, by
-            which to simulate, to avoid red noise leakage
-        random_state : int, default None
-            seed value for random processes
-        """
 
         self.dt = dt
         self.N = N

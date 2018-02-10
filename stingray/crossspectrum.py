@@ -12,25 +12,31 @@ from stingray.exceptions import StingrayError
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 import copy
 
-__all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence"]
+__all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag"]
 
 
 def coherence(lc1, lc2):
     """
     Estimate coherence function of two light curves.
+    For details on the definition of the coherence, see [vaughan-1996].
 
     Parameters
     ----------
-    lc1: lightcurve.Lightcurve object
+    lc1: :class:`stingray.Lightcurve` object
         The first light curve data for the channel of interest.
 
-    lc2: lightcurve.Lightcurve object
+    lc2: :class:`stingray.Lightcurve` object
         The light curve data for reference band
 
     Returns
     -------
-    coh : np.ndarray
-        Coherence function
+    coh : ``np.ndarray``
+        The array of coherence versus frequency
+
+    References
+    ----------
+    .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
+
     """
 
     if not isinstance(lc1, Lightcurve):
@@ -44,63 +50,97 @@ def coherence(lc1, lc2):
     return cs.coherence()
 
 
+def time_lag(lc1, lc2):
+    """
+    Estimate the time lag of two light curves.
+    Calculate time lag and uncertainty.
+
+        Equation from Bendat & Piersol, 2011 [bendat-2011]_.
+
+        Returns
+        -------
+        lag : np.ndarray
+            The time lag
+
+        lag_err : np.ndarray
+            The uncertainty in the time lag
+
+        References
+        ----------
+
+        .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
+
+    """
+
+    if not isinstance(lc1, Lightcurve):
+        raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+    if not isinstance(lc2, Lightcurve):
+        raise TypeError("lc2 must be a lightcurve.Lightcurve object")
+
+    cs = Crossspectrum(lc1, lc2, norm='none')
+    lag = cs.time_lag()
+
+    return lag
+
+
 class Crossspectrum(object):
+    """
+    Make a cross spectrum from a (binned) light curve.
+    You can also make an empty :class:`Crossspectrum` object to populate with your
+    own Fourier-transformed data (this can sometimes be useful when making
+    binned power spectra).
+
+    Parameters
+    ----------
+    lc1: :class:`stingray.Lightcurve` object, optional, default ``None``
+        The first light curve data for the channel/band of interest.
+
+    lc2: :class:`stingray.Lightcurve` object, optional, default ``None``
+        The light curve data for the reference band.
+
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
+        The normalization of the (real part of the) cross spectrum.
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of cross spectra (complex numbers)
+
+    power_err: numpy.ndarray
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
+        binning, or averaging more than one spectra). Note that for a single
+        realization (``m=1``) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged cross-spectra amplitudes in each bin.
+
+    n: int
+        The number of data points/time bins in one segment of the light
+        curves.
+
+    nphots1: float
+        The total number of photons in light curve 1
+
+    nphots2: float
+        The total number of photons in light curve 2
+    """
     def __init__(self, lc1=None, lc2=None, norm='none', gti=None):
-        """
-        Make a cross spectrum from a (binned) light curve.
-        You can also make an empty Crossspectrum object to populate with your
-        own fourier-transformed data (this can sometimes be useful when making
-        binned periodograms).
-
-        Parameters
-        ----------
-        lc1: lightcurve.Lightcurve object, optional, default None
-            The first light curve data for the channel/band of interest.
-
-        lc2: lightcurve.Lightcurve object, optional, default None
-            The light curve data for the reference band.
-
-        norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
-            The normalization of the (real part of the) cross spectrum.
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        power: numpy.ndarray
-            The array of cross spectra (complex numbers)
-
-        power_err: numpy.ndarray
-            The uncertainties of `power`.
-            An approximation for each bin given by "power_err= power/Sqrt(m)".
-            Where `m` is the number of power averaged in each bin (by frequency
-            binning, or averaging more than one spectra). Note that for a single
-            realization (m=1) the error is equal to the power.
-
-        df: float
-            The frequency resolution
-
-        m: int
-            The number of averaged cross-spectra amplitudes in each bin.
-
-        n: int
-            The number of data points/time bins in one segment of the light
-            curves.
-
-        nphots1: float
-            The total number of photons in light curve 1
-
-        nphots2: float
-            The total number of photons in light curve 2
-        """
 
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
@@ -111,7 +151,7 @@ class Crossspectrum(object):
         self.norm = norm.lower()
 
         # check if input data is a Lightcurve object, if not make one or
-        # make an empty Crossspectrum object if lc1 == None or lc2 == None
+        # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
         if lc1 is None or lc2 is None:
             if lc1 is not None or lc2 is not None:
                 raise TypeError("You can't do a cross spectrum with just one "
@@ -131,16 +171,35 @@ class Crossspectrum(object):
         self.lc2 = lc2
 
         self._make_crossspectrum(lc1, lc2)
+
         # These are needed to calculate coherence
         self._make_auxil_pds(lc1, lc2)
 
     def _make_auxil_pds(self, lc1, lc2):
+        """
+        Helper method to create the power spectrum of both light curves independently.
+
+        Parameters
+        ----------
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
+            Two light curves used for computing the cross spectrum.
+        """
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
             self.pds1 = Crossspectrum(lc1, lc1, norm='none')
             self.pds2 = Crossspectrum(lc2, lc2, norm='none')
 
     def _make_crossspectrum(self, lc1, lc2):
+        """
+        Auxiliary method computing the normalized cross spectrum from two light curves.
+        This includes checking for the presence of and applying Good Time Intervals, computing the
+        unnormalized Fourier cross-amplitude, and then renormalizing using the required normalization.
+        Also computes an uncertainty estimate on the cross spectral powers.
 
+        Parameters
+        ----------
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
+            Two light curves used for computing the cross spectrum.
+        """
         # make sure the inputs work!
         if not isinstance(lc1, Lightcurve):
             raise TypeError("lc1 must be a lightcurve.Lightcurve object")
@@ -235,11 +294,11 @@ class Crossspectrum(object):
 
         Parameters
         ----------
-        lc1: lightcurve.Lightcurve object
+        lc1: :class:`stingray.Lightcurve` object
             One light curve to be Fourier transformed. Ths is the band of
             interest or channel of interest.
 
-        lc2: lightcurve.Lightcurve object
+        lc2: :class:`stingray.Lightcurve` object
             Another light curve to be Fourier transformed.
             This is the reference band.
 
@@ -259,7 +318,7 @@ class Crossspectrum(object):
 
     def rebin(self, df=None, f=None, method="mean"):
         """
-        Rebin the cross spectrum to a new frequency resolution df.
+        Rebin the cross spectrum to a new frequency resolution ``df``.
 
         Parameters
         ----------
@@ -269,16 +328,16 @@ class Crossspectrum(object):
         Other Parameters
         ----------------
         f: float
-            the rebin factor. If specified, it substitutes df with f*self.df
+            the rebin factor. If specified, it substitutes df with ``f*self.df``
 
         Returns
         -------
-        bin_cs = Crossspectrum (or one of its subclasses) object
+        bin_cs = :class:`Crossspectrum` (or one of its subclasses) object
             The newly binned cross spectrum or power spectrum.
             Note: this object will be of the same type as the object
             that called this method. For example, if this method is called
-            from `AveragedPowerspectrum`, it will return an object of class
-            `AveragedPowerspectrum`, too.
+            from :class:`AveragedPowerspectrum`, it will return an object of class
+            :class:`AveragedPowerspectrum`, too.
         """
 
         if f is None and df is None:
@@ -392,21 +451,23 @@ class Crossspectrum(object):
         The new frequency depends on the previous frequency
         modified by a factor f:
 
-        dnu_j = dnu_{j-1}*(1+f)
+        .. math::
+
+            d\\nu_j = d\\nu_{j-1} (1+f)
 
         Parameters
         ----------
-        f: float, optional, default 0.01
+        f: float, optional, default ``0.01``
             parameter that steers the frequency resolution
 
 
         Returns
         -------
-        new_spec : Crossspectrum (or one of its subclasses) object
+        new_spec : :class:`Crossspectrum` (or one of its subclasses) object
             The newly binned cross spectrum or power spectrum.
             Note: this object will be of the same type as the object
             that called this method. For example, if this method is called
-            from `AveragedPowerspectrum`, it will return an object of class
+            from :class:`AveragedPowerspectrum`, it will return an object of class
         """
 
         binfreq, binpower, binpower_err, nsamples = \
@@ -446,20 +507,16 @@ class Crossspectrum(object):
         return new_spec
 
     def coherence(self):
-        """
-        Compute Coherence function of the cross spectrum. Coherence is a
-        Fourier frequency dependent measure of the linear correlation
+        """ Compute Coherence function of the cross spectrum.
+
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]_.
+        It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
         Returns
         -------
         coh : numpy.ndarray
             Coherence function
-
-        References
-        ----------
-        .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
-
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -485,78 +542,77 @@ class Crossspectrum(object):
 
 
 class AveragedCrossspectrum(Crossspectrum):
+    """
+    Make an averaged cross spectrum from a light curve by segmenting two
+    light curves, Fourier-transforming each segment and then averaging the
+    resulting cross spectra.
+
+    Parameters
+    ----------
+    lc1: :class:`stingray.Lightcurve` object OR iterable of :class:`stingray.Lightcurve` objects
+        A light curve from which to compute the cross spectrum. In some cases, this would
+        be the light curve of the wavelength/energy/frequency band of interest.
+
+    lc2: :class:`stingray.Lightcurve` object OR iterable of :class:`stingray.Lightcurve` objects
+        A second light curve to use in the cross spectrum. In some cases, this would be
+        the wavelength/energy/frequency reference band to compare the band of interest with.
+
+    segment_size: float
+        The size of each segment to average. Note that if the total
+        duration of each :class:`Lightcurve` object in ``lc1`` or ``lc2`` is not an
+        integer multiple of the ``segment_size``, then any fraction left-over
+        at the end of the time series will be lost. Otherwise you introduce
+        artifacts.
+
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
+        The normalization of the (real part of the) cross spectrum.
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    Attributes
+    ----------
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of cross spectra
+
+    power_err: numpy.ndarray
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
+        binning, or averaging powerspectrum). Note that for a single
+        realization (``m=1``) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged cross spectra
+
+    n: int
+        The number of time bins per segment of light curve
+
+    nphots1: float
+        The total number of photons in the first (interest) light curve
+
+    nphots2: float
+        The total number of photons in the second (reference) light curve
+
+    gti: 2-d float array
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        They are calculated by taking the common GTI between the
+        two light curves
+
+    """
     def __init__(self, lc1=None, lc2=None, segment_size=None,
                  norm='none', gti=None):
-        """
-        Make an averaged cross spectrum from a light curve by segmenting two
-        light curves, Fourier-transforming each segment and then averaging the
-        resulting cross spectra.
 
-        Parameters
-        ----------
-        lc1: lightcurve.Lightcurve object OR
-            iterable of lightcurve.Lightcurve objects
-            One light curve data to be Fourier-transformed. This is the band
-            of interest or channel of interest.
-
-        lc2: lightcurve.Lightcurve object OR
-            iterable of lightcurve.Lightcurve objects
-            Second light curve data to be Fourier-transformed. This is the
-            reference band.
-
-        segment_size: float
-            The size of each segment to average. Note that if the total
-            duration of each Lightcurve object in lc1 or lc2 is not an
-            integer multiple of the segment_size, then any fraction left-over
-            at the end of the time series will be lost. Otherwise you introduce
-            artefacts.
-
-        norm: {'frac', 'abs', 'leahy', 'none'}, default 'none'
-            The normalization of the (real part of the) cross spectrum.
-
-        Other Parameters
-        ----------------
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            This choice overrides the GTIs in the single light curves. Use with
-            care!
-
-        Attributes
-        ----------
-        freq: numpy.ndarray
-            The array of mid-bin frequencies that the Fourier transform samples
-
-        power: numpy.ndarray
-            The array of cross spectra
-
-        power_err: numpy.ndarray
-            The uncertainties of `power`.
-            An approximation for each bin given by "power_err= power/Sqrt(m)".
-            Where `m` is the number of power averaged in each bin (by frequency
-            binning, or averaging powerspectrum). Note that for a single
-            realization (m=1) the error is equal to the power.
-
-        df: float
-            The frequency resolution
-
-        m: int
-            The number of averaged cross spectra
-
-        n: int
-            The number of time bins per segment of light curve?
-
-        nphots1: float
-            The total number of photons in the first (interest) light curve
-
-        nphots2: float
-            The total number of photons in the second (reference) light curve
-
-        gti: 2-d float array
-            [[gti0_0, gti0_1], [gti1_0, gti1_1], ...] -- Good Time intervals.
-            They are calculated by taking the common GTI between the
-            two light curves
-
-        """
         self.type = "crossspectrum"
 
         if segment_size is None and lc1 is not None:
@@ -571,6 +627,14 @@ class AveragedCrossspectrum(Crossspectrum):
         return
 
     def _make_auxil_pds(self, lc1, lc2):
+        """
+        Helper method to create the power spectrum of both light curves independently.
+
+        Parameters
+        ----------
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
+            Two light curves used for computing the cross spectrum.
+        """
         # A way to say that this is actually not a power spectrum
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
             self.pds1 = AveragedCrossspectrum(lc1, lc1,
@@ -581,6 +645,27 @@ class AveragedCrossspectrum(Crossspectrum):
                                               norm='none', gti=lc2.gti)
 
     def _make_segment_spectrum(self, lc1, lc2, segment_size):
+        """
+        Split the light curves into segments of size ``segment_size``, and calculate a cross spectrum for
+        each.
+
+        Parameters
+        ----------
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
+            Two light curves used for computing the cross spectrum.
+
+        segment_size : ``numpy.float``
+            Size of each light curve segment to use for averaging.
+
+        Returns
+        -------
+        cs_all : list of :class:`Crossspectrum`` objects
+            A list of cross spectra calculated independently from each light curve segment
+
+        nphots1_all, nphots2_all : ``numpy.ndarray` for each of ``lc1`` and ``lc2``
+            Two lists containing the number of photons for all segments calculated from ``lc1`` and ``lc2``.
+
+        """
 
         # TODO: need to update this for making cross spectra.
         assert isinstance(lc1, Lightcurve)
@@ -636,9 +721,21 @@ class AveragedCrossspectrum(Crossspectrum):
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
             nphots2_all.append(np.sum(lc2_seg.counts))
+
         return cs_all, nphots1_all, nphots2_all
 
     def _make_crossspectrum(self, lc1, lc2):
+        """
+        Auxiliary method computing the normalized cross spectrum from two light curves.
+        This includes checking for the presence of and applying Good Time Intervals, computing the
+        unnormalized Fourier cross-amplitude, and then renormalizing using the required normalization.
+        Also computes an uncertainty estimate on the cross spectral powers.
+
+        Parameters
+        ----------
+        lc1, lc2 : :class:`stingray.Lightcurve` objects
+            Two light curves used for computing the cross spectrum.
+        """
 
         # chop light curves into segments
         if isinstance(lc1, Lightcurve) and \
@@ -657,8 +754,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
-            # TODO: should be using izip from iterables if lc1 or lc2 could
-            # be long
+
             for lc1_seg, lc2_seg in zip(lc1, lc2):
 
                 if self.type == "crossspectrum":
@@ -713,23 +809,24 @@ class AveragedCrossspectrum(Crossspectrum):
             self.nphots2 = nphots2
 
     def coherence(self):
-        """
+        """Averaged Coherence function.
+
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]__.
+        It is a Fourier frequency dependent measure of the linear correlation
+        between time series measured simultaneously in two energy channels.
+
         Compute an averaged Coherence function of cross spectrum by computing
         coherence function of each segment and averaging them. The return type
         is a tuple with first element as the coherence function and the second
-        element as the corresponding uncertainty[1] associated with it.
+        element as the corresponding uncertainty associated with it.
 
-        Note : The uncertainty in coherence function is strictly valid for
-               Gaussian statistics only.
+        Note : The uncertainty in coherence function is strictly valid for Gaussian \
+               statistics only.
 
         Returns
         -------
-        tuple : tuple of np.ndarray
-            Tuple of coherence function and uncertainty.
-
-        References
-        ----------
-        .. [1] http://iopscience.iop.org/article/10.1086/310430/pdf
+        (coh, uncertainty) : tuple of np.ndarray
+            Tuple comprising the coherence function and uncertainty.
 
         """
         if np.any(self.m < 50):
@@ -749,15 +846,15 @@ class AveragedCrossspectrum(Crossspectrum):
         coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
 
         # Calculate uncertainty
-        uncertainty = (2 ** 0.5 * coh * (1 - coh)) / (
-        np.abs(coh) * self.m ** 0.5)
+        uncertainty = \
+            (2 ** 0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m ** 0.5)
 
         return (coh, uncertainty)
 
     def time_lag(self):
         """Calculate time lag and uncertainty.
 
-        Formula from Bendat & Piersol 1986
+        Equation from Bendat & Piersol, 2011 [bendat-2011]__.
 
         Returns
         -------
@@ -766,10 +863,10 @@ class AveragedCrossspectrum(Crossspectrum):
 
         lag_err : np.ndarray
             The uncertainty in the time lag
-
         """
         lag = super(AveragedCrossspectrum, self).time_lag()
         coh, uncert = self.coherence()
         dum = (1. - coh) / (2. * coh)
         lag_err = np.sqrt(dum / self.m) / (2 * np.pi * self.freq)
+
         return lag, lag_err

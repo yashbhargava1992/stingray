@@ -20,7 +20,6 @@ try:
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
-
     class jit(object):
         def __init__(self, *args, **kwargs):
             pass
@@ -36,7 +35,23 @@ try:
     from statsmodels.robust import mad as mad  # pylint: disable=unused-import
 except ImportError:
     def mad(data, c=0.6745, axis=None):
-        """Straight from statsmodels's source code, adapted"""
+        """
+        Mean Absolute Deviation (MAD) along an axis.
+
+        Straight from statsmodels's source code, adapted
+
+        Parameters
+        ----------
+        data : iterable
+            The data along which to calculate the MAD
+
+        c : float, optional
+            The normalization constant. Defined as ``scipy.stats.norm.ppf(3/4.)``,
+            which is approximately ``.6745``.
+
+        axis : int, optional, default ``0``
+            Axis along which to calculate ``mad``. Default is ``0``, can also be ``None``
+        """
         data = np.asarray(data)
         if axis is not None:
             center = np.apply_over_axes(np.median, data, axis)
@@ -50,6 +65,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
            'create_window', 'poisson_symmetrical_errors']
+
 
 def _root_squared_mean(array):
     return np.sqrt(np.sum(array ** 2)) / len(array)
@@ -67,7 +83,7 @@ def simon(message, **kwargs):
         The message that is thrown
 
     kwargs : dict
-        The rest of the arguments that are passed to warnings.warn
+        The rest of the arguments that are passed to ``warnings.warn``
     """
 
     warnings.warn("SIMON says: {0}".format(message), **kwargs)
@@ -80,37 +96,36 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     Parameters
     ----------
     x: iterable
-        The dependent variable with some resolution dx_old = x[1]-x[0]
+        The dependent variable with some resolution ``dx_old = x[1]-x[0]``
 
     y: iterable
         The independent variable to be binned
 
     dx_new: float
-        The new resolution of the dependent variable x
+        The new resolution of the dependent variable ``x``
 
     Other parameters
     ----------------
     yerr: iterable, optional
-        The uncertainties of y, to be propagated during binning.
+        The uncertainties of ``y``, to be propagated during binning.
 
-    method: {"sum" | "average" | "mean"}, optional, default "sum"
-        The method to be used in binning. Either sum the samples y in
-        each new bin of x, or take the arithmetic mean.
+    method: {``sum`` | ``average`` | ``mean``}, optional, default ``sum``
+        The method to be used in binning. Either sum the samples ``y`` in
+        each new bin of ``x``, or take the arithmetic mean.
 
     dx: float
         The old resolution (otherwise, calculated from median diff)
 
-
     Returns
     -------
     xbin: numpy.ndarray
-        The midpoints of the new bins in x
+        The midpoints of the new bins in ``x``
 
     ybin: numpy.ndarray
-        The binned quantity y
+        The binned quantity ``y``
 
     ybin_err: numpy.ndarray
-        The uncertainties of the binned values of y.
+        The uncertainties of the binned values of ``y``.
 
     step_size: float
         The size of the binning step
@@ -179,16 +194,19 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
 
 def rebin_data_log(x, y, f, y_err=None, dx=None):
-    """Logarithmic rebin of the periodogram.
+    """Logarithmic rebin of some data. Particularly useful for the power spectrum.
 
-    The new frequency depends on the previous frequency modified by a factor f:
+    The new dependent variable depends on the previous dependent variable modified
+    by a factor f:
 
-    dnu_j = dnu_{j-1}*(1+f)
+    .. math::
+
+        d\\nu_j = d\\nu_{j-1} (1+f)
 
     Parameters
     ----------
     x: iterable
-        The dependent variable with some resolution dx_old = x[1]-x[0]
+        The dependent variable with some resolution ``dx_old = x[1]-x[0]``
 
     y: iterable
         The independent variable to be binned
@@ -199,25 +217,25 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     Other Parameters
     ----------------
     yerr: iterable, optional
-        The uncertainties of y, to be propagated during binning.
+        The uncertainties of ``y`` to be propagated during binning.
 
-    method: {"sum" | "average" | "mean"}, optional, default "sum"
-        The method to be used in binning. Either sum the samples y in
-        each new bin of x, or take the arithmetic mean.
+    method: {``sum`` | ``average`` | ``mean``}, optional, default ``sum``
+        The method to be used in binning. Either sum the samples ``y`` in
+        each new bin of ``x`` or take the arithmetic mean.
 
     dx: float, optional
-        The binning step of the initial xs
+        The binning step of the initial ``x``
 
     Returns
     -------
     xbin: numpy.ndarray
-        The midpoints of the new bins in x
+        The midpoints of the new bins in ``x``
 
     ybin: numpy.ndarray
-        The binned quantity y
+        The binned quantity ``y``
 
     ybin_err: numpy.ndarray
-        The uncertainties of the binned values of y
+        The uncertainties of the binned values of ``y``
 
     step_size: float
         The size of the binning step
@@ -264,7 +282,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
             x.astype(np.double), imag.astype(np.double),
             statistic="mean", bins=binx)
 
-        biny = biny + 1j*biny_imag
+        biny = biny + 1j * biny_imag
 
     if isinstance(y_err[0], np.complex):
         imag_err = y_err.imag
@@ -276,21 +294,68 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
     # compute the number of powers in each frequency bin
     nsamples = np.array([len(binno[np.where(binno == i)[0]])
-                         for i in range(1, np.max(binno)+1, 1)])
+                         for i in range(1, np.max(binno) + 1, 1)])
 
     return binx, biny, biny_err, nsamples
 
 
 def assign_value_if_none(value, default):
+    """
+    Assign a value to a variable if that variable has value ``None`` on input.
+
+    Parameters
+    ----------
+    value : object
+        A variable with either some assigned value, or ``None``
+
+    default : object
+        The value to assign to the variable ``value`` if ``value is None`` returns ``True``
+
+    Returns
+    -------
+        new_value : object
+            The new value of ``value``
+
+    """
     return default if value is None else value
 
 
 def look_for_array_in_array(array1, array2):
+    """
+    Find a subset of values in an array.
+
+    Parameters
+    ----------
+    array1 : iterable
+        An array with values to be searched
+
+    array2 : iterable
+        A second array which potentially contains a subset of values
+        also contained in ``array1``
+
+    Returns
+    -------
+    array3 : iterable
+        An array with the subset of values contained in both ``array1`` and ``array2``
+
+    """
     return next((i for i in array1 if i in array2), None)
 
 
 def is_string(s):  # pragma : no cover
-    """Portable function to answer this question."""
+    """
+    Portable function to answer whether a variable is a string.
+
+    Parameters
+    ----------
+    s : object
+        An object that is potentially a string
+
+    Returns
+    -------
+    isstring : bool
+        A boolean decision on whether ``s`` is a string or not
+    """
 
     PY2 = sys.version_info[0] == 2
     if PY2:
@@ -299,10 +364,20 @@ def is_string(s):  # pragma : no cover
         return isinstance(s, str)  # NOQA
 
 
-def is_iterable(stuff):
-    """Test if stuff is an iterable."""
+def is_iterable(var):
+    """Test if a variable  is an iterable.
 
-    return isinstance(stuff, collections.Iterable)
+    Parameters
+    ----------
+    var : object
+        The variable to be tested for iterably-ness
+
+    Returns
+    -------
+    is_iter : bool
+        Returns ``True`` if ``var`` is an ``Iterable``, ``False`` otherwise
+    """
+    return isinstance(var, collections.Iterable)
 
 
 def order_list_of_arrays(data, order):
@@ -331,34 +406,45 @@ def optimal_bin_time(fftlen, tbin):
     Given an FFT length and a proposed bin time, return a bin time
     slightly shorter than the original, that will produce a power-of-two number
     of FFT bins.
+
+    Parameters
+    ----------
+    fftlen : int
+        Number of positive frequencies in a proposed Fourier spectrum
+
+    tbin : float
+        The proposed time resolution of a light curve
+
+    Returns
+    -------
+    res : float
+        A time resolution that will produce a Fourier spectrum with ``fftlen`` frequencies and
+        a number of FFT bins that are a power of two
     """
 
     return fftlen / (2 ** np.ceil(np.log2(fftlen / tbin)))
 
 
 def contiguous_regions(condition):
-    """Find contiguous True regions of the boolean array "condition".
+    """Find contiguous ``True`` regions of the boolean array ``condition``.
 
     Return a 2D array where the first column is the start index of the region
-    and the second column is the end index.
+    and the second column is the end index, found on [so-contiguous]_.
 
     Parameters
     ----------
-    condition : boolean array
+    condition : bool array
 
     Returns
     -------
-    idx : [[i0_0, i0_1], [i1_0, i1_1], ...]
-        A list of integer couples, with the start and end of each True blocks
+    idx : ``[[i0_0, i0_1], [i1_0, i1_1], ...]``
+        A list of integer couples, with the start and end of each ``True`` blocks
         in the original array
 
     Notes
     -----
-    From : http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-
-    fulfilling-condition-in-a-numpy-array
+    .. [so-contiguous] http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-fulfilling-condition-in-a-numpy-array
     """
-
-    # NOQA
     # Find the indices of changes in "condition"
     diff = np.logical_xor(condition[1:], condition[:-1])
     idx, = diff.nonzero()
@@ -386,7 +472,7 @@ def get_random_state(random_state=None):
 
     Parameters
     ----------
-    seed : integer or numpy.random.RandomState, optional, default None
+    seed : integer or ``numpy.random.RandomState``, optional, default ``None``
 
     Returns
     -------
@@ -434,18 +520,13 @@ def offset_fit(x, y, offset_start=0):
 def _als(y, lam, p, niter=10):
     """Baseline Correction with Asymmetric Least Squares Smoothing.
 
-    Modifications to the routine from Eilers & Boelens 2005
-    https://www.researchgate.net/publication/
-        228961729_Technical_Report_Baseline_Correction_with_
-        Asymmetric_Least_Squares_Smoothing
-    The Python translation is partly from
-    http://stackoverflow.com/questions/29156532/
-        python-baseline-correction-library
+    Modifications to the routine from Eilers & Boelens 2005 [eilers-2005]_.
+    The Python translation is partly from [so-als]_.
 
     Parameters
     ----------
     y : array-like
-        the data series corresponding to x
+        the data series corresponding to ``x``
     lam : float
         the lambda parameter of the ALS method. This control how much the
         baseline can adapt to local changes. A higher value corresponds to a
@@ -462,8 +543,14 @@ def _als(y, lam, p, niter=10):
 
     Returns
     -------
-    z : array-like, same size as y
+    z : array-like, same size as ``y``
         Fitted baseline.
+
+    References
+    ----------
+    .. [eilers-2005] https://www.researchgate.net/publication/228961729_Technical_Report_Baseline_Correction_with_Asymmetric_Least_Squares_Smoothing
+    .. [so-als] http://stackoverflow.com/questions/29156532/python-baseline-correction-library
+
     """
     from scipy import sparse
     L = len(y)
@@ -486,14 +573,14 @@ def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False,
     x : array-like
         the sample time/number/position
     y : array-like
-        the data series corresponding to x
+        the data series corresponding to ``x``
     lam : float
         the lambda parameter of the ALS method. This control how much the
         baseline can adapt to local changes. A higher value corresponds to a
         stiffer baseline
     p : float
         the asymmetry parameter of the ALS method. This controls the overall
-        slope tollerated for the baseline. A higher value correspond to a
+        slope tolerated for the baseline. A higher value correspond to a
         higher possible slope
 
     Other Parameters
@@ -507,10 +594,10 @@ def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False,
 
     Returns
     -------
-    y_subtracted : array-like, same size as y
+    y_subtracted : array-like, same size as ``y``
         The initial time series, subtracted from the trend
-    baseline : array-like, same size as y
-        Fitted baseline. Only returned if return_baseline is True
+    baseline : array-like, same size as ``y``
+        Fitted baseline. Only returned if return_baseline is ``True``
 
     Examples
     --------
@@ -550,7 +637,7 @@ def excess_variance(lc, normalization='fvar'):
 
     Vaughan et al. 2003, MNRAS 345, 1271 give three measurements of source
     intrinsic variance: if a light curve has a total variance of :math:`S^2`,
-    and each point has an errorbar :math:`\sigma_{err}`, the *excess variance*
+    and each point has an error bar :math:`\sigma_{err}`, the *excess variance*
     is defined as
 
     .. math:: \sigma_{XS} = S^2 - \overline{\sigma_{err}}^2;
@@ -569,9 +656,9 @@ def excess_variance(lc, normalization='fvar'):
     ----------
     lc : a :class:`Lightcurve` object
     normalization : str
-        if 'fvar', return the fractional mean square variability :math:`F_{var}`.
-        If 'none', return the unnormalized excess variance variance
-        :math:`\sigma_{XS}`. If 'norm_xs', return the normalized excess variance
+        if ``fvar``, return the fractional mean square variability :math:`F_{var}`.
+        If ``none``, return the unnormalized excess variance variance
+        :math:`\sigma_{XS}`. If ``norm_xs``, return the normalized excess variance
         :math:`\sigma_{XS}`
     Returns
     -------
@@ -599,38 +686,40 @@ def excess_variance(lc, normalization='fvar'):
     elif normalization == 'norm_xs':
         return var_nxs, var_nxs_err
     elif normalization == 'none' or normalization is None:
-        return var_xs, var_nxs_err * mean_lc **2
+        return var_xs, var_nxs_err * mean_lc ** 2
 
 
 def create_window(N, window_type='uniform'):
-    """ A method to create window functions commonly used in signal processing.
+    """A method to create window functions commonly used in signal processing.
 
     Windows supported are:
-    Hamming, Hanning, uniform(rectangular window), triangular window, blackmann window among others.
+    Hamming, Hanning, uniform (rectangular window), triangular window,
+    blackmann window among others.
 
     Parameters
     ----------
     N : int
         Total number of data points in window. If negative, abs is taken.
-    window_type : {'uniform', 'parzen', 'hamming', 'hanning', 'traingular', 'welch', 'blackmann', 'flat-top'}, optional, default 'uniform'
+    window_type : {``uniform``, ``parzen``, ``hamming``, ``hanning``, ``triangular``,\
+                 ``welch``, ``blackmann``, ``flat-top``}, optional, default ``uniform``
         Type of window to create.
 
     Returns
     -------
     window: numpy.ndarray
-        Window function of length N.
+        Window function of length ``N``.
     """
 
     if not isinstance(N, int):
         raise TypeError('N (window length) must be an integer')
 
-    WINDOWS = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
+    windows = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
 
     if not isinstance(window_type, string_types):
         raise TypeError('type of window must be specified as string!')
 
     window_type = window_type.lower()
-    if window_type not in WINDOWS:
+    if window_type not in windows:
         raise ValueError("Wrong window type specified or window function is not available")
 
     # Return empty array as window if N = 0
@@ -702,6 +791,16 @@ def poisson_symmetrical_errors(counts):
 
     Uses a lookup table in order to limit the calls to poisson_conf_interval
 
+    Parameters
+    ----------
+    counts : iterable
+        An array of Poisson-distributed numbers
+
+    Returns
+    -------
+    err : numpy.ndarray
+        An array of uncertainties associated with the Poisson counts in ``counts``
+
     Example
     -------
     >>> from astropy.stats import poisson_conf_interval
@@ -726,7 +825,7 @@ def poisson_symmetrical_errors(counts):
     # calculate approximately symmetric uncertainties
     err_low -= np.asarray(count_values)
     err_high -= np.asarray(count_values)
-    err = (np.absolute(err_low) + np.absolute(err_high))/2.0
+    err = (np.absolute(err_low) + np.absolute(err_high)) / 2.0
 
     idxs = np.searchsorted(count_values, counts_int)
     return err[idxs]

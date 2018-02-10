@@ -3,7 +3,7 @@ Authors and Credits
 *******************
 
 Stingray Project Coordinators
-============================
+=============================
 
 * Matteo Bachetti
 * Paul Balm
