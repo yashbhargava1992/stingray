@@ -3,4 +3,6 @@ requires = [
     "wheel",
     "setuptools",
     "numpy",
+    "scipy",
+    "astropy",
 ]
