@@ -3,10 +3,21 @@ Downloading and Installing Stingray
 
 There are currently two ways to install Stingray:
 
+* via ``conda``
 * via ``pip``
 * from source
 
-A ``conda`` package is currently in the works, but not available yet.
+Installing via ``conda``
+------------------------
+
+If you manage your Python installation and packages 
+via Anaconda or miniconda, you can install ``stingray`` 
+via the ``conda-forge`` build: ::
+
+    $ conda install -c conda-forge stingray
+
+That should be all you need to do! Just remember to :ref:`run the tests <testsuite>` before 
+you use it!
 
 Installing via ``pip``
 ----------------------
@@ -15,7 +26,7 @@ Installing via ``pip``
 
     $ pip install stingray
 
-And you should be done! Just remember to run the tests before you use it!
+And you should be done! Just remember to :ref:`run the tests <testsuite>` before you use it!
 
 Installing from source (bleeding edge version)
 ----------------------------------------------
@@ -35,6 +46,8 @@ dependencies: ::
 Finally, install ``stingray`` itself: ::
 
     $ python setup.py install
+
+.. _testsuite:
 
 Test Suite
 ----------
