@@ -45,10 +45,10 @@ matrix:
     fast_finish: true
     include:
         - python: 3.5
-          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner pytest-catchlog' SETUP_CMD='test --remote-data --coverage'
+          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data --coverage'
 
         - python: 2.7
-          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner pytest-catchlog' SETUP_CMD='test --remote-data'
+          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data'
 
         #Try without importing h5py but importing numba
         - python: 2.7
@@ -70,7 +70,7 @@ matrix:
           env: PIP_DEPENDENCIES='emcee' SETUP_CMD='test --coverage'
 
         - python: 3.4
-          env: PIP_DEPENDENCIES='emcee statsmodels corner pytest-catchlog' NUMPY_VERSION=1.11
+          env: PIP_DEPENDENCIES='emcee statsmodels corner pytest==3.0 pytest-catchlog' NUMPY_VERSION=1.11
 
         - python: 3.6
           env: PIP_DEPENDENCIES='nbsphinx' SETUP_CMD='build_docs -w'
