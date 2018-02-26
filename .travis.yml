@@ -44,6 +44,9 @@ env:
 matrix:
     fast_finish: true
     include:
+        - python: 3.4
+          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba astropy<2.0' PIP_DEPENDENCIES='emcee statsmodels corner pytest==2.8.5 pytest-catchlog' NUMPY_VERSION=1.11
+
         - python: 3.5
           env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data --coverage'
 
@@ -68,9 +71,6 @@ matrix:
         # Try without using statsmodels
         - python: 3.5
           env: PIP_DEPENDENCIES='emcee' SETUP_CMD='test --coverage'
-
-        - python: 3.4
-          env: PIP_DEPENDENCIES='emcee statsmodels corner pytest==3.0 pytest-catchlog' NUMPY_VERSION=1.11
 
         - python: 3.6
           env: PIP_DEPENDENCIES='nbsphinx' SETUP_CMD='build_docs -w'
