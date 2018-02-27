@@ -349,13 +349,12 @@ def split_numbers(number, shift=0):
 
     Examples
     --------
-    >>> n = [1234.567]
-    >>> split_numbers(n)
-    (array([1234.]), array([0.567]))
-    >>> split_numbers(n, -1)
-    (array([123.]), array([0.4567]))
-    >>> split_numbers(n, 1)
-    (array([12345.]), array([0.67]))
+    >>> split_numbers(12.34)
+    (12.0, 0.33999999999999986)
+    >>> split_numbers(12.34, 2)
+    (1234.0, 0.0)
+    >>> split_numbers(12.34, -2)
+    (0.0, 0.1234)
     """
     if isinstance(number, collections.Iterable):
         mods = [math.modf(n * (10**shift)) for n in number]
