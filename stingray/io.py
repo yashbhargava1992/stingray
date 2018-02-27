@@ -349,11 +349,12 @@ def split_numbers(number, shift=0):
 
     Examples
     --------
-    >>> split_numbers(12.34)
+    n = 12.34
+    >>> split_numbers(n)
     (12.0, 0.33999999999999986)
-    >>> split_numbers(12.34, 2)
+    >>> split_numbers(n, 2)
     (1234.0, 0.0)
-    >>> split_numbers(12.34, -2)
+    >>> split_numbers(n, -2)
     (0.0, 0.1234)
     """
     if isinstance(number, collections.Iterable):
