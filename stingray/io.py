@@ -346,6 +346,16 @@ def split_numbers(number, shift=0):
 
     number_F: double
         Second part of high precision number
+
+    Examples
+    --------
+    >>> n = [1234.567]
+    >>> split_numbers(n)
+    (array([1234.]), array([0.567]))
+    >>> split_numbers(n, -1)
+    (array([123.]), array([0.4567]))
+    >>> split_numbers(n, 1)
+    (array([12345.]), array([0.67]))
     """
     if isinstance(number, collections.Iterable):
         mods = [math.modf(n * (10**shift)) for n in number]

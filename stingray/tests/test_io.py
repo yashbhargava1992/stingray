@@ -71,12 +71,18 @@ class TestIO(object):
 
     def test_split_number(self):
         """Test split with high precision numbers."""
-        numbers = np.array([57401.0000003423423400453453, 
+        numbers = np.array([57401.0000003423423400453453,
             0.00000574010000003426646], dtype = np.longdouble)
         number_I, number_F = split_numbers(numbers)
         r_numbers = np.longdouble(number_I) + np.longdouble(number_F)
 
         assert (numbers == r_numbers).all()
+
+        n = [1234.567]
+        shift = 2
+        n_i, n_f = split_numbers(n, shift)
+        r_n = (n_i + n_f) / (10**shift)
+        assert (n == r_n).all()
 
 class TestIOReadWrite(object):
     """A class to test all the read and write functions."""
@@ -110,7 +116,7 @@ class TestFileFormats(object):
         assert (rec_object.array == test_object.array).all()
         assert rec_object.long_number == test_object.long_number
         assert (rec_object.long_array == test_object.long_array).all()
-        
+
         os.remove('test.pickle')
 
     def test_pickle_functions(self):
