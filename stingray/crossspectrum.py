@@ -540,6 +540,71 @@ class Crossspectrum(object):
         else:
             raise AttributeError("Object has no attribute named 'time_lag' !")
 
+    def plot(self, labels=None, axis=None, title=None, marker='-', save=False,
+             filename=None):
+        """
+        Plot the amplitude of the cross spectrum vs. the frequency using ``matplotlib``.
+
+        Parameters
+        ----------
+        labels : iterable, default ``None``
+            A list of tuple with ``xlabel`` and ``ylabel`` as strings.
+
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of the ``matplotlib`` figure. For example
+            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
+            acceptable argument for the``matplotlib.pyplot.axis()`` method.
+
+        title : str, default ``None``
+            The title of the plot.
+
+        marker : str, default '-'
+            Line style and color of the plot. Line styles and colors are
+            combined in a single format string, as in ``'bo'`` for blue
+            circles. See ``matplotlib.pyplot.plot`` for more options.
+
+        save : boolean, optional, default ``False``
+            If ``True``, save the figure with specified filename.
+
+        filename : str
+            File name of the image to save. Depends on the boolean ``save``.
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise ImportError("Matplotlib required for plot()")
+
+        fig = plt.figure()
+        fig = plt.plot(self.freq, np.abs(self.power), marker)
+
+        if labels is not None:
+            try:
+                plt.xlabel(labels[0])
+                plt.ylabel(labels[1])
+            except TypeError:
+                utils.simon("``labels`` must be either a list or tuple with "
+                            "x and y labels.")
+                raise
+            except IndexError:
+                utils.simon("``labels`` must have two labels for x and y "
+                            "axes.")
+                # Not raising here because in case of len(labels)==1, only
+                # x-axis will be labelled.
+
+        if axis is not None:
+            plt.axis(axis)
+
+        if title is not None:
+            plt.title(title)
+
+        if save:
+            if filename is None:
+                plt.savefig('spec.png')
+            else:
+                plt.savefig(filename)
+        else:
+            plt.show(block=False)
+
 
 class AveragedCrossspectrum(Crossspectrum):
     """
