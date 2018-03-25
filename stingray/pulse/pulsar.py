@@ -549,6 +549,9 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
     ----------------
     nstep : int, optional, default 100
         Number of steps for the bootstrap method
+    sigma : array, default None
+        error on profile bins. If None, the square root of the mean profile
+        is used.
 
     Returns
     -------
@@ -557,13 +560,6 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
     mean_phase, std_phase : floats
         Mean and standard deviation of the phase
 
-    Other parameters
-    ----------------
-    nstep : int, optional, default 100
-        Number of steps for the bootstrap method
-    sigma : array, default None
-        error on profile bins. If None, the square root of the mean profile
-        is used.
     """
     nstep = _default_value_if_no_key(fftfit_kwargs, "nstep", 100)
 
