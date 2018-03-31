@@ -575,7 +575,9 @@ class Crossspectrum(object):
             raise ImportError("Matplotlib required for plot()")
 
         fig = plt.figure()
-        fig = plt.plot(self.freq, np.abs(self.power), marker)
+        fig = plt.plot(self.freq, np.abs(self.power), marker, color='b', label='Amplitude')
+        fig = plt.plot(self.freq, np.abs(self.power.real), marker, color='r', alpha=0.8, label='Real Part')
+        fig = plt.plot(self.freq, np.abs(self.power.imag), marker, color='g', alpha=0.8, label='Imaginary Part')
 
         if labels is not None:
             try:
@@ -590,7 +592,7 @@ class Crossspectrum(object):
                             "axes.")
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
-
+        plt.legend(loc='best')
         if axis is not None:
             plt.axis(axis)
 
