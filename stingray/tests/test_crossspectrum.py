@@ -244,7 +244,7 @@ class TestCrossspectrum(object):
 
     def test_plot_simple(self):
         self.cs.plot()
-        assert plt.fignum_exists(1)
+        assert plt.fignum_exists('crossspectrum')
 
 class TestAveragedCrossspectrum(object):
 
