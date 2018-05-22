@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import pytest
 import warnings
+import matplotlib.pyplot as plt
 from stingray import Lightcurve, AveragedPowerspectrum
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
 from stingray import StingrayError
@@ -241,6 +242,9 @@ class TestCrossspectrum(object):
         with pytest.raises(AttributeError):
             lag = obj.time_lag()
 
+    def test_plot_simple(self):
+        self.cs.plot()
+        assert plt.fignum_exists('crossspectrum')
 
 class TestAveragedCrossspectrum(object):
 
