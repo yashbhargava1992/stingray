@@ -143,14 +143,7 @@ class Crossspectrum(object):
     nphots2: float
         The total number of photons in light curve 2
     """
-
-    def __init__(
-            self,
-            lc1=None,
-            lc2=None,
-            norm='none',
-            gti=None,
-            amplitude=False):
+    def __init__(self, lc1=None, lc2=None, norm='none', gti=None, amplitude=False):
 
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
@@ -161,8 +154,7 @@ class Crossspectrum(object):
         self.norm = norm.lower()
 
         # check if input data is a Lightcurve object, if not make one or
-        # make an empty Crossspectrum object if lc1 == ``None`` or lc2 ==
-        # ``None``
+        # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
         if lc1 is None or lc2 is None:
             if lc1 is not None or lc2 is not None:
                 raise TypeError("You can't do a cross spectrum with just one "
@@ -400,8 +392,7 @@ class Crossspectrum(object):
             if self.type == 'powerspectrum':
                 pass
             else:
-                raise AttributeError(
-                    'Spectrum has no attribute named nphots2.')
+                raise AttributeError('Spectrum has no attribute named nphots2.')
 
         bin_cs.m = np.rint(step_size * self.m)
 
@@ -597,29 +588,9 @@ class Crossspectrum(object):
             raise ImportError("Matplotlib required for plot()")
 
         fig = plt.figure('crossspectrum')
-        fig = plt.plot(
-            self.freq,
-            np.abs(
-                self.power),
-            marker,
-            color='b',
-            label='Amplitude')
-        fig = plt.plot(
-            self.freq,
-            np.abs(
-                self.power.real),
-            marker,
-            color='r',
-            alpha=0.5,
-            label='Real Part')
-        fig = plt.plot(
-            self.freq,
-            np.abs(
-                self.power.imag),
-            marker,
-            color='g',
-            alpha=0.5,
-            label='Imaginary Part')
+        fig = plt.plot(self.freq, np.abs(self.power), marker, color='b', label='Amplitude')
+        fig = plt.plot(self.freq, np.abs(self.power.real), marker, color='r', alpha=0.5, label='Real Part')
+        fig = plt.plot(self.freq, np.abs(self.power.imag), marker, color='g', alpha=0.5, label='Imaginary Part')
 
         if labels is not None:
             try:
@@ -719,7 +690,6 @@ class AveragedCrossspectrum(Crossspectrum):
         two light curves
 
     """
-
     def __init__(self, lc1=None, lc2=None, segment_size=None,
                  norm='none', gti=None):
 
@@ -816,9 +786,9 @@ class AveragedCrossspectrum(Crossspectrum):
             counts_2 = lc2.counts[start_ind:end_ind]
             counts_2_err = lc2.counts_err[start_ind:end_ind]
             gti1 = np.array([[time_1[0] - lc1.dt / 2,
-                              time_1[-1] + lc1.dt / 2]])
+                             time_1[-1] + lc1.dt / 2]])
             gti2 = np.array([[time_2[0] - lc2.dt / 2,
-                              time_2[-1] + lc2.dt / 2]])
+                             time_2[-1] + lc2.dt / 2]])
             lc1_seg = Lightcurve(time_1, counts_1, err=counts_1_err,
                                  err_dist=lc1.err_dist,
                                  gti=gti1,
