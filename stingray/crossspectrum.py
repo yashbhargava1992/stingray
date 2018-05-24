@@ -398,7 +398,7 @@ class Crossspectrum(object):
 
         return bin_cs
 
-    def _normalize_crossspectrum(self, unnorm_power, tseg, amp=False):
+    def _normalize_crossspectrum(self, unnorm_power, tseg):
         """
         Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
         fractional rms^2 normalization, or not at all.
