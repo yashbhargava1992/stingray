@@ -246,6 +246,8 @@ class CrossCorrelation(object):
                 plt.savefig('corr.pdf', format="pdf")
             else:
                 plt.savefig(filename)
+        else:
+            plt.show(block=False)
 
         return ax
 
