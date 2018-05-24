@@ -102,6 +102,9 @@ class Crossspectrum(object):
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
         The normalization of the (real part of the) cross spectrum.
 
+    amplitude: bool, optional, default ``False``
+        Parameter to choose between real component and amplitude of the cross spectrum.
+
     Other Parameters
     ----------------
     gti: 2-d float array
@@ -140,7 +143,7 @@ class Crossspectrum(object):
     nphots2: float
         The total number of photons in light curve 2
     """
-    def __init__(self, lc1=None, lc2=None, norm='none', gti=None):
+    def __init__(self, lc1=None, lc2=None, norm='none', gti=None, amplitude=False):
 
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
@@ -169,6 +172,7 @@ class Crossspectrum(object):
         self.gti = gti
         self.lc1 = lc1
         self.lc2 = lc2
+        self.amplitude = amplitude
 
         self._make_crossspectrum(lc1, lc2)
 
@@ -199,6 +203,7 @@ class Crossspectrum(object):
         ----------
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
+
         """
         # make sure the inputs work!
         if not isinstance(lc1, Lightcurve):
@@ -406,6 +411,9 @@ class Crossspectrum(object):
         tseg: int
             The length of the Fourier segment, in seconds.
 
+        amp: bool, optional, default ``False``
+            Parameter to choose between real component and amplitude of the cross spectrum
+
         Returns
         -------
         power: numpy.nd.array
@@ -425,16 +433,21 @@ class Crossspectrum(object):
         assert actual_mean > 0.0, \
             "Mean count rate is <= 0. Something went wrong."
 
+        if self.amplitude:
+            c_num = np.abs(unnorm_power)
+        else:
+            c_num = unnorm_power.real
+
         if self.norm.lower() == 'leahy':
-            c = unnorm_power.real
+            c = c_num
             power = c * 2. / actual_nphots
 
         elif self.norm.lower() == 'frac':
-            c = unnorm_power.real / np.float(self.n ** 2.)
+            c = c_num / np.float(self.n ** 2.)
             power = c * 2. * tseg / (actual_mean ** 2.0)
 
         elif self.norm.lower() == 'abs':
-            c = unnorm_power.real / np.float(self.n ** 2.)
+            c = c_num / np.float(self.n ** 2.)
             power = c * (2. * tseg)
 
         elif self.norm.lower() == 'none':
