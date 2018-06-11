@@ -114,7 +114,7 @@ def fit_powerspectrum(ps, model, starting_pars=None, max_post=False,
     >>> p_opt = res.p_opt
 
     """
-    if not starting_pars:
+    if starting_pars is None:
         starting_pars = model.parameters
 
     if priors:
@@ -240,7 +240,7 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
 
     model = models.Lorentz1D()
 
-    if not starting_pars:
+    if starting_pars is None:
         starting_pars = model.parameters
 
     if nlor > 1:
