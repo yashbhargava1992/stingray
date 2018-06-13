@@ -8,8 +8,8 @@ from stingray import Powerspectrum
 __all__ = ["fit_powerspectrum", "fit_lorentzians"]
 
 
-def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
-                      fitmethod="L-BFGS-B"):
+def fit_powerspectrum(ps, model, starting_pars=None, max_post=False,
+                      priors=None, fitmethod="L-BFGS-B"):
     """
     Fit a number of Lorentzians to a power spectrum, possibly including white
     noise. Each Lorentzian has three parameters (amplitude, centroid position,
@@ -33,8 +33,9 @@ def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
         The parametric model supposed to represent the data. For details
         see the astropy.modeling documentation
 
-    starting_pars : iterable
-        The list of starting guesses for the optimizer. See explanation above
+    starting_pars : iterable, optional, default None
+        The list of starting guesses for the optimizer. If it is not provided,
+        then default parameters are taken from `model`. See explanation above
         for ordering of parameters in this list.
 
     fit_whitenoise : bool, optional, default True
@@ -113,17 +114,20 @@ def fit_powerspectrum(ps, model, starting_pars, max_post=False, priors=None,
     >>> p_opt = res.p_opt
 
     """
+    if starting_pars is None:
+        starting_pars = model.parameters
+
     if priors:
         lpost = PSDPosterior(ps.freq, ps.power, model, priors=priors,
                              m=ps.m)
     else:
         lpost = PSDLogLikelihood(ps.freq, ps.power, model, m=ps.m)
 
-
     parest = PSDParEst(ps, fitmethod=fitmethod, max_post=max_post)
     res = parest.fit(lpost, starting_pars, neg=True)
 
     return parest, res
+
 
 def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
                     max_post=False, priors=None,
@@ -151,7 +155,8 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
         The number of Lorentzians to fit
 
     starting_pars : iterable
-        The list of starting guesses for the optimizer. See explanation above
+        The list of starting guesses for the optimizer. If it is not provided,
+        then default parameters are taken from `model`. See explanation above
         for ordering of parameters in this list.
 
     fit_whitenoise : bool, optional, default True
@@ -235,8 +240,11 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
 
     model = models.Lorentz1D()
 
+    if starting_pars is None:
+        starting_pars = model.parameters
+
     if nlor > 1:
-        for i in range( nlor -1):
+        for i in range(nlor - 1):
             model += models.Lorentz1D()
 
     if fit_whitenoise:
