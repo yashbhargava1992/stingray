@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from astropy.modeling import models
 
-from stingray.modeling import PSDParEst, PSDPosterior, PSDLogLikelihood
+from stingray.modeling import PSDParEst, PSDPosterior, PSDLogLikelihood, GaussianPosterior, GaussianLogLikelihood
 from stingray import Powerspectrum
 
 __all__ = ["fit_powerspectrum", "fit_lorentzians"]
@@ -125,6 +125,26 @@ def fit_powerspectrum(ps, model, starting_pars=None, max_post=False,
 
     parest = PSDParEst(ps, fitmethod=fitmethod, max_post=max_post)
     res = parest.fit(lpost, starting_pars, neg=True)
+
+    return parest, res
+
+
+def fit_crossspectrum(cs, model, starting_pars=None, max_post=False,
+                      priors=None, fitmethod="L-BFGS-B"):
+    """
+    Fit a number of Lorentzian to a cross spectrum.
+    """
+    if not starting_pars:
+        starting_pars = model.parameters
+    if priors:
+        lgauss = GaussianPosterior(cs.freq, np.abs(cs.power), model,
+                                   priors=priors, yerr=cs.power_err)
+    else:
+        lgauss = GaussianLogLikelihood(cs.freq, np.abs(cs.power), model=model,
+                                       yerr=cs.power_err)
+
+    parest = PSDParEst(cs, fitmethod=fitmethod, max_post=max_post)
+    res = parest.fit(lgauss, starting_pars, neg=True)
 
     return parest, res
 
