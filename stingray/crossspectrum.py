@@ -695,7 +695,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
     """
     def __init__(self, lc1=None, lc2=None, segment_size=None,
-                 norm='none', gti=None, power_type=False):
+                 norm='none', gti=None, power_type="real"):
 
         self.type = "crossspectrum"
 
