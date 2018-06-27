@@ -299,3 +299,10 @@ def test_standard_error():
     x = np.array(np.split(x, 3))
     error = utils.standard_error(x)
     assert np.allclose(error, sem(x))
+
+
+def test_nearest_power_of_2():
+    assert utils.nearest_power_of_2(4) == 4
+    assert utils.nearest_power_of_2(5) == 4
+    assert utils.nearest_power_of_2(6) == 8
+    assert utils.nearest_power_of_2(7) == 8
