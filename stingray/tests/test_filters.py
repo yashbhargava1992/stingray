@@ -23,17 +23,14 @@ class TestFilters(object):
     def test_window(self):
         tophat_filter = Window1D(self.model)
         filtered_y = self.y * tophat_filter(self.x)
-
-        filter_w = [1. if np.abs(x_i - self.x_0_0) <= self.fwhm_0 / 2 else 0. for x_i in self.x]
+        filter_w = [1. if np.abs(x_i - self.x_0_0) <= self.fwhm_0 / 2 else 0.
+                    for x_i in self.x]
         y_w = self.y * filter_w
-
         assert np.all(filtered_y == y_w)
 
     def test_optimal(self):
         optimal_filter = Optimal1D(self.model)
         filtered_y = self.y * optimal_filter(self.x)
-
         filter_o = (self.lorentz / self.model)(self.x)
-        y_o= self.y * filter_o
-
+        y_o = self.y * filter_o
         assert np.all(filtered_y == y_o)

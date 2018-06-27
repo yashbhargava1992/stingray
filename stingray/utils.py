@@ -20,6 +20,7 @@ try:
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
+
     class jit(object):
         def __init__(self, *args, **kwargs):
             pass
@@ -29,7 +30,6 @@ except ImportError:
                 return func(*args, **kwargs)
 
             return wrapped_f
-
 
 try:
     from statsmodels.robust import mad as mad  # pylint: disable=unused-import
@@ -58,7 +58,6 @@ except ImportError:
         else:
             center = np.median(data)
         return np.median((np.fabs(data - center)) / c, axis=axis)
-
 
 __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'is_string', 'is_iterable', 'order_list_of_arrays',
@@ -484,9 +483,10 @@ def get_random_state(random_state=None):
         if is_int(random_state):
             random_state = np.random.RandomState(random_state)
         elif not isinstance(random_state, np.random.RandomState):
-            raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
-                value=random_state
-            ))
+            raise ValueError(
+                "{value} can't be used to generate a numpy.random.RandomState".format(
+                    value=random_state
+                ))
 
     return random_state
 
@@ -713,14 +713,16 @@ def create_window(N, window_type='uniform'):
     if not isinstance(N, int):
         raise TypeError('N (window length) must be an integer')
 
-    windows = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
+    windows = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular',
+               'welch', 'blackmann', 'flat-top']
 
     if not isinstance(window_type, string_types):
         raise TypeError('type of window must be specified as string!')
 
     window_type = window_type.lower()
     if window_type not in windows:
-        raise ValueError("Wrong window type specified or window function is not available")
+        raise ValueError(
+            "Wrong window type specified or window function is not available")
 
     # Return empty array as window if N = 0
     if N == 0:
@@ -770,7 +772,8 @@ def create_window(N, window_type='uniform'):
         a0 = 0.42659
         a1 = 0.49656
         a2 = 0.076849
-        window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + a2 * np.cos((4 * np.pi * n) / N_minus_1)
+        window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + a2 * np.cos(
+            (4 * np.pi * n) / N_minus_1)
 
     if window_type == 'flat-top':
         a0 = 1
@@ -779,9 +782,9 @@ def create_window(N, window_type='uniform'):
         a3 = 0.388
         a4 = 0.028
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + \
-                      a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
-                      a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
-                      a4 * np.cos((8 * np.pi * n) / N_minus_1)
+                 a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
+                 a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
+                 a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
 
@@ -829,3 +832,31 @@ def poisson_symmetrical_errors(counts):
 
     idxs = np.searchsorted(count_values, counts_int)
     return err[idxs]
+
+
+def standard_error(xs, mean=None):
+    """
+    Return the standard error of the mean (SEM) of an array of arrays.
+
+    Parameters
+    ----------
+    xs : 2-d float array
+        List of data point arrays.
+
+    mean : 1-d float array
+        Average of the data points.
+
+    Returns
+    -------
+    standard_error : 1-d float array
+        Standard error of the mean (SEM).
+
+    """
+    if not mean:
+        mean = np.mean(xs, axis=0)
+
+    n_seg = len(xs)
+    xs_diff_sq = np.subtract(xs, mean) ** 2
+    standard_deviation = np.sum(xs_diff_sq, axis=0) / (n_seg - 1)
+    error = np.sqrt(standard_deviation / n_seg)
+    return error
