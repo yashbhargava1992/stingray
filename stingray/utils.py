@@ -64,7 +64,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
            'create_window', 'poisson_symmetrical_errors', 'standard_error',
-           'nearest_power_of_2']
+           'nearest_power_of_2', 'find_nearest']
 
 
 def _root_squared_mean(array):
@@ -882,3 +882,33 @@ def nearest_power_of_2(x):
     x_upper = 1 if x == 0 else 2 ** (x - 1).bit_length()
     x_nearest = x_lower if (x - x_lower) < (x_upper - x) else x_upper
     return x_nearest
+
+
+def find_nearest(array, value):
+    """
+    Return the array value that is closest to the input value (Abigail Stevens: Thanks StackOverflow!)
+
+    Parameters
+    ----------
+    array : np.array of ints or floats
+        1-D array of numbers to search through. Should already be sorted
+        from low values to high values.
+
+    value : int or float
+        The value you want to find the closest to in the array.
+
+    Returns
+    -------
+    array[idx] : int or float
+        The array value that is closest to the input value.
+
+    idx : int
+        The index of the array of the closest value.
+
+    """
+    idx = np.searchsorted(array, value, side="left")
+    if idx == len(array) or np.fabs(value - array[idx - 1]) < \
+            np.fabs(value - array[idx]):
+        return array[idx - 1], idx - 1
+    else:
+        return array[idx], idx

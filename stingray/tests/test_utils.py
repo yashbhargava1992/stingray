@@ -306,3 +306,10 @@ def test_nearest_power_of_2():
     assert utils.nearest_power_of_2(5) == 4
     assert utils.nearest_power_of_2(6) == 8
     assert utils.nearest_power_of_2(7) == 8
+
+
+def test_find_nearest():
+    x = np.arange(1, 10)
+    assert utils.find_nearest(x, 2) == (2, 1)
+    assert utils.find_nearest(x, 4.5) == (5, 4)
+    assert utils.find_nearest(x, 7.4) == (7, 6)

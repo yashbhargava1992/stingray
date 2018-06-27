@@ -184,7 +184,8 @@ class Crossspectrum(object):
 
     def _make_auxil_pds(self, lc1, lc2):
         """
-        Helper method to create the power spectrum of both light curves independently.
+        Helper method to create the power spectrum of both light curves
+        independently.
 
         Parameters
         ----------
@@ -197,10 +198,12 @@ class Crossspectrum(object):
 
     def _make_crossspectrum(self, lc1, lc2):
         """
-        Auxiliary method computing the normalized cross spectrum from two light curves.
-        This includes checking for the presence of and applying Good Time Intervals, computing the
-        unnormalized Fourier cross-amplitude, and then renormalizing using the required normalization.
-        Also computes an uncertainty estimate on the cross spectral powers.
+        Auxiliary method computing the normalized cross spectrum from two
+        light curves. This includes checking for the presence of and
+        applying Good Time Intervals, computing the unnormalized Fourier
+        cross-amplitude, and then renormalizing using the required
+        normalization. Also computes an uncertainty estimate on the cross
+        spectral powers.
 
         Parameters
         ----------
