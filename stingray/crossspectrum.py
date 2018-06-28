@@ -144,14 +144,7 @@ class Crossspectrum(object):
     nphots2: float
         The total number of photons in light curve 2
     """
-<<<<<<< HEAD
-
-    def __init__(self, lc1=None, lc2=None, norm='none', gti=None,
-                 amplitude=False):
-=======
     def __init__(self, lc1=None, lc2=None, norm='none', gti=None, power_type="real"):
->>>>>>> fit_crosspectrum
-
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
 
