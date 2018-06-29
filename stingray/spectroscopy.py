@@ -1,28 +1,43 @@
-import astropy
+import numpy as np
+from scipy.stats import binned_statistic
+from scipy.fftpack import fft, ifft
+from scipy.optimize import brent
+
+
 from astropy.table import Table
-from stingray import Lightcurve, Powerspectrum, AveragedPowerspectrum, DynamicalPowerspectrum, Crossspectrum, AveragedCrossspectrum
-from astropy.modeling import models, fitting
-from stingray.modeling.scripts import fit_powerspectrum, fit_lorentzians, fit_crossspectrum
-from stingray.utils import standard_error
+from stingray import Lightcurve, Crossspectrum
+from stingray.utils import standard_error, find_nearest
 from stingray.filters import Optimal1D, Window1D
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import binned_statistic
-from scipy.fftpack import ifft
 
+def load_lc_fits(file, counts_type=True):
+    """
+    Function to load FITS file having reference band and channel of interest
+    bands.
 
-def load_lc_fits(file, rate_type=True):
+    Parameters
+    ----------
+    file : string
+        Path of the FITS file.
+
+    counts_type : bool, optional, default True
+        Set this parameter to False if the unit is ct/s.
+
+    Returns
+    -------
+    new_df : float
+
+    """
     lc_fits = Table.read(file)
     meta = lc_fits.meta
     dt = meta['DT']
 
-    if rate_type:
-        ref = np.asarray(lc_fits['REF'].T * dt, dtype=np.float64)
-        ci = np.asarray(lc_fits['CI'].T * dt, dtype=np.float64)
-    else:
-        ref = np.asarray(lc_fits['REF'].T, dtype=np.float64)
-        ci = np.asarray(lc_fits['CI'].T, dtype=np.float64)
+    ref = np.asarray(lc_fits['REF'].T, dtype=np.float64)
+    ci = np.asarray(lc_fits['CI'].T, dtype=np.float64)
+
+    if not counts_type:
+        ref *= dt
+        ci *= dt
 
     return ref, ci, meta
 
@@ -40,8 +55,9 @@ def get_new_df(spectrum):
     new_df : float
 
     """
-    lin_psd, f_bin_edges, something = binned_statistic(spectrum.freq, spectrum.power[0:int(spectrum.n/2+1)],
-                                statistic='mean', bins=1600)
+    _, f_bin_edges, _ = binned_statistic(spectrum.freq,
+                                         spectrum.power[0:int(spectrum.n/2+1)],
+                                         statistic='mean', bins=1600)
     new_df = np.median(np.diff(f_bin_edges))
     return new_df
 
@@ -129,3 +145,225 @@ def ccf_error(ref_counts, ci_counts_0, cs_res_model, rebin_log_factor, meta,
 
     error = standard_error(seg_ccfs, avg_seg_ccf)
     return error
+
+
+def get_parameters(counts, dt, model):
+    """
+    Return the parameters of the QPO waveform.
+
+    Parameters
+    ----------
+    counts : np.array of ints or floats
+        1-D array of numbers to search through. Should already be sorted
+        from low values to high values.
+
+    dt : float
+        Time resolution of the light curve.
+
+    model: astropy.modeling.models class instance
+        The parametric model supposed to represent the data. For details
+        see the astropy.modeling documentation. It assumes the first model
+        is Lorentzian model fit at QPO component (fundamental) and the
+        next Lorentzian model fit at the second harmonic.
+
+    Returns
+    -------
+    mu : float
+        Mean count rate of light curve.
+
+    cap_phi_1 : float
+        Phase offset of the first harmonic.
+
+    cap_phi_2 : float
+        Phase offset of the second harmonic.
+
+    small_psi : float
+        Phase difference between the first and second harmonics.
+
+    """
+    x = counts / dt
+    X = fft(x)  # fourier transform of count rate
+
+    n = X.size
+    timestep = dt
+    ffreq = np.fft.fftfreq(n, d=timestep)
+
+    x_0_0 = model[0].x_0.value
+    x_0_1 = model[1].x_0.value
+
+    _, idx_0 = find_nearest(ffreq, x_0_0)
+    _, idx_1 = find_nearest(ffreq, x_0_1)
+
+    X_1 = X[idx_0]  # 1st harmonic
+    X_2 = X[idx_1]  # 2nd harmonic
+
+    small_psi_1 = np.angle(X_1)
+    small_psi_2 = np.angle(X_2)
+
+    cap_phi_1 = small_psi_1
+    cap_phi_2 = small_psi_2
+
+    mu = np.mean(x)
+    small_psi = (cap_phi_2 / 2 - cap_phi_1) % np.pi
+
+    return mu, cap_phi_1, cap_phi_2, small_psi
+
+
+def waveform(x, mu, avg_sigma_1, avg_sigma_2, cap_phi_1, cap_phi_2):
+    """
+    Return the QPO waveform (periodic function of QPO phase).
+
+    Parameters
+    ----------
+    x : np.array of ints or floats
+        QPO phase
+
+    mu : float
+        Mean count rate of light curve.
+
+    avg_sigma_1 : float
+        Average RMS in the first harmonic.
+
+    avg_sigma_2 : float
+        Average RMS in the second harmonic.
+
+    cap_phi_1 : float
+        Phase offset of the first harmonic.
+
+    cap_phi_2 : float
+        Phase offset of the second harmonic.
+
+    Returns
+    -------
+    y : np.array
+        QPO waveform.
+
+    """
+    y = mu * (1 + np.sqrt(2) * (avg_sigma_1 * np.cos(x - cap_phi_1) +
+                                avg_sigma_2 * np.cos(2*x - cap_phi_2)))
+    return y
+
+
+def psi_distance(avg_psi, psi):
+    """
+    Return the distance between array of phase differences of the segments
+    and the mean phase difference.
+
+    Parameters
+    ----------
+    avg_psi : float
+        Mean phase difference between the first and second harmonics.
+
+    psi: np.array of list of floats
+        Phase difference of the segments.
+
+    Returns
+    -------
+    dm : np.array
+
+    """
+    delta = np.abs(psi - avg_psi)
+    dm = np.array([delta_i if avg_psi < np.pi/2 else np.pi - delta
+                   for delta_i in delta])
+    return dm
+
+
+def x_2_function(x, *args):
+    """
+    Function to minimise to find the average phase difference
+    of the segements.
+    """
+    psi_m = np.array(args)
+    X_2 = np.sum(psi_distance(x, psi_m)**2)
+    return X_2
+
+
+def get_mean_phase_difference(cs, model):
+    """
+    Return the mean phase difference between the first and second harmonics.
+
+    Parameters
+    ----------
+    cs : Crossspectrum
+        A Crossspectrum instance.
+
+    model : astropy.modeling.models class instance
+        The parametric model supposed to represent the data. For details
+        see the astropy.modeling documentation. It assumes the first model
+        is Lorentzian model fit at QPO component (fundamental) and the
+        next Lorentzian model fit at the second harmonic.
+
+    Returns
+    -------
+    avg_psi : float
+        Mean phase difference.
+
+    stddev:
+        Standard deviation on the mean.
+    """
+    counts = cs.lc1.counts  # counts in CoI lightcurve
+    dt = cs.lc2.dt  # dt
+    n_seg = cs.m  # number of segments
+
+    counts_seg = np.array_split(counts, n_seg)
+
+    small_psis = np.array([])
+
+    for i in range(n_seg):
+        counts_seg_i = counts_seg[i]  # for each count segment
+        _, _, _, small_psi_m = get_parameters(counts_seg_i, dt, model)
+        small_psis = np.append(small_psis, small_psi_m)
+
+    avg_psi, _, _, _ = brent(x_2_function, args=tuple(small_psis),
+                             full_output=True)
+
+    stddev = avg_psi / n_seg
+
+    return avg_psi, stddev
+
+
+def get_phase_lag(cs, model):
+    """
+    Return the phase offset of the waveform.
+
+    Parameters
+    ----------
+    cs : Crossspectrum
+        A Crossspectrum instance.
+
+    model: astropy.modeling.models class instance
+        The parametric model supposed to represent the data. For details
+        see the astropy.modeling documentation. It assumes the first model
+        is Lorentzian model fit at QPO component (fundamental) and the
+        next Lorentzian model fit at the second harmonic.
+
+    Returns
+    -------
+    cap_phi_1 : float
+        Phase offset of the first harmonic.
+
+    cap_phi_2 : float
+        Phase offset of the second harmonic.
+
+    small_psi : float
+        Phase difference between the first and second harmonics.
+
+    """
+    x_0_0 = model[0].x_0.value
+    x_0_1 = model[1].x_0.value
+
+    _, idx_0 = find_nearest(cs.freq, x_0_0)
+    _, idx_1 = find_nearest(cs.freq, x_0_1)
+
+    C_E_1 = cs.power[idx_0]  # 1st harmonic
+    C_E_2 = cs.power[idx_1]  # 2nd harmonic
+
+    delta_E_1 = np.angle(C_E_1)
+    delta_E_2 = np.angle(C_E_2)
+
+    avg_psi, _ = get_mean_phase_difference(cs, model)
+
+    cap_phi_1 = np.pi / 2 + delta_E_1
+    cap_phi_2 = 2 * (cap_phi_1 + avg_psi) + delta_E_2
+
+    return cap_phi_1, cap_phi_2, avg_psi
