@@ -654,7 +654,7 @@ class Crossspectrum(object):
             model_output = model(self.freq)
         elif criteria == "posfreq":
             model_output = model(self.freq[self.freq > 0])
-        elif criteria == "optimal":  # optimal filter
+        elif criteria == "optimal":
             model_output = model(self.freq)
             for i in range(len(self.freq)):
                 if self.freq[i] <= 0:
