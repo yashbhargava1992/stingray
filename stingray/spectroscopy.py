@@ -149,7 +149,8 @@ def ccf_error(ref_counts, ci_counts_0, cs_res_model, rebin_log_factor, meta,
 
 def get_parameters(counts, dt, model):
     """
-    Return the parameters of the QPO waveform.
+    Function to calculate mean count rate, phase offset and phase difference
+    between the harmonics.
 
     Parameters
     ----------
@@ -194,11 +195,11 @@ def get_parameters(counts, dt, model):
     _, idx_0 = find_nearest(ffreq, x_0_0)
     _, idx_1 = find_nearest(ffreq, x_0_1)
 
-    X_1 = X[idx_0]  # 1st harmonic
-    X_2 = X[idx_1]  # 2nd harmonic
+    dft_X_1 = X[idx_0]  # 1st harmonic
+    dft_X_2 = X[idx_1]  # 2nd harmonic
 
-    small_psi_1 = np.angle(X_1)
-    small_psi_2 = np.angle(X_2)
+    small_psi_1 = np.angle(dft_X_1)
+    small_psi_2 = np.angle(dft_X_2)
 
     cap_phi_1 = small_psi_1
     cap_phi_2 = small_psi_2
