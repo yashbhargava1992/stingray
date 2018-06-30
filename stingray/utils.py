@@ -64,7 +64,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
            'create_window', 'poisson_symmetrical_errors', 'standard_error',
-           'nearest_power_of_2', 'find_nearest']
+           'nearest_power_of_two', 'find_nearest']
 
 
 def _root_squared_mean(array):
@@ -835,7 +835,7 @@ def poisson_symmetrical_errors(counts):
     return err[idxs]
 
 
-def standard_error(xs, mean=None):
+def standard_error(xs, mean):
     """
     Return the standard error of the mean (SEM) of an array of arrays.
 
@@ -853,8 +853,6 @@ def standard_error(xs, mean=None):
         Standard error of the mean (SEM).
 
     """
-    if not mean:
-        mean = np.mean(xs, axis=0)
 
     n_seg = len(xs)
     xs_diff_sq = np.subtract(xs, mean) ** 2
@@ -863,7 +861,7 @@ def standard_error(xs, mean=None):
     return error
 
 
-def nearest_power_of_2(x):
+def nearest_power_of_two(x):
     """
     Return a number which is nearest to `x` and is the integral power of two.
 

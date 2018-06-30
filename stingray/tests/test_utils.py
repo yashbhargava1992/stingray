@@ -301,11 +301,11 @@ def test_standard_error():
     assert np.allclose(error, sem(x))
 
 
-def test_nearest_power_of_2():
-    assert utils.nearest_power_of_2(4) == 4
-    assert utils.nearest_power_of_2(5) == 4
-    assert utils.nearest_power_of_2(6) == 8
-    assert utils.nearest_power_of_2(7) == 8
+def test_nearest_power_of_two():
+    assert utils.nearest_power_of_two(4) == 4
+    assert utils.nearest_power_of_two(5) == 4
+    assert utils.nearest_power_of_two(6) == 8
+    assert utils.nearest_power_of_two(7) == 8
 
 
 def test_find_nearest():

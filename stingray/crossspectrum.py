@@ -10,7 +10,6 @@ from stingray.lightcurve import Lightcurve
 from stingray.utils import rebin_data, simon, rebin_data_log
 from stingray.exceptions import StingrayError
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
-from astropy.modeling.models import Lorentz1D
 import copy
 
 __all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag"]
@@ -144,7 +143,8 @@ class Crossspectrum(object):
     nphots2: float
         The total number of photons in light curve 2
     """
-    def __init__(self, lc1=None, lc2=None, norm='none', gti=None, power_type="real"):
+    def __init__(self, lc1=None, lc2=None, norm='none', gti=None,
+                 power_type="real"):
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
 
@@ -627,52 +627,6 @@ class Crossspectrum(object):
                 plt.savefig(filename)
         else:
             plt.show(block=False)
-
-    def compute_rms(self, model, criteria="all"):
-        """
-        Return the average RMS based of the fitting model used and frequency
-        selection criteria.
-
-        Parameters
-        ----------
-        model: astropy.modeling.models class instance
-            The parametric model supposed to represent the data. For details
-            see the astropy.modeling documentation
-
-        criteria : string, optional, default "all The parameter to decide
-        which part of the output to be used to calculate rms. Allowed values
-        are `all`, `posfreq`, `window` and `optimal`.
-
-        Returns
-        -------
-        rms : float
-            Average RMS.
-
-        """
-
-        if criteria == "all":
-            model_output = model(self.freq)
-        elif criteria == "posfreq":
-            model_output = model(self.freq[self.freq > 0])
-        elif criteria == "optimal":
-            model_output = model(self.freq)
-            for i in range(len(self.freq)):
-                if self.freq[i] <= 0:
-                    model_output[i] = 0
-        elif criteria == "window":
-            model_output = model(self.freq)
-            assert isinstance(model[0], Lorentz1D)
-            x_0 = model[0].x_0.value
-            fwhm = model[0].fwhm.value
-            for i in range(len(self.freq)):
-                if np.abs(self.freq[i] - x_0) >= (fwhm / 2):
-                    model_output[i] = 0
-        else:
-            raise ValueError("Incorrect frequency selection criteria.")
-
-        rms = np.sqrt(np.sum(model_output * self.df)).mean()
-
-        return rms
 
 
 class AveragedCrossspectrum(Crossspectrum):

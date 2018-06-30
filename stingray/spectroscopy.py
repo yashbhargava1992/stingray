@@ -5,6 +5,7 @@ from scipy.optimize import brent
 
 
 from astropy.table import Table
+from astropy.modeling.models import Lorentz1D
 from stingray import Lightcurve, Crossspectrum
 from stingray.utils import standard_error, find_nearest
 from stingray.filters import Optimal1D, Window1D
@@ -25,7 +26,14 @@ def load_lc_fits(file, counts_type=True):
 
     Returns
     -------
-    new_df : float
+    ref : 1-d float array
+        Reference band counts array
+
+    ci : 1-d float array
+        Channel of Interest band counts array
+
+    meta : dict
+        metadata
 
     """
     lc_fits = Table.read(file)
@@ -44,7 +52,7 @@ def load_lc_fits(file, counts_type=True):
 
 def get_new_df(spectrum):
     """
-    Return the new df used to rebin the spectrum.
+    Return the new df used to re-bin the spectrum.
 
     Parameters
     ----------
@@ -368,3 +376,52 @@ def get_phase_lag(cs, model):
     cap_phi_2 = 2 * (cap_phi_1 + avg_psi) + delta_E_2
 
     return cap_phi_1, cap_phi_2, avg_psi
+
+
+def compute_rms(spectrum, model, criteria="all"):
+    """
+    Return the average RMS based of the fitting model used and frequency
+    selection criteria.
+
+    Parameters
+    ----------
+    spectrum : Powerspectrum or Crossspectrum class instance
+
+    model: astropy.modeling.models class instance
+        The parametric model supposed to represent the data. For details
+        see the astropy.modeling documentation
+
+    criteria : string, optional, default "all The parameter to decide
+    which part of the output to be used to calculate rms. Allowed values
+    are `all`, `posfreq`, `window` and `optimal`.
+
+    Returns
+    -------
+    rms : float
+        Average RMS.
+
+    """
+
+    if criteria == "all":
+        model_output = model(spectrum.freq)
+    elif criteria == "posfreq":
+        model_output = model(spectrum.freq[spectrum.freq > 0])
+    elif criteria == "optimal":
+        model_output = model(spectrum.freq)
+        for i in range(len(spectrum.freq)):
+            if spectrum.freq[i] <= 0:
+                model_output[i] = 0
+    elif criteria == "window":
+        model_output = model(spectrum.freq)
+        assert isinstance(model[0], Lorentz1D)
+        x_0 = model[0].x_0.value
+        fwhm = model[0].fwhm.value
+        for i in range(len(spectrum.freq)):
+            if np.abs(spectrum.freq[i] - x_0) >= (fwhm / 2):
+                model_output[i] = 0
+    else:
+        raise ValueError("Incorrect frequency selection criteria.")
+
+    rms = np.sqrt(np.sum(model_output * spectrum.df)).mean()
+
+    return rms
