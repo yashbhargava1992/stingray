@@ -30,11 +30,10 @@ class TestFitLorentzians(object):
 
         cls.whitenoise = 2.0
 
-        cls.model = models.Lorentz1D(cls.amplitude_0, cls.x_0_0, cls.fwhm_0) + \
-                    models.Lorentz1D(cls.amplitude_1, cls.x_0_1, cls.fwhm_1) + \
-                    models.Lorentz1D(cls.amplitude_2, cls.x_0_2, cls.fwhm_2) + \
-                    models.Const1D(cls.whitenoise)
-
+        cls.model = models.Lorentz1D(cls.amplitude_0, cls.x_0_0, cls.fwhm_0) +\
+            models.Lorentz1D(cls.amplitude_1, cls.x_0_1, cls.fwhm_1) + \
+            models.Lorentz1D(cls.amplitude_2, cls.x_0_2, cls.fwhm_2) + \
+            models.Const1D(cls.whitenoise)
 
         freq = np.linspace(0.01, 10.0, 10.0 / 0.01)
         p = cls.model(freq)

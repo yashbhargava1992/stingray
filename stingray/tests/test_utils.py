@@ -58,8 +58,7 @@ class TestRebinData(object):
         ybin_test = np.zeros_like(xbin) + self.counts * dx_new / self.dx
         assert np.allclose(ybin_test, ybin)
 
-    def test_rebin_data_should_raise_error_when_method_is_different_than_allowed(
-            self):
+    def test_rebin_data_should_raise_error_when_method_is_not_allowed(self):
         dx_new = 2.0
         with pytest.raises(ValueError):
             utils.rebin_data(self.x, self.y, dx_new, self.yerr,
@@ -112,8 +111,8 @@ class TestRebinDataLog(object):
                                                              y_err=self.y_err,
                                                              dx=self.dx)
 
-        # binx describes the bin _edges_ rather than midpoints, so has one more entry
-        # than biny and the rest
+        # binx describes the bin _edges_ rather than midpoints, so has one
+        # more entry than biny and the rest
         assert binx.shape[0] == biny.shape[0] + 1
         assert biny.shape[0] == binyerr.shape[0]
         assert binyerr.shape[0] == nsamples.shape[0]

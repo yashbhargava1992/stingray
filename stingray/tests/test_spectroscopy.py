@@ -66,7 +66,7 @@ def test_waveform():
 
 def test_x_2_function():
     a = [-2, -1, 0, 1, 2]
-    y1 = spec.x_2_function(0,a)
+    y1 = spec.x_2_function(0, a)
     y2 = np.sum(np.array(a) ** 2)
     assert np.all(y1 == y2)
 

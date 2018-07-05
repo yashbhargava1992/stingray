@@ -20,7 +20,6 @@ try:
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
-
     class jit(object):
         def __init__(self, *args, **kwargs):
             pass
@@ -46,11 +45,12 @@ except ImportError:
             The data along which to calculate the MAD
 
         c : float, optional
-            The normalization constant. Defined as ``scipy.stats.norm.ppf(3/4.)``,
-            which is approximately ``.6745``.
+            The normalization constant. Defined as
+            ``scipy.stats.norm.ppf(3/4.)``, which is approximately ``.6745``.
 
         axis : int, optional, default ``0``
-            Axis along which to calculate ``mad``. Default is ``0``, can also be ``None``
+            Axis along which to calculate ``mad``. Default is ``0``, can also
+            be ``None``
         """
         data = np.asarray(data)
         if axis is not None:
@@ -194,10 +194,11 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
 
 def rebin_data_log(x, y, f, y_err=None, dx=None):
-    """Logarithmic rebin of some data. Particularly useful for the power spectrum.
+    """Logarithmic re-bin of some data. Particularly useful for the power
+    spectrum.
 
-    The new dependent variable depends on the previous dependent variable modified
-    by a factor f:
+    The new dependent variable depends on the previous dependent variable
+    modified by a factor f:
 
     .. math::
 
@@ -308,8 +309,8 @@ def assign_value_if_none(value, default):
     value : object
         A variable with either some assigned value, or ``None``
 
-    default : object
-        The value to assign to the variable ``value`` if ``value is None`` returns ``True``
+    default : object The value to assign to the variable ``value`` if
+    ``value is None`` returns ``True``
 
     Returns
     -------
@@ -333,10 +334,8 @@ def look_for_array_in_array(array1, array2):
         A second array which potentially contains a subset of values
         also contained in ``array1``
 
-    Returns
-    -------
-    array3 : iterable
-        An array with the subset of values contained in both ``array1`` and ``array2``
+    Returns ------- array3 : iterable An array with the subset of values
+    contained in both ``array1`` and ``array2``
 
     """
     return next((i for i in array1 if i in array2), None)
@@ -803,7 +802,8 @@ def poisson_symmetrical_errors(counts):
     Returns
     -------
     err : numpy.ndarray
-        An array of uncertainties associated with the Poisson counts in ``counts``
+        An array of uncertainties associated with the Poisson counts in
+        ``counts``
 
     Example
     -------
@@ -884,7 +884,8 @@ def nearest_power_of_two(x):
 
 def find_nearest(array, value):
     """
-    Return the array value that is closest to the input value (Abigail Stevens: Thanks StackOverflow!)
+    Return the array value that is closest to the input value (Abigail Stevens:
+    Thanks StackOverflow!)
 
     Parameters
     ----------
