@@ -3,6 +3,7 @@ import pytest
 import stingray.spectroscopy as spec
 from stingray.filters import Window1D
 from stingray import Crossspectrum
+from scipy.fftpack import fft, ifft
 from astropy.modeling import models
 
 
@@ -120,3 +121,14 @@ def test_compute_rms():
 
     with pytest.raises(ValueError):
         spec.compute_rms(cs, model, criteria="filter")
+
+
+def test_ccf():
+    x = np.arange(100)
+    power = fft(x)
+    n_bins = 10
+    ps_rms = 4
+    ccf1 = x * (2 / n_bins / ps_rms)
+    ccf2 = spec.ccf(power, n_bins, ps_rms)
+    print(ccf1-ccf2)
+    assert np.all(np.isclose(ccf1, ccf2, atol=0.000001, rtol=0.000001))
