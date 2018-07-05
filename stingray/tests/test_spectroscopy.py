@@ -143,8 +143,10 @@ def test_compute_rms():
     rms = np.sqrt(np.sum(model(cs.freq) * cs.df)).mean()
 
     assert np.all(rms == spec.compute_rms(cs, model, criteria="all"))
-    assert np.all(rms == spec.compute_rms(cs, model, criteria="posfreq"))
-    assert np.all(rms == spec.compute_rms(cs, model, criteria="optimal"))
+
+    rms_pos = np.sqrt(np.sum(model(cs.freq[cs.freq > 0]) * cs.df)).mean()
+    assert np.all(rms_pos == spec.compute_rms(cs, model, criteria="posfreq"))
+    assert np.all(rms_pos == spec.compute_rms(cs, model, criteria="optimal"))
 
     optimal_filter = Window1D(model)
     optimal_filter_freq = optimal_filter(cs.freq)

@@ -404,13 +404,8 @@ def compute_rms(spectrum, model, criteria="all"):
 
     if criteria == "all":
         model_output = model(spectrum.freq)
-    elif criteria == "posfreq":
+    elif criteria == "posfreq" or criteria == "optimal":
         model_output = model(spectrum.freq[spectrum.freq > 0])
-    elif criteria == "optimal":
-        model_output = model(spectrum.freq)
-        for i in range(len(spectrum.freq)):
-            if spectrum.freq[i] <= 0:
-                model_output[i] = 0
     elif criteria == "window":
         model_output = model(spectrum.freq)
         assert isinstance(model[0], Lorentz1D)
