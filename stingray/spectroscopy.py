@@ -50,7 +50,7 @@ def load_lc_fits(file, counts_type=True):
     return ref, ci, meta
 
 
-def get_new_df(spectrum):
+def get_new_df(spectrum, n_bins):
     """
     Return the new df used to re-bin the spectrum.
 
@@ -58,14 +58,17 @@ def get_new_df(spectrum):
     ----------
     spectrum : Powerspectrum or Crossspectrum class instance
 
+    n_bins : int
+        New bin size.
+
     Returns
     -------
     new_df : float
 
     """
     _, f_bin_edges, _ = binned_statistic(spectrum.freq,
-                                         spectrum.power[0:int(spectrum.n/2+1)],
-                                         statistic='mean', bins=1600)
+                                         spectrum.power,
+                                         statistic='mean', bins=n_bins)
     new_df = np.median(np.diff(f_bin_edges))
     return new_df
 
@@ -109,8 +112,6 @@ def ccf_error(ref_counts, ci_counts_0, cs_res_model, rebin_log_factor, meta,
     seg_css = np.array([])
     seg_ccfs = np.array([])
     seg_times = np.arange(0, n_seconds, dt)  # light curve time bins
-
-    print(seg_ref_counts.shape, seg_ci_counts.shape)
 
     for i in range(n_seg):  # for each segment
         # Creating cross spectrum
@@ -279,8 +280,7 @@ def psi_distance(avg_psi, psi):
 
 def x_2_function(x, *args):
     """
-    Function to minimise to find the average phase difference
-    of the segements.
+    Function to minimise to find the average phase difference of the segments.
     """
     psi_m = np.array(args)
     X_2 = np.sum(psi_distance(x, psi_m)**2)

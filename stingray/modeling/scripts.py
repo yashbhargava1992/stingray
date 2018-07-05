@@ -114,7 +114,7 @@ def fit_powerspectrum(ps, model, starting_pars=None, max_post=False,
     >>> p_opt = res.p_opt
 
     """
-    if starting_pars is None:
+    if not isinstance(starting_pars, np.ndarray):
         starting_pars = model.parameters
 
     if priors:
@@ -181,7 +181,7 @@ def fit_crossspectrum(cs, model, starting_pars=None, max_post=False,
         The OptimizationResults object storing useful results and quantities
         relating to the fit
     """
-    if not starting_pars:
+    if not isinstance(starting_pars, np.ndarray):
         starting_pars = model.parameters
     if priors:
         lgauss = GaussianPosterior(cs.freq, np.abs(cs.power), model,
@@ -307,7 +307,7 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
 
     model = models.Lorentz1D()
 
-    if starting_pars is None:
+    if not isinstance(starting_pars, np.ndarray):
         starting_pars = model.parameters
 
     if nlor > 1:

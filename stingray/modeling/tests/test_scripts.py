@@ -3,10 +3,10 @@ import numpy as np
 
 from astropy.modeling import models
 
-from stingray import Powerspectrum
+from stingray import Powerspectrum, Crossspectrum
 
-from stingray.modeling.scripts import fit_lorentzians  # , fit_powerspectrum_bounds
-from stingray.modeling.scripts import fit_powerspectrum
+from stingray.modeling.scripts import fit_lorentzians
+from stingray.modeling.scripts import fit_powerspectrum, fit_crossspectrum
 
 
 class TestFitLorentzians(object):
@@ -35,6 +35,7 @@ class TestFitLorentzians(object):
                     models.Lorentz1D(cls.amplitude_2, cls.x_0_2, cls.fwhm_2) + \
                     models.Const1D(cls.whitenoise)
 
+
         freq = np.linspace(0.01, 10.0, 10.0 / 0.01)
         p = cls.model(freq)
         noise = np.random.exponential(size=len(freq))
@@ -45,6 +46,13 @@ class TestFitLorentzians(object):
         cls.ps.power = power
         cls.ps.df = cls.ps.freq[1] - cls.ps.freq[0]
         cls.ps.m = 1
+
+        cls.cs = Crossspectrum()
+        cls.cs.freq = freq
+        cls.cs.power = power
+        cls.cs.power_err = np.array([0.00001]*len(power))
+        cls.cs.df = cls.cs.freq[1] - cls.cs.freq[0]
+        cls.cs.m = 1
 
         cls.t0 = np.asarray([200.0, 0.5, 0.1, 100.0, 2.0, 1.0,
                              50.0, 7.5, 0.5, 2.0])
@@ -117,4 +125,9 @@ class TestFitLorentzians(object):
         assert np.all(np.isclose(true_pars, res.p_opt, rtol=0.5))
 
     def test_fit_crossspectrum(self):
-        assert True == True
+        model = self.model.copy()
+
+        t0 = model.parameters
+        _, res = fit_crossspectrum(self.cs, model, t0)
+
+        assert np.all(np.isclose(t0, res.p_opt, rtol=0.5))

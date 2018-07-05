@@ -297,7 +297,7 @@ class TestCreateWindow(object):
 def test_standard_error():
     x = np.arange(1, 100)
     x = np.array(np.split(x, 3))
-    error = utils.standard_error(x)
+    error = utils.standard_error(x, x.mean(axis=0))
     assert np.allclose(error, sem(x))
 
 
