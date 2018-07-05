@@ -130,6 +130,15 @@ class TestFitLorentzians(object):
         _, res1 = fit_crossspectrum(self.cs, model)
         _, res2 = fit_crossspectrum(self.cs, model, t0)
 
-        print(res1.p_opt[2]-t0[2])
         assert np.all(np.isclose(t0, res1.p_opt, rtol=0.5, atol=0.5))
-        assert np.all(np.isclose(t0, res2.p_opt, rtol=0.5))
+        assert np.all(np.isclose(t0, res2.p_opt, rtol=0.5, atol=0.5))
+
+    def test_fit_powerspectrum(self):
+        model = self.model.copy()
+
+        t0 = model.parameters
+        _, res1 = fit_powerspectrum(self.ps, model)
+        _, res2 = fit_powerspectrum(self.ps, model, t0)
+
+        assert np.all(np.isclose(t0, res1.p_opt, rtol=0.5, atol=0.5))
+        assert np.all(np.isclose(t0, res2.p_opt, rtol=0.5, atol=0.5))

@@ -310,10 +310,6 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
 
     model = models.Lorentz1D()
 
-    if not (isinstance(starting_pars, np.ndarray) or isinstance(starting_pars,
-                                                                list)):
-        starting_pars = model.parameters
-
     if nlor > 1:
         for i in range(nlor - 1):
             model += models.Lorentz1D()
