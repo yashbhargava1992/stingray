@@ -456,7 +456,7 @@ class Crossspectrum(object):
             power = c * (2. * tseg)
 
         elif self.norm.lower() == 'none':
-            power = c_num
+            power = unnorm_power
 
         else:
             raise ValueError("Normalization not recognized!")
