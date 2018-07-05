@@ -391,6 +391,23 @@ class TestAveragedCrossspectrum(object):
                                             segment_size=1,
                                             norm="wrong")
 
+    def test_failure_when_power_type_not_recognized(self):
+        with pytest.raises(ValueError):
+            self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
+                                            segment_size=1,
+                                            power_type="wrong")
+
+    def test_normalize_crossspectrum(self):
+        cs1 = Crossspectrum(self.lc1, self.lc2, norm="leahy")
+        cs2 = Crossspectrum(self.lc1, self.lc2, norm="leahy",
+                            power_type="all")
+        cs3 = Crossspectrum(self.lc1, self.lc2, norm="leahy",
+                            power_type="real")
+        cs4 = Crossspectrum(self.lc1, self.lc2, norm="leahy",
+                            power_type="absolute")
+        assert np.all(cs1.power.real == cs3.power)
+        assert np.all(np.isclose(np.abs(cs2.power), cs4.power,atol=0.0001))
+
     def test_rebin(self):
         new_cs = self.cs.rebin(df=1.5)
         assert new_cs.df == 1.5

@@ -439,9 +439,9 @@ class Crossspectrum(object):
         elif self.power_type == "real":
             c_num = unnorm_power.real
         elif self.power_type == "absolute":
-            c_num = np.abs(unnorm_power)
+            c_num = np.absolute(unnorm_power)
         else:
-            raise Exception("`power_type` not recognized!")
+            raise ValueError("`power_type` not recognized!")
 
         if self.norm.lower() == 'leahy':
             c = c_num
@@ -459,8 +459,7 @@ class Crossspectrum(object):
             power = unnorm_power
 
         else:
-            raise Exception("Normalization not recognized!")
-
+            raise ValueError("Normalization not recognized!")
         return power
 
     def rebin_log(self, f=0.01):
@@ -713,8 +712,10 @@ class AveragedCrossspectrum(Crossspectrum):
             raise ValueError("segment_size must be finite!")
 
         self.segment_size = segment_size
+        self.power_type = power_type
 
-        Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti, power_type=power_type)
+        Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti,
+                               power_type=power_type)
 
         return
 
