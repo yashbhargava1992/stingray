@@ -3,8 +3,42 @@ import pytest
 import stingray.spectroscopy as spec
 from stingray.filters import Window1D
 from stingray import Crossspectrum
-from scipy.fftpack import fft, ifft
+from scipy.fftpack import fft
 from astropy.modeling import models
+from astropy.table import Table, Column
+
+from os import remove
+
+
+def test_load_lc_fits():
+    dt = 0.1
+    n_seg = 5
+    n_seconds = 100
+    output_file = 'out.fits'
+
+    ref_lc = np.arange(0, n_seconds, dt)
+    ci_lc = np.array(np.array_split(np.arange(0, n_seconds*n_seg, dt), n_seg))
+
+    n_bins = len(ref_lc)
+
+    lightcurves = Table()
+    lightcurves.add_column(Column(name='REF', data=ref_lc.T))
+    lightcurves.add_column(Column(name='CI', data=ci_lc.T))
+    lightcurves.meta['N_BINS'] = n_bins
+    lightcurves.meta['DT'] = dt
+    lightcurves.meta['N_SEG'] = n_seg
+    lightcurves.meta['NSECONDS'] = n_seconds
+    lightcurves.write(output_file, format='fits', overwrite=True)
+
+    ref, ci, meta = spec.load_lc_fits(output_file, counts_type=True)
+    remove(output_file)
+
+    assert np.all(ref_lc == ref)
+    assert np.all(ci_lc == ci)
+    assert meta['N_BINS'] == n_bins
+    assert meta['DT'] == dt
+    assert meta['N_SEG'] == n_seg
+    assert meta['NSECONDS'] == n_seconds
 
 
 def test_psi_distance():
@@ -94,7 +128,7 @@ def test_compute_rms():
         models.Lorentz1D(amplitude_2, x_0_2, fwhm_2) + \
         models.Const1D(whitenoise)
 
-    freq = np.linspace(0.01, 10.0, 10.0 / 0.01)
+    freq = np.linspace(-10.0, 10.0, 10.0 / 0.01)
     p = model(freq)
     noise = np.random.exponential(size=len(freq))
 
