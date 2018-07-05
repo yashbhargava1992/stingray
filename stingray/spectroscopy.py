@@ -44,6 +44,7 @@ def load_lc_fits(file, counts_type=True):
     ci = np.asarray(lc_fits['CI'].T, dtype=np.float64)
 
     if not counts_type:
+        print(dt)
         ref *= dt
         ci *= dt
 

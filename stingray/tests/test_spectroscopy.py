@@ -22,15 +22,15 @@ def test_load_lc_fits():
     n_bins = len(ref_lc)
 
     lightcurves = Table()
-    lightcurves.add_column(Column(name='REF', data=ref_lc.T))
-    lightcurves.add_column(Column(name='CI', data=ci_lc.T))
+    lightcurves.add_column(Column(name='REF', data=ref_lc.T/dt))
+    lightcurves.add_column(Column(name='CI', data=ci_lc.T/dt))
     lightcurves.meta['N_BINS'] = n_bins
     lightcurves.meta['DT'] = dt
     lightcurves.meta['N_SEG'] = n_seg
     lightcurves.meta['NSECONDS'] = n_seconds
     lightcurves.write(output_file, format='fits', overwrite=True)
 
-    ref, ci, meta = spec.load_lc_fits(output_file, counts_type=True)
+    ref, ci, meta = spec.load_lc_fits(output_file, counts_type=False)
     remove(output_file)
 
     assert np.all(ref_lc == ref)
