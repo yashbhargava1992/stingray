@@ -2,12 +2,185 @@ import numpy as np
 import pytest
 import stingray.spectroscopy as spec
 from stingray.filters import Window1D
-from stingray import Crossspectrum
+from stingray import Lightcurve, AveragedPowerspectrum, AveragedCrossspectrum, Powerspectrum, Crossspectrum
+from stingray.modeling import fit_lorentzians, fit_crossspectrum, fit_powerspectrum
+from stingray.filters import Optimal1D, Window1D
 from scipy.fftpack import fft
 from astropy.modeling import models
 from astropy.table import Table, Column
 
 from os import remove
+
+
+def random_walk(n, step):
+    """
+    Parameters
+    ----------
+    n : int
+        number of points
+    step : float
+        maximum step
+    """
+
+    return np.cumsum(np.random.uniform(-step, step, n))
+
+
+def normalize_angle(angle):
+    """Refer angle to 0-pi."""
+    while angle < 0:
+        angle += np.pi
+    while angle > np.pi:
+        angle -= np.pi
+    return angle
+
+
+def waveform_simple(phases, dph=np.pi / 5, dampl=2.,
+                    initial_phase=np.pi / 3):
+    """Phases are in radians!"""
+    fine_phases = np.arange(0, 2 * np.pi, 0.002)
+    fine_shape = np.cos(fine_phases) + 1 / dampl * np.cos(
+        2 * (fine_phases + dph))
+    mean = np.mean(fine_shape)
+    ampl = (np.max(fine_shape) - np.min(fine_shape)) / 2
+
+    shape = np.cos(phases + initial_phase) + 1 / dampl * np.cos(
+        2 * (initial_phase + phases + dph))
+    shape -= mean
+    shape /= ampl
+
+    return shape
+
+
+def fake_qpo(t, f0=1., waveform=None, timescale=10, astep=0, phstep=0, waveform_opts=None, rms=0.1):
+    """
+    Parameters
+    ----------
+    t : array
+        Times at which the lightcurve is calculated
+    f0: float
+        mean frequency of the QPO
+    waveform : function
+        Function that accepts phases from 0 to pi as input and returns an
+        waveform with mean 0 and total amplitude 2 (typically from -1 to 1).
+        Default is ``np.sin``
+    timescale : float
+        In this timescale, expressed in seconds, the waveform changes its phase
+        or amplitude or both by an entire step
+    astep : float
+        Steps of variation of amplitude
+    phstep : float
+        Steps of variation of phase
+    """
+
+    if waveform is None:
+        waveform = np.sin
+
+    n = len(t)
+    phase = 2 * np.pi * f0 * t + random_walk(n, phstep / timescale)
+    amp = 1 + random_walk(n, astep / timescale)
+    qpo_lc = amp * (1 + rms * waveform(phase, **waveform_opts))
+
+    return phase, qpo_lc
+
+
+class TestCCF(object):
+
+    @classmethod
+    def setup_class(cls):
+        total_length = 10000
+        f_qpo = 1.5
+        cls.dt = 1 / f_qpo / 40
+        approx_Q = 10
+        q_len = approx_Q / f_qpo
+        fftlen = q_len / 2
+        fftlen = 2 ** np.floor(np.log2(fftlen))
+        sigma = 0.1
+        astep = 0.01
+        phstep = 1
+        real_dphi = 0.4 * np.pi
+        cls.n_seconds = 500
+        cls.n_seg = int(total_length / cls.n_seconds)
+        cls.n_bins = cls.n_seconds/cls.dt
+
+        times = np.arange(0, total_length, cls.dt)
+        _, cls.ref_counts = fake_qpo(times, f0=f_qpo, astep=astep, rms=sigma,
+                                     waveform=waveform_simple, phstep=phstep,
+                                     timescale=q_len,
+                                     waveform_opts={'dph': real_dphi})
+        _, ci_counts = fake_qpo(times, f0=f_qpo, astep=astep, rms=sigma,
+                                waveform=waveform_simple, phstep=phstep,
+                                timescale=q_len,
+                                waveform_opts={'dph': real_dphi})
+        cls.ci_counts = np.array([ci_counts])
+
+        cls.ref_times = np.arange(0, cls.n_seconds * cls.n_seg, cls.dt)
+        cls.ref_lc = Lightcurve(cls.ref_times, cls.ref_counts, dt=cls.dt)
+        ref_aps = AveragedPowerspectrum(cls.ref_lc, segment_size=cls.n_seconds,
+                                        norm='abs')
+        df = ref_aps.freq[1] - ref_aps.freq[0]
+        amplitude_0 = np.max(ref_aps.power)
+        x_0_0 = ref_aps.freq[np.argmax(ref_aps.power)]
+        amplitude_1 = amplitude_0 / 2
+        x_0_1 = x_0_0 * 2
+        fwhm = df
+
+        cls.model = models.Lorentz1D(amplitude=amplitude_0, x_0=x_0_0,
+                                     fwhm=fwhm) + \
+            models.Lorentz1D(amplitude=amplitude_1, x_0=x_0_1,
+                             fwhm=fwhm)
+
+    def test_ccf(self):
+        # to make testing faster, fitting is not done.
+        ref_ps = Powerspectrum(self.ref_lc, norm='abs')
+
+        ci_counts_0 = self.ci_counts[0]
+        ci_times = np.arange(0, self.n_seconds * self.n_seg, self.dt)
+        ci_lc = Lightcurve(ci_times, ci_counts_0, dt=self.dt)
+
+        # rebinning factor used in `rebin_log`
+        rebin_log_factor = 0.4
+
+        acs = AveragedCrossspectrum(lc1=ci_lc, lc2=self.ref_lc,
+                                    segment_size=self.n_seconds, norm='leahy',
+                                    power_type="absolute")
+        acs = acs.rebin_log(rebin_log_factor)
+
+        # parest, res = fit_crossspectrum(acs, self.model, fitmethod="CG")
+        acs_result_model = self.model
+
+        # using optimal filter
+        optimal_filter = Optimal1D(acs_result_model)
+        optimal_filter_freq = optimal_filter(acs.freq)
+        filtered_acs_power = optimal_filter_freq * np.abs(acs.power)
+
+        # rebinning power spectrum
+        new_df = spec.get_new_df(ref_ps, self.n_bins)
+        ref_ps_rebinned = ref_ps.rebin(df=new_df)
+
+        # parest, res = fit_powerspectrum(ref_ps_rebinned, self.model)
+        ref_ps_rebinned_result_model = self.model
+
+        # calculating rms from power spectrum
+        ref_ps_rebinned_rms = spec.compute_rms(ref_ps_rebinned,
+                                               ref_ps_rebinned_result_model,
+                                               criteria="optimal")
+
+        # calculating normalized ccf
+        ccf_norm = spec.ccf(filtered_acs_power, ref_ps_rebinned_rms,
+                            self.n_bins)
+
+        # calculating ccf error
+        meta = {'N_SEG': self.n_seg, 'NSECONDS': self.n_seconds, 'DT': self.dt,
+                'N_BINS': self.n_bins}
+        error_ccf, avg_seg_ccf = spec.ccf_error(self.ref_counts, ci_counts_0,
+                                                acs_result_model,
+                                                rebin_log_factor,
+                                                meta, ref_ps_rebinned_rms,
+                                                filter_type="optimal")
+
+        assert np.all(np.isclose(ccf_norm, avg_seg_ccf, atol=0.01))
+        assert np.all(np.isclose(error_ccf, np.zeros(shape=error_ccf.shape),
+                                 atol=0.01))
 
 
 def test_load_lc_fits():
@@ -168,3 +341,40 @@ def test_ccf():
     ccf2 = spec.ccf(power, n_bins, ps_rms)
     print(ccf1-ccf2)
     assert np.all(np.isclose(ccf1, ccf2, atol=0.000001, rtol=0.000001))
+
+
+def test_get_parameters():
+    np.random.seed(150)
+
+    amplitude_0 = 200.0
+    amplitude_1 = 100.0
+    amplitude_2 = 50.0
+
+    x_0_0 = 0.5
+    x_0_1 = 2.0
+    x_0_2 = 7.5
+
+    fwhm_0 = 0.1
+    fwhm_1 = 1.0
+    fwhm_2 = 0.5
+
+    whitenoise = 100.0
+
+    model = models.Lorentz1D(amplitude_0, x_0_0, fwhm_0) + \
+            models.Lorentz1D(amplitude_1, x_0_1, fwhm_1) + \
+            models.Lorentz1D(amplitude_2, x_0_2, fwhm_2) + \
+            models.Const1D(whitenoise)
+
+    freq = np.linspace(-10.0, 10.0, 10.0 / 0.01)
+    p = model(freq)
+    noise = np.random.exponential(size=len(freq))
+
+    power = p * noise
+    cs = Crossspectrum()
+    cs.freq = freq
+    cs.power = power
+    cs.df = cs.freq[1] - cs.freq[0]
+    cs.n = len(freq)
+    cs.m = 1
+
+    # print(spec.get_mean_phase_difference(cs, model))

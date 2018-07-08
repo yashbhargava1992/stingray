@@ -154,7 +154,7 @@ def ccf_error(ref_counts, ci_counts_0, cs_res_model, rebin_log_factor, meta,
     avg_seg_ccf = ccf(avg_seg_css, ps_rms, n_bins)
 
     error = standard_error(seg_ccfs, avg_seg_ccf)
-    return error
+    return error, avg_seg_ccf
 
 
 def get_parameters(counts, dt, model):
