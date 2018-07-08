@@ -51,7 +51,8 @@ def waveform_simple(phases, dph=np.pi / 5, dampl=2.,
     return shape
 
 
-def fake_qpo(t, f0=1., waveform=None, timescale=10, astep=0, phstep=0, waveform_opts=None, rms=0.1):
+def fake_qpo(t, f0=1., waveform=None, timescale=10, astep=0, phstep=0,
+             waveform_opts=None, rms=0.1):
     """
     Parameters
     ----------
@@ -92,8 +93,6 @@ class TestCCF(object):
         cls.dt = 1 / f_qpo / 40
         approx_Q = 10
         q_len = approx_Q / f_qpo
-        fftlen = q_len / 2
-        fftlen = 2 ** np.floor(np.log2(fftlen))
         sigma = 0.1
         astep = 0.01
         phstep = 1
@@ -128,6 +127,7 @@ class TestCCF(object):
                                      fwhm=fwhm) + \
             models.Lorentz1D(amplitude=amplitude_1, x_0=x_0_1,
                              fwhm=fwhm)
+        cls.ref_aps = ref_aps
 
     def test_ccf(self):
         # to make testing faster, fitting is not done.
@@ -181,6 +181,33 @@ class TestCCF(object):
         assert np.all(np.isclose(ccf_norm, avg_seg_ccf, atol=0.01))
         assert np.all(np.isclose(error_ccf, np.zeros(shape=error_ccf.shape),
                                  atol=0.01))
+
+        # using window function
+        tophat_filter = Window1D(acs_result_model)
+        tophat_filter_freq = tophat_filter(acs.freq)
+        filtered_acs_power = tophat_filter_freq * np.abs(acs.power)
+
+        ref_ps_rebinned_rms = spec.compute_rms(ref_ps_rebinned,
+                                               ref_ps_rebinned_result_model,
+                                               criteria="window")
+
+        ccf_norm = spec.ccf(filtered_acs_power, ref_ps_rebinned_rms,
+                            self.n_bins)
+
+        error_ccf, avg_seg_ccf = spec.ccf_error(self.ref_counts, ci_counts_0,
+                                                acs_result_model,
+                                                rebin_log_factor,
+                                                meta, ref_ps_rebinned_rms,
+                                                filter_type="window")
+
+        assert np.all(np.isclose(ccf_norm, avg_seg_ccf, atol=0.01))
+        assert np.all(np.isclose(error_ccf, np.zeros(shape=error_ccf.shape),
+                                 atol=0.01))
+
+    def test_get_mean_phase_difference(self):
+        _, a, b, _ = spec.get_parameters(self.ref_aps.lc1.counts,
+                                         self.ref_aps.lc1.dt, self.model)
+        assert a == b
 
 
 def test_load_lc_fits():
@@ -330,51 +357,3 @@ def test_compute_rms():
 
     with pytest.raises(ValueError):
         spec.compute_rms(cs, model, criteria="filter")
-
-
-def test_ccf():
-    x = np.arange(100)
-    power = fft(x)
-    n_bins = 10
-    ps_rms = 4
-    ccf1 = x * (2 / n_bins / ps_rms)
-    ccf2 = spec.ccf(power, n_bins, ps_rms)
-    print(ccf1-ccf2)
-    assert np.all(np.isclose(ccf1, ccf2, atol=0.000001, rtol=0.000001))
-
-
-def test_get_parameters():
-    np.random.seed(150)
-
-    amplitude_0 = 200.0
-    amplitude_1 = 100.0
-    amplitude_2 = 50.0
-
-    x_0_0 = 0.5
-    x_0_1 = 2.0
-    x_0_2 = 7.5
-
-    fwhm_0 = 0.1
-    fwhm_1 = 1.0
-    fwhm_2 = 0.5
-
-    whitenoise = 100.0
-
-    model = models.Lorentz1D(amplitude_0, x_0_0, fwhm_0) + \
-            models.Lorentz1D(amplitude_1, x_0_1, fwhm_1) + \
-            models.Lorentz1D(amplitude_2, x_0_2, fwhm_2) + \
-            models.Const1D(whitenoise)
-
-    freq = np.linspace(-10.0, 10.0, 10.0 / 0.01)
-    p = model(freq)
-    noise = np.random.exponential(size=len(freq))
-
-    power = p * noise
-    cs = Crossspectrum()
-    cs.freq = freq
-    cs.power = power
-    cs.df = cs.freq[1] - cs.freq[0]
-    cs.n = len(freq)
-    cs.m = 1
-
-    # print(spec.get_mean_phase_difference(cs, model))
