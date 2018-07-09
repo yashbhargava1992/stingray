@@ -30,6 +30,13 @@ class TestFitLorentzians(object):
 
         cls.whitenoise = 2.0
 
+        cls.priors = {'x_0_0': cls.x_0_0, 'x_0_1': cls.x_0_1,
+                      'x_0_2': cls.x_0_2, 'amplitude_0': cls.amplitude_0,
+                      'amplitude_1': cls.amplitude_1,
+                      'amplitude_2': cls.amplitude_2, 'fwhm_0': cls.fwhm_0,
+                      'fwhm_1': cls.fwhm_1, 'fwhm_2': cls.fwhm_2,
+                      'whitenoise': cls.whitenoise}
+
         cls.model = models.Lorentz1D(cls.amplitude_0, cls.x_0_0, cls.fwhm_0) +\
             models.Lorentz1D(cls.amplitude_1, cls.x_0_1, cls.fwhm_1) + \
             models.Lorentz1D(cls.amplitude_2, cls.x_0_2, cls.fwhm_2) + \
@@ -43,13 +50,14 @@ class TestFitLorentzians(object):
         cls.ps = Powerspectrum()
         cls.ps.freq = freq
         cls.ps.power = power
+        cls.ps.power_err = np.array([0.]*len(power))
         cls.ps.df = cls.ps.freq[1] - cls.ps.freq[0]
         cls.ps.m = 1
 
         cls.cs = Crossspectrum()
         cls.cs.freq = freq
         cls.cs.power = power
-        cls.cs.power_err = np.array([0.00001]*len(power))
+        cls.cs.power_err = np.array([0.]*len(power))
         cls.cs.df = cls.cs.freq[1] - cls.cs.freq[0]
         cls.cs.m = 1
 
@@ -129,9 +137,11 @@ class TestFitLorentzians(object):
         t0 = model.parameters
         _, res1 = fit_crossspectrum(self.cs, model)
         _, res2 = fit_crossspectrum(self.cs, model, t0)
+        _, res3 = fit_crossspectrum(self.cs, model, t0, priors=self.priors)
 
         assert np.all(np.isclose(t0, res1.p_opt, rtol=0.5, atol=0.5))
         assert np.all(np.isclose(t0, res2.p_opt, rtol=0.5, atol=0.5))
+        assert np.all(np.isclose(t0, res3.p_opt, rtol=0.5, atol=0.5))
 
     def test_fit_powerspectrum(self):
         model = self.model.copy()
@@ -139,6 +149,8 @@ class TestFitLorentzians(object):
         t0 = model.parameters
         _, res1 = fit_powerspectrum(self.ps, model)
         _, res2 = fit_powerspectrum(self.ps, model, t0)
+        _, res3 = fit_crossspectrum(self.ps, model, t0, priors=self.priors)
 
         assert np.all(np.isclose(t0, res1.p_opt, rtol=0.5, atol=0.5))
         assert np.all(np.isclose(t0, res2.p_opt, rtol=0.5, atol=0.5))
+        assert np.all(np.isclose(t0, res3.p_opt, rtol=0.5, atol=0.5))

@@ -187,8 +187,8 @@ def fit_crossspectrum(cs, model, starting_pars=None, max_post=False,
                                                                 list)):
         starting_pars = model.parameters
     if priors:
-        lgauss = GaussianPosterior(cs.freq, np.abs(cs.power), model,
-                                   priors=priors, yerr=cs.power_err)
+        lgauss = GaussianPosterior(cs.freq, np.abs(cs.power), cs.power_err,
+                                   model, priors)
     else:
         lgauss = GaussianLogLikelihood(cs.freq, np.abs(cs.power), model=model,
                                        yerr=cs.power_err)
