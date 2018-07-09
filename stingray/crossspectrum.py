@@ -457,9 +457,6 @@ class Crossspectrum(object):
 
         elif self.norm.lower() == 'none':
             power = unnorm_power
-
-        else:
-            raise ValueError("Normalization not recognized!")
         return power
 
     def rebin_log(self, f=0.01):

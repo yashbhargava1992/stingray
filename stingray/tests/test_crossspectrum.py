@@ -246,6 +246,11 @@ class TestCrossspectrum(object):
         self.cs.plot()
         assert plt.fignum_exists('crossspectrum')
 
+    def test_rebin_error(self):
+        cs = Crossspectrum()
+        with pytest.raises(ValueError):
+            cs.rebin()
+
 
 class TestAveragedCrossspectrum(object):
 
