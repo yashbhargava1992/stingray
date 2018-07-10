@@ -563,9 +563,9 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         elif segment_size > lc.tseg:
             raise ValueError("Length of the segment is too long to create "
                              "any segments of the light curve!")
-        self.segment_size = segment_size
-        self.norm = norm
-        self.gti = gti
+        AveragedPowerspectrum.__init__(self, lc=lc,
+                                       segment_size=segment_size, norm=norm,
+                                       gti=gti)
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
