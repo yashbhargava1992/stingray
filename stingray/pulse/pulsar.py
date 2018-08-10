@@ -717,7 +717,7 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
     mjds = np.linspace(mjdstart, mjdstop, ntimes)
     toalist = _load_and_prepare_TOAs(mjds, ephem=ephem)
     m = get_model(parfile)
-    delays = m.delay(toalist.table)
+    delays = m.delay(toalist)
     correction_mjd = \
         interp1d(mjds,
                  (toalist.table['tdbld'] * units.d - delays).to(units.d).value)
