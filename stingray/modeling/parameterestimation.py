@@ -953,6 +953,7 @@ class SamplingResults(object):
         References
         ----------
         .. [autocorr] https://arxiv.org/abs/1202.3665
+        .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
         """
 
         # compute and store autocorrelation time
@@ -970,6 +971,10 @@ class SamplingResults(object):
         Parameters
         ----------
         sampler : an `emcee.EnsembleSampler` object
+
+        References
+        ----------
+        .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
 
         """
         # between-sequence variance
