@@ -454,7 +454,7 @@ class Simulator(object):
         else:
             raise ValueError('Model is not defined!')
 
-    def _simulate_impulse_response(self, s, h, mode='same'):
+    def _simulate_impulse_response(self, s, h, mode='same', tstart=0.0):
         """
         Generate LightCurve from impulse response. To get
         accurate results, binning intervals (dt) of variability
@@ -474,6 +474,9 @@ class Simulator(object):
             is len(s) - lag_delay
             'full' indicates that the length of output light
             curve is len(s) + len(h) -1
+        tstart : float, optional, default 0.0
+            The optional start time for the light curve.
+
 
         Returns
         -------
@@ -486,7 +489,7 @@ class Simulator(object):
         elif mode == 'filtered':
             lc = lc[(len(h) - 1):-(len(h) - 1)]
 
-        time = self.dt * np.arange(len(lc))
+        time = self.dt * np.arange(len(lc)) + tstart
         return Lightcurve(time, lc, err_dist='gauss', dt=self.dt)
 
     def _find_inverse(self, real, imaginary):
