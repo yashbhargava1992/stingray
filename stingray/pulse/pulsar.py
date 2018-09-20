@@ -4,6 +4,7 @@ Basic pulsar-related functions and statistics.
 from __future__ import division, print_function, absolute_import
 import numpy as np
 import collections
+import warnings
 from ..utils import simon, jit, mad
 from scipy.optimize import minimize, basinhopping, curve_fit
 try:
@@ -26,6 +27,58 @@ def _default_value_if_no_key(dictionary, key, default):
         return dictionary[key]
     except:
         return default
+
+
+def p_to_f(*period_derivatives):
+    """Convert periods into frequencies, and vice versa.
+
+    For now, limited to third derivative. Raises when a
+    fourth derivative is passed.
+
+    Parameters
+    ----------
+    p, pdot, pddot, ... : floats
+        period derivatives, starting from zeroth and in
+        increasing order
+
+    Examples
+    --------
+    >>> p_to_f() == []
+    True
+    >>> np.all(p_to_f(1) == [1])
+    True
+    >>> np.all(p_to_f(1, 2) == [1, -2])
+    True
+    >>> np.all(p_to_f(1, 2, 3) == [1, -2, 5])
+    True
+    >>> np.all(p_to_f(1, 2, 3, 4) == [1, -2, 5, -16])
+    True
+    >>> np.all(p_to_f(1, 2, 3, 4, 32, 22) == [1, -2, 5, -16, 0, 0])
+    True
+    """
+    nder = len(period_derivatives)
+    if nder == 0:
+        return []
+    fder = np.zeros_like(period_derivatives)
+    p = period_derivatives[0]
+    fder[0] = 1 / p
+
+    if nder > 1:
+        pd = period_derivatives[1]
+        fder[1] = -1 / p**2 * pd
+
+    if nder > 2:
+        pdd = period_derivatives[2]
+        fder[2] = 2 / p**3 * pd**2 - 1 / p**2 * pdd
+
+    if nder > 3:
+        pddd = period_derivatives[3]
+        fder[3] = - 6 / p**4 * pd ** 3 + 6 / p**3 * pd * pdd - \
+                  1 / p**2 * pddd
+    if nder > 4:
+        warnings.warn("Derivatives above third are not supported")
+
+    return fder
 
 
 def pulse_phase(times, *frequency_derivatives, **opts):
@@ -549,6 +602,9 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
     ----------------
     nstep : int, optional, default 100
         Number of steps for the bootstrap method
+    sigma : array, default None
+        error on profile bins. If None, the square root of the mean profile
+        is used.
 
     Returns
     -------
@@ -557,13 +613,6 @@ def fftfit_error(template, sigma=None, **fftfit_kwargs):
     mean_phase, std_phase : floats
         Mean and standard deviation of the phase
 
-    Other parameters
-    ----------------
-    nstep : int, optional, default 100
-        Number of steps for the bootstrap method
-    sigma : array, default None
-        error on profile bins. If None, the square root of the mean profile
-        is used.
     """
     nstep = _default_value_if_no_key(fftfit_kwargs, "nstep", 100)
 
@@ -721,7 +770,7 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
     mjds = np.linspace(mjdstart, mjdstop, ntimes)
     toalist = _load_and_prepare_TOAs(mjds, ephem=ephem)
     m = get_model(parfile)
-    delays = m.delay(toalist.table)
+    delays = m.delay(toalist)
     correction_mjd = \
         interp1d(mjds,
                  (toalist.table['tdbld'] * units.d - delays).to(units.d).value)

@@ -522,7 +522,7 @@ class Crossspectrum(object):
     def coherence(self):
         """ Compute Coherence function of the cross spectrum.
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]_.
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -530,6 +530,11 @@ class Crossspectrum(object):
         -------
         coh : numpy.ndarray
             Coherence function
+
+        References
+        ----------
+        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
+
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -891,7 +896,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def coherence(self):
         """Averaged Coherence function.
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]__.
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -907,6 +912,10 @@ class AveragedCrossspectrum(Crossspectrum):
         -------
         (coh, uncertainty) : tuple of np.ndarray
             Tuple comprising the coherence function and uncertainty.
+
+        References
+        ----------
+        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
 
         """
         if np.any(self.m < 50):

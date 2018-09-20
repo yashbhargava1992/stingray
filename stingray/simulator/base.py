@@ -22,8 +22,8 @@ def simulate_times(lc, use_spline=False, bin_time=None):
         The bin time of the light curve, if it needs to be specified for
         improved precision
 
-    Return
-    ------
+    Returns
+    -------
     times : array-like
         Simulated photon arrival times
     """

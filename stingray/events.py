@@ -173,8 +173,8 @@ class EventList(object):
             The bin time of the light curve, if it needs to be specified for
             improved precision
 
-        Return
-        ------
+        Returns
+        -------
         times : array-like
             Simulated photon arrival times
         """

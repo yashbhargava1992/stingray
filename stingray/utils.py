@@ -801,8 +801,8 @@ def poisson_symmetrical_errors(counts):
     err : numpy.ndarray
         An array of uncertainties associated with the Poisson counts in ``counts``
 
-    Example
-    -------
+    Examples
+    --------
     >>> from astropy.stats import poisson_conf_interval
     >>> counts = np.random.randint(0, 1000, 100)
     >>> # ---- Do it without the lookup table ----

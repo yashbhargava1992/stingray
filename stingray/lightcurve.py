@@ -492,8 +492,8 @@ class Lightcurve(object):
 
         Light curves are equal only if their counts as well as times at which those counts occur equal.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [1, 2, 3]
         >>> count1 = [100, 200, 300]
         >>> count2 = [100, 200, 300]
@@ -934,8 +934,8 @@ class Lightcurve(object):
         reverse : boolean, default False
             If True then the object is sorted in reverse order.
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = [2, 1, 3]
         >>> count = [200, 100, 300]
         >>> lc = Lightcurve(time, count)
