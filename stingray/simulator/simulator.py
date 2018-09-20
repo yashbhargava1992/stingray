@@ -33,14 +33,15 @@ class Simulator(object):
     """
 
     def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
-                 random_state=None):
+                 random_state=None, tstart=0.0):
 
         self.dt = dt
         self.N = N
         self.mean = mean
         self.rms = rms
         self.red_noise = red_noise
-        self.time = dt*np.arange(N)
+        self.tstart = tstart
+        self.time = dt*np.arange(N) + self.tstart
 
         # Initialize a tuple of energy ranges with corresponding light curves
         self.channels = []
@@ -454,7 +455,7 @@ class Simulator(object):
         else:
             raise ValueError('Model is not defined!')
 
-    def _simulate_impulse_response(self, s, h, mode='same', tstart=0.0):
+    def _simulate_impulse_response(self, s, h, mode='same'):
         """
         Generate LightCurve from impulse response. To get
         accurate results, binning intervals (dt) of variability
@@ -474,9 +475,6 @@ class Simulator(object):
             is len(s) - lag_delay
             'full' indicates that the length of output light
             curve is len(s) + len(h) -1
-        tstart : float, optional, default 0.0
-            The optional start time for the light curve.
-
 
         Returns
         -------
@@ -486,10 +484,11 @@ class Simulator(object):
 
         if mode == 'same':
             lc = lc[:-(len(h) - 1)]
+
         elif mode == 'filtered':
             lc = lc[(len(h) - 1):-(len(h) - 1)]
 
-        time = self.dt * np.arange(len(lc)) + tstart
+        time = self.dt * np.arange(len(lc)) + self.tstart
         return Lightcurve(time, lc, err_dist='gauss', dt=self.dt)
 
     def _find_inverse(self, real, imaginary):
