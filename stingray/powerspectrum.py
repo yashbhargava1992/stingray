@@ -481,7 +481,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         check_gtis(self.gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(self.gti, segment_size, lc.time)
+            bin_intervals_from_gtis(self.gti, segment_size, lc.time, dt=lc.dt)
 
         power_all = []
         nphots_all = []
