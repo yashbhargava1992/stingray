@@ -582,8 +582,8 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
 
         self.freq = ps_all[0].freq
-        self.time = np.arange(lc.time[0] - 0.5 * lc.dt + 0.5 * self.segment_size,
-                              lc.time[-1] + 0.5 * lc.dt, self.segment_size)
+        self.time = np.arange(lc.time[0] + 0.5 * self.segment_size,
+                              lc.time[-1], self.segment_size)
 
         # Assign lenght of lightcurve as time resolution if only one value
         if len(self.time) > 1:
