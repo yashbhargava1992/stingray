@@ -597,7 +597,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         else:
             self.df = 1 / lc.n
 
-        if len(self.time) > self.dyn_ps.shape[0]:
+        if len(self.time) > self.dyn_ps.shape[1]:
             self.time = self.time[:-1]
 
     def rebin_frequency(self, df_new, method="sum"):
