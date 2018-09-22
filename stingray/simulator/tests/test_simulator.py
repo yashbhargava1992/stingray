@@ -44,6 +44,15 @@ class TestSimulator(object):
         self.simulator = simulator.Simulator(N=1024, random_state=12)
         assert len(self.simulator.simulate(2).counts), 1024
 
+    def test_simulate_with_tstart(self):
+        """
+        Simulate with a random seed value.
+        """
+        tstart = 10.0
+        self.simulator = simulator.Simulator(N=1024, tstart=tstart)
+        assert self.simulator.time[0] == tstart
+
+
     def test_simulate_with_random_state(self):
         self.simulator = simulator.Simulator(N=1024, random_state=np.random.RandomState(12))
 
