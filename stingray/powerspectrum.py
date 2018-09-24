@@ -582,8 +582,17 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
 
         self.freq = ps_all[0].freq
-        self.time = np.arange(lc.time[0] + 0.5 * self.segment_size,
-                              lc.time[-1], self.segment_size)
+
+        start_inds, end_inds = \
+            bin_intervals_from_gtis(self.gti, self.segment_size, lc.time, dt=lc.dt)
+
+
+        tstart = lc.time[start_inds]
+        tend = lc.time[end_inds]
+
+        self.time = tstart + 0.5*(tend - tstart)
+        #self.time = np.arange(lc.time[0] + 0.5 * self.segment_size,
+        #                      lc.time[-1], self.segment_size)
 
         # Assign lenght of lightcurve as time resolution if only one value
         if len(self.time) > 1:
@@ -597,8 +606,9 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         else:
             self.df = 1 / lc.n
 
-        if len(self.time) > self.dyn_ps.shape[1]:
-            self.time = self.time[:-1]
+
+        #if len(self.time) > self.dyn_ps.shape[1]:
+        #    self.time = self.time[:-1]
 
     def rebin_frequency(self, df_new, method="sum"):
         """
