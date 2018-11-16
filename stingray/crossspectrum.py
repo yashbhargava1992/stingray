@@ -15,6 +15,89 @@ import copy
 __all__ = ["Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag"]
 
 
+def cospectra_pvalue(power, nspec):
+    """
+    the assumption that there is no periodic oscillation in the data.
+
+    This computes the single-trial p-value that the power was
+    observed under the null hypothesis that there is no signal in
+    the data.
+
+    Important: the underlying assumptions that make this calculation valid
+    are:
+
+    1. the powers in the power spectrum follow a Laplace distribution
+    2. the power spectrum is normalized according to [Leahy 1983]_
+    3. there is only white noise in the light curve. That is, there is no
+       aperiodic variability that would change the overall shape of the power
+       spectrum.
+
+    Also note that the p-value is for a *single trial*, i.e. the power
+    currently being tested. If more than one power or more than one power
+    spectrum are being tested, the resulting p-value must be corrected for the
+    number of trials (Bonferroni correction).
+
+    Mathematical formulation in [Huppenkothen 2017]_.
+    Original implementation in IDL by Anna L. Watts.
+
+    Parameters
+    ----------
+    power :  float
+        The squared Fourier amplitude of a spectrum to be evaluated
+
+    nspec : int
+        The number of spectra or frequency bins averaged in ``power``.
+        This matters because averaging spectra or frequency bins increases
+        the signal-to-noise ratio, i.e. makes the statistical distributions
+        of the noise narrower, such that a smaller power might be very
+        significant in averaged spectra even though it would not be in a single
+        power spectrum.
+
+    Returns
+    -------
+    pval : float
+        The classical p-value of the observed power being consistent with
+        the null hypothesis of white noise
+
+    References
+    ----------
+
+    * .. [Leahy 1983] https://ui.adsabs.harvard.edu/#abs/1983ApJ...266..160L/abstract
+    * .. [Huppenkothen 2017] http://adsabs.harvard.edu/abs/2018ApJS..236...13H
+
+    """
+    if not np.isfinite(power):
+        raise ValueError("power must be a finite floating point number!")
+
+    #if power < 0:
+    #    raise ValueError("power must be a positive real number!")
+
+    if not np.isfinite(nspec):
+        raise ValueError("nspec must be a finite integer number")
+
+    if nspec < 1:
+        raise ValueError("nspec must be larger or equal to 1")
+
+    if not np.isclose(nspec % 1, 0):
+        raise ValueError("nspec must be an integer number!")
+
+    # If the power is really big, it's safe to say it's significant,
+    # and the p-value will be nearly zero
+    #if (power * nspec) > 30000:
+    #    simon("Probability of no signal too miniscule to calculate.")
+    #    return 0.0
+
+    #else:
+    #    pval = _pavnosigfun(power, nspec)
+    #    return pval
+    if nspec == 1:
+        lapl = scipy.stats.laplace(0, 1)
+        pval = lapl.sf(power)
+
+
+
+    return pval
+
 def coherence(lc1, lc2):
     """
     Estimate coherence function of two light curves.
