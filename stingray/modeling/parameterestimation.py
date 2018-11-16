@@ -94,12 +94,12 @@ class OptimizationResults(object):
     aic : float
         The Akaike Information Criterion, derived from the log(likelihood) and often used
         in model comparison between non-nested models;
-        For more details, see [aic]_
+        For more details, see [aic]
 
     bic : float
         The Bayesian Information Criterion, derived from the log(likelihood) and often used
         in model comparison between non-nested models;
-        For more details, see [bic]_
+        For more details, see [bic]
 
     merit : float
         sum of squared differences between data and model, normalized by the
@@ -122,6 +122,7 @@ class OptimizationResults(object):
     ----------
     .. [aic] http://ieeexplore.ieee.org/document/1100705/?reload=true
     .. [bic] https://projecteuclid.org/euclid.aos/1176344136
+
     """
     def __init__(self, lpost, res, neg=True):
         self.neg = neg
@@ -194,14 +195,19 @@ class OptimizationResults(object):
         Compute various information criteria useful for model comparison in
         non-nested models.
 
-        Currently implemented are the Akaike Information Criterion [aic]_ and the
-        Bayesian Information Criterion [bic]_.
+        Currently implemented are the Akaike Information Criterion [aic] and the
+        Bayesian Information Criterion [bic].
 
         Parameters
         ----------
         lpost: instance of :class:`Posterior` or one of its subclasses
             The object containing the function that is being optimized
             in the regression
+
+        References
+        ----------
+        .. [aic] http://ieeexplore.ieee.org/document/1100705/?reload=true
+        .. [bic] https://projecteuclid.org/euclid.aos/1176344136
 
         """
         if isinstance(lpost, Posterior):
@@ -953,6 +959,7 @@ class SamplingResults(object):
         References
         ----------
         .. [autocorr] https://arxiv.org/abs/1202.3665
+        .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
         """
 
         # compute and store autocorrelation time
@@ -970,6 +977,10 @@ class SamplingResults(object):
         Parameters
         ----------
         sampler : an `emcee.EnsembleSampler` object
+
+        References
+        ----------
+        .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
 
         """
         # between-sequence variance
@@ -1034,9 +1045,10 @@ class SamplingResults(object):
 
         log.info("-- The acceptance fraction is: %f.5"%self.acceptance)
         try:
-            log.info("-- The autocorrelation time is: %f.5"%self.acor)
+            log.info("-- The autocorrelation time is: {}".format(self.acor))
         except AttributeError:
             pass
+
         log.info("R_hat for the parameters is: " + str(self.rhat))
 
         log.info("-- Posterior Summary of Parameters: \n")

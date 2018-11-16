@@ -659,8 +659,8 @@ class TestDynamicalPowerspectrum(object):
     def test_rebin_time_default_method(self):
         segment_size = 3
         dt_new = 4.0
-        rebin_time = np.array([1.5, 5.5, 9.5, 13.5])
-        rebin_dps = np.array([[0.7962963, 1.16402116, 0.28571429, 0.65625]])
+        rebin_time = np.array([ 2.,  6., 10.])
+        rebin_dps = np.array([[0.7962963 , 1.16402116, 0.28571429]])
         dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
         dps.rebin_time(dt_new=dt_new)
         assert np.allclose(dps.time, rebin_time)
@@ -686,8 +686,8 @@ class TestDynamicalPowerspectrum(object):
     def test_rebin_time_mean_method(self):
         segment_size = 3
         dt_new = 4.0
-        rebin_time = np.array([1.5, 5.5, 9.5, 13.5])
-        rebin_dps = np.array([[0.59722222, 0.87301587, 0.21428571, 0.4921875]])
+        rebin_time = np.array([ 2.,  6., 10.])
+        rebin_dps = np.array([[0.59722222, 0.87301587, 0.21428571]])
         dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
         dps.rebin_time(dt_new=dt_new, method='mean')
         assert np.allclose(dps.time, rebin_time)
@@ -713,8 +713,8 @@ class TestDynamicalPowerspectrum(object):
     def test_rebin_time_average_method(self):
         segment_size = 3
         dt_new = 4.0
-        rebin_time = np.array([1.5, 5.5, 9.5, 13.5])
-        rebin_dps = np.array([[0.59722222, 0.87301587, 0.21428571, 0.4921875]])
+        rebin_time = np.array([ 2.,  6., 10.])
+        rebin_dps = np.array([[0.59722222, 0.87301587, 0.21428571]])
         dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
         dps.rebin_time(dt_new=dt_new, method='average')
         assert np.allclose(dps.time, rebin_time)

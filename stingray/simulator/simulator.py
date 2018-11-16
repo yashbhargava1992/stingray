@@ -33,14 +33,15 @@ class Simulator(object):
     """
 
     def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
-                 random_state=None):
+                 random_state=None, tstart=0.0):
 
         self.dt = dt
         self.N = N
         self.mean = mean
         self.rms = rms
         self.red_noise = red_noise
-        self.time = dt*np.arange(N)
+        self.tstart = tstart
+        self.time = dt*np.arange(N) + self.tstart
 
         # Initialize a tuple of energy ranges with corresponding light curves
         self.channels = []
@@ -483,10 +484,11 @@ class Simulator(object):
 
         if mode == 'same':
             lc = lc[:-(len(h) - 1)]
+
         elif mode == 'filtered':
             lc = lc[(len(h) - 1):-(len(h) - 1)]
 
-        time = self.dt * np.arange(len(lc))
+        time = self.dt * np.arange(len(lc)) + self.tstart
         return Lightcurve(time, lc, err_dist='gauss', dt=self.dt)
 
     def _find_inverse(self, real, imaginary):

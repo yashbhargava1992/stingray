@@ -189,7 +189,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
 
     additional_data = order_list_of_arrays(additional_data, order)
 
-    returns = _empty()
+    returns = EvtData()
     returns.ev_list = ev_list
     returns.gti_list = gti_list
     returns.additional_data = additional_data
@@ -199,7 +199,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     return returns
 
 
-class _empty():
+class EvtData():
     def __init__(self):
         pass
 

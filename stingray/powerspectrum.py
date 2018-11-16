@@ -481,7 +481,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         check_gtis(self.gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(self.gti, segment_size, lc.time)
+            bin_intervals_from_gtis(self.gti, segment_size, lc.time, dt=lc.dt)
 
         power_all = []
         nphots_all = []
@@ -563,9 +563,9 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         elif segment_size > lc.tseg:
             raise ValueError("Length of the segment is too long to create "
                              "any segments of the light curve!")
-        self.segment_size = segment_size
-        self.norm = norm
-        self.gti = gti
+        AveragedPowerspectrum.__init__(self, lc=lc,
+                                       segment_size=segment_size, norm=norm,
+                                       gti=gti)
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
@@ -582,10 +582,17 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
 
         self.freq = ps_all[0].freq
-        self.time = np.arange(lc.time[0] - 0.5 * lc.dt + 0.5 * self.segment_size,
-                              lc.time[-1] + 0.5 * lc.dt, self.segment_size)
 
-        # Assign lenght of lightcurve as time resolution if only one value
+        start_inds, end_inds = \
+            bin_intervals_from_gtis(self.gti, self.segment_size, lc.time, dt=lc.dt)
+
+
+        tstart = lc.time[start_inds]
+        tend = lc.time[end_inds]
+
+        self.time = tstart + 0.5*(tend - tstart)
+
+        # Assign length of lightcurve as time resolution if only one value
         if len(self.time) > 1:
             self.dt = self.time[1] - self.time[0]
         else:
@@ -596,9 +603,6 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             self.df = self.freq[1] - self.freq[0]
         else:
             self.df = 1 / lc.n
-
-        if len(self.time) > self.dyn_ps.shape[0]:
-            self.time = self.time[:-1]
 
     def rebin_frequency(self, df_new, method="sum"):
         """

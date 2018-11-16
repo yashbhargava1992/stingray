@@ -185,6 +185,9 @@ class Crossspectrum(object):
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
         The normalization of the (real part of the) cross spectrum.
 
+    amplitude: bool, optional, default ``False``
+        Parameter to choose between real component and amplitude of the cross spectrum.
+
     Other Parameters
     ----------------
     gti: 2-d float array
@@ -223,7 +226,7 @@ class Crossspectrum(object):
     nphots2: float
         The total number of photons in light curve 2
     """
-    def __init__(self, lc1=None, lc2=None, norm='none', gti=None):
+    def __init__(self, lc1=None, lc2=None, norm='none', gti=None, amplitude=False):
 
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
@@ -252,6 +255,7 @@ class Crossspectrum(object):
         self.gti = gti
         self.lc1 = lc1
         self.lc2 = lc2
+        self.amplitude = amplitude
 
         self._make_crossspectrum(lc1, lc2)
 
@@ -282,6 +286,7 @@ class Crossspectrum(object):
         ----------
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
+
         """
         # make sure the inputs work!
         if not isinstance(lc1, Lightcurve):
@@ -489,6 +494,9 @@ class Crossspectrum(object):
         tseg: int
             The length of the Fourier segment, in seconds.
 
+        amp: bool, optional, default ``False``
+            Parameter to choose between real component and amplitude of the cross spectrum
+
         Returns
         -------
         power: numpy.nd.array
@@ -508,16 +516,21 @@ class Crossspectrum(object):
         assert actual_mean > 0.0, \
             "Mean count rate is <= 0. Something went wrong."
 
+        if self.amplitude:
+            c_num = np.abs(unnorm_power)
+        else:
+            c_num = unnorm_power.real
+
         if self.norm.lower() == 'leahy':
-            c = unnorm_power.real
+            c = c_num
             power = c * 2. / actual_nphots
 
         elif self.norm.lower() == 'frac':
-            c = unnorm_power.real / np.float(self.n ** 2.)
+            c = c_num / np.float(self.n ** 2.)
             power = c * 2. * tseg / (actual_mean ** 2.0)
 
         elif self.norm.lower() == 'abs':
-            c = unnorm_power.real / np.float(self.n ** 2.)
+            c = c_num / np.float(self.n ** 2.)
             power = c * (2. * tseg)
 
         elif self.norm.lower() == 'none':
@@ -592,7 +605,7 @@ class Crossspectrum(object):
     def coherence(self):
         """ Compute Coherence function of the cross spectrum.
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]_.
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -600,6 +613,11 @@ class Crossspectrum(object):
         -------
         coh : numpy.ndarray
             Coherence function
+
+        References
+        ----------
+        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
+
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -622,6 +640,73 @@ class Crossspectrum(object):
             return ph_lag / (2 * np.pi * self.freq)
         else:
             raise AttributeError("Object has no attribute named 'time_lag' !")
+
+    def plot(self, labels=None, axis=None, title=None, marker='-', save=False,
+             filename=None):
+        """
+        Plot the amplitude of the cross spectrum vs. the frequency using ``matplotlib``.
+
+        Parameters
+        ----------
+        labels : iterable, default ``None``
+            A list of tuple with ``xlabel`` and ``ylabel`` as strings.
+
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of the ``matplotlib`` figure. For example
+            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
+            acceptable argument for the``matplotlib.pyplot.axis()`` method.
+
+        title : str, default ``None``
+            The title of the plot.
+
+        marker : str, default '-'
+            Line style and color of the plot. Line styles and colors are
+            combined in a single format string, as in ``'bo'`` for blue
+            circles. See ``matplotlib.pyplot.plot`` for more options.
+
+        save : boolean, optional, default ``False``
+            If ``True``, save the figure with specified filename.
+
+        filename : str
+            File name of the image to save. Depends on the boolean ``save``.
+        """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise ImportError("Matplotlib required for plot()")
+
+        fig = plt.figure('crossspectrum')
+        fig = plt.plot(self.freq, np.abs(self.power), marker, color='b', label='Amplitude')
+        fig = plt.plot(self.freq, np.abs(self.power.real), marker, color='r', alpha=0.5, label='Real Part')
+        fig = plt.plot(self.freq, np.abs(self.power.imag), marker, color='g', alpha=0.5, label='Imaginary Part')
+
+        if labels is not None:
+            try:
+                plt.xlabel(labels[0])
+                plt.ylabel(labels[1])
+            except TypeError:
+                utils.simon("``labels`` must be either a list or tuple with "
+                            "x and y labels.")
+                raise
+            except IndexError:
+                utils.simon("``labels`` must have two labels for x and y "
+                            "axes.")
+                # Not raising here because in case of len(labels)==1, only
+                # x-axis will be labelled.
+        plt.legend(loc='best')
+        if axis is not None:
+            plt.axis(axis)
+
+        if title is not None:
+            plt.title(title)
+
+        if save:
+            if filename is None:
+                plt.savefig('spec.png')
+            else:
+                plt.savefig(filename)
+        else:
+            plt.show(block=False)
 
 
 class AveragedCrossspectrum(Crossspectrum):
@@ -894,7 +979,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def coherence(self):
         """Averaged Coherence function.
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996]__.
+        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -910,6 +995,10 @@ class AveragedCrossspectrum(Crossspectrum):
         -------
         (coh, uncertainty) : tuple of np.ndarray
             Tuple comprising the coherence function and uncertainty.
+
+        References
+        ----------
+        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
 
         """
         if np.any(self.m < 50):
