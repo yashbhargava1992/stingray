@@ -1307,3 +1307,4 @@ class Lightcurve(object):
         self.meanrate = np.mean(self.countrate)
         self.meancounts = np.mean(self.counts)
         self.n = self.counts.shape[0]
+        self.tseg = np.max(self.gti) - np.min(self.gti)

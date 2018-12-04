@@ -99,12 +99,15 @@ class TestCrossspectrum(object):
         dt = 0.0001
 
         time = np.arange(tstart + 0.5*dt, tend + 0.5*dt, dt)
+        time2 = np.arange(tstart + 0.5*dt, tend + 1.5*dt, dt)
 
         counts1 = np.random.poisson(0.01, size=time.shape[0])
         counts2 = np.random.negative_binomial(1, 0.09, size=time.shape[0])
+        counts3 = np.random.poisson(0.01, size=time2.shape[0])
 
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, tend]], dt=dt)
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
+        self.lc3 = Lightcurve(time2, counts3, gti=[[tstart, tend]], dt=dt)
 
         self.cs = Crossspectrum(self.lc1, self.lc2)
 
@@ -316,19 +319,21 @@ class TestAveragedCrossspectrum(object):
 
     def test_different_tseg(self):
         time2 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        counts2_test = np.random.poisson(0.01, size=len(time2))
+        counts2_test = np.random.poisson(1000, size=len(time2))
         test_lc2 = Lightcurve(time2, counts2_test)
 
         time1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        counts1_test = np.random.negative_binomial(1, 0.09, size=len(time1))
+        counts1_test = np.random.np.random.poisson(1000, size=len(time1))
         test_lc1 = Lightcurve(time1, counts1_test)
 
         assert test_lc2.dt == test_lc1.dt
 
         assert test_lc2.tseg != test_lc1.tseg
 
-        with pytest.raises(ValueError):
-            assert AveragedCrossspectrum(test_lc1, test_lc2, segment_size=1)
+        with pytest.warns(UserWarning) as record:
+            AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5)
+            assert np.any(["same tseg" in r.message.args[0]
+                           for r in record])
 
     def test_rebin_with_invalid_type_attribute(self):
         new_df = 2
