@@ -12,7 +12,7 @@ X-Ray Spectral Timing Made Easy
 
 Stingray is an in-development spectral-timing software package for astrophysical X-ray (and more) data.
 Stingray merges existing efforts for a (spectral-)timing package in Python, and is
-structured with the best guidelines for modern open-source programming, following the example of `Astropy`_ .
+structured with the best guidelines for modern open-source programming, following the example of `Astropy`_.
 
 It is composed of:
 
