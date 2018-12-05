@@ -111,7 +111,7 @@ class TestLightcurve(object):
 
         with warnings.catch_warnings(record=True) as w:
             lc = Lightcurve(times, counts, err_dist="poisson")
-            assert str(w[0].message) == warn_str
+            assert np.any([str(wi.message) == warn_str for wi in w])
 
     def test_unrecognize_err_dist_warning(self):
         """
@@ -125,7 +125,7 @@ class TestLightcurve(object):
 
         with warnings.catch_warnings(record=True) as w:
             lc = Lightcurve(times, counts, err_dist='gauss')
-            assert str(w[0].message) == warn_str
+            assert np.any([str(wi.message) == warn_str for wi in w])
 
     def test_dummy_err_dist_fail(self):
         """
@@ -325,7 +325,8 @@ class TestLightcurve(object):
                          err_dist="gauss")
         with warnings.catch_warnings(record=True) as w:
             lc = lc1 + lc2
-            assert "ightcurves have different statistics" in str(w[0].message)
+            assert np.any(["ightcurves have different statistics"
+                           in str(wi.message) for wi in w])
 
     def test_add_with_same_gtis(self):
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
@@ -383,7 +384,8 @@ class TestLightcurve(object):
                          err_dist="gauss")
         with warnings.catch_warnings(record=True) as w:
             lc = lc1 - lc2
-            assert "ightcurves have different statistics" in str(w[0].message)
+            assert np.any(["ightcurves have different statistics"
+                           in str(wi.message) for wi in w])
 
     def test_sub_with_different_mjdref(self):
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
@@ -463,7 +465,8 @@ class TestLightcurve(object):
 
         with warnings.catch_warnings(record=True) as w:
             lc1.join(lc2)
-            assert "different bin widths" in str(w[0].message)
+            assert np.any(["different bin widths"
+                           in str(wi.message) for wi in w])
 
     def test_join_with_different_mjdref(self):
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
@@ -493,7 +496,8 @@ class TestLightcurve(object):
 
         with warnings.catch_warnings(record=True) as w:
             lc = lc1.join(lc2)
-            assert "overlapping time ranges" in str(w[0].message)
+            assert np.any(["overlapping time ranges" in wi.message
+                           for wi in w])
 
         assert len(lc.counts) == len(lc.time) == 6
         assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
@@ -634,13 +638,14 @@ class TestLightcurve(object):
         with pytest.raises(TypeError):
             with warnings.catch_warnings(record=True) as w:
                 lc.plot(labels=123)
-                assert "must be either a list or tuple" in str(w[0].message)
+                assert np.any(["must be either a list or tuple"
+                               in wi.message for wi in w])
 
     def test_plot_labels_index_error(self):
         lc = Lightcurve(self.times, self.counts)
         with warnings.catch_warnings(record=True) as w:
             lc.plot(labels=('x'))
-            assert "must have two labels" in str(w[0].message)
+            assert np.any(["must have two labels" in wi.message for wi in w])
 
     def test_plot_default_filename(self):
         lc = Lightcurve(self.times, self.counts)
