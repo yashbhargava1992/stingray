@@ -35,13 +35,13 @@ env:
         # so Cython is required for testing. If your package does not include
         # Cython code, you can set CONDA_DEPENDENCIES=''
         - CONDA_DEPENDENCIES='Cython numpy scipy h5py nose matplotlib'
+        - SETUP_XVFB=True
+        - MPLBACKEND="Agg"
     matrix:
         # Make sure that egg_info works without dependencies
         - SETUP_CMD='egg_info'
         # Try all python versions with the latest numpy
         - SETUP_CMD='test --coverage'
-        - SETUP_XVFB=True
-        - MPLBACKEND="Agg"
 
 matrix:
     fast_finish: true
