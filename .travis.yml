@@ -40,6 +40,8 @@ env:
         - SETUP_CMD='egg_info'
         # Try all python versions with the latest numpy
         - SETUP_CMD='test --coverage'
+        - SETUP_XVFB=True
+        - MPLBACKEND="Agg"
 
 matrix:
     fast_finish: true
@@ -134,9 +136,6 @@ install:
     # other dependencies.
 
 before_script:
-#   - "export DISPLAY=:99.0"
-#   - "sh -e /etc/init.d/xvfb start"
-#   - sleep 3
 
 script:
    - python setup.py $SETUP_CMD
