@@ -30,7 +30,6 @@ except ImportError:
 
             return wrapped_f
 
-
 try:
     from statsmodels.robust import mad as mad  # pylint: disable=unused-import
 except ImportError:
@@ -46,11 +45,12 @@ except ImportError:
             The data along which to calculate the MAD
 
         c : float, optional
-            The normalization constant. Defined as ``scipy.stats.norm.ppf(3/4.)``,
-            which is approximately ``.6745``.
+            The normalization constant. Defined as
+            ``scipy.stats.norm.ppf(3/4.)``, which is approximately ``.6745``.
 
         axis : int, optional, default ``0``
-            Axis along which to calculate ``mad``. Default is ``0``, can also be ``None``
+            Axis along which to calculate ``mad``. Default is ``0``, can also
+            be ``None``
         """
         data = np.asarray(data)
         if axis is not None:
@@ -59,12 +59,12 @@ except ImportError:
             center = np.median(data)
         return np.median((np.fabs(data - center)) / c, axis=axis)
 
-
 __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'is_string', 'is_iterable', 'order_list_of_arrays',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
-           'create_window', 'poisson_symmetrical_errors']
+           'create_window', 'poisson_symmetrical_errors', 'standard_error',
+           'nearest_power_of_two', 'find_nearest']
 
 
 def _root_squared_mean(array):
@@ -194,10 +194,11 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
 
 def rebin_data_log(x, y, f, y_err=None, dx=None):
-    """Logarithmic rebin of some data. Particularly useful for the power spectrum.
+    """Logarithmic re-bin of some data. Particularly useful for the power
+    spectrum.
 
-    The new dependent variable depends on the previous dependent variable modified
-    by a factor f:
+    The new dependent variable depends on the previous dependent variable
+    modified by a factor f:
 
     .. math::
 
@@ -308,8 +309,8 @@ def assign_value_if_none(value, default):
     value : object
         A variable with either some assigned value, or ``None``
 
-    default : object
-        The value to assign to the variable ``value`` if ``value is None`` returns ``True``
+    default : object The value to assign to the variable ``value`` if
+    ``value is None`` returns ``True``
 
     Returns
     -------
@@ -333,10 +334,8 @@ def look_for_array_in_array(array1, array2):
         A second array which potentially contains a subset of values
         also contained in ``array1``
 
-    Returns
-    -------
-    array3 : iterable
-        An array with the subset of values contained in both ``array1`` and ``array2``
+    Returns ------- array3 : iterable An array with the subset of values
+    contained in both ``array1`` and ``array2``
 
     """
     return next((i for i in array1 if i in array2), None)
@@ -484,9 +483,10 @@ def get_random_state(random_state=None):
         if is_int(random_state):
             random_state = np.random.RandomState(random_state)
         elif not isinstance(random_state, np.random.RandomState):
-            raise ValueError("{value} can't be used to generate a numpy.random.RandomState".format(
-                value=random_state
-            ))
+            raise ValueError(
+                "{value} can't be used to generate a numpy.random.RandomState".format(
+                    value=random_state
+                ))
 
     return random_state
 
@@ -713,14 +713,16 @@ def create_window(N, window_type='uniform'):
     if not isinstance(N, int):
         raise TypeError('N (window length) must be an integer')
 
-    windows = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular', 'welch', 'blackmann', 'flat-top']
+    windows = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular',
+               'welch', 'blackmann', 'flat-top']
 
     if not isinstance(window_type, string_types):
         raise TypeError('type of window must be specified as string!')
 
     window_type = window_type.lower()
     if window_type not in windows:
-        raise ValueError("Wrong window type specified or window function is not available")
+        raise ValueError(
+            "Wrong window type specified or window function is not available")
 
     # Return empty array as window if N = 0
     if N == 0:
@@ -770,7 +772,8 @@ def create_window(N, window_type='uniform'):
         a0 = 0.42659
         a1 = 0.49656
         a2 = 0.076849
-        window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + a2 * np.cos((4 * np.pi * n) / N_minus_1)
+        window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + a2 * np.cos(
+            (4 * np.pi * n) / N_minus_1)
 
     if window_type == 'flat-top':
         a0 = 1
@@ -779,9 +782,9 @@ def create_window(N, window_type='uniform'):
         a3 = 0.388
         a4 = 0.028
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + \
-                      a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
-                      a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
-                      a4 * np.cos((8 * np.pi * n) / N_minus_1)
+                 a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
+                 a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
+                 a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
 
@@ -799,7 +802,8 @@ def poisson_symmetrical_errors(counts):
     Returns
     -------
     err : numpy.ndarray
-        An array of uncertainties associated with the Poisson counts in ``counts``
+        An array of uncertainties associated with the Poisson counts in
+        ``counts``
 
     Examples
     --------
@@ -829,3 +833,81 @@ def poisson_symmetrical_errors(counts):
 
     idxs = np.searchsorted(count_values, counts_int)
     return err[idxs]
+
+
+def standard_error(xs, mean):
+    """
+    Return the standard error of the mean (SEM) of an array of arrays.
+
+    Parameters
+    ----------
+    xs : 2-d float array
+        List of data point arrays.
+
+    mean : 1-d float array
+        Average of the data points.
+
+    Returns
+    -------
+    standard_error : 1-d float array
+        Standard error of the mean (SEM).
+
+    """
+
+    n_seg = len(xs)
+    xs_diff_sq = np.subtract(xs, mean) ** 2
+    standard_deviation = np.sum(xs_diff_sq, axis=0) / (n_seg - 1)
+    error = np.sqrt(standard_deviation / n_seg)
+    return error
+
+
+def nearest_power_of_two(x):
+    """
+    Return a number which is nearest to `x` and is the integral power of two.
+
+    Parameters
+    ----------
+    x : int, float
+
+    Returns
+    -------
+    x_nearest : int
+        Number closest to `x` and is the integral power of two.
+
+    """
+    x = int(x)
+    x_lower = 1 if x == 0 else 2 ** (x - 2).bit_length()
+    x_upper = 1 if x == 0 else 2 ** (x - 1).bit_length()
+    x_nearest = x_lower if (x - x_lower) < (x_upper - x) else x_upper
+    return x_nearest
+
+
+def find_nearest(array, value):
+    """
+    Return the array value that is closest to the input value (Abigail Stevens:
+    Thanks StackOverflow!)
+
+    Parameters
+    ----------
+    array : np.array of ints or floats
+        1-D array of numbers to search through. Should already be sorted
+        from low values to high values.
+
+    value : int or float
+        The value you want to find the closest to in the array.
+
+    Returns
+    -------
+    array[idx] : int or float
+        The array value that is closest to the input value.
+
+    idx : int
+        The index of the array of the closest value.
+
+    """
+    idx = np.searchsorted(array, value, side="left")
+    if idx == len(array) or np.fabs(value - array[idx - 1]) < \
+            np.fabs(value - array[idx]):
+        return array[idx - 1], idx - 1
+    else:
+        return array[idx], idx
