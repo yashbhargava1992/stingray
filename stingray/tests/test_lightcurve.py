@@ -84,7 +84,6 @@ class TestChunks(object):
 
 
 class TestLightcurve(object):
-
     @classmethod
     def setup_class(cls):
         cls.times = np.array([1, 2, 3, 4])
@@ -496,7 +495,7 @@ class TestLightcurve(object):
 
         with warnings.catch_warnings(record=True) as w:
             lc = lc1.join(lc2)
-            assert np.any(["overlapping time ranges" in wi.message
+            assert np.any(["overlapping time ranges" in str(wi.message)
                            for wi in w])
 
         assert len(lc.counts) == len(lc.time) == 6
@@ -639,13 +638,14 @@ class TestLightcurve(object):
             with warnings.catch_warnings(record=True) as w:
                 lc.plot(labels=123)
                 assert np.any(["must be either a list or tuple"
-                               in wi.message for wi in w])
+                               in str(wi.message) for wi in w])
 
     def test_plot_labels_index_error(self):
         lc = Lightcurve(self.times, self.counts)
         with warnings.catch_warnings(record=True) as w:
             lc.plot(labels=('x'))
-            assert np.any(["must have two labels" in wi.message for wi in w])
+
+            assert np.any(["must have two labels" in str(wi.message) for wi in w])
 
     def test_plot_default_filename(self):
         lc = Lightcurve(self.times, self.counts)

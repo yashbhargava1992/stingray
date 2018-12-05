@@ -229,7 +229,7 @@ class TestFileFormats(object):
         plt.close("all")
         with warnings.catch_warnings(record=True) as w:
             savefig('test.png')
-            assert np.any(["plot the image first" in wi.message for wi in w])
+            assert np.any(["plot the image first" in str(wi.message) for wi in w])
         os.unlink('test.png')
 
     def test_savefig(self):
