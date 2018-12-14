@@ -455,8 +455,8 @@ def cross_two_gtis(gti0, gti1):
     final_gti = []
     for ie, e in enumerate(conc_end):
         # Is this ending in series 0 or 1?
-        this_series = conc_tag[ie]
-        other_series = not this_series
+        this_series = int(conc_tag[ie])
+        other_series = int(this_series == 0)
 
         # Check that this closes intervals in both series.
         # 1. Check that there is an opening in both series 0 and 1 lower than e
