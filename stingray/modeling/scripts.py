@@ -283,7 +283,7 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
     ...         models.Lorentz1D(amplitude_2, x_0_2, fwhm_2) + \\
     ...         models.Const1D(whitenoise)
 
-    >>> freq = np.linspace(0.01, 10.0, 10.0/0.01)
+    >>> freq = np.linspace(0.01, 10.0, 1000)
     >>> p = model(freq)
     >>> noise = np.random.exponential(size=len(freq))
 

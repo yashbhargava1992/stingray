@@ -42,7 +42,7 @@ class TestFitLorentzians(object):
             models.Lorentz1D(cls.amplitude_2, cls.x_0_2, cls.fwhm_2) + \
             models.Const1D(cls.whitenoise)
 
-        freq = np.linspace(0.01, 10.0, 10.0 / 0.01)
+        freq = np.linspace(0.01, 10.0, 1000)
         p = cls.model(freq)
         noise = np.random.exponential(size=len(freq))
 

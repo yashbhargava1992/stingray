@@ -298,7 +298,7 @@ class Simulator(object):
         h_primary = np.append(np.zeros(int(t1/dt)), p1)
 
         # Create a rising exponential of user-provided slope
-        x = np.linspace(t1/dt, t2/dt, (t2-t1)/dt)
+        x = np.linspace(t1/dt, t2/dt, int((t2-t1)/dt))
         h_rise = np.exp(rise*x)
 
         # Evaluate a factor for scaling exponential
@@ -306,7 +306,7 @@ class Simulator(object):
         h_secondary = (h_rise/factor) + p1
 
         # Create a decaying exponential until the end time
-        x = np.linspace(t2/dt, t3/dt, (t3-t2)/dt)
+        x = np.linspace(t2/dt, t3/dt, int((t3-t2)/dt))
         h_decay = (np.exp((-decay)*(x-4/dt)))
 
         # Add the three responses
