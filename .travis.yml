@@ -2,7 +2,7 @@ language: python
 
 python:
     - 2.7
-    - 3.6
+    - 3.7
 
 # Setting sudo to false opts in to Travis-CI container-based builds.
 sudo: false
@@ -50,13 +50,6 @@ matrix:
         - python: 3.5
           env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data --coverage'
 
-        - python: 2.7
-          env: PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner' SETUP_CMD='test --remote-data'
-
-        #Try without importing h5py but importing numba
-        - python: 2.7
-          env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba'
-
         - python: 3.5
           env: CONDA_DEPENDENCIES='Cython numpy scipy nose matplotlib numba' SETUP_CMD='test --coverage'
 
@@ -89,16 +82,15 @@ matrix:
 
     allow_failures:
         # Try older scipy versions
-        - python: 2.7
-          env: SCIPY_VERSION=0.16.0 NUMPY_VERSION=1.11
-
-        # Try older scipy versions
         - python: 3.4
           env: SCIPY_VERSION=0.16.0 NUMPY_VERSION=1.11
 
         # Try Astropy development version
         - python: 3.5
           env: ASTROPY_VERSION=development
+
+        - python: 2.7
+        - SETUP_CMD='test --coverage'
 
 
 before_install:
