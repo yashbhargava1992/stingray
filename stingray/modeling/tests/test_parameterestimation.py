@@ -3,9 +3,8 @@ import numpy as np
 import scipy.stats
 import os
 import logging
-import warnings
 
-from astropy.tests.helper import pytest
+from astropy.tests.helper import pytest, catch_warnings
 from astropy.modeling import models
 from astropy.modeling.fitting import _fitter_to_model_params
 
@@ -161,9 +160,7 @@ class TestParameterEstimation(object):
         pe = ParameterEstimation()
         if os.path.exists("test_corner.pdf"):
             os.unlink("test_corner.pdf")
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=RuntimeWarning)
-
+        with catch_warnings(RuntimeWarning):
             sample_res = pe.sample(self.lpost, [2.0], nwalkers=100, niter=10,
                                    burnin=50, print_results=True, plot=True)
 
@@ -575,9 +572,8 @@ if can_sample:
                                                 len(res.p_opt), cls.lpost,
                                                 args=[False], threads=1)
 
-            with warnings.catch_warnings():
-                warnings.filterwarnings('ignore', category=RuntimeWarning)
-                _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
+         with catch_warnings(RuntimeWarning):
+               _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
 
 
         def test_can_sample_is_true(self):
@@ -926,8 +922,7 @@ class TestPSDParEst(object):
 
         pe = PSDParEst(self.ps)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=RuntimeWarning)
+        with catch_warnings(RuntimeWarning):
             sample_res = pe.sample(self.lpost, [2.0, 0.1, 100, 2.0], nwalkers=50,
                                    niter=10, burnin=15, print_results=True,
                                    plot=True)
@@ -1191,8 +1186,7 @@ class TestPSDParEst(object):
 
         pe = PSDParEst(ps)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=RuntimeWarning)
+        with catch_warnings(RuntimeWarning):
             pval = pe.calibrate_lrt(lpost, [2.0], lpost2,
                                     [2.0, 1.0, 2.0], sample=None,
                                     max_post=True, nsim=10, nwalkers=100,
@@ -1387,8 +1381,7 @@ class TestPSDParEst(object):
 
         pe = PSDParEst(ps)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=RuntimeWarning)
+        with catch_warnings(RuntimeWarning):
             pval = pe.calibrate_highest_outlier(lpost, [2.0], sample=None,
                                                 max_post=True, seed=seed,
                                                 nsim=nsim, niter=20, nwalkers=100,
