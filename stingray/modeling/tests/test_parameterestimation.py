@@ -572,8 +572,8 @@ if can_sample:
                                                 len(res.p_opt), cls.lpost,
                                                 args=[False], threads=1)
 
-         with catch_warnings(RuntimeWarning):
-               _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
+            with catch_warnings(RuntimeWarning):
+                _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
 
 
         def test_can_sample_is_true(self):
