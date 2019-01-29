@@ -531,7 +531,7 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
         min_chisq = 1e32
 
         binsize = 1 / nbin
-        for d in np.linspace(-0.5, 0.5, nbin / 2):
+        for d in np.linspace(-0.5, 0.5, int(nbin / 2)):
             p0 = [1, dph + d]
 
             res_trial = minimize(_fft_fun_wrap, p0, args=([prof, template],),
