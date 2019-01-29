@@ -14,18 +14,15 @@ environment:
         PIP_DEPENDENCIES: "emcee pytest-catchlog"
 
     matrix:
-        - PYTHON_VERSION: "3.4"
-          CONDA_PY: "34"
-          CONDA_DEPENDENCIES: "mkl=2017.0.3 scipy=0.18 numpy=1.11 nose h5py astropy matplotlib statsmodels"
-        - PYTHON_VERSION: "3.5"
-          CONDA_PY: "35"
-          NUMPY_VERSION: "1.11"
-        - PYTHON_VERSION: "2.7"
-          NUMPY_VERSION: "stable"
-          CONDA_PY: "27"
         - PYTHON_VERSION: "3.6"
           NUMPY_VERSION: "stable"
           CONDA_PY: "36"
+        - PYTHON_VERSION: "3.7"
+          NUMPY_VERSION: "stable"
+          CONDA_PY: "37"
+        - PYTHON_VERSION: "3.5"
+          CONDA_PY: "35"
+          NUMPY_VERSION: "1.11"
 
 matrix:
     fast_finish: true
