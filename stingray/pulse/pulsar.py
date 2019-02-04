@@ -395,7 +395,7 @@ def z_n(phase, n=2, norm=1):
                 for k in range(1, n + 1)])
 
 
-def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
+def z2_n_detection_level(epsilon=0.01, n=2, n_summed_spectra=1, ntrial=1):
     """Return the detection level for the Z^2_n statistics.
 
     See Buccheri et al. (1983), Bendat and Piersol (1971).
@@ -411,6 +411,8 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     ----------------
     ntrial : int
         The number of trials executed to find this profile
+    n_summed_spectra : int
+        Number of Z_2^n periodograms that are being averaged
 
     Returns
     -------
@@ -418,13 +420,19 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
         The epoch folding statistics corresponding to a probability
         epsilon * 100 % that the signal has been produced by noise
     """
-    if ntrial > 1:
-        simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
+    try:
+        from scipy import stats
+    except:  # pragma: no cover
+        raise Exception('You need Scipy to use this function')
     from scipy import stats
-    return stats.chi2.isf(epsilon / ntrial, 2 * n)
+
+    retlev = stats.chi2.isf(epsilon / ntrial, 2 * n_summed_spectra * n) \
+        / (n_summed_spectra)
+
+    return retlev
 
 
-def z2_n_probability(z2, n=2, ntrial=1):
+def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
     """Calculate the probability of a certain folded profile, due to noise.
 
     Parameters
@@ -438,6 +446,8 @@ def z2_n_probability(z2, n=2, ntrial=1):
     ----------------
     ntrial : int
         The number of trials executed to find this profile
+    n_summed_spectra : int
+        Number of Z_2^n periodograms that were averaged to obtain z2
 
     Returns
     -------
@@ -447,7 +457,10 @@ def z2_n_probability(z2, n=2, ntrial=1):
     if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
-    return stats.chi2.sf(z2, 2 * n) * ntrial
+
+    epsilon = ntrial * stats.chi2.sf(z2 * n_summed_spectra,
+                                     2 * n * n_summed_spectra)
+    return epsilon
 
 
 def fftfit_fun(profile, template, amplitude, phase):
