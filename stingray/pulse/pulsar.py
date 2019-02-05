@@ -355,8 +355,8 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     if ntrial > 1:
         simon("fold: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
-    return stats.chi2.isf(epsilon/ntrial, nbin - 1)
 
+    return stats.chi2.isf(epsilon/ntrial, nbin - 1)
 
 def z_n(phase, n=2, norm=1):
     '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
@@ -395,7 +395,7 @@ def z_n(phase, n=2, norm=1):
                 for k in range(1, n + 1)])
 
 
-def z2_n_detection_level(epsilon=0.01, n=2, n_summed_spectra=1, ntrial=1):
+def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1, n_summed_spectra=1):
     """Return the detection level for the Z^2_n statistics.
 
     See Buccheri et al. (1983), Bendat and Piersol (1971).
