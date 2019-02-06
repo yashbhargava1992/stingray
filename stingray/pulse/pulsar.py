@@ -811,7 +811,8 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
         -------
         mets: array-like
             Corrected times in MET seconds
-        """        deorb_mjds = correction_mjd(times / 86400 + mjdref)
+        """
+        deorb_mjds = correction_mjd(times / 86400 + mjdref)
         return np.array((deorb_mjds - mjdref) * 86400)
 
     retvals = [correction_sec, correction_mjd]
