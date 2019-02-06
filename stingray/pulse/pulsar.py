@@ -778,6 +778,17 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
                   fill_value="extrapolate")
 
     def correction_mjd(mjds):
+        """Get the orbital correction.
+        
+        Parameters
+        ----------
+        mjds : array-like
+            The input times in MJD
+        
+        Returns
+        -------
+        mjds: Corrected times in MJD
+        """
         xvals = correction_mjd_rough.x
         # Maybe this will be fixed if scipy/scipy#9602 is accepted
         bad = (mjds < xvals[0]) | (np.any(mjds > xvals[-1]))
@@ -787,7 +798,20 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
         return correction_mjd_rough(mjds)
 
     def correction_sec(times, mjdref):
-        deorb_mjds = correction_mjd(times / 86400 + mjdref)
+        """Get the orbital correction.
+        
+        Parameters
+        ----------
+        times : array-like
+            The input times in seconds of Mission Elapsed Time (MET)
+        mjdref : float
+            MJDREF, reference MJD for the mission
+       
+        Returns
+        -------
+        mets: array-like
+            Corrected times in MET seconds
+        """        deorb_mjds = correction_mjd(times / 86400 + mjdref)
         return np.array((deorb_mjds - mjdref) * 86400)
 
     retvals = [correction_sec, correction_mjd]
