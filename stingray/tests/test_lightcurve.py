@@ -563,6 +563,46 @@ class TestLightcurve(object):
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
         assert lc2.mjdref == lc.mjdref
 
+    def test_split_with_two_segments(self):
+        test_time = np.array([1, 2, 3, 6, 7, 8])
+        test_counts = np.random.rand(len(test_time))
+        lc_test = Lightcurve(test_time, test_counts)
+        slc = lc_test.split(1.5)
+
+        assert len(slc) == 2
+
+    def test_split_has_correct_data_points(self):
+        test_time = np.array([1, 2, 3, 6, 7, 8])
+        test_counts = np.random.rand(len(test_time))
+        lc_test = Lightcurve(test_time, test_counts)
+        slc = lc_test.split(1.5)
+
+        assert np.all((slc[0].time == [1, 2, 3]))
+        assert np.all((slc[1].time == [6, 7 ,8]))
+        assert np.all((slc[0].counts == test_counts[:3]))
+        assert np.all((slc[1].counts == test_counts[3:]))
+
+    def test_split_with_three_segments(self):
+        test_time = np.array([1, 2, 3, 6, 7, 8, 10, 11, 12])
+        test_counts = np.random.rand(len(test_time))
+        lc_test = Lightcurve(test_time, test_counts)
+        slc = lc_test.split(1.5)
+
+        assert len(slc) == 3
+
+    def test_threeway_split_has_correct_data_points(self):
+        test_time = np.array([1, 2, 3, 6, 7, 8, 10, 11, 12])
+        test_counts = np.random.rand(len(test_time))
+        lc_test = Lightcurve(test_time, test_counts)
+        slc = lc_test.split(1.5)
+
+        assert np.all((slc[0].time == [1, 2, 3]))
+        assert np.all((slc[1].time == [6, 7 ,8]))
+        assert np.all((slc[2].time == [10, 11 ,12]))
+        assert np.all((slc[0].counts == test_counts[:3]))
+        assert np.all((slc[1].counts == test_counts[3:6]))
+        assert np.all((slc[2].counts == test_counts[6:]))
+
     def test_sort(self):
         _times = [2, 1, 3, 4]
         _counts = [40, 10, 20, 5]
