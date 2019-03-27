@@ -921,6 +921,54 @@ class Lightcurve(object):
 
         return self._truncate_by_index(start, stop)
 
+    def split(self, min_gap, min_points=1):
+        """
+        For data with gaps, it can sometimes be useful to be able to split
+        the light curve into separate, evenly sampled objects along those
+        data gaps. This method allows to do this: it finds data gaps of a
+        specified minimum size, and produces a list of new `Lightcurve`
+        objects for each contiguous segment.
+
+        Parameters
+        ----------
+        min_gap : float
+            The length of a data gap, in the same units as the `time` attribute
+            of the `Lightcurve` object. Any smaller gaps will be ignored, any
+            larger gaps will be identified and used to split the light curve.
+
+        min_points : int, default 1
+            The minimum number of data points in each light curve. Light
+            curves with fewer data points will be ignored.
+
+        Returns
+        -------
+        lc_all : iterable of `Lightcurve` objects
+            The list of all contiguous light curves
+
+        Example
+        -------
+        >>> time = np.array([1, 2, 3, 6, 7, 8, 11, 12, 13])
+        >>> counts = np.random.rand(time.shape[0])
+        >>> lc = Lightcurve(time, counts)
+        >>> split_lc = lc.split(lc, 1.5)
+
+        """
+
+        gap_idx = np.where(np.diff(self.time) >= min_gap)[0]
+        print(gap_idx)
+
+        gap_idx = np.hstack([[-1], gap_idx, [self.n - 1]])
+        print(gap_idx)
+
+        lc_all = []
+        for i in range(len(gap_idx) - 1):
+            lc_new = self.truncate(start=gap_idx[i] + 1, stop=gap_idx[i + 1] + 1)
+
+            if len(lc_new) > min_points:
+                lc_all.append(lc_new)
+
+        return lc_all
+
     def sort(self, reverse=False):
         """
         Sort a Lightcurve object by time.
