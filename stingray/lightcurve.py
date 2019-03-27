@@ -962,7 +962,10 @@ class Lightcurve(object):
 
         lc_all = []
         for i in range(len(gap_idx) - 1):
-            lc_new = self.truncate(start=gap_idx[i] + 1, stop=gap_idx[i + 1] + 1)
+            if gap_idx[i+1] - gap_idx[i] <= 1:
+                continue
+            else:
+                lc_new = self.truncate(start=gap_idx[i] + 1, stop=gap_idx[i + 1] + 1)
 
             if len(lc_new) > min_points:
                 lc_all.append(lc_new)

@@ -603,6 +603,17 @@ class TestLightcurve(object):
         assert np.all((slc[1].counts == test_counts[3:6]))
         assert np.all((slc[2].counts == test_counts[6:]))
 
+    def test_consecutive_gaps(self):
+        test_time = np.array([1, 2, 3, 6, 9, 10, 11])
+        test_counts = np.random.rand(len(test_time))
+        lc_test = Lightcurve(test_time, test_counts)
+        slc = lc_test.split(1.5)
+
+        assert np.all((slc[0].time == [1, 2, 3]))
+        assert np.all((slc[1].time == [9, 10, 11]))
+        assert np.all((slc[0].counts == test_counts[:3]))
+        assert np.all((slc[1].counts == test_counts[4:]))
+
     def test_sort(self):
         _times = [2, 1, 3, 4]
         _counts = [40, 10, 20, 5]
