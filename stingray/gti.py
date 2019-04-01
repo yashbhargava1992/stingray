@@ -100,6 +100,9 @@ def check_gtis(gti):
         If GTIs have overlapping or displaced values
     """
     gti = np.asarray(gti)
+    if len(gti) < 1:
+        raise ValueError("Empty GTIs")
+
     if len(gti) != gti.shape[0] or len(gti.shape) != 2 or \
             len(gti) != gti.shape[0]:
         raise TypeError("Please check formatting of GTIs. They need to be"
@@ -158,7 +161,6 @@ def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):  # pragma: no
             if length < min_length:
                 next_gti = True
                 continue
-
             next_gti = False
             gti_mask[gti_el] = True
 
@@ -229,9 +231,14 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
                                         dt=dt, epsilon=epsilon)
 
     gtis = np.array(gtis, dtype=np.longdouble)
+
     check_gtis(gtis)
 
     dt = assign_value_if_none(dt, np.median(np.diff(time)))
+
+    lengths = gtis[:, 1] - gtis[:, 0]
+    good = lengths > max(min_length, dt)
+    gtis = gtis[good]
 
     mask = np.zeros(len(time), dtype=bool)
 
