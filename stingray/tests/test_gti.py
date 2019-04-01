@@ -237,3 +237,9 @@ class TestGTI(object):
 
         with pytest.raises(ValueError):
             check_gtis([[1, 0]])
+
+    def test_check_gti_fails_empty(self):
+        with pytest.raises(ValueError) as excinfo:
+            check_gtis([])
+        assert 'Empty' in str(excinfo)
+

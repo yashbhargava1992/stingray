@@ -259,7 +259,8 @@ def fold_events(times, *frequency_derivatives, **opts):
     start_phase, stop_phase = pulse_phase(np.array([start_time, stop_time]),
                                           *frequency_derivatives,
                                           to_1=False)
-
+    print(phases)
+    print(pulse_phase(times, frequency_derivatives[0], frequency_derivatives[1], to_1=True))
     raw_profile, bins = np.histogram(phases,
                                      bins=np.linspace(0, 1, nbin + 1),
                                      weights=weights)
@@ -357,6 +358,7 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     from scipy import stats
 
     return stats.chi2.isf(epsilon/ntrial, nbin - 1)
+
 
 def z_n(phase, n=2, norm=1):
     '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
@@ -670,16 +672,19 @@ def _plot_TOA_fit(profile, template, toa, mod=None, toaerr=None,
     import matplotlib.pyplot as plt
     from scipy.interpolate import interp1d
     import time
-    phases = np.arange(0, 1, 1 / len(profile))
+    phases = np.arange(0, 2, 1 / len(profile))
+    profile = np.concatenate((profile, profile))
+    template = np.concatenate((template, template))
     if mod is None:
         mod = interp1d(phases, template, fill_value='extrapolate')
 
     fig = plt.figure()
-    plt.plot(phases - np.floor(phases), profile, drawstyle='steps-mid')
+    plt.plot(phases, profile, drawstyle='steps-mid')
     fine_phases = np.linspace(0, 1, 1000)
     fine_phases_shifted = fine_phases - toa / period + additional_phase
-    plt.plot(fine_phases,
-             mod(fine_phases_shifted - np.floor(fine_phases_shifted)))
+    model = mod(fine_phases_shifted - np.floor(fine_phases_shifted))
+    model = np.concatenate((model, model))
+    plt.plot(np.linspace(0, 2, 2000), model)
     if toaerr is not None:
         plt.axvline((toa - toaerr) / period)
         plt.axvline((toa + toaerr) / period)
