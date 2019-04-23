@@ -591,7 +591,7 @@ class Lightcurve(object):
             A :class:`Lightcurve` object with the binned light curve
         """
 
-        toa = np.asarray(toa)
+        toa = np.sort(np.asarray(toa))
         # tstart is an optional parameter to set a starting time for
         # the light curve in case this does not coincide with the first photon
         if tstart is None:
@@ -1307,3 +1307,4 @@ class Lightcurve(object):
         self.meanrate = np.mean(self.countrate)
         self.meancounts = np.mean(self.counts)
         self.n = self.counts.shape[0]
+        self.tseg = np.max(self.gti) - np.min(self.gti)

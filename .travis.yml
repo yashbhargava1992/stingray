@@ -26,6 +26,7 @@ env:
         # to repeat them for all configurations.
         - ASTROPY_VERSION=stable
         - NUMPY_VERSION=stable
+
         - SETUP_CMD='test --coverage'
         - PIP_DEPENDENCIES='emcee statsmodels corner'
         - CONDA_DEPENDENCIES='scipy h5py matplotlib'

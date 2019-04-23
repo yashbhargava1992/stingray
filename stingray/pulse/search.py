@@ -485,6 +485,7 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
     allphases = np.concatenate([phases, phases + 1]).astype('float64')
     allts = \
         np.concatenate([times, times]).astype('float64')
+
     if weights is not None and isinstance(weights, collections.Iterable):
         if len(weights) != len(times):
             raise ValueError('The length of weights must match the length of '
