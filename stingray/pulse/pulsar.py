@@ -261,8 +261,6 @@ def fold_events(times, *frequency_derivatives, **opts):
     start_phase, stop_phase = pulse_phase(np.array([start_time, stop_time]),
                                           *frequency_derivatives,
                                           to_1=False)
-    print(phases)
-    print(pulse_phase(times, frequency_derivatives[0], frequency_derivatives[1], to_1=True))
     raw_profile, bins = np.histogram(phases,
                                      bins=np.linspace(0, 1, nbin + 1),
                                      weights=weights)
