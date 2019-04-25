@@ -370,7 +370,7 @@ def z_n(phase, n=2, norm=1):
     phase : array of floats
         The phases of the events
     n : int, default 2
-        The ``n`` in $Z^2_n$.
+        Number of harmonics, including the fundamental
 
     Other Parameters
     ----------------
@@ -407,7 +407,7 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1, n_summed_spectra=1):
     Parameters
     ----------
     n : int, default 2
-        The ``n`` in $Z^2_n$
+        The ``n`` in $Z^2_n$ (number of harmonics, including the fundamental)
     epsilon : float, default 0.01
         The fractional probability that the signal has been produced by noise
 
@@ -438,7 +438,7 @@ def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
     z2 : float
         A Z^2_n statistics value
     n : int, default 2
-        The ``n`` in $Z^2_n$
+        The ``n`` in $Z^2_n$ (number of harmonics, including the fundamental)
 
     Other Parameters
     ----------------
