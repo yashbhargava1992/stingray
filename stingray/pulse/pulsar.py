@@ -7,6 +7,8 @@ import collections
 import warnings
 from ..utils import simon, jit, mad
 from scipy.optimize import minimize, basinhopping, curve_fit
+from scipy import stats
+
 try:
     import pint.toa as toa
     import pint
@@ -422,12 +424,6 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1, n_summed_spectra=1):
         The epoch folding statistics corresponding to a probability
         epsilon * 100 % that the signal has been produced by noise
     """
-    try:
-        from scipy import stats
-    except:  # pragma: no cover
-        raise Exception('You need Scipy to use this function')
-    from scipy import stats
-
     retlev = stats.chi2.isf(epsilon / ntrial, 2 * n_summed_spectra * n) \
         / (n_summed_spectra)
 
@@ -458,7 +454,6 @@ def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
     """
     if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
-    from scipy import stats
 
     epsilon = ntrial * stats.chi2.sf(z2 * n_summed_spectra,
                                      2 * n * n_summed_spectra)
