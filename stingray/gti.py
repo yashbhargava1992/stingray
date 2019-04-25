@@ -601,7 +601,8 @@ def gti_len(gti):
         The sum of lengths of all GTIs
 
     """
-    return np.sum([g[1] - g[0] for g in gti])
+    gti = np.array(gti)
+    return np.sum(gti[:, 1] - gti[:, 0])
 
 
 def check_separate(gti0, gti1):
