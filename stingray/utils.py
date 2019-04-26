@@ -17,6 +17,7 @@ try:
     from numba import jit
 
     HAS_NUMBA = True
+    from numba import njit, prange
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
@@ -29,6 +30,19 @@ except ImportError:
                 return func(*args, **kwargs)
 
             return wrapped_f
+
+    class njit(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __call__(self, func):
+            def wrapped_f(*args, **kwargs):
+                return func(*args, **kwargs)
+
+            return wrapped_f
+
+    def prange(x):
+        return range(x)
 
 try:
     from statsmodels.robust import mad as mad  # pylint: disable=unused-import
