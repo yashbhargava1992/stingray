@@ -769,6 +769,21 @@ class TestLightcurve(object):
         assert np.all(lc0.gti == [[0.5, 4.5]])
         assert np.all(lc1.gti == [[5.5, 7.5]])
 
+    def test_split_lc_by_gtis_minpoints(self):
+        times = [1, 2, 3, 4, 5, 6, 7, 8]
+        counts = [1, 1, 1, 1, 2, 3, 3, 2]
+        gti = [[0.5, 3.5], [3.5, 5.5], [5.5, 8.5]]
+        min_points = 3
+
+        lc = Lightcurve(times, counts, gti=gti)
+        list_of_lcs = lc.split_by_gti(min_points=min_points)
+        lc0 = list_of_lcs[0]
+        lc1 = list_of_lcs[1]
+        assert np.all(lc0.time == [1, 2, 3])
+        assert np.all(lc1.time == [6, 7, 8])
+        assert np.all(lc0.counts == [1, 1, 1])
+        assert np.all(lc1.counts == [3, 3, 2])
+
     def test_shift(self):
         times = [1, 2, 3, 4, 5, 6, 7, 8]
         counts = [1, 1, 1, 1, 2, 3, 3, 2]
