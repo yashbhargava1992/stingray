@@ -672,5 +672,4 @@ class TestAveragedCrossspectrum(object):
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
                                        norm="leahy")
         maxpower = np.max(cs.power)
-
         assert np.all(np.isfinite(cs.classical_significances(threshold = maxpower/2.)))
