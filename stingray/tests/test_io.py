@@ -71,7 +71,7 @@ class TestIO(object):
 
     def test_split_number(self):
         """Test split with high precision numbers."""
-        numbers = np.array([57401.0000003423423400453453, 
+        numbers = np.array([57401.0000003423423400453453,
             0.00000574010000003426646], dtype = np.longdouble)
         number_I, number_F = split_numbers(numbers)
         r_numbers = np.longdouble(number_I) + np.longdouble(number_F)
@@ -110,7 +110,7 @@ class TestFileFormats(object):
         assert (rec_object.array == test_object.array).all()
         assert rec_object.long_number == test_object.long_number
         assert (rec_object.long_array == test_object.long_array).all()
-        
+
         os.remove('test.pickle')
 
     def test_pickle_functions(self):
@@ -229,7 +229,7 @@ class TestFileFormats(object):
         plt.close("all")
         with warnings.catch_warnings(record=True) as w:
             savefig('test.png')
-            assert "plot the image first" in str(w[0].message)
+            assert np.any(["plot the image first" in str(wi.message) for wi in w])
         os.unlink('test.png')
 
     def test_savefig(self):

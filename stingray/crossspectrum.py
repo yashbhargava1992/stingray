@@ -767,7 +767,9 @@ class AveragedCrossspectrum(Crossspectrum):
         assert isinstance(lc2, Lightcurve)
 
         if lc1.tseg != lc2.tseg:
-            raise ValueError("Lightcurves do not have same tseg.")
+            simon("Lightcurves do not have same tseg. This means that the data"
+                  "from the two channels are not completely in sync. This "
+                  "might or might not be an issue. Keep an eye on it.")
 
         # If dt differs slightly, its propagated error must not be more than
         # 1/100th of the bin
@@ -776,7 +778,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
         # In case a small difference exists, ignore it
         lc1.dt = lc2.dt
-
         if self.gti is None:
             self.gti = cross_two_gtis(lc1.gti, lc2.gti)
             lc1.gti = lc2.gti = self.gti

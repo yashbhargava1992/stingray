@@ -69,7 +69,7 @@ class TestCovariancespectrumwithEvents(object):
         event_list = np.array([[2, 1], [2, 3], [1, 2], [5, 2], [4, 1]])
         with warnings.catch_warnings(record=True) as w:
             c = Covariancespectrum(event_list, dt=1)
-            assert "must be sorted" in str(w[0].message)
+            assert np.any(["must be sorted" in str(wi.message) for wi in w])
 
     def test_with_std_as_iterable(self):
         c = Covariancespectrum(self.event_list, dt=1, std=[1, 2])

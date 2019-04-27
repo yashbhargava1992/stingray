@@ -165,14 +165,14 @@ class TestCrossCorrelation(object):
         with pytest.raises(TypeError):
             with warnings.catch_warnings(record=True) as w:
                 cr.plot(labels=123)
-                assert "must be either a list or tuple" in str(w[0].message)
+                assert np.any(["must be either a list or tuple" in str(wi.message) for wi in w])
 
     @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_labels_index_error(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
         with warnings.catch_warnings(record=True) as w:
             cr.plot(labels='x')
-            assert "must have two labels" in str(w[0].message)
+            assert np.any(["must have two labels" in str(wi.message) for wi in w])
 
     @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_axis(self):

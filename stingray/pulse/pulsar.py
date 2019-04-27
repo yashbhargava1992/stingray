@@ -7,6 +7,8 @@ import collections
 import warnings
 from ..utils import simon, jit, mad
 from scipy.optimize import minimize, basinhopping, curve_fit
+from scipy import stats
+
 try:
     import pint.toa as toa
     import pint
@@ -354,6 +356,7 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     if ntrial > 1:
         simon("fold: The treatment of ntrial is very rough. Use with caution")
     from scipy import stats
+
     return stats.chi2.isf(epsilon/ntrial, nbin - 1)
 
 
@@ -365,7 +368,7 @@ def z_n(phase, n=2, norm=1):
     phase : array of floats
         The phases of the events
     n : int, default 2
-        The ``n`` in $Z^2_n$.
+        Number of harmonics, including the fundamental
 
     Other Parameters
     ----------------
@@ -394,7 +397,7 @@ def z_n(phase, n=2, norm=1):
                 for k in range(1, n + 1)])
 
 
-def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
+def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1, n_summed_spectra=1):
     """Return the detection level for the Z^2_n statistics.
 
     See Buccheri et al. (1983), Bendat and Piersol (1971).
@@ -402,7 +405,7 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     Parameters
     ----------
     n : int, default 2
-        The ``n`` in $Z^2_n$
+        The ``n`` in $Z^2_n$ (number of harmonics, including the fundamental)
     epsilon : float, default 0.01
         The fractional probability that the signal has been produced by noise
 
@@ -410,6 +413,8 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
     ----------------
     ntrial : int
         The number of trials executed to find this profile
+    n_summed_spectra : int
+        Number of Z_2^n periodograms that are being averaged
 
     Returns
     -------
@@ -417,13 +422,13 @@ def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1):
         The epoch folding statistics corresponding to a probability
         epsilon * 100 % that the signal has been produced by noise
     """
-    if ntrial > 1:
-        simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
-    from scipy import stats
-    return stats.chi2.isf(epsilon / ntrial, 2 * n)
+    retlev = stats.chi2.isf(epsilon / ntrial, 2 * n_summed_spectra * n) \
+        / (n_summed_spectra)
+
+    return retlev
 
 
-def z2_n_probability(z2, n=2, ntrial=1):
+def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
     """Calculate the probability of a certain folded profile, due to noise.
 
     Parameters
@@ -431,12 +436,14 @@ def z2_n_probability(z2, n=2, ntrial=1):
     z2 : float
         A Z^2_n statistics value
     n : int, default 2
-        The ``n`` in $Z^2_n$
+        The ``n`` in $Z^2_n$ (number of harmonics, including the fundamental)
 
     Other Parameters
     ----------------
     ntrial : int
         The number of trials executed to find this profile
+    n_summed_spectra : int
+        Number of Z_2^n periodograms that were averaged to obtain z2
 
     Returns
     -------
@@ -445,8 +452,10 @@ def z2_n_probability(z2, n=2, ntrial=1):
     """
     if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
-    from scipy import stats
-    return stats.chi2.sf(z2, 2 * n) * ntrial
+
+    epsilon = ntrial * stats.chi2.sf(z2 * n_summed_spectra,
+                                     2 * n * n_summed_spectra)
+    return epsilon
 
 
 def fftfit_fun(profile, template, amplitude, phase):
@@ -773,11 +782,47 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
     toalist = _load_and_prepare_TOAs(mjds, ephem=ephem)
     m = get_model(parfile)
     delays = m.delay(toalist)
-    correction_mjd = \
+
+    correction_mjd_rough = \
         interp1d(mjds,
-                 (toalist.table['tdbld'] * units.d - delays).to(units.d).value)
+                 (toalist.table['tdbld'] * units.d - delays).to(units.d).value,
+                  fill_value="extrapolate")
+
+    def correction_mjd(mjds):
+        """Get the orbital correction.
+        
+        Parameters
+        ----------
+        mjds : array-like
+            The input times in MJD
+        
+        Returns
+        -------
+        mjds: Corrected times in MJD
+        """
+        xvals = correction_mjd_rough.x
+        # Maybe this will be fixed if scipy/scipy#9602 is accepted
+        bad = (mjds < xvals[0]) | (np.any(mjds > xvals[-1]))
+        if np.any(bad):
+            warnings.warn("Some points are outside the interpolation range:"
+                          " {}".format(mjds[bad]))
+        return correction_mjd_rough(mjds)
 
     def correction_sec(times, mjdref):
+        """Get the orbital correction.
+        
+        Parameters
+        ----------
+        times : array-like
+            The input times in seconds of Mission Elapsed Time (MET)
+        mjdref : float
+            MJDREF, reference MJD for the mission
+       
+        Returns
+        -------
+        mets: array-like
+            Corrected times in MET seconds
+        """
         deorb_mjds = correction_mjd(times / 86400 + mjdref)
         return np.array((deorb_mjds - mjdref) * 86400)
 
