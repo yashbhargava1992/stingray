@@ -237,7 +237,8 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
     dt = assign_value_if_none(dt, np.median(np.diff(time)))
 
     lengths = gtis[:, 1] - gtis[:, 0]
-    good = lengths > max(min_length, dt)
+    good = lengths >= max(min_length, dt)
+
     gtis = gtis[good]
 
     mask = np.zeros(len(time), dtype=bool)
@@ -601,7 +602,8 @@ def gti_len(gti):
         The sum of lengths of all GTIs
 
     """
-    return np.sum([g[1] - g[0] for g in gti])
+    gti = np.array(gti)
+    return np.sum(gti[:, 1] - gti[:, 0])
 
 
 def check_separate(gti0, gti1):
