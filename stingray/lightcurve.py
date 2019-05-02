@@ -921,6 +921,59 @@ class Lightcurve(object):
 
         return self._truncate_by_index(start, stop)
 
+    def split(self, min_gap, min_points=1):
+        """
+        For data with gaps, it can sometimes be useful to be able to split
+        the light curve into separate, evenly sampled objects along those
+        data gaps. This method allows to do this: it finds data gaps of a
+        specified minimum size, and produces a list of new `Lightcurve`
+        objects for each contiguous segment.
+
+        Parameters
+        ----------
+        min_gap : float
+            The length of a data gap, in the same units as the `time` attribute
+            of the `Lightcurve` object. Any smaller gaps will be ignored, any
+            larger gaps will be identified and used to split the light curve.
+
+        min_points : int, default 1
+            The minimum number of data points in each light curve. Light
+            curves with fewer data points will be ignored.
+
+        Returns
+        -------
+        lc_split : iterable of `Lightcurve` objects
+            The list of all contiguous light curves
+
+        Example
+        -------
+        >>> time = np.array([1, 2, 3, 6, 7, 8, 11, 12, 13])
+        >>> counts = np.random.rand(time.shape[0])
+        >>> lc = Lightcurve(time, counts)
+        >>> split_lc = lc.split(1.5)
+
+        """
+        # calculate the difference between time bins
+        tdiff = np.diff(self.time)
+        # find all distances between time bins that are larger than `min_gap`
+        gap_idx = np.where(tdiff >= min_gap)[0]
+
+        # tolerance for the newly created GTIs: Note that this seems to work with a 
+        # tolerance of 2, but not if I substitute 10, and I don't know why
+        epsilon = np.min(tdiff)/2.0
+
+        # calculate new GTIs
+        gti_start = np.hstack([self.time[0]-epsilon, self.time[gap_idx+1]-epsilon])
+        gti_stop = np.hstack([self.time[gap_idx]+epsilon, self.time[-1]+epsilon])
+        
+        gti = np.vstack([gti_start, gti_stop]).T
+        if hasattr(self, 'gti') and self.gti is not None:
+            gti = cross_two_gtis(self.gti, gti)
+        self.gti = gti
+        
+        lc_split = self.split_by_gti(min_points=min_points)
+        return lc_split
+
     def sort(self, reverse=False):
         """
         Sort a Lightcurve object by time.
@@ -1262,10 +1315,16 @@ class Lightcurve(object):
         else:
             utils.simon("Format not understood.")
 
-    def split_by_gti(self):
+    def split_by_gti(self, min_points=2):
         """
         Split the current :class:`Lightcurve` object into a list of :class:`Lightcurve` objects, one
         for each continuous GTI segment as defined in the ``gti`` attribute.
+
+        Parameters
+        ----------
+        min_points : int, default 1
+            The minimum number of data points in each light curve. Light
+            curves with fewer data points will be ignored.
 
         Returns
         -------
@@ -1278,6 +1337,13 @@ class Lightcurve(object):
         for i in range(len(start_bins)):
             start = start_bins[i]
             stop = stop_bins[i]
+
+            if np.isclose(stop-start, 1):
+                logging.warning("Segment with a single time bin! Ignoring this segment!")
+                continue
+            if (stop - start) < min_points:
+                continue
+
             # Note: GTIs are consistent with default in this case!
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
                                 err=self.counts_err[start:stop],
