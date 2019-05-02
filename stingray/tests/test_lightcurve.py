@@ -606,6 +606,18 @@ class TestLightcurve(object):
         assert np.all((slc[1].counts == test_counts[3:6]))
         assert np.all((slc[2].counts == test_counts[6:]))
 
+    def test_split_with_gtis(self):
+        test_time = np.array([1, 2, 3, 6, 7, 8, 10, 11, 12])
+        test_counts = np.random.rand(len(test_time))
+        gti = [[0,4], [9, 13]]
+        lc_test = Lightcurve(test_time, test_counts, gti=gti)
+        slc = lc_test.split(1.5)
+
+        assert np.all((slc[0].time == [1, 2, 3]))
+        assert np.all((slc[1].time == [10, 11 ,12]))
+        assert np.all((slc[0].counts == test_counts[:3]))
+        assert np.all((slc[1].counts == test_counts[6:]))
+
     def test_consecutive_gaps(self):
         test_time = np.array([1, 2, 3, 6, 9, 10, 11])
         test_counts = np.random.rand(len(test_time))

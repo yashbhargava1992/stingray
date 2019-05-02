@@ -965,8 +965,12 @@ class Lightcurve(object):
         # calculate new GTIs
         gti_start = np.hstack([self.time[0]-epsilon, self.time[gap_idx+1]-epsilon])
         gti_stop = np.hstack([self.time[gap_idx]+epsilon, self.time[-1]+epsilon])
-        self.gti = np.vstack([gti_start, gti_stop]).T
-
+        
+        gti = np.vstack([gti_start, gti_stop]).T
+        if hasattr(self, 'gti') and self.gti is not None:
+            gti = cross_two_gtis(self.gti, gti)
+        self.gti = gti
+        
         lc_split = self.split_by_gti(min_points=min_points)
         return lc_split
 
