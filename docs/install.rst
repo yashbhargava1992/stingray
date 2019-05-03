@@ -41,11 +41,10 @@ Now ``cd`` into the newly created ``stingray`` directory and install the necessa
 dependencies: ::
 
     $ cd stingray
-    $ pip install -r requirements.txt
 
 Finally, install ``stingray`` itself: ::
 
-    $ python setup.py install
+    $ pip install -e ./
 
 .. _testsuite:
 
