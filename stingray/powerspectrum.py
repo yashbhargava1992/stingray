@@ -11,6 +11,8 @@ from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
 from stingray.stats import pds_probability
 
+from .gti import cross_two_gtis
+
 try:
     from tqdm import tqdm as show_progress
 except ImportError:
@@ -78,9 +80,11 @@ class Powerspectrum(Crossspectrum):
         The total number of photons in the light curve
 
     """
-    def __init__(self, lc=None, norm='frac', gti=None):
-        Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti)
+    def __init__(self, lc=None, norm='frac', gti=None, dt=None):
+        Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti,
+                               dt=dt)
         self.nphots = self.nphots1
+        self.dt = dt
 
     def rebin(self, df=None, f=None, method="mean"):
         """
@@ -335,7 +339,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     """
     def __init__(self, lc=None, segment_size=None, norm="frac", gti=None,
-                 silent=False):
+                 silent=False, dt=None):
 
         self.type = "powerspectrum"
 
@@ -346,14 +350,14 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         self.segment_size = segment_size
         self.show_progress = not silent
-        Powerspectrum.__init__(self, lc, norm, gti=gti)
+        Powerspectrum.__init__(self, lc, norm, gti=gti, dt=dt)
 
         return
 
     def _make_segment_spectrum(self, lc, segment_size):
         """
-        Split the light curves into segments of size ``segment_size``, and calculate a power spectrum for
-        each.
+        Split the light curves into segments of size ``segment_size``, and
+        calculate a power spectrum for each.
 
         Parameters
         ----------
@@ -374,16 +378,18 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
-        if self.gti is None:
-            self.gti = lc.gti
-        else:
-            if not np.all(lc.gti == self.gti):
-                self.gti = np.vstack([self.gti, lc.gti])
+        current_gtis = lc.gti
 
-        check_gtis(self.gti)
+        if self.gti is not None:
+            current_gtis = cross_two_gtis(current_gtis, self.gti)
+
+        lc.gti = current_gtis
+        lc._apply_gtis()
+
+        check_gtis(current_gtis)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(lc.gti, segment_size, lc.time, dt=lc.dt)
+            bin_intervals_from_gtis(current_gtis, segment_size, lc.time, dt=lc.dt)
 
         power_all = []
         nphots_all = []
@@ -472,7 +478,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         The time resolution
     """
 
-    def __init__(self, lc, segment_size, norm="frac", gti=None):
+    def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
         if segment_size < 2 * lc.dt:
             raise ValueError("Length of the segment is too short to form a "
                              "light curve!")
@@ -481,7 +487,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
                              "any segments of the light curve!")
         AveragedPowerspectrum.__init__(self, lc=lc,
                                        segment_size=segment_size, norm=norm,
-                                       gti=gti)
+                                       gti=gti, dt=dt)
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
@@ -498,9 +504,13 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
 
         self.freq = ps_all[0].freq
+        current_gti = lc.gti
+        if self.gti is not None:
+            current_gti = cross_two_gtis(self.gti, current_gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(self.gti, self.segment_size, lc.time, dt=lc.dt)
+            bin_intervals_from_gtis(current_gti, self.segment_size, lc.time,
+                                    dt=lc.dt)
 
 
         tstart = lc.time[start_inds]

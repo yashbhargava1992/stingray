@@ -4,10 +4,115 @@ import copy
 from astropy.tests.helper import pytest
 
 from stingray import Lightcurve
+from stingray.events import EventList
 from stingray import Powerspectrum, AveragedPowerspectrum, \
     DynamicalPowerspectrum
 
 np.random.seed(20150907)
+
+
+class TestAveragedPowerspectrumEvents(object):
+    @classmethod
+    def setup_class(cls):
+        tstart = 0.0
+        tend = 10.0
+        cls.dt = 0.0001
+        cls.segment_size = tend - tstart
+
+        times = np.sort(np.random.uniform(tstart, tend, 1000))
+        gti = np.array([[tstart, tend]])
+
+        cls.events = EventList(times, gti=gti)
+
+        cls.lc = cls.events
+
+    def test_init(self):
+        AveragedPowerspectrum(self.lc, self.segment_size, dt=self.dt)
+
+    def test_init_without_segment(self):
+        with pytest.raises(ValueError):
+            assert AveragedPowerspectrum(self.lc, dt=self.dt)
+
+    def test_init_with_nonsense_segment(self):
+        segment_size = "foo"
+        with pytest.raises(TypeError):
+            assert AveragedPowerspectrum(self.lc, segment_size, dt=self.dt)
+
+    def test_init_with_none_segment(self):
+        segment_size = None
+        with pytest.raises(ValueError):
+            assert AveragedPowerspectrum(self.lc, segment_size, dt=self.dt)
+
+    def test_init_with_inf_segment(self):
+        segment_size = np.inf
+        with pytest.raises(ValueError):
+            assert AveragedPowerspectrum(self.lc, segment_size, dt=self.dt)
+
+    def test_init_with_nan_segment(self):
+        segment_size = np.nan
+        with pytest.raises(ValueError):
+            assert AveragedPowerspectrum(self.lc, segment_size, dt=self.dt)
+
+    @pytest.mark.parametrize('df', [2, 3, 5, 1.5, 1, 85])
+    def test_rebin(self, df):
+        """
+        TODO: Not sure how to write tests for the rebin method!
+        """
+
+        aps = AveragedPowerspectrum(lc=self.lc, segment_size=self.segment_size,
+                                    norm="Leahy", dt=self.dt)
+        bin_aps = aps.rebin(df)
+        assert np.isclose(bin_aps.freq[1]-bin_aps.freq[0], bin_aps.df,
+                          atol=1e-4, rtol=1e-4)
+        assert np.isclose(bin_aps.freq[0],
+                          (aps.freq[0]-aps.df*0.5+bin_aps.df*0.5),
+                          atol=1e-4, rtol=1e-4)
+
+    @pytest.mark.parametrize('f', [20, 30, 50, 15, 1, 850])
+    def test_rebin_factor(self, f):
+        """
+        TODO: Not sure how to write tests for the rebin method!
+        """
+
+        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+                                    norm="Leahy", dt=self.dt)
+        bin_aps = aps.rebin(f=f)
+        assert np.isclose(bin_aps.freq[1]-bin_aps.freq[0], bin_aps.df,
+                          atol=1e-4, rtol=1e-4)
+        assert np.isclose(bin_aps.freq[0],
+                          (aps.freq[0]-aps.df*0.5+bin_aps.df*0.5),
+                          atol=1e-4, rtol=1e-4)
+
+    @pytest.mark.parametrize('df', [0.01, 0.1])
+    def test_rebin_log(self, df):
+        # For now, just verify that it doesn't crash
+        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+                                    norm="Leahy", dt=self.dt)
+        bin_aps = aps.rebin_log(df)
+
+    def test_rebin_with_invalid_type_attribute(self):
+        new_df = 2
+        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+                                    norm='leahy', dt=self.dt)
+        aps.type = 'invalid_type'
+        with pytest.raises(AttributeError):
+            assert aps.rebin(df=new_df)
+
+    def test_leahy_correct_for_multiple(self):
+
+        n = 10
+        lc_all = []
+        for i in range(n):
+            time = np.arange(0.0, 10.0, 10. / 10000)
+            counts = np.random.poisson(1000, size=time.shape[0])
+            lc = Lightcurve(time, counts)
+            lc_all.append(lc)
+
+        ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy")
+
+        assert np.isclose(np.mean(ps.power), 2.0, atol=1e-2, rtol=1e-2)
+        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(n*10), atol=0.1,
+                          rtol=0.1)
 
 
 class TestPowerspectrum(object):
