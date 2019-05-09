@@ -906,11 +906,11 @@ class AveragedCrossspectrum(Crossspectrum):
 
     Parameters
     ----------
-    lc1: :class:`stingray.Lightcurve` object OR iterable of :class:`stingray.Lightcurve` objects
+    lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         A light curve from which to compute the cross spectrum. In some cases, this would
         be the light curve of the wavelength/energy/frequency band of interest.
 
-    lc2: :class:`stingray.Lightcurve` object OR iterable of :class:`stingray.Lightcurve` objects
+    lc2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         A second light curve to use in the cross spectrum. In some cases, this would be
         the wavelength/energy/frequency reference band to compare the band of interest with.
 

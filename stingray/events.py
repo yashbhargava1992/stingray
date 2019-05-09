@@ -135,6 +135,19 @@ class EventList(object):
 
 
     def to_lc_list(self, dt):
+        """
+        Convert event list to a generator of :class:`stingray.Lightcurve`s.
+
+        Parameters
+        ----------
+        dt: float
+            Binning time of the light curves
+
+        Returns
+        -------
+        lc_gen: generator
+            Generates one :class:`stingray.Lightcurve` object for each GTI
+        """
         start_times = self.gti[:, 0]
         end_times = self.gti[:, 1]
         tsegs = end_times - start_times

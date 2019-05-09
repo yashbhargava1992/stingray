@@ -282,7 +282,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     Parameters
     ----------
-    lc: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+    lc: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         The light curve data to be Fourier-transformed.
 
     segment_size: float
