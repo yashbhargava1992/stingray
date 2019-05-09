@@ -6,6 +6,7 @@ import scipy
 import scipy.stats
 import scipy.fftpack
 import scipy.optimize
+import copy
 
 # location of factorial moved between scipy versions
 try:
@@ -26,7 +27,8 @@ from stingray.utils import rebin_data, simon, rebin_data_log
 from stingray.exceptions import StingrayError
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 from .events import EventList
-import copy
+from .utils import show_progress
+
 
 try:
     from tqdm import tqdm as show_progress
@@ -1014,8 +1016,10 @@ class AveragedCrossspectrum(Crossspectrum):
             Two light curves used for computing the cross spectrum.
         """
         # A way to say that this is actually not a power spectrum
-        if lc1 is not lc2 and (isinstance(lc1, EventList) or
-                               isinstance(lc1, Lightcurve)):
+        if self.type != "powerspectrum" and \
+                lc1 is not lc2 and (isinstance(lc1, EventList) or
+                                    isinstance(lc1, Lightcurve)):
+            print("Auxil")
             self.pds1 = AveragedCrossspectrum(lc1, lc1,
                                               segment_size=self.segment_size,
                                               norm='none', gti=lc1.gti,
@@ -1168,7 +1172,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
-            for lc1_seg, lc2_seg in zip(lc1, lc2):
+            for lc1_seg, lc2_seg in show_progress(zip(lc1, lc2)):
                 if self.type == "crossspectrum":
                     cs_sep, nphots1_sep, nphots2_sep = \
                         self._make_segment_spectrum(lc1_seg, lc2_seg,

@@ -54,6 +54,12 @@ except ImportError:
         return range(x)
 
 try:
+    from tqdm import tqdm as show_progress
+except ImportError:
+    def show_progress(a):
+        return a
+
+try:
     from statsmodels.robust import mad as mad  # pylint: disable=unused-import
 except ImportError:
     def mad(data, c=0.6745, axis=None):
