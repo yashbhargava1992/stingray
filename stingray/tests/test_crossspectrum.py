@@ -102,10 +102,9 @@ class TestCrossspectrum(object):
 
         counts1 = np.random.poisson(0.01, size=time.shape[0])
         counts2 = np.random.negative_binomial(1, 0.09, size=time.shape[0])
-
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, tend]], dt=dt)
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
-
+        self.rate1 = 100.  # mean count rate (counts/sec) of light curve 1
         self.cs = Crossspectrum(self.lc1, self.lc2)
 
     def test_make_empty_crossspectrum(self):
@@ -202,19 +201,25 @@ class TestCrossspectrum(object):
         new_cs.time_lag()
 
     def test_norm_leahy(self):
-        cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
+        cs = Crossspectrum(self.lc1, self.lc1, norm='leahy')
         assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
+        leahy_noise = 2.0  # expected Poisson noise level
+        assert np.isclose(np.mean(cs.power), leahy_noise, atol=0.02)
 
     def test_norm_frac(self):
-        cs = Crossspectrum(self.lc1, self.lc2, norm='frac')
+        cs = Crossspectrum(self.lc1, self.lc1, norm='frac')
         assert len(cs.power) == 4999
         assert cs.norm == 'frac'
+        frac_noise = 2. / self.rate1  # expected Poisson noise level
+        assert np.isclose(np.mean(cs.power), frac_noise, atol=0.0015)
 
     def test_norm_abs(self):
-        cs = Crossspectrum(self.lc1, self.lc2, norm='abs')
+        cs = Crossspectrum(self.lc1, self.lc1, norm='abs')
         assert len(cs.power) == 4999
         assert cs.norm == 'abs'
+        abs_noise = 2. * self.rate1  # expected Poisson noise level
+        assert np.isclose(np.mean(cs.power), abs_noise, atol=20)
 
     def test_failure_when_normalization_not_recognized(self):
         with pytest.raises(ValueError):
