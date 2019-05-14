@@ -202,7 +202,8 @@ class TestCrossspectrum(object):
 
     def test_norm_leahy(self):
         # Testing for a power spectrum of lc1
-        csL = Crossspectrum(self.lc1, self.lc1, norm='leahy', power_type='absolute')
+        csL = Crossspectrum(self.lc1, self.lc1, norm='leahy',
+                            power_type='absolute')
         assert len(csL.power) == 4999
         assert csL.norm == 'leahy'
         leahy_noise = 2.0  # expected Poisson noise level
@@ -211,7 +212,8 @@ class TestCrossspectrum(object):
 
     def test_norm_frac(self):
         # Testing for a power spectrum of lc1
-        csF = Crossspectrum(self.lc1, self.lc1, norm='frac', power_type='absolute')
+        csF = Crossspectrum(self.lc1, self.lc1, norm='frac',
+                            power_type='absolute')
         assert len(csF.power) == 4999
         assert csF.norm == 'frac'
         frac_noise = 2. / self.rate1  # expected Poisson noise level
@@ -220,7 +222,8 @@ class TestCrossspectrum(object):
 
     def test_norm_abs(self):
         # Testing for a power spectrum of lc1
-        csA = Crossspectrum(self.lc1, self.lc1, norm='abs', power_type='absolute')
+        csA = Crossspectrum(self.lc1, self.lc1, norm='abs',
+                            power_type='absolute')
         assert len(csA.power) == 4999
         assert csA.norm == 'abs'
         abs_noise = 2. * self.rate1  # expected Poisson noise level

@@ -209,7 +209,8 @@ class TestPowerspectrum(object):
         light curve.
         """
         ps = Powerspectrum(lc=self.lc, norm="abs")
-        abs_noise = 2. * 100  # expected Poisson noise level; hardcoded value from above
+        abs_noise = 2. * 100  # expected Poisson noise level;
+                              # hardcoded value from above
         print(np.mean(ps.power), abs_noise)
         assert np.isclose(np.mean(ps.power), abs_noise, atol=30)
 
