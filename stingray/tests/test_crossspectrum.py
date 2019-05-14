@@ -201,6 +201,7 @@ class TestCrossspectrum(object):
         new_cs.time_lag()
 
     def test_norm_leahy(self):
+        # Testing for a power spectrum of lc1
         csL = Crossspectrum(self.lc1, self.lc1, norm='leahy')
         assert len(csL.power) == 4999
         assert csL.norm == 'leahy'
@@ -209,6 +210,7 @@ class TestCrossspectrum(object):
         assert np.isclose(np.mean(csL.power), leahy_noise, atol=0.2)
 
     def test_norm_frac(self):
+        # Testing for a power spectrum of lc1
         csF = Crossspectrum(self.lc1, self.lc1, norm='frac')
         assert len(csF.power) == 4999
         assert csF.norm == 'frac'
@@ -217,6 +219,7 @@ class TestCrossspectrum(object):
         assert np.isclose(np.mean(csF.power), frac_noise, atol=0.005)
 
     def test_norm_abs(self):
+        # Testing for a power spectrum of lc1
         csA = Crossspectrum(self.lc1, self.lc1, norm='abs')
         assert len(csA.power) == 4999
         assert csA.norm == 'abs'
