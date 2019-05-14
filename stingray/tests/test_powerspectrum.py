@@ -202,6 +202,17 @@ class TestPowerspectrum(object):
             rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
                                              max_freq=ps.freq[-1])
 
+    def test_norm_abs(self):
+        """
+        Poisson noise level for a light curve with absolute rms-squared
+        normalization should be approximately 2 * the mean count rate of the
+        light curve.
+        """
+        ps = Powerspectrum(lc=self.lc, norm="abs")
+        abs_noise = 2. * 100  # expected Poisson noise level; hardcoded value from above
+        print(np.mean(ps.power), abs_noise)
+        assert np.isclose(np.mean(ps.power), abs_noise, atol=30)
+
     def test_fractional_rms_error(self):
         """
         TODO: Need to write a test for the fractional rms error.
