@@ -444,16 +444,14 @@ class Crossspectrum(object):
             raise ValueError("`power_type` not recognized!")
 
         if self.norm.lower() == 'leahy':
-            c = c_num
-            power = c * 2. / actual_nphots
+            power = c_num * 2. / actual_nphots
 
         elif self.norm.lower() == 'frac':
             c = c_num / np.float(self.n ** 2.)
             power = c * 2. * tseg / (actual_mean ** 2.0)
 
         elif self.norm.lower() == 'abs':
-            c = c_num / np.float(self.n ** 2.)
-            power = c * 2. / np.float(tseg)
+            power = c_num * 2. * actual_mean / actual_nphots
 
         elif self.norm.lower() == 'none':
             power = unnorm_power
