@@ -190,8 +190,8 @@ class Crossspectrum(object):
             Two light curves used for computing the cross spectrum.
         """
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
-            self.pds1 = Crossspectrum(lc1, lc1, norm='none', power_type=self.power_type)
-            self.pds2 = Crossspectrum(lc2, lc2, norm='none', power_type=self.power_type)
+            self.pds1 = Crossspectrum(lc1, lc1, norm='none')
+            self.pds2 = Crossspectrum(lc2, lc2, norm='none')
 
     def _make_crossspectrum(self, lc1, lc2):
         """
@@ -320,7 +320,7 @@ class Crossspectrum(object):
         fourier_2 = scipy.fftpack.fft(lc2.counts)  # do Fourier transform 2
 
         freqs = scipy.fftpack.fftfreq(lc1.n, lc1.dt)
-        cross = fourier_1[freqs > 0] * np.conj(fourier_2[freqs > 0])
+        cross = np.multiply(fourier_1[freqs > 0], np.conj(fourier_2[freqs > 0]))
 
         return freqs[freqs > 0], cross
 
@@ -431,6 +431,8 @@ class Crossspectrum(object):
         actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
         actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
 
+        meanrate = np.sqrt((self.nphots1 * self.nphots2) / tseg)
+
         assert actual_mean > 0.0, \
             "Mean count rate is <= 0. Something went wrong."
 
@@ -451,7 +453,7 @@ class Crossspectrum(object):
             power = c * 2. * tseg / (actual_mean ** 2.0)
 
         elif self.norm.lower() == 'abs':
-            power = c_num * 2. * actual_mean / actual_nphots
+            power = c_num * 2. * meanrate / actual_nphots
 
         elif self.norm.lower() == 'none':
             power = unnorm_power
