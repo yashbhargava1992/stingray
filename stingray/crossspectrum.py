@@ -423,7 +423,7 @@ class Crossspectrum(object):
         """
 
         # The "effective" counts/bin is the geometrical mean of the counts/bin
-        # of the two light curves
+        # of the two light curves. Same goes for counts/second in meanrate.
 
         log_nphots1 = np.log(self.nphots1)
         log_nphots2 = np.log(self.nphots2)
