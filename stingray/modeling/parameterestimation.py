@@ -930,7 +930,7 @@ class SamplingResults(object):
         self.samples = sampler.flatchain
 
         self.nwalkers = np.float(sampler.chain.shape[0])
-        self.niter = np.float(sampler.iterations)
+        self.niter = np.float(sampler.chain.shape[1])
 
         # store number of dimensions
         self.ndim = sampler.dim
