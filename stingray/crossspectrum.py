@@ -76,18 +76,16 @@ def _averaged_cospectra_cdf(xcoord, n):
 
 def cospectra_pvalue(power, nspec):
     """
-    the assumption that there is no periodic oscillation in the data.
-
-    This computes the single-trial p-value that the power was
+    This function computes the single-trial p-value that the power was
     observed under the null hypothesis that there is no signal in
     the data.
 
-    Important: the underlying assumptions that make this calculation valid
-    are:
+    Important: the underlying assumption that make this calculation valid 
+    is that the powers in the power spectrum follow a Laplace distribution, 
+    and this requires that:
 
-    1. the powers in the power spectrum follow a Laplace distribution
-    2. the power spectrum is normalized according to [Leahy 1983]_
-    3. there is only white noise in the light curve. That is, there is no
+    1. the co-spectrum is normalized according to [Leahy 1983]_
+    2. there is only white noise in the light curve. That is, there is no
        aperiodic variability that would change the overall shape of the power
        spectrum.
 
@@ -97,7 +95,6 @@ def cospectra_pvalue(power, nspec):
     number of trials (Bonferroni correction).
 
     Mathematical formulation in [Huppenkothen 2017]_.
-    Original implementation in IDL by Anna L. Watts.
 
     Parameters
     ----------
@@ -134,24 +131,23 @@ def cospectra_pvalue(power, nspec):
     if not np.isfinite(nspec):
         raise ValueError("nspec must be a finite integer number")
 
-    if nspec < 1:
-        raise ValueError("nspec must be larger or equal to 1")
-
     if not np.isclose(nspec % 1, 0):
         raise ValueError("nspec must be an integer number!")
 
-    if nspec == 1:
+    if nspec < 1:
+        raise ValueError("nspec must be larger or equal to 1")
+
+    elif nspec == 1:
         lapl = scipy.stats.laplace(0, 1)
         pval = lapl.sf(power)
 
-    else:
-        if nspec > 50:
-            exp_sigma = np.sqrt(2) / np.sqrt(nspec)
-            gauss = scipy.stats.norm(0, exp_sigma)
-            pval = gauss.sf(power)
+    elif nspec > 50:
+        exp_sigma = np.sqrt(2) / np.sqrt(nspec)
+        gauss = scipy.stats.norm(0, exp_sigma)
+        pval = gauss.sf(power)
 
-        else:
-            pval = 1. - _averaged_cospectra_cdf(power, nspec)
+    else:
+        pval = 1. - _averaged_cospectra_cdf(power, nspec)
 
     return pval
 

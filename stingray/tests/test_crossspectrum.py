@@ -7,7 +7,9 @@ import scipy.special
 from stingray import Lightcurve, AveragedPowerspectrum
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
 from stingray.crossspectrum import  cospectra_pvalue
+from ..simulator.simulator import Simulator
 from stingray import StingrayError
+
 import copy
 
 np.random.seed(20160528)
@@ -191,7 +193,6 @@ class TestCoherence(object):
         assert np.abs(np.mean(coh)) < 1
 
     def test_high_coherence(self):
-        import copy
         t = np.arange(1280)
         a = np.random.poisson(100, len(t))
         lc = Lightcurve(t, a)
@@ -634,9 +635,8 @@ class TestAveragedCrossspectrum(object):
         assert isinstance(new_cs.power_err[0], np.complex)
 
     def test_timelag(self):
-        from ..simulator.simulator import Simulator
         dt = 0.1
-        simulator = Simulator(dt, 10000, rms=0.8, mean=1000)
+        simulator = Simulator(dt, 10000, rms=0.2, mean=1000)
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
                               np.array(np.roll(test_lc1.counts, 2)),
