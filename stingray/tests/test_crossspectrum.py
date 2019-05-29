@@ -325,13 +325,8 @@ class TestCrossspectrum(object):
         assert np.isclose(np.mean(cs.power[1:]), abs_noise, atol=30)
 
     def test_norm_leahy(self):
-<<<<<<< HEAD
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
-=======
-        # Testing for a power spectrum of lc1
-        cs = Crossspectrum(lc1=self.lc1, lc2=self.lc1, norm='leahy')
->>>>>>> origin
+            cs = Crossspectrum(lc1=self.lc1, lc2=self.lc1, norm='leahy')
         assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
         leahy_noise = 2.0  # expected Poisson noise level
@@ -339,7 +334,6 @@ class TestCrossspectrum(object):
         assert np.isclose(np.mean(cs.power[1:]), leahy_noise, atol=0.2)
 
     def test_norm_frac(self):
-<<<<<<< HEAD
         with pytest.warns(UserWarning) as record:
             cs = Crossspectrum(self.lc1, self.lc2, norm='frac')
         assert len(cs.power) == 4999
@@ -350,15 +344,6 @@ class TestCrossspectrum(object):
             cs = Crossspectrum(self.lc1, self.lc2, norm='abs')
         assert len(cs.power) == 4999
         assert cs.norm == 'abs'
-=======
-        # Testing for a power spectrum of lc1
-        cs = Crossspectrum(lc1=self.lc1, lc2=self.lc1, norm='frac')
-        assert len(cs.power) == 4999
-        assert cs.norm == 'frac'
-        frac_noise = 2. / self.rate1  # expected Poisson noise level
-        print(np.mean(cs.power), frac_noise)
-        assert np.isclose(np.mean(cs.power[1:]), frac_noise, atol=0.005)
->>>>>>> origin
 
     def test_failure_when_normalization_not_recognized(self):
         with pytest.raises(ValueError):
