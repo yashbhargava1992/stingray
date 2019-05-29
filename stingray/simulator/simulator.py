@@ -67,6 +67,9 @@ class Simulator(object):
 
         * x = simulate(s):
            For generating a light curve from user-provided spectrum.
+            **Note**: In this case, the `red_noise` parameter is provided.
+            You can generate a longer light curve by providing a higher 
+            frequency resolution on the input power spectrum.
 
               Parameters:
                 * s : array-like
@@ -370,7 +373,10 @@ class Simulator(object):
         a1 = self.random_state.normal(size=len(s))
         a2 = self.random_state.normal(size=len(s))
 
-        lc = self._find_inverse(a1*s, a2*s)
+        real = a1 * np.sqrt(s)
+        imaginary = a2 * np.sqrt(s)
+
+        lc = self._find_inverse(real, imaginary)
         lc = Lightcurve(self.time, self._extract_and_scale(lc),
                         err_dist='gauss', dt=self.dt)
 
@@ -401,7 +407,7 @@ class Simulator(object):
         # Compute PSD from model
         simpsd = model(simfreq)
 
-        fac = np.sqrt(simpsd/2.)
+        fac = np.sqrt(simpsd)
         pos_real   = self.random_state.normal(size=nbins//2)*fac
         pos_imag   = self.random_state.normal(size=nbins//2)*fac
 
@@ -443,7 +449,7 @@ class Simulator(object):
             else:
                 raise ValueError('Params should be list or dictionary!')
 
-            fac = np.sqrt(simpsd/2.)
+            fac = np.sqrt(simpsd)
             pos_real   = self.random_state.normal(size=nbins//2)*fac
             pos_imag   = self.random_state.normal(size=nbins//2)*fac
 
