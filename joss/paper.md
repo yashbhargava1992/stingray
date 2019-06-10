@@ -55,6 +55,8 @@ affiliations:
   index: 11
 date: 26 March 2019
 bibliography: joss.bib
+aas-doi: 10.3847/1538-4357/ab258d
+aas-journal: Astrophysical Journal
 ---
 
 # Summary
