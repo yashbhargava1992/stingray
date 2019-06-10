@@ -44,7 +44,7 @@ dependencies: ::
 
 Finally, install ``stingray`` itself: ::
 
-    $ pip install -e ./
+    $ pip install -e ".[modeling]"
 
 .. _testsuite:
 
