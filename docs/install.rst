@@ -44,6 +44,12 @@ dependencies: ::
 
 Finally, install ``stingray`` itself: ::
 
+    $ pip install -e "."
+
+Note that this will install the package *without* the optional dependencies required by 
+the ``modeling`` subpackage. In order to install ``stingray`` with these dependencies
+(``emcee``, ``corner`` and ``statsmodels``), execute :: 
+
     $ pip install -e ".[modeling]"
 
 .. _testsuite:

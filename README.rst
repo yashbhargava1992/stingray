@@ -107,17 +107,9 @@ Future Additions
 Installation
 ------------
 
-1. Clone our project from github (remember about including --recursive flag due to our submodule(s))::
-
-    $ git clone --recursive https://github.com/StingraySoftware/stingray.git
-
-2. Go to already created directory and install all dependencies::
-
-    $ pip install -r requirements.txt
-
-3. Go back to stingray project directory and execute::
-
-    $ python setup.py install
+You can find install Stingray via `conda`, `pip` or from the source repository itself.
+More details on how to install Stingray can be found `on the Installations page
+<https://github.com/StingraySoftware/stingray/blob/master/docs/install.rst>`_.
 
 
 Documentation
@@ -143,7 +135,7 @@ Stingray uses `py.test` for testing. To run the tests, try::
 Copyright
 ---------
 
-All content © 2015 the authors. The code is distributed under the MIT license.
+All content © 2019 the authors. The code is distributed under the MIT license.
 
 Pull requests are welcome! If you are interested in the further development of
 this project, please `get in touch via the issues
