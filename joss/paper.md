@@ -34,7 +34,6 @@ authors:
   affiliation: 12
 - name: Ricardo Valles Blanco
   affiliation: 6
-- name: 
 affiliations:
 - name: DIRAC Institute, Department of Astronomy, University of Washington, 3910 15th Ave NE, Seattle, WA 98195
   index: 1
