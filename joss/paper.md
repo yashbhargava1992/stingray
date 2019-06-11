@@ -26,10 +26,15 @@ authors:
   affiliation: 8
 - name: Himanshu Mishra
   affiliation: 9
-- name: Swapnil Sharma
+- name: Haroon Rashid
   affiliation: 10
-- name: Ricardo Valles Blanco
+- name: Swapnil Sharma
   affiliation: 11
+- name: Evandro Martinez Ribeiro
+  affiliation: 12
+- name: Ricardo Valles Blanco
+  affiliation: 6
+- name: 
 affiliations:
 - name: DIRAC Institute, Department of Astronomy, University of Washington, 3910 15th Ave NE, Seattle, WA 98195
   index: 1
@@ -53,7 +58,9 @@ affiliations:
   index: 10
 - name: Indian Institute of Technology Mandi, Mandi, Himachal Pradesh, India
   index: 11
-date: 26 March 2019
+- name: Kapteyn Astronomical Institute, University of Groningen, P.O. Box 800, NL-9700 AV Groningen, The Netherlands
+  index: 12
+date: 10 June 2019
 bibliography: joss.bib
 aas-doi: 10.3847/1538-4357/ab258d
 aas-journal: Astrophysical Journal
