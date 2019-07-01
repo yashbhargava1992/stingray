@@ -2,9 +2,9 @@
 Stingray
 ========
 
-+------------------+-------------------------+---------------+--------+---------+---------------------------+---------------------+
-| Master           | |Build Status Master|   | |Readthedocs| | |joss| | |Slack| | |Coverage Status Master|  | |Stage Release v0.1.3| |
-+------------------+-------------------------+---------------+--------+---------+---------------------------+---------------------+
++------------------+-------------------------+---------------+---------+--------+---------------------------+------------------+
+| Master           | |Build Status Master|   | |Readthedocs| | |Slack| | |joss| | |Coverage Status Master|  | |GitHub release| |
++------------------+-------------------------+---------------+---------+--------+---------------------------+------------------+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
@@ -148,7 +148,7 @@ this project, please `get in touch via the issues
     :target: http://slack-invite.timelabtechnologies.com
 .. |Coverage Status Master| image:: https://coveralls.io/repos/github/StingraySoftware/stingray/badge.svg?branch=master
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
-.. |Stage Release v0.1.3| image:: .. image:: https://img.shields.io/github/release/StingraySoftware/stingray.svg   :alt: GitHub release
+.. |GitHub release| image:: https://img.shields.io/github/release/StingraySoftware/stingray.svg
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
 .. |joss| image:: http://joss.theoj.org/papers/10.21105/joss.01393/status.svg
    :target: https://doi.org/10.21105/joss.01393
