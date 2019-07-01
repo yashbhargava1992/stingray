@@ -54,7 +54,7 @@ matrix:
         # Try without using statsmodels
         - env: PYTHON_VERSION=3.5 PIP_DEPENDENCIES='emcee'
 
-        - env: PYTHON_VERSION=3.6 PIP_DEPENDENCIES='nbsphinx' SETUP_CMD='build_docs -w'
+        - env: PYTHON_VERSION=3.6 PIP_DEPENDENCIES='nbsphinx sphinx-astropy' SETUP_CMD='build_docs -w'
 
         # Try Astropy development version
         - env: PYTHON_VERSION=3.7 ASTROPY_VERSION=development
