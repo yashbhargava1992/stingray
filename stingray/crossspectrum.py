@@ -778,11 +778,14 @@ class AveragedCrossspectrum(Crossspectrum):
 
         # In case a small difference exists, ignore it
         lc1.dt = lc2.dt
+
+        gti = cross_two_gtis(lc1.gti, lc2.gti)
+        lc1._apply_gtis()
+        lc2._apply_gtis()
         if self.gti is None:
-            self.gti = cross_two_gtis(lc1.gti, lc2.gti)
-            lc1.gti = lc2.gti = self.gti
-            lc1._apply_gtis()
-            lc2._apply_gtis()
+            self.gti = gti 
+        else:
+            self.gti = np.vstack([self.gti, gti])
 
         check_gtis(self.gti)
 
@@ -790,8 +793,9 @@ class AveragedCrossspectrum(Crossspectrum):
         nphots1_all = []
         nphots2_all = []
 
+
         start_inds, end_inds = \
-            bin_intervals_from_gtis(self.gti, segment_size, lc1.time,
+            bin_intervals_from_gtis(gti, segment_size, lc1.time,
                                     dt=lc1.dt)
 
         for start_ind, end_ind in zip(start_inds, end_inds):
