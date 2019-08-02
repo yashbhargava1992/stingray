@@ -4,7 +4,6 @@ import scipy
 import scipy.stats
 import scipy.fftpack
 import scipy.optimize
-import logging
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
@@ -476,7 +475,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
-        if self.gti is None:
+        if self.gti is None or np.all(lc.gti == self.gti):
             self.gti = lc.gti
         else:
             self.gti = np.vstack([self.gti, lc.gti])

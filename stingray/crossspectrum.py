@@ -782,7 +782,7 @@ class AveragedCrossspectrum(Crossspectrum):
         gti = cross_two_gtis(lc1.gti, lc2.gti)
         lc1._apply_gtis()
         lc2._apply_gtis()
-        if self.gti is None:
+        if self.gti is None or np.all(self.gti == gti):
             self.gti = gti 
         else:
             self.gti = np.vstack([self.gti, gti])
