@@ -396,16 +396,16 @@ class TestAveragedCrossspectrum(object):
 
 
     def test_with_multiple_lightcurves_variable_length(self):
-         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]
-         lc1 = copy.copy(self.lc1)
-         lc1.gti = gti
-         lc2 = copy.copy(self.lc2)
-         lc2.gti = gti
+        gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]
+        lc1 = copy.copy(self.lc1)
+        lc1.gti = gti
+        lc2 = copy.copy(self.lc2)
+        lc2.gti = gti
 
-         lc1_split = lc1.split_by_gti()
-         lc2_split = lc2.split_by_gti()
+        lc1_split = lc1.split_by_gti()
+        lc2_split = lc2.split_by_gti()
 
-         cs = AveragedCrossspectrum(lc1_split, lc2_split, segment_size=0.05, norm="leahy") 
+        cs = AveragedCrossspectrum(lc1_split, lc2_split, segment_size=0.05, norm="leahy")
 
 
     def test_coherence(self):
