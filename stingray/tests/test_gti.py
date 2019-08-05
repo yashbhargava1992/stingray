@@ -9,7 +9,7 @@ from ..gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
 from ..gti import check_separate, create_gti_mask, check_gtis
 from ..gti import create_gti_from_condition, gti_len, gti_border_bins
 from ..gti import time_intervals_from_gtis, bin_intervals_from_gtis
-from ..gti import create_gti_mask_complete
+from ..gti import create_gti_mask_complete, join_equal_gti_boundaries
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
@@ -242,4 +242,13 @@ class TestGTI(object):
         with pytest.raises(ValueError) as excinfo:
             check_gtis([])
         assert 'Empty' in str(excinfo.value)
+
+    def test_join_boundaries(self):
+        gti = np.array([[1.16703354e+08, 1.16703386e+08], 
+                        [1.16703386e+08, 1.16703418e+08], 
+                        [1.16703418e+08, 1.16703450e+08], 
+                        [1.16703450e+08, 1.16703482e+08], 
+                        [1.16703482e+08, 1.16703514e+08]])
+        newg = join_equal_gti_boundaries(gti)
+        assert np.allclose(newg, np.array([[1.16703354e+08, 1.16703514e+08]]))
 

@@ -648,20 +648,21 @@ def join_equal_gti_boundaries(gti):
     """If the start of a GTI is right at the end of another, join them.
 
     """
-    new_gtis = gti
+    new_gtis=[]
+    for l in gti:
+        new_gtis.append(l)
     touching = gti[:-1, 1] == gti[1:, 0]
-    if np.any(touching):
-        ng = []
-        count = 0
-        while count < len(gti) - 1:
-            if new_gtis[count, 1] == gti[count + 1, 0]:
-                ng.append([gti[count, 0], gti[count + 1, 1]])
-            else:
-                ng.append(gti[count])
-            count += 1
-        new_gtis = np.asarray(ng)
-    return new_gtis
-
+    ng = []
+    count = 0
+    while count < len(gti)-1:
+        if touching[count]:
+            new_gtis[count+1] = [new_gtis[count][0], new_gtis[count+1][1]]
+        else:
+            ng.append(new_gtis[count])
+        count += 1
+    ng.append(new_gtis[-1])
+    return np.asarray(ng)
+  
 
 def append_gtis(gti0, gti1):
     """Union of two non-overlapping GTIs.
