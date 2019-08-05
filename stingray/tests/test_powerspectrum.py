@@ -428,7 +428,7 @@ class TestAveragedPowerspectrum(object):
 
     def test_with_iterable_of_variable_length_lightcurves(self):
         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]
-        lc = copy.copy(self.lc)
+        lc = copy.deepcopy(self.lc)
         lc.gti = gti
         lc_split = lc.split_by_gti()
 

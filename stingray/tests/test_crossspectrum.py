@@ -397,9 +397,9 @@ class TestAveragedCrossspectrum(object):
 
     def test_with_multiple_lightcurves_variable_length(self):
         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]
-        lc1 = copy.copy(self.lc1)
+        lc1 = copy.deepcopy(self.lc1)
         lc1.gti = gti
-        lc2 = copy.copy(self.lc2)
+        lc2 = copy.deepcopy(self.lc2)
         lc2.gti = gti
 
         lc1_split = lc1.split_by_gti()

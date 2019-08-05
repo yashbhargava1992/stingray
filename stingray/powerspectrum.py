@@ -475,10 +475,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
-        if self.gti is None or np.all(lc.gti == self.gti):
+        if self.gti is None:
             self.gti = lc.gti
         else:
-            self.gti = np.vstack([self.gti, lc.gti])
+            if not np.all(lc.gti == self.gti):
+                self.gti = np.vstack([self.gti, lc.gti])
 
         check_gtis(self.gti)
 
