@@ -244,6 +244,9 @@ class Powerspectrum(Crossspectrum):
             The fractional rms amplitude contained between ``min_freq`` and
             ``max_freq``
 
+        rms_err: float
+            The error on the fractional rms amplitude
+
         """
         minind = self.freq.searchsorted(min_freq)
         maxind = self.freq.searchsorted(max_freq)
@@ -287,7 +290,7 @@ class Powerspectrum(Crossspectrum):
         Returns
         -------
         delta_rms: float
-            the error on the fractional rms amplitude
+            The error on the fractional rms amplitude
         """
         nphots = self.nphots
         p_err = scipy.stats.chi2(2.0 * self.m).var() * powers / self.m / nphots
