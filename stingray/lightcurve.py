@@ -117,12 +117,17 @@ class Lightcurve(object):
 
     err_dist: string
         Statistic of the Lightcurve, it is used to calculate the
-        uncertainties and other statistical values apropriately.
+        uncertainties and other statistical values appropriately.
         It propagates to Spectrum classes.
+
+    precise_poisson_err: bool
+        If True, calculate proper poisson confidence intervals.
+        Otherwise, just sqrt(mean(counts))
 
     """
     def __init__(self, time, counts, err=None, input_counts=True,
-                 gti=None, err_dist='poisson', mjdref=0, dt=None):
+                 gti=None, err_dist='poisson', mjdref=0, dt=None,
+                 precise_poisson_err=False):
 
         if not np.all(np.isfinite(time)):
             raise ValueError("There are inf or NaN values in "
@@ -151,10 +156,14 @@ class Lightcurve(object):
                 raise StingrayError("Statistic not recognized."
                                     "Please select one of these: ",
                                     "{}".format(valid_statistics))
+
             if err_dist.lower() == 'poisson':
                 # Instead of the simple square root, we use confidence
                 # intervals (should be valid for low fluxes too)
-                err = poisson_symmetrical_errors(counts)
+                if precise_poisson_err:
+                    err = poisson_symmetrical_errors(counts)
+                else:
+                    err = np.zeros_like(counts) + np.sqrt(np.mean(counts))
             else:
                 simon("Stingray only uses poisson err_dist at the moment, "
                       "We are setting your errors to zero. "
@@ -163,60 +172,57 @@ class Lightcurve(object):
 
         self.mjdref = mjdref
         self.time = np.asarray(time)
-        dt_array = np.diff(np.sort(self.time))
         dt_array_unsorted = np.diff(self.time)
         unsorted = np.any(dt_array_unsorted < 0)
 
+        if unsorted:
+            logging.warning("The light curve is unsorted. Sorting...")
+            order = np.argsort(self.time)
+            self.time = self.time[order]
+            self.counts = self.counts[order]
+            self.err = self.err[order]
+
         if dt is None:
-            if unsorted:
-                logging.warning("The light curve is unordered! This may cause "
-                                "unexpected behaviour in some methods! Use "
-                                "sort() to order the light curve in time and "
-                                "check that the time resolution `dt` is "
-                                "calculated correctly!")
+            dt_array = np.diff(self.time)
+            dt = np.median(dt_array)
 
-            self.dt = np.median(dt_array)
-        else:
-            self.dt = dt
-
-        self.bin_lo = self.time - 0.5 * self.dt
-        self.bin_hi = self.time + 0.5 * self.dt
+        self.dt = dt
 
         self.err_dist = err_dist
 
-        if unsorted:
-            self.tstart = np.min(self.time) - 0.5 * self.dt
-            self.tseg = np.max(self.time) - np.min(self.time) + self.dt
+        self.tstart = self.time[0] - 0.5 * self.dt
+        self.tseg = self.time[-1] - self.time[0] + self.dt
+
+        self.gti = gti
+        if gti is None:
+            self.gti = \
+                np.asarray([[self.tstart, self.tstart + self.tseg]])
         else:
-            self.tstart = self.time[0] - 0.5 * self.dt
-            self.tseg = self.time[-1] - self.time[0] + self.dt
-
-        self.gti = \
-            np.asarray(assign_value_if_none(gti,
-                                            [[self.tstart,
-                                              self.tstart + self.tseg]]))
-
-        check_gtis(self.gti)
+            check_gtis(self.gti)
 
         good = create_gti_mask(self.time, self.gti, dt=self.dt)
 
-        self.time = self.time[good]
-
         if input_counts:
-            self.counts = np.asarray(counts)[good]
+            self.counts = np.asarray(counts)
             self.countrate = self.counts / self.dt
-            self.counts_err = np.asarray(err)[good]
-            self.countrate_err = np.asarray(err)[good] / self.dt
+            self.counts_err = np.asarray(err)
+            self.countrate_err = np.asarray(err) / self.dt
         else:
-            self.countrate = np.asarray(counts)[good]
+            self.countrate = np.asarray(counts)
             self.counts = self.countrate * self.dt
-            self.counts_err = np.asarray(err)[good] * self.dt
-            self.countrate_err = np.asarray(err)[good]
+            self.counts_err = np.asarray(err) * self.dt
+            self.countrate_err = np.asarray(err)
 
         self.meanrate = np.mean(self.countrate)
         self.meancounts = np.mean(self.counts)
         self.n = self.counts.shape[0]
 
+    def check_lightcurve(self):
+        """Make various checks on the lightcurve.
+
+        It can be slow, use it if you are not sure about your
+        input data.
+        """
         # Issue a warning if the input time iterable isn't regularly spaced,
         # i.e. the bin sizes aren't equal throughout.
         dt_array = []
@@ -958,19 +964,19 @@ class Lightcurve(object):
         # find all distances between time bins that are larger than `min_gap`
         gap_idx = np.where(tdiff >= min_gap)[0]
 
-        # tolerance for the newly created GTIs: Note that this seems to work with a 
+        # tolerance for the newly created GTIs: Note that this seems to work with a
         # tolerance of 2, but not if I substitute 10, and I don't know why
         epsilon = np.min(tdiff)/2.0
 
         # calculate new GTIs
         gti_start = np.hstack([self.time[0]-epsilon, self.time[gap_idx+1]-epsilon])
         gti_stop = np.hstack([self.time[gap_idx]+epsilon, self.time[-1]+epsilon])
-        
+
         gti = np.vstack([gti_start, gti_stop]).T
         if hasattr(self, 'gti') and self.gti is not None:
             gti = cross_two_gtis(self.gti, gti)
         self.gti = gti
-        
+
         lc_split = self.split_by_gti(min_points=min_points)
         return lc_split
 

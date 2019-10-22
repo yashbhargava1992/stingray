@@ -174,7 +174,7 @@ def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):  # pragma: no
     return mask, gti_mask
 
 
-def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
+def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
                     return_new_gtis=False, dt=None, epsilon=0.001):
     """Create GTI mask.
 
@@ -234,37 +234,42 @@ def create_gti_mask(time, gtis, safe_interval=0, min_length=0,
 
     check_gtis(gtis)
 
-    dt = assign_value_if_none(dt, np.median(np.diff(time)))
+    if dt is None:
+        print('dt is none')
+        dt = np.median(np.diff(time))
 
-    lengths = gtis[:, 1] - gtis[:, 0]
-    good = lengths >= max(min_length, dt)
+    if min_length > 0:
+        lengths = gtis[:, 1] - gtis[:, 0]
+        good = lengths >= max(min_length, dt)
 
-    gtis = gtis[good]
+        gtis = gtis[good]
 
     mask = np.zeros(len(time), dtype=bool)
 
-    if not isinstance(safe_interval, collections.Iterable):
-        safe_interval = np.array([safe_interval, safe_interval])
-    gti_mask = np.zeros(len(gtis), dtype=bool)
-    # These are the gtis that will be returned (filtered!). They are only
-    # modified by the safe intervals
-    gtis_new = copy.deepcopy(gtis)
-    gtis_new[:, 0] = gtis[:, 0] + safe_interval[0]
-    gtis_new[:, 1] = gtis[:, 1] - safe_interval[1]
+    if safe_interval is not None:
+        if not isinstance(safe_interval, collections.Iterable):
+            safe_interval = np.array([safe_interval, safe_interval])
+        gtis_new = copy.deepcopy(gtis)
+        # These are the gtis that will be returned (filtered!). They are only
+        # modified by the safe intervals
+        gtis_new[:, 0] = gtis[:, 0] + safe_interval[0]
+        gtis_new[:, 1] = gtis[:, 1] - safe_interval[1]
 
     # These are false gtis, they contain a few boundary modifications
     # in order to simplify the calculation of the mask, but they will _not_
     # be returned.
-    gtis_to_mask = copy.deepcopy(gtis_new)
-    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon * dt + dt / 2
-    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon * dt - dt / 2
+    gtis_to_mask = copy.deepcopy(gtis)
+    gtis_to_mask[:, 0] = gtis[:, 0] - epsilon * dt + dt / 2
+    gtis_to_mask[:, 1] = gtis[:, 1] + epsilon * dt - dt / 2
+
+    gti_mask = np.zeros(len(gtis), dtype=bool)
 
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
                             (gtis_to_mask - time[0]).astype(np.float64),
                             mask, gti_mask=gti_mask, min_length=min_length)
     if return_new_gtis:
-        return mask, gtis_new[gtimask]
+        return mask, gtis[gtimask]
     return mask
 
 
@@ -662,7 +667,7 @@ def join_equal_gti_boundaries(gti):
         count += 1
     ng.append(new_gtis[-1])
     return np.asarray(ng)
-  
+
 
 def append_gtis(gti0, gti1):
     """Union of two non-overlapping GTIs.
