@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from stingray import Lightcurve, AveragedPowerspectrum
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
 from stingray import StingrayError
+from ..simulator.simulator import Simulator
+
 import copy
 
 np.random.seed(20160528)
@@ -337,7 +339,7 @@ class TestAveragedCrossspectrum(object):
         test_lc2 = Lightcurve(time2, counts2_test)
 
         time1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        counts1_test = np.random.np.random.poisson(1000, size=len(time1))
+        counts1_test = np.random.poisson(1000, size=len(time1))
         test_lc1 = Lightcurve(time1, counts1_test)
 
         assert test_lc2.dt == test_lc1.dt
@@ -470,7 +472,7 @@ class TestAveragedCrossspectrum(object):
     def test_timelag(self):
         from ..simulator.simulator import Simulator
         dt = 0.1
-        simulator = Simulator(dt, 10000, rms=0.8, mean=1000)
+        simulator = Simulator(dt, 10000, rms=0.2, mean=1000)
         test_lc1 = simulator.simulate(2)
         test_lc2 = Lightcurve(test_lc1.time,
                               np.array(np.roll(test_lc1.counts, 2)),
