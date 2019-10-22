@@ -933,7 +933,7 @@ class SamplingResults(object):
         self.niter = np.float(sampler.chain.shape[1])
 
         # store number of dimensions
-        self.ndim = sampler.dim
+        self.ndim = sampler.chain.shape[2]
 
         # compute and store acceptance fraction
         self.acceptance = np.nanmean(sampler.acceptance_fraction)
