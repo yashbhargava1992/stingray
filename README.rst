@@ -2,9 +2,9 @@
 Stingray
 ========
 
-+------------------+-------------------------+---------------+---------+---------------------------+---------------------+
-| Master           | |Build Status Master|   | |Readthedocs| | |Slack| | |Coverage Status Master|  | |Stage Pre Release| |
-+------------------+-------------------------+---------------+---------+---------------------------+---------------------+
++------------------+-------------------------+---------------+---------+--------+---------------------------+------------------+
+| Master           | |Build Status Master|   | |Readthedocs| | |Slack| | |joss| | |Coverage Status Master|  | |GitHub release| |
++------------------+-------------------------+---------------+---------+--------+---------------------------+------------------+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
@@ -33,13 +33,7 @@ the learning curve for the advanced spectral timing techniques with a correct st
 Note to Users
 -------------
 
-Stingray is currently in **development phase**. Some of the code is not in
-its final stage, and might change before our first release. There might also
-still be bugs we are working on fixing and features that are not finished.
-
-We encourage you to download it and try it out, but please be aware of
-the caveats of working with in-development code.
-At the same time, we welcome contributions and we need your help!
+We welcome contributions and we need your help!
 If you have your own code duplicating any part of the methods implemented in
 Stingray, please try out Stingray and compare to your own results.
 
@@ -51,6 +45,35 @@ have.
 
 If you have code you might want to contribute, we'd love to hear from you,
 either via a `pull request`_ or via an `issue`_.
+
+
+Citing Stingray
+---------------
+
+Please cite `Huppenkothen et al. (2019)
+<https://arxiv.org/abs/1901.07681>`_ if you find this package useful in your
+research.
+ 
+The BibTeX entry for the paper is::
+
+    @ARTICLE{2019arXiv190107681H,
+           author = {{Huppenkothen}, D. and {Bachetti}, M. and {Stevens}, A.~L. and
+             {Migliari}, S. and {Balm}, P. and {Hammad}, O. and {Khan}, U.~M. and
+             {Mishra}, H. and {Rashid}, H. and {Sharma}, S.},
+            title = "{Stingray: A Modern Python Library For Spectral Timing}",
+          journal = {arXiv e-prints},
+         keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - High Energy Astrophysical Phenomena},
+             year = "2019",
+            month = "Jan",
+              eid = {arXiv:1901.07681},
+            pages = {arXiv:1901.07681},
+    archivePrefix = {arXiv},
+           eprint = {1901.07681},
+     primaryClass = {astro-ph.IM},
+           adsurl = {https://ui.adsabs.harvard.edu/abs/2019arXiv190107681H},
+          adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+    }
+
 
 Contents
 --------
@@ -84,18 +107,9 @@ Future Additions
 Installation
 ------------
 
-1. Clone our project from github (remember about including --recursive flag due to our submodule(s))::
-
-    $ git clone --recursive https://github.com/StingraySoftware/stingray.git
-
-2. Go to already created directory and install all dependencies::
-
-    $ pip install -r requirements.txt
-
-3. Go back to stingray project directory and execute::
-
-    $ python setup.py install
-
+You can find install Stingray via `conda`, `pip` or from the source repository itself.
+More details on how to install Stingray can be found `on the Installations page
+<https://stingray.readthedocs.io/en/latest/stingray/docs/install.html>_.
 
 Documentation
 -------------
@@ -120,7 +134,7 @@ Stingray uses `py.test` for testing. To run the tests, try::
 Copyright
 ---------
 
-All content © 2015 the authors. The code is distributed under the MIT license.
+All content © 2019 the authors. The code is distributed under the MIT license.
 
 Pull requests are welcome! If you are interested in the further development of
 this project, please `get in touch via the issues
@@ -134,8 +148,10 @@ this project, please `get in touch via the issues
     :target: http://slack-invite.timelabtechnologies.com
 .. |Coverage Status Master| image:: https://coveralls.io/repos/github/StingraySoftware/stingray/badge.svg?branch=master
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
-.. |Stage Pre Release| image:: https://img.shields.io/badge/stage-pre--release-green.svg
+.. |GitHub release| image:: https://img.shields.io/github/release/StingraySoftware/stingray.svg
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
+.. |joss| image:: http://joss.theoj.org/papers/10.21105/joss.01393/status.svg
+   :target: https://doi.org/10.21105/joss.01393
 .. _Astropy: https://www.github.com/astropy/astropy
 .. _Issues: https://www.github.com/stingraysoftware/stingray/issues
 .. _Issue: https://www.github.com/stingraysoftware/stingray/issues

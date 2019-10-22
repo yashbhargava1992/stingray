@@ -9,7 +9,7 @@ from ..gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
 from ..gti import check_separate, create_gti_mask, check_gtis
 from ..gti import create_gti_from_condition, gti_len, gti_border_bins
 from ..gti import time_intervals_from_gtis, bin_intervals_from_gtis
-from ..gti import create_gti_mask_complete
+from ..gti import create_gti_mask_complete, join_equal_gti_boundaries
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
@@ -64,14 +64,14 @@ class TestGTI(object):
         gti = np.array([[0, 2.1], [3.9, 5]])
         with pytest.raises(ValueError) as excinfo:
             create_gti_mask(arr, gti, return_new_gtis=True)
-        assert 'empty time array' in str(excinfo)
+        assert 'empty time array' in str(excinfo.value)
 
     def test_gti_mask_fails_empty_gti(self):
         arr = np.array([0, 1, 2, 3, 4, 5, 6])
         gti = np.array([])
         with pytest.raises(ValueError) as excinfo:
             create_gti_mask(arr, gti, return_new_gtis=True)
-        assert 'empty GTI array' in str(excinfo)
+        assert 'empty GTI array' in str(excinfo.value)
 
     def test_gti_mask_complete(self):
         arr = np.array([0, 1, 2, 3, 4, 5, 6])
@@ -241,5 +241,14 @@ class TestGTI(object):
     def test_check_gti_fails_empty(self):
         with pytest.raises(ValueError) as excinfo:
             check_gtis([])
-        assert 'Empty' in str(excinfo)
+        assert 'Empty' in str(excinfo.value)
+
+    def test_join_boundaries(self):
+        gti = np.array([[1.16703354e+08, 1.16703386e+08], 
+                        [1.16703386e+08, 1.16703418e+08], 
+                        [1.16703418e+08, 1.16703450e+08], 
+                        [1.16703450e+08, 1.16703482e+08], 
+                        [1.16703482e+08, 1.16703514e+08]])
+        newg = join_equal_gti_boundaries(gti)
+        assert np.allclose(newg, np.array([[1.16703354e+08, 1.16703514e+08]]))
 

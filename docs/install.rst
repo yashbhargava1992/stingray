@@ -41,11 +41,16 @@ Now ``cd`` into the newly created ``stingray`` directory and install the necessa
 dependencies: ::
 
     $ cd stingray
-    $ pip install -r requirements.txt
 
 Finally, install ``stingray`` itself: ::
 
-    $ python setup.py install
+    $ pip install -e "."
+
+Note that this will install the package *without* the optional dependencies required by 
+the ``modeling`` subpackage. In order to install ``stingray`` with these dependencies
+(``emcee``, ``corner`` and ``statsmodels``), execute :: 
+
+    $ pip install -e ".[modeling]"
 
 .. _testsuite:
 

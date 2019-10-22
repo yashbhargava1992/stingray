@@ -9,6 +9,7 @@ from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
 from stingray.crossspectrum import  cospectra_pvalue
 from ..simulator.simulator import Simulator
 from stingray import StingrayError
+from ..simulator.simulator import Simulator
 
 import copy
 
@@ -523,7 +524,7 @@ class TestAveragedCrossspectrum(object):
         test_lc2 = Lightcurve(time2, counts2_test)
 
         time1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        counts1_test = np.random.np.random.poisson(1000, size=len(time1))
+        counts1_test = np.random.poisson(1000, size=len(time1))
         test_lc1 = Lightcurve(time1, counts1_test)
 
         assert test_lc2.dt == test_lc1.dt
