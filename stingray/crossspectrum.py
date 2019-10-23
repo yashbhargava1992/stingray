@@ -48,13 +48,13 @@ def _averaged_cospectra_cdf(xcoord, n):
     cdf = np.zeros_like(xcoord)
 
     for i, x in enumerate(xcoord):
-        prefac_bottom1 = scipy.misc.factorial(n - 1)
+        prefac_bottom1 = factorial(n - 1)
         # print("x: " + str(x))
         for j in range(n):
             # print("j: " + str(j))
-            prefac_top = scipy.misc.factorial(n - 1 + j)
-            prefac_bottom2 = scipy.misc.factorial(
-                n - 1 - j) * scipy.misc.factorial(j)
+            prefac_top = factorial(n - 1 + j)
+            prefac_bottom2 = factorial(
+                n - 1 - j) * factorial(j)
             prefac_bottom3 = 2.0 ** (n + j)
 
             prefac = prefac_top / (
