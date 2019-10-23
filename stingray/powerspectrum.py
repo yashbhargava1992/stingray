@@ -4,7 +4,6 @@ import scipy
 import scipy.stats
 import scipy.fftpack
 import scipy.optimize
-import logging
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
@@ -481,10 +480,14 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         if self.gti is None:
             self.gti = lc.gti
+        else:
+            if not np.all(lc.gti == self.gti):
+                self.gti = np.vstack([self.gti, lc.gti])
+
         check_gtis(self.gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(self.gti, segment_size, lc.time, dt=lc.dt)
+            bin_intervals_from_gtis(lc.gti, segment_size, lc.time, dt=lc.dt)
 
         power_all = []
         nphots_all = []

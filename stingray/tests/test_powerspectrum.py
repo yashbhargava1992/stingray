@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 from astropy.tests.helper import pytest
 
@@ -424,6 +425,14 @@ class TestAveragedPowerspectrum(object):
 
         segment_size = 0.5
         assert AveragedPowerspectrum(lc_all, segment_size)
+
+    def test_with_iterable_of_variable_length_lightcurves(self):
+        gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]
+        lc = copy.deepcopy(self.lc)
+        lc.gti = gti
+        lc_split = lc.split_by_gti()
+
+        cs = AveragedPowerspectrum(lc_split, segment_size=0.05, norm="leahy")
 
     @pytest.mark.parametrize('df', [2, 3, 5, 1.5, 1, 85])
     def test_rebin(self, df):
