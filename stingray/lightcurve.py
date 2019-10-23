@@ -151,15 +151,15 @@ class Lightcurve(object):
                                  "your counts array!")
 
             logging.warning("Checking if light curve is sorted.")
-            dt_array = np.diff(self.time)
+            dt_array = np.diff(time)
             unsorted = np.any(dt_array < 0)
 
             if unsorted:
                 logging.warning("The light curve is unsorted. Now, sorting...")
-                order = np.argsort(self.time)
-                self.time = self.time[order]
-                self.counts = self.counts[order]
-                self.err = self.err[order]
+                order = np.argsort(time)
+                time = time[order]
+                counts = counts[order]
+                err = err[order]
 
         if time.size != counts.size:
             raise StingrayError("time and counts array are not "
@@ -262,6 +262,16 @@ class Lightcurve(object):
         self._counts = value
 
     @property
+    def counts_err(self):
+        if self._counts_err is None:
+            self._counts_err = self.countrate_err  * self.dt
+        return self._counts_err
+
+    @counts_err.setter
+    def counts_err(self, value):
+        self._counts_err = value
+
+    @property
     def countrate(self):
         if self._countrate is None:
             self._countrate = self.counts  * self.dt
@@ -270,6 +280,16 @@ class Lightcurve(object):
     @countrate.setter
     def countrate(self, value):
         self._countrate = value
+
+    @property
+    def countrate_err(self):
+        if self._countrate_err is None:
+            self._countrate_err = self.counts_err  * self.dt
+        return self._countrate_err
+
+    @countrate_err.setter
+    def countrate_err(self, value):
+        self._countrate_err = value
 
     @property
     def bin_lo(self):
