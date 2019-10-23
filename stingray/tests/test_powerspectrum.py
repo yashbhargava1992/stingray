@@ -212,16 +212,16 @@ class TestPowerspectrum(object):
         normalization should be approximately 2 * the mean count rate of the
         light curve.
         """
+        np.random.seed(101)
+
         time = np.linspace(0, 1., 1e4)
         counts = np.random.poisson(0.01, size=time.shape[0])
 
         lc = Lightcurve(time, counts)
         ps = Powerspectrum(lc, norm="abs")
-        print(lc.counts/lc.tseg)
         abs_noise = 2. * 100  # expected Poisson noise level;
                               # hardcoded value from above
-        print(np.mean(ps.power[1:]), abs_noise)
-        assert np.isclose(np.mean(ps.power[1:]), abs_noise, atol=30)
+        assert np.isclose(np.mean(ps.power[1:]), abs_noise, atol=50)
 
     def test_fractional_rms_error(self):
         """
