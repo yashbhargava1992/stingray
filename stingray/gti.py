@@ -223,7 +223,7 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     try:
         from numba import jit
-    except ImportError:
+    except (ImportError, ModuleNotFoundError):
         return create_gti_mask_complete(time, gtis,
                                         safe_interval=safe_interval,
                                         min_length=min_length,
@@ -325,7 +325,9 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
 
     mask = np.zeros(len(time), dtype=bool)
 
-    if not isinstance(safe_interval, collections.Iterable):
+    if not safe_interval is None:
+        safe_interval = [0, 0]
+    elif not isinstance(safe_interval, collections.Iterable):
         safe_interval = [safe_interval, safe_interval]
 
     newgtis = np.zeros_like(gtis)
