@@ -146,9 +146,9 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     """
 
     y = np.asarray(y)
-    yerr = np.asarray(assign_value_if_none(yerr, np.zeros_like(y)))
+    yerr = np.asarray(apply_function_if_none(yerr, y, np.zeros_like))
 
-    dx_old = assign_value_if_none(dx, np.median(np.diff(x)))
+    dx_old = apply_function_if_none(dx, x, np.median(np.diff)
 
     if dx_new < dx_old:
         raise ValueError("New frequency resolution must be larger than "
@@ -256,10 +256,10 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
         The size of the binning step
     """
 
-    dx_init = assign_value_if_none(dx, np.median(np.diff(x)))
+    dx_init = apply_function_if_none(dx, np.diff(x), np.median)
     x = np.asarray(x)
     y = np.asarray(y)
-    y_err = np.asarray(assign_value_if_none(y_err, np.zeros_like(y)))
+    y_err = np.asarray(apply_function_if_none(y_err, y, np.zeros_like))
 
     if x.shape[0] != y.shape[0]:
         raise ValueError("x and y must be of the same length!")
@@ -313,6 +313,32 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
     return binx, biny, biny_err, nsamples
 
+
+def apply_function_if_none(variable, value, func):
+    """
+    Assign a function value to a variable if that variable has value ``None`` on input.
+
+    Parameters
+    ----------
+    variable : object
+        A variable with either some assigned value, or ``None``
+
+    value : object
+        A variable to go into the function
+ 
+    func : function
+        Function to apply to ``value``. Result is assigned to ``variable``
+
+    Returns
+    -------
+        new_value : object
+            The new value of ``variable``
+
+    """
+    if variable is None:
+        return func(value)
+    else:
+        return variable
 
 def assign_value_if_none(value, default):
     """
