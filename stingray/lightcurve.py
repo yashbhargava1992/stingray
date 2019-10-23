@@ -135,6 +135,8 @@ class Lightcurve(object):
 
         time = np.asarray(time)
         counts = np.asarray(counts)
+        if err is not None:
+            err = np.asarray(err)
 
         if not skip_checks:
             logging.warning("Checking if light curve is well behaved. This "
@@ -159,7 +161,8 @@ class Lightcurve(object):
                 order = np.argsort(time)
                 time = time[order]
                 counts = counts[order]
-                err = err[order]
+                if err is not None:
+                    err = err[order]
 
         if time.size != counts.size:
             raise StingrayError("time and counts array are not "
@@ -170,6 +173,7 @@ class Lightcurve(object):
                                 "a lightcurve!")
 
         if err is not None:
+            err = np.asarray(err)
             if not np.all(np.isfinite(err)):
                 raise ValueError("There are inf or NaN values in "
                                  "your err array")
@@ -222,10 +226,13 @@ class Lightcurve(object):
 
         if input_counts:
             self._counts = np.asarray(counts)
-            self._counts_err = np.asarray(err)
+            self._counts_err = err
         else:
             self._countrate = np.asarray(counts)
-            self._countrate_err = np.asarray(err)
+            self._countrate_err = err
+
+        if not skip_checks:
+            self.check_lightcurve()
 
     @property
     def mask(self):
@@ -263,8 +270,10 @@ class Lightcurve(object):
 
     @property
     def counts_err(self):
-        if self._counts_err is None:
-            self._counts_err = self.countrate_err  * self.dt
+        if self._counts_err is None and self._countrate_err is not None:
+            self._counts_err = self._countrate_err * self.dt
+        elif self._counts_err is None:
+            self._counts_err = poisson_symmetrical_errors(self.counts)
         return self._counts_err
 
     @counts_err.setter
@@ -274,7 +283,7 @@ class Lightcurve(object):
     @property
     def countrate(self):
         if self._countrate is None:
-            self._countrate = self.counts  * self.dt
+            self._countrate = self.counts  / self.dt
         return self._countrate
 
     @countrate.setter
@@ -284,7 +293,7 @@ class Lightcurve(object):
     @property
     def countrate_err(self):
         if self._countrate_err is None:
-            self._countrate_err = self.counts_err  * self.dt
+            self._countrate_err = self.counts_err  / self.dt
         return self._countrate_err
 
     @countrate_err.setter
@@ -364,12 +373,13 @@ class Lightcurve(object):
 
         """
         new_lc = Lightcurve(self.time + time_shift, self.counts,
-                            gti=self.gti + time_shift, mjdref=self.mjdref)
+                            err=self.counts_err,
+                            gti=self.gti + time_shift, mjdref=self.mjdref,
+                            dt=self.dt, err_dist=self.err_dist,
+                            skip_checks=True)
         new_lc.countrate = self.countrate
         new_lc.counts = self.counts
         new_lc.counts_err = self.counts_err
-        new_lc.meanrate = np.mean(new_lc.countrate)
-        new_lc.meancounts = np.mean(new_lc.counts)
         return new_lc
 
     def _operation_with_other_lc(self, other, operation):
@@ -759,35 +769,28 @@ class Lightcurve(object):
             raise ValueError("New time resolution must be larger than "
                              "old time resolution!")
 
-        if self.gti is None:
+        bin_time, bin_counts, bin_err = [], [], []
+        gti_new = []
+        for g in self.gti:
+            if g[1] - g[0] < dt_new:
+                continue
+            else:
+                # find start and end of GTI segment in data
+                start_ind = self.time.searchsorted(g[0])
+                end_ind = self.time.searchsorted(g[1])
 
-            bin_time, bin_counts, bin_err, _ = \
-                utils.rebin_data(self.time, self.counts, dt_new,
-                                 yerr=self.counts_err, method=method)
+                t_temp = self.time[start_ind:end_ind]
+                c_temp = self.counts[start_ind:end_ind]
+                e_temp = self.counts_err[start_ind:end_ind]
 
-        else:
-            bin_time, bin_counts, bin_err = [], [], []
-            gti_new = []
-            for g in self.gti:
-                if g[1] - g[0] < dt_new:
-                    continue
-                else:
-                    # find start and end of GTI segment in data
-                    start_ind = self.time.searchsorted(g[0])
-                    end_ind = self.time.searchsorted(g[1])
+                bin_t, bin_c, bin_e, _ = \
+                    utils.rebin_data(t_temp, c_temp, dt_new,
+                                     yerr=e_temp, method=method)
 
-                    t_temp = self.time[start_ind:end_ind]
-                    c_temp = self.counts[start_ind:end_ind]
-                    e_temp = self.counts_err[start_ind:end_ind]
-
-                    bin_t, bin_c, bin_e, _ = \
-                        utils.rebin_data(t_temp, c_temp, dt_new,
-                                         yerr=e_temp, method=method)
-
-                    bin_time.extend(bin_t)
-                    bin_counts.extend(bin_c)
-                    bin_err.extend(bin_e)
-                    gti_new.append(g)
+                bin_time.extend(bin_t)
+                bin_counts.extend(bin_c)
+                bin_err.extend(bin_e)
+                gti_new.append(g)
 
         lc_new = Lightcurve(bin_time, bin_counts, err=bin_err,
                             mjdref=self.mjdref, dt=dt_new, gti=gti_new)
@@ -1099,13 +1102,16 @@ class Lightcurve(object):
             The :class:`Lightcurve` object with sorted time and counts
             arrays.
         """
-
         new_time, new_counts, new_counts_err = \
             zip(*sorted(zip(self.time, self.counts, self.counts_err),
                         reverse=reverse))
+        new_time = np.asarray(new_time)
+        new_counts = np.asarray(new_counts)
+        new_counts_err = np.asarray(new_counts_err)
 
         new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
-                            gti=self.gti, dt=self.dt, mjdref=self.mjdref)
+                            gti=self.gti, dt=self.dt, mjdref=self.mjdref,
+                            skip_checks=True)
 
         return new_lc
 
@@ -1145,7 +1151,8 @@ class Lightcurve(object):
                         reverse=reverse))
 
         new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
-                            gti=self.gti, dt=self.dt, mjdref=self.mjdref)
+                            gti=self.gti, dt=self.dt, mjdref=self.mjdref,
+                            skip_checks=True)
 
         return new_lc
 
@@ -1363,17 +1370,14 @@ class Lightcurve(object):
         format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
         """
-
+        _ = self.counts, self.counts_err, self.countrate, self.countrate_err
         if format_ == 'ascii':
-            io.write(np.array([self.time, self.counts]).T,
-                     filename, format_, fmt=["%s", "%s"])
-
+            io.write(np.array([self.time, self.counts, self.counts_err]).T,
+                     filename, format_, fmt=["%s", "%s", "%s"])
         elif format_ == 'pickle':
             io.write(self, filename, format_)
-
         elif format_ == 'hdf5':
             io.write(self, filename, format_)
-
         else:
             utils.simon("Format not understood.")
 
@@ -1401,14 +1405,37 @@ class Lightcurve(object):
             * If ``format\_`` is ``pickle``: :class:`Lightcurve` object is returned.
         """
 
-        if format_ == 'ascii' or format_ == 'hdf5':
-            return io.read(filename, format_)
+        if format_ == 'ascii':
+            data_raw = io.read(filename, format_,
+                               names=['time', 'counts', 'counts_err'])
 
+            data = {'time': np.array(data_raw['time']),
+                    'counts': np.array(data_raw['counts']),
+                    'counts_err': np.array(data_raw['counts_err'])}
+            data['dt'] = np.median(np.diff(data['time']))
+            data['gti'] = np.array([[data['time'][0] - data['dt'] / 0,
+                                     data['time'][-1] + data['dt'] / 0]])
+            data['err_dist'] = 'gauss'
+            data['mjdref'] = 0
+        elif format_ == 'hdf5':
+            data_raw = io.read(filename, format_)
+
+            data = {'time': np.array(data_raw['time']),
+                    'counts': np.array(data_raw['_counts']),
+                    'counts_err': np.array(data_raw['_counts_err'])}
+            data['dt'] = data_raw['dt']
+            data['gti'] = data_raw['gti']
+            data['err_dist'] = data_raw['err_dist']
+            data['mjdref'] = data_raw['mjdref']
         elif format_ == 'pickle':
-            self = io.read(filename, format_)
-
+            return io.read(filename, format_)
         else:
             utils.simon("Format not understood.")
+            return None
+        return Lightcurve(data['time'], data['counts'], err=data['counts_err'],
+                          dt=data['dt'], skip_checks=True, gti=data['gti'],
+                          err_dist=data['err_dist'],
+                          mjdref=data['mjdref'])
 
     def split_by_gti(self, min_points=2):
         """
@@ -1456,16 +1483,18 @@ class Lightcurve(object):
         """
         check_gtis(self.gti)
 
-        good = create_gti_mask(self.time, self.gti, dt=self.dt)
+        good = self.mask
 
         self.time = self.time[good]
         self.counts = self.counts[good]
-
-        self.counts_err = self.counts_err[good]
-        self.countrate = self.countrate[good]
-        self.countrate_err = self.countrate_err[good]
-
-        self.meanrate = np.mean(self.countrate)
-        self.meancounts = np.mean(self.counts)
-        self.n = self.counts.shape[0]
+        if self._counts_err is not None:
+            self._counts_err = self._counts_err[good]
+        self._countrate = None
+        self._countrate_err = None
         self.tseg = np.max(self.gti) - np.min(self.gti)
+        self.tstart = self.time - 0.5 * self.dt
+        self._mask = None
+
+        self._meanrate = None
+        self._meancounts = None
+        self._n = None

@@ -216,9 +216,10 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     new_gtis : ``Nx2`` array
         An array of new GTIs created by this function
     """
-    if len(time) == 0:
+    gtis = np.array(gtis, dtype=np.longdouble)
+    if time.size == 0:
         raise ValueError("Passing an empty time array to create_gti_mask")
-    if len(gtis) == 0:
+    if gtis.size == 0:
         raise ValueError("Passing an empty GTI array to create_gti_mask")
 
     try:
@@ -230,12 +231,9 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
                                         return_new_gtis=return_new_gtis,
                                         dt=dt, epsilon=epsilon)
 
-    gtis = np.array(gtis, dtype=np.longdouble)
-
     check_gtis(gtis)
 
     if dt is None:
-        print('dt is none')
         dt = np.median(np.diff(time))
 
     if min_length > 0:
@@ -246,10 +244,12 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     mask = np.zeros(len(time), dtype=bool)
 
+    gtis_new = copy.deepcopy(gtis)
+    gti_mask = np.zeros(len(gtis), dtype=bool)
+
     if safe_interval is not None:
         if not isinstance(safe_interval, collections.Iterable):
             safe_interval = np.array([safe_interval, safe_interval])
-        gtis_new = copy.deepcopy(gtis)
         # These are the gtis that will be returned (filtered!). They are only
         # modified by the safe intervals
         gtis_new[:, 0] = gtis[:, 0] + safe_interval[0]
@@ -258,18 +258,17 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     # These are false gtis, they contain a few boundary modifications
     # in order to simplify the calculation of the mask, but they will _not_
     # be returned.
-    gtis_to_mask = copy.deepcopy(gtis)
-    gtis_to_mask[:, 0] = gtis[:, 0] - epsilon * dt + dt / 2
-    gtis_to_mask[:, 1] = gtis[:, 1] + epsilon * dt - dt / 2
-
-    gti_mask = np.zeros(len(gtis), dtype=bool)
+    gtis_to_mask = copy.deepcopy(gtis_new)
+    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon * dt + dt / 2
+    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon * dt - dt / 2
 
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
                             (gtis_to_mask - time[0]).astype(np.float64),
                             mask, gti_mask=gti_mask, min_length=min_length)
+
     if return_new_gtis:
-        return mask, gtis[gtimask]
+        return mask, gtis_new[gtimask]
     return mask
 
 

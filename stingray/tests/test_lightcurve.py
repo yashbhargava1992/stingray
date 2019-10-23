@@ -753,9 +753,9 @@ class TestLightcurve(object):
 
         if _H5PY_INSTALLED:
             data = lc.read('lc.hdf5', format_='hdf5')
-            assert np.all(data['time'] == self.times)
-            assert np.all(data['counts'] == self.counts)
-            assert np.all(data['gti'] == self.gti)
+            assert np.all(data.time == self.times)
+            assert np.all(data.counts == self.counts)
+            assert np.all(data.gti == self.gti)
             os.remove('lc.hdf5')
 
         else:
@@ -876,7 +876,8 @@ class TestLightcurveRebin(object):
         good = create_gti_mask(times, gti)
 
         counts[np.logical_not(good)] = 0
-        lc = Lightcurve(times, counts, gti=gti)
+        lc = Lightcurve(times, counts, gti=gti, skip_checks=True, dt=0.1)
+        lc._apply_gtis()
 
         lc_rebin = lc.rebin(1.0)
 
