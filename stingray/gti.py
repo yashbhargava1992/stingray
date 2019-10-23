@@ -7,7 +7,7 @@ import collections
 import copy
 
 from astropy.io import fits
-from .utils import contiguous_regions, jit, assign_value_if_none
+from .utils import contiguous_regions, jit, assign_value_if_none, HAS_NUMBA
 from stingray.exceptions import StingrayError
 
 __all__ = ['load_gtis', 'check_gtis',
@@ -222,9 +222,7 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     if gtis.size == 0:
         raise ValueError("Passing an empty GTI array to create_gti_mask")
 
-    try:
-        from numba import jit
-    except (ImportError, ModuleNotFoundError):
+    if not HAS_NUMBA:
         return create_gti_mask_complete(time, gtis,
                                         safe_interval=safe_interval,
                                         min_length=min_length,
@@ -324,7 +322,7 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
 
     mask = np.zeros(len(time), dtype=bool)
 
-    if not safe_interval is None:
+    if safe_interval is None:
         safe_interval = [0, 0]
     elif not isinstance(safe_interval, collections.Iterable):
         safe_interval = [safe_interval, safe_interval]
