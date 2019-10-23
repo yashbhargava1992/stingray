@@ -148,7 +148,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     y = np.asarray(y)
     yerr = np.asarray(apply_function_if_none(yerr, y, np.zeros_like))
 
-    dx_old = apply_function_if_none(dx, x, np.median(np.diff)
+    dx_old = apply_function_if_none(dx, np.diff(x), np.median)
 
     if dx_new < dx_old:
         raise ValueError("New frequency resolution must be larger than "
