@@ -7,6 +7,13 @@ import scipy.stats
 import scipy.fftpack
 import scipy.optimize
 
+# location of factorial moved between scipy versions
+try:
+    from scipy.misc import factorial
+except ImportError:
+    from scipy.special import factorial
+
+
 from stingray.lightcurve import Lightcurve
 from stingray.utils import rebin_data, simon, rebin_data_log
 from stingray.exceptions import StingrayError
