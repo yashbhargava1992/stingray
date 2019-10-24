@@ -18,7 +18,7 @@ try:
 
     HAS_NUMBA = True
     from numba import njit, prange
-except (ImportError, ModuleNotFoundError):
+except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
     class jit(object):
