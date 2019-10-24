@@ -292,7 +292,7 @@ class Covariancespectrum(object):
                     counts += self.lcs[j].counts
 
             # make a combined light curve
-            lc = Lightcurve(self.lcs[0].time, counts)
+            lc = Lightcurve(self.lcs[0].time, counts, skip_checks=True)
 
             # add to list of reference light curves
             lc_all.append(lc)

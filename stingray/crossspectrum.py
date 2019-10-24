@@ -87,8 +87,8 @@ def cospectra_pvalue(power, nspec):
     observed under the null hypothesis that there is no signal in
     the data.
 
-    Important: the underlying assumption that make this calculation valid 
-    is that the powers in the power spectrum follow a Laplace distribution, 
+    Important: the underlying assumption that make this calculation valid
+    is that the powers in the power spectrum follow a Laplace distribution,
     and this requires that:
 
     1. the co-spectrum is normalized according to [Leahy 1983]_
@@ -1001,7 +1001,7 @@ class AveragedCrossspectrum(Crossspectrum):
         lc1._apply_gtis()
         lc2._apply_gtis()
         if self.gti is None:
-            self.gti = gti 
+            self.gti = gti
         else:
             if not np.all(self.gti == gti):
                 self.gti = np.vstack([self.gti, gti])
@@ -1032,11 +1032,11 @@ class AveragedCrossspectrum(Crossspectrum):
             lc1_seg = Lightcurve(time_1, counts_1, err=counts_1_err,
                                  err_dist=lc1.err_dist,
                                  gti=gti1,
-                                 dt=lc1.dt)
+                                 dt=lc1.dt, skip_checks=True)
             lc2_seg = Lightcurve(time_2, counts_2, err=counts_2_err,
                                  err_dist=lc2.err_dist,
                                  gti=gti2,
-                                 dt=lc2.dt)
+                                 dt=lc2.dt, skip_checks=True)
             with warnings.catch_warnings(record=True) as w:
                 cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm, power_type=self.power_type)
 

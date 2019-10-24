@@ -437,7 +437,7 @@ class Lightcurve(object):
 
         lc_new = Lightcurve(new_time, new_counts,
                             err=new_counts_err, gti=common_gti,
-                            mjdref=self.mjdref)
+                            mjdref=self.mjdref, skip_checks=True)
 
         return lc_new
 
@@ -516,7 +516,7 @@ class Lightcurve(object):
         """
         lc_new = Lightcurve(self.time, -1 * self.counts,
                             err=self.counts_err, gti=self.gti,
-                            mjdref=self.mjdref)
+                            mjdref=self.mjdref, skip_checks=True)
 
         return lc_new
 
@@ -586,7 +586,7 @@ class Lightcurve(object):
             new_gti = cross_two_gtis(self.gti, new_gti)
 
             return Lightcurve(new_time, new_counts, mjdref=self.mjdref,
-                              gti=new_gti, dt=self.dt)
+                              gti=new_gti, dt=self.dt, skip_checks=True)
         else:
             raise IndexError("The index must be either an integer or a slice "
                              "object !")
@@ -794,7 +794,8 @@ class Lightcurve(object):
                 gti_new.append(g)
 
         lc_new = Lightcurve(bin_time, bin_counts, err=bin_err,
-                            mjdref=self.mjdref, dt=dt_new, gti=gti_new)
+                            mjdref=self.mjdref, dt=dt_new, gti=gti_new,
+                            skip_checks=True)
         return lc_new
 
     def join(self, other):
