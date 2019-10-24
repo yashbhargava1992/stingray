@@ -728,7 +728,8 @@ class Lightcurve(object):
             counts, histbins = np.histogram(toa[good], bins=histbins)
             time = histbins[:-1] + 0.5 * dt
 
-        return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt)
+        return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt,
+                          skip_checks=True, precise_poisson_err=False)
 
     def rebin(self, dt_new=None, f=None, method='sum'):
         """
