@@ -261,7 +261,7 @@ class Lightcurve(object):
     @property
     def counts(self):
         if self._counts is None:
-            self._counts = self.countrate  * self.dt
+            self._counts = self.countrate * self.dt
         return self._counts
 
     @counts.setter
@@ -283,7 +283,7 @@ class Lightcurve(object):
     @property
     def countrate(self):
         if self._countrate is None:
-            self._countrate = self.counts  / self.dt
+            self._countrate = self.counts / self.dt
         return self._countrate
 
     @countrate.setter
@@ -293,7 +293,7 @@ class Lightcurve(object):
     @property
     def countrate_err(self):
         if self._countrate_err is None:
-            self._countrate_err = self.counts_err  / self.dt
+            self._countrate_err = self.counts_err / self.dt
         return self._countrate_err
 
     @countrate_err.setter
@@ -1058,8 +1058,8 @@ class Lightcurve(object):
         # find all distances between time bins that are larger than `min_gap`
         gap_idx = np.where(tdiff >= min_gap)[0]
 
-        # tolerance for the newly created GTIs: Note that this seems to work with a
-        # tolerance of 2, but not if I substitute 10, and I don't know why
+        # tolerance for the newly created GTIs: Note that this seems to work
+        # with a tolerance of 2, but not if I substitute 10. I don't know why
         epsilon = np.min(tdiff)/2.0
 
         # calculate new GTIs
