@@ -174,7 +174,7 @@ class Lightcurve(object):
 
         if err is not None:
             err = np.asarray(err)
-            if not np.all(np.isfinite(err)):
+            if not skip_checks and not np.all(np.isfinite(err)):
                 raise ValueError("There are inf or NaN values in "
                                  "your err array")
         else:
@@ -184,14 +184,11 @@ class Lightcurve(object):
                                     "Please select one of these: ",
                                     "{}".format(valid_statistics))
 
-            if precise_poisson_err:
-                err = poisson_symmetrical_errors(counts)
-
             if not err_dist.lower() == 'poisson':
-                simon("Stingray only uses poisson err_dist at the moment, "
-                      "We are setting your errors to zero. "
+                simon("Stingray only uses poisson err_dist at the moment. "
+                      "All analysis in the light curve will assume Poisson "
+                      "errors. "
                       "Sorry for the inconvenience.")
-                err = np.zeros_like(counts)
 
         self.mjdref = mjdref
         self.time = time
@@ -209,9 +206,6 @@ class Lightcurve(object):
         self.tseg = self.time[-1] - self.time[0] + self.dt
 
         self.gti = gti
-        if gti is None:
-            self.gti = \
-                np.asarray([[self.tstart, self.tstart + self.tseg]])
 
         self._mask = None
         self._counts = None
@@ -233,6 +227,18 @@ class Lightcurve(object):
 
         if not skip_checks:
             self.check_lightcurve()
+
+    @property
+    def gti(self):
+        if self._gti is None:
+            self._gti = \
+                np.asarray([[self.tstart, self.tstart + self.tseg]])
+        return self._gti
+
+    @gti.setter
+    def gti(self, value):
+        self._gti = value
+        self._mask = None
 
     @property
     def mask(self):
@@ -377,9 +383,7 @@ class Lightcurve(object):
                             gti=self.gti + time_shift, mjdref=self.mjdref,
                             dt=self.dt, err_dist=self.err_dist,
                             skip_checks=True)
-        new_lc.countrate = self.countrate
-        new_lc.counts = self.counts
-        new_lc.counts_err = self.counts_err
+
         return new_lc
 
     def _operation_with_other_lc(self, other, operation):
@@ -792,6 +796,9 @@ class Lightcurve(object):
                 bin_counts.extend(bin_c)
                 bin_err.extend(bin_e)
                 gti_new.append(g)
+
+        if len(gti_new) == 0:
+            raise ValueError("No valid GTIs after rebin.")
 
         lc_new = Lightcurve(bin_time, bin_counts, err=bin_err,
                             mjdref=self.mjdref, dt=dt_new, gti=gti_new,

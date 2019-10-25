@@ -238,7 +238,7 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     if min_length > 0:
         lengths = gtis[:, 1] - gtis[:, 0]
-        good = lengths >= max(min_length, dt)
+        good = lengths >= np.max(min_length, dt)
 
         gtis = gtis[good]
 
