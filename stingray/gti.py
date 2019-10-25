@@ -8,7 +8,7 @@ import copy
 
 from astropy.io import fits
 from .utils import contiguous_regions, jit, HAS_NUMBA
-from .utils import assign_value_if_none, assign_function_if_none
+from .utils import assign_value_if_none, apply_function_if_none
 from stingray.exceptions import StingrayError
 
 __all__ = ['load_gtis', 'check_gtis',
@@ -233,7 +233,8 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     check_gtis(gtis)
 
-    dt = apply_function_if_none(dt, lambda times: np.median(np.diff(times)))
+    dt = apply_function_if_none(dt, time,
+                                lambda x: np.median(np.diff(x)))
 
     if min_length > 0:
         lengths = gtis[:, 1] - gtis[:, 0]
