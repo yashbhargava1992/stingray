@@ -325,7 +325,7 @@ def apply_function_if_none(variable, value, func):
 
     value : object
         A variable to go into the function
- 
+
     func : function
         Function to apply to ``value``. Result is assigned to ``variable``
 
@@ -334,6 +334,15 @@ def apply_function_if_none(variable, value, func):
         new_value : object
             The new value of ``variable``
 
+    Examples
+    --------
+    >>> var = 4
+    >>> value = np.zeros(10)
+    >>> apply_function_if_none(var, value, np.mean)
+    4
+    >>> var = None
+    >>> apply_function_if_none(var, value, lambda y: np.mean(y))
+    0.0
     """
     if variable is None:
         return func(value)
