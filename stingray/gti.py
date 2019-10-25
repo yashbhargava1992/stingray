@@ -7,7 +7,8 @@ import collections
 import copy
 
 from astropy.io import fits
-from .utils import contiguous_regions, jit, assign_value_if_none, HAS_NUMBA
+from .utils import contiguous_regions, jit, HAS_NUMBA
+from .utils import assign_value_if_none, assign_function_if_none
 from stingray.exceptions import StingrayError
 
 __all__ = ['load_gtis', 'check_gtis',
@@ -191,13 +192,14 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     Other parameters
     ----------------
-    safe_interval : float or ``[float, float]``
+    safe_interval : float or ``[float, float]``, default None
         A safe interval to exclude at both ends (if single float) or the start
-        and the end (if pair of values) of GTIs.
+        and the end (if pair of values) of GTIs. If None, no safe interval
+        is applied to data.
 
     min_length : float
-        An optional minimum length for the GTIs to be applied. Only GTIs longer than ``min_length`` will
-        be considered when creating the mask.
+        An optional minimum length for the GTIs to be applied. Only GTIs longer
+        than ``min_length`` will be considered when creating the mask.
 
     return_new_gtis : bool
         If ``True```, return the list of new GTIs (if ``min_length > 0``)
@@ -231,8 +233,7 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     check_gtis(gtis)
 
-    if dt is None:
-        dt = np.median(np.diff(time))
+    dt = apply_function_if_none(dt, lambda times: np.median(np.diff(times)))
 
     if min_length > 0:
         lengths = gtis[:, 1] - gtis[:, 0]
