@@ -123,7 +123,7 @@ class TestLightcurve(object):
 
         with warnings.catch_warnings(record=True) as w:
             lc = Lightcurve(times, counts, err_dist='gauss')
-            assert np.any([str(wi.message) == warn_str for wi in w])
+            assert np.any([warn_str in str(wi.message) for wi in w])
 
     def test_dummy_err_dist_fail(self):
         """
