@@ -64,10 +64,6 @@ class Lightcurve(object):
     mjdref: float
         MJD reference (useful in most high-energy mission data)
 
-    precise_poisson_err: bool
-        If True, calculate proper poisson confidence intervals.
-        Otherwise, just sqrt(mean(counts))
-
     skip_checks: bool
         If True, the user specifies that data are already sorted and contain no
         infinite or nan points. Use at your own risk
@@ -131,7 +127,7 @@ class Lightcurve(object):
     """
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
-                 precise_poisson_err=False, skip_checks=False):
+                 skip_checks=False):
 
         time = np.asarray(time)
         counts = np.asarray(counts)
@@ -733,7 +729,7 @@ class Lightcurve(object):
             time = histbins[:-1] + 0.5 * dt
 
         return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt,
-                          skip_checks=True, precise_poisson_err=False)
+                          skip_checks=True)
 
     def rebin(self, dt_new=None, f=None, method='sum'):
         """
