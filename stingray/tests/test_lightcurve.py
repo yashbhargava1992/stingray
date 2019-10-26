@@ -119,8 +119,7 @@ class TestLightcurve(object):
         times = [1, 2, 3, 4, 5]
         counts = [2, 2, 2, 2, 2]
         warn_str = ("SIMON says: Stingray only uses poisson err_dist at "
-                    "the moment, We are setting your errors to zero. Sorry for "
-                    "the inconvenience.")
+                    "the moment")
 
         with warnings.catch_warnings(record=True) as w:
             lc = Lightcurve(times, counts, err_dist='gauss')

@@ -275,7 +275,10 @@ class Lightcurve(object):
         if self._counts_err is None and self._countrate_err is not None:
             self._counts_err = self._countrate_err * self.dt
         elif self._counts_err is None:
-            self._counts_err = poisson_symmetrical_errors(self.counts)
+            if self.err_dist.lower() == 'poisson':
+                self._counts_err = poisson_symmetrical_errors(self.counts)
+            else:
+                self._counts_err = np.zeros_like(self.counts)
         return self._counts_err
 
     @counts_err.setter
