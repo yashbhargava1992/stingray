@@ -1434,6 +1434,7 @@ class Lightcurve(object):
                     'counts': np.array(data_raw['_counts']),
                     'counts_err': np.array(data_raw['_counts_err'])}
             data['dt'] = data_raw['dt']
+            data['gti'] = None
             if 'gti' in data_raw:
                 data['gti'] = data_raw['gti']
             data['err_dist'] = data_raw['err_dist']
