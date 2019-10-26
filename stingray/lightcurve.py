@@ -1379,7 +1379,9 @@ class Lightcurve(object):
         format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
         """
-        _ = self.counts, self.counts_err, self.countrate, self.countrate_err
+        _ = self.counts, self.counts_err, \
+            self.countrate, self.countrate_err, \
+            self.gti
         if format_ == 'ascii':
             io.write(np.array([self.time, self.counts, self.counts_err]).T,
                      filename, format_, fmt=["%s", "%s", "%s"])
@@ -1433,7 +1435,8 @@ class Lightcurve(object):
                     'counts': np.array(data_raw['_counts']),
                     'counts_err': np.array(data_raw['_counts_err'])}
             data['dt'] = data_raw['dt']
-            data['gti'] = data_raw['gti']
+            if 'gti' in data_raw:
+                data['gti'] = data_raw['gti']
             data['err_dist'] = data_raw['err_dist']
             data['mjdref'] = data_raw['mjdref']
         elif format_ == 'pickle':
