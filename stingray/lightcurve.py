@@ -168,23 +168,22 @@ class Lightcurve(object):
             raise StingrayError("A single or no data points can not create "
                                 "a lightcurve!")
 
+        if err_dist.lower() not in valid_statistics:
+            # err_dist set can be increased with other statistics
+            raise StingrayError("Statistic not recognized."
+                                "Please select one of these: ",
+                                "{}".format(valid_statistics))
+        elif not err_dist.lower() == 'poisson':
+            simon("Stingray only uses poisson err_dist at the moment. "
+                  "All analysis in the light curve will assume Poisson "
+                  "errors. "
+                  "Sorry for the inconvenience.")
+
         if err is not None:
             err = np.asarray(err)
             if not skip_checks and not np.all(np.isfinite(err)):
                 raise ValueError("There are inf or NaN values in "
                                  "your err array")
-        else:
-            if err_dist.lower() not in valid_statistics:
-                # err_dist set can be increased with other statistics
-                raise StingrayError("Statistic not recognized."
-                                    "Please select one of these: ",
-                                    "{}".format(valid_statistics))
-
-            if not err_dist.lower() == 'poisson':
-                simon("Stingray only uses poisson err_dist at the moment. "
-                      "All analysis in the light curve will assume Poisson "
-                      "errors. "
-                      "Sorry for the inconvenience.")
 
         self.mjdref = mjdref
         self.time = time
