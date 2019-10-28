@@ -998,8 +998,8 @@ class AveragedCrossspectrum(Crossspectrum):
         lc1.dt = lc2.dt
 
         gti = cross_two_gtis(lc1.gti, lc2.gti)
-        lc1._apply_gtis()
-        lc2._apply_gtis()
+        lc1.apply_gtis()
+        lc2.apply_gtis()
         if self.gti is None:
             self.gti = gti
         else:

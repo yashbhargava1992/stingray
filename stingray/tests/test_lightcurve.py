@@ -1,5 +1,5 @@
+import copy
 import numpy as np
-
 from astropy.tests.helper import pytest
 import warnings
 import os
@@ -30,6 +30,78 @@ def evar_fun(lc):
     from stingray.utils import excess_variance
     return excess_variance(lc, normalization='none')
 
+
+class TestProperties(object):
+    @classmethod
+    def setup_class(cls):
+        dt = 0.1
+        tstart = 0
+        tstop = 1
+        times = np.arange(tstart, tstop, dt)
+        cls.gti = np.array([[tstart - dt/2, tstop - dt/2]])
+        # Simulate something *clearly* non-constant
+        counts = np.zeros_like(times) + 100
+
+        cls.lc = Lightcurve(times, counts, gti=cls.gti)
+
+    def test_time(self):
+        lc = copy.deepcopy(self.lc)
+        assert lc._bin_lo is None
+        # When I call bin_lo, _bin_lo gets set
+        _ = lc.bin_lo
+        assert lc._bin_lo is not None
+
+        # When I set time, _bin_lo gets deleted.
+        lc.time = lc.time / 10
+        assert lc._bin_lo is None
+        _ = lc.bin_lo
+        assert lc._bin_lo is not None
+
+    def test_gti(self):
+        lc = copy.deepcopy(self.lc)
+        assert lc._mask is None
+        _ = lc.mask
+        assert lc._mask is not None
+        lc.gti = [[0, 1]]
+        assert lc._mask is None
+
+    def test_counts_and_countrate(self):
+        lc = copy.deepcopy(self.lc)
+        # At initialization, _countrate is None and _counts is not.
+        assert lc._countrate is None
+        assert lc._counts is not None
+        assert lc._meancounts is None
+        # Now we retrieve meancounts; it gets calculated.
+        _ = lc.meancounts
+        assert lc._meancounts is not None
+        # Now we retrieve countrate, and it gets calculated
+        _ = lc.countrate
+        assert lc._countrate is not None
+        # Now I set counts; countrate gets deleted together with the other
+        # statistics.
+        lc.counts = np.zeros_like(lc.counts) + 3
+        assert lc._countrate is None
+        assert lc._meancounts is None
+        assert lc._meanrate is None
+        # Now I retrieve meanrate. It gets calculated
+        _ = lc.meanrate
+        assert lc._meanrate is not None
+        # Finally, we set count rate and test that the rest has been deleted.
+        lc.countrate = np.zeros_like(lc.countrate) + 3
+        assert lc._counts is None
+        assert lc._meancounts is None
+
+    @pytest.mark.parametrize('property', 'time,counts,counts_err,'
+                                         'countrate,countrate_err'.split(','))
+    def test_assign_bad_shape_fails(self, property):
+        lc = copy.deepcopy(self.lc)
+        # Same shape passes
+        setattr(lc, property, np.zeros_like(lc.time))
+        # Different shape doesn't
+        with pytest.raises(ValueError):
+            setattr(lc, property, 3)
+        with pytest.raises(ValueError):
+            setattr(lc, property, np.arange(2))
 
 class TestChunks(object):
     @classmethod
@@ -876,7 +948,7 @@ class TestLightcurveRebin(object):
 
         counts[np.logical_not(good)] = 0
         lc = Lightcurve(times, counts, gti=gti, skip_checks=True, dt=0.1)
-        lc._apply_gtis()
+        lc.apply_gtis()
 
         lc_rebin = lc.rebin(1.0)
 
@@ -922,16 +994,16 @@ class TestLightcurveRebin(object):
         lc_new = self.lc.change_mjdref(57000)
         assert lc_new.mjdref == 57000
 
-    def test_apply_gtis(self):
+    def testapply_gtis(self):
         time = np.arange(150)
         count = np.zeros_like(time) + 3
         lc = Lightcurve(time, count, gti=[[-0.5, 150.5]])
         lc.gti = [[-0.5, 2.5], [12.5, 14.5]]
-        lc._apply_gtis()
+        lc.apply_gtis()
         assert lc.n == 5
         assert np.all(lc.time == np.array([0, 1, 2, 13, 14]))
         lc.gti = [[-0.5, 10.5]]
-        lc._apply_gtis()
+        lc.apply_gtis()
         assert np.all(lc.time == np.array([0, 1, 2]))
 
     def test_eq_operator(self):
