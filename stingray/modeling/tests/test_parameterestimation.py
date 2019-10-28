@@ -34,12 +34,25 @@ class LogLikelihoodDummy(LogLikelihood):
     def evaluate(self, parse, neg=False):
         return np.nan
 
+class OptimizationResultsSubclassDummy(OptimizationResults):
+
+    def __init__(self, lpost, res, neg):
+        self.neg = neg
+        if res is not None:
+            self.result = res.fun
+            self.p_opt = res.x
+        else:
+            self.result = None
+            self.p_opt = None
+        self.model = lpost.model
+
 class TestParameterEstimation(object):
 
     @classmethod
     def setup_class(cls):
+        np.random.seed(100)
         m = 1
-        nfreq = 100000
+        nfreq = 100
         freq = np.arange(nfreq)
         noise = np.random.exponential(size=nfreq)
         power = noise * 2.0
@@ -64,6 +77,7 @@ class TestParameterEstimation(object):
                                  m=cls.ps.m)
         cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
 
+
     def test_par_est_initializes(self):
         pe = ParameterEstimation()
 
@@ -81,8 +95,8 @@ class TestParameterEstimation(object):
                                  self.model, m=self.ps.m)
         pe = ParameterEstimation()
         res = pe.fit(llike, [2.0])
-
-        pass
+        assert isinstance(res,
+                          OptimizationResults), "res must be of type OptimizationResults"
 
     def test_fit_fails_when_object_is_not_posterior_or_likelihood(self):
         x = np.ones(10)
@@ -112,13 +126,6 @@ class TestParameterEstimation(object):
         t0 = [2.0]
         res = pe.fit(self.lpost, t0)
 
-    def test_fit_method_returns_optimization_results_object(self):
-        pe = ParameterEstimation()
-        t0 = [2.0]
-        res = pe.fit(self.lpost, t0)
-        assert isinstance(res,
-                          OptimizationResults), "res must be of type OptimizationResults"
-
     def test_fit_method_fails_with_too_many_tries(self):
         lpost = LogLikelihoodDummy(self.ps.freq, self.ps.power, self.model)
         pe = ParameterEstimation()
@@ -142,17 +149,9 @@ class TestParameterEstimation(object):
         pe = ParameterEstimation(max_post=True)
 
         assert pe.max_post is True
-        delta_deviance = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
+        delta_deviance, opt1, opt2 = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
 
         assert pe.max_post is False
-
-    def test_compute_lrt_computes_deviance_correctly(self):
-        t0 = [2.0]
-        pe = ParameterEstimation()
-
-        delta_deviance, opt1, opt2 = pe.compute_lrt(self.lpost, t0,
-                                                    self.lpost, t0)
-
         assert delta_deviance < 1e-7
 
     @pytest.mark.skipif("not can_sample")
@@ -161,7 +160,7 @@ class TestParameterEstimation(object):
         if os.path.exists("test_corner.pdf"):
             os.unlink("test_corner.pdf")
         with catch_warnings(RuntimeWarning):
-            sample_res = pe.sample(self.lpost, [2.0], nwalkers=100, niter=10,
+            sample_res = pe.sample(self.lpost, [2.0], nwalkers=50, niter=10,
                                    burnin=50, print_results=True, plot=True)
 
         assert os.path.exists("test_corner.pdf")
@@ -186,8 +185,9 @@ class TestOptimizationResults(object):
 
     @classmethod
     def setup_class(cls):
+        np.random.seed(1000)
         m = 1
-        nfreq = 100000
+        nfreq = 100
         freq = np.arange(nfreq)
         noise = np.random.exponential(size=nfreq)
         power = noise * 2.0
@@ -196,6 +196,7 @@ class TestOptimizationResults(object):
         ps.freq = freq
         ps.power = power
         ps.m = m
+        ps.n = freq.shape[0]
         ps.df = freq[1] - freq[0]
         ps.norm = "leahy"
 
@@ -220,12 +221,12 @@ class TestOptimizationResults(object):
                                           method=cls.fitmethod,
                                           args=cls.neg, tol=1.e-10)
 
-    def test_object_initializes(self):
-        res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
+        cls.optres = OptimizationResultsSubclassDummy(cls.lpost, cls.opt,
+                                                      neg=True)
 
-    def test_object_has_right_attributes(self):
-        res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
 
+    def test_object_initializes_correctly(self):
+        res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
         assert hasattr(res, "p_opt")
         assert hasattr(res, "result")
         assert hasattr(res, "deviance")
@@ -233,33 +234,24 @@ class TestOptimizationResults(object):
         assert hasattr(res, "bic")
         assert hasattr(res, "model")
         assert isinstance(res.model, models.Const1D)
-
-    def test_p_opt_is_correct(self):
-        res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
         assert res.p_opt == self.opt.x, "res.p_opt must be the same as opt.x!"
         assert np.isclose(res.p_opt[0], 2.0, atol=0.1, rtol=0.1)
-
-    def test_model_is_same_as_in_lpost(self):
-        res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
         assert res.model == self.lpost.model
-
-    def test_result_is_same_as_in_opt(self):
-        res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
         assert res.result == self.opt.fun
 
-    def test_compute_model_works_correctly(self):
-        res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
         mean_model = np.ones_like(self.lpost.x) * self.opt.x[0]
         assert np.all(
             res.mfit == mean_model), "res.model should be exactly " \
                                      "the model for the data."
 
-    def test_compute_criteria_computes_criteria_correctly(self):
+    def test_compute_criteria_works_correctly(self):
         res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
 
-        test_aic = 169440.83719024697
-        test_bic = 169245.62163088709
-        test_deviance = 337950.6823459795
+        test_aic = res.result+ 2.0*res.p_opt.shape[0]
+        test_bic = res.result + res.p_opt.shape[0] * \
+                                np.log(self.lpost.x.shape[0])
+        test_deviance = -2 * self.lpost.loglikelihood(res.p_opt,
+                                                      neg=False)
 
         assert np.isclose(res.aic, test_aic, atol=0.1, rtol=0.1)
         assert np.isclose(res.bic, test_bic, atol=0.1, rtol=0.1)
@@ -268,189 +260,81 @@ class TestOptimizationResults(object):
     def test_merit_calculated_correctly(self):
         res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
 
-        test_merit = 98770.654981073574
-        assert np.isclose(res.merit, test_merit, atol=0.1, rtol=0.1)
+        test_merit = np.sum(((self.ps.power - 2.0)/2.0)**2.)
+        assert np.isclose(res.merit, test_merit, rtol=0.2)
 
-    def test_res_is_of_correct_type(self):
-        pe = ParameterEstimation()
-        t0 = [2.0]
-        res = pe.fit(self.lpost, t0)
+    def test_compute_statistics_computes_mfit(self):
 
-        assert isinstance(res, OptimizationResults)
+        assert hasattr(self.optres, "mfit") is False
+        self.optres._compute_statistics(self.lpost)
 
-class OptimizationResultsSubclassDummy(OptimizationResults):
-
-    def __init__(self, lpost, res, neg):
-        self.neg = neg
-        if res is not None:
-            self.result = res.fun
-            self.p_opt = res.x
-        else:
-            self.result = None
-            self.p_opt = None
-        self.model = lpost.model
-
-
-class TestOptimizationResultInternalFunctions(object):
-
-    @classmethod
-    def setup_class(cls):
-        m = 1
-        nfreq = 100000
-        freq = np.linspace(1, 1000, nfreq)
-
-        np.random.seed(100)  # set the seed for the random number generator
-        noise = np.random.exponential(size=nfreq)
-
-        cls.model = models.PowerLaw1D() + models.Const1D()
-        cls.model.x_0_0.fixed = True
-
-        cls.alpha_0 = 2.0
-        cls.amplitude_0 = 100.0
-        cls.amplitude_1 = 2.0
-
-        cls.model.alpha_0 = cls.alpha_0
-        cls.model.amplitude_0 = cls.amplitude_0
-        cls.model.amplitude_1 = cls.amplitude_1
-
-        p = cls.model(freq)
-        power = noise * p
-
-        ps = Powerspectrum()
-        ps.freq = freq
-        ps.power = power
-        ps.m = m
-        ps.df = freq[1] - freq[0]
-        ps.norm = "leahy"
-
-        cls.ps = ps
-        cls.a_mean, cls.a_var = 2.0, 1.0
-        cls.a2_mean, cls.a2_var = 100.0, 10.0
-
-        p_amplitude_1 = lambda amplitude: \
-            scipy.stats.norm(loc=cls.a_mean, scale=cls.a_var).pdf(amplitude)
-
-        p_alpha_0 = lambda alpha: \
-            scipy.stats.uniform(0.0, 5.0).pdf(alpha)
-
-        p_amplitude_0 = lambda amplitude: \
-            scipy.stats.norm(loc=cls.a2_mean, scale=cls.a2_var).pdf(
-                amplitude)
-
-        cls.priors = {"amplitude_1": p_amplitude_1,
-                      "amplitude_0": p_amplitude_0,
-                      "alpha_0": p_alpha_0}
-
-        cls.lpost = PSDPosterior(cls.ps.freq, cls.ps.power,
-                                 cls.model, m=cls.ps.m)
-        cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
-
-        cls.fitmethod = "BFGS"
-        cls.max_post = True
-        cls.t0 = [cls.amplitude_0, cls.alpha_0, cls.amplitude_1]
-        cls.neg = True
-        cls.opt = scipy.optimize.minimize(cls.lpost, cls.t0,
-                                          method=cls.fitmethod,
-                                          args=cls.neg, tol=1.e-5)
-
-        cls.optres = OptimizationResultsSubclassDummy(cls.lpost, cls.opt,
-                                                      neg=True)
+        assert hasattr(self.optres, "mfit")
 
     def test_compute_model(self):
-        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
-                                                  neg=True)
 
-        optres._compute_model(self.lpost)
+        self.optres._compute_model(self.lpost)
 
-        assert hasattr(optres,
+        assert hasattr(self.optres,
                        "mfit"), "OptimizationResult object should have mfit " \
                                 "attribute at this point!"
 
         _fitter_to_model_params(self.model, self.opt.x)
         mfit_test = self.model(self.lpost.x)
 
-        assert np.all(optres.mfit == mfit_test)
+        assert np.all(self.optres.mfit == mfit_test)
 
     @pytest.mark.skipif("comp_hessian")
     def test_compute_covariance_without_comp_hessian(self):
-        optres = OptimizationResultsSubclassDummy(self.lpost, None,
-                                                  neg=True)
 
-        optres._compute_covariance(self.lpost, None)
-        assert optres.cov is None
-        assert optres.err is None
-
-    def test_compute_statistics_computes_mfit(self):
-        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
-                                                  neg=True)
-
-        assert hasattr(optres, "mfit") is False
-        optres._compute_statistics(self.lpost)
-
-        assert hasattr(optres, "mfit")
+        self.optres._compute_covariance(self.lpost, None)
+        assert self.optres.cov is None
+        assert self.optres.err is None
 
     def test_compute_statistics_computes_all_statistics(self):
-        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
-                                                  neg=True)
 
-        optres._compute_statistics(self.lpost)
+        self.optres._compute_statistics(self.lpost)
 
-        assert hasattr(optres, "merit")
-        assert hasattr(optres, "dof")
-        assert hasattr(optres, "sexp")
-        assert hasattr(optres, "ssd")
-        assert hasattr(optres, "sobs")
+        assert hasattr(self.optres, "merit")
+        assert hasattr(self.optres, "dof")
+        assert hasattr(self.optres, "sexp")
+        assert hasattr(self.optres, "ssd")
+        assert hasattr(self.optres, "sobs")
 
-    def test_compute_statistics_returns_correct_values(self):
-        test_merit = 99765.718448514497
-        test_dof = 99997.0
-        test_sexp = 600000.0
-        test_ssd = 1095.4451150103323
-        test_sobs = -154.901207861497
+        test_merit = np.sum(((self.ps.power - 2.0)/2.0)**2.)
+        test_dof = self.ps.n - self.lpost.npar
+        test_sexp = 2.0 * self.lpost.x.shape[0] * len(self.optres.p_opt)
+        test_ssd = np.sqrt(2.0*test_sexp)
+        test_sobs = np.sum(self.ps.power - self.optres.p_opt[0])
 
-        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
-                                                  neg=True)
-
-        optres._compute_statistics(self.lpost)
-
-        assert np.isclose(test_merit, optres.merit, atol=0.01, rtol=0.01)
-        assert test_dof == optres.dof
-        assert test_sexp == optres.sexp
-        assert test_ssd == optres.ssd
-        assert np.isclose(test_sobs, optres.sobs, atol=0.01, rtol=0.01)
+        assert np.isclose(test_merit, self.optres.merit, rtol=0.2)
+        assert test_dof == self.optres.dof
+        assert test_sexp == self.optres.sexp
+        assert test_ssd == self.optres.ssd
+        assert np.isclose(test_sobs, self.optres.sobs, atol=0.01, rtol=0.01)
 
     def test_compute_criteria_returns_correct_attributes(self):
-        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
-                                                  neg=True)
+        self.optres._compute_criteria(self.lpost)
 
-        optres._compute_criteria(self.lpost)
+        assert hasattr(self.optres, "aic")
+        assert hasattr(self.optres, "bic")
+        assert hasattr(self.optres, "deviance")
 
-        assert hasattr(optres, "aic")
-        assert hasattr(optres, "bic")
-        assert hasattr(optres, "deviance")
+        npar = self.optres.p_opt.shape[0]
 
-    def test_compute_criteria_returns_correct_values(self):
-        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
-                                                  neg=True)
+        test_aic = self.optres.result + 2. * npar
+        test_bic = self.optres.result + npar * np.log(self.ps.freq.shape[0])
+        test_deviance = -2 * self.lpost.loglikelihood(self.optres.p_opt,
+                                                      neg=False)
 
-        optres._compute_criteria(self.lpost)
-
-        test_aic = 170988.9174964963
-        test_bic = 171017.4562728912
-        test_deviance = 341954.16168676887
-
-        assert np.isclose(test_aic, optres.aic)
-        assert np.isclose(test_bic, optres.bic)
-        assert np.isclose(test_deviance, optres.deviance)
+        assert np.isclose(test_aic, self.optres.aic)
+        assert np.isclose(test_bic, self.optres.bic)
+        assert np.isclose(test_deviance, self.optres.deviance)
 
     def test_compute_covariance_with_hess_inverse(self):
-        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
-                                                  neg=True)
+        self.optres._compute_covariance(self.lpost, self.opt)
 
-        optres._compute_covariance(self.lpost, self.opt)
-
-        assert np.all(optres.cov == np.asarray(self.opt.hess_inv))
-        assert np.all(optres.err == np.sqrt(np.diag(self.opt.hess_inv)))
+        assert np.all(self.optres.cov == np.asarray(self.opt.hess_inv))
+        assert np.all(self.optres.err == np.sqrt(np.diag(self.opt.hess_inv)))
 
     def test_compute_covariance_without_hess_inverse(self):
         fitmethod = "powell"
@@ -475,23 +359,9 @@ class TestOptimizationResultInternalFunctions(object):
 
     def test_print_summary_works(self, logger, caplog):
 
-        fitmethod = "powell"
-        opt = scipy.optimize.minimize(self.lpost, self.t0,
-                                      method=fitmethod,
-                                      args=self.neg, tol=1.e-10)
+        self.optres.print_summary(self.lpost)
 
-        optres = OptimizationResultsSubclassDummy(self.lpost, opt,
-                                                  neg=True)
-
-        optres._compute_covariance(self.lpost, self.opt)
-
-        optres.print_summary(self.lpost)
-
-        assert 'Parameter amplitude_0' in caplog.text
-        assert "Parameter x_0_0" in caplog.text
-        assert "Parameter alpha_0" in caplog.text
-        assert "Parameter amplitude_1" in caplog.text
-        assert "(Fixed)" in caplog.text
+        assert 'Parameter amplitude' in caplog.text
         assert "Fitting statistics" in caplog.text
         assert "number of data points" in caplog.text
         assert "Deviance [-2 log L] D =" in caplog.text
@@ -526,7 +396,7 @@ if can_sample:
         @classmethod
         def setup_class(cls):
             m = 1
-            nfreq = 100000
+            nfreq = 100
             freq = np.arange(nfreq)
             noise = np.random.exponential(size=nfreq)
             power = noise * 2.0
@@ -560,8 +430,8 @@ if can_sample:
             pe = ParameterEstimation()
             res = pe.fit(cls.lpost, cls.t0)
 
-            cls.nwalkers = 100
-            cls.niter = 200
+            cls.nwalkers = 50
+            cls.niter = 100
 
             np.random.seed(200)
             p0 = np.array(
@@ -580,51 +450,37 @@ if can_sample:
             assert can_sample
 
         def test_sample_results_object_initializes(self):
-            SamplingResults(self.sampler)
-
-        def test_sample_results_produces_attributes(self):
             s = SamplingResults(self.sampler)
 
             assert s.samples.shape[0] == self.nwalkers * self.niter
-
-        def test_sampling_results_acceptance_ratio(self):
-            s = SamplingResults(self.sampler)
-
             assert s.acceptance > 0.25
             assert np.isclose(s.L,
                               s.acceptance * self.nwalkers * self.niter)
 
+
         def test_check_convergence_works(self):
             s = SamplingResultsDummy(self.sampler)
             s._check_convergence(self.sampler)
-
             assert hasattr(s, "rhat")
 
-        def test_rhat_computes_correct_answer(self):
-            s = SamplingResults(self.sampler)
+            rhat_test = 0.038688
+            assert np.isclose(rhat_test, s.rhat[0], atol=0.02, rtol=0.1)
 
-            rhat_test = 3.81886815e-06
-
-            assert np.isclose(rhat_test, s.rhat[0], atol=0.001, rtol=0.001)
-
-        def test_infer_works(self):
-            s = SamplingResultsDummy(self.sampler)
             s._infer()
-
             assert hasattr(s, "mean")
             assert hasattr(s, "std")
             assert hasattr(s, "ci")
 
+            test_mean = 2.0
+            test_std = 0.2
+
+            assert np.isclose(test_mean, s.mean[0], rtol=0.1)
+            assert np.isclose(test_std, s.std[0], atol=0.01, rtol=0.01)
+            assert s.ci.size == 2
+
+
         def test_infer_computes_correct_values(self):
             s = SamplingResults(self.sampler)
-
-            test_mean = 2.00190793
-            test_std = 0.00195719
-            test_ci = [[1.99435539], [1.9971502]]
-
-            assert np.isclose(test_mean, s.mean[0], atol=0.01, rtol=0.01)
-            assert np.isclose(test_std, s.std[0], atol=0.01, rtol=0.01)
-            assert np.all(np.isclose(test_ci, s.ci, atol=0.01, rtol=0.01))
 
 
 @pytest.fixture()
@@ -641,7 +497,7 @@ class TestPSDParEst(object):
     def setup_class(cls):
 
         m = 1
-        nfreq = 100000
+        nfreq = 100
         freq = np.linspace(1, 10.0, nfreq)
 
         rng = np.random.RandomState(100)  # set the seed for the random number generator
@@ -650,11 +506,10 @@ class TestPSDParEst(object):
         cls.model = models.Lorentz1D() + models.Const1D()
 
         cls.x_0_0 = 2.0
-        cls.fwhm_0 = 0.1
-        cls.amplitude_0 = 100.0
+        cls.fwhm_0 = 0.05
+        cls.amplitude_0 = 1000.0
 
         cls.amplitude_1 = 2.0
-
         cls.model.x_0_0 = cls.x_0_0
         cls.model.fwhm_0 = cls.fwhm_0
         cls.model.amplitude_0 = cls.amplitude_0
@@ -697,7 +552,7 @@ class TestPSDParEst(object):
                                  cls.model, m=cls.ps.m)
         cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
 
-        cls.fitmethod = "BFGS"
+        cls.fitmethod = "powell"
         cls.max_post = True
         cls.t0 = [cls.x_0_0, cls.fwhm_0, cls.amplitude_0, cls.amplitude_1]
         cls.neg = True
@@ -747,14 +602,6 @@ class TestPSDParEst(object):
 
     def test_par_est_initializes(self):
         pe = PSDParEst(self.ps)
-
-    def test_parest_stores_max_post_correctly(self):
-        """
-        Make sure the keyword for Maximum A Posteriori fits is stored correctly
-        as a default.
-        """
-        pe = PSDParEst(self.ps)
-
         assert pe.max_post is True, "max_post should be set to True as a default."
 
     def test_fit_fails_when_object_is_not_posterior_or_likelihood(self):
@@ -786,104 +633,19 @@ class TestPSDParEst(object):
                              self.model, self.priors, m=self.ps.m)
         t0 = [2.0, 1, 1, 1]
         res = pe.fit(lpost, t0)
-
-    def test_fit_method_returns_optimization_results_object(self):
-        pe = PSDParEst(self.ps)
-
-        t0 = [2.0, 1, 1, 1]
-        res = pe.fit(self.lpost, t0)
         assert isinstance(res, OptimizationResults), "res must be of type " \
                                                      "OptimizationResults"
-
-    def test_plotfits_leahy(self):
-        pe = PSDParEst(self.ps)
-        t0 = [2.0, 1, 1, 1]
-        lpost = PSDPosterior(self.ps.freq, self.ps.power,
-                             self.model, self.priors, m=self.ps.m)
-
-        res = pe.fit(lpost, t0)
 
         pe.plotfits(res, save_plot=True)
 
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 
-    def test_plotfits_log_leahy(self):
-        pe = PSDParEst(self.ps)
-        t0 = [2.0, 1, 1, 1]
-
-        res = pe.fit(self.lpost, t0)
-
         pe.plotfits(res, save_plot=True, log=True)
-
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
-
-    def test_plotfits_rms(self):
-        t0 = [2.0, 1, 1, 1]
-        ps = Powerspectrum()
-        ps.freq = self.ps.freq
-        ps.power = self.ps.power
-        ps.m = self.ps.m
-        ps.df = self.ps.df
-        ps.norm = "rms"
-        pe = PSDParEst(ps)
-
-        res = pe.fit(self.lpost, t0)
 
         pe.plotfits(res, res2=res, save_plot=True)
-
-        assert os.path.exists("test_ps_fit.png")
-        os.unlink("test_ps_fit.png")
-
-    def test_plotfits_log_rms(self):
-        ps = Powerspectrum()
-        ps.freq = self.ps.freq
-        ps.power = self.ps.power
-        ps.m = self.ps.m
-        ps.df = self.ps.df
-        ps.norm = "rms"
-        pe = PSDParEst(ps)
-
-        t0 = [2.0, 1, 1, 1]
-        res = pe.fit(self.lpost, t0)
-
-        pe.plotfits(res, res2=res, save_plot=True, log=True)
-
-        assert os.path.exists("test_ps_fit.png")
-        os.unlink("test_ps_fit.png")
-
-    def test_plotfits_pow(self):
-        t0 = [2.0, 1, 1, 1]
-        ps = Powerspectrum()
-        ps.freq = self.ps.freq
-        ps.power = self.ps.power
-        ps.m = self.ps.m
-        ps.df = self.ps.df
-        ps.norm = "none"
-        pe = PSDParEst(ps)
-
-        res = pe.fit(self.lpost, t0)
-
-        pe.plotfits(res, res2=res, save_plot=True)
-
-        assert os.path.exists("test_ps_fit.png")
-        os.unlink("test_ps_fit.png")
-
-    def test_plotfits_log_pow(self):
-        ps = Powerspectrum()
-        ps.freq = self.ps.freq
-        ps.power = self.ps.power
-        ps.m = self.ps.m
-        ps.df = self.ps.df
-        ps.norm = "none"
-        pe = PSDParEst(ps)
-
-        t0 = [2.0, 1, 1, 1]
-        res = pe.fit(self.lpost, t0)
-
-        pe.plotfits(res, res2=res, save_plot=True, log=True)
-
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 
@@ -897,7 +659,7 @@ class TestPSDParEst(object):
         with pytest.raises(ValueError):
             pe.compute_lrt(self.lpost, t0[:-1], self.lpost, t0)
 
-    def test_compute_lrt_sets_max_post_to_false(self):
+    def test_compute_lrt_works(self):
         t0 = [2.0, 1, 1, 1]
         pe = PSDParEst(self.ps, max_post=True)
 
@@ -905,31 +667,52 @@ class TestPSDParEst(object):
         delta_deviance, _, _ = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
 
         assert pe.max_post is False
-
-    def test_compute_lrt_computes_deviance_correctly(self):
-
-        t0 = [2.0, 1, 1, 1]
-        pe = PSDParEst(self.ps, max_post=True)
-
-        # MB: This is a little too random
-        delta_deviance, _, _ = pe.compute_lrt(self.lpost, t0,
-                                        self.lpost, t0)
-
         assert np.absolute(delta_deviance) < 1.5e-4
 
-    @pytest.mark.skipif("not can_sample")
-    def test_sampler_runs(self):
+    def test_simulate_lrts_works(self):
 
+        m = 1
+        nfreq = 100
+        freq = np.linspace(1, 10, nfreq)
+        rng = np.random.RandomState(100)
+        noise = rng.exponential(size=nfreq)
+        model = models.Const1D()
+        model.amplitude = 2.0
+        p = model(freq)
+        power = noise * p
+
+        ps = Powerspectrum()
+        ps.freq = freq
+        ps.power = power
+        ps.m = m
+        ps.df = freq[1] - freq[0]
+        ps.norm = "leahy"
+
+        loglike = PSDLogLikelihood(ps.freq, ps.power, model, m=1)
+
+        s_all = np.atleast_2d(np.ones(5) * 2.0).T
+
+        model2 = models.PowerLaw1D() + models.Const1D()
+        model2.x_0_0.fixed = True
+        loglike2 = PSDLogLikelihood(ps.freq, ps.power, model2, 1)
+
+        pe = PSDParEst(ps)
+
+        lrt_obs, res1, res2 = pe.compute_lrt(loglike, [2.0], loglike2,
+                                             [2.0, 1.0, 2.0], neg=True)
+        lrt_sim = pe.simulate_lrts(s_all, loglike, [2.0], loglike2,
+                                           [2.0, 1.0, 2.0],
+                                           seed=100)
+
+        assert (lrt_obs > 0.4) and (lrt_obs < 0.6)
+        assert np.all(lrt_sim < 10.0) and np.all(lrt_sim > 0.01)
+
+
+    def test_compute_lrt_fails_with_wrong_input(self):
         pe = PSDParEst(self.ps)
-
-        with catch_warnings(RuntimeWarning):
-            sample_res = pe.sample(self.lpost, [2.0, 0.1, 100, 2.0], nwalkers=50,
-                                   niter=10, burnin=15, print_results=True,
-                                   plot=True)
-        assert os.path.exists("test_corner.pdf")
-        os.unlink("test_corner.pdf")
-        assert sample_res.acceptance > 0.25
-        assert isinstance(sample_res, SamplingResults)
+        with pytest.raises(AssertionError):
+            lrt_sim = pe.simulate_lrts(np.arange(5), self.lpost, [1, 2, 3, 4],
+                                       [1, 2, 3, 4], [1, 2, 3, 4])
 
     def test_generate_model_data(self):
         pe = PSDParEst(self.ps)
@@ -939,7 +722,9 @@ class TestPSDParEst(object):
 
         model = m(self.ps.freq)
 
-        pe_model = pe._generate_model(self.lpost, [2.0, 0.1, 100, 2.0])
+        pe_model = pe._generate_model(self.lpost, [self.x_0_0, self.fwhm_0,
+                                                   self.amplitude_0,
+                                                   self.amplitude_1])
 
         assert np.allclose(model, pe_model)
 
@@ -948,10 +733,14 @@ class TestPSDParEst(object):
         pe = PSDParEst(self.ps)
 
         sim_data1 = pe._generate_data(self.lpost,
-                                      [2.0, 0.1, 100.0, 2.0],
+                                      [self.x_0_0, self.fwhm_0,
+                                       self.amplitude_0,
+                                       self.amplitude_1],
                                       seed=1)
         sim_data2 = pe._generate_data(self.lpost,
-                                      [2.0, 0.1, 100.0, 2.0],
+                                      [self.x_0_0, self.fwhm_0,
+                                       self.amplitude_0,
+                                       self.amplitude_1],
                                       seed=1)
 
         assert np.allclose(sim_data1.power, sim_data2.power)
@@ -998,53 +787,6 @@ class TestPSDParEst(object):
         with pytest.raises(AssertionError):
             pe_model = pe._generate_model(self.lpost, [1, 2, 3])
 
-
-    def test_compute_lrt_works(self):
-
-        m = 1
-        nfreq = 100000
-        freq = np.linspace(1, 10, nfreq)
-        rng = np.random.RandomState(100)
-        noise = rng.exponential(size=nfreq)
-        model = models.Const1D()
-        model.amplitude = 2.0
-        p = model(freq)
-        power = noise * p
-
-        ps = Powerspectrum()
-        ps.freq = freq
-        ps.power = power
-        ps.m = m
-        ps.df = freq[1] - freq[0]
-        ps.norm = "leahy"
-
-        loglike = PSDLogLikelihood(ps.freq, ps.power, model, m=1)
-
-        s_all = np.atleast_2d(np.ones(10) * 2.0).T
-
-        model2 = models.PowerLaw1D() + models.Const1D()
-        model2.x_0_0.fixed = True
-        loglike2 = PSDLogLikelihood(ps.freq, ps.power, model2, 1)
-
-        pe = PSDParEst(ps)
-
-        lrt_obs, res1, res2 = pe.compute_lrt(loglike, [2.0], loglike2,
-                                             [2.0, 1.0, 2.0], neg=True)
-        lrt_sim = pe.simulate_lrts(s_all, loglike, [2.0], loglike2,
-                                           [2.0, 1.0, 2.0],
-                                           seed=100)
-
-        assert (lrt_obs > 0.4) and (lrt_obs < 0.6)
-        assert np.all(lrt_sim < 10.0) and np.all(lrt_sim > 0.01)
-
-
-    def test_compute_lrt_fails_with_wrong_input(self):
-        pe = PSDParEst(self.ps)
-        with pytest.raises(AssertionError):
-            lrt_sim = pe.simulate_lrts(np.arange(10), self.lpost, [1, 2, 3, 4],
-                                       [1, 2, 3, 4], [1, 2, 3, 4])
-
-
     def test_pvalue_calculated_correctly(self):
         a = [1, 1, 1, 2]
         obs_val = 1.5
@@ -1071,7 +813,7 @@ class TestPSDParEst(object):
     def test_calibrate_lrt_works_as_expected(self):
 
         m = 1
-        nfreq = 10000
+        nfreq = 100
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(100)
         noise = rng.exponential(size=nfreq)
@@ -1099,41 +841,7 @@ class TestPSDParEst(object):
 
         pval = pe.calibrate_lrt(loglike, [2.0], loglike2,
                                 [2.0, 1.0, 2.0], sample=s_all,
-                                max_post=False, nsim=10,
-                                seed=100)
-
-        assert pval > 0.001
-
-    def test_calibrate_lrt_works_with_mvn(self):
-
-        m = 1
-        nfreq = 10000
-        freq = np.linspace(1, 10, nfreq)
-        rng = np.random.RandomState(100)
-        noise = rng.exponential(size=nfreq)
-        model = models.Const1D()
-        model.amplitude = 2.0
-        p = model(freq)
-        power = noise * p
-
-        ps = Powerspectrum()
-        ps.freq = freq
-        ps.power = power
-        ps.m = m
-        ps.df = freq[1] - freq[0]
-        ps.norm = "leahy"
-
-        loglike = PSDLogLikelihood(ps.freq, ps.power, model, m=1)
-
-        model2 = models.PowerLaw1D() + models.Const1D()
-        model2.x_0_0.fixed = True
-        loglike2 = PSDLogLikelihood(ps.freq, ps.power, model2, 1)
-
-        pe = PSDParEst(ps)
-
-        pval = pe.calibrate_lrt(loglike, [2.0], loglike2,
-                                [2.0, 1.0, 2.0], sample=None,
-                                max_post=False, nsim=10,
+                                max_post=False, nsim=5,
                                 seed=100)
 
         assert pval > 0.001
@@ -1141,7 +849,7 @@ class TestPSDParEst(object):
     @pytest.mark.skipif("not can_sample")
     def test_calibrate_lrt_works_with_sampling(self):
         m = 1
-        nfreq = 10000
+        nfreq = 100
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(100)
         noise = rng.exponential(size=nfreq)
@@ -1189,8 +897,8 @@ class TestPSDParEst(object):
         with catch_warnings(RuntimeWarning):
             pval = pe.calibrate_lrt(lpost, [2.0], lpost2,
                                     [2.0, 1.0, 2.0], sample=None,
-                                    max_post=True, nsim=10, nwalkers=100,
-                                    burnin=100, niter=20,
+                                    max_post=True, nsim=10, nwalkers=10,
+                                    burnin=10, niter=10,
                                     seed=100)
 
         assert pval > 0.001
@@ -1252,7 +960,7 @@ class TestPSDParEst(object):
 
     def test_simulate_highest_outlier_works(self):
         m = 1
-        nfreq = 100000
+        nfreq = 100
         seed = 100
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(seed)
@@ -1269,7 +977,7 @@ class TestPSDParEst(object):
         ps.df = freq[1] - freq[0]
         ps.norm = "leahy"
 
-        nsim = 10
+        nsim = 5
 
         loglike = PSDLogLikelihood(ps.freq, ps.power, model, m=1)
 
@@ -1277,18 +985,16 @@ class TestPSDParEst(object):
 
         pe = PSDParEst(ps)
 
-        res = pe.fit(loglike, [2.0], neg=True)
-
         maxpow_sim = pe.simulate_highest_outlier(s_all, loglike, [2.0],
                                                  max_post=False, seed=seed)
 
         assert maxpow_sim.shape[0] == nsim
-        assert np.all(maxpow_sim > 20.00) and np.all(maxpow_sim < 31.0)
+        assert np.all(maxpow_sim > 9.00) and np.all(maxpow_sim < 31.0)
 
 
     def test_calibrate_highest_outlier_works(self):
         m = 1
-        nfreq = 10000
+        nfreq = 100
         seed = 100
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(seed)
@@ -1305,7 +1011,7 @@ class TestPSDParEst(object):
         ps.df = freq[1] - freq[0]
         ps.norm = "leahy"
 
-        nsim = 10
+        nsim = 5
 
         loglike = PSDLogLikelihood(ps.freq, ps.power, model, m=1)
 
@@ -1318,41 +1024,10 @@ class TestPSDParEst(object):
 
         assert pval > 0.001
 
-    def test_calibrate_highest_outlier_works_with_mvn(self):
-        m = 1
-        nfreq = 10000
-        seed = 100
-        freq = np.linspace(1, 10, nfreq)
-        rng = np.random.RandomState(seed)
-        noise = rng.exponential(size=nfreq)
-        model = models.Const1D()
-        model.amplitude = 2.0
-        p = model(freq)
-        power = noise * p
-
-        ps = Powerspectrum()
-        ps.freq = freq
-        ps.power = power
-        ps.m = m
-        ps.df = freq[1] - freq[0]
-        ps.norm = "leahy"
-
-        nsim = 10
-
-        loglike = PSDLogLikelihood(ps.freq, ps.power, model, m=1)
-
-        pe = PSDParEst(ps)
-
-        pval = pe.calibrate_highest_outlier(loglike, [2.0], sample=None,
-                                            max_post=False, seed=seed,
-                                            nsim=nsim)
-
-        assert pval > 0.001
-
     @pytest.mark.skipif("not can_sample")
     def test_calibrate_highest_outlier_works_with_sampling(self):
         m = 1
-        nfreq = 100000
+        nfreq = 100
         seed = 100
         freq = np.linspace(1, 10, nfreq)
         rng = np.random.RandomState(seed)
@@ -1369,7 +1044,7 @@ class TestPSDParEst(object):
         ps.df = freq[1] - freq[0]
         ps.norm = "leahy"
 
-        nsim = 10
+        nsim = 5
 
         lpost = PSDPosterior(ps.freq, ps.power, model, m=1)
         p_amplitude = lambda amplitude: \
@@ -1384,7 +1059,7 @@ class TestPSDParEst(object):
         with catch_warnings(RuntimeWarning):
             pval = pe.calibrate_highest_outlier(lpost, [2.0], sample=None,
                                                 max_post=True, seed=seed,
-                                                nsim=nsim, niter=20, nwalkers=100,
-                                                burnin=100)
+                                                nsim=nsim, niter=10, nwalkers=20,
+                                                burnin=10)
 
         assert pval > 0.001
