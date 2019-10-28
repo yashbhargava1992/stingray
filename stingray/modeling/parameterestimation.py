@@ -167,7 +167,10 @@ class OptimizationResults(object):
                 # calculate Hessian approximating with finite differences
                 logging.info("Approximating Hessian with finite differences ...")
 
-                phess = approx_hess(self.p_opt, lpost)
+                if self.p_opt.size == 1:
+                    phess = approx_hess([self.p_opt], lpost)
+                else:
+                    phess = approx_hess(self.p_opt, lpost)
 
                 self.cov = np.linalg.inv(phess)
                 self.err = np.sqrt(np.diag(np.abs(self.cov)))
