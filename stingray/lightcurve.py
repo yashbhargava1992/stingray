@@ -177,7 +177,9 @@ class Lightcurve(object):
         self.tstart = self._time[0] - 0.5 * self.dt
         self.tseg = self._time[-1] - self._time[0] + self.dt
 
-        self._gti = gti
+        self._gti = None
+        if gti is not None:
+            self._gti = np.asarray(gti)
 
         self._mask = None
         self._counts = None
