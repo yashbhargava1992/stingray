@@ -34,6 +34,7 @@ class LogLikelihoodDummy(LogLikelihood):
     def evaluate(self, parse, neg=False):
         return np.nan
 
+
 class OptimizationResultsSubclassDummy(OptimizationResults):
 
     def __init__(self, lpost, res, neg):
@@ -96,7 +97,8 @@ class TestParameterEstimation(object):
         pe = ParameterEstimation()
         res = pe.fit(llike, [2.0])
         assert isinstance(res,
-                          OptimizationResults), "res must be of type OptimizationResults"
+                          OptimizationResults), "res must be of " \
+                                                "type OptimizationResults"
 
     def test_fit_fails_when_object_is_not_posterior_or_likelihood(self):
         x = np.ones(10)
@@ -149,7 +151,8 @@ class TestParameterEstimation(object):
         pe = ParameterEstimation(max_post=True)
 
         assert pe.max_post is True
-        delta_deviance, opt1, opt2 = pe.compute_lrt(self.lpost, t0, self.lpost, t0)
+        delta_deviance, opt1, opt2 = pe.compute_lrt(self.lpost, t0,
+                                                    self.lpost, t0)
 
         assert pe.max_post is False
         assert delta_deviance < 1e-7
@@ -224,7 +227,6 @@ class TestOptimizationResults(object):
         cls.optres = OptimizationResultsSubclassDummy(cls.lpost, cls.opt,
                                                       neg=True)
 
-
     def test_object_initializes_correctly(self):
         res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
         assert hasattr(res, "p_opt")
@@ -245,7 +247,7 @@ class TestOptimizationResults(object):
                                      "the model for the data."
 
     def test_compute_criteria_works_correctly(self):
-        res = OptimizationResults(self.lpost, self.opt, neg=self.neg)
+        res = OptimizationResults(self.lpost, self.opt, neg = self.neg)
 
         test_aic = res.result+ 2.0*res.p_opt.shape[0]
         test_bic = res.result + res.p_opt.shape[0] * \
@@ -478,7 +480,6 @@ if can_sample:
             assert np.isclose(test_std, s.std[0], atol=0.01, rtol=0.01)
             assert s.ci.size == 2
 
-
         def test_infer_computes_correct_values(self):
             s = SamplingResults(self.sampler)
 
@@ -701,12 +702,11 @@ class TestPSDParEst(object):
         lrt_obs, res1, res2 = pe.compute_lrt(loglike, [2.0], loglike2,
                                              [2.0, 1.0, 2.0], neg=True)
         lrt_sim = pe.simulate_lrts(s_all, loglike, [2.0], loglike2,
-                                           [2.0, 1.0, 2.0],
-                                           seed=100)
+                                   [2.0, 1.0, 2.0],
+                                   seed=100)
 
         assert (lrt_obs > 0.4) and (lrt_obs < 0.6)
         assert np.all(lrt_sim < 10.0) and np.all(lrt_sim > 0.01)
-
 
     def test_compute_lrt_fails_with_wrong_input(self):
         pe = PSDParEst(self.ps)
@@ -1059,7 +1059,7 @@ class TestPSDParEst(object):
         with catch_warnings(RuntimeWarning):
             pval = pe.calibrate_highest_outlier(lpost, [2.0], sample=None,
                                                 max_post=True, seed=seed,
-                                                nsim=nsim, niter=10, nwalkers=20,
-                                                burnin=10)
+                                                nsim=nsim, niter=10,
+                                                nwalkers=20, burnin=10)
 
         assert pval > 0.001
