@@ -37,11 +37,11 @@ matrix:
     include:
         - env: PYTHON_VERSION=3.7 SETUP_CMD='egg_info' SETUP_XVFB=False
 
-        - env: PYTHON_VERSION=3.7
+        - env: PYTHON_VERSION=3.8
 
         - env: PYTHON_VERSION=3.6
                PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner'
-               SETUP_CMD='test --remote-data --coverage' NUMPY_VERSION=1.14
+               SETUP_CMD='test --remote-data --coverage'
 
         - env: PYTHON_VERSION=3.7  CONDA_DEPENDENCIES='scipy matplotlib numba'
 
@@ -56,6 +56,7 @@ matrix:
 
     allow_failures:
 
+        - env: PYTHON_VERSION=3.8
         # Try Astropy development version
         - env: PYTHON_VERSION=3.7 ASTROPY_VERSION=development
 
