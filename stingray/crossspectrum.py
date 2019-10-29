@@ -1082,26 +1082,26 @@ class AveragedCrossspectrum(Crossspectrum):
 
             if np.sum(counts_1) == 0 or np.sum(counts_2) == 0:
                 continue
-            else:
-                gti1 = np.array([[time_1[0] - lc1.dt / 2,
-                                  time_1[-1] + lc1.dt / 2]])
-                gti2 = np.array([[time_2[0] - lc2.dt / 2,
-                                  time_2[-1] + lc2.dt / 2]])
-                lc1_seg = Lightcurve(time_1, counts_1, err=counts_1_err,
-                                     err_dist=lc1.err_dist,
-                                     gti=gti1,
-                                     dt=lc1.dt, skip_checks=True)
-                lc2_seg = Lightcurve(time_2, counts_2, err=counts_2_err,
-                                     err_dist=lc2.err_dist,
-                                     gti=gti2,
-                                     dt=lc2.dt, skip_checks=True)
-                with warnings.catch_warnings(record=True) as w:
-                    cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
-                                           power_type=self.power_type)
 
-                cs_all.append(cs_seg)
-                nphots1_all.append(np.sum(lc1_seg.counts))
-                nphots2_all.append(np.sum(lc2_seg.counts))
+            gti1 = np.array([[time_1[0] - lc1.dt / 2,
+                              time_1[-1] + lc1.dt / 2]])
+            gti2 = np.array([[time_2[0] - lc2.dt / 2,
+                              time_2[-1] + lc2.dt / 2]])
+            lc1_seg = Lightcurve(time_1, counts_1, err=counts_1_err,
+                                 err_dist=lc1.err_dist,
+                                 gti=gti1,
+                                 dt=lc1.dt, skip_checks=True)
+            lc2_seg = Lightcurve(time_2, counts_2, err=counts_2_err,
+                                 err_dist=lc2.err_dist,
+                                 gti=gti2,
+                                 dt=lc2.dt, skip_checks=True)
+            with warnings.catch_warnings(record=True) as w:
+                cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
+                                       power_type=self.power_type)
+
+            cs_all.append(cs_seg)
+            nphots1_all.append(np.sum(lc1_seg.counts))
+            nphots2_all.append(np.sum(lc2_seg.counts))
 
         return cs_all, nphots1_all, nphots2_all
 
