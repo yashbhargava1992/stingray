@@ -26,6 +26,12 @@ try:
 except ImportError:
     can_sample = False
 
+try:
+    import matplotlib.pyplot as plt
+    can_plot = True
+except ImportError:
+    can_plot = False
+
 
 class LogLikelihoodDummy(LogLikelihood):
     def __init__(self, x, y, model):
@@ -157,7 +163,7 @@ class TestParameterEstimation(object):
         assert pe.max_post is False
         assert delta_deviance < 1e-7
 
-    @pytest.mark.skipif("not can_sample")
+    @pytest.mark.skipif("not can_sample", "not can_plot")
     def test_sampler_runs(self):
         pe = ParameterEstimation()
         if os.path.exists("test_corner.pdf"):
@@ -216,15 +222,18 @@ class TestOptimizationResults(object):
                                  cls.model, m=cls.ps.m)
         cls.lpost.logprior = set_logprior(cls.lpost, cls.priors)
 
-        cls.fitmethod = "BFGS"
+        cls.fitmethod = "powell"
         cls.max_post = True
-        cls.t0 = [2.0]
+        cls.t0 = np.array([2.0])
         cls.neg = True
-        cls.opt = scipy.optimize.minimize(cls.lpost, cls.t0,
-                                          method=cls.fitmethod,
-                                          args=cls.neg, tol=1.e-10)
 
-        cls.optres = OptimizationResultsSubclassDummy(cls.lpost, cls.opt,
+        cls.opt = scipy.optimize.minimize(cls.lpost, cls.t0,
+                                      method=cls.fitmethod,
+                                      args=cls.neg, tol=1.e-10)
+
+        cls.opt.x = np.atleast_1d(cls.opt.x)
+        cls.optres = OptimizationResultsSubclassDummy(cls.lpost,
+                                                      cls.opt,
                                                       neg=True)
 
     def test_object_initializes_correctly(self):
@@ -285,13 +294,6 @@ class TestOptimizationResults(object):
 
         assert np.all(self.optres.mfit == mfit_test)
 
-    @pytest.mark.skipif("comp_hessian")
-    def test_compute_covariance_without_comp_hessian(self):
-
-        self.optres._compute_covariance(self.lpost, None)
-        assert self.optres.cov is None
-        assert self.optres.err is None
-
     def test_compute_statistics_computes_all_statistics(self):
 
         self.optres._compute_statistics(self.lpost)
@@ -338,29 +340,29 @@ class TestOptimizationResults(object):
         assert np.all(self.optres.cov == np.asarray(self.opt.hess_inv))
         assert np.all(self.optres.err == np.sqrt(np.diag(self.opt.hess_inv)))
 
-    def test_compute_covariance_without_hess_inverse(self):
-        fitmethod = "powell"
-        opt = scipy.optimize.minimize(self.lpost, self.t0,
-                                      method=fitmethod,
-                                      args=self.neg, tol=1.e-10)
+    @pytest.mark.skipif("comp_hessian")
+    def test_compute_covariance_without_comp_hessian(self):
 
-        optres = OptimizationResultsSubclassDummy(self.lpost, opt,
+        self.optres._compute_covariance(self.lpost, None)
+        assert self.optres.cov is None
+        assert self.optres.err is None
+
+    @pytest.mark.skipif("not comp_hessian")
+    def test_compute_covariance_with_hess_inverse(self):
+        optres = OptimizationResultsSubclassDummy(self.lpost, self.opt,
                                                   neg=True)
 
-        optres._compute_covariance(self.lpost, opt)
+        optres._compute_covariance(self.lpost, self.opt)
 
         if comp_hessian:
-            phess = approx_hess(opt.x, self.lpost)
+            phess = approx_hess(self.opt.x, self.lpost)
             hess_inv = np.linalg.inv(phess)
 
             assert np.all(optres.cov == hess_inv)
             assert np.all(optres.err == np.sqrt(np.diag(np.abs(hess_inv))))
-        else:
-            assert optres.cov is None
-            assert optres.err is None
 
     def test_print_summary_works(self, logger, caplog):
-
+        self.optres._compute_covariance(self.lpost, None)
         self.optres.print_summary(self.lpost)
 
         assert 'Parameter amplitude' in caplog.text
@@ -628,6 +630,7 @@ class TestPSDParEst(object):
         with pytest.raises(ValueError):
             res = pe.fit(self.lpost, t0)
 
+    @pytest.mark.skipif("not can_plot")
     def test_fit_method_works_with_correct_parameter(self):
         pe = PSDParEst(self.ps)
         lpost = PSDPosterior(self.ps.freq, self.ps.power,

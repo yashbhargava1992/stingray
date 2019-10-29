@@ -127,7 +127,7 @@ class OptimizationResults(object):
     def __init__(self, lpost, res, neg=True):
         self.neg = neg
         self.result = res.fun
-        self.p_opt = res.x
+        self.p_opt = np.atleast_1d(res.x)
         self.model = lpost.model
 
         self._compute_covariance(lpost, res)
@@ -167,10 +167,7 @@ class OptimizationResults(object):
                 # calculate Hessian approximating with finite differences
                 logging.info("Approximating Hessian with finite differences ...")
 
-                if self.p_opt.size == 1:
-                    phess = approx_hess([self.p_opt], lpost)
-                else:
-                    phess = approx_hess(self.p_opt, lpost)
+                phess = approx_hess(np.atleast_1d(self.p_opt), lpost)
 
                 self.cov = np.linalg.inv(phess)
                 self.err = np.sqrt(np.diag(np.abs(self.cov)))
