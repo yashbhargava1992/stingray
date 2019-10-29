@@ -1,8 +1,8 @@
-from __future__ import (absolute_import, unicode_literals, division,
-                        print_function)
+
 
 import numpy as np
 import logging
+import warnings
 import collections
 import copy
 
@@ -224,6 +224,18 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     if gtis.size == 0:
         raise ValueError("Passing an empty GTI array to create_gti_mask")
 
+    mask = np.zeros(len(time), dtype=bool)
+
+    if min_length > 0:
+        lengths = gtis[:, 1] - gtis[:, 0]
+        good = lengths >= np.max(min_length, dt)
+
+        if np.all(~good):
+            warnings.warn("No GTIs longer than "
+                          "min_length {}".format(min_length))
+            return mask
+        gtis = gtis[good]
+
     if not HAS_NUMBA:
         return create_gti_mask_complete(time, gtis,
                                         safe_interval=safe_interval,
@@ -235,14 +247,6 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     dt = apply_function_if_none(dt, time,
                                 lambda x: np.median(np.diff(x)))
-
-    if min_length > 0:
-        lengths = gtis[:, 1] - gtis[:, 0]
-        good = lengths >= np.max(min_length, dt)
-
-        gtis = gtis[good]
-
-    mask = np.zeros(len(time), dtype=bool)
 
     gtis_new = copy.deepcopy(gtis)
     gti_mask = np.zeros(len(gtis), dtype=bool)
