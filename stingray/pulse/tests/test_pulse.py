@@ -1,4 +1,4 @@
-from __future__ import division, print_function, absolute_import
+
 
 import numpy as np
 from stingray.pulse.pulsar import fold_events, get_TOA

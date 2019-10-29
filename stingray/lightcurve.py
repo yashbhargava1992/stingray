@@ -4,7 +4,7 @@ Definition of :class::class:`Lightcurve`.
 :class::class:`Lightcurve` is used to create light curves out of photon counting data
 or to save existing light curves in a class that's easy to use.
 """
-from __future__ import division, print_function
+
 import logging
 import numpy as np
 import stingray.io as io
