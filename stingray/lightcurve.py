@@ -1576,7 +1576,8 @@ class Lightcurve(object):
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
                                 err=self.counts_err[start:stop],
                                 mjdref=self.mjdref, gti=[self.gti[i]],
-                                dt=self.dt, err_dist=self.err_dist)
+                                dt=self.dt, err_dist=self.err_dist,
+                                skip_checks=True)
             list_of_lcs.append(new_lc)
 
         return list_of_lcs

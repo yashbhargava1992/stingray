@@ -952,10 +952,12 @@ class AveragedCrossspectrum(Crossspectrum):
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
             self.pds1 = AveragedCrossspectrum(lc1, lc1,
                                               segment_size=self.segment_size,
-                                              norm='none', gti=lc1.gti, power_type=self.power_type)
+                                              norm='none', gti=lc1.gti,
+                                              power_type=self.power_type)
             self.pds2 = AveragedCrossspectrum(lc2, lc2,
                                               segment_size=self.segment_size,
-                                              norm='none', gti=lc2.gti, power_type=self.power_type)
+                                              norm='none', gti=lc2.gti,
+                                              power_type=self.power_type)
 
     def _make_segment_spectrum(self, lc1, lc2, segment_size):
         """
