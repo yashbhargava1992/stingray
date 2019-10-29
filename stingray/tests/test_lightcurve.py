@@ -89,8 +89,12 @@ class TestProperties(object):
         assert lc._meanrate is not None
         # Finally, we set count rate and test that the rest has been deleted.
         lc.countrate = np.zeros_like(lc.countrate) + 3
+        lc.countrate_err = np.zeros_like(lc.countrate) + 3
         assert lc._counts is None
+        assert lc._counts_err is None
         assert lc._meancounts is None
+        _ = lc.counts_err
+        assert lc._counts_err is not None
 
     def test_counts_and_countrate_lowmem(self):
         lc = copy.deepcopy(self.lc_lowmem)
@@ -260,6 +264,11 @@ class TestLightcurve(object):
 
         with pytest.raises(ValueError):
             lc = Lightcurve(times, [2]*5, err=counts_err)
+
+        times[2] = np.inf
+
+        with pytest.raises(ValueError):
+            lc = Lightcurve(times, [2]*5)
 
     def test_n(self):
         lc = Lightcurve(self.times, self.counts)
@@ -745,11 +754,14 @@ class TestLightcurve(object):
     def test_sort(self):
         _times = [2, 1, 3, 4]
         _counts = [40, 10, 20, 5]
-        lc = Lightcurve(_times, _counts, mjdref=57000)
+        _counts_err = [4, 1, 2, 0.5]
+
+        lc = Lightcurve(_times, _counts, err=_counts_err, mjdref=57000)
         mjdref = lc.mjdref
 
         lc_new = lc.sort()
 
+        assert np.all(lc_new.counts_err == np.array([1, 4, 2, 0.5]))
         assert np.all(lc_new.counts == np.array([10, 40, 20, 5]))
         assert np.all(lc_new.time == np.array([1, 2, 3, 4]))
         assert lc_new.mjdref == mjdref
@@ -777,8 +789,6 @@ class TestLightcurve(object):
         assert np.all(lc_new.counts == np.array([40, 20, 10,  5]))
         assert np.all(lc_new.time == np.array([1, 3, 2, 4]))
         assert lc_new.mjdref == mjdref
-
-
 
     def test_sort_reverse(self):
         times = np.arange(1000)

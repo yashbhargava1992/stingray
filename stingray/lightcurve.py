@@ -348,7 +348,7 @@ class Lightcurve(object):
     @countrate_err.setter
     def countrate_err(self, value):
         value = np.asarray(value)
-        if not value.shape == self.counts.shape:
+        if not value.shape == self.countrate.shape:
             raise ValueError('Can only assign new error array of the same '
                              'shape as the original array')
         self._countrate_err = value
