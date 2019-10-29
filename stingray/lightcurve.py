@@ -68,6 +68,10 @@ class Lightcurve(object):
         If True, the user specifies that data are already sorted and contain no
         infinite or nan points. Use at your own risk
 
+    low_memory: bool
+        If True, all the lazily evaluated attribute (e.g., countrate and
+        countrate_err if input_counts is True) will _not_ be stored in memory,
+        but calculated every time they are requested.
 
     Attributes
     ----------
