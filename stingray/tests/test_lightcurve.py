@@ -43,6 +43,7 @@ class TestProperties(object):
         counts = np.zeros_like(times) + 100
 
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
+        cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
 
     def test_time(self):
         lc = copy.deepcopy(self.lc)
@@ -90,6 +91,47 @@ class TestProperties(object):
         lc.countrate = np.zeros_like(lc.countrate) + 3
         assert lc._counts is None
         assert lc._meancounts is None
+
+    def test_counts_and_countrate_lowmem(self):
+        lc = copy.deepcopy(self.lc_lowmem)
+        # At initialization, _countrate is None and _counts is not.
+        assert lc._countrate is None
+        assert lc._counts is not None
+        assert lc._meancounts is None
+        # Now we retrieve meancounts; it gets calculated.
+        _ = lc.meancounts
+        assert lc._meancounts is not None
+        # Now we retrieve countrate, and it gets calculated but not saved
+        # (because low_memory)
+        _ = lc.countrate
+        assert lc._countrate is None
+        _ = lc.countrate_err
+        assert lc._countrate_err is None
+        # Now I set counts; countrate gets deleted together with the other
+        # statistics.
+        lc.counts = np.zeros_like(lc.counts) + 3
+        assert lc.input_counts
+        assert lc._countrate is None
+        assert lc._meancounts is None
+        assert lc._meanrate is None
+        # Now I retrieve meanrate. It gets calculated
+        _ = lc.meanrate
+        assert lc._meanrate is not None
+        # Finally, we set count rate and test that the rest has been deleted,
+        # AND input_counts is changed to False.
+        lc.countrate = np.zeros_like(lc.countrate) + 3
+        assert lc._counts is None
+        assert lc._meancounts is None
+        assert not lc.input_counts
+        _ = lc.counts
+        # Now we retrieve counts, and it gets calculated but not saved
+        # (because low_memory, and input_counts is now False)
+        assert lc._counts is None
+        _ = lc.counts_err
+        # Now we retrieve counts, and it gets calculated but not saved
+        # (because low_memory, and input_counts is now False)
+        assert lc._counts_err is None
+
 
     @pytest.mark.parametrize('property', 'time,counts,counts_err,'
                                          'countrate,countrate_err'.split(','))

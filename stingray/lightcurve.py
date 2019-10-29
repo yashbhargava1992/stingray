@@ -127,7 +127,7 @@ class Lightcurve(object):
     """
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
-                 skip_checks=False):
+                 skip_checks=False, low_memory=False):
 
         time = np.asarray(time)
         counts = np.asarray(counts)
@@ -192,6 +192,8 @@ class Lightcurve(object):
         self._bin_hi = None
         self._n = None
 
+        self.input_counts = input_counts
+        self.low_memory = low_memory
         if input_counts:
             self._counts = np.asarray(counts)
             self._counts_err = err
@@ -255,9 +257,14 @@ class Lightcurve(object):
 
     @property
     def counts(self):
+        counts = self._counts
         if self._counts is None:
-            self._counts = self.countrate * self.dt
-        return self._counts
+            counts = self._countrate * self.dt
+            # If not in low-memory regime, cache the values
+            if not self.low_memory or self.input_counts:
+                self._counts = counts
+
+        return counts
 
     @counts.setter
     def counts(self, value):
@@ -269,17 +276,26 @@ class Lightcurve(object):
         self._countrate = None
         self._meancounts = None
         self._meancountrate = None
+        self.input_counts = True
 
     @property
     def counts_err(self):
-        if self._counts_err is None and self._countrate_err is not None:
-            self._counts_err = self._countrate_err * self.dt
-        elif self._counts_err is None:
+        counts_err = self._counts_err
+        if counts_err is None and self._countrate_err is not None:
+            counts_err = self._countrate_err * self.dt
+        elif counts_err is None:
             if self.err_dist.lower() == 'poisson':
-                self._counts_err = poisson_symmetrical_errors(self.counts)
+                counts_err = poisson_symmetrical_errors(self.counts)
             else:
-                self._counts_err = np.zeros_like(self.counts)
-        return self._counts_err
+                counts_err = np.zeros_like(self.counts)
+
+        # If not in low-memory regime, cache the values ONLY if they have
+        # been changed!
+        if self._counts_err is not counts_err:
+            if not self.low_memory or self.input_counts:
+                self._counts_err = counts_err
+
+        return counts_err
 
     @counts_err.setter
     def counts_err(self, value):
@@ -292,9 +308,14 @@ class Lightcurve(object):
 
     @property
     def countrate(self):
-        if self._countrate is None:
-            self._countrate = self.counts / self.dt
-        return self._countrate
+        countrate = self._countrate
+        if countrate is None:
+            countrate = self._counts / self.dt
+            # If not in low-memory regime, cache the values
+            if not self.low_memory or not self.input_counts:
+                self._countrate = countrate
+
+        return countrate
 
     @countrate.setter
     def countrate(self, value):
@@ -306,12 +327,23 @@ class Lightcurve(object):
         self._counts = None
         self._meancounts = None
         self._meancountrate = None
+        self.input_counts = False
 
     @property
     def countrate_err(self):
-        if self._countrate_err is None:
-            self._countrate_err = self.counts_err / self.dt
-        return self._countrate_err
+        countrate_err = self._countrate_err
+        if countrate_err is None and self._counts_err is not None:
+            countrate_err = self._counts_err / self.dt
+        elif countrate_err is None:
+            countrate_err = 0
+
+        # If not in low-memory regime, cache the values ONLY if they have
+        # been changed!
+        if countrate_err is not self._countrate_err:
+            if not self.low_memory or not self.input_counts:
+                self._countrate_err = countrate_err
+
+        return countrate_err
 
     @countrate_err.setter
     def countrate_err(self, value):
