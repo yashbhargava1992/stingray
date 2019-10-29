@@ -311,7 +311,8 @@ class TestPowerspectrum(object):
     def test_classical_significances_with_logbinned_psd(self):
         ps = Powerspectrum(lc=self.lc, norm="leahy")
         ps_log = ps.rebin_log()
-        pval = ps_log.classical_significances(threshold=1.1, trial_correction=False)
+        pval = ps_log.classical_significances(threshold=1.1,
+                                              trial_correction=False)
 
         assert len(pval[0]) == len(ps_log.power)
 
@@ -425,6 +426,17 @@ class TestAveragedPowerspectrum(object):
 
         segment_size = 0.5
         assert AveragedPowerspectrum(lc_all, segment_size)
+
+    def test_with_zero_counts(self):
+        nbins = 100
+        x = np.linspace(0, 10, nbins)
+        y0 = np.random.normal(loc=10, scale=0.5, size=int(0.4*nbins))
+        y1 = np.zeros(int(0.6*nbins))
+        y = np.hstack([y0, y1])
+
+        lc = Lightcurve(x, y)
+        aps = AveragedPowerspectrum(lc, segment_size=5.0, norm="leahy")
+        assert aps.m == 1
 
     def test_with_iterable_of_variable_length_lightcurves(self):
         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]

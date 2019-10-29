@@ -589,6 +589,23 @@ class TestAveragedCrossspectrum(object):
             assert np.any(["same tseg" in r.message.args[0]
                            for r in record])
 
+    def test_with_zero_counts(self):
+        nbins = 100
+        x = np.linspace(0, 10, nbins)
+        ycounts1 = np.random.normal(loc=10, scale=0.5, size=int(0.4*nbins))
+        ycounts2 = np.random.normal(loc=10, scale=0.5, size=int(0.4*nbins))
+
+        yzero = np.zeros(int(0.6*nbins))
+        y1 = np.hstack([ycounts1, yzero])
+        y2 = np.hstack([ycounts2, yzero])
+
+        lc1 = Lightcurve(x, y1)
+        lc2 = Lightcurve(x, y2)
+
+        acs = AveragedCrossspectrum(lc1, lc2, segment_size=5.0, norm="leahy")
+        assert acs.m == 1
+
+
     def test_rebin_with_invalid_type_attribute(self):
         new_df = 2
 
