@@ -520,7 +520,8 @@ class Lightcurve(object):
 
         lc_new = Lightcurve(new_time, new_counts,
                             err=new_counts_err, gti=common_gti,
-                            mjdref=self.mjdref, skip_checks=True)
+                            mjdref=self.mjdref, skip_checks=True,
+                            dt=self.dt)
 
         return lc_new
 
@@ -541,8 +542,8 @@ class Lightcurve(object):
         >>> count2 = [600, 1200, 800]
         >>> gti1 = [[0, 20]]
         >>> gti2 = [[0, 25]]
-        >>> lc1 = Lightcurve(time, count1, gti=gti1)
-        >>> lc2 = Lightcurve(time, count2, gti=gti2)
+        >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=5)
+        >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=5)
         >>> lc = lc1 + lc2
         >>> lc.counts
         array([ 900, 1300, 1200])
@@ -570,8 +571,8 @@ class Lightcurve(object):
         >>> count2 = [300, 100, 400]
         >>> gti1 = [[0, 35]]
         >>> gti2 = [[0, 40]]
-        >>> lc1 = Lightcurve(time, count1, gti=gti1)
-        >>> lc2 = Lightcurve(time, count2, gti=gti2)
+        >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=5)
+        >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=5)
         >>> lc = lc1 - lc2
         >>> lc.counts
         array([ 300, 1100,  400])
@@ -599,7 +600,8 @@ class Lightcurve(object):
         """
         lc_new = Lightcurve(self.time, -1 * self.counts,
                             err=self.counts_err, gti=self.gti,
-                            mjdref=self.mjdref, skip_checks=True)
+                            mjdref=self.mjdref, skip_checks=True,
+                            dt=self.dt)
 
         return lc_new
 
@@ -615,7 +617,7 @@ class Lightcurve(object):
         --------
         >>> time = [1, 2, 3]
         >>> count = [100, 200, 300]
-        >>> lc = Lightcurve(time, count)
+        >>> lc = Lightcurve(time, count, dt=1)
         >>> len(lc)
         3
         """
@@ -643,7 +645,7 @@ class Lightcurve(object):
         --------
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
-        >>> lc = Lightcurve(time, count)
+        >>> lc = Lightcurve(time, count, dt=1)
         >>> lc[2]
         33
         >>> lc[:2].counts
@@ -685,8 +687,8 @@ class Lightcurve(object):
         >>> time = [1, 2, 3]
         >>> count1 = [100, 200, 300]
         >>> count2 = [100, 200, 300]
-        >>> lc1 = Lightcurve(time, count1)
-        >>> lc2 = Lightcurve(time, count2)
+        >>> lc1 = Lightcurve(time, count1, dt=1)
+        >>> lc2 = Lightcurve(time, count2, dt=1)
         >>> lc1 == lc2
         True
         """
@@ -913,8 +915,8 @@ class Lightcurve(object):
         >>> count1 = [300, 100, 400]
         >>> time2 = [20, 25, 30]
         >>> count2 = [600, 1200, 800]
-        >>> lc1 = Lightcurve(time1, count1)
-        >>> lc2 = Lightcurve(time2, count2)
+        >>> lc1 = Lightcurve(time1, count1, dt=5)
+        >>> lc2 = Lightcurve(time2, count2, dt=5)
         >>> lc = lc1.join(lc2)
         >>> lc.time
         array([ 5, 10, 15, 20, 25, 30])
@@ -1037,7 +1039,7 @@ class Lightcurve(object):
         --------
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
-        >>> lc = Lightcurve(time, count)
+        >>> lc = Lightcurve(time, count, dt=1)
         >>> lc_new = lc.truncate(start=2, stop=8)
         >>> lc_new.counts
         array([30, 40, 50, 60, 70, 80])
@@ -1135,7 +1137,7 @@ class Lightcurve(object):
         -------
         >>> time = np.array([1, 2, 3, 6, 7, 8, 11, 12, 13])
         >>> counts = np.random.rand(time.shape[0])
-        >>> lc = Lightcurve(time, counts)
+        >>> lc = Lightcurve(time, counts, dt=1)
         >>> split_lc = lc.split(1.5)
 
         """
@@ -1177,7 +1179,7 @@ class Lightcurve(object):
         --------
         >>> time = [2, 1, 3]
         >>> count = [200, 100, 300]
-        >>> lc = Lightcurve(time, count)
+        >>> lc = Lightcurve(time, count, dt=1)
         >>> lc_new = lc.sort()
         >>> lc_new.time
         array([1, 2, 3])
@@ -1226,7 +1228,7 @@ class Lightcurve(object):
         --------
         >>> time = [1, 2, 3]
         >>> count = [200, 100, 300]
-        >>> lc = Lightcurve(time, count)
+        >>> lc = Lightcurve(time, count, dt=1)
         >>> lc_new = lc.sort_counts()
         >>> lc_new.time
         array([2, 1, 3])
@@ -1270,13 +1272,13 @@ class Lightcurve(object):
         >>> import numpy as np
         >>> time = np.arange(150)
         >>> count = np.zeros_like(time) + 3
-        >>> lc = Lightcurve(time, count)
+        >>> lc = Lightcurve(time, count, dt=1)
         >>> lc.estimate_chunk_length(min_total_counts=10, min_time_bins=3)
         4.0
         >>> lc.estimate_chunk_length(min_total_counts=10, min_time_bins=5)
         5.0
         >>> count[2:4] = 1
-        >>> lc = Lightcurve(time, count)
+        >>> lc = Lightcurve(time, count, dt=1)
         >>> lc.estimate_chunk_length(min_total_counts=3, min_time_bins=1)
         4.0
         """
@@ -1334,7 +1336,7 @@ class Lightcurve(object):
         >>> import numpy as np
         >>> time = np.arange(0, 10, 0.1)
         >>> counts = np.zeros_like(time) + 10
-        >>> lc = Lightcurve(time, counts)
+        >>> lc = Lightcurve(time, counts, dt=0.1)
         >>> # Define a function that calculates the mean
         >>> mean_func = lambda x: np.mean(x)
         >>> # Calculate the mean in segments of 5 seconds
@@ -1574,7 +1576,8 @@ class Lightcurve(object):
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
                                 err=self.counts_err[start:stop],
                                 mjdref=self.mjdref, gti=[self.gti[i]],
-                                dt=self.dt, err_dist=self.err_dist)
+                                dt=self.dt, err_dist=self.err_dist,
+                                skip_checks=True)
             list_of_lcs.append(new_lc)
 
         return list_of_lcs
