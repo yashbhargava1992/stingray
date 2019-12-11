@@ -139,7 +139,14 @@ class VarEnergySpectrum(object):
             self.ref_band = np.asarray([self.ref_band])
 
         self.segment_size = segment_size
-        self.spectrum, self.spectrum_error = self._spectrum_function()
+
+        if len(events.time) == 0:
+            simon("There are no events in your event list!" +
+                  "Can't make a spectrum!")
+            self.spectrum = 0
+            self.spectrum_error = 0
+        else:
+            self.spectrum, self.spectrum_error = self._spectrum_function()
 
     def _decide_ref_intervals(self, channel_band, ref_band):
         """
