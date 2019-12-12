@@ -790,12 +790,12 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
 
     def correction_mjd(mjds):
         """Get the orbital correction.
-        
+
         Parameters
         ----------
         mjds : array-like
             The input times in MJD
-        
+
         Returns
         -------
         mjds: Corrected times in MJD
@@ -810,14 +810,14 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
 
     def correction_sec(times, mjdref):
         """Get the orbital correction.
-        
+
         Parameters
         ----------
         times : array-like
             The input times in seconds of Mission Elapsed Time (MET)
         mjdref : float
             MJDREF, reference MJD for the mission
-       
+
         Returns
         -------
         mets: array-like
