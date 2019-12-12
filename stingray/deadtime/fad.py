@@ -1,5 +1,4 @@
-import copy
-
+import warnings
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
@@ -164,8 +163,10 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
                additional='Maybe something is not right.' if not is_compliant else '')
     if strict:
         assert is_compliant
-    if verbose:
+    if verbose and is_compliant:
         log.info(verbose_string)
+    elif not is_compliant:
+        warnings.warn(verbose_string)
 
     results = Table()
 
