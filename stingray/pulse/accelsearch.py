@@ -164,8 +164,11 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     ref_time : float, default 0
         Reference time for the times
     """
+    times = np.asarray(times)
+    signal = np.asarray(signal)
     dt = times[1] - times[0]
     if GTI is not None:
+        GTI = np.asarray(GTI)
         # Fill in the data with a constant outside GTI
         gti_mask = create_gti_mask(times, GTI)
         bti_mask = ~gti_mask
