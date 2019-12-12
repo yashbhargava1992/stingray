@@ -70,19 +70,7 @@ def detection_level(nbins, epsilon=0.01, n_summed_spectra=1, n_rebin=1):
     return retlev
 
 
-def data_and_error(data, error):
-    sign = data / np.abs(data)
-
-    data_order_of_magn = np.int(np.log10(sign * data))
-    if data_order_of_magn < 0:
-        data_order_of_magn -= 1
-    data_resc = data / 10**data_order_of_magn
-    err_resc = error / 10**data_order_of_magn
-    return '({data_resc} ± {err_resc:.1e})x10^{data_order_of_magn}'.format(
-        data_resc=data_resc, err_resc=err_resc, data_order_of_magn=data_order_of_magn)
-
-
-def create_responses(range_z):
+def _create_responses(range_z):
     log.info("Creating responses")
     responses = []
     for j, z in enumerate(show_progress(range_z)):
@@ -110,7 +98,7 @@ def create_responses(range_z):
     return responses
 
 
-def calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
+def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
                                detlev):
     log.info("Convolving FFT with responses...")
     candidate_powers = [0.]
@@ -156,8 +144,25 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         An evenly spaced list of times
     signal : array of floats
         The light curve, in counts; same length as ``times``
+    Other parameters
+    ----------------
     delta_z : float
         The spacing in ``z`` space
+    fmin : float, default 1.
+        Minimum frequency to search
+    fmax : float, default 1e32
+        Maximum frequency to search
+    GTI : ``[[gti00, gti01], [gti10, gti11], ...]``, default None
+        Good Time Intervals. If None, it assumes the full range 
+        ``[[time[0] - dt / 2 -- time[-1] + dt / 2]]``
+    zmax : int, default 100
+        Maximum frequency derivative to search (pos and neg), in bins.
+        It corresponds to ``fdot_max = zmax / T**2``, where ``T`` is the
+        length of the observation.
+    candidate_file : str, default None
+        Save the final candidate table in this file.
+    ref_time : float, default 0
+        Reference time for the times
     """
     dt = times[1] - times[0]
     if GTI is not None:
@@ -176,8 +181,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
 
     freq_intv_to_search = (freq >= fmin) & (freq < fmax)
     log.info("Starting search over full plane...")
-    start_z = -zmax#-20*delta_z
-    end_z = zmax#-start_z + delta_z
+    start_z = -zmax
+    end_z = zmax
     range_z = np.arange(start_z,end_z, delta_z)
     log.info("min and max possible r_dot: {}--{}".format(delta_z/T**2,
                                                          np.max(range_z)/T**2))
@@ -189,11 +194,11 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
 
     detlev = detection_level(freqs_to_search.size, epsilon=0.015)
 
-    RESPONSES = create_responses(range_z)
+    RESPONSES = _create_responses(range_z)
 
     candidate_rs, candidate_js, candidate_powers = \
-        calculate_all_convolutions(spectr, RESPONSES, n_photons,
-                                   freq_intv_to_search, detlev)
+        _calculate_all_convolutions(spectr, RESPONSES, n_photons,
+                                    freq_intv_to_search, detlev)
 
     for r, j, cand_power in zip(candidate_rs, candidate_js, candidate_powers):
         z = range_z[j]

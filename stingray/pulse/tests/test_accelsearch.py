@@ -43,7 +43,6 @@ class TestAccelsearch(object):
     def test_prepare(self):
         pass
 
-    @pytest.mark.skipif('not HAS_NUMBA')
     def test_signal(self):
         candidate_table = accelsearch(self.times, self.signal, zmax=10,
                                       candidate_file='bubu.csv', delta_z=0.5)
@@ -58,7 +57,6 @@ class TestAccelsearch(object):
                           self.fdot * self.rescale_fdot,
                           atol=2 * self.dfdot * self.rescale_fdot)
 
-    @pytest.mark.skipif('not HAS_NUMBA')
     def test_signal_neg_fdot(self):
         candidate_table = accelsearch(self.times, self.signal_neg, zmax=10,
                                       candidate_file='bubu.csv', delta_z=0.5)
@@ -69,7 +67,7 @@ class TestAccelsearch(object):
         assert np.isclose(candidate_table['fdot'][best] * self.rescale_fdot,
                           -self.fdot * self.rescale_fdot,
                           atol=2 * self.dfdot * self.rescale_fdot)
-    @pytest.mark.skipif('not HAS_NUMBA')
+
     def test_noisy(self):
         candidate_table = accelsearch(self.times, self.noisy, zmax=10,
                                       candidate_file='bubu.csv', delta_z=0.5)
@@ -81,7 +79,6 @@ class TestAccelsearch(object):
                           self.fdot * self.rescale_fdot,
                           atol=2 * self.dfdot * self.rescale_fdot)
 
-    @pytest.mark.skipif('not HAS_NUMBA')
     def test_noisy_neg_fdot(self):
         candidate_table = accelsearch(self.times, self.noisy_neg, zmax=10,
                                       candidate_file='bubu.csv',
