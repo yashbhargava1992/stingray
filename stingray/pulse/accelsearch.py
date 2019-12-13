@@ -98,20 +98,27 @@ def _create_responses(range_z):
     return responses
 
 
+@njit()
+def convolve(a, b):
+    return np.convolve(a, b)
+
+
 def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
-                               detlev):
+                               detlev, debug=False):
     log.info("Convolving FFT with responses...")
     candidate_powers = [0.]
     candidate_rs = [1]
     candidate_js = [2]
     r_freqs_to_search = np.arange(A.size)[freq_intv_to_search]
     len_responses = len(responses)
+    if debug:
+        fobj = open('accelsearch_dump.dat', 'w')
     for j in show_progress(prange(len_responses)):
         response = responses[j]
         if np.asarray(response).size == 1:
              accel = A
         else:
-            accel = np.convolve(A, response)
+            accel = convolve(A, response)
             new_size = accel.size
             diff = new_size - A.size
             accel = accel[diff // 2: diff // 2 + A.size]
@@ -119,6 +126,8 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
         powers = pds_from_fft(accel, n_photons)
 
         powers_to_search = powers[freq_intv_to_search]
+        if debug:
+            print(*powers_to_search, file=fobj)
         candidate = powers_to_search > detlev
         rs = r_freqs_to_search[candidate]
         cand_powers= powers_to_search[candidate]
@@ -128,12 +137,14 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
             candidate_powers.append(cand_power)
             candidate_rs.append(r)
             candidate_js.append(j)
-
+    if debug:
+        fobj.close()
     return candidate_rs, candidate_js, candidate_powers
 
 
 def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
-                GTI=None, zmax=100, candidate_file=None, ref_time=0):
+                GTI=None, zmax=100, candidate_file=None, ref_time=0,
+                debug=False):
     """Find pulsars with accelerated search.
 
     The theory behind these methods is described in Ransom+02, AJ 124, 1788.
@@ -201,7 +212,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
 
     candidate_rs, candidate_js, candidate_powers = \
         _calculate_all_convolutions(spectr, RESPONSES, n_photons,
-                                    freq_intv_to_search, detlev)
+                                    freq_intv_to_search, detlev,
+                                    debug=debug)
 
     for r, j, cand_power in zip(candidate_rs, candidate_js, candidate_powers):
         z = range_z[j]
@@ -215,4 +227,3 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         candidate_table.write(candidate_file + '.csv', overwrite=True)
 
     return candidate_table
-

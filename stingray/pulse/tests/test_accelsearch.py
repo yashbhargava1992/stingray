@@ -83,7 +83,7 @@ class TestAccelsearch(object):
     def test_noisy_neg_fdot(self):
         candidate_table = accelsearch(self.times, self.noisy_neg, zmax=10,
                                       candidate_file='bubu.csv',
-                                      delta_z=0.5)
+                                      delta_z=0.5, debug=True)
         best = np.argmax(candidate_table['power'])
         assert np.isclose(candidate_table['frequency'][best], self.freq,
                           atol=5 * self.df)
