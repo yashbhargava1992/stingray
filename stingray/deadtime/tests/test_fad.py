@@ -15,7 +15,8 @@ def generate_events(length, ncounts):
 
 def generate_deadtime_lc(ev, dt, tstart=0, tseg=None, deadtime=2.5e-3):
     ev = filter_for_deadtime(ev, deadtime)
-    return Lightcurve.make_lightcurve(ev, dt=dt, tstart=0, tseg=tseg, gti=np.array([[tstart, tseg]]))
+    return Lightcurve.make_lightcurve(ev, dt=dt, tstart=tstart, tseg=tseg,
+                                      gti=np.array([[tstart, tseg]]))
 
 
 @pytest.mark.parametrize('ctrate', [0.5, 5, 50, 200])

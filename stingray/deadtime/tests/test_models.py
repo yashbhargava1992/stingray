@@ -27,11 +27,10 @@ def test_deadtime_conversion():
     np.testing.assert_almost_equal(rin, original_rate)
 
 
-@pytest.mark.skipif('not HAS_NUMBA')
 def test_zhang_model_accurate():
     bintime = 1 / 4096
     deadtime = 2.5e-3
-    length = 8000
+    length = 2000
     fftlen = 5
     r = 300
 
@@ -39,7 +38,7 @@ def test_zhang_model_accurate():
     lc_dt = Lightcurve.make_lightcurve(events_dt, bintime, tstart=0, tseg=length)
     pds = AveragedPowerspectrum(lc_dt, fftlen, norm='leahy')
 
-    zh_f, zh_p = pds_model_zhang(1000, r, deadtime, bintime, limit_k=250)
+    zh_f, zh_p = pds_model_zhang(1000, r, deadtime, bintime, limit_k=100)
 
     deadtime_fun = interp1d(zh_f, zh_p, bounds_error=False,fill_value="extrapolate")
     ratio = pds.power / deadtime_fun(pds.freq)
@@ -47,14 +46,12 @@ def test_zhang_model_accurate():
     assert np.isclose(np.std(ratio), 1 / np.sqrt(pds.m), atol=0.001)
 
 
-@pytest.mark.skipif('not HAS_NUMBA')
 def test_checkA():
     check_A(300, 2.5e-3, 0.001, max_k=100, save_to='check_A.png')
     assert os.path.exists('check_A.png')
     os.unlink('check_A.png')
 
 
-@pytest.mark.skipif('not HAS_NUMBA')
 def test_checkB():
     check_B(300, 2.5e-3, 0.001, max_k=100, save_to='check_B.png')
     assert os.path.exists('check_B.png')
