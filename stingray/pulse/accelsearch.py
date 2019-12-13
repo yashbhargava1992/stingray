@@ -104,32 +104,38 @@ def convolve(a, b):
 
 
 def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
-                               detlev, debug=False):
+                               detlev, debug=False, interbin=False):
     log.info("Convolving FFT with responses...")
     candidate_powers = [0.]
     candidate_rs = [1]
     candidate_js = [2]
-    r_freqs_to_search = np.arange(A.size)[freq_intv_to_search]
+    r_freqs = np.arange(A.size)
     len_responses = len(responses)
     if debug:
         fobj = open('accelsearch_dump.dat', 'w')
     for j in show_progress(prange(len_responses)):
         response = responses[j]
         if np.asarray(response).size == 1:
-             accel = A
+            accel = A
         else:
             accel = convolve(A, response)
             new_size = accel.size
             diff = new_size - A.size
             accel = accel[diff // 2: diff // 2 + A.size]
 
-        powers = pds_from_fft(accel, n_photons)
+        rf = r_freqs[freq_intv_to_search]
+        accel = accel[freq_intv_to_search]
+        if interbin:
+            rf, accel = \
+                interbin_fft(rf, accel)
 
-        powers_to_search = powers[freq_intv_to_search]
+        powers_to_search = pds_from_fft(accel, n_photons)
+
         if debug:
             print(*powers_to_search, file=fobj)
+
         candidate = powers_to_search > detlev
-        rs = r_freqs_to_search[candidate]
+        rs = rf[candidate]
         cand_powers= powers_to_search[candidate]
         for i in range(len(rs)):
             r = rs[i]
@@ -139,12 +145,12 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
             candidate_js.append(j)
     if debug:
         fobj.close()
-    return candidate_rs, candidate_js, candidate_powers
+    return candidate_rs[1:], candidate_js[1:], candidate_powers[1:]
 
 
 def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
                 GTI=None, zmax=100, candidate_file=None, ref_time=0,
-                debug=False):
+                debug=False, interbin=False):
     """Find pulsars with accelerated search.
 
     The theory behind these methods is described in Ransom+02, AJ 124, 1788.
@@ -164,7 +170,7 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     fmax : float, default 1e32
         Maximum frequency to search
     GTI : ``[[gti00, gti01], [gti10, gti11], ...]``, default None
-        Good Time Intervals. If None, it assumes the full range 
+        Good Time Intervals. If None, it assumes the full range
         ``[[time[0] - dt / 2 -- time[-1] + dt / 2]]``
     zmax : int, default 100
         Maximum frequency derivative to search (pos and neg), in bins.
@@ -213,7 +219,7 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     candidate_rs, candidate_js, candidate_powers = \
         _calculate_all_convolutions(spectr, RESPONSES, n_photons,
                                     freq_intv_to_search, detlev,
-                                    debug=debug)
+                                    debug=debug, interbin=interbin)
 
     for r, j, cand_power in zip(candidate_rs, candidate_js, candidate_powers):
         z = range_z[j]
@@ -227,3 +233,51 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         candidate_table.write(candidate_file + '.csv', overwrite=True)
 
     return candidate_table
+
+
+def interbin_fft(freq, fft):
+    """Interbinning, a la van der Klis 1989.
+
+    Allows to recover some sensitivity when the pulsation frequency
+    is close to bin edge.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> freq = [0, 0.5, 1, -1, -0.5]
+    >>> fft = np.array([1, 0, 1, 1, 0], dtype=float)
+    >>> f, F = interbin_fft(freq, fft)
+    >>> np.allclose(f, [0, 0.25, 0.5, 0.75, 1, -1, -0.75, -0.5, -0.25])
+    True
+    >>> pi_4 = np.pi / 4
+    >>> np.allclose(F, [1, -pi_4, 0, pi_4, 1, 1, -pi_4, 0, pi_4])
+    True
+    """
+    import numpy as np
+
+    freq = np.asarray(freq)
+    fft = np.asarray(fft)
+
+    neglast = freq[-1] < 0
+    if neglast:
+        order = np.argsort(freq)
+        freq = freq[order]
+        fft = fft[order]
+
+    N = freq.size
+
+    new_N = 2 * N - 1
+
+    new_freqs = np.linspace(freq[0], freq[-1], new_N)
+
+    new_fft = np.zeros(new_N, dtype=type(fft[0]))
+    new_fft[::2] = fft
+    new_fft[1::2] = (fft[1:] - fft[:-1]) * np.pi / 4
+
+    if neglast:
+        fneg = new_freqs < 0
+        fpos = ~fneg
+        new_freqs = np.concatenate((new_freqs[fpos], new_freqs[fneg]))
+        new_fft = np.concatenate((new_fft[fpos], new_fft[fneg]))
+
+    return new_freqs, new_fft
