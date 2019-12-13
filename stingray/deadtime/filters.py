@@ -89,15 +89,17 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
 
     """
     additional_output = DeadtimeFilterOutput()
-    if not isinstance(event_list, EventList):
-        event_list_obj = EventList(event_list)
+    if isinstance(event_list, EventList):
+        ev_list = event_list.time
+        mjdref = event_list.mjdref
     else:
-        event_list_obj = event_list
-
-    ev_list = event_list_obj.time
+        ev_list = event_list
+        mjdref = 0
 
     if deadtime <= 0.:
-        return copy.deepcopy(event_list)
+        if deadtime < 0:
+            warnings.warn("Dead time < 0")
+        return event_list
 
     # Create the total lightcurve, and a "kind" array that keeps track
     # of the events classified as "signal" (True) and "background" (False)
@@ -138,9 +140,9 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
         'filter_for_deadtime: '
         '{0}/{1} events rejected'.format(initial_len - final_len,
                                          initial_len))
-    retval = EventList(time=tot_ev_list[ev_kind], mjdref=event_list_obj.mjdref)
+    retval = EventList(time=tot_ev_list[ev_kind], mjdref=mjdref)
 
-    if hasattr(event_list_obj, 'pi') and event_list_obj.pi is not None:
+    if isinstance(event_list, EventList) and hasattr(event_list, 'pi') and event_list.pi is not None:
         warnings.warn(
             "PI information is lost during dead time filtering",
             AstropyUserWarning)
