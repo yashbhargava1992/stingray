@@ -53,14 +53,24 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
 
     Parameters
     ----------
-    ev_list : array-like
+    ev_list : array-like or class:`stingray.events.EventList`
         The event list
     deadtime: float
         The (mean, if not constant) value of deadtime
 
+    Other Parameters
+    ----------------
+    bkg_ev_list : array-like
+        A background event list that affects dead time
+    dt_sigma : float
+        The standard deviation of a non-constant dead time around deadtime.
+    return_all : bool
+        If True, return the mask that filters the input event list to obtain
+        the output event list.
+
     Returns
     -------
-    new_ev_list : array-like
+    new_ev_list : class:`stingray.events.EventList` object
         The filtered event list
     additional_output : dict
         Object with all the following attributes. Only returned if
@@ -76,16 +86,6 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
     mask : array-like, optional
         The mask that filters the input event list and produces the output
         event list.
-
-    Other Parameters
-    ----------------
-    bkg_ev_list : array-like
-        A background event list that affects dead time
-    dt_sigma : float
-        The standard deviation of a non-constant dead time around deadtime.
-    return_all : bool
-        If True, return the mask that filters the input event list to obtain
-        the output event list.
 
     """
     additional_output = DeadtimeFilterOutput()
