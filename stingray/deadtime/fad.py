@@ -112,6 +112,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         if all_leahy:
             f1 = f1_leahy
             f2 = f2_leahy
+            ftot = ftot_leahy
         p1 = (f1 * f1.conj()).real
         p1 = p1 / smooth_real * 2
         p2 = (f2 * f2.conj()).real
