@@ -60,6 +60,61 @@ def test_fad_power_spectrum_compliant(ctrate):
     assert np.isclose(ptot_f.std() * 2 / ncounts_per_intvtot, pds_std_theor, rtol=0.1)
 
 
+@pytest.mark.parametrize('ctrate', [200])
+def test_fad_power_spectrum_compliant_leahy(ctrate):
+    dt = 0.1
+    deadtime = 2.5e-3
+    length = 25600
+    segment_size = 256.
+    ncounts = np.int(ctrate * length)
+    ev1 = generate_events(length, ncounts)
+    ev2 = generate_events(length, ncounts)
+
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
+
+    results = \
+        calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
+                          strict=True, verbose=True,
+                          tolerance=0.05, all_leahy=True)
+
+    pds1_f = results['pds1']
+    pds2_f = results['pds2']
+    cs_f = results['cs']
+    ptot_f = results['ptot']
+
+    n = length / segment_size
+
+    pds_std_theor = 2 / np.sqrt(n)
+    cs_std_theor = np.sqrt(2 / n)
+
+    assert np.isclose(pds1_f.std(), pds_std_theor, rtol=0.1)
+    assert np.isclose(pds2_f.std(), pds_std_theor, rtol=0.1)
+    assert np.isclose(cs_f.std(), cs_std_theor, rtol=0.1)
+    assert np.isclose(ptot_f.std(), pds_std_theor, rtol=0.1)
+
+
+@pytest.mark.parametrize('ctrate', [0.5])
+def test_fad_power_spectrum_unknown_alg(ctrate):
+    dt = 0.1
+    deadtime = 2.5e-3
+    length = 25600
+    segment_size = 256.
+    ncounts = np.int(ctrate * length)
+    ev1 = generate_events(length, ncounts)
+    ev2 = generate_events(length, ncounts)
+
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
+
+    with pytest.raises(ValueError) as excinfo:
+        calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
+                              smoothing_alg='babasone',
+                              strict=False, verbose=False,
+                              tolerance=0.0001)
+    assert 'Unknown smoothing algorithm' in str(excinfo.value)
+
+
 @pytest.mark.parametrize('ctrate', [50])
 def test_fad_power_spectrum_non_compliant(ctrate):
     dt = 0.1

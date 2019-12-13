@@ -103,9 +103,10 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         if smoothing_alg == 'gauss':
             smooth_real = gaussian_filter1d(fourier_diff.real ** 2,
                                             smoothing_length)
-        elif smoothing_alg == 'spline':
-            spl = UnivariateSpline(freq, fourier_diff.real ** 2, s=1)
-            smooth_real = spl(freq.astype(np.float64))
+        else:
+            raise ValueError("Unknown smoothing algorithm: {}".format(
+                smoothing_alg))
+
         if plot:
             plt.scatter(freq, fourier_diff, s=1)
 
@@ -162,12 +163,15 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
                tolerance=tolerance * 100,
                compl='NOT ' if not is_compliant else '',
                additional='Maybe something is not right.' if not is_compliant else '')
-    if strict:
-        assert is_compliant
+
+    print(verbose_string)
     if verbose and is_compliant:
         log.info(verbose_string)
     elif not is_compliant:
         warnings.warn(verbose_string)
+
+    if strict:
+        assert is_compliant
 
     results = Table()
 
