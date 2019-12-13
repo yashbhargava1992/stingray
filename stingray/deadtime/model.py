@@ -18,21 +18,8 @@ def r_det(td, r_i):
 
 
 @njit()
-def sum(x):
-    s = 0
-    for el in x:
-        s += el
-    return s
-
-
-@njit()
 def factorial(n):
     return gamma(n + 1)
-
-
-@njit()
-def fn(x, n):
-    return(x**(n-1) / factorial(n - 1)) * np.exp(-x)
 
 
 @njit()
@@ -45,6 +32,15 @@ def Gn(x, n):
 
 @njit()
 def heaviside(x):
+    """Heaviside function.
+
+    Examples
+    --------
+    >>> heaviside(2)
+    1
+    >>> heaviside(-1)
+    0
+    """
     if x >= 0:
         return 1
     else:
@@ -80,12 +76,6 @@ def A(k, r0, td, tb, tau):
         s += h(k + 1, n, td, tb, tau) - 2 * h(k, n, td, tb, tau) + h(k - 1, n, td, tb, tau)
 
     return r0 * tb * s
-
-@njit()
-def safe_A(k, r0, td, tb, tau, limit_k=60):
-    if k > limit_k:
-        return r0 ** 2 * tb**2
-    return A(k, r0, td, tb, tau)
 
 
 def check_A(rate, td, tb, max_k=100, save_to=None):
