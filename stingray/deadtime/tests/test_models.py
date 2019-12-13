@@ -1,14 +1,18 @@
 import os
 import numpy as np
-import pytest
 from scipy.interpolate import interp1d
 
-from stingray.utils import HAS_NUMBA
 from stingray.lightcurve import Lightcurve
 from stingray.powerspectrum import AveragedPowerspectrum
 from stingray.deadtime.model import r_det, r_in, pds_model_zhang
-from stingray.deadtime.model import check_A, check_B
+from stingray.deadtime.model import check_A, check_B, heaviside
 from stingray.deadtime.filters import filter_for_deadtime
+
+
+def test_heaviside():
+    assert heaviside(2) == 1
+    assert heaviside(0) == 1
+    assert heaviside(-1) == 0
 
 
 def simulate_events(rate, length, deadtime=2.5e-3, **filter_kwargs):
