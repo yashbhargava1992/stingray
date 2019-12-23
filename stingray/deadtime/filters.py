@@ -11,6 +11,22 @@ from ..events import EventList
 
 
 def _paralyzable_dead_time(event_list, dead_time):
+    """Apply paralyzable dead time to an event list.
+
+    Parameters
+    ----------
+    event_list : array of floats
+        Event times of arrival
+    dead_time: float
+        Dead time (single value)
+
+    Returns
+    -------
+    output_event_list : array of floats
+        Filtered event times
+    mask : array of bools
+        Final mask, showing all good events in the original event list.
+    """
     mask = np.ones(len(event_list), dtype=bool)
     dead_time_end = event_list + dead_time
     bad = dead_time_end[:-1] > event_list[1:]
@@ -23,6 +39,22 @@ def _paralyzable_dead_time(event_list, dead_time):
 
 @njit()
 def _nonpar_core(event_list, dead_time_end, mask):
+    """Numba-compiled core of the non-paralyzable dead time calculation.
+
+    Parameters
+    ----------
+    event_list : array of floats
+        Event times of arrival
+    dead_time_end : array of floats
+        End of the dead time of each event
+    mask : array of bools
+        Final mask of good events. Initially, all entries must be ``True``
+
+    Return
+    ------
+    mask : array of bools
+        Final mask of good events
+    """
     for i in range(1, len(event_list)):
         if (event_list[i] < dead_time_end[i - 1]):
             dead_time_end[i] = dead_time_end[i - 1]
@@ -31,6 +63,22 @@ def _nonpar_core(event_list, dead_time_end, mask):
 
 
 def _non_paralyzable_dead_time(event_list, dead_time):
+    """Apply non-paralyzable dead time to an event list.
+
+    Parameters
+    ----------
+    event_list : array of floats
+        Event times of arrival
+    dead_time: float
+        Dead time (single value)
+
+    Returns
+    -------
+    output_event_list : array of floats
+        Filtered event times
+    mask : array of bools
+        Final mask, showing all good events in the original event list.
+    """
     event_list_dbl = (event_list - event_list[0]).astype(np.double)
     dead_time_end = event_list_dbl + np.double(dead_time)
     mask = np.ones(event_list_dbl.size, dtype=bool)
@@ -75,17 +123,17 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
     additional_output : dict
         Object with all the following attributes. Only returned if
         `return_all` is True
-    uf_events : array-like
-        Unfiltered event list (events + background)
-    is_event : array-like
-        Boolean values; True if event, False if background
-    deadtime : array-like
-        Dead time values
-    bkg : array-like
-        The filtered background event list
-    mask : array-like, optional
-        The mask that filters the input event list and produces the output
-        event list.
+        uf_events : array-like
+            Unfiltered event list (events + background)
+        is_event : array-like
+            Boolean values; True if event, False if background
+        deadtime : array-like
+            Dead time values
+        bkg : array-like
+            The filtered background event list
+        mask : array-like, optional
+            The mask that filters the input event list and produces the output
+            event list.
 
     """
     additional_output = DeadtimeFilterOutput()
@@ -98,7 +146,7 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
 
     if deadtime <= 0.:
         if deadtime < 0:
-            warnings.warn("Dead time < 0")
+            raise ValueError("Dead time is less than 0. Please check.")
         return event_list
 
     # Create the total lightcurve, and a "kind" array that keeps track

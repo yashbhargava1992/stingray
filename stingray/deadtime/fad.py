@@ -12,6 +12,27 @@ from ..gti import cross_two_gtis, bin_intervals_from_gtis
 
 
 def _get_fourier_intv(lc, start_ind, end_ind):
+    """Calculate the Fourier transform of a light curve chunk.
+
+    Parameters
+    ----------
+    lc : a :class:`Lightcurve` object
+        Input light curve
+    start_ind : int
+        Start index of the light curve chunk
+    end_ind : int
+        End index of the light curve chunk
+
+    Returns
+    -------
+    freq : array of floats
+        Frequencies of the Fourier transform
+    fft : array of complex numbers
+        The Fourier transform
+    fft_norm : array of complex numbers
+        The Fourier transform, normalized so to give Leahy normalization
+        after the squared root is calculated.
+    """
     time = lc.time[start_ind:end_ind]
     counts = lc.counts[start_ind:end_ind]
 
@@ -25,30 +46,48 @@ def _get_fourier_intv(lc, start_ind, end_ind):
 
 def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
                              plot=False, smoothing_alg='gauss',
-                             smoothing_length=None, verbose=False, tolerance=0.05,
-                             strict=False, all_leahy=False):
-    """Calculate Frequency Amplitude Difference-corrected (cross) power spectra.
+                             smoothing_length=None, verbose=False,
+                             tolerance=0.05, strict=False, all_leahy=False):
+    """Calculate Frequency Amplitude Difference-corrected (cross)power spectra.
 
     Reference: Bachetti \& Huppenkothen, 2018, ApJ, 853L, 21
+
+    The two input light curve must be strictly simultaneous, and recorded by
+    two independent detectors with similar responses, so that the count rates
+    are similar and dead time is independent.
+    The method does not apply to different energy channels of the same
+    instrument, or to the signal observed by two instruments with very
+    different responses. See the paper for caveats.
 
     Parameters
     ----------
     lc1: class:`stingray.ligthtcurve.Lightcurve`
-    lc1: class:`stingray.ligthtcurve.Lightcurve`
+        Light curve from channel 1
+    lc2: class:`stingray.ligthtcurve.Lightcurve`
+        Light curve from channel 2. Must be strictly simultaneous to ``lc1``
+        and have the same binning time. Also, it must be strictly independent,
+        e.g. from a different detector. There must be no dead time cross-talk
+        between the two light curves.
     segment_size: float
-        Length of the segments to be averaged
+        The final Fourier products are averaged over many segments of the
+        input light curves. This is the length of each segment being averaged.
+        Note that the light curve must be long enough to have at least 30
+        segments, as the result gets better as one averages more and more
+        segments.
 
     Other parameters
     ----------------
-    plot : bool
-        Plot diagnostics
-    smoothing_alg : {'gauss', 'spline'}
-        Smoothing algorithm
-    smoothing_length : int
+    plot : bool, default False
+        Plot diagnostics: check if the smoothed Fourier difference scatter is
+        a good approximation of the data scatter.
+    smoothing_alg : {'gauss', ...}
+        Smoothing algorithm. For now, the only smoothing algorithm allowed is
+        ``gauss``, which applies a Gaussian Filter from `scipy`.
+    smoothing_length : int, default ``segment_size * 3``
         Number of bins to smooth in gaussian window smoothing
-    verbose: bool
+    verbose: bool, default False
         Print out information on the outcome of the algorithm (recommended)
-    tolerance : float
+    tolerance : float, default 0.05
         Accepted relative error on the FAD-corrected Fourier amplitude, to be
         used as success diagnostics.
         Should be
@@ -56,8 +95,11 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         stdtheor = 2 / np.sqrt(n)
         std = (average_corrected_fourier_diff / n).std()
         np.abs((std - stdtheor) / stdtheor) < tolerance
-    strict : bool
-        Fail if condition on tolerance is not met.
+    strict : bool, default False
+        Decide what to do if the condition on tolerance is not met. If True,
+        raise a ``RuntimeError``. If False, just throw a warning.
+    all_leahy : bool, default False
+        Save all spectra in Leahy normalization. Otherwise, leave unnormalized.
 
     Returns
     -------
@@ -71,8 +113,10 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     """
     if smoothing_length is None:
         smoothing_length = segment_size * 3
+
     if gti is None:
         gti = cross_two_gtis(lc1.gti, lc2.gti)
+
     lc1.gti = gti
     lc2.gti = gti
     lc1.apply_gtis()
@@ -82,6 +126,8 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         bin_intervals_from_gtis(gti, segment_size, lc1.time,
                                 dt=lc1.dt)
     freq = 0
+    # These will be the final averaged periodograms. Initializing with a single
+    # scalar 0, but the final products will be arrays.
     pds1 = 0
     pds2 = 0
     ptot = 0
@@ -170,8 +216,9 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     elif not is_compliant:
         warnings.warn(verbose_string)
 
-    if strict:
-        assert is_compliant
+    if strict and not is_compliant:
+        raise RuntimeError('Results are not compliant, and `strict` mode '
+                           'selected. Exiting.')
 
     results = Table()
 

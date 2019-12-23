@@ -140,3 +140,25 @@ def test_fad_power_spectrum_non_compliant(ctrate):
     is_compliant = results.meta['is_compliant']
 
     assert not is_compliant
+
+
+@pytest.mark.parametrize('ctrate', [50])
+def test_fad_power_spectrum_non_compliant_raise(ctrate):
+    dt = 0.1
+    deadtime = 2.5e-3
+    length = 25600
+    segment_size = 256.
+    ncounts = np.int(ctrate * length)
+    ev1 = generate_events(length, ncounts)
+    ev2 = generate_events(length, ncounts)
+
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        _ = \
+            calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
+                              smoothing_alg='gauss',
+                              strict=True, verbose=False,
+                              tolerance=0.0001)
+    assert 'Results are not compliant, and' in str(excinfo.value)

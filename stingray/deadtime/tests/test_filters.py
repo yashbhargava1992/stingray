@@ -30,11 +30,9 @@ def test_filter_for_deadtime_evlist():
 def test_filter_for_deadtime_lt0():
     """Test dead time filter, non-paralyzable case."""
     events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
-    with pytest.warns(UserWarning) as record:
-        evlist = filter_for_deadtime(events, -0.11)
-
-    assert np.any(["Dead time < 0"
-                   in r.message.args[0] for r in record])
+    with pytest.raises(ValueError) as excinfo:
+        _ = filter_for_deadtime(events, -0.11)
+    assert "Dead time is less than 0. Please check." in str(excinfo.value)
 
 
 def test_filter_for_deadtime_nonpar_sigma():
