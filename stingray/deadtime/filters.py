@@ -162,10 +162,13 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
         ev_kind = np.ones(len(ev_list), dtype=bool)
 
     if return_all:
+        # uf_events: source and background events together
+        # ev_kind : kind of each event in uf_events.
+        # bkg : Background events
         additional_output.uf_events = tot_ev_list
         additional_output.is_event = ev_kind
         additional_output.deadtime = deadtime
-        additional_output.mask = np.zeros(tot_ev_list.size, dtype=bool)
+        additional_output.mask = np.ones(tot_ev_list.size, dtype=bool)
         additional_output.bkg = tot_ev_list[np.logical_not(ev_kind)]
 
     if deadtime <= 0.:
@@ -187,13 +190,16 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
 
     initial_len = len(tot_ev_list)
 
+    # Note: saved_mask gives the mask that produces tot_ev_list_filt from
+    # tot_ev_list. The same mask can be used to also filter all other arrays.
     if paralyzable:
-        tot_ev_list, saved_mask = \
+        tot_ev_list_filt, saved_mask = \
             _paralyzable_dead_time(tot_ev_list, deadtime_values)
 
     else:
-        tot_ev_list, saved_mask = \
+        tot_ev_list_filt, saved_mask = \
             _non_paralyzable_dead_time(tot_ev_list, deadtime_values)
+    del tot_ev_list
 
     ev_kind = ev_kind[saved_mask]
     deadtime_values = deadtime_values[saved_mask]
@@ -202,8 +208,11 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
         'filter_for_deadtime: '
         '{0}/{1} events rejected'.format(initial_len - final_len,
                                          initial_len))
-    retval = EventList(time=tot_ev_list[ev_kind], mjdref=mjdref)
+    retval = EventList(time=tot_ev_list_filt[ev_kind], mjdref=mjdref)
 
+    # I use saved_mask to filter the pi values that survived dead time, and
+    # ev_kind to save the pi values corresponding to source events (as
+    # opposed to background events
     if isinstance(event_list, EventList) and hasattr(event_list, 'pi') and \
             event_list.pi is not None:
         retval.pi = event_list.pi[saved_mask][ev_kind]
@@ -215,11 +224,14 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
         retval = retval.time
 
     if return_all:
-        additional_output.uf_events = tot_ev_list
+        # uf_events: source and background events together
+        # ev_kind : kind of each event in uf_events.
+        # bkg : Background events
+        additional_output.uf_events = tot_ev_list_filt
         additional_output.is_event = ev_kind
         additional_output.deadtime = deadtime_values
         additional_output.mask = saved_mask[all_ev_kind]
-        additional_output.bkg = tot_ev_list[np.logical_not(ev_kind)]
+        additional_output.bkg = tot_ev_list_filt[np.logical_not(ev_kind)]
         retval = [retval, additional_output]
 
     return retval
