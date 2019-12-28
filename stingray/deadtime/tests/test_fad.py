@@ -1,8 +1,13 @@
 import numpy as np
 import pytest
+
+from astropy.table import Table
 from stingray.lightcurve import Lightcurve
 from stingray.deadtime.fad import calculate_FAD_correction
+from stingray.deadtime.fad import get_periodograms_from_FAD_results
 from stingray.deadtime.filters import filter_for_deadtime
+from stingray.crossspectrum import AveragedCrossspectrum
+from stingray.powerspectrum import AveragedPowerspectrum
 import matplotlib.pyplot as plt
 
 # np.random.seed(2134791)
@@ -70,13 +75,18 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
-    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
-    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
 
-    results = \
+    results_out = \
         calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
                           strict=True, verbose=True,
-                          tolerance=0.05, all_leahy=True)
+                          tolerance=0.05, all_leahy=True,
+                          output_file='table.hdf5')
+
+    results = Table.read(results_out)
 
     pds1_f = results['pds1']
     pds2_f = results['pds2']
@@ -92,6 +102,13 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
     assert np.isclose(pds2_f.std(), pds_std_theor, rtol=0.1)
     assert np.isclose(cs_f.std(), cs_std_theor, rtol=0.1)
     assert np.isclose(ptot_f.std(), pds_std_theor, rtol=0.1)
+
+    results_cs = get_periodograms_from_FAD_results(results_out, kind='cs')
+    assert isinstance(results_cs, AveragedCrossspectrum)
+    assert np.all(results_cs.power == cs_f)
+    results_ps = get_periodograms_from_FAD_results(results_out, kind='pds1')
+    assert isinstance(results_ps, AveragedPowerspectrum)
+    assert np.all(results_ps.power == pds1_f)
 
 
 @pytest.mark.parametrize('ctrate', [0.5])

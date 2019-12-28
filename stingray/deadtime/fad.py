@@ -7,6 +7,8 @@ from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import UnivariateSpline
 from astropy import log
 from astropy.table import Table
+from ..crossspectrum import AveragedCrossspectrum
+from ..powerspectrum import AveragedPowerspectrum
 
 from ..gti import cross_two_gtis, bin_intervals_from_gtis
 
@@ -47,7 +49,8 @@ def _get_fourier_intv(lc, start_ind, end_ind):
 def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
                              plot=False, smoothing_alg='gauss',
                              smoothing_length=None, verbose=False,
-                             tolerance=0.05, strict=False, all_leahy=False):
+                             tolerance=0.05, strict=False, all_leahy=False,
+                             output_file=None):
     """Calculate Frequency Amplitude Difference-corrected (cross)power spectra.
 
     Reference: Bachetti \& Huppenkothen, 2018, ApJ, 853L, 21
@@ -188,7 +191,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     stduncorr = (average_diff_uncorr / n).std()
     is_compliant = np.abs((std - stdtheor) / stdtheor) < tolerance
     verbose_string = \
-        '''
+    '''
     -------- FAD correction ----------
     I smoothed over {smoothing_length} power spectral bins
     {n} intervals averaged.
@@ -210,7 +213,6 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
                compl='NOT ' if not is_compliant else '',
                additional='Maybe something is not right.' if not is_compliant else '')
 
-    print(verbose_string)
     if verbose and is_compliant:
         log.info(verbose_string)
     elif not is_compliant:
@@ -233,4 +235,41 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     results.meta['n'] = n
     results.meta['smoothing_length'] = smoothing_length
 
+    if output_file is not None:
+        results.write(output_file, overwrite=True)
+        return output_file
     return results
+
+
+def get_periodograms_from_FAD_results(FAD_results, kind='ptot'):
+    """Get Stingray periodograms from FAD results.
+
+    Parameters
+    ----------
+    FAD_results : :class:`astropy.table.Table` object or `str`
+        Results from `calculate_FAD_correction`, either as a Table or an output
+        file name
+    kind : :class:`str`, one of ['ptot', 'pds1', 'pds2', 'cs']
+        Kind of periodogram to get (E.g., 'ptot' -> PDS from the sum of the two
+        light curves, 'cs' -> cospectrum, etc.)
+
+    Returns
+    -------
+    results : `AveragedCrossspectrum` or `Averagedpowerspectrum` object
+        The periodogram.
+    """
+    if isinstance(FAD_results, str):
+        FAD_results = Table.read(FAD_results)
+
+    if kind.startswith('p') and kind in FAD_results.colnames:
+        powersp = AveragedPowerspectrum()
+    elif kind == 'cs':
+        powersp = AveragedCrossspectrum(power_type='real')
+    else:
+        raise ValueError("Unknown periodogram type")
+
+    powersp.freq = FAD_results['freq']
+    powersp.power = FAD_results[kind]
+    powersp.m = FAD_results.meta['n']
+
+    return powersp

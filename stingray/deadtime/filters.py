@@ -203,7 +203,7 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
 
     ev_kind = ev_kind[saved_mask]
     deadtime_values = deadtime_values[saved_mask]
-    final_len = len(tot_ev_list)
+    final_len = tot_ev_list_filt.size
     log.info(
         'filter_for_deadtime: '
         '{0}/{1} events rejected'.format(initial_len - final_len,
