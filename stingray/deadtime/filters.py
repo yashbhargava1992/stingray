@@ -111,10 +111,13 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
     bkg_ev_list : array-like
         A background event list that affects dead time
     dt_sigma : float
-        The standard deviation of a non-constant dead time around deadtime.
+        If specified, dead time will not have a single value but it will have
+        a normal distribution with mean ``deadtime`` and standard deviation
+        ``dt_sigma``.
     return_all : bool
         If True, return the mask that filters the input event list to obtain
-        the output event list.
+        the output event list and more information into an
+        ``additional_output`` structure (see Returns for more information).
 
     Returns
     -------
@@ -144,11 +147,6 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
         ev_list = event_list
         mjdref = 0
 
-    if deadtime <= 0.:
-        if deadtime < 0:
-            raise ValueError("Dead time is less than 0. Please check.")
-        return event_list
-
     # Create the total lightcurve, and a "kind" array that keeps track
     # of the events classified as "signal" (True) and "background" (False)
     if bkg_ev_list is not None:
@@ -163,11 +161,27 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
         tot_ev_list = ev_list
         ev_kind = np.ones(len(ev_list), dtype=bool)
 
+    if return_all:
+        additional_output.uf_events = tot_ev_list
+        additional_output.is_event = ev_kind
+        additional_output.deadtime = deadtime
+        additional_output.mask = np.zeros(tot_ev_list.size, dtype=bool)
+        additional_output.bkg = tot_ev_list[np.logical_not(ev_kind)]
+
+    if deadtime <= 0.:
+        if deadtime < 0:
+            raise ValueError("Dead time is less than 0. Please check.")
+        retval = event_list
+        if return_all:
+            retval = [retval, additional_output]
+        return retval
+
     nevents = len(tot_ev_list)
     all_ev_kind = ev_kind.copy()
 
     if dt_sigma is not None:
         deadtime_values = ra.normal(deadtime, dt_sigma, nevents)
+        deadtime_values[deadtime_values < 0] = 0.
     else:
         deadtime_values = np.zeros(nevents) + deadtime
 
@@ -190,10 +204,12 @@ def filter_for_deadtime(event_list, deadtime, bkg_ev_list=None,
                                          initial_len))
     retval = EventList(time=tot_ev_list[ev_kind], mjdref=mjdref)
 
-    if isinstance(event_list, EventList) and hasattr(event_list, 'pi') and event_list.pi is not None:
-        warnings.warn(
-            "PI information is lost during dead time filtering",
-            AstropyUserWarning)
+    if isinstance(event_list, EventList) and hasattr(event_list, 'pi') and \
+            event_list.pi is not None:
+        retval.pi = event_list.pi[saved_mask][ev_kind]
+    if isinstance(event_list, EventList) and hasattr(event_list, 'energy') \
+            and event_list.energy is not None:
+        retval.energy = event_list.energy[saved_mask][ev_kind]
 
     if not isinstance(event_list, EventList):
         retval = retval.time

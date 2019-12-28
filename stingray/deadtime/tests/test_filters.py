@@ -16,15 +16,18 @@ def test_filter_for_deadtime_nonpar():
 def test_filter_for_deadtime_evlist():
     """Test dead time filter, non-paralyzable case."""
     events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
-    events = EventList(events, pi=np.random.randint(events.size))
+    events = EventList(events)
+    events.pi=np.array([1, 2, 2, 2, 2, 1, 1, 1, 2, 1])
+    events.energy=np.array([1, 2, 2, 2, 2, 1, 1, 1, 2, 1])
     events.mjdref = 10
-    with pytest.warns(UserWarning) as record:
-        filt_events = filter_for_deadtime(events, 0.11)
-    assert np.any(["PI information is lost during dead time filterin"
-                   in r.message.args[0] for r in record])
+    filt_events = filter_for_deadtime(events, 0.11)
+
     expected = np.array([1, 2, 2.2, 3, 3.2])
     assert np.all(filt_events.time == expected), \
         "Wrong: {} vs {}".format(filt_events, expected)
+
+    assert np.all(filt_events.pi == 1)
+    assert np.all(filt_events.energy == 1)
 
 
 def test_filter_for_deadtime_lt0():
@@ -33,6 +36,13 @@ def test_filter_for_deadtime_lt0():
     with pytest.raises(ValueError) as excinfo:
         _ = filter_for_deadtime(events, -0.11)
     assert "Dead time is less than 0. Please check." in str(excinfo.value)
+
+
+def test_filter_for_deadtime_0():
+    """Test dead time filter, non-paralyzable case."""
+    events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
+    filt_events, _ = filter_for_deadtime(events, 0, return_all=True)
+    assert np.all(events == filt_events)
 
 
 def test_filter_for_deadtime_nonpar_sigma():
