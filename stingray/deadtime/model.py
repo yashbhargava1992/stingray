@@ -24,6 +24,7 @@ def factorial(n):
 
 @njit()
 def Gn(x, n):
+    """Term in Eq. 34 in Zhang+95."""
     s = 0
     for l in range(0, n):
         s += (n - l) / factorial(l) * x**l
@@ -32,7 +33,7 @@ def Gn(x, n):
 
 @njit()
 def heaviside(x):
-    """Heaviside function.
+    """Heaviside function. Returns 1 if x>0, and 0 otherwise.
 
     Examples
     --------
@@ -49,6 +50,7 @@ def heaviside(x):
 
 @njit()
 def h(k, n, td, tb, tau):
+    """Term in Eq. 35 in Zhang+95."""
     # Typo in Zhang+95 corrected. k * tb, not k * td
     if k * tb < n * td:
         return 0
@@ -59,6 +61,7 @@ def h(k, n, td, tb, tau):
 INFINITE = 100
 @njit()
 def A0(r0, td, tb, tau):
+    """Term in Eq. 38 in Zhang+95."""
     s = 0
     for n in range(1, INFINITE):
         s += h(1, n, td, tb, tau)
@@ -68,6 +71,7 @@ def A0(r0, td, tb, tau):
 
 @njit()
 def A(k, r0, td, tb, tau):
+    """Term in Eq. 39 in Zhang+95."""
     if k == 0:
         return A0(r0, td, tb, tau)
     # Equation 39
@@ -79,7 +83,11 @@ def A(k, r0, td, tb, tau):
 
 
 def check_A(rate, td, tb, max_k=100, save_to=None):
-    """Ak ->r0**2tb**2 for k->infty"""
+    """Test that A is well-behaved.
+
+    Check that Ak ->r0**2tb**2 for k->infty, as per Eq. 43 in
+    Zhang+95.
+    """
     tau = 1 / rate
     r0 = r_det(td, rate)
 
@@ -96,6 +104,7 @@ def check_A(rate, td, tb, max_k=100, save_to=None):
 
 @njit()
 def B(k, r0, td, tb, tau):
+    """Term in Eq. 45 in Zhang+95."""
     if k == 0:
         return 2 * (A(0, r0, td, tb, tau) - r0**2 * tb**2) / (r0*tb)
 
@@ -103,13 +112,17 @@ def B(k, r0, td, tb, tau):
 
 @njit()
 def safe_B(k, r0, td, tb, tau, limit_k=60):
+    """Term in Eq. 39 in Zhang+95, with a cut in the maximum k.
+
+    This can be risky. Only use if B is really 0 for high k.
+    """
     if k > limit_k:
         return 0
     return B(k, r0, td, tb, tau)
 
 
 def check_B(rate, td, tb, max_k=100, save_to=None):
-    """Ak ->r0**2tb**2 for k->infty."""
+    """Check that B->0 for k->infty."""
     tau = 1 / rate
     r0 = r_det(td, rate)
 
@@ -125,12 +138,14 @@ def check_B(rate, td, tb, max_k=100, save_to=None):
 
 @njit(parallel=True)
 def _inner_loop_pds_zhang(N, tau, r0, td, tb, limit_k=60):
+    """Calculate the power spectrum, as per Eq. 44 in Zhang+95."""
     P = np.zeros(N // 2)
     for j in prange(N//2):
         eq8_sum = 0
         for k in range(1, N):
             eq8_sum += (N - k) / N * safe_B(
-                k, r0, td, tb, tau, limit_k=limit_k) * np.cos(2 * np.pi * j * k / N)
+                k, r0, td, tb, tau,
+                limit_k=limit_k) * np.cos(2 * np.pi * j * k / N)
 
         P[j] = safe_B(0, r0, td, tb, tau) + eq8_sum
 
@@ -138,6 +153,33 @@ def _inner_loop_pds_zhang(N, tau, r0, td, tb, limit_k=60):
 
 
 def pds_model_zhang(N, rate, td, tb, limit_k=60):
+    """Calculate the dead-time-modified power spectrum.
+
+    Parameters
+    ----------
+    N : int
+        The number of spectral bins
+    rate : float
+        Incident count rate
+    td : float
+        Dead time
+    tb : float
+        Bin time of the light curve
+
+    Other Parameters
+    ----------------
+    limit_k : int
+        Limit to this value the number of terms in the inner loops of
+        calculations. Check the plots returned by  the `check_B` and
+        `check_A` functions to test that this number is adequate.
+
+    Returns
+    -------
+    freqs : array of floats
+        Frequency array
+    power : array of floats
+        Power spectrum
+    """
     tau = 1 / rate
     r0 = r_det(td, rate)
     # Nph = N / tau
