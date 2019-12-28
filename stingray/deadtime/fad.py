@@ -103,6 +103,9 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         raise a ``RuntimeError``. If False, just throw a warning.
     all_leahy : bool, default False
         Save all spectra in Leahy normalization. Otherwise, leave unnormalized.
+    output_file : str, default None
+        Name of an output file (any extension automatically recognized by
+        Astropy is fine)
 
     Returns
     -------
