@@ -31,9 +31,8 @@ def _get_fourier_intv(lc, start_ind, end_ind):
         Frequencies of the Fourier transform
     fft : array of complex numbers
         The Fourier transform
-    fft_norm : array of complex numbers
-        The Fourier transform, normalized so to give Leahy normalization
-        after the squared root is calculated.
+    nph : int
+        Number of photons in the interval of the light curve
     """
     time = lc.time[start_ind:end_ind]
     counts = lc.counts[start_ind:end_ind]
@@ -43,7 +42,7 @@ def _get_fourier_intv(lc, start_ind, end_ind):
     freq = scipy.fftpack.fftfreq(len(time), lc.dt)
     good = freq > 0
 
-    return freq[good], fourier[good], fourier[good] * np.sqrt(2 / (np.sum(counts)))
+    return freq[good], fourier[good], np.sum(counts)
 
 
 def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
@@ -139,16 +138,23 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     ptot = 0
     cs = 0
     n = 0
+    nph1_tot = nph2_tot = nph_tot = 0
     average_diff = average_diff_uncorr = 0
 
     if plot:
         plt.figure()
 
     for start_ind, end_ind in zip(start_inds, end_inds):
-        freq, f1, f1_leahy = _get_fourier_intv(lc1, start_ind, end_ind)
-        freq, f2, f2_leahy = _get_fourier_intv(lc2, start_ind, end_ind)
-        freq, ftot, ftot_leahy = \
+        freq, f1, nph1 = _get_fourier_intv(lc1, start_ind, end_ind)
+        f1_leahy = f1 * np.sqrt(2 / nph1)
+        freq, f2, nph2 = _get_fourier_intv(lc2, start_ind, end_ind)
+        f2_leahy = f2 * np.sqrt(2 / nph2)
+        freq, ftot, nphtot = \
             _get_fourier_intv(summed_lc, start_ind, end_ind)
+        ftot_leahy = ftot * np.sqrt(2 / nphtot)
+        nph1_tot += nph1
+        nph2_tot += nph2
+        nph_tot += nphtot
 
         fourier_diff = f1_leahy - f2_leahy
 
@@ -236,6 +242,10 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     results.meta['fad_delta'] = (std - stdtheor) / stdtheor
     results.meta['is_compliant'] = is_compliant
     results.meta['n'] = n
+    results.meta['nph1'] = nph1_tot
+    results.meta['nph2'] = nph2_tot
+    results.meta['nph'] = nph_tot
+    results.meta['norm'] = 'leahy' if all_leahy else 'none'
     results.meta['smoothing_length'] = smoothing_length
 
     if output_file is not None:
@@ -266,13 +276,24 @@ def get_periodograms_from_FAD_results(FAD_results, kind='ptot'):
 
     if kind.startswith('p') and kind in FAD_results.colnames:
         powersp = AveragedPowerspectrum()
+        powersp.nphot = FAD_results.meta['nph']
+        if '1' in kind:
+            powersp.nphots = FAD_results.meta['nph1']
+        elif '2' in kind:
+            powersp.nphots = FAD_results.meta['nph2']
     elif kind == 'cs':
         powersp = AveragedCrossspectrum(power_type='real')
+        powersp.nphots1 = FAD_results.meta['nph1']
+        powersp.nphots2 = FAD_results.meta['nph2']
     else:
         raise ValueError("Unknown periodogram type")
 
     powersp.freq = FAD_results['freq']
     powersp.power = FAD_results[kind]
+    powersp.power_err = np.zeros_like(powersp.power)
     powersp.m = FAD_results.meta['n']
+    powersp.df = np.mean(np.diff(powersp.freq))
+    powersp.n = len(powersp.freq)
+    powersp.norm = FAD_results.meta['norm']
 
     return powersp
