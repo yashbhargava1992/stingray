@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from multiprocessing import Pool
 
 import numpy as np
 import scipy
@@ -103,46 +104,66 @@ def convolve(a, b):
     return np.convolve(a, b)
 
 
+def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
+                            interbin=False, n_photons=1):
+    response, j = response_and_j
+    r_freqs = np.arange(A.size)
+    if np.asarray(response).size == 1:
+        accel = A
+    else:
+        accel = convolve(A, response)
+        new_size = accel.size
+        diff = new_size - A.size
+        accel = accel[diff // 2: diff // 2 + A.size]
+
+    rf = r_freqs[freq_intv_to_search]
+    accel = accel[freq_intv_to_search]
+    if interbin:
+        rf, accel = \
+            interbin_fft(rf, accel)
+
+    powers_to_search = pds_from_fft(accel, n_photons)
+
+    candidate = powers_to_search > detlev
+    rs = rf[candidate]
+    cand_powers = powers_to_search[candidate]
+    results = []
+    for i in range(len(rs)):
+        r = rs[i]
+        cand_power = cand_powers[i]
+        results.append([r, j, cand_power])
+
+    return results
+
+
+# @njit(parallel=True)
 def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
-                               detlev, debug=False, interbin=False):
+                                detlev, debug=False, interbin=False,
+                                nproc=4):
     log.info("Convolving FFT with responses...")
     candidate_powers = [0.]
     candidate_rs = [1]
+
     candidate_js = [2]
-    r_freqs = np.arange(A.size)
+    # print(responses)
     len_responses = len(responses)
     if debug:
         fobj = open('accelsearch_dump.dat', 'w')
-    for j in show_progress(prange(len_responses)):
-        response = responses[j]
-        if np.asarray(response).size == 1:
-            accel = A
-        else:
-            accel = convolve(A, response)
-            new_size = accel.size
-            diff = new_size - A.size
-            accel = accel[diff // 2: diff // 2 + A.size]
+    from functools import partial
+    func = partial(_convolve_with_response, A, detlev, freq_intv_to_search,
+                   interbin=interbin, n_photons=n_photons)
+    with Pool(processes=nproc) as pool:
+        import tqdm
+        results = list(tqdm.tqdm(pool.imap_unordered(
+            func, [(responses[j], j) for j in range(len_responses)]), total=len_responses))
+    pool.close()
 
-        rf = r_freqs[freq_intv_to_search]
-        accel = accel[freq_intv_to_search]
-        if interbin:
-            rf, accel = \
-                interbin_fft(rf, accel)
+    for res in results:
+        for subr in res:
+            candidate_powers.append(subr[2])
+            candidate_rs.append(subr[0])
+            candidate_js.append(subr[1])
 
-        powers_to_search = pds_from_fft(accel, n_photons)
-
-        if debug:
-            print(*powers_to_search, file=fobj)
-
-        candidate = powers_to_search > detlev
-        rs = rf[candidate]
-        cand_powers= powers_to_search[candidate]
-        for i in range(len(rs)):
-            r = rs[i]
-            cand_power = cand_powers[i]
-            candidate_powers.append(cand_power)
-            candidate_rs.append(r)
-            candidate_js.append(j)
     if debug:
         fobj.close()
     return candidate_rs[1:], candidate_js[1:], candidate_powers[1:]
@@ -150,7 +171,7 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
 
 def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
                 GTI=None, zmax=100, candidate_file=None, ref_time=0,
-                debug=False, interbin=False):
+                debug=False, interbin=False, nproc=4):
     """Find pulsars with accelerated search.
 
     The theory behind these methods is described in Ransom+02, AJ 124, 1788.
@@ -209,8 +230,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     freqs_to_search = freq[freq_intv_to_search]
 
     candidate_table = Table(
-        names=['time', 'power', 'prob', 'frequency', 'fdot', 'fddot'],
-        dtype=[float] * 6)
+        names=['time', 'length', 'power', 'prob', 'frequency', 'fdot', 'fddot'],
+        dtype=[float] * 7)
 
     detlev = detection_level(freqs_to_search.size, epsilon=0.015)
 
@@ -219,7 +240,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     candidate_rs, candidate_js, candidate_powers = \
         _calculate_all_convolutions(spectr, RESPONSES, n_photons,
                                     freq_intv_to_search, detlev,
-                                    debug=debug, interbin=interbin)
+                                    debug=debug, interbin=interbin,
+                                    nproc=nproc)
 
     for r, j, cand_power in zip(candidate_rs, candidate_js, candidate_powers):
         z = range_z[j]
@@ -227,7 +249,7 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         fdot = z / T**2
         prob = probability_of_power(cand_power, freqs_to_search.size)
         candidate_table.add_row(
-            [ref_time + GTI[0, 0], cand_power, prob, cand_freq, fdot, 0])
+            [ref_time + GTI[0, 0], T, cand_power, prob, cand_freq, fdot, 0])
 
     if candidate_file is not None:
         candidate_table.write(candidate_file + '.csv', overwrite=True)
