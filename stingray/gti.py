@@ -269,7 +269,9 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
         create_gti_mask_jit((time - time[0]).astype(np.float64),
                             (gtis_to_mask - time[0]).astype(np.float64),
                             mask, gti_mask=gti_mask,
-                            min_length=min_length - 2 * (1 + epsilon) * dt)
+                            min_length=float(
+                                    min_length - 2 * (1 + epsilon) * dt
+                            ))
 
     if return_new_gtis:
         return mask, gtis_new[gtimask]
