@@ -573,7 +573,7 @@ def get_btis(gtis, start_time=None, stop_time=None):
     """
     # Check GTIs
     if len(gtis) == 0:
-        if not start_time or not stop_time:
+        if start_time is None or stop_time is None:
             raise ValueError('Empty GTI and no valid start_time '
                              'and stop_time. BAD!')
 
@@ -583,17 +583,17 @@ def get_btis(gtis, start_time=None, stop_time=None):
     start_time = assign_value_if_none(start_time, gtis[0][0])
     stop_time = assign_value_if_none(stop_time, gtis[-1][1])
 
-    if gtis[0][0] - start_time <= 0:
+    if gtis[0][0] <= start_time:
         btis = []
     else:
-        btis = [[gtis[0][0] - start_time]]
+        btis = [[start_time, gtis[0][0]]]
     # Transform GTI list in
     flat_gtis = gtis.flatten()
     new_flat_btis = zip(flat_gtis[1:-2:2], flat_gtis[2:-1:2])
     btis.extend(new_flat_btis)
 
-    if stop_time - gtis[-1][1] > 0:
-        btis.extend([[gtis[0][0] - stop_time]])
+    if stop_time > gtis[-1][1]:
+        btis.extend([[gtis[-1][1],  stop_time]])
 
     return np.asarray(btis)
 
