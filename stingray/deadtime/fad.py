@@ -46,7 +46,7 @@ def _get_fourier_intv(lc, start_ind, end_ind):
 
 
 def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
-                             plot=False, smoothing_alg='gauss',
+                             plot=False, ax=None, smoothing_alg='gauss',
                              smoothing_length=None, verbose=False,
                              tolerance=0.05, strict=False, all_leahy=False,
                              output_file=None):
@@ -82,6 +82,9 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     plot : bool, default False
         Plot diagnostics: check if the smoothed Fourier difference scatter is
         a good approximation of the data scatter.
+    ax : :class:`matplotlib.axes.axes` object
+        If not None and ``plot`` is True, use this axis object to produce
+         the diagnostic plot. Otherwise, create a new figure.
     smoothing_alg : {'gauss', ...}
         Smoothing algorithm. For now, the only smoothing algorithm allowed is
         ``gauss``, which applies a Gaussian Filter from `scipy`.
@@ -142,7 +145,8 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     average_diff = average_diff_uncorr = 0
 
     if plot:
-        plt.figure()
+        if ax is None:
+            fig, ax = plt.subplots()
 
     for start_ind, end_ind in zip(start_inds, end_inds):
         freq, f1, nph1 = _get_fourier_intv(lc1, start_ind, end_ind)
@@ -166,7 +170,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
                 smoothing_alg))
 
         if plot:
-            plt.scatter(freq, fourier_diff, s=1)
+            ax.scatter(freq, fourier_diff, s=1)
 
         if all_leahy:
             f1 = f1_leahy
@@ -183,9 +187,9 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         c = c / smooth_real * 2
 
         if n == 0 and plot:
-            plt.plot(freq, smooth_real, zorder=10, lw=3)
-            plt.plot(freq, f1_leahy, zorder=5, lw=1)
-            plt.plot(freq, f2_leahy, zorder=5, lw=1)
+            ax.plot(freq, smooth_real, zorder=10, lw=3)
+            ax.plot(freq, f1_leahy, zorder=5, lw=1)
+            ax.plot(freq, f2_leahy, zorder=5, lw=1)
 
         ptot += pt
         pds1 += p1
