@@ -58,6 +58,16 @@ class TestGTI(object):
         # bin at times 0, 2, 4 and 5 are not in.
         assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
 
+    def test_gti_mask_minlen(self):
+        arr = np.array([0, 1, 2, 3, 4, 5, 6])
+        gti = np.array([[0, 2.1], [3.9, 5]])
+        mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True,
+                                         min_length=2)
+        # NOTE: the time bin has to be fully inside the GTI. That is why the
+        # bin at times 0, 2, 4 and 5 are not in.
+        assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
+        assert np.all(new_gtis == np.array([[0, 2.1]]))
+
     def test_gti_mask_none_longer_than_minlen(self):
         arr = np.array([0, 1, 2, 3, 4, 5, 6])
         gti = np.array([[0, 2.1], [3.9, 5]])

@@ -229,7 +229,6 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     if min_length > 0:
         lengths = gtis[:, 1] - gtis[:, 0]
         good = lengths >= np.max(min_length, dt)
-
         if np.all(~good):
             warnings.warn("No GTIs longer than "
                           "min_length {}".format(min_length))
@@ -269,10 +268,12 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
                             (gtis_to_mask - time[0]).astype(np.float64),
-                            mask, gti_mask=gti_mask, min_length=min_length)
+                            mask, gti_mask=gti_mask,
+                            min_length=min_length - 2 * (1 + epsilon) * dt)
 
     if return_new_gtis:
         return mask, gtis_new[gtimask]
+
     return mask
 
 
