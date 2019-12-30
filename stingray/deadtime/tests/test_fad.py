@@ -116,6 +116,12 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
     results_ps = get_periodograms_from_FAD_results(results_out, kind='pds1')
     assert isinstance(results_ps, AveragedPowerspectrum)
     assert np.all(results_ps.power == pds1_f)
+    results_ps = get_periodograms_from_FAD_results(results_out, kind='pds2')
+    assert isinstance(results_ps, AveragedPowerspectrum)
+    assert np.all(results_ps.power == pds2_f)
+    with pytest.raises(ValueError) as excinfo:
+        _ = get_periodograms_from_FAD_results(results_out, kind='a')
+    assert "Unknown periodogram type" in str(excinfo.value)
 
 
 @pytest.mark.parametrize('ctrate', [0.5])
@@ -139,7 +145,7 @@ def test_fad_power_spectrum_unknown_alg(ctrate):
     assert 'Unknown smoothing algorithm' in str(excinfo.value)
 
 
-@pytest.mark.parametrize('ctrate', [50])
+@pytest.mark.parametrize('ctrate', [100])
 def test_fad_power_spectrum_non_compliant(ctrate):
     dt = 0.1
     deadtime = 2.5e-3
@@ -147,7 +153,7 @@ def test_fad_power_spectrum_non_compliant(ctrate):
     segment_size = 256.
     ncounts = np.int(ctrate * length)
     ev1 = generate_events(length, ncounts)
-    ev2 = generate_events(length, ncounts)
+    ev2 = generate_events(length, int(ncounts * 0.6))
 
     lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
     lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
