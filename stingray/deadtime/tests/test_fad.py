@@ -10,6 +10,12 @@ from stingray.crossspectrum import AveragedCrossspectrum
 from stingray.powerspectrum import AveragedPowerspectrum
 import matplotlib.pyplot as plt
 
+try:
+    import h5py
+    HAS_HDF5 = True
+except ImportError:
+    HAS_HDF5 = False
+
 # np.random.seed(2134791)
 
 def generate_events(length, ncounts):
@@ -65,6 +71,7 @@ def test_fad_power_spectrum_compliant(ctrate):
     assert np.isclose(ptot_f.std() * 2 / ncounts_per_intvtot, pds_std_theor, rtol=0.1)
 
 
+@pytest.mark.skipif('not HAS_HDF5')
 @pytest.mark.parametrize('ctrate', [200])
 def test_fad_power_spectrum_compliant_leahy(ctrate):
     dt = 0.1
