@@ -915,11 +915,13 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         raise ValueError("Invalid time interval for the given GTIs")
 
     spectrum_start_bins = np.array([], dtype=np.long)
+    time_low = time - dt / 2
+    time_high = time + dt / 2
     for g in gtis:
         if g[1] - g[0] + epsilon * dt < chunk_length:
             continue
-        good_low = time - dt / 2 >= g[0] - epsilon * dt
-        good_up = time + dt / 2 <= g[1] + epsilon * dt
+        good_low = time_low >= g[0] - epsilon * dt
+        good_up = time_high <= g[1] + epsilon * dt
         good = good_low & good_up
         t_good = time[good]
         if len(t_good) == 0:

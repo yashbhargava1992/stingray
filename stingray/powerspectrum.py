@@ -11,6 +11,12 @@ from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.utils import simon
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
 
+try:
+    from tqdm import tqdm as show_progress
+except ImportError:
+    def show_progress(a, **kwargs):
+        return a
+
 __all__ = ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]
 
 
@@ -491,7 +497,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         power_all = []
         nphots_all = []
-        for start_ind, end_ind in zip(start_inds, end_inds):
+        for start_ind, end_ind in show_progress(zip(start_inds, end_inds)):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
             counts_err = lc.counts_err[start_ind: end_ind]

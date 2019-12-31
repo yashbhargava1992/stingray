@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from multiprocessing import Pool
+import warnings
 
 import numpy as np
 import scipy
@@ -12,6 +13,14 @@ try:
 except ImportError:
     def show_progress(a, **kwargs):
         return a
+
+try:
+    import pyfftw
+    from pyfftw.interfaces.numpy_fft import fft, fftfreq
+except ImportError:
+    warnings.warn("Using standard numpy fft")
+    from scipy.fftpack import fft, fftfreq
+
 
 from ..utils import njit, prange
 
@@ -334,8 +343,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
             [[times[0] - dt /2, times[-1] + dt / 2]])
 
     n_photons = np.sum(signal)
-    spectr = np.fft.fft(signal)
-    freq = np.fft.fftfreq(len(spectr), dt)
+    spectr = fft(signal)
+    freq = fftfreq(len(spectr), dt)
     T = times[-1] - times[0] + dt
 
     freq_intv_to_search = (freq >= fmin) & (freq < fmax)
