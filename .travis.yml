@@ -24,8 +24,8 @@ env:
         # The following versions are the 'default' for tests, unless
         # overidden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
-        - ASTROPY_VERSION=stable
-        - NUMPY_VERSION=stable
+        - ASTROPY_VERSION=3.2.3
+        - NUMPY_VERSION=1.16
 
         - SETUP_CMD='test --coverage'
         - PIP_DEPENDENCIES='emcee statsmodels corner'
