@@ -168,7 +168,7 @@ class TestPowerspectrum(object):
         In Leahy normalization, the poisson noise level (so, in the absence of
         a signal, the average power) should be equal to 2.
         """
-        time = np.linspace(0, 10.0, 1e5)
+        time = np.linspace(0, 10.0, 10**5)
         counts = np.random.poisson(1000, size=time.shape[0])
 
         lc = Lightcurve(time, counts)
@@ -215,7 +215,7 @@ class TestPowerspectrum(object):
         """
         np.random.seed(101)
 
-        time = np.linspace(0, 1., 1e4)
+        time = np.linspace(0, 1., 10**4)
         counts = np.random.poisson(0.01, size=time.shape[0])
 
         lc = Lightcurve(time, counts)
