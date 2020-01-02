@@ -16,15 +16,39 @@ except ImportError:
 
 try:
     import pyfftw
-    from pyfftw.interfaces.numpy_fft import fft, fftfreq
+    from pyfftw.interfaces.numpy_fft import fft, fftfreq, fftn, ifftn
+    HAS_PYFFTW = True
 except ImportError:
     warnings.warn("Using standard numpy fft")
-    from scipy.fftpack import fft, fftfreq
+    from scipy.fftpack import fft, fftfreq, fftn, ifftn
+    HAS_PYFFTW = False
 
+from stingray.pulse.overlapandsave.ols import ols
 
-from ..utils import njit, prange
-
+from ..utils import njit
 from ..gti import create_gti_mask
+
+
+def convolve(a, b):
+    """Convolution using overlap-and-save.
+
+    The code for the convolution, as implemented by Ahmed Fasih, is under
+    stingray.pulse.overlapandsave
+
+    Mimicks scipy.signal.fftconvolve with mode='save'.
+
+    Examples
+    --------
+    >>> from scipy.signal import fftconvolve
+    >>> nx, nh = 21, 7
+    >>> x = np.random.randint(-30, 30, size=(nx, nx)) + 1j * np.random.randint(-30, 30, size=(nx, nx))
+    >>> h = np.random.randint(-20, 20, size=(nh, nh)) + 1j * np.random.randint(-20, 20, size=(nh, nh))
+    >>> gold = fftconvolve(x, h, mode='same')
+    >>> y = convolve(x, h)
+    >>> np.allclose(gold, y)
+    True
+    """
+    return ols(a, b, rfftn=fftn, irfftn=ifftn)
 
 
 @njit()
@@ -90,15 +114,15 @@ def detection_level(nbins, epsilon=0.01, n_summed_spectra=1, n_rebin=1):
 
 def _create_responses(range_z):
     """Create responses corresponding to different accelerations.
-    
-    This is the implementation of Eq. 39 in Ransom, Eikenberry & 
+
+    This is the implementation of Eq. 39 in Ransom, Eikenberry &
     Middleditch 2002. See that paper for details
-    
+
     Parameters
     ----------
     range_z : int
         List of z values to be used for the calculation.
-    
+
     Returns
     -------
     responses : list
@@ -113,7 +137,7 @@ def _create_responses(range_z):
              responses.append(0)
              continue
 
-        m = np.max([np.abs(np.int( 2 * z)), 40]) 
+        m = np.max([np.abs(np.int( 2 * z)), 40])
         sign = z / np.abs(z)
         absz = np.abs(z)
         factor = sign * 1 / scipy.sqrt( 2 * absz)
@@ -132,52 +156,47 @@ def _create_responses(range_z):
     return responses
 
 
-@njit()
-def convolve(a, b):
-    return np.convolve(a, b)
-
-
 def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
                             interbin=False, n_photons=1):
     """Accelerate the Fourier transform and find pulsations.
-    
+
     This function convolves the initial Fourier transform with the response
-    corresponding to a constant acceleration, and searches for signals 
+    corresponding to a constant acceleration, and searches for signals
     corresponding to candidate pulsations.
-    
+
     Parameters
     ----------
     A : complex array
         The initial FT
     response_and_j : tuple
-        Tuple containing the response matrix corresponding to a given 
+        Tuple containing the response matrix corresponding to a given
         acceleration and its position in the list of reponses allocated
         at the start of the procedure in ``accelsearch``.
     detlev : float
         The power level considered good for detection
     freq_intv_to_search : bool array
         Mask for ``A``, showing all spectral bins that should be searched
-        for pulsations. Note that we use the full array to calculate the 
+        for pulsations. Note that we use the full array to calculate the
         convolution with the responses, but only these bins to search for
         pulsations. Had we filtered the frequencies before the convolution,
-        we would be sure to introduce boundary effects in the "Good" 
+        we would be sure to introduce boundary effects in the "Good"
         frequency interval
-        
+
     Other parameters
     ----------------
     n_photons : int
-        Number of photons that contributed to the Fourier Transform (used 
+        Number of photons that contributed to the Fourier Transform (used
         to estimate the detection level)
     interbin : bool
         Calculate interbinning to improve sensitivity to frequencies close
         to the edge of PDS bins
     nproc : int
         Number of processors to be used for parallel computation.
-        
+
     Returns
     -------
     result : list
-        List containing tuples of the kind (r, j, power) where 
+        List containing tuples of the kind (r, j, power) where
         r is the frequency in units of 1/ T, j is the index of the
         acceleration response used and power is the spectral power
     """
@@ -187,9 +206,10 @@ def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
         accel = A
     else:
         accel = convolve(A, response)
-        new_size = accel.size
-        diff = new_size - A.size
-        accel = accel[diff // 2: diff // 2 + A.size]
+        # new_size = accel.size
+        # diff = new_size - A.size
+        # Now uses 'same'
+        # accel = accel[diff // 2: diff // 2 + A.size]
 
     rf = r_freqs[freq_intv_to_search]
     accel = accel[freq_intv_to_search]
@@ -215,31 +235,31 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
                                 detlev, debug=False, interbin=False,
                                 nproc=4):
     """Accelerate the initial Fourier transform and find pulsations.
-    
+
     This function convolves the initial Fourier transform with the responses
     corresponding to different amounts of constant acceleration, and searches
     for signals corresponding to candidate pulsations.
-    
+
     Parameters
     ----------
     A : complex array
         The initial FT
     responses : list of complex arrays
-        List of response functions corresponding to different values of 
+        List of response functions corresponding to different values of
         constant acceleration.
     n_photons : int
-        Number of photons that contributed to the Fourier Transform (used 
+        Number of photons that contributed to the Fourier Transform (used
         to estimate the detection level)
     freq_intv_to_search : bool array
         Mask for ``A``, showing all spectral bins that should be searched
-        for pulsations. Note that we use the full array to calculate the 
+        for pulsations. Note that we use the full array to calculate the
         convolution with the responses, but only these bins to search for
         pulsations. Had we filtered the frequencies before the convolution,
-        we would be sure to introduce boundary effects in the "Good" 
+        we would be sure to introduce boundary effects in the "Good"
         frequency interval
     detlev : float
         The power level considered good for detection
-        
+
     Other parameters
     ----------------
     debug : bool
@@ -249,7 +269,7 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
         to the edge of PDS bins
     nproc : int
         Number of processors to be used for parallel computation.
-        
+
     Returns
     -------
     candidate_rs: array of float
@@ -326,8 +346,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     candidate_table: :class:`Table`
         Table containing the candidate frequencies and frequency derivatives,
         the spectral power in Leahy normalization, the detection probability,
-        the time and the observation length. 
-    
+        the time and the observation length.
+
     """
     times = np.asarray(times)
     signal = np.asarray(signal)
@@ -387,15 +407,15 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
 def interbin_fft(freq, fft):
     """Interbinning, a la van der Klis 1989.
 
-    Allows to recover some sensitivity in a power density spectrum when 
-    the pulsation frequency is close to a bin edge. Here we oversample 
+    Allows to recover some sensitivity in a power density spectrum when
+    the pulsation frequency is close to a bin edge. Here we oversample
     the Fourier transform that will be used to calculate the PDS, adding
     intermediate bins with the following values:
 
     A_{k+1/2} = \\pi /4 (A_k - A_{k + 1})
-    
+
     Please note: The new bins are not statistically independent from the
-    rest. Please use simulations to estimate the correct detection 
+    rest. Please use simulations to estimate the correct detection
     levels.
 
     Parameters
