@@ -29,7 +29,7 @@ from ..utils import njit
 from ..gti import create_gti_mask
 
 
-def convolve(a, b):
+def convolve_ols(a, b):
     """Convolution using overlap-and-save.
 
     The code for the convolution, as implemented by Ahmed Fasih, is under
@@ -41,14 +41,16 @@ def convolve(a, b):
     --------
     >>> from scipy.signal import fftconvolve
     >>> nx, nh = 21, 7
-    >>> x = np.random.randint(-30, 30, size=(nx, nx)) + 1j * np.random.randint(-30, 30, size=(nx, nx))
-    >>> h = np.random.randint(-20, 20, size=(nh, nh)) + 1j * np.random.randint(-20, 20, size=(nh, nh))
-    >>> gold = fftconvolve(x, h, mode='same')
+    >>> x = np.random.randint(-30, 30, size=(nx, nx)) + 1j * \\
+    ...         np.random.randint(-30, 30, size=(nx, nx))
+    >>> h = np.random.randint(-20, 20, size=(nh, nh)) + 1j * \\
+    ...         np.random.randint(-20, 20, size=(nh, nh))
+    >>> ref = fftconvolve(x, h, mode='same')
     >>> y = convolve(x, h)
-    >>> np.allclose(gold, y)
+    >>> np.allclose(ref, y)
     True
     """
-    return ols(a, b, rfftn=fftn, irfftn=ifftn)
+    return ols(a, b, size=[max(4 * b.size, 100000)], rfftn=fftn, irfftn=ifftn)
 
 
 @njit()
