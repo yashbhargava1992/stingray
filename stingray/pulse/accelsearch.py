@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import scipy
 from scipy import special, stats
+import scipy.signal
 from astropy import log
 from astropy.table import Table
 
@@ -46,11 +47,22 @@ def convolve_ols(a, b):
     >>> h = np.random.randint(-20, 20, size=(nh, nh)) + 1j * \\
     ...         np.random.randint(-20, 20, size=(nh, nh))
     >>> ref = fftconvolve(x, h, mode='same')
-    >>> y = convolve(x, h)
+    >>> y = convolve(x, h) # +doctest:ellipsis
+    ...
     >>> np.allclose(ref, y)
     True
     """
-    return ols(a, b, size=[max(4 * b.size, 100000)], rfftn=fftn, irfftn=ifftn)
+    return ols(a, b,
+               size=[
+                   max(4 * x, int(pow(100000, 1/len(b.shape))))
+                   for x in b.shape],
+               rfftn=fftn, irfftn=ifftn)
+
+
+def convolve(a, b, mode='ols'):
+    if mode == 'ols':
+        return convolve_ols(a, b)
+    return scipy.signal.fftconvolve(a, b, mode='same')
 
 
 @njit()
@@ -293,10 +305,15 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
     from functools import partial
     func = partial(_convolve_with_response, A, detlev, freq_intv_to_search,
                    interbin=interbin, n_photons=n_photons)
-    with Pool(processes=nproc) as pool:
-        results = list(show_progress(pool.imap_unordered(
-            func, [(responses[j], j) for j in range(len_responses)]), total=len_responses))
-    pool.close()
+    if nproc == 1:
+        results = []
+        for j in show_progress(range(len_responses)):
+            results.append(func((responses[j], j)))
+    else:
+        with Pool(processes=nproc) as pool:
+            results = list(show_progress(pool.imap_unordered(
+                func, [(responses[j], j) for j in range(len_responses)]), total=len_responses))
+        pool.close()
 
     for res in results:
         for subr in res:
@@ -358,9 +375,14 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         gti = np.asarray(gti)
         # Fill in the data with a constant outside GTIs
         gti_mask = create_gti_mask(times, gti)
+        expo_fraction = np.count_nonzero(gti_mask) / len(gti_mask)
         bti_mask = ~gti_mask
-        signal[bti_mask] = np.median(signal[gti_mask])
+        mean_ops = np.mean
+        if np.mean(signal) > 10:
+            mean_ops = np.median
+        signal[bti_mask] = mean_ops(signal[gti_mask])
     else:
+        expo_fraction = 1
         gti = np.array(
             [[times[0] - dt /2, times[-1] + dt / 2]])
 
@@ -379,8 +401,9 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     freqs_to_search = freq[freq_intv_to_search]
 
     candidate_table = Table(
-        names=['time', 'length', 'power', 'prob', 'frequency', 'fdot', 'fddot'],
-        dtype=[float] * 7)
+        names=['time', 'length', 'frac_exposure', 'power', 'prob', 'frequency',
+               'fdot', 'fddot', 'ntrial'],
+        dtype=[float] * 8 + [int])
 
     detlev = detection_level(freqs_to_search.size, epsilon=0.015)
 
@@ -398,7 +421,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         fdot = z / T**2
         prob = probability_of_power(cand_power, freqs_to_search.size)
         candidate_table.add_row(
-            [ref_time + gti[0, 0], T, cand_power, prob, cand_freq, fdot, 0])
+            [ref_time + gti[0, 0], T, expo_fraction, cand_power, prob,
+             cand_freq, fdot, 0, freqs_to_search.size])
 
     if candidate_file is not None:
         candidate_table.write(candidate_file + '.csv', overwrite=True)
