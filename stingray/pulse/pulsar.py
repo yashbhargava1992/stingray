@@ -453,8 +453,8 @@ def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
     if ntrial > 1:
         simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
 
-    epsilon = ntrial * stats.chi2.sf(z2 * n_summed_spectra,
-                                     2 * n * n_summed_spectra)
+    epsilon = 1 - stats.chi2.cdf(z2 * n_summed_spectra,
+                                 2 * n * n_summed_spectra)**ntrial
     return epsilon
 
 
