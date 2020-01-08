@@ -1368,6 +1368,39 @@ class Lightcurve(object):
             results = [results[:, i] for i in range(results.shape[1])]
         return start_times, stop_times, results
 
+    def to_lightkurve(self):
+        """
+        Returns a `lightkurve.LightCurve` object.
+        This feature requires `Lightkurve
+        <https://docs.lightkurve.org/index.html/>`_ to be installed
+        (e.g. ``pip install lightkurve``).  An `ImportError` will
+        be raised if this package is not available.
+
+        Returns
+        -------
+        lightcurve : `lightkurve.LightCurve`
+            A lightkurve LightCurve object.
+        """
+        try:
+            from lightkurve import LightCurve as lk
+        except ImportError:
+            raise ImportError("You need to install Lightkurve to use "
+                              "the Lightcurve.to_lightkurve() method.")
+        return lk(time=self.time, flux=self.counts, flux_err=self.counts_err)
+
+    @staticmethod
+    def from_lightkurve(lk):
+        """
+        Creates a new `Lightcurve` from a `lightkurve.LightCurve`.
+
+        Parameters
+        ----------
+        lk : `lightkurve.LightCurve`
+            A lightkurve LightCurve object.
+        """
+        return Lightcurve(time=lc.time, counts=lc.flux,
+                          err=lc.flux_err, input_counts=False)
+
     def plot(self, witherrors=False, labels=None, axis=None, title=None,
              marker='-', save=False, filename=None):
         """

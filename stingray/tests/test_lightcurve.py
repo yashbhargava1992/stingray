@@ -800,6 +800,30 @@ class TestLightcurve(object):
         new_lc_long = lc_long[:]  # Copying into a new object
         assert new_lc_long.n == lc_long.n
 
+    def test_to_lightkurve(self):
+        time, counts, counts_err = range(3), np.ones(3), np.zeros(3)
+        lc = Lightcurve(time, counts, counts_err)
+        try:
+            lk = lc.to_lightkurve()
+            assert_allclose(lk.time, time)
+            assert_allclose(lk.flux, counts)
+            assert_allclose(lk.flux_err, counts_err)
+        except ImportError:
+            # Requires Lightkurve
+            pass
+
+    def test_from_lightkurve(self):
+        try:
+            from Lightkurve import LightCurve
+            time, flux, flux_err = range(3), np.ones(3), np.zeros(3)
+            lk = LightCurve(time, flux, flux_err)
+            sr = Lightcurve.from_lightkurve(lk)
+            assert_allclose(sr.time, lc.time)
+            assert_allclose(sr.counts, lc.flux)
+            assert_allclose(sr.counts_err, lc.flux_err)
+        except ImportError:
+            pass
+
     def test_plot_matplotlib_not_installed(self):
         try:
             import matplotlib.pyplot as plt
