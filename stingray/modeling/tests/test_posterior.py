@@ -205,7 +205,8 @@ class TestPSDPosterior(object):
 
     def test_negative_loglikelihood(self):
         t0 = [2.0]
-        m = self.model(self.ps.freq[1:], t0)
+        self.model.amplitude = t0[0]
+        m = self.model(self.ps.freq[1:])
         loglike = np.sum(self.ps.power[1:]/m + np.log(m))
 
         lpost = PSDPosterior(self.ps.freq, self.ps.power,
@@ -218,7 +219,9 @@ class TestPSDPosterior(object):
 
     def test_posterior(self):
         t0 = [2.0]
-        m = self.model(self.ps.freq[1:], t0)
+        self.model.amplitude = t0[0]
+
+        m = self.model(self.ps.freq[1:])
         lpost = PSDPosterior(self.ps.freq, self.ps.power,
                              self.model, m=self.ps.m)
         lpost.logprior = set_logprior(lpost, self.priors)
@@ -233,7 +236,9 @@ class TestPSDPosterior(object):
 
     def test_negative_posterior(self):
         t0 = [2.0]
-        m = self.model(self.ps.freq[1:], t0)
+        self.model.amplitude = t0[0]
+
+        m = self.model(self.ps.freq[1:])
         lpost = PSDPosterior(self.ps.freq, self.ps.power,
                              self.model, m=self.ps.m)
         lpost.logprior = set_logprior(lpost, self.priors)
@@ -779,7 +784,8 @@ class TestPerPosteriorAveragedPeriodogram(object):
         ps_nan.power = np.nan*np.ones_like(self.ps.freq)
 
         t0 = [2.0]
-        m = self.model(self.ps.freq[1:], t0)
+        self.model.amplitude = t0[0]
+        m = self.model(self.ps.freq[1:])
         lpost = PSDPosterior(ps_nan.freq, ps_nan.power, self.model)
         lpost.logprior = set_logprior(lpost, self.priors)
 
