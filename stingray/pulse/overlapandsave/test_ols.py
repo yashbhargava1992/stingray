@@ -129,6 +129,8 @@ def testOls():
 
                     dirtmem2 = np.load('out.npy')
                     assert np.allclose(dirtmem2, gold)
+                    del dirtmem2
+                    del dirtmem
 
         testinner(8)
 

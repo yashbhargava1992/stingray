@@ -47,7 +47,7 @@ class TestAccelsearch(object):
         candidate_table = accelsearch(self.times, self.signal, zmax=10,
                                       candidate_file='bubu.csv', delta_z=0.5,
                                       gti=[[self.tstart, self.tstop]], debug=True,
-                                      interbin=True)
+                                      interbin=True, nproc=1)
         best = np.argmax(candidate_table['power'])
         assert np.isclose(candidate_table['frequency'][best], self.freq,
                           atol=5 * self.df)

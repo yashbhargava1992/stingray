@@ -61,6 +61,9 @@ def convolve_ols(a, b):
 
 
 def convolve(a, b, mode='ols'):
+    if np.version.version.split('.') <= ['1', '15', '0']:
+        mode = 'scipy'
+
     if mode == 'ols':
         return convolve_ols(a, b)
     return scipy.signal.fftconvolve(a, b, mode='same')

@@ -59,6 +59,30 @@ from typing import List
 import math
 
 
+def flip_all(array):
+    """Flip all array dimensions (compatibility with old numpy)
+
+    Substitutes for np.flip(array, axis=None) introduced in Numpy 1.15
+
+    Examples
+    --------
+    >>> array = np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]]])
+    >>> flipped_array = np.array([[[7, 6], [5, 4]], [[3, 2], [1, 0]]])
+    >>> np.all(flipped_array == flip_all(array))
+    True
+    """
+    for dim in range(len(array.shape)):
+        array = np.flip(array, dim)
+    return array
+
+
+try:
+    from numpy import flip
+    flip(np.zeros((0, 0)))
+except TypeError:
+    flip = flip_all
+
+
 def nextpow(a: float, x: float) -> float:
     """The smallest `a^n` not less than `x`, where `n` is a non-negative integer.
 
@@ -160,8 +184,7 @@ def prepareh(h, nfft: List[int], rfftn=None):
     `rfftn` defaults to `numpy.fft.rfftn` and may be overridden.
     """
     rfftn = rfftn or np.fft.rfftn
-    axes = np.arange(len(h.shape))
-    return np.conj(rfftn(np.flip(np.conj(h), axis=axes), nfft))
+    return np.conj(rfftn(flip(np.conj(h)), nfft))
 
 
 def slice2range(s: slice):

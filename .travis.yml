@@ -24,8 +24,8 @@ env:
         # The following versions are the 'default' for tests, unless
         # overidden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
-        - ASTROPY_VERSION=3.2.3
-        - NUMPY_VERSION=1.16
+        - ASTROPY_VERSION=stable
+        - NUMPY_VERSION=stable
 
         - SETUP_CMD='test --coverage'
         - PIP_DEPENDENCIES='emcee statsmodels corner'
@@ -43,10 +43,13 @@ matrix:
                PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner'
                SETUP_CMD='test --remote-data --coverage'
                ASTROPY_VERSION=3.2.3
+               NUMPY_VERSION=1.16
 
         - env: PYTHON_VERSION=3.6
                PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner pyfftw'
                SETUP_CMD='test --remote-data --coverage'
+               ASTROPY_VERSION=3.2.3
+               NUMPY_VERSION=1.16
 
         - env: PYTHON_VERSION=3.7  CONDA_DEPENDENCIES='scipy matplotlib numba'
 
