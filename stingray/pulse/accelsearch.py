@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 import scipy
-from scipy import special, stats
+from scipy import special
 import scipy.signal
 from astropy import log
 from astropy.table import Table
@@ -27,6 +27,7 @@ except ImportError:
 from stingray.pulse.overlapandsave.ols import ols
 
 from ..utils import njit
+from ..stats import pds_probability, pds_detection_level
 from ..gti import create_gti_mask
 
 
@@ -68,62 +69,6 @@ def convolve(a, b, mode='ols'):
 @njit()
 def pds_from_fft(spectr, nph):
     return (spectr * spectr.conj()).real * 2 / nph
-
-
-def probability_of_power(level, ntrials=1, n_summed_spectra=1, n_rebin=1):
-    r"""Give the probability of a given power level in PDS.
-
-    Return the probability of a certain power level in a Power Density
-    Spectrum of nbins bins, normalized a la Leahy (1983), based on
-    the 2-dof :math:`{\chi}^2` statistics, corrected for rebinning (n_rebin)
-    and multiple PDS averaging (n_summed_spectra)
-
-    Parameters
-    ----------
-    level : float or array of floats
-        The power level for which we are calculating the probability
-    ntrials : int
-        The number of *independent* trials
-    n_summed_spectra : int
-        The number of power density spectra that have been averaged to obtain
-        this power level
-    n_rebin : int
-        The number of power density bins that have been averaged to obtain
-        this power level
-
-    Returns
-    -------
-    epsilon : float
-        The probability value(s)"""
-
-    epsilon = 1 - stats.chi2.cdf(level * n_summed_spectra * n_rebin,
-                                 2 * n_summed_spectra * n_rebin) ** ntrials
-    return epsilon
-
-
-def detection_level(nbins, epsilon=0.01, n_summed_spectra=1, n_rebin=1):
-    r"""Detection level for a PDS.
-
-    Return the detection level (with probability 1 - epsilon) for a Power
-    Density Spectrum of nbins bins, normalized a la Leahy (1983), based on
-    the 2-dof :math:`{\chi}^2` statistics, corrected for rebinning (n_rebin)
-    and multiple PDS averaging (n_summed_spectra)
-    Examples
-    --------
-    >>> np.isclose(detection_level(1, 0.1), 4.6, atol=0.1)
-    True
-    >>> np.allclose(detection_level(1, 0.1, n_rebin=[1]), [4.6], atol=0.1)
-    True
-    """
-    if isinstance(n_rebin, Iterable):
-        retlev = [stats.chi2.isf(epsilon / nbins, 2 * n_summed_spectra * r) /
-                  (n_summed_spectra * r) for r in n_rebin]
-        retlev = np.array(retlev)
-    else:
-        r = n_rebin
-        retlev = stats.chi2.isf(epsilon / nbins, 2 * n_summed_spectra * r) \
-            / (n_summed_spectra * r)
-    return retlev
 
 
 def _create_responses(range_z):
@@ -405,7 +350,7 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
                'fdot', 'fddot', 'ntrial'],
         dtype=[float] * 8 + [int])
 
-    detlev = detection_level(freqs_to_search.size, epsilon=0.015)
+    detlev = pds_detection_level(ntrial=freqs_to_search.size, epsilon=0.015)
 
     responses = _create_responses(range_z)
 
@@ -419,7 +364,7 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         z = range_z[j]
         cand_freq = r / T
         fdot = z / T**2
-        prob = probability_of_power(cand_power, freqs_to_search.size)
+        prob = pds_probability(cand_power, freqs_to_search.size)
         candidate_table.add_row(
             [ref_time + gti[0, 0], T, expo_fraction, cand_power, prob,
              cand_freq, fdot, 0, freqs_to_search.size])

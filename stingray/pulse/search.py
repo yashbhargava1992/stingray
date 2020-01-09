@@ -1,7 +1,7 @@
 
 import numpy as np
 import collections
-from .pulsar import stat, fold_events, z_n, pulse_phase
+from .pulsar import profile_stat, fold_events, z_n, pulse_phase
 from ..utils import jit, HAS_NUMBA
 from ..utils import contiguous_regions
 from astropy.stats import poisson_conf_interval
@@ -139,7 +139,7 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
                              ' specify the GTIs')
 
         def stat_fun(t, f, fd=0, **kwargs):
-            return stat(fold_events(t, f, fd, **kwargs)[1])
+            return profile_stat(fold_events(t, f, fd, **kwargs)[1])
 
         return \
             _folding_search(stat_fun, times, frequencies,
@@ -147,7 +147,7 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
                             use_times=True, expocorr=expocorr, weights=weights,
                             gti=gti, nbin=nbin, fdots=fdots)
 
-    return _folding_search(lambda x: stat(_profile_fast(x, nbin=nbin)),
+    return _folding_search(lambda x: profile_stat(_profile_fast(x, nbin=nbin)),
                            times, frequencies, segment_size=segment_size,
                            fdots=fdots)
 

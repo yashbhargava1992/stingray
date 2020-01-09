@@ -1,10 +1,6 @@
-
-
 import numpy as np
-from stingray.pulse.pulsar import fold_events, get_TOA
-from stingray.pulse.pulsar import stat, z_n, pulse_phase, phase_exposure
-from stingray.pulse.pulsar import fold_detection_level, z2_n_detection_level
-from stingray.pulse.pulsar import fold_profile_probability, z2_n_probability
+from stingray.pulse.pulsar import fold_events, get_TOA, phase_exposure
+from stingray.pulse.pulsar import profile_stat, z_n, pulse_phase
 from stingray.pulse.pulsar import get_orbital_correction_from_ephemeris_file
 from stingray.pulse.pulsar import HAS_PINT
 from astropy.tests.helper import remote_data
@@ -81,7 +77,7 @@ class TestAll(object):
     def test_stat(self):
         """Test pulse phase calculation, frequency only."""
         prof = np.array([2, 2, 2, 2])
-        np.testing.assert_array_almost_equal(stat(prof), 0)
+        np.testing.assert_array_almost_equal(profile_stat(prof), 0)
 
     def test_zn(self):
         """Test pulse phase calculation, frequency only."""
@@ -92,31 +88,6 @@ class TestAll(object):
         ph = np.array([0.2, 0.7])
         ph2 = np.array([0, 0.5])
         np.testing.assert_array_almost_equal(z_n(ph), z_n(ph2))
-
-    def test_fold_detection_level(self):
-        """Test pulse phase calculation, frequency only."""
-        np.testing.assert_almost_equal(fold_detection_level(16, 0.01),
-                                       30.577914166892498)
-        np.testing.assert_almost_equal(
-            fold_detection_level(16, 0.01, ntrial=2),
-            fold_detection_level(16, 0.01 / 2))
-
-    def test_zn_detection_level(self):
-        np.testing.assert_almost_equal(z2_n_detection_level(2),
-                                       13.276704135987625)
-        np.testing.assert_almost_equal(z2_n_detection_level(4, 0.01, ntrial=2),
-                                       z2_n_detection_level(4, 0.01/2))
-
-    def test_fold_probability(self):
-        detlev = fold_detection_level(16, 0.1, ntrial=3)
-        np.testing.assert_almost_equal(fold_profile_probability(detlev, 16,
-                                                                ntrial=3),
-                                       0.1)
-
-    def test_zn_probability(self):
-        detlev = z2_n_detection_level(2, 0.1, ntrial=3)
-        np.testing.assert_almost_equal(z2_n_probability(detlev, 2, ntrial=3),
-                                       0.1)
 
     def test_pulse_phase1(self):
         """Test pulse phase calculation, frequency only."""
