@@ -15,10 +15,10 @@ environment:
 
     matrix:
         - PYTHON_VERSION: "3.6"
-          NUMPY_VERSION: "stable"
+          NUMPY_VERSION: "1.16"
           CONDA_PY: "36"
         - PYTHON_VERSION: "3.7"
-          NUMPY_VERSION: "stable"
+          NUMPY_VERSION: "1.16"
           CONDA_PY: "37"
 
 matrix:
