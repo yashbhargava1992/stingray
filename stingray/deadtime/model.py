@@ -1,8 +1,13 @@
 from stingray.utils import njit, prange
-from math import gamma
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import log
+
+
+try:
+    from scipy.special import factorial
+except ImportError:
+    from scipy.misc import factorial
 
 
 def r_in(td, r_0):
@@ -15,11 +20,6 @@ def r_det(td, r_i):
     """Calculate detected countrate given dead time and incident countrate."""
     tau = 1 / r_i
     return 1. / (tau + td)
-
-
-@njit()
-def factorial(n):
-    return gamma(n + 1)
 
 
 @njit()
