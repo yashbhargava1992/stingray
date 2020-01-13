@@ -39,8 +39,10 @@ def test_fad_power_spectrum_compliant(ctrate):
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
-    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
-    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
     ncounts1 = np.sum(lc1.counts)
     ncounts2 = np.sum(lc2.counts)
 
@@ -59,15 +61,68 @@ def test_fad_power_spectrum_compliant(ctrate):
     ncounts_per_intv1 = ncounts1 * segment_size / length
     ncounts_per_intv2 = ncounts2 * segment_size / length
     ncounts_per_intvtot = (ncounts1 + ncounts2) * segment_size / length
-    ncounts_per_intv_geomav = np.sqrt(ncounts1 * ncounts2) * segment_size / length
+    ncounts_per_intv_geomav = \
+        np.sqrt(ncounts1 * ncounts2) * segment_size / length
 
     pds_std_theor = 2 / np.sqrt(n)
     cs_std_theor = np.sqrt(2 / n)
 
-    assert np.isclose(pds1_f.std() * 2 / ncounts_per_intv1, pds_std_theor, rtol=0.1)
-    assert np.isclose(pds2_f.std() * 2 / ncounts_per_intv2, pds_std_theor, rtol=0.1)
-    assert np.isclose(cs_f.std() * 2 / ncounts_per_intv_geomav, cs_std_theor, rtol=0.1)
-    assert np.isclose(ptot_f.std() * 2 / ncounts_per_intvtot, pds_std_theor, rtol=0.1)
+    assert np.isclose(pds1_f.std() * 2 / ncounts_per_intv1, pds_std_theor,
+                      rtol=0.1)
+    assert np.isclose(pds2_f.std() * 2 / ncounts_per_intv2, pds_std_theor,
+                      rtol=0.1)
+    assert np.isclose(cs_f.std() * 2 / ncounts_per_intv_geomav, cs_std_theor,
+                      rtol=0.1)
+    assert np.isclose(ptot_f.std() * 2 / ncounts_per_intvtot, pds_std_theor,
+                      rtol=0.1)
+
+
+@pytest.mark.parametrize('ctrate', [0.5, 5, 50, 200])
+def test_fad_power_spectrum_compliant_objects(ctrate):
+    dt = 0.1
+    deadtime = 2.5e-3
+    length = 25600
+    segment_size = 256.
+    ncounts = np.int(ctrate * length)
+    ev1 = generate_events(length, ncounts)
+    ev2 = generate_events(length, ncounts)
+
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+    ncounts1 = np.sum(lc1.counts)
+    ncounts2 = np.sum(lc2.counts)
+
+    results = \
+        calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
+                          smoothing_alg='gauss',
+                          strict=True, verbose=True,
+                          tolerance=0.05, return_objects=True)
+
+    pds1_f = results['pds1'].power
+    pds2_f = results['pds2'].power
+    cs_f = results['cs'].power
+    ptot_f = results['ptot'].power
+
+    n = length / segment_size
+    ncounts_per_intv1 = ncounts1 * segment_size / length
+    ncounts_per_intv2 = ncounts2 * segment_size / length
+    ncounts_per_intvtot = (ncounts1 + ncounts2) * segment_size / length
+    ncounts_per_intv_geomav = \
+        np.sqrt(ncounts1 * ncounts2) * segment_size / length
+
+    pds_std_theor = 2 / np.sqrt(n)
+    cs_std_theor = np.sqrt(2 / n)
+
+    assert np.isclose(pds1_f.std() * 2 / ncounts_per_intv1, pds_std_theor,
+                      rtol=0.1)
+    assert np.isclose(pds2_f.std() * 2 / ncounts_per_intv2, pds_std_theor,
+                      rtol=0.1)
+    assert np.isclose(cs_f.std() * 2 / ncounts_per_intv_geomav, cs_std_theor,
+                      rtol=0.1)
+    assert np.isclose(ptot_f.std() * 2 / ncounts_per_intvtot, pds_std_theor,
+                      rtol=0.1)
 
 
 @pytest.mark.skipif('not HAS_HDF5')
@@ -123,6 +178,59 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
     assert "Unknown periodogram type" in str(excinfo.value)
 
 
+@pytest.mark.skipif('not HAS_HDF5')
+@pytest.mark.parametrize('ctrate', [200])
+def test_fad_power_spectrum_compliant_leahy(ctrate):
+    dt = 0.1
+    deadtime = 2.5e-3
+    length = 25600
+    segment_size = 256.
+    ncounts = np.int(ctrate * length)
+    ev1 = generate_events(length, ncounts)
+    ev2 = generate_events(length, ncounts)
+
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+
+    results_out = \
+        calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
+                          strict=True, verbose=True,
+                          tolerance=0.05, all_leahy=True,
+                          output_file='table.hdf5', return_objects=True)
+
+    results = Table.read(results_out)
+
+    pds1_f = results['pds1'].power
+    pds2_f = results['pds2'].power
+    cs_f = results['cs'].power
+    ptot_f = results['ptot'].power
+
+    n = length / segment_size
+
+    pds_std_theor = 2 / np.sqrt(n)
+    cs_std_theor = np.sqrt(2 / n)
+
+    assert np.isclose(pds1_f.std(), pds_std_theor, rtol=0.1)
+    assert np.isclose(pds2_f.std(), pds_std_theor, rtol=0.1)
+    assert np.isclose(cs_f.std(), cs_std_theor, rtol=0.1)
+    assert np.isclose(ptot_f.std(), pds_std_theor, rtol=0.1)
+
+    results_cs = get_periodograms_from_FAD_results(results_out, kind='cs')
+    assert isinstance(results_cs, AveragedCrossspectrum)
+    assert np.all(results_cs.power == cs_f)
+    results_ps = get_periodograms_from_FAD_results(results_out, kind='pds1')
+    assert isinstance(results_ps, AveragedPowerspectrum)
+    assert np.all(results_ps.power == pds1_f)
+    results_ps = get_periodograms_from_FAD_results(results_out, kind='pds2')
+    assert isinstance(results_ps, AveragedPowerspectrum)
+    assert np.all(results_ps.power == pds2_f)
+    with pytest.raises(ValueError) as excinfo:
+        _ = get_periodograms_from_FAD_results(results_out, kind='a')
+    assert "Unknown periodogram type" in str(excinfo.value)
+
+
 @pytest.mark.parametrize('ctrate', [0.5])
 def test_fad_power_spectrum_unknown_alg(ctrate):
     dt = 0.1
@@ -133,8 +241,10 @@ def test_fad_power_spectrum_unknown_alg(ctrate):
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
-    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
-    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
 
     with pytest.raises(ValueError) as excinfo:
         calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
@@ -154,8 +264,10 @@ def test_fad_power_spectrum_non_compliant(ctrate):
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, int(ncounts * 0.6))
 
-    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
-    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
 
     with pytest.warns(UserWarning) as record:
         results = \
@@ -181,8 +293,10 @@ def test_fad_power_spectrum_non_compliant_raise(ctrate):
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
-    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length, deadtime=deadtime)
-    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length, deadtime=deadtime)
+    lc1 = generate_deadtime_lc(ev1, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
+    lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
+                               deadtime=deadtime)
 
     with pytest.raises(RuntimeError) as excinfo:
         _ = \

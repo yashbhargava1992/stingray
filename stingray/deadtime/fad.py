@@ -49,7 +49,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
                              plot=False, ax=None, smoothing_alg='gauss',
                              smoothing_length=None, verbose=False,
                              tolerance=0.05, strict=False, all_leahy=False,
-                             output_file=None):
+                             output_file=None, return_objects=False):
     """Calculate Frequency Amplitude Difference-corrected (cross)power spectra.
 
     Reference: Bachetti \& Huppenkothen, 2018, ApJ, 853L, 21
@@ -111,12 +111,20 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
 
     Returns
     -------
-    results : class:`astropy.Table` object
-        This table contains the results of the FAD correction, in its columns:
-        pds1: the corrected PDS of ``lc1``
-        pds2: the corrected PDS of ``lc2``
-        cs: the corrected cospectrum
-        ptot: the corrected PDS of lc1 + lc2
+    results : class:`astropy.table.Table` object or dict
+        The content of ``results`` depends on whether ``return_objects`` is
+        True or False.
+        If ``return_objects==False``, ``results`` is a `Table` with the
+        following columns:
+
+        + pds1: the corrected PDS of ``lc1``
+        + pds2: the corrected PDS of ``lc2``
+        + cs: the corrected cospectrum
+        + ptot: the corrected PDS of lc1 + lc2
+
+        If True, ``results`` is a ``dict``, with keys named like the columns
+        listed above but with `AveragePowerspectrum` or
+        `AverageCrossspectrum` objects instead of arrays.
 
     """
     if smoothing_length is None:
@@ -251,10 +259,25 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     results.meta['nph'] = nph_tot
     results.meta['norm'] = 'leahy' if all_leahy else 'none'
     results.meta['smoothing_length'] = smoothing_length
+    results.meta['df'] = np.mean(np.diff(freq))
 
     if output_file is not None:
         results.write(output_file, overwrite=True)
         return output_file
+
+    if return_objects:
+        result_table = results
+        results = {}
+        results['pds1'] = \
+            get_periodograms_from_FAD_results(result_table, kind='pds1')
+        results['pds2'] = \
+            get_periodograms_from_FAD_results(result_table, kind='pds2')
+        results['cs'] = \
+            get_periodograms_from_FAD_results(result_table, kind='cs')
+        results['ptot'] = \
+            get_periodograms_from_FAD_results(result_table, kind='ptot')
+        results['fad'] = result_table['fad']
+
     return results
 
 
@@ -296,7 +319,7 @@ def get_periodograms_from_FAD_results(FAD_results, kind='ptot'):
     powersp.power = FAD_results[kind]
     powersp.power_err = np.zeros_like(powersp.power)
     powersp.m = FAD_results.meta['n']
-    powersp.df = np.mean(np.diff(powersp.freq))
+    powersp.df = FAD_results.meta['df']
     powersp.n = len(powersp.freq)
     powersp.norm = FAD_results.meta['norm']
 
