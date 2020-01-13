@@ -111,18 +111,19 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
 
     Returns
     -------
-    results : class:`astropy.table.Table` object or dict
+    results : class:`astropy.table.Table` object or ``dict`` or ``str``
         The content of ``results`` depends on whether ``return_objects`` is
         True or False.
-        If ``return_objects==False``, ``results`` is a `Table` with the
-        following columns:
+        If ``return_objects==False``,
+        ``results`` is a `Table` with the following columns:
 
         + pds1: the corrected PDS of ``lc1``
         + pds2: the corrected PDS of ``lc2``
         + cs: the corrected cospectrum
         + ptot: the corrected PDS of lc1 + lc2
 
-        If True, ``results`` is a ``dict``, with keys named like the columns
+        If ``return_objects==True``, ``results`` is a ``dict``, with keys
+        named like the columns
         listed above but with `AveragePowerspectrum` or
         `AverageCrossspectrum` objects instead of arrays.
 
@@ -263,7 +264,6 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
 
     if output_file is not None:
         results.write(output_file, overwrite=True)
-        return output_file
 
     if return_objects:
         result_table = results

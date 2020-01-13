@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pytest
 
@@ -147,7 +148,11 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
                           tolerance=0.05, all_leahy=True,
                           output_file='table.hdf5')
 
-    results = Table.read(results_out)
+    results = Table.read('table.hdf5')
+    os.unlink('table.hdf5')
+
+    for attr in ['pds1', 'pds2', 'cs', 'ptot']:
+        assert np.allclose(results_out[attr], results[attr])
 
     pds1_f = results['pds1']
     pds2_f = results['pds2']
@@ -180,7 +185,7 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
 
 @pytest.mark.skipif('not HAS_HDF5')
 @pytest.mark.parametrize('ctrate', [200])
-def test_fad_power_spectrum_compliant_leahy(ctrate):
+def test_fad_power_spectrum_compliant_leahy_objects(ctrate):
     dt = 0.1
     deadtime = 2.5e-3
     length = 25600
@@ -200,12 +205,16 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
                           tolerance=0.05, all_leahy=True,
                           output_file='table.hdf5', return_objects=True)
 
-    results = Table.read(results_out)
+    results = Table.read('table.hdf5')
+    os.unlink('table.hdf5')
 
-    pds1_f = results['pds1'].power
-    pds2_f = results['pds2'].power
-    cs_f = results['cs'].power
-    ptot_f = results['ptot'].power
+    for attr in ['pds1', 'pds2', 'cs', 'ptot']:
+        assert np.allclose(results_out[attr].power, results[attr])
+
+    pds1_f = results_out['pds1'].power
+    pds2_f = results_out['pds2'].power
+    cs_f = results_out['cs'].power
+    ptot_f = results_out['ptot'].power
 
     n = length / segment_size
 
@@ -216,19 +225,6 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
     assert np.isclose(pds2_f.std(), pds_std_theor, rtol=0.1)
     assert np.isclose(cs_f.std(), cs_std_theor, rtol=0.1)
     assert np.isclose(ptot_f.std(), pds_std_theor, rtol=0.1)
-
-    results_cs = get_periodograms_from_FAD_results(results_out, kind='cs')
-    assert isinstance(results_cs, AveragedCrossspectrum)
-    assert np.all(results_cs.power == cs_f)
-    results_ps = get_periodograms_from_FAD_results(results_out, kind='pds1')
-    assert isinstance(results_ps, AveragedPowerspectrum)
-    assert np.all(results_ps.power == pds1_f)
-    results_ps = get_periodograms_from_FAD_results(results_out, kind='pds2')
-    assert isinstance(results_ps, AveragedPowerspectrum)
-    assert np.all(results_ps.power == pds2_f)
-    with pytest.raises(ValueError) as excinfo:
-        _ = get_periodograms_from_FAD_results(results_out, kind='a')
-    assert "Unknown periodogram type" in str(excinfo.value)
 
 
 @pytest.mark.parametrize('ctrate', [0.5])
