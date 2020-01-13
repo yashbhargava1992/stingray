@@ -10,6 +10,9 @@ except ImportError:
     from scipy.misc import factorial
 
 
+__FACTORIALS = factorial(np.arange(160))
+
+
 def r_in(td, r_0):
     """Calculate incident countrate given dead time and detected countrate."""
     tau = 1 / r_0
@@ -27,7 +30,7 @@ def Gn(x, n):
     """Term in Eq. 34 in Zhang+95."""
     s = 0
     for l in range(0, n):
-        s += (n - l) / factorial(l) * x**l
+        s += (n - l) / __FACTORIALS[l] * x**l
     return np.exp(-x) * s
 
 
