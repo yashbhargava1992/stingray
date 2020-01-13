@@ -5,10 +5,9 @@ from astropy.table import Table
 from stingray.lightcurve import Lightcurve
 from stingray.deadtime.fad import calculate_FAD_correction
 from stingray.deadtime.fad import get_periodograms_from_FAD_results
-from stingray.deadtime.filters import filter_for_deadtime
+from stingray.filters import filter_for_deadtime
 from stingray.crossspectrum import AveragedCrossspectrum
 from stingray.powerspectrum import AveragedPowerspectrum
-import matplotlib.pyplot as plt
 
 try:
     import h5py

@@ -6,7 +6,7 @@ from stingray.lightcurve import Lightcurve
 from stingray.powerspectrum import AveragedPowerspectrum
 from stingray.deadtime.model import r_det, r_in, pds_model_zhang
 from stingray.deadtime.model import check_A, check_B, heaviside
-from stingray.deadtime.filters import filter_for_deadtime
+from stingray.filters import filter_for_deadtime
 
 
 def test_heaviside():
