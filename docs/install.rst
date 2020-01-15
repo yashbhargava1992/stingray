@@ -65,6 +65,18 @@ the ``stingray`` root directory and execute ::
 
     $ python setup.py test
 
+If you have installed Stingray via pip or conda, the source directly might
+not be easily accessible. Once installed, you can also run the tests using::
+
+   $ python -c 'import stingray; stingray.test()'
+
+or from within a python interpreter::
+
+   >>> import stingray
+   >>> stingray.test()
+
+
+
 Documentation
 -------------
 
