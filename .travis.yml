@@ -28,7 +28,7 @@ env:
         - NUMPY_VERSION=stable
 
         - SETUP_CMD='test --coverage'
-        - PIP_DEPENDENCIES='emcee statsmodels corner'
+        - PIP_DEPENDENCIES='emcee statsmodels corner Lightkurve'
         - CONDA_DEPENDENCIES='scipy h5py matplotlib'
         - SETUP_XVFB=True
 

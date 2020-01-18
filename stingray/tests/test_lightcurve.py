@@ -4,6 +4,7 @@ from astropy.tests.helper import pytest
 import warnings
 import os
 import matplotlib.pyplot as plt
+from numpy.testing import assert_allclose
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
@@ -12,11 +13,17 @@ from stingray.gti import create_gti_mask
 np.random.seed(20150907)
 
 _H5PY_INSTALLED = True
+_HAS_LIGHTKURVE = True
 
 try:
     import h5py
 except ImportError:
     _H5PY_INSTALLED = False
+
+try:
+    import Lightkurve
+except ImportError:
+    _HAS_LIGHTKURVE = False
 
 def fvar_fun(lc):
     from stingray.utils import excess_variance
@@ -812,6 +819,8 @@ class TestLightcurve(object):
             # Requires Lightkurve
             pass
 
+    @pytest.mark.skipif(not _HAS_LIGHTKURVE,
+                        reason='Lightkurve not installed')
     def test_from_lightkurve(self):
         try:
             from Lightkurve import LightCurve
