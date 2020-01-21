@@ -63,14 +63,23 @@ you think might be bugs on our GitHub `Issues page <https://github.com/StingrayS
 Stingray uses `py.test <https://doc.pytest.org/en/latest/>`_ for testing. To run the tests, go into
 the ``stingray`` root directory and execute ::
 
+.. doctest::
+    :options: +SKIP
+
     $ python setup.py test
 
 If you have installed Stingray via pip or conda, the source directory might
 not be easily accessible. Once installed, you can also run the tests using::
 
+.. doctest::
+    :options: +SKIP
+
    $ python -c 'import stingray; stingray.test()'
 
 or from within a python interpreter::
+
+.. doctest::
+    :options: +SKIP
 
    >>> import stingray
    >>> stingray.test()
