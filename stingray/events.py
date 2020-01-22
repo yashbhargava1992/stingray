@@ -4,16 +4,18 @@ Definition of :class:`EventList`.
 :class:`EventList` is used to handle photon arrival times.
 """
 
+import copy
+
+import numpy as np
+import numpy.random as ra
 
 from .io import read, write
 from .utils import simon, assign_value_if_none
+from .filters import get_deadtime_mask
 from .gti import cross_gtis, append_gtis, check_separate
 
 from .lightcurve import Lightcurve
 from stingray.simulator.base import simulate_times
-
-import numpy as np
-import numpy.random as ra
 
 __all__ = ['EventList']
 
@@ -413,3 +415,71 @@ class EventList(object):
 
         else:
             raise KeyError("Format not understood.")
+
+    def apply_deadtime(self, deadtime, inplace=False, **kwargs):
+        """Apply deadtime filter to this event list.
+
+        Additional arguments in ``kwargs`` are passed to `get_deadtime_mask`
+
+        Parameters
+        ----------
+        deadtime : float
+            Value of dead time to apply to data
+        inplace : bool, default False
+            If True, apply the deadtime to the current event list. Otherwise,
+            return a new event list.
+
+        Returns
+        -------
+        new_event_list : `EventList` object
+            Filtered event list. if `inplace` is True, this is the input object
+            filtered for deadtime, otherwise this is a new object.
+        additional_output : object
+            Only returned if `return_all` is True. See `get_deadtime_mask` for
+            more details.
+
+        Examples
+        --------
+        >>> events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
+        >>> events = EventList(events)
+        >>> events.pi=np.array([1, 2, 2, 2, 2, 1, 1, 1, 2, 1])
+        >>> events.energy=np.array([1, 2, 2, 2, 2, 1, 1, 1, 2, 1])
+        >>> events.mjdref = 10
+        >>> filt_events, retval = events.apply_deadtime(0.11, inplace=False,
+        ...                                             verbose=False,
+        ...                                             return_all=True)
+        >>> filt_events is events
+        False
+        >>> expected = np.array([1, 2, 2.2, 3, 3.2])
+        >>> np.all(filt_events.time == expected)
+        True
+        >>> np.all(filt_events.pi == 1)
+        True
+        >>> np.all(filt_events.energy == 1)
+        True
+        >>> np.all(events.pi == 1)
+        False
+        >>> filt_events = events.apply_deadtime(0.11, inplace=True,
+        ...                                     verbose=False)
+        >>> filt_events is events
+        True
+        """
+        if inplace:
+            new_ev = self
+        else:
+            new_ev = copy.deepcopy(self)
+
+        local_retall = kwargs.pop('return_all', False)
+
+        mask, retall = get_deadtime_mask(new_ev.time, deadtime,
+                                         return_all=True,
+                                         **kwargs)
+
+        for attr in 'time', 'energy', 'pi':
+            if hasattr(new_ev, attr):
+                setattr(new_ev, attr, getattr(new_ev, attr)[mask])
+
+        if local_retall:
+            new_ev = [new_ev, retall]
+
+        return new_ev

@@ -4,11 +4,12 @@ import numpy as np
 import pytest
 import os
 
-from ..gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
-from ..gti import check_separate, create_gti_mask, check_gtis
-from ..gti import create_gti_from_condition, gti_len, gti_border_bins
-from ..gti import time_intervals_from_gtis, bin_intervals_from_gtis
-from ..gti import create_gti_mask_complete, join_equal_gti_boundaries
+from stingray.gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
+from stingray.gti import check_separate, create_gti_mask, check_gtis
+from stingray.gti import create_gti_from_condition, gti_len, gti_border_bins
+from stingray.gti import time_intervals_from_gtis, bin_intervals_from_gtis
+from stingray.gti import create_gti_mask_complete, join_equal_gti_boundaries
+from stingray import StingrayError
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
@@ -50,6 +51,27 @@ class TestGTI(object):
         assert np.all(bti == [[2, 4], [5, 7], [10, 11], [11.2, 12.2]]), \
             'BTI is wrong!, %s' % repr(bti)
 
+    def test_bti_start_and_stop(self):
+        """Test the inversion of GTIs."""
+        gti = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
+        bti = get_btis(gti, start_time=0, stop_time=14)
+
+        assert np.all(bti == [[0, 1], [2, 4], [5, 7], [10, 11], [11.2, 12.2],
+                              [13.2, 14]])
+
+    def test_bti_empty_valid(self):
+        gti = np.array([])
+
+        bti = get_btis(gti, start_time=0, stop_time=1)
+        assert np.all(bti == np.asarray([[0, 1]]))
+
+    def test_bti_fail(self):
+        gti = np.array([])
+
+        with pytest.raises(ValueError) as excinfo:
+            _ = get_btis(gti)
+        assert "Empty GTI" in str(excinfo.value)
+
     def test_gti_mask(self):
         arr = np.array([0, 1, 2, 3, 4, 5, 6])
         gti = np.array([[0, 2.1], [3.9, 5]])
@@ -57,6 +79,16 @@ class TestGTI(object):
         # NOTE: the time bin has to be fully inside the GTI. That is why the
         # bin at times 0, 2, 4 and 5 are not in.
         assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
+
+    def test_gti_mask_minlen(self):
+        arr = np.array([0, 1, 2, 3, 4, 5, 6])
+        gti = np.array([[0, 2.1], [3.9, 5]])
+        mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True,
+                                         min_length=2)
+        # NOTE: the time bin has to be fully inside the GTI. That is why the
+        # bin at times 0, 2, 4 and 5 are not in.
+        assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
+        assert np.all(new_gtis == np.array([[0, 2.1]]))
 
     def test_gti_mask_none_longer_than_minlen(self):
         arr = np.array([0, 1, 2, 3, 4, 5, 6])
@@ -123,6 +155,13 @@ class TestGTI(object):
         condition = np.array([1, 1, 1, 1, 0, 1, 0], dtype=bool)
         gti = create_gti_from_condition(t, condition, safe_interval=1)
         assert np.all(gti == np.array([[0.5, 2.5]]))
+
+    def test_gti_from_condition_fail(self):
+        t = np.array([0, 1, 2, 3])
+        condition = np.array([1, 1, 1], dtype=bool)
+        with pytest.raises(StingrayError) as excinfo:
+            _ = create_gti_from_condition(t, condition, safe_interval=1)
+        assert "The length of the" in str(excinfo.value)
 
     def test_load_gtis(self):
         """Test event file reading."""
