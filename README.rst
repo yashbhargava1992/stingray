@@ -129,23 +129,14 @@ Test suite
 
 Stingray uses `py.test` for testing. To run the tests, try::
 
-.. doctest::
-    :options: +SKIP
-
    $ python setup.py test
 
 If you have installed Stingray via pip or conda, the source directory might 
 not be easily accessible. Once installed, you can also run the tests using::
 
-.. doctest::
-    :options: +SKIP
-
    $ python -c 'import stingray; stingray.test()'
 
 or from within a python interpreter::
-
-.. doctest::
-    :options: +SKIP
 
    >>> import stingray
    >>> stingray.test()
