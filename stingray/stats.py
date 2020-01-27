@@ -14,12 +14,11 @@ __all__ = ['p_multitrial_from_single_trial',
 
 
 def p_multitrial_from_single_trial(p1, n):
-    """Calculate a multi-trial probability from a single-trial one.
+    """Calculate a multi-trial p-value from a single-trial one.
 
-    Calling _p_ the probability of a single hit, the Binomial
+    Calling _p_ the probability of a single success, the Binomial
     distributions says that the probability _at least_ one outcome
     in n trials is
-
                          n
     P (k ≥ 1) =   Σ    (   ) p^k (1 - p)^(n - k)
                 k ≥ 1    k
@@ -28,24 +27,41 @@ def p_multitrial_from_single_trial(p1, n):
                           n
     P (k ≥ 1) =   1 -   (   ) (1 - p)^n = 1 - (1 - p)^n
                           0
+
+    Parameters
+    ----------
+    p1 : float
+        The significance at which we reject the null hypothesis on
+        each single trial.
+    n : int
+        The number of trials
+
+    Returns
+    -------
+    pn : float
+        The significance at which we reject the null hypothesis
+        after multiple trials
     """
     return 1 - (1 - np.longdouble(p1))**np.longdouble(n)
 
 
 def p_single_trial_from_p_multitrial(pn, n):
-    """Calculate a single-trial probability from a multi-trial one.
+    """Calculate the single-trial p-value from a total p-value
 
-    How to calculate a single-trial probability when we only have
-    a multi-trial one? This might be the case because, e.g., we
-    want to have a 10% probability of detecting a signal in an
+    Let us say that we want to reject a null hypothesis at the
+    ``pn`` level, after executing ``n`` different measurements.
+    This might be the case because, e.g., we
+    want to have a 1% probability of detecting a signal in an
     entire power spectrum, and we need to correct the detection
     level accordingly.
 
     The typical procedure is dividing the initial probability
     (often called _epsilon_) by the number of trials. This is
-    often a good approximation, but it is not formally correct.
-    If epsilon * n approaches 1, this approximation gives
-    incorrect results.
+    called the Bonferroni correction and it is often a good
+    approximation, when ``pn`` is low: ``p1 = pn / n``.
+
+    However, if ``pn`` is close to 1, this approximation gives
+   incorrect results.
 
     Here we calculate this probability by inverting the Binomial
     problem. Given that (see ``p_multitrial_from_single_trial``)
@@ -57,8 +73,36 @@ def p_single_trial_from_p_multitrial(pn, n):
     we get the single trial probability from the multi-trial one
     from
 
-    p = 1 - (1 - P)^1/n
+    p = 1 - (1 - P)^(1/n)
 
+    This is also known as Šidák correction.
+
+    Parameters
+    ----------
+    pn : float
+        The significance at which we want to reject the null
+        hypothesis after multiple trials
+    n : int
+        The number of trials
+
+    Returns
+    -------
+    p1 : float
+        The significance at which we reject the null hypothesis on
+        each single trial.
+
+    Parameters
+    ----------
+    pn : float or array of float (same size as p1)
+        The probability of at least one success in ``n`` trials, each with
+        probability ``p1``
+    n : int
+        The number of trials
+
+    Returns
+    -------
+    p1 : float or array of floats, same size as ``pn``
+        the probability of success in each trial.
     """
     if isinstance(n, Iterable):
         return np.array([p_single_trial_from_p_multitrial(pn, ni)
@@ -108,7 +152,8 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     nbin : int
         The number of bins in the profile
     epsilon : float, default 0.01
-        The fractional probability that the signal has been produced by noise
+        The fractional probability that the signal has been produced
+        by noise
 
     Other Parameters
     ----------------

@@ -246,7 +246,7 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     dt = apply_function_if_none(dt, time,
                                 lambda x: np.median(np.diff(x)))
-
+    epsilon_times_dt = epsilon * dt
     gtis_new = copy.deepcopy(gtis)
     gti_mask = np.zeros(len(gtis), dtype=bool)
 
@@ -262,8 +262,8 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     # in order to simplify the calculation of the mask, but they will _not_
     # be returned.
     gtis_to_mask = copy.deepcopy(gtis_new)
-    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon * dt + dt / 2
-    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon * dt - dt / 2
+    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon_times_dt + dt / 2
+    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon_times_dt - dt / 2
 
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
@@ -329,6 +329,7 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
                               np.zeros_like(time) +
                               np.median(np.diff(np.sort(time)) / 2))
 
+    epsilon_times_dt = epsilon * dt
     mask = np.zeros(len(time), dtype=bool)
 
     if safe_interval is None:
@@ -346,8 +347,8 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
         limmax -= safe_interval[1]
         if limmax - limmin >= min_length:
             newgtis[ig][:] = [limmin, limmax]
-            cond1 = time >= limmin + dt / 2 - epsilon * dt
-            cond2 = time <= limmax - dt / 2 + epsilon * dt
+            cond1 = time >= (limmin + dt / 2 - epsilon_times_dt)
+            cond2 = time <= (limmax - dt / 2 + epsilon_times_dt)
 
             good = np.logical_and(cond1, cond2)
             mask[good] = True
@@ -909,6 +910,8 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
     """
     if dt is None:
         dt = np.median(np.diff(time))
+
+    epsilon_times_dt = epsilon * dt
     nbin = np.long(chunk_length / dt)
 
     if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
@@ -918,10 +921,10 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
     time_low = time - dt / 2
     time_high = time + dt / 2
     for g in gtis:
-        if g[1] - g[0] + epsilon * dt < chunk_length:
+        if (g[1] - g[0] + epsilon_times_dt) < chunk_length:
             continue
-        good_low = time_low >= g[0] - epsilon * dt
-        good_up = time_high <= g[1] + epsilon * dt
+        good_low = time_low >= (g[0] - epsilon_times_dt)
+        good_up = time_high <= (g[1] + epsilon_times_dt)
         good = good_low & good_up
         t_good = time[good]
         if len(t_good) == 0:
@@ -931,11 +934,11 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         if stopbin > len(time):
             stopbin = len(time)
 
-        if time[startbin] < g[0] + dt / 2 - epsilon * dt:
+        if time[startbin] < (g[0] + dt / 2 - epsilon_times_dt):
             startbin += 1
         # Would be g[1] - dt/2, but stopbin is the end of an interval
         # so one has to add one bin
-        if time[stopbin - 1] > g[1] - dt / 2 + epsilon * dt:
+        if time[stopbin - 1] > (g[1] - dt / 2 + epsilon_times_dt):
             stopbin -= 1
 
         newbins = np.arange(startbin, stopbin - nbin + 1,
@@ -989,6 +992,7 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     if dt is None:
         dt = np.median(np.diff(time))
 
+    epsilon_times_dt = epsilon * dt
     spectrum_start_bins = np.array([], dtype=np.long)
     spectrum_stop_bins = np.array([], dtype=np.long)
     for g in gtis:
@@ -1001,11 +1005,11 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
         if stopbin > len(time):
             stopbin = len(time)
 
-        if time[startbin] < g[0] + dt / 2 - epsilon * dt:
+        if time[startbin] < (g[0] + dt / 2 - epsilon_times_dt):
             startbin += 1
         # Would be g[1] - dt/2, but stopbin is the end of an interval
         # so one has to add one bin
-        if time[stopbin - 1] > g[1] - dt / 2 + epsilon * dt:
+        if time[stopbin - 1] > (g[1] - dt / 2 + epsilon_times_dt):
             stopbin -= 1
         spectrum_start_bins = \
             np.append(spectrum_start_bins,

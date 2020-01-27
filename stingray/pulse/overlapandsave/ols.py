@@ -56,7 +56,6 @@ from itertools import product
 from typing import List, Iterable, Tuple
 
 from typing import List
-import math
 
 
 def flip_all(array):
@@ -87,36 +86,36 @@ def nextpow(a: float, x: float) -> float:
     """The smallest `a^n` not less than `x`, where `n` is a non-negative integer.
 
     `a` must be greater than 1, and `x` must be greater than 0.
-    # Examples
-    ```jldoctest
-    julia> nextpow(2, 7)
-    8
-    julia> nextpow(2, 9)
-    16
-    julia> nextpow(5, 20)
-    25
-    julia> nextpow(4, 16)
-    16
-    ```
+
+    Examples
+    --------
+    >>> nextpow(2, 7)
+    8.0
+    >>> nextpow(2, 9)
+    16.0
+    >>> nextpow(5, 20)
+    25.0
+    >>> nextpow(4, 16)
+    16.0
     """
     assert x > 0 and a > 1
     if x <= 1:
         return 1.0
-    n = math.ceil(math.log(x, a))
+    n = np.ceil(np.math.log(x, a))
     p = a ** (n - 1)
     return p if p >= x else a ** n
 
 
 def nextprod(a: List[int], x: int) -> int:
-    """Next integer greater than or equal to `x` that can be written as ``\\prod k_i^{a_i}`` for integers
-    ``a_1``, ``a_2``, etc.
-    # Examples
-    ```jldoctest
-    julia> nextprod([2, 3], 105)
+    """Find a multiple of a few factors that approximates x
+
+    Next integer greater than or equal to `x` that can be written
+    as ``\\prod k_i^{a_i}`` for integers ``a_1``, ``a_2``, etc.
+
+    Examples
+    --------
+    >>> nextprod([2, 3], 105)
     108
-    julia> 2^2 * 3^3
-    108
-    ```
     """
     k = len(a)
     v = [1] * k  # current value of each counter
@@ -148,8 +147,7 @@ def nextprod(a: List[int], x: int) -> int:
 
 def array_range(start: List[int], stop: List[int], step: List[int]) -> \
         Iterable[Tuple]:
-    """
-    Makes an iterable of non-overlapping slices, e.g., to partition an array
+    """Make an iterable of non-overlapping slices.
 
     Returns an iterable of tuples of slices, each of which can be used to
     index into a multidimensional array such as Numpy's ndarray.
@@ -163,6 +161,29 @@ def array_range(start: List[int], stop: List[int], step: List[int]) -> \
     expected to be list-like of same length. `start` indicates the indexes
     to start each dimension. `stop` indicates the stop index for each
     dimension. `step` is the size of the chunk in each dimension.
+
+    Parameters
+    ----------
+    start : list of ints
+        Starting indices of slices
+    stop : list of ints
+        Stopping indices of slices
+    step : list of ints
+        Steps for each slice
+
+    Returns
+    -------
+    slices : tuple
+        Tuple containing all the generated slices.
+
+    Examples
+    --------
+    >>> list(array_range([0, 0], [10, 10], [5, 7]))
+    [(slice(0, 5, None), slice(0, 7, None)),
+     (slice(0, 5, None), slice(7, 10, None)),
+     (slice(5, 10, None), slice(0, 7, None)),
+     (slice(5, 10, None), slice(7, 10, None))]
+
     """
     assert len(start) == len(stop)
     assert len(stop) == len(step)
@@ -175,50 +196,97 @@ def array_range(start: List[int], stop: List[int], step: List[int]) -> \
 
 
 def prepareh(h, nfft: List[int], rfftn=None):
-    """Pre-process a filter array
+    """Pre-process a filter array.
 
     Given a real filter array `h` and the length of the FFT `nfft`,
     returns the frequency-domain array. Needs to be computed
     only once before all steps of the overlap-save algorithm run.
 
-    `rfftn` defaults to `numpy.fft.rfftn` and may be overridden.
+    ``rfftn`` defaults to `numpy.fft.rfftn` and may be overridden.
+
+    Parameters
+    ----------
+    h : array of floats
+        Filter array
+    nfft : int
+        Length of the FFT
+
+    Optional parameters
+    -------------------
+    rfftn : function
+        Substitute of `numpy.fft.rfftn`, provided by the user
+
+    Returns
+    -------
+    hfftconj : array of complex
+        The FFT-transformed, conjugate filter array
     """
     rfftn = rfftn or np.fft.rfftn
     return np.conj(rfftn(flip(np.conj(h)), nfft))
 
 
 def slice2range(s: slice):
-    "Convert slice to range"
+    "Convert slice to range."
     return range(s.start, s.stop, s.step or 1)
 
 
 def edgesReflect(x, slices):
-    "Find the edges of `x` that np.pad in *REFLECT* mode will need"
+    """Find the edges of `x` that np.pad in *REFLECT* mode will need.
+
+    Parameters
+    ----------
+    x : array
+        Input array
+    slices : list of slice objects
+        Input slices
+
+    Returns
+    -------
+    edges : tuple of slice objects
+
+    """
     starts = [
         0 if s.start < 0 else np.min([s.start, xdim - (s.stop - xdim)])
         for (s, xdim) in zip(slices, x.shape)
     ]
     stops = [
-        xdim if s.stop > xdim else np.max([s.stop, -s.start]) for (s, xdim) in zip(slices, x.shape)
+        xdim if s.stop > xdim else np.max([s.stop, -s.start])
+        for (s, xdim) in zip(slices, x.shape)
     ]
     edges = tuple(slice(lo, hi) for (lo, hi) in zip(starts, stops))
     return edges
 
 
 def edgesConstant(x, slices):
-    "Find the edges of `x` that np.pad in CONSTANT mode will need"
+    """Find the edges of `x` that np.pad in CONSTANT mode will need.
+
+    Parameters
+    ----------
+    x : array
+        Input array
+    slices : list of slice objects
+        Input slices
+
+    Returns
+    -------
+    edges : tuple of slice objects
+    """
     return tuple(
-        slice(np.maximum(0, s.start), np.minimum(xdim, s.stop)) for (s, xdim) in zip(slices, x.shape))
+        slice(np.maximum(0, s.start), np.minimum(xdim, s.stop))
+        for (s, xdim) in zip(slices, x.shape))
 
 
 def padEdges(x, slices, mode='constant', **kwargs):
     """Wrapper around `np.pad`
 
-    This wrapper seeks to call `np.pad` with the smallest amount of data as needed, as dictated by `slices`.
+    This wrapper seeks to call `np.pad` with the smallest amount of data as
+    needed, as dictated by `slices`.
     """
-    if all(map(lambda s, xdim: s.start >= 0 and s.stop <= xdim, slices, x.shape)):
+    if all(map(lambda s, xdim: s.start >= 0 and s.stop <= xdim,
+               slices, x.shape)):
         return x[slices]
-    beforeAfters = [(-s.start if s.start < 0 else 0, s.stop - xdim if s.stop > xdim else 0)
+    beforeAfters = [(-s.start if s.start < 0 else 0, s.stop - xdim
+                     if s.stop > xdim else 0)
                     for (s, xdim) in zip(slices, x.shape)]
     if mode == 'constant':
         edges = edgesConstant(x, slices)
@@ -226,8 +294,10 @@ def padEdges(x, slices, mode='constant', **kwargs):
         edges = edgesReflect(x, slices)
     else:
         assert False
+
     xpadded = np.pad(x[edges], beforeAfters, mode=mode, **kwargs)
-    # we now have an array that's padded just right to the top/left but maybe too big bottom/right
+    # we now have an array that's padded just right to the top/left but
+    # maybe too big bottom/right
     firsts = tuple(slice(0, len(slice2range(s))) for s in slices)
     return xpadded[firsts]
 
@@ -270,6 +340,39 @@ def olsStep(x,
 
     N.B. These are the only modes supported by this module. Others are
     *UNSUPPORTED*.
+
+    Parameters
+    ----------
+    x : float/complex array
+        This is the array that we need to convolve
+    hfftconj : complex array
+        filter array, pre-transformed by ``prepareh``
+    starts: list of ints
+        Starting indeces for each dimension
+    lengths: list of ints
+        Length of interval in each dimension
+    nfft: int
+        Length of the FFT
+    nh: tuple of int
+        Shape of filter array
+
+    Optional parameters
+    -------------------
+    rfftn : function, default None
+        Substitute of `numpy.fft.rfftn`, provided by the user
+    irfftn : function, default None
+        Substitute of `numpy.fft.irfftn`, provided by the user
+    mode : str
+        The mode of the convolution. The only accepted modes are
+        ``constant`` and ``reflect``
+    **kwargs : dict
+        Keyword arguments to be passed to ``np.pad``
+
+    Returns
+    -------
+    outarray : array of complex
+        The convolved array. The dimension depends on the ``mode``.
+        See the docs of `scipy.convolve`
     """
     assert len(x.shape) == len(hfftconj.shape)
     assert len(x.shape) == len(starts) and len(x.shape) == len(lengths)
@@ -289,7 +392,8 @@ def olsStep(x,
     return output[tuple(slice(0, s) for s in lengths)]
 
 
-def ols(x, h, size=None, nfft=None, out=None, rfftn=None, irfftn=None, mode='constant', **kwargs):
+def ols(x, h, size=None, nfft=None, out=None, rfftn=None, irfftn=None,
+        mode='constant', **kwargs):
     """Perform multidimensional overlap-save fast-convolution.
 
     As mentioned in the module docstring, the output of this function will be
@@ -305,33 +409,69 @@ def ols(x, h, size=None, nfft=None, out=None, rfftn=None, irfftn=None, mode='con
     `x` and `h` can be multidimensional (1D and 2D are extensively tested), but
     must have the same rank, i.e., `len(x.shape) == len(h.shape)`.
 
-    `size` is a list of integers that specifies the sizes of the output that will
-    be computed in each iteration of the overlap-save algorithm. It must be the
-    same length as `x.shape` and `h.shape`. If not provided, defaults to
-    `[4 * x for x in h.shape]`, i.e., will break up the output into chunks whose
-    size is governed by the size of `h`.
-
-    `nfft` is a list of integers that specifies the size of the FFT to be used.
-    It's length must be equal to the length of `size`. Each element of this list
-    must be large enough to store the *linear* convolution, i.e.,
-    `all([nfft[i] >= size[i] + h.shape[i] - 1 for i in range(len(nfft))])`
-    must be `True`. Set this to a multiple of small prime factors, which is the
-    default.
-
     If provided, the results will be stored in `out`. This is useful for
     memory-mapped outputs, e.g.
 
     If not provided, `rfftn` and `irfftn` default to those in `numpy.fft`. Other
     implementations matching Numpy's, such as PyFFTW, will also work.
 
-    By default, `mode='constant'` assumes elements of `x` outside its boundaries
-    are 0, which matches the textbook definition of convolution. `mode='reflect'`
-    is also supported. It should be straightforward to add support for other modes
-    supported by `np.pad`. Keyword arguments in `**kwargs` are passed to `np.pad`.
+    Parameters
+    ----------
+    x : float/complex array
+        This is the array that we need to convolve
+    h : complex array
+        Filter array. Must have the same rank as x, i.e.
+        `len(x.shape) == len(h.shape)`
+
+    Other Parameters
+    ----------------
+    size: list of ints
+        List of integers that specifies the sizes of the output that will
+        be computed in each iteration of the overlap-save algorithm. It must
+        be the same length as `x.shape` and `h.shape`. If not provided,
+        defaults to `[4 * x for x in h.shape]`, i.e., will break up the output
+        into chunks whose size is governed by the size of `h`.
+    lengths: list of ints
+        Length of interval in each dimension
+    nfft: int
+        List of integers that specifies the size of the FFT to be used.
+        Its length must be equal to the length of `size`. Each element of this
+        list must be large enough to store the *linear* convolution, i.e.,
+        `all([nfft[i] >= size[i] + h.shape[i] - 1 for i in range(len(nfft))])`
+        must be `True`. Set this to a multiple of small prime factors, which
+        is the default.
+    nh: tuple of int
+        Shape of filter array
+
+    Optional parameters
+    -------------------
+    rfftn : function, default None
+        Substitute of `numpy.fft.rfftn`, provided by the user
+    irfftn : function, default None
+        Substitute of `numpy.fft.irfftn`, provided by the user
+    out : array, default None
+        If provided, the results are stored here. Useful, e.g., for
+        memory-mapped arrays.
+    mode : str
+        The mode of the convolution. The only accepted modes are
+        ``constant`` and ``reflect``. By default, `mode='constant'` assumes
+        elements of `x` outside its boundaries are 0, which matches the
+        textbook definition of convolution. `mode='reflect'` is also
+        supported. It should be straightforward to add support for other modes
+        supported by `np.pad`.
+    **kwargs : dict
+        Keyword arguments to be passed to ``np.pad``
+
+    Returns
+    -------
+    outarray : array of complex
+        The convolved array. The dimension depends on the ``mode``.
+        See the docs of `scipy.convolve`
     """
     assert len(x.shape) == len(h.shape)
     size = size or [4 * x for x in h.shape]
-    nfft = nfft or [nextprod([2, 3, 5, 7], size + nh - 1) for size, nh in zip(size, h.shape)]
+    nfft = nfft or [nextprod([2, 3, 5, 7], size + nh - 1)
+                    for size, nh in zip(size, h.shape)]
     rfftn = rfftn or np.fft.rfftn
     irfftn = irfftn or np.fft.irfftn
     assert len(x.shape) == len(size)
