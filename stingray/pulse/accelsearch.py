@@ -286,7 +286,7 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
 
 def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
                 gti=None, zmax=100, candidate_file=None, ref_time=0,
-                debug=False, interbin=False, nproc=4):
+                debug=False, interbin=False, nproc=4, det_p_value=0.15):
     """Find pulsars with accelerated search.
 
     The theory behind these methods is described in Ransom+02, AJ 124, 1788.
@@ -297,6 +297,7 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         An evenly spaced list of times
     signal : array of floats
         The light curve, in counts; same length as ``times``
+
     Other parameters
     ----------------
     delta_z : float
@@ -317,6 +318,9 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         is just returned and not saved.
     ref_time : float, default 0
         Reference time for the times
+    det_p_value : float, default 0.015
+        Detection p-value (tail probability of noise powers, corrected for the
+        number of trials)
 
     Returns
     -------
@@ -366,7 +370,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
                'fdot', 'fddot', 'ntrial'],
         dtype=[float] * 8 + [int])
 
-    detlev = pds_detection_level(ntrial=freqs_to_search.size, epsilon=0.015)
+    detlev = pds_detection_level(ntrial=freqs_to_search.size,
+                                 epsilon=det_p_value)
 
     responses = _create_responses(range_z)
 
