@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from multiprocessing import Pool
 import warnings
+import tempfile
 
 import numpy as np
 import scipy
@@ -256,8 +257,9 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
     if debug:
         fobj = open('accelsearch_dump.dat', 'w')
 
+    _, memmapfname = tempfile.mkstemp(suffix='.npy')
     memout = np.lib.format.open_memmap(
-        'out.npy', mode='w+', dtype=A.dtype, shape=A.shape)
+        memmapfname, mode='w+', dtype=A.dtype, shape=A.shape)
 
     from functools import partial
     func = partial(_convolve_with_response, A, detlev, freq_intv_to_search,
