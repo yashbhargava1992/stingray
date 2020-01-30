@@ -31,7 +31,7 @@ from ..stats import pds_probability, pds_detection_level
 from ..gti import create_gti_mask
 
 
-def convolve_ols(a, b):
+def convolve_ols(a, b, memout=None):
     """Convolution using overlap-and-save.
 
     The code for the convolution, as implemented by Ahmed Fasih, is under
@@ -53,19 +53,24 @@ def convolve_ols(a, b):
     >>> np.allclose(ref, y)
     True
     """
+
+    if isinstance(a, str):
+        a = np.lib.format.open_memmap(a)
+
     return ols(a, b,
                size=[
                    max(4 * x, int(pow(100000, 1/len(b.shape))))
                    for x in b.shape],
-               rfftn=fftn, irfftn=ifftn)
+               rfftn=fftn, irfftn=ifftn, out=memout)
 
 
-def convolve(a, b, mode='ols'):
+def convolve(a, b, mode='ols', memout=None):
     if np.version.version.split('.') <= ['1', '15', '0']:
         mode = 'scipy'
 
     if mode == 'ols':
-        return convolve_ols(a, b)
+        return convolve_ols(a, b, memout=memout)
+
     return scipy.signal.fftconvolve(a, b, mode='same')
 
 
@@ -119,7 +124,7 @@ def _create_responses(range_z):
 
 
 def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
-                            interbin=False, n_photons=1):
+                            interbin=False, n_photons=1, memout=None):
     """Accelerate the Fourier transform and find pulsations.
 
     This function convolves the initial Fourier transform with the response
@@ -167,7 +172,7 @@ def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
     if np.asarray(response).size == 1:
         accel = A
     else:
-        accel = convolve(A, response)
+        accel = convolve(A, response, memout=memout)
         # new_size = accel.size
         # diff = new_size - A.size
         # Now uses 'same'
@@ -250,9 +255,14 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
     len_responses = len(responses)
     if debug:
         fobj = open('accelsearch_dump.dat', 'w')
+
+    memout = np.lib.format.open_memmap(
+        'out.npy', mode='w+', dtype=A.dtype, shape=A.shape)
+
     from functools import partial
     func = partial(_convolve_with_response, A, detlev, freq_intv_to_search,
-                   interbin=interbin, n_photons=n_photons)
+                   interbin=interbin, n_photons=n_photons, memout=memout)
+
     if nproc == 1:
         results = []
         for j in show_progress(range(len_responses)):
@@ -316,8 +326,11 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
         the time and the observation length.
 
     """
-    times = np.asarray(times)
-    signal = np.asarray(signal)
+    if not isinstance(times, np.ndarray):
+        times = np.asarray(times)
+    if not isinstance(signal, np.ndarray):
+        signal = np.asarray(signal)
+
     dt = times[1] - times[0]
     if gti is not None:
         gti = np.asarray(gti)

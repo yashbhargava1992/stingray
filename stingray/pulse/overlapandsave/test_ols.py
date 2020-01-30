@@ -121,7 +121,8 @@ def testOls():
                     assert np.allclose(dirt3, gold)
 
                     memx = np.lib.format.open_memmap('x.npy')
-                    memout = np.lib.format.open_memmap('out.npy', mode='w+', dtype=x.dtype, shape=x.shape)
+                    memout = np.lib.format.open_memmap(
+                        'out.npy', mode='w+', dtype=x.dtype, shape=x.shape)
                     dirtmem = ols(memx, h, [ylen, xlen], out=memout)
                     assert np.allclose(dirtmem, gold)
                     del memout
