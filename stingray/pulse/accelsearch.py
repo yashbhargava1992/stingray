@@ -375,8 +375,8 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     if debug:
         plt.plot(freq[_good_f], (spectr * spectr.conj()).real[_good_f],
                  label='PDS after filtering (if any)')
-        fname = candidate_file + '_initial_spec.jpg' \
-            if candidate_file else 'initial_spec.jpg'
+        fname = candidate_file + '_initial_spec.png' \
+            if candidate_file else 'initial_spec.png'
         plt.legend(loc=2)
         del _good_f
         plt.savefig(fname)
