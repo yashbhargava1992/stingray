@@ -125,7 +125,7 @@ def _create_responses(range_z):
 
 
 def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
-                            interbin=False, n_photons=1, memout=None):
+                            interbin=False, memout=None):
     """Accelerate the Fourier transform and find pulsations.
 
     This function convolves the initial Fourier transform with the response
@@ -135,7 +135,7 @@ def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
     Parameters
     ----------
     A : complex array
-        The initial FT
+        The initial FT, normalized so that || FT ||^2 are Leahy powers.
     response_and_j : tuple
         Tuple containing the response matrix corresponding to a given
         acceleration and its position in the list of reponses allocated
@@ -152,9 +152,6 @@ def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
 
     Other parameters
     ----------------
-    n_photons : int
-        Number of photons that contributed to the Fourier Transform (used
-        to estimate the detection level)
     interbin : bool
         Calculate interbinning to improve sensitivity to frequencies close
         to the edge of PDS bins
@@ -185,7 +182,7 @@ def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
         rf, accel = \
             interbin_fft(rf, accel)
 
-    powers_to_search = pds_from_fft(accel, n_photons)
+    powers_to_search = (accel * accel.conj()).real
 
     candidate = powers_to_search > detlev
     rs = rf[candidate]
@@ -199,7 +196,7 @@ def _convolve_with_response(A, detlev, freq_intv_to_search, response_and_j,
     return results
 
 
-def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
+def _calculate_all_convolutions(A, responses, freq_intv_to_search,
                                 detlev, debug=False, interbin=False,
                                 nproc=4):
     """Accelerate the initial Fourier transform and find pulsations.
@@ -211,13 +208,10 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
     Parameters
     ----------
     A : complex array
-        The initial FT
+        The initial FT, normalized so that || FT ||^2 are Leahy powers.
     responses : list of complex arrays
         List of response functions corresponding to different values of
         constant acceleration.
-    n_photons : int
-        Number of photons that contributed to the Fourier Transform (used
-        to estimate the detection level)
     freq_intv_to_search : bool array
         Mask for ``A``, showing all spectral bins that should be searched
         for pulsations. Note that we use the full array to calculate the
@@ -254,8 +248,8 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
     candidate_js = [2]
     # print(responses)
     len_responses = len(responses)
-    if debug:
-        fobj = open('accelsearch_dump.dat', 'w')
+    # if debug:
+    #     fobj = open('accelsearch_dump.dat', 'w')
 
     _, memmapfname = tempfile.mkstemp(suffix='.npy')
     memout = np.lib.format.open_memmap(
@@ -263,7 +257,7 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
 
     from functools import partial
     func = partial(_convolve_with_response, A, detlev, freq_intv_to_search,
-                   interbin=interbin, n_photons=n_photons, memout=memout)
+                   interbin=interbin, memout=memout)
 
     if nproc == 1:
         results = []
@@ -272,7 +266,8 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
     else:
         with Pool(processes=nproc) as pool:
             results = list(show_progress(pool.imap_unordered(
-                func, [(responses[j], j) for j in range(len_responses)]), total=len_responses))
+                func, [(responses[j], j) for j in range(len_responses)]),
+                total=len_responses))
         pool.close()
 
     for res in results:
@@ -281,14 +276,15 @@ def _calculate_all_convolutions(A, responses, n_photons, freq_intv_to_search,
             candidate_rs.append(subr[0])
             candidate_js.append(subr[1])
 
-    if debug:
-        fobj.close()
+    # if debug:
+    #     fobj.close()
     return candidate_rs[1:], candidate_js[1:], candidate_powers[1:]
 
 
 def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
                 gti=None, zmax=100, candidate_file=None, ref_time=0,
-                debug=False, interbin=False, nproc=4, det_p_value=0.15):
+                debug=False, interbin=False, nproc=4, det_p_value=0.15,
+                fft_rescale=None):
     """Find pulsars with accelerated search.
 
     The theory behind these methods is described in Ransom+02, AJ 124, 1788.
@@ -323,6 +319,11 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     det_p_value : float, default 0.015
         Detection p-value (tail probability of noise powers, corrected for the
         number of trials)
+    fft_rescale : function
+        Any function to apply to the initial FFT, normalized by the number of
+        photons as FT * np.sqrt(2/nph) so that || FT ||^2 are Leahy powers.
+        For example, a filter to flatten the spectrum in the presence of strong
+        red noise.
 
     Returns
     -------
@@ -354,8 +355,34 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
             [[times[0] - dt /2, times[-1] + dt / 2]])
 
     n_photons = np.sum(signal)
-    spectr = fft(signal)
+    spectr = fft(signal) * np.sqrt(2 / n_photons)
     freq = fftfreq(len(spectr), dt)
+
+    if debug:
+        _good_f = freq > 0
+        import matplotlib.pyplot as plt
+        fig = plt.figure(figsize=(12, 8))
+        plt.plot(freq[_good_f], (spectr * spectr.conj()).real[_good_f],
+                 label='initial PDS')
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Power (Leahy)")
+        plt.loglog()
+
+    if fft_rescale is not None:
+        log.info("Applying initial filters...")
+        spectr = fft_rescale(spectr)
+
+    if debug:
+        plt.plot(freq[_good_f], (spectr * spectr.conj()).real[_good_f],
+                 label='PDS after filtering (if any)')
+        fname = candidate_file + '_initial_spec.jpg' \
+            if candidate_file else 'initial_spec.jpg'
+        plt.legend(loc=2)
+        del _good_f
+        plt.savefig(fname)
+        plt.close(fig)
+
+
     T = times[-1] - times[0] + dt
 
     freq_intv_to_search = (freq >= fmin) & (freq < fmax)
@@ -378,7 +405,7 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
     responses = _create_responses(range_z)
 
     candidate_rs, candidate_js, candidate_powers = \
-        _calculate_all_convolutions(spectr, responses, n_photons,
+        _calculate_all_convolutions(spectr, responses,
                                     freq_intv_to_search, detlev,
                                     debug=debug, interbin=interbin,
                                     nproc=nproc)
