@@ -44,10 +44,10 @@ def convolve_ols(a, b, memout=None):
     --------
     >>> from scipy.signal import fftconvolve
     >>> nx, nh = 21, 7
-    >>> x = np.random.randint(-30, 30, size=(nx, nx)) + 1j * \\
-    ...         np.random.randint(-30, 30, size=(nx, nx))
-    >>> h = np.random.randint(-20, 20, size=(nh, nh)) + 1j * \\
-    ...         np.random.randint(-20, 20, size=(nh, nh))
+    >>> x = (np.random.randint(-30, 30, size=(nx, nx)) + 1j *
+    ...      np.random.randint(-30, 30, size=(nx, nx)))
+    >>> h = (np.random.randint(-20, 20, size=(nh, nh)) + 1j *
+    ...      np.random.randint(-20, 20, size=(nh, nh)))
     >>> ref = fftconvolve(x, h, mode='same')
     >>> y = convolve(x, h) # +doctest:ellipsis
     ...
