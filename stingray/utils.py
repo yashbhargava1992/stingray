@@ -16,7 +16,7 @@ try:
     from numba import jit
 
     HAS_NUMBA = True
-    from numba import njit, prange
+    from numba import njit, prange, vectorize
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
@@ -39,6 +39,16 @@ except ImportError:
                 return func(*args, **kwargs)
 
             return wrapped_f
+
+    class vectorize(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __call__(self, func):
+            wrapped_f = np.vectorize(func)
+
+            return wrapped_f
+    float32 = float64 = int32 = int64 = lambda x, y: None
 
     def prange(x):
         return range(x)

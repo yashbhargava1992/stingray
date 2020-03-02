@@ -4,6 +4,7 @@ from collections.abc import Iterable
 import numpy as np
 from scipy import stats
 from stingray.utils import simon
+from stingray.utils import vectorize, float64, float32, int32, int64
 
 
 __all__ = ['p_multitrial_from_single_trial',
@@ -13,6 +14,38 @@ __all__ = ['p_multitrial_from_single_trial',
            'z2_n_detection_level',
            'z2_n_probability',
            'classical_pvalue']
+
+@vectorize([float64(float32, int32),
+            float64(float32, int64),
+            float64(float64, int32),
+            float64(float64, int64)])
+def _p_multitrial_from_single_logp(logp1, n):
+    """Calculate a multi-trial p-value from the log of a single-trial one.
+
+    This allows to work around Numba's limitation on longdoubles, a way to
+    vectorize the computation when we need longdouble precision.
+
+    Parameters
+    ----------
+    logp1 : float
+        The logarithm (base 10) of the significance at which we reject the null
+        hypothesis on each single trial.
+    n : int
+        The number of trials
+
+    Returns
+    -------
+    pn : float
+        The significance at which we reject the null hypothesis
+        after multiple trials
+    """
+    # If the the probability is very small (p1 * n) < 1e-6, use Bonferroni
+    # approximation.
+    if logp1 + np.log10(n) < -6:
+        return 10**logp1 * n
+
+    return 1 - (1 - np.longdouble(10)**(np.longdouble(logp1))
+                )**np.longdouble(n)
 
 
 def p_multitrial_from_single_trial(p1, n):
@@ -44,7 +77,46 @@ def p_multitrial_from_single_trial(p1, n):
         The significance at which we reject the null hypothesis
         after multiple trials
     """
-    return 1 - (1 - np.longdouble(p1))**np.longdouble(n)
+    return _p_multitrial_from_single_logp(np.log10(p1).astype(np.double), n)
+
+
+@vectorize([float64(float32, int32),
+            float64(float32, int64),
+            float64(float64, int32),
+            float64(float64, int64)])
+def _p_single_trial_from_logp_multitrial(logpn, n):
+    """Calculate a multi-trial p-value from the log of a single-trial one.
+
+    This allows to work around Numba's limitation on longdoubles, a way to
+    vectorize the computation when we need longdouble precision.
+
+    Parameters
+    ----------
+    logpn : float
+        The logarithm (base 10) of the significance at which we want to reject
+        the null hypothesis after multiple trials
+    n : int
+        The number of trials
+
+    Returns
+    -------
+    p1 : float
+        The significance at which we reject the null hypothesis on
+        each single trial.
+    """
+    # If the the probability is very small, use Bonferroni approximation.
+    if logpn < -6:
+        return 10.**logpn / n
+
+    # Numerical errors arise when pn is very close to 1.
+    if 1 - 10.**logpn < np.finfo(np.longdouble).resolution * 1000:
+        warnings.warn("Multi-trial probability is very close to 1.")
+        warnings.warn("The problem is ill-conditioned. Returning NaN")
+        return np.nan
+
+    p1 = 1 - np.power(1 - np.longdouble(10)**np.longdouble(logpn),
+                      1/np.longdouble(n))
+    return p1
 
 
 def p_single_trial_from_p_multitrial(pn, n):
@@ -92,32 +164,10 @@ def p_single_trial_from_p_multitrial(pn, n):
     p1 : float
         The significance at which we reject the null hypothesis on
         each single trial.
-
-    Parameters
-    ----------
-    pn : float or array of float (same size as p1)
-        The probability of at least one success in ``n`` trials, each with
-        probability ``p1``
-    n : int
-        The number of trials
-
-    Returns
-    -------
-    p1 : float or array of floats, same size as ``pn``
-        the probability of success in each trial.
     """
-    if isinstance(n, Iterable):
-        return np.array([p_single_trial_from_p_multitrial(pn, ni)
-                         for ni in n])
 
-    # Numerical errors arise when pn is very close to 1.
-    if 1 - pn < np.finfo(np.longdouble).resolution * 1000:
-        warnings.warn("Multi-trial probability is very close to 1.")
-        warnings.warn("The problem is ill-conditioned. Returning NaN")
-        return np.nan
-
-    p1 = 1 - np.power(1 - np.longdouble(pn), 1/np.longdouble(n))
-    return p1
+    return _p_single_trial_from_logp_multitrial(
+        np.log10(pn).astype(np.float64), n)
 
 
 def fold_profile_probability(stat, nbin, ntrial=1):
@@ -197,7 +247,6 @@ def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
     epsilon_1 = stats.chi2.sf(z2 * n_summed_spectra,
                               2 * n * n_summed_spectra)
     epsilon = p_multitrial_from_single_trial(epsilon_1, ntrial)
-
     return epsilon
 
 
