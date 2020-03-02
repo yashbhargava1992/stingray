@@ -16,7 +16,7 @@ try:
     from numba import jit
 
     HAS_NUMBA = True
-    from numba import njit, prange, vectorize
+    from numba import njit, prange, vectorize, float32, float64, int32, int64
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
