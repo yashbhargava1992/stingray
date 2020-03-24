@@ -278,10 +278,10 @@ def fit_lorentzians(ps, nlor, starting_pars, fit_whitenoise=True,
     We will also include a white noise level:
     >>> whitenoise = 2.0
 
-    >>> model = models.Lorentz1D(amplitude_0, x_0_0, fwhm_0) + \\
-    ...         models.Lorentz1D(amplitude_1, x_0_1, fwhm_1) + \\
-    ...         models.Lorentz1D(amplitude_2, x_0_2, fwhm_2) + \\
-    ...         models.Const1D(whitenoise)
+    >>> model = (models.Lorentz1D(amplitude_0, x_0_0, fwhm_0) +
+    ...          models.Lorentz1D(amplitude_1, x_0_1, fwhm_1) +
+    ...          models.Lorentz1D(amplitude_2, x_0_2, fwhm_2) +
+    ...          models.Const1D(whitenoise))
 
     >>> freq = np.linspace(0.01, 10.0, 1000)
     >>> p = model(freq)

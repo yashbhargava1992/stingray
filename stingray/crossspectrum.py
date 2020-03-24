@@ -13,6 +13,13 @@ try:
 except ImportError:
     from scipy.special import factorial
 
+try:
+    import pyfftw
+    from pyfftw.interfaces.scipy_fftpack import fft, fftfreq
+except ImportError:
+    warnings.warn("Using standard scipy fft")
+    from scipy.fftpack import fft, fftfreq
+
 
 from stingray.lightcurve import Lightcurve
 from stingray.utils import rebin_data, simon, rebin_data_log
@@ -459,10 +466,10 @@ class Crossspectrum(object):
             The squared absolute value of the Fourier amplitudes
 
         """
-        fourier_1 = scipy.fftpack.fft(lc1.counts)  # do Fourier transform 1
-        fourier_2 = scipy.fftpack.fft(lc2.counts)  # do Fourier transform 2
+        fourier_1 = fft(lc1.counts)  # do Fourier transform 1
+        fourier_2 = fft(lc2.counts)  # do Fourier transform 2
 
-        freqs = scipy.fftpack.fftfreq(lc1.n, lc1.dt)
+        freqs = fftfreq(lc1.n, lc1.dt)
         cross = np.multiply(fourier_1[freqs > 0], np.conj(fourier_2[freqs > 0]))
 
         return freqs[freqs > 0], cross
