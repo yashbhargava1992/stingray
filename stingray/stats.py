@@ -11,6 +11,8 @@ __all__ = ['p_multitrial_from_single_trial',
            'p_single_trial_from_p_multitrial',
            'fold_profile_probability',
            'fold_detection_level',
+           'pds_probability',
+           'pds_detection_level',
            'z2_n_detection_level',
            'z2_n_probability',
            'classical_pvalue']
@@ -374,6 +376,14 @@ def pds_detection_level(epsilon=0.01, ntrial=1, n_summed_spectra=1, n_rebin=1):
 
 def classical_pvalue(power, nspec):
     """
+    Note:
+    This is stingray's original implementation of the probability 
+    distribution for the power spectrum. It is superseded by the 
+    implementation in pds_probability for practical purposes, but 
+    remains here for backwards compatibility and for its educational 
+    value as a clear, explicit implementation of the correct 
+    probability distribution.
+    
     Compute the probability of detecting the current power under
     the assumption that there is no periodic oscillation in the data.
 
