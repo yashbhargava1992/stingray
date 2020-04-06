@@ -63,10 +63,6 @@ Powerspectrum
 
 ----
 
-.. autofunction:: stingray.powerspectrum.classical_pvalue
-
-----
-
 AveragedCrossspectrum
 ---------------------
 
