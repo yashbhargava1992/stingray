@@ -27,6 +27,12 @@ from stingray.exceptions import StingrayError
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 import copy
 
+try:
+    from tqdm import tqdm as show_progress
+except ImportError:
+    def show_progress(a, **kwargs):
+        return a
+
 __all__ = ["Crossspectrum", "AveragedCrossspectrum",
            "coherence", "time_lag", "cospectra_pvalue"]
 
@@ -888,8 +894,13 @@ class AveragedCrossspectrum(Crossspectrum):
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
-    power_type: string, optional, default ``real`` Parameter to choose among
-    complete, real part and magnitude of the cross spectrum.
+    power_type: string, optional, default ``real`` 
+         Parameter to choose among complete, real part and magnitude of 
+         the cross spectrum.
+
+    show_progress_bar : bool, default True
+         Show a progress bar when generating an averaged cross spectrum. Useful 
+         for averaged cross spectra from many segments.
 
     Attributes
     ----------
@@ -929,7 +940,7 @@ class AveragedCrossspectrum(Crossspectrum):
     """
 
     def __init__(self, lc1=None, lc2=None, segment_size=None,
-                 norm='none', gti=None, power_type="real"):
+                 norm='none', gti=None, power_type="real", show_progress_bar=True):
 
         self.type = "crossspectrum"
 
@@ -940,6 +951,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         self.segment_size = segment_size
         self.power_type = power_type
+        self.show_progress = show_progress_bar
 
         Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti,
                                power_type=power_type)
@@ -1027,7 +1039,12 @@ class AveragedCrossspectrum(Crossspectrum):
                                     dt=lc1.dt)
         simon("Errorbars on cross spectra are not thoroughly tested. "
               "Please report any inconsistencies.")
-        for start_ind, end_ind in zip(start_inds, end_inds):
+
+        if not self.show_progress:
+            show_progress = lambda a: a
+
+
+        for start_ind, end_ind in show_progress(zip(start_inds, end_inds)):
             time_1 = lc1.time[start_ind:end_ind]
             counts_1 = lc1.counts[start_ind:end_ind]
             counts_1_err = lc1.counts_err[start_ind:end_ind]

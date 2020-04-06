@@ -298,6 +298,10 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
+    show_progress_bar : bool, default True
+         Show a progress bar when generating an averaged cross spectrum. Useful 
+         for averaged cross spectra from many segments.
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
