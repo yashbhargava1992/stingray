@@ -110,11 +110,20 @@ Let's first understand the concept of spectral density which we have mentioned.
 
 | and many more
 
-|
+| Stingray also provides a CLI *HENDRICS* and GUI *dave* interface for providing an abstract analysis interface.
+
+
+4. Further Readings
+===================
+| If all of this intrigues you as much as it did me, you can go through the references mentioned below and the notebooks(https://github.com/StingraySoftware/notebooks) for Stingray or even fork the repository and mess around with the code yourself(**Highly Recommended ;)**)
+
 
 |
+
+References
+***********
 
 .. [#f1] http://web.stanford.edu/class/earthsys214/notes/series.html
 .. [#f2] https://www.investopedia.com/terms/t/timeseries.asp
 .. [#f3] https://imagine.gsfc.nasa.gov/science/toolbox/timing1.html
-.. [#f4] http://coolwiki.ipac.caltech.edu/index.php/What_is_a_periodogram%3
+.. [#f4] http://coolwiki.ipac.caltech.edu/index.php/What_is_a_periodogram
