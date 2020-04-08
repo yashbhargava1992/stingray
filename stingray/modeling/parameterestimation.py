@@ -1284,7 +1284,7 @@ class PSDParEst(ParameterEstimation):
         """
         self.lpost = lpost
 
-        if cov is not None:
+        if cov is None:   
             fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
             cov = fit_res.cov
             t0 = fit_res.p_opt
