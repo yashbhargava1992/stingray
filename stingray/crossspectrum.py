@@ -56,9 +56,7 @@ def _averaged_cospectra_cdf(xcoord, n):
 
     for i, x in enumerate(xcoord):
         prefac_bottom1 = factorial(n - 1)
-        # print("x: " + str(x))
         for j in range(n):
-            # print("j: " + str(j))
             prefac_top = factorial(n - 1 + j)
             prefac_bottom2 = factorial(
                 n - 1 - j) * factorial(j)
@@ -67,15 +65,11 @@ def _averaged_cospectra_cdf(xcoord, n):
             prefac = prefac_top / (
             prefac_bottom1 * prefac_bottom2 * prefac_bottom3)
 
-            # print("prefac: " + str(prefac))
             gf = -j + n
 
-            # print("gamma_fac: " + str(gf))
             first_fac = scipy.special.gamma(gf)
-            # print("first_fac: " + str(first_fac))
             if x >= 0:
                 second_fac = scipy.special.gammaincc(gf, n * x) * first_fac
-                # print("second_fac: " + str(second_fac))
                 fac = 2.0 * first_fac - second_fac
             else:
                 fac = scipy.special.gammaincc(gf, -n * x) * first_fac
@@ -581,7 +575,7 @@ class Crossspectrum(object):
         actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
         actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
 
-        meanrate = np.sqrt((self.nphots1 * self.nphots2) / tseg)
+        meanrate = np.sqrt((self.nphots1 * self.nphots2)) / tseg
 
         assert actual_mean > 0.0, \
             "Mean count rate is <= 0. Something went wrong."

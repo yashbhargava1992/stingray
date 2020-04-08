@@ -323,7 +323,7 @@ class TestCrossspectrum(object):
         assert cs.norm == 'abs'
         abs_noise = 2. * self.rate1  # expected Poisson noise level
         print(np.mean(cs.power), abs_noise)
-        assert np.isclose(np.mean(cs.power[1:]), abs_noise, atol=30)
+        assert np.isclose(np.mean(cs.power[1:]), abs_noise)
 
     def test_norm_leahy(self):
         with pytest.warns(UserWarning) as record:
@@ -332,13 +332,15 @@ class TestCrossspectrum(object):
         assert cs.norm == 'leahy'
         leahy_noise = 2.0  # expected Poisson noise level
         print(np.mean(cs.power), leahy_noise)
-        assert np.isclose(np.mean(cs.power[1:]), leahy_noise, atol=0.2)
+        assert np.isclose(np.mean(cs.power[1:]), leahy_noise, rtol=0.02)
 
     def test_norm_frac(self):
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(self.lc1, self.lc2, norm='frac')
+            cs = Crossspectrum(self.lc1, self.lc1, norm='frac')
         assert len(cs.power) == 4999
         assert cs.norm == 'frac'
+        norm = 2. / self.rate1
+        assert np.isclose(np.mean(cs.power[1:]), norm, rtol=0.1)
 
     def test_norm_abs(self):
         with pytest.warns(UserWarning) as record:
