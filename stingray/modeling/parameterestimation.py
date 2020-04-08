@@ -1284,10 +1284,13 @@ class PSDParEst(ParameterEstimation):
         """
         self.lpost = lpost
 
-        fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
+        if cov is not None:
+            fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
+            cov = fit_res.cov
+            t0 = fit_res.p_opt
 
-        res = ParameterEstimation.sample(self, self.lpost, fit_res.p_opt,
-                                         cov=fit_res.cov,
+        res = ParameterEstimation.sample(self, self.lpost, t0,
+                                         cov=cov,
                                          nwalkers=nwalkers,
                                          niter=niter, burnin=burnin,
                                          threads=threads,
