@@ -7,7 +7,7 @@ from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import UnivariateSpline
 from astropy import log
 from astropy.table import Table
-from ..crossspectrum import AveragedCrossspectrum
+from ..crossspectrum import AveragedCrossspectrum, normalize_crossspectrum
 from ..powerspectrum import AveragedPowerspectrum
 
 from ..gti import cross_two_gtis, bin_intervals_from_gtis
@@ -34,7 +34,7 @@ def _get_fourier_intv(lc, start_ind, end_ind):
 
     fft : array of complex numbers
         The Fourier transform
-   
+
     nph : int
         Number of photons in the interval of the light curve
 
@@ -42,19 +42,18 @@ def _get_fourier_intv(lc, start_ind, end_ind):
         Number of bins in the light curve segment
 
     meancounts : float
-        The mean counts/bin in the light curve    
+        The mean counts/bin in the light curve
     """
     time = lc.time[start_ind:end_ind]
     counts = lc.counts[start_ind:end_ind]
-    meancounts = np.mean(counts)
 
     fourier = scipy.fftpack.fft(counts)
 
     freq = scipy.fftpack.fftfreq(len(time), lc.dt)
     good = freq > 0
 
-    nbins = len(time)
-    return freq[good], fourier[good], np.sum(counts), nbins,  meancounts
+    nbins = time.size
+    return freq[good], fourier[good], np.sum(counts), nbins
 
 
 def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
@@ -151,7 +150,8 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         gti = cross_two_gtis(lc1.gti, lc2.gti)
 
     if all_leahy:
-        warnings.warn("`all_leahy` is deprecated. Use `norm` instead! Setting `norm`=`leahy`.", DeprecationWarning)
+        warnings.warn("`all_leahy` is deprecated. Use `norm` instead! "  + 
+                      " Setting `norm`=`leahy`.", DeprecationWarning)
         norm="leahy"
 
     lc1.gti = gti
@@ -178,13 +178,16 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
             fig, ax = plt.subplots()
 
     for start_ind, end_ind in zip(start_inds, end_inds):
-        freq, f1, nph1, nbins1, mc1 = _get_fourier_intv(lc1, start_ind, end_ind)
+        freq, f1, nph1, nbins1 = _get_fourier_intv(lc1, start_ind,
+                                                        end_ind)
         f1_leahy = f1 * np.sqrt(2 / nph1)
-        freq, f2, nph2, nbins2, mc2 = _get_fourier_intv(lc2, start_ind, end_ind)
+        freq, f2, nph2, nbins2 = _get_fourier_intv(lc2, start_ind,
+                                                        end_ind)
         f2_leahy = f2 * np.sqrt(2 / nph2)
-        freq, ftot, nphtot, nbinstot, mctot = \
+        freq, ftot, nphtot, nbinstot = \
             _get_fourier_intv(summed_lc, start_ind, end_ind)
         ftot_leahy = ftot * np.sqrt(2 / nphtot)
+
         nph1_tot += nph1
         nph2_tot += nph2
         nph_tot += nphtot
@@ -201,10 +204,6 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         if plot:
             ax.scatter(freq, fourier_diff, s=1)
 
-        #if all_leahy:
-        #    f1 = f1_leahy
-        #    f2 = f2_leahy
-        #    ftot = ftot_leahy
         p1 = (f1 * f1.conj()).real
         p1 = p1 / smooth_real * 2
         p2 = (f2 * f2.conj()).real
@@ -215,36 +214,16 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         c = (f2 * f1.conj()).real
         c = c / smooth_real * 2
 
-        if norm == "none":
-            power1 = p1
-            power2 = p2
-            power_tot = pt
-            cs_power = c
 
-        elif norm == "leahy":
-            power1 = p1 * 2. / nph1
-            power2 = p2 * 2. / nph2 
-            power_tot = pt * 2. / nphtot
-            cs_power = c * 2. / np.sqrt(nph1 * nph2)
+        power1 = normalize_crossspectrum(p1, segment_size, nbins1, nph1, 
+                                         nph1, norm=norm)
 
-        elif norm == "frac":
-            actual_mean = np.sqrt(mc1 * mc2)
-            power1 = p1 * 2. * segment_size / (np.float(nbins1**2.) * (mc1 ** 2.))
-            power2 = p2 * 2. * segment_size / (np.float(nbins1**2.) * (mc2 ** 2.))
-            power_tot = pt * 2. * segment_size / (np.float(nbins1**2.) * (mctot ** 2.))
-            cs_power = c * 2. * segment_size / (np.float(nbins1**2.) * (actual_mean ** 2.))
-
-        elif norm == "abs":
-            meanrate = np.sqrt((nph1 * nph2) / segment_size)
-            actual_nphots = np.sqrt(np.exp((np.log(nph1) + np.log(nph2))))
-
-            power1 = p1 * 2. / segment_size
-            power2 = p2 * 2. / segment_size
-            power_tot = pt * 2. / segment_size
-            cs_power = c * 2. * meanrate / actual_nphots
-
-        else: 
-            raise ValueError("Value for `norm` keyword not recognized!")  
+        power2 = normalize_crossspectrum(p2, segment_size, nbins2, nph2,    
+                                         nph2, norm=norm)
+        power_tot = normalize_crossspectrum(pt, segment_size, nbinstot, nphtot,    
+                                         nphtot, norm=norm)
+        cs_power = normalize_crossspectrum(c, segment_size, nbins1, nph1,    
+                                         nph2, norm=norm)
 
         if n == 0 and plot:
             ax.plot(freq, smooth_real, zorder=10, lw=3)
