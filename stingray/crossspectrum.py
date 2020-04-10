@@ -70,7 +70,6 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
         raise ValueError("`power_type` not recognized!")
 
     if norm.lower() == 'leahy':
-        actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
         power = c_num * 2. / actual_nphots
 
     elif norm.lower() == 'frac':
@@ -92,6 +91,9 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
 
     elif norm.lower() == 'none':
         power = unnorm_power
+
+    else:
+        raise ValueError("Value for `norm` not recognized.")
 
     return power
 
