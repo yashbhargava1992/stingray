@@ -28,7 +28,73 @@ from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 import copy
 
 __all__ = ["Crossspectrum", "AveragedCrossspectrum",
-           "coherence", "time_lag", "cospectra_pvalue"]
+           "coherence", "time_lag", "cospectra_pvalue",
+            "normalize_crossspectrum"]
+
+
+def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="none", power_type="real"):
+    """
+    Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
+    fractional rms^2 normalization, or not at all.
+
+    Parameters
+    ----------
+    unnorm_power: numpy.ndarray
+        The unnormalized cross spectrum.
+
+    tseg: int
+        The length of the Fourier segment, in seconds.
+
+    Returns
+    -------
+    power: numpy.nd.array
+        The normalized co-spectrum (real part of the cross spectrum). For
+        'none' normalization, imaginary part is returned as well.
+    """
+
+    # The "effective" counts/bin is the geometrical mean of the counts/bin
+    # of the two light curves. Same goes for counts/second in meanrate.
+
+    log_nphots1 = np.log(nphots1)
+    log_nphots2 = np.log(nphots2)
+
+    actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
+
+    if power_type == "all":
+        c_num = unnorm_power
+    elif power_type == "real":
+        c_num = unnorm_power.real
+    elif power_type == "absolute":
+        c_num = np.absolute(unnorm_power)
+    else:
+        raise ValueError("`power_type` not recognized!")
+
+    if norm.lower() == 'leahy':
+        actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
+        power = c_num * 2. / actual_nphots
+
+    elif norm.lower() == 'frac':
+        meancounts1 = nphots1 / nbins
+        meancounts2 = nphots2 / nbins
+
+        actual_mean = np.sqrt(meancounts1 * meancounts2)
+
+        assert actual_mean > 0.0, \
+            "Mean count rate is <= 0. Something went wrong."
+
+        c = c_num / np.float(nbins ** 2.)
+        power = c * 2. * tseg / (actual_mean ** 2.0)
+
+    elif norm.lower() == 'abs':
+        meanrate = np.sqrt(nphots1 * nphots2) / tseg
+
+        power = c_num * 2. * meanrate / actual_nphots
+
+    elif norm.lower() == 'none':
+        power = unnorm_power
+
+    return power
+
 
 
 def _averaged_cospectra_cdf(xcoord, n):
@@ -569,40 +635,42 @@ class Crossspectrum(object):
         # The "effective" counts/bin is the geometrical mean of the counts/bin
         # of the two light curves. Same goes for counts/second in meanrate.
 
-        log_nphots1 = np.log(self.nphots1)
-        log_nphots2 = np.log(self.nphots2)
+        return normalize_crossspectrum(unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm, self.power_type)
 
-        actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
-        actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
-
-        meanrate = np.sqrt((self.nphots1 * self.nphots2)) / tseg
-
-        assert actual_mean > 0.0, \
-            "Mean count rate is <= 0. Something went wrong."
-
-        if self.power_type == "all":
-            c_num = unnorm_power
-        elif self.power_type == "real":
-            c_num = unnorm_power.real
-        elif self.power_type == "absolute":
-            c_num = np.absolute(unnorm_power)
-        else:
-            raise ValueError("`power_type` not recognized!")
-
-        if self.norm.lower() == 'leahy':
-            power = c_num * 2. / actual_nphots
-
-        elif self.norm.lower() == 'frac':
-            c = c_num / np.float(self.n ** 2.)
-            power = c * 2. * tseg / (actual_mean ** 2.0)
-
-        elif self.norm.lower() == 'abs':
-            power = c_num * 2. * meanrate / actual_nphots
-
-        elif self.norm.lower() == 'none':
-            power = unnorm_power
-        return power
-
+#        log_nphots1 = np.log(self.nphots1)
+#        log_nphots2 = np.log(self.nphots2)
+#
+#        actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
+#        actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
+#
+#        meanrate = np.sqrt((self.nphots1 * self.nphots2)) / tseg
+#
+#        assert actual_mean > 0.0, \
+#            "Mean count rate is <= 0. Something went wrong."
+#
+#        if self.power_type == "all":
+#            c_num = unnorm_power
+#        elif self.power_type == "real":
+#            c_num = unnorm_power.real
+#        elif self.power_type == "absolute":
+#            c_num = np.absolute(unnorm_power)
+#        else:
+#            raise ValueError("`power_type` not recognized!")
+#
+#        if self.norm.lower() == 'leahy':
+#            power = c_num * 2. / actual_nphots
+#
+#        elif self.norm.lower() == 'frac':
+#            c = c_num / np.float(self.n ** 2.)
+#            power = c * 2. * tseg / (actual_mean ** 2.0)
+#
+#        elif self.norm.lower() == 'abs':
+#            power = c_num * 2. * meanrate / actual_nphots
+#
+#        elif self.norm.lower() == 'none':
+#            power = unnorm_power
+#        return power
+#
     def rebin_log(self, f=0.01):
         """
         Logarithmic rebin of the periodogram.
