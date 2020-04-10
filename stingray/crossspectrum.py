@@ -1206,6 +1206,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def coherence(self):
         """Averaged Coherence function.
 
+
         Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
@@ -1243,10 +1244,13 @@ class AveragedCrossspectrum(Crossspectrum):
         unnorm_powers_avg_2 = self.pds2.power.real
 
         coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
+        coh[~np.isfinite(coh)] = 0.0
 
         # Calculate uncertainty
         uncertainty = \
             (2 ** 0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m ** 0.5)
+
+        uncertainty[coh == 0] = 0.0
 
         return (coh, uncertainty)
 
@@ -1265,7 +1269,11 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         lag = super(AveragedCrossspectrum, self).time_lag()
         coh, uncert = self.coherence()
+
         dum = (1. - coh) / (2. * coh)
+
+        dum[coh == 0] = 0.0
+
         lag_err = np.sqrt(dum / self.m) / (2 * np.pi * self.freq)
 
         return lag, lag_err
