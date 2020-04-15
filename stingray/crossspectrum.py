@@ -634,45 +634,8 @@ class Crossspectrum(object):
             'none' normalization, imaginary part is returned as well.
         """
 
-        # The "effective" counts/bin is the geometrical mean of the counts/bin
-        # of the two light curves. Same goes for counts/second in meanrate.
-
         return normalize_crossspectrum(unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm, self.power_type)
 
-#        log_nphots1 = np.log(self.nphots1)
-#        log_nphots2 = np.log(self.nphots2)
-#
-#        actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
-#        actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
-#
-#        meanrate = np.sqrt((self.nphots1 * self.nphots2)) / tseg
-#
-#        assert actual_mean > 0.0, \
-#            "Mean count rate is <= 0. Something went wrong."
-#
-#        if self.power_type == "all":
-#            c_num = unnorm_power
-#        elif self.power_type == "real":
-#            c_num = unnorm_power.real
-#        elif self.power_type == "absolute":
-#            c_num = np.absolute(unnorm_power)
-#        else:
-#            raise ValueError("`power_type` not recognized!")
-#
-#        if self.norm.lower() == 'leahy':
-#            power = c_num * 2. / actual_nphots
-#
-#        elif self.norm.lower() == 'frac':
-#            c = c_num / np.float(self.n ** 2.)
-#            power = c * 2. * tseg / (actual_mean ** 2.0)
-#
-#        elif self.norm.lower() == 'abs':
-#            power = c_num * 2. * meanrate / actual_nphots
-#
-#        elif self.norm.lower() == 'none':
-#            power = unnorm_power
-#        return power
-#
     def rebin_log(self, f=0.01):
         """
         Logarithmic rebin of the periodogram.
