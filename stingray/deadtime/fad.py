@@ -7,7 +7,7 @@ from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import UnivariateSpline
 from astropy import log
 from astropy.table import Table
-from ..crossspectrum import AveragedCrossspectrum
+from ..crossspectrum import AveragedCrossspectrum, normalize_crossspectrum
 from ..powerspectrum import AveragedPowerspectrum
 
 from ..gti import cross_two_gtis, bin_intervals_from_gtis
@@ -20,8 +20,10 @@ def _get_fourier_intv(lc, start_ind, end_ind):
     ----------
     lc : a :class:`Lightcurve` object
         Input light curve
+
     start_ind : int
         Start index of the light curve chunk
+
     end_ind : int
         End index of the light curve chunk
 
@@ -29,10 +31,18 @@ def _get_fourier_intv(lc, start_ind, end_ind):
     -------
     freq : array of floats
         Frequencies of the Fourier transform
+
     fft : array of complex numbers
         The Fourier transform
+
     nph : int
         Number of photons in the interval of the light curve
+
+    nbins : int
+        Number of bins in the light curve segment
+
+    meancounts : float
+        The mean counts/bin in the light curve
     """
     time = lc.time[start_ind:end_ind]
     counts = lc.counts[start_ind:end_ind]
@@ -42,10 +52,11 @@ def _get_fourier_intv(lc, start_ind, end_ind):
     freq = scipy.fftpack.fftfreq(len(time), lc.dt)
     good = freq > 0
 
-    return freq[good], fourier[good], np.sum(counts)
+    nbins = time.size
+    return freq[good], fourier[good], np.sum(counts), nbins
 
 
-def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
+def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
                              plot=False, ax=None, smoothing_alg='gauss',
                              smoothing_length=None, verbose=False,
                              tolerance=0.05, strict=False, all_leahy=False,
@@ -77,6 +88,10 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         segments, as the result gets better as one averages more and more
         segments.
 
+     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
+        The normalization of the (real part of the) cross spectrum.
+
+
     Other parameters
     ----------------
     plot : bool, default False
@@ -103,7 +118,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     strict : bool, default False
         Decide what to do if the condition on tolerance is not met. If True,
         raise a ``RuntimeError``. If False, just throw a warning.
-    all_leahy : bool, default False
+    all_leahy : **deprecated** bool, default False
         Save all spectra in Leahy normalization. Otherwise, leave unnormalized.
     output_file : str, default None
         Name of an output file (any extension automatically recognized by
@@ -134,6 +149,11 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
     if gti is None:
         gti = cross_two_gtis(lc1.gti, lc2.gti)
 
+    if all_leahy:
+        warnings.warn("`all_leahy` is deprecated. Use `norm` instead! "  + 
+                      " Setting `norm`=`leahy`.", DeprecationWarning)
+        norm="leahy"
+
     lc1.gti = gti
     lc2.gti = gti
     lc1.apply_gtis()
@@ -158,13 +178,16 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
             fig, ax = plt.subplots()
 
     for start_ind, end_ind in zip(start_inds, end_inds):
-        freq, f1, nph1 = _get_fourier_intv(lc1, start_ind, end_ind)
+        freq, f1, nph1, nbins1 = _get_fourier_intv(lc1, start_ind,
+                                                        end_ind)
         f1_leahy = f1 * np.sqrt(2 / nph1)
-        freq, f2, nph2 = _get_fourier_intv(lc2, start_ind, end_ind)
+        freq, f2, nph2, nbins2 = _get_fourier_intv(lc2, start_ind,
+                                                        end_ind)
         f2_leahy = f2 * np.sqrt(2 / nph2)
-        freq, ftot, nphtot = \
+        freq, ftot, nphtot, nbinstot = \
             _get_fourier_intv(summed_lc, start_ind, end_ind)
         ftot_leahy = ftot * np.sqrt(2 / nphtot)
+
         nph1_tot += nph1
         nph2_tot += nph2
         nph_tot += nphtot
@@ -181,10 +204,6 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         if plot:
             ax.scatter(freq, fourier_diff, s=1)
 
-        if all_leahy:
-            f1 = f1_leahy
-            f2 = f2_leahy
-            ftot = ftot_leahy
         p1 = (f1 * f1.conj()).real
         p1 = p1 / smooth_real * 2
         p2 = (f2 * f2.conj()).real
@@ -195,15 +214,26 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
         c = (f2 * f1.conj()).real
         c = c / smooth_real * 2
 
+
+        power1 = normalize_crossspectrum(p1, segment_size, nbins1, nph1, 
+                                         nph1, norm=norm)
+
+        power2 = normalize_crossspectrum(p2, segment_size, nbins2, nph2,    
+                                         nph2, norm=norm)
+        power_tot = normalize_crossspectrum(pt, segment_size, nbinstot, nphtot,    
+                                         nphtot, norm=norm)
+        cs_power = normalize_crossspectrum(c, segment_size, nbins1, nph1,    
+                                         nph2, norm=norm)
+
         if n == 0 and plot:
             ax.plot(freq, smooth_real, zorder=10, lw=3)
             ax.plot(freq, f1_leahy, zorder=5, lw=1)
             ax.plot(freq, f2_leahy, zorder=5, lw=1)
 
-        ptot += pt
-        pds1 += p1
-        pds2 += p2
-        cs += c
+        ptot += power_tot
+        pds1 += power1
+        pds2 += power2
+        cs += cs_power
         average_diff += fourier_diff / smooth_real ** 0.5 * np.sqrt(2)
         average_diff_uncorr += fourier_diff
         n += 1
@@ -245,6 +275,8 @@ def calculate_FAD_correction(lc1, lc2, segment_size, gti=None,
                            'selected. Exiting.')
 
     results = Table()
+
+    print("n: " + str(n))
 
     results['freq'] = freq
     results['pds1'] = pds1 / n

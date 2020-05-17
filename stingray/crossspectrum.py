@@ -28,7 +28,75 @@ from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
 import copy
 
 __all__ = ["Crossspectrum", "AveragedCrossspectrum",
-           "coherence", "time_lag", "cospectra_pvalue"]
+           "coherence", "time_lag", "cospectra_pvalue",
+            "normalize_crossspectrum"]
+
+
+def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="none", power_type="real"):
+    """
+    Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
+    fractional rms^2 normalization, or not at all.
+
+    Parameters
+    ----------
+    unnorm_power: numpy.ndarray
+        The unnormalized cross spectrum.
+
+    tseg: int
+        The length of the Fourier segment, in seconds.
+
+    Returns
+    -------
+    power: numpy.nd.array
+        The normalized co-spectrum (real part of the cross spectrum). For
+        'none' normalization, imaginary part is returned as well.
+    """
+
+    # The "effective" counts/bin is the geometrical mean of the counts/bin
+    # of the two light curves. Same goes for counts/second in meanrate.
+
+    log_nphots1 = np.log(nphots1)
+    log_nphots2 = np.log(nphots2)
+
+    actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
+
+    if power_type == "all":
+        c_num = unnorm_power
+    elif power_type == "real":
+        c_num = unnorm_power.real
+    elif power_type == "absolute":
+        c_num = np.absolute(unnorm_power)
+    else:
+        raise ValueError("`power_type` not recognized!")
+
+    if norm.lower() == 'leahy':
+        power = c_num * 2. / actual_nphots
+
+    elif norm.lower() == 'frac':
+        meancounts1 = nphots1 / nbins
+        meancounts2 = nphots2 / nbins
+
+        actual_mean = np.sqrt(meancounts1 * meancounts2)
+
+        assert actual_mean > 0.0, \
+            "Mean count rate is <= 0. Something went wrong."
+
+        c = c_num / np.float(nbins ** 2.)
+        power = c * 2. * tseg / (actual_mean ** 2.0)
+
+    elif norm.lower() == 'abs':
+        meanrate = np.sqrt(nphots1 * nphots2) / tseg
+
+        power = c_num * 2. * meanrate / actual_nphots
+
+    elif norm.lower() == 'none':
+        power = unnorm_power
+
+    else:
+        raise ValueError("Value for `norm` not recognized.")
+
+    return power
+
 
 
 def _averaged_cospectra_cdf(xcoord, n):
@@ -56,9 +124,7 @@ def _averaged_cospectra_cdf(xcoord, n):
 
     for i, x in enumerate(xcoord):
         prefac_bottom1 = factorial(n - 1)
-        # print("x: " + str(x))
         for j in range(n):
-            # print("j: " + str(j))
             prefac_top = factorial(n - 1 + j)
             prefac_bottom2 = factorial(
                 n - 1 - j) * factorial(j)
@@ -67,15 +133,11 @@ def _averaged_cospectra_cdf(xcoord, n):
             prefac = prefac_top / (
             prefac_bottom1 * prefac_bottom2 * prefac_bottom3)
 
-            # print("prefac: " + str(prefac))
             gf = -j + n
 
-            # print("gamma_fac: " + str(gf))
             first_fac = scipy.special.gamma(gf)
-            # print("first_fac: " + str(first_fac))
             if x >= 0:
                 second_fac = scipy.special.gammaincc(gf, n * x) * first_fac
-                # print("second_fac: " + str(second_fac))
                 fac = 2.0 * first_fac - second_fac
             else:
                 fac = scipy.special.gammaincc(gf, -n * x) * first_fac
@@ -572,42 +634,7 @@ class Crossspectrum(object):
             'none' normalization, imaginary part is returned as well.
         """
 
-        # The "effective" counts/bin is the geometrical mean of the counts/bin
-        # of the two light curves. Same goes for counts/second in meanrate.
-
-        log_nphots1 = np.log(self.nphots1)
-        log_nphots2 = np.log(self.nphots2)
-
-        actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
-        actual_mean = np.sqrt(self.meancounts1 * self.meancounts2)
-
-        meanrate = np.sqrt((self.nphots1 * self.nphots2) / tseg)
-
-        assert actual_mean > 0.0, \
-            "Mean count rate is <= 0. Something went wrong."
-
-        if self.power_type == "all":
-            c_num = unnorm_power
-        elif self.power_type == "real":
-            c_num = unnorm_power.real
-        elif self.power_type == "absolute":
-            c_num = np.absolute(unnorm_power)
-        else:
-            raise ValueError("`power_type` not recognized!")
-
-        if self.norm.lower() == 'leahy':
-            power = c_num * 2. / actual_nphots
-
-        elif self.norm.lower() == 'frac':
-            c = c_num / np.float(self.n ** 2.)
-            power = c * 2. * tseg / (actual_mean ** 2.0)
-
-        elif self.norm.lower() == 'abs':
-            power = c_num * 2. * meanrate / actual_nphots
-
-        elif self.norm.lower() == 'none':
-            power = unnorm_power
-        return power
+        return normalize_crossspectrum(unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm, self.power_type)
 
     def rebin_log(self, f=0.01):
         """
@@ -1142,6 +1169,7 @@ class AveragedCrossspectrum(Crossspectrum):
     def coherence(self):
         """Averaged Coherence function.
 
+
         Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
@@ -1179,10 +1207,13 @@ class AveragedCrossspectrum(Crossspectrum):
         unnorm_powers_avg_2 = self.pds2.power.real
 
         coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
+        coh[~np.isfinite(coh)] = 0.0
 
         # Calculate uncertainty
         uncertainty = \
             (2 ** 0.5 * coh * (1 - coh)) / (np.abs(coh) * self.m ** 0.5)
+
+        uncertainty[coh == 0] = 0.0
 
         return (coh, uncertainty)
 
@@ -1201,7 +1232,11 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         lag = super(AveragedCrossspectrum, self).time_lag()
         coh, uncert = self.coherence()
+
         dum = (1. - coh) / (2. * coh)
+
+        dum[coh == 0] = 0.0
+
         lag_err = np.sqrt(dum / self.m) / (2 * np.pi * self.freq)
 
         return lag, lag_err

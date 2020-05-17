@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import scipy.special
 from stingray import Lightcurve, AveragedPowerspectrum
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
-from stingray.crossspectrum import  cospectra_pvalue
+from stingray.crossspectrum import  cospectra_pvalue, normalize_crossspectrum
 from ..simulator.simulator import Simulator
 from stingray import StingrayError
 from ..simulator.simulator import Simulator
@@ -205,6 +205,59 @@ class TestCoherence(object):
 
         np.testing.assert_almost_equal(np.mean(coh).real, 1.0)
 
+
+
+class TestNormalization(object):
+
+    def setup_class(self):
+        tstart = 0.0
+        self.tseg = 10.0
+        dt = 0.0001
+
+        time = np.arange(tstart + 0.5 * dt, self.tseg + 0.5 * dt, dt)
+
+        np.random.seed(100)
+        counts1 = np.random.poisson(0.01, size=time.shape[0])
+        self.lc1 = Lightcurve(time, counts1, gti=[[tstart, self.tseg]], dt=dt)
+        self.rate1 = 100.  # mean count rate (counts/sec) of light curve 1
+
+        with pytest.warns(UserWarning) as record:
+            self.cs = Crossspectrum(self.lc1, self.lc1, norm="none")
+
+    def test_norm_abs(self):
+        # Testing for a power spectrum of lc1
+        power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
+                                        self.cs.nphots1, self.cs.nphots2, 
+                                        norm="abs")
+
+        abs_noise = 2. * self.rate1  # expected Poisson noise level
+        assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.001)
+
+    def test_norm_leahy(self):
+
+        power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
+                                        self.cs.nphots1, self.cs.nphots2, 
+                                        norm="leahy")
+
+        leahy_noise = 2.0  # expected Poisson noise level
+        assert np.isclose(np.mean(power[1:]), leahy_noise, rtol=0.02)
+
+    def test_norm_frac(self):
+        power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
+                                        self.cs.nphots1, self.cs.nphots2, 
+                                        norm="frac")
+
+        norm = 2. / self.rate1
+        assert np.isclose(np.mean(power[1:]), norm, rtol=0.1)
+
+    def test_failure_when_normalization_not_recognized(self):
+        with pytest.raises(ValueError):
+            power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
+                                            self.cs.nphots1, self.cs.nphots2,
+                                            norm="wrong")
+
+
+
 class TestCrossspectrum(object):
 
     def setup_class(self):
@@ -322,8 +375,7 @@ class TestCrossspectrum(object):
         assert len(cs.power) == 4999
         assert cs.norm == 'abs'
         abs_noise = 2. * self.rate1  # expected Poisson noise level
-        print(np.mean(cs.power), abs_noise)
-        assert np.isclose(np.mean(cs.power[1:]), abs_noise, atol=30)
+        assert np.isclose(np.mean(cs.power[1:]), abs_noise)
 
     def test_norm_leahy(self):
         with pytest.warns(UserWarning) as record:
@@ -331,14 +383,15 @@ class TestCrossspectrum(object):
         assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
         leahy_noise = 2.0  # expected Poisson noise level
-        print(np.mean(cs.power), leahy_noise)
-        assert np.isclose(np.mean(cs.power[1:]), leahy_noise, atol=0.2)
+        assert np.isclose(np.mean(cs.power[1:]), leahy_noise, rtol=0.02)
 
     def test_norm_frac(self):
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(self.lc1, self.lc2, norm='frac')
+            cs = Crossspectrum(self.lc1, self.lc1, norm='frac')
         assert len(cs.power) == 4999
         assert cs.norm == 'frac'
+        norm = 2. / self.rate1
+        assert np.isclose(np.mean(cs.power[1:]), norm, rtol=0.2)
 
     def test_norm_abs(self):
         with pytest.warns(UserWarning) as record:

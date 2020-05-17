@@ -411,6 +411,7 @@ class LagEnergySpectrum(VarEnergySpectrum):
                 lag, lag_err = xspect.time_lag()
                 good_lag, good_lag_err = lag[good], lag_err[good]
                 coh, coh_err = xspect.coherence()
+
                 lag_spec[i] = np.mean(good_lag)
                 coh_check = coh > 1.2 / (1 + 0.2 * xspect.m)
                 if not np.all(coh_check[good]):
