@@ -388,10 +388,12 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         power_all = []
         nphots_all = []
 
+        local_show_progress = show_progress
         if not self.show_progress:
-            show_progress = lambda a: a
+            local_show_progress = lambda a: a
 
-        for start_ind, end_ind in show_progress(zip(start_inds, end_inds)):
+        for start_ind, end_ind in \
+                local_show_progress(zip(start_inds, end_inds)):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
             counts_err = lc.counts_err[start_ind: end_ind]

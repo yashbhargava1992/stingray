@@ -1040,11 +1040,12 @@ class AveragedCrossspectrum(Crossspectrum):
         simon("Errorbars on cross spectra are not thoroughly tested. "
               "Please report any inconsistencies.")
 
+        local_show_progress = show_progress
         if not self.show_progress:
-            show_progress = lambda a: a
+            local_show_progress = lambda a: a
 
-
-        for start_ind, end_ind in show_progress(zip(start_inds, end_inds)):
+        for start_ind, end_ind in \
+                local_show_progress(zip(start_inds, end_inds)):
             time_1 = lc1.time[start_ind:end_ind]
             counts_1 = lc1.counts[start_ind:end_ind]
             counts_1_err = lc1.counts_err[start_ind:end_ind]
