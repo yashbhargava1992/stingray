@@ -894,13 +894,13 @@ class AveragedCrossspectrum(Crossspectrum):
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
-    power_type: string, optional, default ``real`` 
-         Parameter to choose among complete, real part and magnitude of 
+    power_type: string, optional, default ``real``
+         Parameter to choose among complete, real part and magnitude of
          the cross spectrum.
 
-    show_progress_bar : bool, default True
-         Show a progress bar when generating an averaged cross spectrum. Useful 
-         for averaged cross spectra from many segments.
+    silent : bool, default False
+         Do not show a progress bar when generating an averaged cross spectrum.
+         Useful for the batch execution of many spectra
 
     Attributes
     ----------
@@ -940,7 +940,7 @@ class AveragedCrossspectrum(Crossspectrum):
     """
 
     def __init__(self, lc1=None, lc2=None, segment_size=None,
-                 norm='none', gti=None, power_type="real", show_progress_bar=True):
+                 norm='none', gti=None, power_type="real", silent=False):
 
         self.type = "crossspectrum"
 
@@ -951,7 +951,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         self.segment_size = segment_size
         self.power_type = power_type
-        self.show_progress = show_progress_bar
+        self.show_progress = not silent
 
         Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti,
                                power_type=power_type)
