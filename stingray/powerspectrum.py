@@ -298,6 +298,10 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
+    silent : bool, default False
+         Do not show a progress bar when generating an averaged cross spectrum.
+         Useful for the batch execution of many spectra
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
@@ -330,7 +334,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The total number of photons in the light curve
 
     """
-    def __init__(self, lc=None, segment_size=None, norm="frac", gti=None):
+    def __init__(self, lc=None, segment_size=None, norm="frac", gti=None,
+                 silent=False):
 
         self.type = "powerspectrum"
 
@@ -340,7 +345,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             raise ValueError("segment_size must be finite!")
 
         self.segment_size = segment_size
-
+        self.show_progress = not silent
         Powerspectrum.__init__(self, lc, norm, gti=gti)
 
         return
@@ -382,7 +387,13 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         power_all = []
         nphots_all = []
-        for start_ind, end_ind in show_progress(zip(start_inds, end_inds)):
+
+        local_show_progress = show_progress
+        if not self.show_progress:
+            local_show_progress = lambda a: a
+
+        for start_ind, end_ind in \
+                local_show_progress(zip(start_inds, end_inds)):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
             counts_err = lc.counts_err[start_ind: end_ind]

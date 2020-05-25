@@ -649,7 +649,8 @@ class TestAveragedCrossspectrum(object):
         lc1_split = lc1.split_by_gti()
         lc2_split = lc2.split_by_gti()
 
-        cs = AveragedCrossspectrum(lc1_split, lc2_split, segment_size=0.05, norm="leahy")
+        cs = AveragedCrossspectrum(lc1_split, lc2_split, segment_size=0.05,
+                                   norm="leahy", silent=True)
 
 
     def test_coherence(self):

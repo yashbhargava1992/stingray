@@ -137,7 +137,8 @@ class TestPowerspectrum(object):
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1,
                             gti=[[0, 400]])
-        ps = AveragedPowerspectrum(lc=lc, norm="leahy", segment_size=100)
+        ps = AveragedPowerspectrum(lc=lc, norm="leahy", segment_size=100,
+                                   silent=True)
         rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
                                          max_freq=ps.freq[-1], white_noise_offset=0)
 
