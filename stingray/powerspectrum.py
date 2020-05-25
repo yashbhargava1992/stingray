@@ -13,9 +13,6 @@ from stingray.stats import pds_probability
 
 from .events import EventList
 
-__all__ = ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]
-
-
 from .gti import cross_two_gtis
 
 try:
@@ -353,6 +350,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if segment_size is not None and not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")
 
+        self.dt = dt
+
         if isinstance(lc, EventList):
             lengths = lc.gti[:, 1] - lc.gti[:, 0]
             good = lengths >= segment_size
@@ -390,13 +389,13 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         current_gtis = lc.gti
 
-        if self.gti is not None:
-            current_gtis = cross_two_gtis(current_gtis, self.gti)
+        if self.gti is None:
+            self.gti = lc.gti
+        else:
+            if not np.all(lc.gti == self.gti):
+                self.gti = np.vstack([self.gti, lc.gti])
 
-        lc.gti = current_gtis
-        lc._apply_gtis()
-
-        check_gtis(current_gtis)
+        check_gtis(self.gti)
 
         start_inds, end_inds = \
             bin_intervals_from_gtis(current_gtis, segment_size, lc.time, dt=lc.dt)

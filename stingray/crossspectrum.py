@@ -1071,19 +1071,16 @@ class AveragedCrossspectrum(Crossspectrum):
         # In case a small difference exists, ignore it
         lc1.dt = lc2.dt
 
-        gti = cross_two_gtis(lc1.gti, lc2.gti)
+        current_gtis = cross_two_gtis(lc1.gti, lc2.gti)
+        lc1.gti = lc2.gti = current_gtis
         lc1.apply_gtis()
         lc2.apply_gtis()
 
-        current_gtis = cross_two_gtis(lc1.gti, lc2.gti)
         if self.gti is None:
             self.gti = current_gtis
         else:
-            current_gtis = cross_two_gtis(current_gtis, self.gti)
-
-        lc1.gti = lc2.gti = current_gtis
-        lc1._apply_gtis()
-        lc2._apply_gtis()
+            if not np.all(self.gti == current_gtis):
+                self.gti = np.vstack([self.gti, current_gtis])
 
         check_gtis(current_gtis)
 
@@ -1102,7 +1099,8 @@ class AveragedCrossspectrum(Crossspectrum):
         if not self.show_progress:
             local_show_progress = lambda a: a
 
-        for start_ind, end_ind in zip(start_inds, end_inds):
+        for start_ind, end_ind in \
+                local_show_progress(zip(start_inds, end_inds)):
             time_1 = copy.deepcopy(lc1.time[start_ind:end_ind])
             counts_1 = copy.deepcopy(lc1.counts[start_ind:end_ind])
             counts_1_err = copy.deepcopy(lc1.counts_err[start_ind:end_ind])
