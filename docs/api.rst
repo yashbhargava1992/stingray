@@ -106,6 +106,19 @@ AutoCorrelation
 
 ----
 
+Dead-Time Corrections
+---------------------
+
+.. automodule:: stingray.deadtime.fad
+   :members:
+   :imported-members:
+
+.. automodule:: stingray.deadtime.model
+   :members:
+   :imported-members:
+
+----
+
 
 Higher-Order Fourier and Spectral Timing Products
 =================================================
@@ -184,6 +197,12 @@ Utilities
 Commonly used utility functionality, including Good Time Interval operations and input/output
 helper methods.
 
+Statistical Functions
+---------------------
+
+.. automodule:: stingray.stats
+   :members:
+   :imported-members:
 
 GTI Functionality
 -----------------
