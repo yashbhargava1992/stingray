@@ -84,9 +84,6 @@ the ``modeling`` subpackage. In order to install ``stingray`` with these depende
 
     $ pip install -e ".[modeling]"    
 
-For guidelines on how to submit a Pull Request (PR), check out 
-`this <https://www.thinkful.com/learn/github-pull-request-tutorial/>`_ article.
-
 .. _testsuite:
 
 Test Suite
