@@ -236,6 +236,7 @@ def cospectra_pvalue(power, nspec):
 
     return pval
 
+
 def coherence(lc1, lc2):
     """
     Estimate coherence function of two light curves.
@@ -391,10 +392,15 @@ class Crossspectrum(object):
                 self.m = 1
                 self.n = None
                 return
+        if (isinstance(lc1, EventList) or isinstance(lc2, EventList)) and \
+                dt is None:
+            raise ValueError("If using event lists, please specify the bin "
+                             "time to generate lightcurves.")
 
-        # gti = cross_two_gtis(lc1.gti, lc2.gti)
-        # lc1.gti = gti
-        # lc2.gti = gti
+        if isinstance(lc1, EventList):
+            lc1 = lc1.to_lc(dt)
+        if isinstance(lc2, EventList):
+            lc2 = lc2.to_lc(dt)
 
         self.gti = gti
         self.lc1 = lc1
