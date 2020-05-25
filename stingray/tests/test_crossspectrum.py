@@ -133,9 +133,17 @@ class TestAveragedCrossspectrumEvents(object):
 
         self.events = EventList(times, gti=gti)
 
-        self.cs = AveragedCrossspectrum(self.events, copy.deepcopy(self.events),
+        self.cs = Crossspectrum(self.events, copy.deepcopy(self.events),
+                                dt=self.dt)
+
+        self.acs = AveragedCrossspectrum(self.events, copy.deepcopy(self.events),
                                         segment_size=1, dt=self.dt)
         self.lc1 = self.lc2 = self.events
+
+    def test_it_works_with_events(self):
+        lc = self.events.to_lc(self.dt)
+        lccs = Crossspectrum(lc, lc)
+        assert np.allclose(lccs.power, self.cs.power)
 
     def test_make_empty_crossspectrum(self):
         cs = AveragedCrossspectrum()
@@ -171,7 +179,7 @@ class TestAveragedCrossspectrumEvents(object):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            coh = self.cs.coherence()
+            coh = self.acs.coherence()
 
             assert len(coh[0]) == 4999
             assert len(coh[1]) == 4999
@@ -179,40 +187,40 @@ class TestAveragedCrossspectrumEvents(object):
 
     def test_failure_when_normalization_not_recognized(self):
         with pytest.raises(ValueError):
-            self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
-                                            segment_size=1,
-                                            norm="wrong", dt=self.dt)
+            cs = AveragedCrossspectrum(self.lc1, self.lc2,
+                                       segment_size=1,
+                                       norm="wrong", dt=self.dt)
 
     def test_failure_when_power_type_not_recognized(self):
         with pytest.raises(ValueError):
-            self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
-                                            segment_size=1,
-                                            power_type="wrong", dt=self.dt)
+            cs = AveragedCrossspectrum(self.lc1, self.lc2,
+                                       segment_size=1,
+                                       power_type="wrong", dt=self.dt)
 
     def test_rebin(self):
-        new_cs = self.cs.rebin(df=1.5)
+        new_cs = self.acs.rebin(df=1.5)
         assert new_cs.df == 1.5
         new_cs.time_lag()
 
     def test_rebin_factor(self):
-        new_cs = self.cs.rebin(f=1.5)
-        assert new_cs.df == self.cs.df * 1.5
+        new_cs = self.acs.rebin(f=1.5)
+        assert new_cs.df == self.acs.df * 1.5
         new_cs.time_lag()
 
     def test_rebin_log(self):
         # For now, just verify that it doesn't crash
-        new_cs = self.cs.rebin_log(f=0.1)
-        assert type(new_cs) == type(self.cs)
+        new_cs = self.acs.rebin_log(f=0.1)
+        assert type(new_cs) == type(self.acs)
         new_cs.time_lag()
 
     def test_rebin_log_returns_complex_values(self):
         # For now, just verify that it doesn't crash
-        new_cs = self.cs.rebin_log(f=0.1)
+        new_cs = self.acs.rebin_log(f=0.1)
         assert isinstance(new_cs.power[0], np.complex)
 
     def test_rebin_log_returns_complex_errors(self):
         # For now, just verify that it doesn't crash
-        new_cs = self.cs.rebin_log(f=0.1)
+        new_cs = self.acs.rebin_log(f=0.1)
         assert isinstance(new_cs.power_err[0], np.complex)
 
 
