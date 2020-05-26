@@ -214,7 +214,7 @@ class TestLightcurve(object):
         cls.times = np.array([1, 2, 3, 4])
         cls.counts = np.array([2, 2, 2, 2])
         cls.dt = 1.0
-        cls.gti = [[0.5, 4.5]]
+        cls.gti = np.array([[0.5, 4.5]])
 
     def test_create(self):
         """
@@ -462,12 +462,6 @@ class TestLightcurve(object):
         lc = lc1 + lc2
         np.testing.assert_almost_equal(lc.gti, self.gti)
 
-    def test_add_with_different_mjdref(self):
-        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
-        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
-        with pytest.raises(ValueError):
-            lc1 + lc2
-
     def test_add_with_different_gtis(self):
         gti = [[0., 3.5]]
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
@@ -514,12 +508,6 @@ class TestLightcurve(object):
             lc = lc1 - lc2
             assert np.any(["ightcurves have different statistics"
                            in str(wi.message) for wi in w])
-
-    def test_sub_with_different_mjdref(self):
-        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
-        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
-        with pytest.raises(ValueError):
-            lc1 - lc2
 
     def test_subtraction(self):
         _counts = [3, 4, 5, 6]
@@ -597,10 +585,37 @@ class TestLightcurve(object):
                            in str(wi.message) for wi in w])
 
     def test_join_with_different_mjdref(self):
-        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
+        shift = 86400.  # day
+        lc1 = Lightcurve(self.times + shift, self.counts, gti=self.gti + shift,
+                         mjdref=57000)
         lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
-        with pytest.raises(ValueError):
-            lc1.join(lc2)
+        newlc = lc1.join(lc2)
+        # The join operation *averages* the overlapping arrays
+        assert np.allclose(newlc.counts, lc1.counts)
+
+    def test_sum_with_different_mjdref(self):
+        shift = 86400.  # day
+        lc1 = Lightcurve(self.times + shift, self.counts, gti=self.gti + shift,
+                         mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.warns(UserWarning) as record:
+            newlc = lc1 + lc2
+        assert np.any(["MJDref"
+                       in r.message.args[0] for r in record])
+
+        assert np.allclose(newlc.counts, lc1.counts * 2)
+
+    def test_subtract_with_different_mjdref(self):
+        shift = 86400.  # day
+        lc1 = Lightcurve(self.times + shift, self.counts, gti=self.gti + shift,
+                         mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.warns(UserWarning) as record:
+            newlc = lc1 - lc2
+        assert np.any(["MJDref"
+                       in r.message.args[0] for r in record])
+
+        assert np.allclose(newlc.counts, 0)
 
     def test_join_disjoint_time_arrays(self):
         _times = [5, 6, 7, 8]

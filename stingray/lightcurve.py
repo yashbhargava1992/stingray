@@ -4,7 +4,7 @@ Definition of :class::class:`Lightcurve`.
 :class::class:`Lightcurve` is used to create light curves out of photon counting data
 or to save existing light curves in a class that's easy to use.
 """
-
+import warnings
 import logging
 import numpy as np
 import stingray.io as io
@@ -435,7 +435,7 @@ class Lightcurve(object):
         new_lc : lightcurve.Lightcurve object
             The new LC shifted by MJDREF
         """
-        time_shift = (new_mjdref - self.mjdref) * 86400
+        time_shift = -(new_mjdref - self.mjdref) * 86400
 
         new_lc = self.shift(time_shift)
         new_lc.mjdref = new_mjdref
@@ -485,7 +485,8 @@ class Lightcurve(object):
             The new light curve calculated in ``operation``
         """
         if self.mjdref != other.mjdref:
-            raise ValueError("MJDref is different in the two light curves")
+            warnings.warn("MJDref is different in the two light curves")
+            other = other.change_mjdref(self.mjdref)
 
         common_gti = cross_two_gtis(self.gti, other.gti)
         mask_self = create_gti_mask(self.time, common_gti, dt=self.dt)
@@ -924,7 +925,8 @@ class Lightcurve(object):
         array([ 300,  100,  400,  600, 1200,  800])
         """
         if self.mjdref != other.mjdref:
-            raise ValueError("MJDref is different in the two light curves")
+            warnings.warn("MJDref is different in the two light curves")
+            other = other.change_mjdref(self.mjdref)
 
         if self.dt != other.dt:
             utils.simon("The two light curves have different bin widths.")

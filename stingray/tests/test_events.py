@@ -226,6 +226,24 @@ class TestEvents(object):
                 np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert (ev_new.gti == np.array([[5, 6]])).all()
 
+    def test_overlapping_join_change_mjdref(self):
+        """Join two non-overlapping event lists.
+        """
+        ev = EventList(time=[1, 1, 10, 6, 5],
+                       energy=[10, 6, 3, 11, 2], gti=[[1, 3],[5, 6]],
+                       mjdref=57001)
+        ev_other = EventList(time=np.asarray([5, 7, 6, 6, 10]) + 86400,
+                             energy=[2, 3, 8, 1, 2],
+                             gti=np.asarray([[5, 7],[8, 10]]) + 86400,
+                             mjdref=57000)
+        ev_new = ev.join(ev_other)
+
+        assert np.allclose(ev_new.time,
+                           np.array([1, 1, 5, 5, 6, 6, 6, 7, 10, 10]))
+        assert (ev_new.energy ==
+                np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
+        assert np.allclose(ev_new.gti, np.array([[5, 6]]))
+
     def test_io_with_ascii(self):
         ev = EventList(self.time)
         ev.write('ascii_ev.txt',format_='ascii')
