@@ -36,7 +36,7 @@ class Powerspectrum(Crossspectrum):
 
     Parameters
     ----------
-    lc: :class:`stingray.Lightcurve` object, optional, default ``None``
+    data: :class:`stingray.Lightcurve` object, optional, default ``None``
         The light curve data to be Fourier-transformed.
 
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
@@ -288,7 +288,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     Parameters
     ----------
-    lc: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
+    data: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         The light curve data to be Fourier-transformed.
 
     segment_size: float

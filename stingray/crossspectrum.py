@@ -315,10 +315,10 @@ class Crossspectrum(object):
 
     Parameters
     ----------
-    lc1: :class:`stingray.Lightcurve` object, optional, default ``None``
+    data1: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList`, optional, default ``None``
         The first light curve data for the channel/band of interest.
 
-    lc2: :class:`stingray.Lightcurve` object, optional, default ``None``
+    data2: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList`, optional, default ``None``
         The light curve data for the reference band.
 
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
@@ -369,12 +369,6 @@ class Crossspectrum(object):
     def __init__(self, data1=None, data2=None, norm='none', gti=None,
                  lc1=None, lc2=None, power_type="real", dt=None):
 
-        # for backwards compatibility
-        if data1 is None and lc1 is not None:
-            data1 = lc1
-        if data2 is None and lc2 is not None:
-            data2 = lc2
-
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
 
@@ -406,17 +400,31 @@ class Crossspectrum(object):
             raise ValueError("If using event lists, please specify the bin "
                              "time to generate lightcurves.")
 
-        if isinstance(data1, EventList):
+        # for backwards compatibility
+        if data1 is None:
+            data1 = lc1
+        if data2 is None:
+            data2 = lc2
+
+        if isinstance(data1, Lightcurve):
+            lc1 = data1
+        elif isinstance(data1, EventList):
             lc1 = data1.to_lc(dt)
-        if isinstance(data2, EventList):
+
+        if isinstance(data2, Lightcurve):
+            lc2 = data2
+        elif isinstance(data2, EventList) and data2 is not data1:
             lc2 = data2.to_lc(dt)
+        elif data2 is data1:
+            lc2 = lc1
 
         self.gti = gti
         self.lc1 = lc1
         self.lc2 = lc2
         self.power_type = power_type
+        print("Before", lc1, lc2, data1, data2)
         self._make_crossspectrum(lc1, lc2)
-
+        print("After cross", lc1, lc2)
         # These are needed to calculate coherence
         self._make_auxil_pds(lc1, lc2)
 
@@ -430,6 +438,7 @@ class Crossspectrum(object):
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
+        print(lc1, lc2)
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
             self.pds1 = Crossspectrum(lc1, lc1, norm='none')
             self.pds2 = Crossspectrum(lc2, lc2, norm='none')
@@ -449,6 +458,7 @@ class Crossspectrum(object):
             Two light curves used for computing the cross spectrum.
 
         """
+        print(lc1, lc2)
         # make sure the inputs work!
         if not isinstance(lc1, Lightcurve):
             raise TypeError("lc1 must be a lightcurve.Lightcurve object")
@@ -922,11 +932,11 @@ class AveragedCrossspectrum(Crossspectrum):
 
     Parameters
     ----------
-    lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
+    data1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         A light curve from which to compute the cross spectrum. In some cases, this would
         be the light curve of the wavelength/energy/frequency band of interest.
 
-    lc2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
+    data2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         A second light curve to use in the cross spectrum. In some cases, this would be
         the wavelength/energy/frequency reference band to compare the band of interest with.
 
@@ -999,14 +1009,14 @@ class AveragedCrossspectrum(Crossspectrum):
                  dt=None):
 
         # for backwards compatibility
-        if data1 is None and lc1 is not None:
+        if data1 is None:
             data1 = lc1
-        if data2 is None and lc2 is not None:
+        if data2 is None:
             data2 = lc2
 
         self.type = "crossspectrum"
 
-        if segment_size is None and lc1 is not None:
+        if segment_size is None and data1 is not None:
             raise ValueError("segment_size must be specified")
         if segment_size is not None and not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")
@@ -1023,7 +1033,7 @@ class AveragedCrossspectrum(Crossspectrum):
                 good = lengths >= segment_size
                 data.gti = data.gti[good]
 
-        Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti,
+        Crossspectrum.__init__(self, data1, data2, norm, gti=gti,
                                power_type=power_type, dt=dt)
 
         return
@@ -1169,11 +1179,6 @@ class AveragedCrossspectrum(Crossspectrum):
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
-
-        if isinstance(lc1, EventList):
-            lc1 = lc1.to_lc_list(self.dt)
-        if isinstance(lc2, EventList):
-            lc2 = lc2.to_lc_list(self.dt)
 
         # chop light curves into segments
         if isinstance(lc1, Lightcurve) and \
