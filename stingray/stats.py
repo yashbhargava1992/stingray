@@ -51,19 +51,22 @@ def _logp_multitrial_from_single_logp(logp1, n):
 
 
 def p_multitrial_from_single_trial(p1, n):
-    """Calculate a multi-trial p-value from a single-trial one.
+    r"""Calculate a multi-trial p-value from a single-trial one.
 
-    Calling _p_ the probability of a single success, the Binomial
-    distributions says that the probability _at least_ one outcome
+    Calling *p* the probability of a single success, the Binomial
+    distributions says that the probability *at least* one outcome
     in n trials is
-                         n
-    P (k ≥ 1) =   Σ    (   ) p^k (1 - p)^(n - k)
-                k ≥ 1    k
+
+    .. math::
+
+        P(k\geq 1) = \sum_{k\geq 1} \binom{n}{k} p^k (1-p)^{(n-k)}
 
     or more simply, using P(k ≥ 0) = 1
-                          n
-    P (k ≥ 1) =   1 -   (   ) (1 - p)^n = 1 - (1 - p)^n
-                          0
+
+    .. math::
+
+        P(k\geq 1) = 1 - \binom{n}{0} (1-p)^n = 1 - (1-p)^n
+
 
     Parameters
     ----------
@@ -123,7 +126,7 @@ def _logp_single_trial_from_logp_multitrial(logpn, n):
 
 
 def p_single_trial_from_p_multitrial(pn, n):
-    """Calculate the single-trial p-value from a total p-value
+    r"""Calculate the single-trial p-value from a total p-value
 
     Let us say that we want to reject a null hypothesis at the
     ``pn`` level, after executing ``n`` different measurements.
@@ -138,19 +141,23 @@ def p_single_trial_from_p_multitrial(pn, n):
     approximation, when ``pn`` is low: ``p1 = pn / n``.
 
     However, if ``pn`` is close to 1, this approximation gives
-   incorrect results.
+    incorrect results.
 
     Here we calculate this probability by inverting the Binomial
     problem. Given that (see ``p_multitrial_from_single_trial``)
     the probability of getting more than one hit in n trials,
-    given the single-trial probability _p_, is
+    given the single-trial probability *p*, is
 
-    P (k ≥ 1) =  1 - (1 - p)^n,
+    .. math ::
+
+        P (k \geq 1) =  1 - (1 - p)^n,
 
     we get the single trial probability from the multi-trial one
     from
 
-    p = 1 - (1 - P)^(1/n)
+    .. math ::
+
+        p = 1 - (1 - P)^{(1/n)}
 
     This is also known as Šidák correction.
 
@@ -377,13 +384,13 @@ def pds_detection_level(epsilon=0.01, ntrial=1, n_summed_spectra=1, n_rebin=1):
 def classical_pvalue(power, nspec):
     """
     Note:
-    This is stingray's original implementation of the probability 
-    distribution for the power spectrum. It is superseded by the 
-    implementation in pds_probability for practical purposes, but 
-    remains here for backwards compatibility and for its educational 
-    value as a clear, explicit implementation of the correct 
+    This is stingray's original implementation of the probability
+    distribution for the power spectrum. It is superseded by the
+    implementation in pds_probability for practical purposes, but
+    remains here for backwards compatibility and for its educational
+    value as a clear, explicit implementation of the correct
     probability distribution.
-    
+
     Compute the probability of detecting the current power under
     the assumption that there is no periodic oscillation in the data.
 
