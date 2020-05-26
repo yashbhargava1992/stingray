@@ -312,6 +312,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
          Do not show a progress bar when generating an averaged cross spectrum.
          Useful for the batch execution of many spectra
 
+    dt: float
+        The time resolution of the light curve. Only needed when constructing
+        light curves in the case where data is of :class:EventList
+
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }

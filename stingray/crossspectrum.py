@@ -334,6 +334,20 @@ class Crossspectrum(object):
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
+    lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        For backwards compatibility only. Like ``data1``, but no
+        :class:`stingray.events.EventList` objects allowed
+
+    lc2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        For backwards compatibility only. Like ``data2``, but no
+        :class:`stingray.events.EventList` objects allowed
+
+    dt: float
+        The time resolution of the light curve. Only needed when constructing
+        light curves in the case where ``data1``, ``data2`` are
+        :class:`EventList` objects
+
+
     Attributes
     ----------
     freq: numpy.ndarray
@@ -952,8 +966,10 @@ class AveragedCrossspectrum(Crossspectrum):
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
+
     dt : float
-        Only needed if feeding :class:`EventList` objects
+        The time resolution of the light curve. Only needed when constructing
+        light curves in the case where data1 or data2 are of :class:EventList
 
     power_type: string, optional, default ``real``
          Parameter to choose among complete, real part and magnitude of
@@ -962,6 +978,14 @@ class AveragedCrossspectrum(Crossspectrum):
     silent : bool, default False
          Do not show a progress bar when generating an averaged cross spectrum.
          Useful for the batch execution of many spectra
+
+    lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        For backwards compatibility only. Like ``data1``, but no
+        :class:`stingray.events.EventList` objects allowed
+
+    lc2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        For backwards compatibility only. Like ``data2``, but no
+        :class:`stingray.events.EventList` objects allowed
 
     Attributes
     ----------
