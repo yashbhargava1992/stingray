@@ -380,6 +380,12 @@ class Crossspectrum(object):
         # check if input data is a Lightcurve object, if not make one or
         # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
 
+        # for backwards compatibility
+        if data1 is None:
+            data1 = lc1
+        if data2 is None:
+            data2 = lc2
+
         if data1 is None or data2 is None:
             if data1 is not None or data2 is not None:
                 raise TypeError("You can't do a cross spectrum with just one "
@@ -400,18 +406,12 @@ class Crossspectrum(object):
             raise ValueError("If using event lists, please specify the bin "
                              "time to generate lightcurves.")
 
-        # for backwards compatibility
-        if data1 is None:
-            data1 = lc1
-        if data2 is None:
-            data2 = lc2
-
-        if isinstance(data1, Lightcurve):
+        if not isinstance(data1, EventList):
             lc1 = data1
-        elif isinstance(data1, EventList):
+        else:
             lc1 = data1.to_lc(dt)
 
-        if isinstance(data2, Lightcurve):
+        if not isinstance(data2, EventList):
             lc2 = data2
         elif isinstance(data2, EventList) and data2 is not data1:
             lc2 = data2.to_lc(dt)
@@ -422,9 +422,7 @@ class Crossspectrum(object):
         self.lc1 = lc1
         self.lc2 = lc2
         self.power_type = power_type
-        print("Before", lc1, lc2, data1, data2)
         self._make_crossspectrum(lc1, lc2)
-        print("After cross", lc1, lc2)
         # These are needed to calculate coherence
         self._make_auxil_pds(lc1, lc2)
 
@@ -438,7 +436,6 @@ class Crossspectrum(object):
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
-        print(lc1, lc2)
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
             self.pds1 = Crossspectrum(lc1, lc1, norm='none')
             self.pds2 = Crossspectrum(lc2, lc2, norm='none')
@@ -458,7 +455,6 @@ class Crossspectrum(object):
             Two light curves used for computing the cross spectrum.
 
         """
-        print(lc1, lc2)
         # make sure the inputs work!
         if not isinstance(lc1, Lightcurve):
             raise TypeError("lc1 must be a lightcurve.Lightcurve object")
@@ -1051,7 +1047,6 @@ class AveragedCrossspectrum(Crossspectrum):
         if self.type != "powerspectrum" and \
                 lc1 is not lc2 and (isinstance(lc1, EventList) or
                                     isinstance(lc1, Lightcurve)):
-            print("Auxil")
             self.pds1 = AveragedCrossspectrum(lc1, lc1,
                                               segment_size=self.segment_size,
                                               norm='none', gti=lc1.gti,
@@ -1157,9 +1152,9 @@ class AveragedCrossspectrum(Crossspectrum):
                                  err_dist=lc2.err_dist,
                                  gti=gti2,
                                  dt=lc2.dt, skip_checks=True)
-            with warnings.catch_warnings(record=True) as w:
-                cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
-                                       power_type=self.power_type)
+            # with warnings.catch_warnings(record=True) as w:
+            cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
+                                   power_type=self.power_type)
 
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
@@ -1179,6 +1174,9 @@ class AveragedCrossspectrum(Crossspectrum):
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
+        local_show_progress = show_progress
+        if not self.show_progress:
+            local_show_progress = lambda a: a
 
         # chop light curves into segments
         if isinstance(lc1, Lightcurve) and \
@@ -1197,7 +1195,8 @@ class AveragedCrossspectrum(Crossspectrum):
 
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
-            for lc1_seg, lc2_seg in show_progress(zip(lc1, lc2)):
+
+            for lc1_seg, lc2_seg in local_show_progress(zip(lc1, lc2)):
                 if self.type == "crossspectrum":
                     cs_sep, nphots1_sep, nphots2_sep = \
                         self._make_segment_spectrum(lc1_seg, lc2_seg,

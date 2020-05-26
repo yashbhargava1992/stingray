@@ -482,7 +482,8 @@ class TestCrossspectrum(object):
 
     def test_norm_leahy(self):
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(lc1=self.lc1, lc2=self.lc1, norm='leahy')
+            cs = Crossspectrum(lc1=self.lc1, lc2=self.lc1,
+                               norm='leahy')
         assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
         leahy_noise = 2.0  # expected Poisson noise level
@@ -661,12 +662,13 @@ class TestAveragedCrossspectrum(object):
                                              [self.lc2, self.lc1],
                                              segment_size=1)
         acs_test.type = 'invalid_type'
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as excinfo:
             assert AveragedCrossspectrum._make_crossspectrum(acs_test,
                                                              lc1=[self.lc1,
                                                                   self.lc2],
                                                              lc2=[self.lc2,
                                                                   self.lc1])
+        assert "Type of spectrum not recognized" in str(excinfo.value)
 
     def test_different_dt(self):
         time1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -726,8 +728,9 @@ class TestAveragedCrossspectrum(object):
             aps = AveragedCrossspectrum(lc1=self.lc1, lc2=self.lc2,
                                         segment_size=1, norm='leahy')
         aps.type = 'invalid_type'
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as excinfo:
             assert aps.rebin(df=new_df, method=aps.type)
+        assert "Method for summing or averaging not recognized. " in str(excinfo.value)
 
     def test_rebin_with_valid_type_attribute(self):
         new_df = 2
