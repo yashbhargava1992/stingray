@@ -399,7 +399,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             counts_err = lc.counts_err[start_ind: end_ind]
 
             if np.sum(counts) == 0:
-                warnings.warn(f"No counts in interval {time[0]}--{time[-1]}s")
+                warnings.warn(
+                    "No counts in interval {}--{}s".format(time[0], time[-1]))
                 continue
 
             lc_seg = lightcurve.Lightcurve(time, counts, err=counts_err,
