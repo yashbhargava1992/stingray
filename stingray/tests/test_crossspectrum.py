@@ -227,7 +227,7 @@ class TestNormalization(object):
     def test_norm_abs(self):
         # Testing for a power spectrum of lc1
         power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
-                                        self.cs.nphots1, self.cs.nphots2, 
+                                        self.cs.nphots1, self.cs.nphots2,
                                         norm="abs")
 
         abs_noise = 2. * self.rate1  # expected Poisson noise level
@@ -236,7 +236,7 @@ class TestNormalization(object):
     def test_norm_leahy(self):
 
         power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
-                                        self.cs.nphots1, self.cs.nphots2, 
+                                        self.cs.nphots1, self.cs.nphots2,
                                         norm="leahy")
 
         leahy_noise = 2.0  # expected Poisson noise level
@@ -244,7 +244,7 @@ class TestNormalization(object):
 
     def test_norm_frac(self):
         power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
-                                        self.cs.nphots1, self.cs.nphots2, 
+                                        self.cs.nphots1, self.cs.nphots2,
                                         norm="frac")
 
         norm = 2. / self.rate1
@@ -255,7 +255,6 @@ class TestNormalization(object):
             power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
                                             self.cs.nphots1, self.cs.nphots2,
                                             norm="wrong")
-
 
 
 class TestCrossspectrum(object):
@@ -530,6 +529,16 @@ class TestAveragedCrossspectrum(object):
         assert cs.n is None
         assert cs.power_err is None
 
+    def test_no_counts_warns(self):
+        newlc = copy.deepcopy(self.lc1)
+        newlc.counts[:newlc.counts.size // 2] = \
+            0 * newlc.counts[:newlc.counts.size // 2]
+        with pytest.warns(UserWarning) as record:
+            ps = AveragedCrossspectrum(newlc, self.lc2, segment_size=0.2)
+
+        assert np.any(["No counts in "
+                       in r.message.args[0] for r in record])
+
     def test_no_segment_size(self):
         with pytest.raises(ValueError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2)
@@ -588,6 +597,23 @@ class TestAveragedCrossspectrum(object):
             AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5)
             assert np.any(["same tseg" in r.message.args[0]
                            for r in record])
+
+    def test_with_zero_counts(self):
+        nbins = 100
+        x = np.linspace(0, 10, nbins)
+        ycounts1 = np.random.normal(loc=10, scale=0.5, size=int(0.4*nbins))
+        ycounts2 = np.random.normal(loc=10, scale=0.5, size=int(0.4*nbins))
+
+        yzero = np.zeros(int(0.6*nbins))
+        y1 = np.hstack([ycounts1, yzero])
+        y2 = np.hstack([ycounts2, yzero])
+
+        lc1 = Lightcurve(x, y1)
+        lc2 = Lightcurve(x, y2)
+
+        acs = AveragedCrossspectrum(lc1, lc2, segment_size=5.0, norm="leahy")
+        assert acs.m == 1
+
 
     def test_rebin_with_invalid_type_attribute(self):
         new_df = 2

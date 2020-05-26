@@ -789,11 +789,11 @@ class Crossspectrum(object):
                 plt.xlabel(labels[0])
                 plt.ylabel(labels[1])
             except TypeError:
-                utils.simon("``labels`` must be either a list or tuple with "
+                simon("``labels`` must be either a list or tuple with "
                             "x and y labels.")
                 raise
             except IndexError:
-                utils.simon("``labels`` must have two labels for x and y "
+                simon("``labels`` must have two labels for x and y "
                             "axes.")
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
@@ -1079,6 +1079,13 @@ class AveragedCrossspectrum(Crossspectrum):
             time_2 = lc2.time[start_ind:end_ind]
             counts_2 = lc2.counts[start_ind:end_ind]
             counts_2_err = lc2.counts_err[start_ind:end_ind]
+
+            if np.sum(counts_1) == 0 or np.sum(counts_2) == 0:
+                warnings.warn(
+                    "No counts in interval {}--{}s".format(time_1[0],
+                                                           time_1[-1]))
+                continue
+
             gti1 = np.array([[time_1[0] - lc1.dt / 2,
                               time_1[-1] + lc1.dt / 2]])
             gti2 = np.array([[time_2[0] - lc2.dt / 2,
@@ -1092,7 +1099,8 @@ class AveragedCrossspectrum(Crossspectrum):
                                  gti=gti2,
                                  dt=lc2.dt, skip_checks=True)
             with warnings.catch_warnings(record=True) as w:
-                cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm, power_type=self.power_type)
+                cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
+                                       power_type=self.power_type)
 
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))

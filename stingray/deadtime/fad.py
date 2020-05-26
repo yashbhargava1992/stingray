@@ -88,7 +88,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         segments, as the result gets better as one averages more and more
         segments.
 
-     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
         The normalization of the (real part of the) cross spectrum.
 
 
@@ -115,6 +115,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         stdtheor = 2 / np.sqrt(n)
         std = (average_corrected_fourier_diff / n).std()
         np.abs((std - stdtheor) / stdtheor) < tolerance
+        ```
     strict : bool, default False
         Decide what to do if the condition on tolerance is not met. If True,
         raise a ``RuntimeError``. If False, just throw a warning.
@@ -137,7 +138,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         + cs: the corrected cospectrum
         + ptot: the corrected PDS of lc1 + lc2
 
-        If ``return_objects==True``, ``results`` is a ``dict``, with keys
+        If ``return_objects`` is True, ``results`` is a ``dict``, with keys
         named like the columns
         listed above but with `AveragePowerspectrum` or
         `AverageCrossspectrum` objects instead of arrays.
@@ -150,7 +151,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         gti = cross_two_gtis(lc1.gti, lc2.gti)
 
     if all_leahy:
-        warnings.warn("`all_leahy` is deprecated. Use `norm` instead! "  + 
+        warnings.warn("`all_leahy` is deprecated. Use `norm` instead! "  +
                       " Setting `norm`=`leahy`.", DeprecationWarning)
         norm="leahy"
 
@@ -215,14 +216,14 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         c = c / smooth_real * 2
 
 
-        power1 = normalize_crossspectrum(p1, segment_size, nbins1, nph1, 
+        power1 = normalize_crossspectrum(p1, segment_size, nbins1, nph1,
                                          nph1, norm=norm)
 
-        power2 = normalize_crossspectrum(p2, segment_size, nbins2, nph2,    
+        power2 = normalize_crossspectrum(p2, segment_size, nbins2, nph2,
                                          nph2, norm=norm)
-        power_tot = normalize_crossspectrum(pt, segment_size, nbinstot, nphtot,    
+        power_tot = normalize_crossspectrum(pt, segment_size, nbinstot, nphtot,
                                          nphtot, norm=norm)
-        cs_power = normalize_crossspectrum(c, segment_size, nbins1, nph1,    
+        cs_power = normalize_crossspectrum(c, segment_size, nbins1, nph1,
                                          nph2, norm=norm)
 
         if n == 0 and plot:

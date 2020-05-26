@@ -1133,8 +1133,8 @@ class Lightcurve(object):
         lc_split : iterable of `Lightcurve` objects
             The list of all contiguous light curves
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = np.array([1, 2, 3, 6, 7, 8, 11, 12, 13])
         >>> counts = np.random.rand(time.shape[0])
         >>> lc = Lightcurve(time, counts, dt=1)
