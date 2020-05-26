@@ -82,8 +82,12 @@ class Powerspectrum(Crossspectrum):
         The total number of photons in the light curve
 
     """
-    def __init__(self, lc=None, norm='frac', gti=None, dt=None):
-        Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti,
+    def __init__(self, data=None, norm="frac", gti=None,
+                 dt=None, lc=None):
+        if data is None:
+            data = lc
+
+        Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
                                dt=dt)
         self.nphots = self.nphots1
         self.dt = dt
@@ -340,26 +344,29 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The total number of photons in the light curve
 
     """
-    def __init__(self, lc=None, segment_size=None, norm="frac", gti=None,
-                 silent=False, dt=None):
+    def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
+                 silent=False, dt=None, lc=None):
 
         self.type = "powerspectrum"
+        # Backwards compatibility: user might have supplied lc instead
+        if data is None:
+            data = lc
 
-        if segment_size is None and lc is not None:
+        if segment_size is None and data is not None:
             raise ValueError("segment_size must be specified")
         if segment_size is not None and not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")
 
         self.dt = dt
 
-        if isinstance(lc, EventList):
-            lengths = lc.gti[:, 1] - lc.gti[:, 0]
+        if isinstance(data, EventList):
+            lengths = data.gti[:, 1] - data.gti[:, 0]
             good = lengths >= segment_size
-            lc.gti = lc.gti[good]
+            data.gti = data.gti[good]
 
         self.segment_size = segment_size
         self.show_progress = not silent
-        Powerspectrum.__init__(self, lc, norm, gti=gti, dt=dt)
+        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt)
 
         return
 

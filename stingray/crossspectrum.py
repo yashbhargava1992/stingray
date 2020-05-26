@@ -365,8 +365,16 @@ class Crossspectrum(object):
     nphots2: float
         The total number of photons in light curve 2
     """
-    def __init__(self, lc1=None, lc2=None, norm='none', gti=None,
-                 power_type="real", dt=None):
+
+    def __init__(self, data1=None, data2=None, norm='none', gti=None,
+                 lc1=None, lc2=None, power_type="real", dt=None):
+
+        # for backwards compatibility
+        if data1 is None and lc1 is not None:
+            data1 = lc1
+        if data2 is None and lc2 is not None:
+            data2 = lc2
+
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
 
@@ -378,8 +386,8 @@ class Crossspectrum(object):
         # check if input data is a Lightcurve object, if not make one or
         # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
 
-        if lc1 is None or lc2 is None:
-            if lc1 is not None or lc2 is not None:
+        if data1 is None or data2 is None:
+            if data1 is not None or data2 is not None:
                 raise TypeError("You can't do a cross spectrum with just one "
                                 "light curve!")
             else:
@@ -392,15 +400,16 @@ class Crossspectrum(object):
                 self.m = 1
                 self.n = None
                 return
-        if (isinstance(lc1, EventList) or isinstance(lc2, EventList)) and \
+
+        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and \
                 dt is None:
             raise ValueError("If using event lists, please specify the bin "
                              "time to generate lightcurves.")
 
-        if isinstance(lc1, EventList):
-            lc1 = lc1.to_lc(dt)
-        if isinstance(lc2, EventList):
-            lc2 = lc2.to_lc(dt)
+        if isinstance(data1, EventList):
+            lc1 = data1.to_lc(dt)
+        if isinstance(data2, EventList):
+            lc2 = data2.to_lc(dt)
 
         self.gti = gti
         self.lc1 = lc1
@@ -985,8 +994,15 @@ class AveragedCrossspectrum(Crossspectrum):
 
     """
 
-    def __init__(self, lc1=None, lc2=None, segment_size=None, norm='none',
-                 gti=None, power_type="real", silent=False, dt=None):
+    def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
+                 gti=None, power_type="real", silent=False, lc1=None, lc2=None,
+                 dt=None):
+
+        # for backwards compatibility
+        if data1 is None and lc1 is not None:
+            data1 = lc1
+        if data2 is None and lc2 is not None:
+            data2 = lc2
 
         self.type = "crossspectrum"
 
@@ -1001,11 +1017,11 @@ class AveragedCrossspectrum(Crossspectrum):
         self.show_progress = not silent
         self.dt = dt
 
-        for lc in [lc1, lc2]:
-            if isinstance(lc, EventList):
-                lengths = lc.gti[:, 1] - lc.gti[:, 0]
+        for data in [data1, data2]:
+            if isinstance(data, EventList):
+                lengths = data.gti[:, 1] - data.gti[:, 0]
                 good = lengths >= segment_size
-                lc.gti = lc.gti[good]
+                data.gti = data.gti[good]
 
         Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti,
                                power_type=power_type, dt=dt)
