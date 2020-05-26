@@ -1081,6 +1081,8 @@ class AveragedCrossspectrum(Crossspectrum):
             counts_2_err = lc2.counts_err[start_ind:end_ind]
 
             if np.sum(counts_1) == 0 or np.sum(counts_2) == 0:
+                warnings.warn(
+                    f"No counts in interval {time_1[0]}--{time_1[-1]}s")
                 continue
 
             gti1 = np.array([[time_1[0] - lc1.dt / 2,

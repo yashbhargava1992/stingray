@@ -357,6 +357,17 @@ class TestAveragedPowerspectrum(object):
         ps = AveragedPowerspectrum(self.lc, segment_size)
         assert np.isclose(ps.segment_size, segment_size)
 
+    def test_no_counts_warns(self):
+        newlc = copy.deepcopy(self.lc)
+        newlc.counts[:newlc.counts.size // 2] = \
+            0 * newlc.counts[:newlc.counts.size // 2]
+
+        with pytest.warns(UserWarning) as record:
+            ps = AveragedPowerspectrum(newlc, 0.2)
+
+        assert np.any(["No counts in "
+                       in r.message.args[0] for r in record])
+
     def test_make_empty_periodogram(self):
         ps = AveragedPowerspectrum()
         assert ps.norm == "frac"
