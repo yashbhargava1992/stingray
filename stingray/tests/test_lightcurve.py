@@ -4,6 +4,7 @@ from astropy.tests.helper import pytest
 import warnings
 import os
 import matplotlib.pyplot as plt
+from numpy.testing import assert_allclose
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
@@ -12,11 +13,17 @@ from stingray.gti import create_gti_mask
 np.random.seed(20150907)
 
 _H5PY_INSTALLED = True
+_HAS_LIGHTKURVE = True
 
 try:
     import h5py
 except ImportError:
     _H5PY_INSTALLED = False
+
+try:
+    import Lightkurve
+except ImportError:
+    _HAS_LIGHTKURVE = False
 
 def fvar_fun(lc):
     from stingray.utils import excess_variance
@@ -799,6 +806,26 @@ class TestLightcurve(object):
         lc_long = lc_1.join(lc_2)  # Or vice-versa
         new_lc_long = lc_long[:]  # Copying into a new object
         assert new_lc_long.n == lc_long.n
+
+    @pytest.mark.skipif('not _HAS_LIGHTKURVE')
+    def test_to_lightkurve(self):
+        time, counts, counts_err = range(3), np.ones(3), np.zeros(3)
+        lc = Lightcurve(time, counts, counts_err)
+        lk = lc.to_lightkurve()
+        assert_allclose(lk.time, time)
+        assert_allclose(lk.flux, counts)
+        assert_allclose(lk.flux_err, counts_err)
+
+    @pytest.mark.skipif(not _HAS_LIGHTKURVE,
+                        reason='Lightkurve not installed')
+    def test_from_lightkurve(self):
+        from Lightkurve import LightCurve
+        time, flux, flux_err = range(3), np.ones(3), np.zeros(3)
+        lk = LightCurve(time, flux, flux_err)
+        sr = Lightcurve.from_lightkurve(lk)
+        assert_allclose(sr.time, lc.time)
+        assert_allclose(sr.counts, lc.flux)
+        assert_allclose(sr.counts_err, lc.flux_err)
 
     def test_plot_matplotlib_not_installed(self):
         try:

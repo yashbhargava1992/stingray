@@ -28,7 +28,7 @@ env:
         - NUMPY_VERSION=stable
 
         - SETUP_CMD='test --coverage'
-        - PIP_DEPENDENCIES='emcee statsmodels corner'
+        - PIP_DEPENDENCIES='emcee statsmodels corner Lightkurve'
         - CONDA_DEPENDENCIES='scipy h5py matplotlib'
         - SETUP_XVFB=True
 
@@ -43,7 +43,7 @@ matrix:
           env: PYTHON_VERSION=3.7 CONDA_DEPENDENCIES='scipy matplotlib numba'
 
         - env: PYTHON_VERSION=3.6
-               PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner'
+               PIP_DEPENDENCIES='git+https://git@github.com/nanograv/pint.git jplephem emcee statsmodels corner lightkurve'
                SETUP_CMD='test --remote-data --coverage'
                ASTROPY_VERSION=3.2.3
                NUMPY_VERSION=1.16
