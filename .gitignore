@@ -15,6 +15,7 @@ __pycache__
 htmlcov
 .coverage
 MANIFEST
+.ipynb_checkpoints
 
 # Sphinx
 docs/api
@@ -40,12 +41,17 @@ venv.bak/
 # VSCode editor project files
 .vscode/*
 
+# Floobits project files
+.floo
+.flooignore
+
 # Packages/installer info
 *.egg
 *.egg-info
 dist
 build
 eggs
+.eggs
 parts
 bin
 var
@@ -59,11 +65,12 @@ distribute-*.tar.gz
 .tox
 .*.sw[op]
 *~
+.project
+.pydevproject
+.settings
 .pytest_cache
+pip-wheel-metadata/
 v
 
 # Mac OSX
 .DS_Store
-
-# virtualenv
-.venv
