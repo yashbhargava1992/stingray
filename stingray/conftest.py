@@ -20,6 +20,8 @@ else:
         ASTROPY_HEADER = False
 
     try:
+        import matplotlib
+    except ImportError:
         pass
     else:
         matplotlib.use('Agg')
