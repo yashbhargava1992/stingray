@@ -285,8 +285,10 @@ class OptimizationResults(object):
             if par in parnames:
                 idx = parnames.index(par)
 
-                log.info("{:<20.5f} +/- {:<20.5f} ".format(self.p_opt[idx],
-                                                  self.err[idx]))
+                err_info = " (no error estimate)"
+                if self.err is not None:
+                    err_info = " +/- {:<20.5f}".format(self.err[idx])
+                log.info("{:<20.5f}{} ".format(self.p_opt[idx], err_info))
                 log.info("[{:>10} {:>10}]".format(str(bounds[i][0]),
                                                str(bounds[i][1])))
             elif fixed[i]:
