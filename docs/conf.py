@@ -69,7 +69,7 @@ rst_epilog += """
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
-project = setup_cfg[if versionmod.version.release: edit_on_github_branch="v" + versionmod.version.version else: edit_on_github_branch="master"]
+project = setup_cfg['name']
 author = setup_cfg['author']
 copyright = '{0}, {1}'.format(datetime.datetime.now().year,
                               setup_cfg['author'])
@@ -78,8 +78,8 @@ copyright = '{0}, {1}'.format(datetime.datetime.now().year,
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-import_module(setup_cfg['package_name'])
-package = sys.modules[setup_cfg['package_name']]
+import_module(setup_cfg['name'])
+package = sys.modules[setup_cfg['name']]
 
 # The short X.Y version.
 version = package.__version__.split('-', 1)[0]
@@ -111,7 +111,7 @@ html_theme_options = {
 }
 
 extensions += [
-    'matplotlib.sphinxext.plot_directive', 'sphinx.ext.autodoc', 'nbsphinx',
+    'matplotlib.sphinxext.plot_directive', 'sphinx.ext.autodoc',
     'sphinx.ext.napoleon'
 ]
 

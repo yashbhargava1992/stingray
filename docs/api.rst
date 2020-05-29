@@ -379,4 +379,3 @@ Some basic Stingray-related errors and exceptions.
 .. autoclass:: stingray.exceptions.StingrayError
    :members:
    :undoc-members:
-
