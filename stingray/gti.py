@@ -620,6 +620,28 @@ def gti_len(gti):
     return np.sum(gti[:, 1] - gti[:, 0])
 
 
+@jit(nopython=True)
+def _check_separate(gti0, gti1):
+    """Numba-compiled core of ``check_separate``."""
+    gti0_start = gti0[:, 0]
+    gti0_end = gti0[:, 1]
+    gti1_start = gti1[:, 0]
+    gti1_end = gti1[:, 1]
+
+    if (gti0_end[-1] <= gti1_start[0]) or (gti1_end[-1] <= gti0_start[0]):
+        return True
+
+    for g in gti1.flatten():
+        for g0, g1 in zip(gti0[:, 0], gti0[:, 1]):
+            if (g < g1) and (g > g0):
+                return False
+    for g in gti0.flatten():
+        for g0, g1 in zip(gti1[:, 0], gti1[:, 1]):
+            if (g < g1) and (g > g0):
+                return False
+    return True
+
+
 def check_separate(gti0, gti1):
     """
     Check if two GTIs do not overlap.
@@ -670,23 +692,7 @@ def check_separate(gti0, gti1):
     check_gtis(gti0)
     check_gtis(gti1)
 
-    gti0_start = gti0[:, 0]
-    gti0_end = gti0[:, 1]
-    gti1_start = gti1[:, 0]
-    gti1_end = gti1[:, 1]
-
-    if (gti0_end[-1] <= gti1_start[0]) or (gti1_end[-1] <= gti0_start[0]):
-        return True
-
-    for g in gti1.flatten():
-        for g0 in gti0:
-            if (g < g0[1]) and (g > g0[0]):
-                return False
-    for g in gti0.flatten():
-        for g0 in gti1:
-            if (g < g0[1]) and (g > g0[0]):
-                return False
-    return True
+    return _check_separate(gti0, gti1)
 
 
 def join_equal_gti_boundaries(gti):
