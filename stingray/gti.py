@@ -633,11 +633,11 @@ def _check_separate(gti0, gti1):
 
     for g in gti1.flatten():
         for g0, g1 in zip(gti0[:, 0], gti0[:, 1]):
-            if (g < g1) and (g > g0):
+            if (g <= g1) and (g >= g0):
                 return False
     for g in gti0.flatten():
         for g0, g1 in zip(gti1[:, 0], gti1[:, 1]):
-            if (g < g1) and (g > g0):
+            if (g <= g1) and (g >= g0):
                 return False
     return True
 
@@ -665,6 +665,10 @@ def check_separate(gti0, gti1):
     >>> gti1 = [[20, 30]]
     >>> check_separate(gti0, gti1)
     True
+    >>> gti0 = [[0, 10]]
+    >>> gti1 = [[0, 10]]
+    >>> check_separate(gti0, gti1)
+    False
     >>> gti0 = [[0, 10]]
     >>> gti1 = [[10, 20]]
     >>> check_separate(gti0, gti1)
@@ -802,6 +806,7 @@ def join_gtis(gti0, gti1):
     check_gtis(gti0)
     check_gtis(gti1)
 
+    print(check_separate(gti0, gti1))
     if check_separate(gti0, gti1):
         return append_gtis(gti0, gti1)
 
