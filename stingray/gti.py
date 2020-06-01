@@ -807,7 +807,6 @@ def join_gtis(gti0, gti1):
     check_gtis(gti0)
     check_gtis(gti1)
 
-    print(check_separate(gti0, gti1))
     if check_separate(gti0, gti1):
         return append_gtis(gti0, gti1)
 
