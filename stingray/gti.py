@@ -695,8 +695,9 @@ def check_separate(gti0, gti1):
     # Check if independently GTIs are well behaved
     check_gtis(gti0)
     check_gtis(gti1)
-
-    return _check_separate(gti0, gti1)
+    t0 = min(gti0[0, 0], gti1[0, 0])
+    return _check_separate((gti0 - t0).astype(np.double),
+                           (gti1 - t0).astype(np.double))
 
 
 def join_equal_gti_boundaries(gti):
