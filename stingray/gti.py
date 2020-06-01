@@ -636,6 +636,29 @@ def check_separate(gti0, gti1):
     -------
     separate: bool
         ``True`` if GTIs are mutually exclusive, ``False`` if not
+
+    Examples
+    --------
+    >>> gti0 = [[0, 10]]
+    >>> gti1 = [[20, 30]]
+    >>> check_separate(gti0, gti1)
+    True
+    >>> gti0 = [[0, 10]]
+    >>> gti1 = [[10, 20]]
+    >>> check_separate(gti0, gti1)
+    True
+    >>> gti0 = [[0, 11]]
+    >>> gti1 = [[10, 20]]
+    >>> check_separate(gti0, gti1)
+    False
+    >>> gti0 = [[0, 11]]
+    >>> gti1 = [[10, 20]]
+    >>> check_separate(gti1, gti0)
+    False
+    >>> gti0 = [[0, 10], [30, 40]]
+    >>> gti1 = [[11, 28]]
+    >>> check_separate(gti0, gti1)
+    True
     """
 
     gti0 = np.asarray(gti0)
@@ -647,15 +670,23 @@ def check_separate(gti0, gti1):
     check_gtis(gti0)
     check_gtis(gti1)
 
-    gti0_start = gti0[:, 0][0]
-    gti0_end = gti0[:, 1][-1]
-    gti1_start = gti1[:, 0][0]
-    gti1_end = gti1[:, 1][-1]
+    gti0_start = gti0[:, 0]
+    gti0_end = gti0[:, 1]
+    gti1_start = gti1[:, 0]
+    gti1_end = gti1[:, 1]
 
-    if (gti0_end <= gti1_start) or (gti1_end <= gti0_start):
+    if (gti0_end[-1] <= gti1_start[0]) or (gti1_end[-1] <= gti0_start[0]):
         return True
-    else:
-        return False
+
+    for g in gti1.flatten():
+        for g0 in gti0:
+            if (g < g0[1]) and (g > g0[0]):
+                return False
+    for g in gti0.flatten():
+        for g0 in gti1:
+            if (g < g0[1]) and (g > g0[0]):
+                return False
+    return True
 
 
 def join_equal_gti_boundaries(gti):
@@ -701,13 +732,15 @@ def append_gtis(gti0, gti1):
     --------
     >>> np.all(append_gtis([[0, 1]], [[2, 3]]) == [[0, 1], [2, 3]])
     True
+    >>> np.allclose(append_gtis([[0, 1], [4, 5]], [[2, 3]]),
+    ...             [[0, 1], [2, 3], [4, 5]])
+    True
     >>> np.all(append_gtis([[0, 1]], [[1, 3]]) == [[0, 3]])
     True
     """
 
     gti0 = np.asarray(gti0)
     gti1 = np.asarray(gti1)
-
     # Check if independently GTIs are well behaved.
     check_gtis(gti0)
     check_gtis(gti1)
@@ -717,9 +750,9 @@ def append_gtis(gti0, gti1):
         raise ValueError('In order to append, GTIs must be mutually'
                          'exclusive.')
 
-    new_gtis = np.sort(np.concatenate([gti0, gti1]))
-
-    return join_equal_gti_boundaries(new_gtis)
+    new_gtis = np.concatenate([gti0, gti1])
+    order = np.argsort(new_gtis[:, 0])
+    return join_equal_gti_boundaries(new_gtis[order])
 
 
 def join_gtis(gti0, gti1):
