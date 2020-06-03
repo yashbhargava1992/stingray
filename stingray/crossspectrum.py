@@ -394,6 +394,9 @@ class Crossspectrum(object):
         # check if input data is a Lightcurve object, if not make one or
         # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
 
+        if lc1 is not None or lc2 is not None:
+            warnings.warn("The lcN keywords are now deprecated. Use dataN "
+                          "instead", DeprecationWarning)
         # for backwards compatibility
         if data1 is None:
             data1 = lc1
@@ -1028,6 +1031,9 @@ class AveragedCrossspectrum(Crossspectrum):
                  gti=None, power_type="real", silent=False, lc1=None, lc2=None,
                  dt=None):
 
+        if lc1 is not None or lc2 is not None:
+            warnings.warn("The lcN keywords are now deprecated. Use dataN "
+                          "instead", DeprecationWarning)
         # for backwards compatibility
         if data1 is None:
             data1 = lc1

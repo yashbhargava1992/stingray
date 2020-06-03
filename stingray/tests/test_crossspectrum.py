@@ -4,10 +4,9 @@ import pytest
 import warnings
 import matplotlib.pyplot as plt
 import scipy.special
-from stingray import Lightcurve, AveragedPowerspectrum
+from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
 from stingray.crossspectrum import  cospectra_pvalue, normalize_crossspectrum
-from ..simulator.simulator import Simulator
 from stingray import StingrayError
 from ..simulator.simulator import Simulator
 
@@ -379,6 +378,15 @@ class TestCrossspectrum(object):
         with pytest.warns(UserWarning) as record:
             self.cs = Crossspectrum(self.lc1, self.lc2)
 
+    def test_lc_keyword_deprecation(self):
+        cs1 = Crossspectrum(self.lc1, self.lc2)
+        with pytest.warns(DeprecationWarning) as record:
+            cs2 = Crossspectrum(lc1=self.lc1, lc2=self.lc2)
+        assert np.any(['lcN keywords' in r.message.args[0]
+                       for r in record])
+        assert np.allclose(cs1.power, cs2.power)
+        assert np.allclose(cs1.freq, cs2.freq)
+
     def test_make_empty_crossspectrum(self):
         cs = Crossspectrum()
         assert cs.freq is None
@@ -474,7 +482,7 @@ class TestCrossspectrum(object):
 
     def test_norm_abs(self):
         # Testing for a power spectrum of lc1
-        cs = Crossspectrum(lc1=self.lc1, lc2=self.lc1, norm='abs')
+        cs = Crossspectrum(self.lc1, self.lc1, norm='abs')
         assert len(cs.power) == 4999
         assert cs.norm == 'abs'
         abs_noise = 2. * self.rate1  # expected Poisson noise level
@@ -482,7 +490,7 @@ class TestCrossspectrum(object):
 
     def test_norm_leahy(self):
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(lc1=self.lc1, lc2=self.lc1,
+            cs = Crossspectrum(self.lc1, self.lc1,
                                norm='leahy')
         assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
@@ -623,6 +631,17 @@ class TestAveragedCrossspectrum(object):
         with pytest.warns(UserWarning) as record:
             self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
 
+    def test_lc_keyword_deprecation(self):
+        cs1 = AveragedCrossspectrum(data1=self.lc1, data2=self.lc2,
+                                    segment_size=1)
+        with pytest.warns(DeprecationWarning) as record:
+            cs2 = AveragedCrossspectrum(lc1=self.lc1, lc2=self.lc2,
+                                        segment_size=1)
+        assert np.any(['lcN keywords' in r.message.args[0]
+                       for r in record])
+        assert np.allclose(cs1.power, cs2.power)
+        assert np.allclose(cs1.freq, cs2.freq)
+
     def test_make_empty_crossspectrum(self):
         cs = AveragedCrossspectrum()
         assert cs.freq is None
@@ -664,9 +683,9 @@ class TestAveragedCrossspectrum(object):
         acs_test.type = 'invalid_type'
         with pytest.raises(ValueError) as excinfo:
             assert AveragedCrossspectrum._make_crossspectrum(acs_test,
-                                                             lc1=[self.lc1,
-                                                                  self.lc2],
-                                                             lc2=[self.lc2,
+                                                             [self.lc1,
+                                                              self.lc2],
+                                                             [self.lc2,
                                                                   self.lc1])
         assert "Type of spectrum not recognized" in str(excinfo.value)
 
@@ -735,7 +754,7 @@ class TestAveragedCrossspectrum(object):
     def test_rebin_with_valid_type_attribute(self):
         new_df = 2
         with pytest.warns(UserWarning) as record:
-            aps = AveragedCrossspectrum(lc1=self.lc1, lc2=self.lc2,
+            aps = AveragedCrossspectrum(self.lc1, self.lc2,
                                         segment_size=1, norm='leahy')
         assert aps.rebin(df=new_df)
 

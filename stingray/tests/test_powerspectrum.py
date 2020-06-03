@@ -59,7 +59,7 @@ class TestAveragedPowerspectrumEvents(object):
         TODO: Not sure how to write tests for the rebin method!
         """
 
-        aps = AveragedPowerspectrum(lc=self.lc, segment_size=self.segment_size,
+        aps = AveragedPowerspectrum(self.lc, segment_size=self.segment_size,
                                     norm="Leahy", dt=self.dt)
         bin_aps = aps.rebin(df)
         assert np.isclose(bin_aps.freq[1]-bin_aps.freq[0], bin_aps.df,
@@ -74,7 +74,7 @@ class TestAveragedPowerspectrumEvents(object):
         TODO: Not sure how to write tests for the rebin method!
         """
 
-        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+        aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm="Leahy", dt=self.dt)
         bin_aps = aps.rebin(f=f)
         assert np.isclose(bin_aps.freq[1]-bin_aps.freq[0], bin_aps.df,
@@ -86,13 +86,13 @@ class TestAveragedPowerspectrumEvents(object):
     @pytest.mark.parametrize('df', [0.01, 0.1])
     def test_rebin_log(self, df):
         # For now, just verify that it doesn't crash
-        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+        aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm="Leahy", dt=self.dt)
         bin_aps = aps.rebin_log(df)
 
     def test_rebin_with_invalid_type_attribute(self):
         new_df = 2
-        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+        aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm='leahy', dt=self.dt)
         aps.type = 'invalid_type'
         with pytest.raises(AttributeError):
@@ -144,7 +144,7 @@ class TestPowerspectrum(object):
         assert ps.n is None
 
     def test_make_periodogram_from_lightcurve(self):
-        ps = Powerspectrum(lc=self.lc)
+        ps = Powerspectrum(self.lc)
         assert ps.freq is not None
         assert ps.power is not None
         assert ps.power_err is not None
@@ -155,7 +155,7 @@ class TestPowerspectrum(object):
         assert ps.nphots == np.sum(self.lc.counts)
 
     def test_periodogram_types(self):
-        ps = Powerspectrum(lc=self.lc)
+        ps = Powerspectrum(self.lc)
         assert isinstance(ps.freq, np.ndarray)
         assert isinstance(ps.power, np.ndarray)
         assert isinstance(ps.power_err, np.ndarray)
@@ -190,7 +190,7 @@ class TestPowerspectrum(object):
         Note: make sure the factors of ncounts match!
         Also, make sure to *exclude* the zeroth power!
         """
-        ps = Powerspectrum(lc=self.lc)
+        ps = Powerspectrum(self.lc)
         nn = ps.n
         pp = ps.unnorm_power / np.float(nn) ** 2
         p_int = np.sum(pp[:-1] * ps.df) + (pp[-1] * ps.df) / 2
@@ -202,7 +202,7 @@ class TestPowerspectrum(object):
         Make sure the standard normalization of a periodogram is
         rms and it stays that way!
         """
-        ps = Powerspectrum(lc=self.lc)
+        ps = Powerspectrum(self.lc)
         assert ps.norm == "frac"
 
     def test_frac_normalization_correct(self):
@@ -211,7 +211,7 @@ class TestPowerspectrum(object):
         equal to the variance of the light curve divided by the mean
         of the light curve squared.
         """
-        ps = Powerspectrum(lc=self.lc, norm="frac")
+        ps = Powerspectrum(self.lc, norm="frac")
         ps_int = np.sum(ps.power[:-1] * ps.df) + ps.power[-1] * ps.df / 2
         std_lc = np.var(self.lc.counts) / np.mean(self.lc.counts) ** 2
         assert np.isclose(ps_int, std_lc, atol=0.01, rtol=0.01)
@@ -224,11 +224,11 @@ class TestPowerspectrum(object):
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1,
                             gti=[[0, 100]])
-        ps = Powerspectrum(lc=lc, norm="leahy")
+        ps = Powerspectrum(lc, norm="leahy")
         rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
                                          max_freq=ps.freq[-1], white_noise_offset=0)
 
-        ps = Powerspectrum(lc=lc, norm="frac")
+        ps = Powerspectrum(lc, norm="frac")
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
                                          max_freq=ps.freq[-1], white_noise_offset=0)
         assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
@@ -242,12 +242,12 @@ class TestPowerspectrum(object):
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1,
                             gti=[[0, 400]])
-        ps = AveragedPowerspectrum(lc=lc, norm="leahy", segment_size=100,
+        ps = AveragedPowerspectrum(lc, norm="leahy", segment_size=100,
                                    silent=True)
         rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
                                          max_freq=ps.freq[-1], white_noise_offset=0)
 
-        ps = AveragedPowerspectrum(lc=lc, norm="frac", segment_size=100)
+        ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
                                          max_freq=ps.freq[-1], white_noise_offset=0)
         assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
@@ -261,7 +261,7 @@ class TestPowerspectrum(object):
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1,
                             gti=[[0, 400]])
-        ps = AveragedPowerspectrum(lc=lc, norm="frac", segment_size=100)
+        ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
                                          max_freq=ps.freq[-1],
                                          white_noise_offset=0)
@@ -287,7 +287,7 @@ class TestPowerspectrum(object):
         powers multiplied by the number of counts and divided by the
         square of the number of data points in the light curve
         """
-        ps = Powerspectrum(lc=self.lc, norm="Leahy")
+        ps = Powerspectrum(self.lc, norm="Leahy")
         ps_var = (np.sum(self.lc.counts) / ps.n ** 2.) * \
                  (np.sum(ps.power[:-1]) + ps.power[-1] / 2.)
 
@@ -299,7 +299,7 @@ class TestPowerspectrum(object):
         deviation divided by the mean of the light curve. Therefore, we allow
         for a larger tolerance in np.isclose()
         """
-        ps = Powerspectrum(lc=self.lc, norm="Leahy")
+        ps = Powerspectrum(self.lc, norm="Leahy")
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
                                          max_freq=ps.freq[-1])
 
@@ -308,7 +308,7 @@ class TestPowerspectrum(object):
 
     def test_fractional_rms_fails_when_rms_not_leahy(self):
         with pytest.raises(Exception):
-            ps = Powerspectrum(lc=self.lc, norm="rms")
+            ps = Powerspectrum(self.lc, norm="rms")
             rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
                                              max_freq=ps.freq[-1])
 
@@ -337,7 +337,7 @@ class TestPowerspectrum(object):
         pass
 
     def test_rebin_makes_right_attributes(self):
-        ps = Powerspectrum(lc=self.lc, norm="Leahy")
+        ps = Powerspectrum(self.lc, norm="Leahy")
         # replace powers
         ps.power = np.ones_like(ps.power) * 2.0
 
@@ -360,7 +360,7 @@ class TestPowerspectrum(object):
         Note: function defaults come as a tuple, so the first keyword argument
         had better be 'method'
         """
-        ps = Powerspectrum(lc=self.lc, norm="Leahy")
+        ps = Powerspectrum(self.lc, norm="Leahy")
         assert ps.rebin.__defaults__[2] == "mean"
 
     @pytest.mark.parametrize('df', [2, 3, 5, 1.5, 1, 85])
@@ -368,7 +368,7 @@ class TestPowerspectrum(object):
         """
         TODO: Not sure how to write tests for the rebin method!
         """
-        ps = Powerspectrum(lc=self.lc, norm="Leahy")
+        ps = Powerspectrum(self.lc, norm="Leahy")
         bin_ps = ps.rebin(df)
         assert np.isclose(bin_ps.freq[1] - bin_ps.freq[0], bin_ps.df,
                           atol=1e-4, rtol=1e-4)
@@ -376,17 +376,27 @@ class TestPowerspectrum(object):
                           (ps.freq[0] - ps.df * 0.5 + bin_ps.df * 0.5),
                           atol=1e-4, rtol=1e-4)
 
+    def test_lc_keyword_deprecation(self):
+        cs1 = Powerspectrum(self.lc, norm="Leahy")
+        with pytest.warns(DeprecationWarning) as record:
+            cs2 = Powerspectrum(lc=self.lc, norm="Leahy")
+        assert np.any(['lc keyword' in r.message.args[0]
+                       for r in record])
+        assert np.allclose(cs1.power, cs2.power)
+        assert np.allclose(cs1.freq, cs2.freq)
+
+
     def test_classical_significances_runs(self):
-        ps = Powerspectrum(lc=self.lc, norm="Leahy")
+        ps = Powerspectrum(self.lc, norm="Leahy")
         ps.classical_significances()
 
     def test_classical_significances_fails_in_rms(self):
-        ps = Powerspectrum(lc=self.lc, norm="frac")
+        ps = Powerspectrum(self.lc, norm="frac")
         with pytest.raises(ValueError):
             ps.classical_significances()
 
     def test_classical_significances_threshold(self):
-        ps = Powerspectrum(lc=self.lc, norm="leahy")
+        ps = Powerspectrum(self.lc, norm="leahy")
 
         # change the powers so that just one exceeds the threshold
         ps.power = np.zeros_like(ps.power) + 2.0
@@ -402,7 +412,7 @@ class TestPowerspectrum(object):
         assert pval[1, 0] == index
 
     def test_classical_significances_trial_correction(self):
-        ps = Powerspectrum(lc=self.lc, norm="leahy")
+        ps = Powerspectrum(self.lc, norm="leahy")
         # change the powers so that just one exceeds the threshold
         ps.power = np.zeros_like(ps.power) + 2.0
         index = 1
@@ -414,7 +424,7 @@ class TestPowerspectrum(object):
 
 
     def test_classical_significances_with_logbinned_psd(self):
-        ps = Powerspectrum(lc=self.lc, norm="leahy")
+        ps = Powerspectrum(self.lc, norm="leahy")
         ps_log = ps.rebin_log()
         pval = ps_log.classical_significances(threshold=1.1,
                                               trial_correction=False)
@@ -422,7 +432,7 @@ class TestPowerspectrum(object):
         assert len(pval[0]) == len(ps_log.power)
 
     def test_pvals_is_numpy_array(self):
-        ps = Powerspectrum(lc=self.lc, norm="leahy")
+        ps = Powerspectrum(self.lc, norm="leahy")
         # change the powers so that just one exceeds the threshold
         ps.power = np.zeros_like(ps.power) + 2.0
 
@@ -461,6 +471,15 @@ class TestAveragedPowerspectrum(object):
 
         ps = AveragedPowerspectrum(self.lc, segment_size)
         assert np.isclose(ps.segment_size, segment_size)
+
+    def test_lc_keyword_deprecation(self):
+        cs1 = AveragedPowerspectrum(self.lc, segment_size=self.lc.tseg)
+        with pytest.warns(DeprecationWarning) as record:
+            cs2 = AveragedPowerspectrum(lc=self.lc, segment_size=self.lc.tseg)
+        assert np.any(['lc keyword' in r.message.args[0]
+                       for r in record])
+        assert np.allclose(cs1.power, cs2.power)
+        assert np.allclose(cs1.freq, cs2.freq)
 
     def test_no_counts_warns(self):
         newlc = copy.deepcopy(self.lc)
@@ -568,7 +587,7 @@ class TestAveragedPowerspectrum(object):
         TODO: Not sure how to write tests for the rebin method!
         """
 
-        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+        aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm="Leahy")
         bin_aps = aps.rebin(df)
         assert np.isclose(bin_aps.freq[1]-bin_aps.freq[0], bin_aps.df,
@@ -583,7 +602,7 @@ class TestAveragedPowerspectrum(object):
         TODO: Not sure how to write tests for the rebin method!
         """
 
-        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+        aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm="Leahy")
         bin_aps = aps.rebin(f=f)
         assert np.isclose(bin_aps.freq[1]-bin_aps.freq[0], bin_aps.df,
@@ -595,13 +614,13 @@ class TestAveragedPowerspectrum(object):
     @pytest.mark.parametrize('df', [0.01, 0.1])
     def test_rebin_log(self, df):
         # For now, just verify that it doesn't crash
-        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+        aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm="Leahy")
         bin_aps = aps.rebin_log(df)
 
     def test_rebin_with_invalid_type_attribute(self):
         new_df = 2
-        aps = AveragedPowerspectrum(lc=self.lc, segment_size=1,
+        aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm='leahy')
         aps.type = 'invalid_type'
         with pytest.raises(AttributeError):

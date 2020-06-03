@@ -1,18 +1,17 @@
 import warnings
+
 import numpy as np
 import scipy
-import scipy.stats
 import scipy.fftpack
 import scipy.optimize
+import scipy.stats
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
-from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
+from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.stats import pds_probability
-
 from .events import EventList
-
 from .gti import cross_two_gtis
 
 try:
@@ -84,6 +83,9 @@ class Powerspectrum(Crossspectrum):
     """
     def __init__(self, data=None, norm="frac", gti=None,
                  dt=None, lc=None):
+        if lc is not None:
+            warnings.warn("The lc keyword is now deprecated. Use data "
+                          "instead", DeprecationWarning)
         if data is None:
             data = lc
 
@@ -353,6 +355,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                  silent=False, dt=None, lc=None):
 
         self.type = "powerspectrum"
+        if lc is not None:
+            warnings.warn("The lc keyword is now deprecated. Use data "
+                          "instead", DeprecationWarning)
         # Backwards compatibility: user might have supplied lc instead
         if data is None:
             data = lc
