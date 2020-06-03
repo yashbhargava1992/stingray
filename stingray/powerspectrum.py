@@ -1,15 +1,18 @@
 import warnings
+
 import numpy as np
 import scipy
-import scipy.stats
 import scipy.fftpack
 import scipy.optimize
+import scipy.stats
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
-from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
+from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.stats import pds_probability
+from .events import EventList
+from .gti import cross_two_gtis
 
 try:
     from tqdm import tqdm as show_progress
@@ -32,7 +35,7 @@ class Powerspectrum(Crossspectrum):
 
     Parameters
     ----------
-    lc: :class:`stingray.Lightcurve` object, optional, default ``None``
+    data: :class:`stingray.Lightcurve` object, optional, default ``None``
         The light curve data to be Fourier-transformed.
 
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
@@ -78,9 +81,18 @@ class Powerspectrum(Crossspectrum):
         The total number of photons in the light curve
 
     """
-    def __init__(self, lc=None, norm='frac', gti=None):
-        Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti)
+    def __init__(self, data=None, norm="frac", gti=None,
+                 dt=None, lc=None):
+        if lc is not None:
+            warnings.warn("The lc keyword is now deprecated. Use data "
+                          "instead", DeprecationWarning)
+        if data is None:
+            data = lc
+
+        Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
+                               dt=dt)
         self.nphots = self.nphots1
+        self.dt = dt
 
     def rebin(self, df=None, f=None, method="mean"):
         """
@@ -278,7 +290,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     Parameters
     ----------
-    lc: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+    data: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         The light curve data to be Fourier-transformed.
 
     segment_size: float
@@ -301,6 +313,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     silent : bool, default False
          Do not show a progress bar when generating an averaged cross spectrum.
          Useful for the batch execution of many spectra
+
+    dt: float
+        The time resolution of the light curve. Only needed when constructing
+        light curves in the case where data is of :class:EventList
+
 
     Attributes
     ----------
@@ -334,26 +351,39 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The total number of photons in the light curve
 
     """
-    def __init__(self, lc=None, segment_size=None, norm="frac", gti=None,
-                 silent=False):
+    def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
+                 silent=False, dt=None, lc=None):
 
         self.type = "powerspectrum"
+        if lc is not None:
+            warnings.warn("The lc keyword is now deprecated. Use data "
+                          "instead", DeprecationWarning)
+        # Backwards compatibility: user might have supplied lc instead
+        if data is None:
+            data = lc
 
-        if segment_size is None and lc is not None:
+        if segment_size is None and data is not None:
             raise ValueError("segment_size must be specified")
         if segment_size is not None and not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")
 
+        self.dt = dt
+
+        if isinstance(data, EventList):
+            lengths = data.gti[:, 1] - data.gti[:, 0]
+            good = lengths >= segment_size
+            data.gti = data.gti[good]
+
         self.segment_size = segment_size
         self.show_progress = not silent
-        Powerspectrum.__init__(self, lc, norm, gti=gti)
+        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt)
 
         return
 
     def _make_segment_spectrum(self, lc, segment_size):
         """
-        Split the light curves into segments of size ``segment_size``, and calculate a power spectrum for
-        each.
+        Split the light curves into segments of size ``segment_size``, and
+        calculate a power spectrum for each.
 
         Parameters
         ----------
@@ -374,6 +404,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
+        current_gtis = lc.gti
+
         if self.gti is None:
             self.gti = lc.gti
         else:
@@ -383,7 +415,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         check_gtis(self.gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(lc.gti, segment_size, lc.time, dt=lc.dt)
+            bin_intervals_from_gtis(current_gtis, segment_size, lc.time, dt=lc.dt)
 
         power_all = []
         nphots_all = []
@@ -472,7 +504,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         The time resolution
     """
 
-    def __init__(self, lc, segment_size, norm="frac", gti=None):
+    def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
         if segment_size < 2 * lc.dt:
             raise ValueError("Length of the segment is too short to form a "
                              "light curve!")
@@ -481,7 +513,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
                              "any segments of the light curve!")
         AveragedPowerspectrum.__init__(self, lc=lc,
                                        segment_size=segment_size, norm=norm,
-                                       gti=gti)
+                                       gti=gti, dt=dt)
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
@@ -498,9 +530,13 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
 
         self.freq = ps_all[0].freq
+        current_gti = lc.gti
+        if self.gti is not None:
+            current_gti = cross_two_gtis(self.gti, current_gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(self.gti, self.segment_size, lc.time, dt=lc.dt)
+            bin_intervals_from_gtis(current_gti, self.segment_size, lc.time,
+                                    dt=lc.dt)
 
 
         tstart = lc.time[start_inds]

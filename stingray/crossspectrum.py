@@ -1,11 +1,12 @@
 
 import warnings
-
+from collections.abc import Iterable, Iterator
 import numpy as np
 import scipy
 import scipy.stats
 import scipy.fftpack
 import scipy.optimize
+import copy
 
 # location of factorial moved between scipy versions
 try:
@@ -25,7 +26,9 @@ from stingray.lightcurve import Lightcurve
 from stingray.utils import rebin_data, simon, rebin_data_log
 from stingray.exceptions import StingrayError
 from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
-import copy
+from .events import EventList
+from .utils import show_progress
+
 
 try:
     from tqdm import tqdm as show_progress
@@ -233,6 +236,7 @@ def cospectra_pvalue(power, nspec):
 
     return pval
 
+
 def coherence(lc1, lc2):
     """
     Estimate coherence function of two light curves.
@@ -311,10 +315,10 @@ class Crossspectrum(object):
 
     Parameters
     ----------
-    lc1: :class:`stingray.Lightcurve` object, optional, default ``None``
+    data1: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList`, optional, default ``None``
         The first light curve data for the channel/band of interest.
 
-    lc2: :class:`stingray.Lightcurve` object, optional, default ``None``
+    data2: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList`, optional, default ``None``
         The light curve data for the reference band.
 
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
@@ -329,6 +333,20 @@ class Crossspectrum(object):
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
+
+    lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        For backwards compatibility only. Like ``data1``, but no
+        :class:`stingray.events.EventList` objects allowed
+
+    lc2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        For backwards compatibility only. Like ``data2``, but no
+        :class:`stingray.events.EventList` objects allowed
+
+    dt: float
+        The time resolution of the light curve. Only needed when constructing
+        light curves in the case where ``data1``, ``data2`` are
+        :class:`EventList` objects
+
 
     Attributes
     ----------
@@ -361,8 +379,10 @@ class Crossspectrum(object):
     nphots2: float
         The total number of photons in light curve 2
     """
-    def __init__(self, lc1=None, lc2=None, norm='none', gti=None,
-                 power_type="real"):
+
+    def __init__(self, data1=None, data2=None, norm='none', gti=None,
+                 lc1=None, lc2=None, power_type="real", dt=None):
+
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
 
@@ -373,8 +393,18 @@ class Crossspectrum(object):
 
         # check if input data is a Lightcurve object, if not make one or
         # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
-        if lc1 is None or lc2 is None:
-            if lc1 is not None or lc2 is not None:
+
+        if lc1 is not None or lc2 is not None:
+            warnings.warn("The lcN keywords are now deprecated. Use dataN "
+                          "instead", DeprecationWarning)
+        # for backwards compatibility
+        if data1 is None:
+            data1 = lc1
+        if data2 is None:
+            data2 = lc2
+
+        if data1 is None or data2 is None:
+            if data1 is not None or data2 is not None:
                 raise TypeError("You can't do a cross spectrum with just one "
                                 "light curve!")
             else:
@@ -387,13 +417,29 @@ class Crossspectrum(object):
                 self.m = 1
                 self.n = None
                 return
+
+        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and \
+                dt is None:
+            raise ValueError("If using event lists, please specify the bin "
+                             "time to generate lightcurves.")
+
+        if not isinstance(data1, EventList):
+            lc1 = data1
+        else:
+            lc1 = data1.to_lc(dt)
+
+        if not isinstance(data2, EventList):
+            lc2 = data2
+        elif isinstance(data2, EventList) and data2 is not data1:
+            lc2 = data2.to_lc(dt)
+        elif data2 is data1:
+            lc2 = lc1
+
         self.gti = gti
         self.lc1 = lc1
         self.lc2 = lc2
         self.power_type = power_type
-
         self._make_crossspectrum(lc1, lc2)
-
         # These are needed to calculate coherence
         self._make_auxil_pds(lc1, lc2)
 
@@ -640,7 +686,10 @@ class Crossspectrum(object):
             'none' normalization, imaginary part is returned as well.
         """
 
-        return normalize_crossspectrum(unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm, self.power_type)
+        return normalize_crossspectrum(
+            unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm,
+            self.power_type)
+
 
     def rebin_log(self, f=0.01):
         """
@@ -790,11 +839,11 @@ class Crossspectrum(object):
                 plt.ylabel(labels[1])
             except TypeError:
                 simon("``labels`` must be either a list or tuple with "
-                            "x and y labels.")
+                      "x and y labels.")
                 raise
             except IndexError:
                 simon("``labels`` must have two labels for x and y "
-                            "axes.")
+                      "axes.")
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
         plt.legend(loc='best')
@@ -896,11 +945,11 @@ class AveragedCrossspectrum(Crossspectrum):
 
     Parameters
     ----------
-    lc1: :class:`stingray.Lightcurve` object OR iterable of :class:`stingray.Lightcurve` objects
+    data1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         A light curve from which to compute the cross spectrum. In some cases, this would
         be the light curve of the wavelength/energy/frequency band of interest.
 
-    lc2: :class:`stingray.Lightcurve` object OR iterable of :class:`stingray.Lightcurve` objects
+    data2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         A second light curve to use in the cross spectrum. In some cases, this would be
         the wavelength/energy/frequency reference band to compare the band of interest with.
 
@@ -921,6 +970,10 @@ class AveragedCrossspectrum(Crossspectrum):
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
+    dt : float
+        The time resolution of the light curve. Only needed when constructing
+        light curves in the case where data1 or data2 are of :class:EventList
+
     power_type: string, optional, default ``real``
          Parameter to choose among complete, real part and magnitude of
          the cross spectrum.
@@ -928,6 +981,14 @@ class AveragedCrossspectrum(Crossspectrum):
     silent : bool, default False
          Do not show a progress bar when generating an averaged cross spectrum.
          Useful for the batch execution of many spectra
+
+    lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        For backwards compatibility only. Like ``data1``, but no
+        :class:`stingray.events.EventList` objects allowed
+
+    lc2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+        For backwards compatibility only. Like ``data2``, but no
+        :class:`stingray.events.EventList` objects allowed
 
     Attributes
     ----------
@@ -966,44 +1027,76 @@ class AveragedCrossspectrum(Crossspectrum):
 
     """
 
-    def __init__(self, lc1=None, lc2=None, segment_size=None,
-                 norm='none', gti=None, power_type="real", silent=False):
+    def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
+                 gti=None, power_type="real", silent=False, lc1=None, lc2=None,
+                 dt=None):
+
+        if lc1 is not None or lc2 is not None:
+            warnings.warn("The lcN keywords are now deprecated. Use dataN "
+                          "instead", DeprecationWarning)
+        # for backwards compatibility
+        if data1 is None:
+            data1 = lc1
+        if data2 is None:
+            data2 = lc2
 
         self.type = "crossspectrum"
 
-        if segment_size is None and lc1 is not None:
+        if segment_size is None and data1 is not None:
             raise ValueError("segment_size must be specified")
         if segment_size is not None and not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")
 
         self.segment_size = segment_size
         self.power_type = power_type
-        self.show_progress = not silent
 
-        Crossspectrum.__init__(self, lc1, lc2, norm, gti=gti,
-                               power_type=power_type)
+        self.show_progress = not silent
+        self.dt = dt
+
+        if isinstance(data1, EventList):
+            lengths = data1.gti[:, 1] - data1.gti[:, 0]
+            good = lengths >= segment_size
+            data1.gti = data1.gti[good]
+            data1 = list(data1.to_lc_list(dt))
+
+        if isinstance(data2, EventList):
+            lengths = data2.gti[:, 1] - data2.gti[:, 0]
+            good = lengths >= segment_size
+            data2.gti = data2.gti[good]
+            data2 = list(data2.to_lc_list(dt))
+
+        Crossspectrum.__init__(self, data1, data2, norm, gti=gti,
+                               power_type=power_type, dt=dt)
 
         return
 
     def _make_auxil_pds(self, lc1, lc2):
         """
-        Helper method to create the power spectrum of both light curves independently.
+        Helper method to create the power spectrum of both light curves
+        independently.
 
         Parameters
         ----------
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
+        is_event = isinstance(lc1, EventList)
+        is_lc = isinstance(lc1, Lightcurve)
+        is_lc_iter = isinstance(lc1, Iterator)
+        is_lc_list = isinstance(lc1, Iterable) and not is_lc_iter
         # A way to say that this is actually not a power spectrum
-        if lc1 is not lc2 and isinstance(lc1, Lightcurve):
+        if self.type != "powerspectrum" and \
+                (lc1 is not lc2) and (is_event or is_lc or is_lc_list):
             self.pds1 = AveragedCrossspectrum(lc1, lc1,
                                               segment_size=self.segment_size,
-                                              norm='none', gti=lc1.gti,
-                                              power_type=self.power_type)
+                                              norm='none', gti=self.gti,
+                                              power_type=self.power_type,
+                                              dt=self.dt)
             self.pds2 = AveragedCrossspectrum(lc2, lc2,
                                               segment_size=self.segment_size,
-                                              norm='none', gti=lc2.gti,
-                                              power_type=self.power_type)
+                                              norm='none', gti=self.gti,
+                                              power_type=self.power_type,
+                                              dt=self.dt)
 
     def _make_segment_spectrum(self, lc1, lc2, segment_size):
         """
@@ -1045,16 +1138,18 @@ class AveragedCrossspectrum(Crossspectrum):
         # In case a small difference exists, ignore it
         lc1.dt = lc2.dt
 
-        gti = cross_two_gtis(lc1.gti, lc2.gti)
+        current_gtis = cross_two_gtis(lc1.gti, lc2.gti)
+        lc1.gti = lc2.gti = current_gtis
         lc1.apply_gtis()
         lc2.apply_gtis()
-        if self.gti is None:
-            self.gti = gti
-        else:
-            if not np.all(self.gti == gti):
-                self.gti = np.vstack([self.gti, gti])
 
-        check_gtis(self.gti)
+        if self.gti is None:
+            self.gti = current_gtis
+        else:
+            if not np.all(self.gti == current_gtis):
+                self.gti = np.vstack([self.gti, current_gtis])
+
+        check_gtis(current_gtis)
 
         cs_all = []
         nphots1_all = []
@@ -1062,7 +1157,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(gti, segment_size, lc1.time,
+            bin_intervals_from_gtis(current_gtis, segment_size, lc1.time,
                                     dt=lc1.dt)
         simon("Errorbars on cross spectra are not thoroughly tested. "
               "Please report any inconsistencies.")
@@ -1073,13 +1168,12 @@ class AveragedCrossspectrum(Crossspectrum):
 
         for start_ind, end_ind in \
                 local_show_progress(zip(start_inds, end_inds)):
-            time_1 = lc1.time[start_ind:end_ind]
-            counts_1 = lc1.counts[start_ind:end_ind]
-            counts_1_err = lc1.counts_err[start_ind:end_ind]
-            time_2 = lc2.time[start_ind:end_ind]
-            counts_2 = lc2.counts[start_ind:end_ind]
-            counts_2_err = lc2.counts_err[start_ind:end_ind]
-
+            time_1 = copy.deepcopy(lc1.time[start_ind:end_ind])
+            counts_1 = copy.deepcopy(lc1.counts[start_ind:end_ind])
+            counts_1_err = copy.deepcopy(lc1.counts_err[start_ind:end_ind])
+            time_2 = copy.deepcopy(lc2.time[start_ind:end_ind])
+            counts_2 = copy.deepcopy(lc2.counts[start_ind:end_ind])
+            counts_2_err = copy.deepcopy(lc2.counts_err[start_ind:end_ind])
             if np.sum(counts_1) == 0 or np.sum(counts_2) == 0:
                 warnings.warn(
                     "No counts in interval {}--{}s".format(time_1[0],
@@ -1098,9 +1192,9 @@ class AveragedCrossspectrum(Crossspectrum):
                                  err_dist=lc2.err_dist,
                                  gti=gti2,
                                  dt=lc2.dt, skip_checks=True)
-            with warnings.catch_warnings(record=True) as w:
-                cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
-                                       power_type=self.power_type)
+            # with warnings.catch_warnings(record=True) as w:
+            cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
+                                   power_type=self.power_type)
 
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
@@ -1120,6 +1214,9 @@ class AveragedCrossspectrum(Crossspectrum):
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
+        local_show_progress = show_progress
+        if not self.show_progress:
+            local_show_progress = lambda a: a
 
         # chop light curves into segments
         if isinstance(lc1, Lightcurve) and \
@@ -1139,8 +1236,7 @@ class AveragedCrossspectrum(Crossspectrum):
         else:
             self.cs_all, nphots1_all, nphots2_all = [], [], []
 
-            for lc1_seg, lc2_seg in zip(lc1, lc2):
-
+            for lc1_seg, lc2_seg in local_show_progress(zip(lc1, lc2)):
                 if self.type == "crossspectrum":
                     cs_sep, nphots1_sep, nphots2_sep = \
                         self._make_segment_spectrum(lc1_seg, lc2_seg,
@@ -1152,7 +1248,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
                 else:
                     raise ValueError("Type of spectrum not recognized!")
-
                 self.cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
 

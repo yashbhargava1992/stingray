@@ -133,6 +133,34 @@ class EventList(object):
                                           gti=self.gti, tseg=tseg,
                                           mjdref=self.mjdref)
 
+
+    def to_lc_list(self, dt):
+        """Convert event list to a generator of Lightcurves.
+
+        Parameters
+        ----------
+        dt: float
+            Binning time of the light curves
+
+        Returns
+        -------
+        lc_gen: generator
+            Generates one :class:`stingray.Lightcurve` object for each GTI
+        """
+        start_times = self.gti[:, 0]
+        end_times = self.gti[:, 1]
+        tsegs = end_times - start_times
+
+        for st, end, tseg in zip(start_times, end_times, tsegs):
+            idx_st = np.searchsorted(self.time, st, side='right')
+            idx_end = np.searchsorted(self.time, end, side='left')
+            lc = Lightcurve.make_lightcurve(self.time[idx_st:idx_end], dt,
+                                            tstart=st,
+                                            gti=np.array([[st, end]]),
+                                            tseg=tseg,
+                                            mjdref=self.mjdref)
+            yield lc
+
     @staticmethod
     def from_lc(lc):
         """
