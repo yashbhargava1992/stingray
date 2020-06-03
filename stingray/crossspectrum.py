@@ -1,6 +1,6 @@
 
 import warnings
-
+from collections.abc import Iterable, Iterator
 import numpy as np
 import scipy
 import scipy.stats
@@ -1053,11 +1053,17 @@ class AveragedCrossspectrum(Crossspectrum):
         self.show_progress = not silent
         self.dt = dt
 
-        for data in [data1, data2]:
-            if isinstance(data, EventList):
-                lengths = data.gti[:, 1] - data.gti[:, 0]
-                good = lengths >= segment_size
-                data.gti = data.gti[good]
+        if isinstance(data1, EventList):
+            lengths = data1.gti[:, 1] - data1.gti[:, 0]
+            good = lengths >= segment_size
+            data1.gti = data1.gti[good]
+            data1 = list(data1.to_lc_list(dt))
+
+        if isinstance(data2, EventList):
+            lengths = data2.gti[:, 1] - data2.gti[:, 0]
+            good = lengths >= segment_size
+            data2.gti = data2.gti[good]
+            data2 = list(data2.to_lc_list(dt))
 
         Crossspectrum.__init__(self, data1, data2, norm, gti=gti,
                                power_type=power_type, dt=dt)
@@ -1066,25 +1072,29 @@ class AveragedCrossspectrum(Crossspectrum):
 
     def _make_auxil_pds(self, lc1, lc2):
         """
-        Helper method to create the power spectrum of both light curves independently.
+        Helper method to create the power spectrum of both light curves
+        independently.
 
         Parameters
         ----------
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
         """
+        is_event = isinstance(lc1, EventList)
+        is_lc = isinstance(lc1, Lightcurve)
+        is_lc_iter = isinstance(lc1, Iterator)
+        is_lc_list = isinstance(lc1, Iterable) and not is_lc_iter
         # A way to say that this is actually not a power spectrum
         if self.type != "powerspectrum" and \
-                lc1 is not lc2 and (isinstance(lc1, EventList) or
-                                    isinstance(lc1, Lightcurve)):
+                (lc1 is not lc2) and (is_event or is_lc or is_lc_list):
             self.pds1 = AveragedCrossspectrum(lc1, lc1,
                                               segment_size=self.segment_size,
-                                              norm='none', gti=lc1.gti,
+                                              norm='none', gti=self.gti,
                                               power_type=self.power_type,
                                               dt=self.dt)
             self.pds2 = AveragedCrossspectrum(lc2, lc2,
                                               segment_size=self.segment_size,
-                                              norm='none', gti=lc2.gti,
+                                              norm='none', gti=self.gti,
                                               power_type=self.power_type,
                                               dt=self.dt)
 

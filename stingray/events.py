@@ -159,7 +159,6 @@ class EventList(object):
                                             gti=np.array([[st, end]]),
                                             tseg=tseg,
                                             mjdref=self.mjdref)
-
             yield lc
 
     @staticmethod

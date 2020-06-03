@@ -127,33 +127,24 @@ class TestAveragedCrossspectrumEvents(object):
         tend = 1.0
         self.dt = np.longdouble(0.0001)
 
-        times = np.sort(np.random.uniform(tstart, tend, 1000))
+        times1 = np.sort(np.random.uniform(tstart, tend, 1000))
+        times2 = np.sort(np.random.uniform(tstart, tend, 1000))
         gti = np.array([[tstart, tend]])
 
-        self.events = EventList(times, gti=gti)
+        self.events1 = EventList(times1, gti=gti)
+        self.events2 = EventList(times2, gti=gti)
 
-        self.cs = Crossspectrum(self.events, copy.deepcopy(self.events),
-                                dt=self.dt)
+        self.cs = Crossspectrum(self.events1, self.events2, dt=self.dt)
 
-        self.acs = AveragedCrossspectrum(self.events, copy.deepcopy(self.events),
-                                        segment_size=1, dt=self.dt)
-        self.lc1 = self.lc2 = self.events
+        self.acs = AveragedCrossspectrum(self.events1, self.events2,
+                                         segment_size=1, dt=self.dt)
+        self.lc1, self.lc2 = self.events1, self.events2
 
     def test_it_works_with_events(self):
-        lc = self.events.to_lc(self.dt)
-        lccs = Crossspectrum(lc, lc)
+        lc1 = self.events1.to_lc(self.dt)
+        lc2 = self.events2.to_lc(self.dt)
+        lccs = Crossspectrum(lc1, lc2)
         assert np.allclose(lccs.power, self.cs.power)
-
-    def test_make_empty_crossspectrum(self):
-        cs = AveragedCrossspectrum()
-        assert cs.freq is None
-        assert cs.power is None
-        assert cs.df is None
-        assert cs.nphots1 is None
-        assert cs.nphots2 is None
-        assert cs.m == 1
-        assert cs.n is None
-        assert cs.power_err is None
 
     def test_no_segment_size(self):
         with pytest.raises(ValueError):
