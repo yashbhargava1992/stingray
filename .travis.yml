@@ -17,6 +17,12 @@ addons:
         packages:
             - graphviz
 
+# Only build master and tags, besides pull requests.
+branches:
+  only:
+    - master
+    - /v[0-9]+\.[0-9]+\.[0-9]+(-.*)?$/
+
 
 stages:
    # Do the style check and a single test job, don't proceed if it fails
@@ -156,7 +162,7 @@ matrix:
           name: Python 3.8 with developer version of astropy
           stage: Comprehensive tests
           env: TOXENV=py38-test-devdeps
-          
+
         # Add a job that runs from cron only and tests against astropy dev and
         # numpy dev to give a change for early discovery of issues and feedback
         # for both developer teams.
