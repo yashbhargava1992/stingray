@@ -206,12 +206,13 @@ class TestAveragedCrossspectrumEvents(object):
     def test_rebin_log_returns_complex_values(self):
         # For now, just verify that it doesn't crash
         new_cs = self.acs.rebin_log(f=0.1)
-        assert isinstance(new_cs.power[0], np.complex)
+        assert np.iscomplexobj(new_cs.power[0])
 
     def test_rebin_log_returns_complex_errors(self):
         # For now, just verify that it doesn't crash
+
         new_cs = self.acs.rebin_log(f=0.1)
-        assert isinstance(new_cs.power_err[0], np.complex)
+        assert np.iscomplexobj(new_cs.power_err[0])
 
 
 class TestCoherenceFunction(object):
@@ -850,13 +851,13 @@ class TestAveragedCrossspectrum(object):
         # For now, just verify that it doesn't crash
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin_log(f=0.1)
-        assert isinstance(new_cs.power[0], np.complex)
+        assert np.iscomplexobj(new_cs.power[0])
 
     def test_rebin_log_returns_complex_errors(self):
         # For now, just verify that it doesn't crash
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin_log(f=0.1)
-        assert isinstance(new_cs.power_err[0], np.complex)
+        assert np.iscomplexobj(new_cs.power_err[0])
 
     def test_timelag(self):
         dt = 0.1
