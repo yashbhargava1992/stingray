@@ -1,6 +1,6 @@
 
 
-import collections
+from collections.abc import Iterable
 import logging
 import math
 import numpy as np
@@ -276,7 +276,7 @@ def ref_mjd(fits_file, hdu=1):
         the reference MJD
     """
 
-    if isinstance(fits_file, collections.Iterable) and\
+    if isinstance(fits_file, Iterable) and\
             not is_string(fits_file):  # pragma: no cover
         fits_file = fits_file[0]
         logging.info("opening %s" % fits_file)
@@ -346,7 +346,7 @@ def split_numbers(number):
         Second part of high precision number
     """
 
-    if isinstance(number, collections.Iterable):
+    if isinstance(number, Iterable):
         mods = [math.modf(n) for n in number]
         number_F = [f for f, _ in mods]
         number_I = [i for _, i in mods]
