@@ -128,4 +128,4 @@ The testing framework used by stingray is the pytest framework with tox, it is a
 
 ---
 
-- Please refer [CODE_OF_CONDUCT.md] (https://github.com/StingraySoftware/stingray/blob/master/CODE_OF_CONDUCT.md) to read about the Community Guidelines
+- Please refer [CODE_OF_CONDUCT.md](https://github.com/StingraySoftware/stingray/blob/master/CODE_OF_CONDUCT.md) to read about the Community Guidelines
