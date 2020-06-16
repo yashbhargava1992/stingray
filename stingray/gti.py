@@ -3,7 +3,7 @@
 import numpy as np
 import logging
 import warnings
-import collections
+from collections.abc import Iterable
 import copy
 
 from astropy.io import fits
@@ -251,7 +251,7 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     gti_mask = np.zeros(len(gtis), dtype=bool)
 
     if safe_interval is not None:
-        if not isinstance(safe_interval, collections.Iterable):
+        if not isinstance(safe_interval, Iterable):
             safe_interval = np.array([safe_interval, safe_interval])
         # These are the gtis that will be returned (filtered!). They are only
         # modified by the safe intervals
@@ -334,7 +334,7 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
 
     if safe_interval is None:
         safe_interval = [0, 0]
-    elif not isinstance(safe_interval, collections.Iterable):
+    elif not isinstance(safe_interval, Iterable):
         safe_interval = [safe_interval, safe_interval]
 
     newgtis = np.zeros_like(gtis)
@@ -393,7 +393,7 @@ def create_gti_from_condition(time, condition,
 
     idxs = contiguous_regions(condition)
 
-    if not isinstance(safe_interval, collections.Iterable):
+    if not isinstance(safe_interval, Iterable):
         safe_interval = [safe_interval, safe_interval]
 
     dt = assign_value_if_none(dt,

@@ -1,6 +1,6 @@
 
 import sys
-import collections
+from collections.abc import Iterable
 import numbers
 from six import string_types
 
@@ -440,7 +440,7 @@ def is_iterable(var):
     is_iter : bool
         Returns ``True`` if ``var`` is an ``Iterable``, ``False`` otherwise
     """
-    return isinstance(var, collections.Iterable)
+    return isinstance(var, Iterable)
 
 
 def order_list_of_arrays(data, order):
