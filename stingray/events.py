@@ -528,7 +528,7 @@ class EventList(object):
 
         Returns
         -------
-        new_lc : lightcurve.Lightcurve object
+        new_lc : :class:`EventList` object
             The new LC shifted by MJDREF
         """
         time_shift = (self.mjdref - new_mjdref) * 86400
@@ -539,7 +539,7 @@ class EventList(object):
 
     def shift(self, time_shift):
         """
-        Shift the light curve and the GTIs in time.
+        Shift the events and the GTIs in time.
 
         Parameters
         ----------
