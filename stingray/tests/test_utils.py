@@ -145,7 +145,7 @@ class TestRebinDataLog(object):
         re = np.arange(self.xmin, self.xmax, self.dx)
         im = np.arange(self.xmin, self.xmax, self.dx)
 
-        y = np.zeros(re.shape[0], dtype=np.complex)
+        y = np.zeros(re.shape[0], dtype=np.complex64)
         yerr = np.zeros(re.shape[0], dtype=np.complex)
 
         for k, (r, i) in enumerate(zip(re, im)):
@@ -157,10 +157,23 @@ class TestRebinDataLog(object):
         for i in range(self.true_values.shape[0]):
             real_binned[i] = self.true_values[i] + self.true_values[i] * 1j
 
-        _, biny, _, _ = utils.rebin_data_log(self.x, y, self.f, y_err=yerr,
-                                             dx=self.dx)
+        _, _, binyerr_real, _ = \
+            utils.rebin_data_log(self.x, y.real, self.f, y_err=yerr.real,
+                                 dx=self.dx)
+        _, biny, binyerr, _ = \
+            utils.rebin_data_log(self.x, y, self.f, y_err=yerr,
+                                 dx=self.dx)
 
+        assert np.iscomplexobj(biny)
+        assert np.iscomplexobj(binyerr)
         assert np.allclose(biny, real_binned)
+        assert np.allclose(binyerr, binyerr_real + 1.j * binyerr_real)
+
+    def test_return_float_with_floats(self):
+        _, biny, binyerr, _ = utils.rebin_data_log(
+            self.x, self.y, self.f, y_err=self.y_err, dx=self.dx)
+        assert not np.iscomplexobj(biny)
+        assert not np.iscomplexobj(binyerr)
 
 
 class TestUtils(object):
