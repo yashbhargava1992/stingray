@@ -297,6 +297,10 @@ class EventList(object):
             simon("One of the event lists you are concatenating is empty.")
             other.time = np.asarray([])
 
+        # Tolerance for MJDREF:1 microsecond
+        if not np.isclose(self.mjdref, other.mjdref, atol=1e-6 / 86400):
+            other = other.change_mjdref(self.mjdref)
+
         ev_new.time = np.concatenate([self.time, other.time])
         order = np.argsort(ev_new.time)
         ev_new.time = ev_new.time[order]
@@ -509,5 +513,48 @@ class EventList(object):
 
         if local_retall:
             new_ev = [new_ev, retall]
+
+        return new_ev
+
+    def change_mjdref(self, new_mjdref):
+        """Change the MJD reference time (MJDREF) of the light curve.
+
+        Times will be now referred to this new MJDREF
+
+        Parameters
+        ----------
+        new_mjdref : float
+            New MJDREF
+
+        Returns
+        -------
+        new_lc : :class:`EventList` object
+            The new LC shifted by MJDREF
+        """
+        time_shift = (self.mjdref - new_mjdref) * 86400
+
+        new_ev = self.shift(time_shift)
+        new_ev.mjdref = new_mjdref
+        return new_ev
+
+    def shift(self, time_shift):
+        """
+        Shift the events and the GTIs in time.
+
+        Parameters
+        ----------
+        time_shift: float
+            The time interval by which the light curve will be shifted (in
+            the same units as the time array in :class:`Lightcurve`
+
+        Returns
+        -------
+        new_ev : lightcurve.Lightcurve object
+            The new event list shifted by ``time_shift``
+
+        """
+        new_ev = copy.deepcopy(self)
+        new_ev.time = new_ev.time + time_shift
+        new_ev.gti = new_ev.gti + time_shift
 
         return new_ev
