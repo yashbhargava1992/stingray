@@ -129,9 +129,17 @@ class Lightcurve(object):
         It propagates to Spectrum classes.
 
     """
-    def __init__(self, time, counts, err=None, input_counts=True,
-                 gti=None, err_dist='poisson', mjdref=0, dt=None,
-                 skip_checks=False, low_memory=False):
+    def __init__(self,
+                 time,
+                 counts,
+                 err=None,
+                 input_counts=True,
+                 gti=None,
+                 err_dist='poisson',
+                 mjdref=0,
+                 dt=None,
+                 skip_checks=False,
+                 low_memory=False):
 
         time = np.asarray(time)
         counts = np.asarray(counts)
@@ -151,9 +159,9 @@ class Lightcurve(object):
 
         if err_dist.lower() not in valid_statistics:
             # err_dist set can be increased with other statistics
-            raise StingrayError("Statistic not recognized."
-                                "Please select one of these: ",
-                                "{}".format(valid_statistics))
+            raise StingrayError(
+                "Statistic not recognized."
+                "Please select one of these: ", "{}".format(valid_statistics))
         elif not err_dist.lower() == 'poisson':
             simon("Stingray only uses poisson err_dist at the moment. "
                   "All analysis in the light curve will assume Poisson "
@@ -457,10 +465,13 @@ class Lightcurve(object):
             The new LC shifted by ``time_shift``
 
         """
-        new_lc = Lightcurve(self.time + time_shift, self.counts,
+        new_lc = Lightcurve(self.time + time_shift,
+                            self.counts,
                             err=self.counts_err,
-                            gti=self.gti + time_shift, mjdref=self.mjdref,
-                            dt=self.dt, err_dist=self.err_dist,
+                            gti=self.gti + time_shift,
+                            mjdref=self.mjdref,
+                            dt=self.dt,
+                            err_dist=self.err_dist,
                             skip_checks=True)
 
         return new_lc
@@ -509,18 +520,21 @@ class Lightcurve(object):
                   "We are setting the errors to zero to avoid complications.")
             new_counts_err = np.zeros_like(new_counts)
         elif self.err_dist.lower() in valid_statistics:
-                new_counts_err = \
-                    np.sqrt(np.add(self.counts_err[mask_self]**2,
-                                   other.counts_err[mask_other]**2))
-            # More conditions can be implemented for other statistics
+            new_counts_err = \
+                np.sqrt(np.add(self.counts_err[mask_self]**2,
+                               other.counts_err[mask_other]**2))
+        # More conditions can be implemented for other statistics
         else:
             raise StingrayError("Statistics not recognized."
                                 " Please use one of these: "
                                 "{}".format(valid_statistics))
 
-        lc_new = Lightcurve(new_time, new_counts,
-                            err=new_counts_err, gti=common_gti,
-                            mjdref=self.mjdref, skip_checks=True,
+        lc_new = Lightcurve(new_time,
+                            new_counts,
+                            err=new_counts_err,
+                            gti=common_gti,
+                            mjdref=self.mjdref,
+                            skip_checks=True,
                             dt=self.dt)
 
         return lc_new
@@ -598,9 +612,12 @@ class Lightcurve(object):
         >>> lc_new.counts
         array([100, 100, 100])
         """
-        lc_new = Lightcurve(self.time, -1 * self.counts,
-                            err=self.counts_err, gti=self.gti,
-                            mjdref=self.mjdref, skip_checks=True,
+        lc_new = Lightcurve(self.time,
+                            -1 * self.counts,
+                            err=self.counts_err,
+                            gti=self.gti,
+                            mjdref=self.mjdref,
+                            skip_checks=True,
                             dt=self.dt)
 
         return lc_new
@@ -661,17 +678,23 @@ class Lightcurve(object):
             new_counts = self.counts[start:stop:step]
             new_time = self.time[start:stop:step]
 
-            new_gti = [[self.time[start] - 0.5 * self.dt,
-                        self.time[stop - 1] + 0.5 * self.dt]]
+            new_gti = [[
+                self.time[start] - 0.5 * self.dt,
+                self.time[stop - 1] + 0.5 * self.dt
+            ]]
             new_gti = np.asarray(new_gti)
             if step > 1:
-                new_gt1 = np.array(list(zip(new_time - self.dt / 2,
-                                            new_time + self.dt / 2)))
+                new_gt1 = np.array(
+                    list(zip(new_time - self.dt / 2, new_time + self.dt / 2)))
                 new_gti = cross_two_gtis(new_gti, new_gt1)
             new_gti = cross_two_gtis(self.gti, new_gti)
 
-            return Lightcurve(new_time, new_counts, mjdref=self.mjdref,
-                              gti=new_gti, dt=self.dt, skip_checks=True)
+            return Lightcurve(new_time,
+                              new_counts,
+                              mjdref=self.mjdref,
+                              gti=new_gti,
+                              dt=self.dt,
+                              skip_checks=True)
         else:
             raise IndexError("The index must be either an integer or a slice "
                              "object !")
@@ -693,9 +716,10 @@ class Lightcurve(object):
         True
         """
         if not isinstance(other_lc, Lightcurve):
-            raise ValueError('Lightcurve can only be compared with a Lightcurve Object')
-        if (np.allclose(self.time, other_lc.time) and
-                np.allclose(self.counts, other_lc.counts)):
+            raise ValueError(
+                'Lightcurve can only be compared with a Lightcurve Object')
+        if (np.allclose(self.time, other_lc.time)
+                and np.allclose(self.counts, other_lc.counts)):
             return True
         return False
 
@@ -736,9 +760,13 @@ class Lightcurve(object):
         return baseline
 
     @staticmethod
-    def make_lightcurve(toa, dt, tseg=None, tstart=None, gti=None, mjdref=0,
+    def make_lightcurve(toa,
+                        dt,
+                        tseg=None,
+                        tstart=None,
+                        gti=None,
+                        mjdref=0,
                         use_hist=False):
-
         """
         Make a light curve out of photon arrival times, with a given time resolution ``dt``.
         Note that ``dt`` should be larger than the native time resolution of the instrument
@@ -813,8 +841,13 @@ class Lightcurve(object):
             counts, histbins = np.histogram(toa[good], bins=histbins)
             time = histbins[:-1] + 0.5 * dt
 
-        return Lightcurve(time, counts, gti=gti, mjdref=mjdref, dt=dt,
-                          skip_checks=True, err_dist='poisson')
+        return Lightcurve(time,
+                          counts,
+                          gti=gti,
+                          mjdref=mjdref,
+                          dt=dt,
+                          skip_checks=True,
+                          err_dist='poisson')
 
     def rebin(self, dt_new=None, f=None, method='sum'):
         """
@@ -881,8 +914,12 @@ class Lightcurve(object):
         if len(gti_new) == 0:
             raise ValueError("No valid GTIs after rebin.")
 
-        lc_new = Lightcurve(bin_time, bin_counts, err=bin_err,
-                            mjdref=self.mjdref, dt=dt_new, gti=gti_new,
+        lc_new = Lightcurve(bin_time,
+                            bin_counts,
+                            err=bin_err,
+                            mjdref=self.mjdref,
+                            dt=dt_new,
+                            gti=gti_new,
                             skip_checks=True)
         return lc_new
 
@@ -929,7 +966,7 @@ class Lightcurve(object):
         if self.dt != other.dt:
             utils.simon("The two light curves have different bin widths.")
 
-        if(self.tstart < other.tstart):
+        if (self.tstart < other.tstart):
             first_lc = self
             second_lc = other
         else:
@@ -979,12 +1016,12 @@ class Lightcurve(object):
 
             new_time = list(counts.keys())
             new_counts = list(counts.values())
-            if(valid_err):
+            if (valid_err):
                 new_counts_err = list(counts_err.values())
             else:
                 new_counts_err = np.zeros_like(new_counts)
 
-            del[counts, counts_err]
+            del [counts, counts_err]
 
         else:
 
@@ -998,8 +1035,12 @@ class Lightcurve(object):
         new_counts_err = np.asarray(new_counts_err)
         gti = join_gtis(self.gti, other.gti)
 
-        lc_new = Lightcurve(new_time, new_counts, err=new_counts_err, gti=gti,
-                            mjdref=self.mjdref, dt=self.dt)
+        lc_new = Lightcurve(new_time,
+                            new_counts,
+                            err=new_counts_err,
+                            gti=gti,
+                            mjdref=self.mjdref,
+                            dt=self.dt)
 
         return lc_new
 
@@ -1055,8 +1096,7 @@ class Lightcurve(object):
         """
 
         if not isinstance(method, str):
-            raise TypeError("method key word argument is not "
-                            "a string !")
+            raise TypeError("method key word argument is not " "a string !")
 
         if method.lower() not in ['index', 'time']:
             raise ValueError("Unknown method type " + method + ".")
@@ -1076,7 +1116,10 @@ class Lightcurve(object):
                            np.asarray([[self.time[start] - 0.5 * self.dt,
                                         time_new[-1] + 0.5 * self.dt]]))
 
-        return Lightcurve(time_new, counts_new, err=counts_err_new, gti=gti,
+        return Lightcurve(time_new,
+                          counts_new,
+                          err=counts_err_new,
+                          gti=gti,
                           dt=self.dt)
 
     def _truncate_by_time(self, start, stop):
@@ -1148,11 +1191,13 @@ class Lightcurve(object):
 
         # tolerance for the newly created GTIs: Note that this seems to work
         # with a tolerance of 2, but not if I substitute 10. I don't know why
-        epsilon = np.min(tdiff)/2.0
+        epsilon = np.min(tdiff) / 2.0
 
         # calculate new GTIs
-        gti_start = np.hstack([self.time[0]-epsilon, self.time[gap_idx+1]-epsilon])
-        gti_stop = np.hstack([self.time[gap_idx]+epsilon, self.time[-1]+epsilon])
+        gti_start = np.hstack(
+            [self.time[0] - epsilon, self.time[gap_idx + 1] - epsilon])
+        gti_stop = np.hstack(
+            [self.time[gap_idx] + epsilon, self.time[-1] + epsilon])
 
         gti = np.vstack([gti_start, gti_stop]).T
         if hasattr(self, 'gti') and self.gti is not None:
@@ -1199,8 +1244,12 @@ class Lightcurve(object):
         new_counts = np.asarray(new_counts)
         new_counts_err = np.asarray(new_counts_err)
 
-        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
-                            gti=self.gti, dt=self.dt, mjdref=self.mjdref,
+        new_lc = Lightcurve(new_time,
+                            new_counts,
+                            err=new_counts_err,
+                            gti=self.gti,
+                            dt=self.dt,
+                            mjdref=self.mjdref,
                             skip_checks=True)
 
         return new_lc
@@ -1240,8 +1289,12 @@ class Lightcurve(object):
             zip(*sorted(zip(self.counts, self.time, self.counts_err),
                         reverse=reverse))
 
-        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
-                            gti=self.gti, dt=self.dt, mjdref=self.mjdref,
+        new_lc = Lightcurve(new_time,
+                            new_counts,
+                            err=new_counts_err,
+                            gti=self.gti,
+                            dt=self.dt,
+                            mjdref=self.mjdref,
                             skip_checks=True)
 
         return new_lc
@@ -1346,7 +1399,8 @@ class Lightcurve(object):
         >>> np.all(res == 10)
         True
         """
-        start, stop = bin_intervals_from_gtis(self.gti, chunk_length,
+        start, stop = bin_intervals_from_gtis(self.gti,
+                                              chunk_length,
                                               self.time,
                                               fraction_step=fraction_step,
                                               dt=self.dt)
@@ -1357,7 +1411,7 @@ class Lightcurve(object):
         stop_times = self.time[stop - 1] + self.dt * 1.5
 
         results = []
-        for i, (st, sp) in enumerate(zip(start, stop)):
+        for _, (st, sp) in enumerate(zip(start, stop)):
             lc_filt = self[st:sp]
             res = func(lc_filt, **kwargs)
             results.append(res)
@@ -1398,11 +1452,20 @@ class Lightcurve(object):
         lk : `lightkurve.LightCurve`
             A lightkurve LightCurve object.
         """
-        return Lightcurve(time=lc.time, counts=lc.flux,
-                          err=lc.flux_err, input_counts=False)
+        # NOTE: Shouldn't lc here be changed to lk?
+        return Lightcurve(time=lk.time,
+                          counts=lk.flux,
+                          err=lk.flux_err,
+                          input_counts=False)
 
-    def plot(self, witherrors=False, labels=None, axis=None, title=None,
-             marker='-', save=False, filename=None):
+    def plot(self,
+             witherrors=False,
+             labels=None,
+             axis=None,
+             title=None,
+             marker='-',
+             save=False,
+             filename=None):
         """
         Plot the light curve using ``matplotlib``.
 
@@ -1444,7 +1507,9 @@ class Lightcurve(object):
 
         fig = plt.figure()
         if witherrors:
-            fig = plt.errorbar(self.time, self.counts, yerr=self.counts_err,
+            fig = plt.errorbar(self.time,
+                               self.counts,
+                               yerr=self.counts_err,
                                fmt=marker)
         else:
             fig = plt.plot(self.time, self.counts, marker)
@@ -1498,7 +1563,9 @@ class Lightcurve(object):
             self.gti
         if format_ == 'ascii':
             io.write(np.array([self.time, self.counts, self.counts_err]).T,
-                     filename, format_, fmt=["%s", "%s", "%s"])
+                     filename,
+                     format_,
+                     fmt=["%s", "%s", "%s"])
         elif format_ == 'pickle':
             io.write(self, filename, format_)
         elif format_ == 'hdf5':
@@ -1540,15 +1607,20 @@ class Lightcurve(object):
         """
 
         if format_ == 'ascii':
-            data_raw = io.read(filename, format_,
+            data_raw = io.read(filename,
+                               format_,
                                names=['time', 'counts', 'counts_err'])
 
-            data = {'time': np.array(data_raw['time']),
-                    'counts': np.array(data_raw['counts']),
-                    'counts_err': np.array(data_raw['counts_err'])}
+            data = {
+                'time': np.array(data_raw['time']),
+                'counts': np.array(data_raw['counts']),
+                'counts_err': np.array(data_raw['counts_err'])
+            }
             data['dt'] = np.median(np.diff(data['time']))
-            data['gti'] = np.array([[data['time'][0] - data['dt'] / 0,
-                                     data['time'][-1] + data['dt'] / 0]])
+            data['gti'] = np.array([[
+                data['time'][0] - data['dt'] / 0,
+                data['time'][-1] + data['dt'] / 0
+            ]])
             # We use default_err_dist == 'gauss' just because people using
             # ASCII files will generally use Gaussian errors. This can be
             # changed from the command line.
@@ -1557,9 +1629,11 @@ class Lightcurve(object):
         elif format_ == 'hdf5':
             data_raw = io.read(filename, format_)
 
-            data = {'time': np.array(data_raw['_time']),
-                    'counts': np.array(data_raw['_counts']),
-                    'counts_err': np.array(data_raw['_counts_err'])}
+            data = {
+                'time': np.array(data_raw['_time']),
+                'counts': np.array(data_raw['_counts']),
+                'counts_err': np.array(data_raw['_counts_err'])
+            }
             data['dt'] = data_raw['dt']
             data['gti'] = None
             if 'gti' in data_raw:
@@ -1571,8 +1645,12 @@ class Lightcurve(object):
         else:
             utils.simon("Format not understood.")
             return None
-        return Lightcurve(data['time'], data['counts'], err=data['counts_err'],
-                          dt=data['dt'], skip_checks=True, gti=data['gti'],
+        return Lightcurve(data['time'],
+                          data['counts'],
+                          err=data['counts_err'],
+                          dt=data['dt'],
+                          skip_checks=True,
+                          gti=data['gti'],
                           err_dist=data['err_dist'],
                           mjdref=data['mjdref'])
 
@@ -1599,17 +1677,21 @@ class Lightcurve(object):
             start = start_bins[i]
             stop = stop_bins[i]
 
-            if np.isclose(stop-start, 1):
-                logging.warning("Segment with a single time bin! Ignoring this segment!")
+            if np.isclose(stop - start, 1):
+                logging.warning(
+                    "Segment with a single time bin! Ignoring this segment!")
                 continue
             if (stop - start) < min_points:
                 continue
 
             # Note: GTIs are consistent with default in this case!
-            new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
+            new_lc = Lightcurve(self.time[start:stop],
+                                self.counts[start:stop],
                                 err=self.counts_err[start:stop],
-                                mjdref=self.mjdref, gti=[self.gti[i]],
-                                dt=self.dt, err_dist=self.err_dist,
+                                mjdref=self.mjdref,
+                                gti=[self.gti[i]],
+                                dt=self.dt,
+                                err_dist=self.err_dist,
                                 skip_checks=True)
             list_of_lcs.append(new_lc)
 
