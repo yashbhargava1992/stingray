@@ -3,7 +3,7 @@ Basic pulsar-related functions and statistics.
 """
 
 import numpy as np
-import collections
+from collections.abc import Iterable
 import warnings
 from scipy.optimize import minimize, basinhopping
 
@@ -243,7 +243,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     ref_time = _default_value_if_no_key(opts, "ref_time", 0)
     expocorr = _default_value_if_no_key(opts, "expocorr", False)
 
-    if not isinstance(weights, collections.Iterable):
+    if not isinstance(weights, Iterable):
         weights *= np.ones(len(times))
 
     gtis = gtis - ref_time

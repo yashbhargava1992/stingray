@@ -1,6 +1,6 @@
 
 import sys
-import collections
+from collections.abc import Iterable
 import numbers
 from six import string_types
 
@@ -306,7 +306,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
         x.astype(np.double), real_err.astype(np.double),
         statistic=_root_squared_mean, bins=binx)
 
-    if isinstance(y[0], np.complex):
+    if np.iscomplexobj(y):
         imag = y.imag
         biny_imag, bin_edges, binno = scipy.stats.binned_statistic(
             x.astype(np.double), imag.astype(np.double),
@@ -314,7 +314,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
         biny = biny + 1j * biny_imag
 
-    if isinstance(y_err[0], np.complex):
+    if np.iscomplexobj(y_err):
         imag_err = y_err.imag
 
         biny_err_imag, bin_edges, binno = scipy.stats.binned_statistic(
@@ -440,7 +440,7 @@ def is_iterable(var):
     is_iter : bool
         Returns ``True`` if ``var`` is an ``Iterable``, ``False`` otherwise
     """
-    return isinstance(var, collections.Iterable)
+    return isinstance(var, Iterable)
 
 
 def order_list_of_arrays(data, order):

@@ -1,6 +1,6 @@
 
 import numpy as np
-import collections
+from collections.abc import Iterable
 from .pulsar import profile_stat, fold_events, z_n, pulse_phase
 from ..utils import jit, HAS_NUMBA
 from ..utils import contiguous_regions
@@ -44,7 +44,7 @@ def _folding_search(stat_func, times, frequencies, segment_size=5000,
                 if use_times:
                     kwargs_copy = {}
                     for key in kwargs.keys():
-                        if isinstance(kwargs[key], collections.Iterable) and \
+                        if isinstance(kwargs[key], Iterable) and \
                                 len(kwargs[key]) == len(times):
 
                             kwargs_copy[key] = kwargs[key][good]
@@ -133,7 +133,7 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
     stats : array-like
         the epoch folding statistics corresponding to each frequency bin.
     """
-    if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
+    if expocorr or not HAS_NUMBA or isinstance(weights, Iterable):
         if expocorr and gti is None:
             raise ValueError('To calculate exposure correction, you need to'
                              ' specify the GTIs')
@@ -210,7 +210,7 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
         the Z^2_n statistics corresponding to each frequency bin.
     """
     phase = np.arange(0, 1, 1 / nbin)
-    if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
+    if expocorr or not HAS_NUMBA or isinstance(weights, Iterable):
         if expocorr and gti is None:
             raise ValueError('To calculate exposure correction, you need to'
                              ' specify the GTIs')
@@ -486,7 +486,7 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
     allts = \
         np.concatenate([times, times]).astype('float64')
 
-    if weights is not None and isinstance(weights, collections.Iterable):
+    if weights is not None and isinstance(weights, Iterable):
         if len(weights) != len(times):
             raise ValueError('The length of weights must match the length of '
                              'times')

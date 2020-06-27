@@ -13,6 +13,9 @@ from ..powerspectrum import AveragedPowerspectrum
 from ..gti import cross_two_gtis, bin_intervals_from_gtis
 
 
+__all__ = ["calculate_FAD_correction", "get_periodograms_from_FAD_results"]
+
+
 def _get_fourier_intv(lc, start_ind, end_ind):
     """Calculate the Fourier transform of a light curve chunk.
 
