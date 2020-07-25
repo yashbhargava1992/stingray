@@ -13,7 +13,7 @@ from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none, baseline_als
 from stingray.utils import poisson_symmetrical_errors
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
-from stingray.gti import check_gtis, create_gti_mask_complete, create_gti_mask, bin_intervals_from_gtis
+from stingray.gti import check_gtis, create_gti_mask, bin_intervals_from_gtis
 
 __all__ = ["Lightcurve"]
 
@@ -1001,7 +1001,7 @@ class Lightcurve(object):
         gti = join_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(new_time, new_counts, err=new_counts_err, gti=gti,
-                            mjdref=self.mjdref, dt=self.dt)
+                            mjdref=self.mjdref, dt=self.dt, skip_checks=False)
 
         return lc_new
 
@@ -1079,7 +1079,7 @@ class Lightcurve(object):
                                         time_new[-1] + 0.5 * self.dt]]))
 
         return Lightcurve(time_new, counts_new, err=counts_err_new, gti=gti,
-                          dt=self.dt)
+                          dt=self.dt, skip_checks=True)
 
     def _truncate_by_time(self, start, stop):
         """Helper method for truncation using time values.
@@ -1400,8 +1400,8 @@ class Lightcurve(object):
         lk : `lightkurve.LightCurve`
             A lightkurve LightCurve object.
         """
-        return Lightcurve(time=lc.time, counts=lc.flux,
-                          err=lc.flux_err, input_counts=False)
+        return Lightcurve(time=lk.time, counts=lk.flux,
+                          err=lk.flux_err, input_counts=False, skip_checks=True,)
 
     def plot(self, witherrors=False, labels=None, axis=None, title=None,
              marker='-', save=False, filename=None):
