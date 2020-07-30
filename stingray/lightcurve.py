@@ -887,7 +887,7 @@ class Lightcurve(object):
                             skip_checks=True)
         return lc_new
 
-    def join(self, other):
+    def join(self, other, skip_checks=False):
         """
         Join two lightcurves into a single object.
 
@@ -904,6 +904,9 @@ class Lightcurve(object):
         ----------
         other : :class:`Lightcurve` object
             The other :class:`Lightcurve` object which is supposed to be joined with.
+        skip_checks: bool
+            If True, the user specifies that data are already sorted and
+            contain no infinite or nan points. Use at your own risk.
 
         Returns
         -------
@@ -1001,7 +1004,7 @@ class Lightcurve(object):
         gti = join_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(new_time, new_counts, err=new_counts_err, gti=gti,
-                            mjdref=self.mjdref, dt=self.dt, skip_checks=False)
+                            mjdref=self.mjdref, dt=self.dt, skip_checks=skip_checks)
 
         return lc_new
 
@@ -1391,17 +1394,20 @@ class Lightcurve(object):
         return lk(time=self.time, flux=self.counts, flux_err=self.counts_err)
 
     @staticmethod
-    def from_lightkurve(lk):
+    def from_lightkurve(lk, skip_checks=True):
         """
         Creates a new `Lightcurve` from a `lightkurve.LightCurve`.
 
         Parameters
         ----------
         lk : `lightkurve.LightCurve`
-            A lightkurve LightCurve object.
+            A lightkurve LightCurve object
+        skip_checks: bool
+            If True, the user specifies that data are already sorted and contain no
+            infinite or nan points. Use at your own risk.
         """
         return Lightcurve(time=lk.time, counts=lk.flux,
-                          err=lk.flux_err, input_counts=False, skip_checks=True,)
+                          err=lk.flux_err, input_counts=False, skip_checks=skip_checks)
 
     def plot(self, witherrors=False, labels=None, axis=None, title=None,
              marker='-', save=False, filename=None):
