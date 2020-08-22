@@ -81,9 +81,12 @@ class EventList(object):
     pi : integer, numpy.ndarray
         PI channels
 
+    high_precision : bool
+        Change the precision of self.time to float128. Useful while dealing with fast pulsars.
+
     """
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
-                 notes="", gti=None, pi=None):
+                 notes="", gti=None, pi=None, high_precision=False):
 
         self.energy = None if energy is None else np.array(energy)
         self.notes = notes
@@ -94,13 +97,16 @@ class EventList(object):
         self.ncounts = ncounts
 
         if time is not None:
-            self.time = np.array(time, dtype=np.longdouble)
-            self.ncounts = len(time)
+            if not high_precision:
+                self.time = np.asarray(time)
+            else:
+                self.time = np.asarray(time, dtype=np.longdouble)
+            self.ncounts = self.time.size
         else:
             self.time = None
 
-        if (time is not None) and (energy is not None):
-            if len(time) != len(energy):
+        if (self.time is not None) and (self.energy is not None):
+            if self.time.size != self.energy.size:
                 raise ValueError('Lengths of time and energy must be equal.')
 
     def to_lc(self, dt, tstart=None, tseg=None):
