@@ -8,9 +8,11 @@ import scipy.stats
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
-from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
+from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.stats import pds_probability
+from stingray.utils import saveData
+
 from .events import EventList
 from .gti import cross_two_gtis
 
@@ -302,6 +304,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
         The normaliation of the periodogram to be used.
 
+    large_data : bool, default False
+        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
 
     Other Parameters
     ----------------
@@ -352,9 +356,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     """
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
-                 silent=False, dt=None, lc=None):
+                 silent=False, dt=None, lc=None, large_data=False):
 
-        self.type = "powerspectrum"
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
                           "instead", DeprecationWarning)
@@ -362,6 +365,10 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if data is None:
             data = lc
 
+        if large_data and data is not None:
+            saveData(data, 'data')
+
+        self.type = "powerspectrum"
         if segment_size is None and data is not None:
             raise ValueError("segment_size must be specified")
         if segment_size is not None and not np.isfinite(segment_size):
@@ -538,11 +545,10 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             bin_intervals_from_gtis(current_gti, self.segment_size, lc.time,
                                     dt=lc.dt)
 
-
         tstart = lc.time[start_inds]
         tend = lc.time[end_inds]
 
-        self.time = tstart + 0.5*(tend - tstart)
+        self.time = tstart + 0.5 * (tend - tstart)
 
         # Assign length of lightcurve as time resolution if only one value
         if len(self.time) > 1:

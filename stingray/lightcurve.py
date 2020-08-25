@@ -4,16 +4,18 @@ Definition of :class::class:`Lightcurve`.
 :class::class:`Lightcurve` is used to create light curves out of photon counting data
 or to save existing light curves in a class that's easy to use.
 """
-import warnings
 import logging
+import warnings
+
 import numpy as np
+
 import stingray.io as io
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
-from stingray.utils import simon, assign_value_if_none, baseline_als
-from stingray.utils import poisson_symmetrical_errors
-from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
-from stingray.gti import check_gtis, create_gti_mask, bin_intervals_from_gtis
+from stingray.gti import (bin_intervals_from_gtis, check_gtis, create_gti_mask,
+                          cross_two_gtis, gti_border_bins, join_gtis)
+from stingray.utils import (assign_value_if_none, baseline_als,
+                            poisson_symmetrical_errors, simon)
 
 __all__ = ["Lightcurve"]
 
@@ -510,10 +512,10 @@ class Lightcurve(object):
                   "We are setting the errors to zero to avoid complications.")
             new_counts_err = np.zeros_like(new_counts)
         elif self.err_dist.lower() in valid_statistics:
-                new_counts_err = \
-                    np.sqrt(np.add(self.counts_err[mask_self]**2,
-                                   other.counts_err[mask_other]**2))
-            # More conditions can be implemented for other statistics
+            new_counts_err = \
+                np.sqrt(np.add(self.counts_err[mask_self]**2,
+                               other.counts_err[mask_other]**2))
+        # More conditions can be implemented for other statistics
         else:
             raise StingrayError("Statistics not recognized."
                                 " Please use one of these: "
@@ -1153,11 +1155,11 @@ class Lightcurve(object):
 
         # tolerance for the newly created GTIs: Note that this seems to work
         # with a tolerance of 2, but not if I substitute 10. I don't know why
-        epsilon = np.min(tdiff)/2.0
+        epsilon = np.min(tdiff) / 2.0
 
         # calculate new GTIs
-        gti_start = np.hstack([self.time[0]-epsilon, self.time[gap_idx+1]-epsilon])
-        gti_stop = np.hstack([self.time[gap_idx]+epsilon, self.time[-1]+epsilon])
+        gti_start = np.hstack([self.time[0] - epsilon, self.time[gap_idx + 1] - epsilon])
+        gti_stop = np.hstack([self.time[gap_idx] + epsilon, self.time[-1] + epsilon])
 
         gti = np.vstack([gti_start, gti_stop]).T
         if hasattr(self, 'gti') and self.gti is not None:
@@ -1607,7 +1609,7 @@ class Lightcurve(object):
             start = start_bins[i]
             stop = stop_bins[i]
 
-            if np.isclose(stop-start, 1):
+            if np.isclose(stop - start, 1):
                 logging.warning("Segment with a single time bin! Ignoring this segment!")
                 continue
             if (stop - start) < min_points:
