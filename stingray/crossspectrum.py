@@ -10,8 +10,9 @@ import scipy.stats
 
 from stingray.exceptions import StingrayError
 from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
+from stingray.largememory import createChunkedSpectra, saveData
 from stingray.lightcurve import Lightcurve
-from stingray.utils import rebin_data, rebin_data_log, simon, saveData, createChunkedSpectra
+from stingray.utils import rebin_data, rebin_data_log, simon
 
 from .events import EventList
 from .utils import show_progress
@@ -1049,13 +1050,10 @@ class AveragedCrossspectrum(Crossspectrum):
                 saveData(data2, 'data2')
 
             if data1 is not None and data2 is not None:
-                return createChunkedSpectra('AveragedCrossspectrum',
-                                            segment_size=segment_size,
-                                            norm=norm,
-                                            gti=gti,
-                                            power_type=power_type,
-                                            silent=silent,
-                                            dt=dt)
+                if isinstance(data1, EventList):
+                    return createChunkedSpectra('EventList', 'AveragedCrossspectrum', segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt=dt)
+                else:
+                    return createChunkedSpectra('Lightcurve', 'AveragedCrossspectrum', segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt=dt)
 
         self.type = "crossspectrum"
 

@@ -10,8 +10,8 @@ import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
+from stingray.largememory import createChunkedSpectra, saveData
 from stingray.stats import pds_probability
-from stingray.utils import saveData, createChunkedSpectra
 
 from .events import EventList
 from .gti import cross_two_gtis
@@ -366,13 +366,25 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         if large_data and data is not None:
             saveData(data, 'data')
-            return createChunkedSpectra('AveragedPowerspectrum',
-                                        segment_size=segment_size,
-                                        norm=norm,
-                                        gti=gti,
-                                        power_type=None,
-                                        silent=silent,
-                                        dt=dt)
+
+            if isinstance(data, EventList):
+                return createChunkedSpectra('EventList',
+                                            'AveragedPowerspectrum',
+                                            segment_size=segment_size,
+                                            norm=norm,
+                                            gti=gti,
+                                            power_type=None,
+                                            silent=silent,
+                                            dt=dt)
+            else:
+                return createChunkedSpectra('Lightcurve',
+                                            'AveragedPowerspectrum',
+                                            segment_size=segment_size,
+                                            norm=norm,
+                                            gti=gti,
+                                            power_type=None,
+                                            silent=silent,
+                                            dt=dt)
 
         self.type = "powerspectrum"
         if segment_size is None and data is not None:
