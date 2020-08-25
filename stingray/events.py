@@ -9,13 +9,13 @@ import copy
 import numpy as np
 import numpy.random as ra
 
-from .io import read, write
-from .utils import simon, assign_value_if_none
-from .filters import get_deadtime_mask
-from .gti import cross_gtis, append_gtis, check_separate
-
-from .lightcurve import Lightcurve
 from stingray.simulator.base import simulate_times
+
+from .filters import get_deadtime_mask
+from .gti import append_gtis, check_separate, cross_gtis
+from .io import read, write
+from .lightcurve import Lightcurve
+from .utils import assign_value_if_none, simon
 
 __all__ = ['EventList']
 
@@ -132,7 +132,6 @@ class EventList(object):
         return Lightcurve.make_lightcurve(self.time, dt, tstart=tstart,
                                           gti=self.gti, tseg=tseg,
                                           mjdref=self.mjdref)
-
 
     def to_lc_list(self, dt):
         """Convert event list to a generator of Lightcurves.
@@ -251,10 +250,10 @@ class EventList(object):
         R = ra.uniform(0, 1, self.ncounts)
 
         # Assign energies to events corresponding to the random numbers drawn
-        self.energy = \
-            np.array([energy[
-                np.argwhere(cum_prob == np.min(cum_prob[(cum_prob - r) > 0]))]
-                      for r in R])
+        self.energy = np.array([
+            energy[np.argwhere(
+                cum_prob == np.min(cum_prob[(cum_prob - r) > 0]))] for r in R
+        ])
 
     def join(self, other):
         """
