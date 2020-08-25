@@ -8,8 +8,8 @@ import scipy
 
 from six import string_types
 
-from stingray.lightcurve import Lightcurve
 from stingray.events import EventList
+from stingray.lightcurve import Lightcurve
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
