@@ -5,10 +5,11 @@ from collections.abc import Iterable
 
 import numpy as np
 import scipy
+
 from six import string_types
 
-from stingray.events import EventList
 from stingray.lightcurve import Lightcurve
+from stingray.events import EventList
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
