@@ -1,12 +1,16 @@
-
-import sys
-from collections.abc import Iterable
 import numbers
-from six import string_types
-
+import sys
 import warnings
+from collections.abc import Iterable
+
 import numpy as np
 import scipy
+import zarr
+from numcodecs import Blosc
+from six import string_types
+
+from stingray.lightcurve import Lightcurve
+from stingray.events import EventList
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
@@ -93,7 +97,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
            'create_window', 'poisson_symmetrical_errors', 'standard_error',
-           'nearest_power_of_two', 'find_nearest']
+           'nearest_power_of_two', 'find_nearest', 'saveData']
 
 
 def _root_squared_mean(array):
@@ -363,6 +367,7 @@ def apply_function_if_none(variable, value, func):
         return func(value)
     else:
         return variable
+
 
 def assign_value_if_none(value, default):
     """
@@ -975,3 +980,134 @@ def find_nearest(array, value):
         return array[idx - 1], idx - 1
     else:
         return array[idx], idx
+
+
+def _saveChunkLC(lc, fname):
+    """
+    Prepare Lightcurve for temporary saving.
+
+    Parameters
+    ----------
+    lc: :class:`stingray.Lightcurve` object
+        Lightcurve to be saved
+
+    fname: str
+        High Level diretory name where lightcurve is to be saved.
+    """
+    # Creating a Nested Store and multiple groups for temporary saving
+    store = zarr.NestedDirectoryStore(fname)
+    lc_data_group = zarr.group(store=store, overwrite=True)
+    main_data_group = lc_data_group.create_group('main_data', overwrite=True)
+    meta_data_group = lc_data_group.create_group('meta_data', overwrite=True)
+
+    compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
+
+    # REVIEW: Max chunk size can be 8388608 or 2**23. This efficiently balances time, memory. Memory consumption restricted to 9.1 GB
+
+    main_data_group.create_dataset(name='times',
+                                   data=lc.time,
+                                   compressor=compressor,
+                                   overwrite=True,
+                                   chunks=(8388608, ))
+
+    main_data_group.create_dataset(name='counts',
+                                   data=lc.counts,
+                                   compressor=compressor,
+                                   overwrite=True,
+                                   chunks=(8388608, ))
+
+    # REVIEW: Count_err calculation takes a lot of memory
+    main_data_group.create_dataset(name='count_err',
+                                   data=lc.counts_err,
+                                   compressor=compressor,
+                                   overwrite=True,
+                                   chunks=(8388608, ))
+
+    # FIXME: GTI's are not consistently saved
+    main_data_group.create_dataset(name='gti', data=lc.gti, overwrite=True)
+
+    meta_data_group.create_dataset(name='dt',
+                                   data=lc.dt,
+                                   compressor=compressor,
+                                   overwrite=True)
+
+    meta_data_group.create_dataset(name='err_dist',
+                                   data=lc.err_dist,
+                                   compressor=compressor,
+                                   overwrite=True)
+
+    meta_data_group.create_dataset(name='mjdref',
+                                   data=lc.mjdref,
+                                   compressor=compressor,
+                                   overwrite=True)
+
+
+def _saveChunkEV(ev, fname):
+    """
+    Prepare EventList for temporary saving.
+
+    Parameters
+    ----------
+    ev: :class:`stingray.events.EventList` object
+        EventList to be saved
+
+    fname: str
+        High Level diretory name where lightcurve is to be saved.
+    """
+    # Creating a Nested Store and multiple groups for temporary saving
+    store = zarr.NestedDirectoryStore(fname)
+    ev_data_group = zarr.group(store=store, overwrite=True)
+    main_data_group = ev_data_group.create_group('main_data', overwrite=True)
+    meta_data_group = ev_data_group.create_group('meta_data', overwrite=True)
+
+    compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
+
+    # REVIEW: Max chunk size can be 8388608 or 2**23. This efficiently balances time, memory. Memory consumption restricted to 9.1 GB
+    main_data_group.create_dataset(name='times',
+                                   data=ev.time,
+                                   compressor=compressor,
+                                   overwrite=True,
+                                   chunks=(8388608, ))
+
+    meta_data_group.create_dataset(name='dt',
+                                   data=ev.dt,
+                                   compressor=compressor,
+                                   overwrite=True)
+
+    meta_data_group.create_dataset(name='ncounts',
+                                   data=ev.ncounts,
+                                   compressor=compressor,
+                                   overwrite=True)
+
+    meta_data_group.create_dataset(name='mjdref',
+                                   data=ev.mjdref,
+                                   compressor=compressor,
+                                   overwrite=True)
+
+    if ev.energy:
+        main_data_group.create_dataset(name='energy',
+                                       data=ev.energy,
+                                       compressor=compressor,
+                                       overwrite=True,
+                                       chunks=(8388608, ))
+
+    # FIXME: GTI's are not consistently saved
+    if ev.gti:
+        main_data_group.create_dataset(name='gti', data=ev.gti, overwrite=True)
+
+    if ev.pi:
+        main_data_group.create_dataset(name='pi_channel',
+                                       data=ev.pi,
+                                       compressor=compressor,
+                                       overwrite=True)
+
+
+def saveData(data_obj, f_name):
+    if isinstance(data_obj, Lightcurve):
+        _saveChunkLC(data_obj, f_name)
+
+    elif isinstance(data_obj, EventList):
+        _saveChunkEV(data_obj, f_name)
+
+    else:
+        raise ValueError

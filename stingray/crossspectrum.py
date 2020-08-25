@@ -1,12 +1,20 @@
-
+import copy
 import warnings
 from collections.abc import Iterable, Iterator
+
 import numpy as np
 import scipy
-import scipy.stats
 import scipy.fftpack
 import scipy.optimize
-import copy
+import scipy.stats
+
+from stingray.exceptions import StingrayError
+from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
+from stingray.lightcurve import Lightcurve
+from stingray.utils import rebin_data, rebin_data_log, simon, saveData
+
+from .events import EventList
+from .utils import show_progress
 
 # location of factorial moved between scipy versions
 try:
@@ -21,24 +29,17 @@ except ImportError:
     warnings.warn("Using standard scipy fft")
     from scipy.fftpack import fft, fftfreq
 
-
-from stingray.lightcurve import Lightcurve
-from stingray.utils import rebin_data, simon, rebin_data_log
-from stingray.exceptions import StingrayError
-from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
-from .events import EventList
-from .utils import show_progress
-
-
 try:
     from tqdm import tqdm as show_progress
 except ImportError:
     def show_progress(a, **kwargs):
         return a
 
-__all__ = ["Crossspectrum", "AveragedCrossspectrum",
-           "coherence", "time_lag", "cospectra_pvalue",
-            "normalize_crossspectrum"]
+
+__all__ = [
+    "Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag",
+    "cospectra_pvalue", "normalize_crossspectrum"
+]
 
 
 def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="none", power_type="real"):
@@ -107,7 +108,6 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
     return power
 
 
-
 def _averaged_cospectra_cdf(xcoord, n):
     """
     Function calculating the cumulative distribution function for
@@ -139,8 +139,8 @@ def _averaged_cospectra_cdf(xcoord, n):
                 n - 1 - j) * factorial(j)
             prefac_bottom3 = 2.0 ** (n + j)
 
-            prefac = prefac_top / (
-            prefac_bottom1 * prefac_bottom2 * prefac_bottom3)
+            prefac = prefac_top / (prefac_bottom1 * prefac_bottom2 *
+                                   prefac_bottom3)
 
             gf = -j + n
 
@@ -210,7 +210,7 @@ def cospectra_pvalue(power, nspec):
     if not np.all(np.isfinite(power)):
         raise ValueError("power must be a finite floating point number!")
 
-    #if power < 0:
+    # if power < 0:
     #    raise ValueError("power must be a positive real number!")
 
     if not np.isfinite(nspec):
@@ -690,7 +690,6 @@ class Crossspectrum(object):
             unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm,
             self.power_type)
 
-
     def rebin_log(self, f=0.01):
         """
         Logarithmic rebin of the periodogram.
@@ -990,6 +989,9 @@ class AveragedCrossspectrum(Crossspectrum):
         For backwards compatibility only. Like ``data2``, but no
         :class:`stingray.events.EventList` objects allowed
 
+    large_data : bool, default False
+        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
+
     Attributes
     ----------
     freq: numpy.ndarray
@@ -1024,12 +1026,11 @@ class AveragedCrossspectrum(Crossspectrum):
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         They are calculated by taking the common GTI between the
         two light curves
-
     """
 
     def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
                  gti=None, power_type="real", silent=False, lc1=None, lc2=None,
-                 dt=None):
+                 dt=None, large_data=False):
 
         if lc1 is not None or lc2 is not None:
             warnings.warn("The lcN keywords are now deprecated. Use dataN "
@@ -1039,6 +1040,13 @@ class AveragedCrossspectrum(Crossspectrum):
             data1 = lc1
         if data2 is None:
             data2 = lc2
+
+        if large_data:
+            if data1 is not None:
+                saveData(data1, 'data1')
+
+            if data2 is not None:
+                saveData(data2, 'data2')
 
         self.type = "crossspectrum"
 
@@ -1154,7 +1162,6 @@ class AveragedCrossspectrum(Crossspectrum):
         cs_all = []
         nphots1_all = []
         nphots2_all = []
-
 
         start_inds, end_inds = \
             bin_intervals_from_gtis(current_gtis, segment_size, lc1.time,
