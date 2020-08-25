@@ -1286,7 +1286,7 @@ class PSDParEst(ParameterEstimation):
         """
         self.lpost = lpost
 
-        if cov is None:   
+        if cov is None:
             fit_res = ParameterEstimation.fit(self, self.lpost, t0, neg=True)
             cov = fit_res.cov
             t0 = fit_res.p_opt
@@ -1781,7 +1781,7 @@ class PSDParEst(ParameterEstimation):
                 logy = np.log10(self.ps.power)
                 logpar1 = np.log10(res1.mfit)
 
-                p1, = s1.plot(logx, logy, color='black', linestyle='steps-mid')
+                p1, = s1.plot(logx, logy, color='black', drawstyle='steps-mid')
                 p2, = s1.plot(logx, logpar1, color='blue', lw=2)
                 s1.set_xlim([np.min(logx), np.max(logx)])
                 s1.set_ylim([np.min(logy)-1.0, np.max(logy)+1])
@@ -1794,7 +1794,7 @@ class PSDParEst(ParameterEstimation):
 
             else:
                 p1, = s1.plot(self.ps.freq, self.ps.power,
-                              color='black', linestyle='steps-mid')
+                              color='black', drawstyle='steps-mid')
                 p2, = s1.plot(self.ps.freq, res1.mfit,
                               color='blue', lw=2)
 
@@ -1834,7 +1834,7 @@ class PSDParEst(ParameterEstimation):
                           fontsize=18)
 
             if log:
-                s2.plot(logx, pldif, color='black', linestyle='steps-mid')
+                s2.plot(logx, pldif, color='black', drawstyle='steps-mid')
                 s2.plot(logx, np.ones(self.ps.freq.shape[0]),
                         color='blue', lw=2)
                 s2.set_xlim([np.min(logx), np.max(logx)])
@@ -1842,7 +1842,7 @@ class PSDParEst(ParameterEstimation):
 
             else:
                 s2.plot(self.ps.freq, pldif, color='black',
-                        linestyle='steps-mid')
+                        drawstyle='steps-mid')
                 s2.plot(self.ps.freq, np.ones_like(self.ps.power),
                         color='blue', lw=2)
 
@@ -1858,7 +1858,7 @@ class PSDParEst(ParameterEstimation):
                 s3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1)
 
                 if log:
-                    s3.plot(logx, bpldif, color='black', linestyle='steps-mid')
+                    s3.plot(logx, bpldif, color='black', drawstyle='steps-mid')
                     s3.plot(logx, np.ones(len(self.ps.freq)),
                             color='red', lw=2)
                     s3.axis([np.min(logx), np.max(logx), np.min(bpldif), np.max(bpldif)])
@@ -1866,7 +1866,7 @@ class PSDParEst(ParameterEstimation):
 
                 else:
                     s3.plot(self.ps.freq, bpldif,
-                            color='black', linestyle='steps-mid')
+                            color='black', drawstyle='steps-mid')
                     s3.plot(self.ps.freq, np.ones(len(self.ps.freq)),
                             color='red', lw=2)
                     s3.set_xscale("log")
