@@ -29,7 +29,7 @@ def _saveChunkLC(lc, fname):
         Lightcurve to be saved
 
     fname: str
-        High Level diretory name where lightcurve is to be saved.
+        High Level diretory name where Lightcurve is to be saved.
     """
     # Creating a Nested Store and multiple groups for temporary saving
     store = zarr.NestedDirectoryStore(fname)
@@ -89,7 +89,7 @@ def _saveChunkEV(ev, fname):
         EventList to be saved
 
     fname: str
-        High Level diretory name where lightcurve is to be saved.
+        High Level diretory name where EventList is to be saved.
     """
     # Creating a Nested Store and multiple groups for temporary saving
     store = zarr.NestedDirectoryStore(fname)
@@ -482,6 +482,21 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
 
 def saveData(data_obj, f_name):
+    """
+    Saves Lightcurve/EventList or any such data in chunks to disk.
+
+    Parameters
+    ----------
+    data_obj : :class:`stingray.Lightcurve` or :class:`stingray.events.EventList` object
+        Data to be stored on the disk.
+    f_name : string
+        Name of high level directory where data is to be stored
+
+    Raises
+    ------
+    ValueError
+        If data is not a Lightcurve or EventList
+    """
     if isinstance(data_obj, Lightcurve):
         _saveChunkLC(data_obj, f_name)
 
