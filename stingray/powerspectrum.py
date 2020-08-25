@@ -11,7 +11,7 @@ import stingray.utils as utils
 from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.stats import pds_probability
-from stingray.utils import saveData
+from stingray.utils import saveData, createChunkedSpectra
 
 from .events import EventList
 from .gti import cross_two_gtis
@@ -304,9 +304,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
         The normaliation of the periodogram to be used.
 
-    large_data : bool, default False
-        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
-
     Other Parameters
     ----------------
     gti: 2-d float array
@@ -322,6 +319,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The time resolution of the light curve. Only needed when constructing
         light curves in the case where data is of :class:EventList
 
+    large_data : bool, default False
+        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
 
     Attributes
     ----------
@@ -367,6 +366,13 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         if large_data and data is not None:
             saveData(data, 'data')
+            return createChunkedSpectra('AveragedPowerspectrum',
+                                        segment_size=segment_size,
+                                        norm=norm,
+                                        gti=gti,
+                                        power_type=None,
+                                        silent=silent,
+                                        dt=dt)
 
         self.type = "powerspectrum"
         if segment_size is None and data is not None:
