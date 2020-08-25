@@ -5,15 +5,21 @@ from collections.abc import Iterable
 
 import numpy as np
 import scipy
-import zarr
-from numcodecs import Blosc
 from six import string_types
 
-from stingray.lightcurve import Lightcurve
 from stingray.events import EventList
+from stingray.lightcurve import Lightcurve
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
+HAS_ZARR = False
+try:
+    import zarr
+
+    HAS_ZARR = True
+    from numcodecs import Blosc
+except ImportError:
+    warnings.warn("Large Datasets ie. greater than 10**7 datapoints will not be processed")
 
 HAS_NUMBA = False
 try:
