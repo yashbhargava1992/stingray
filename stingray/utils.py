@@ -20,7 +20,7 @@ try:
     HAS_ZARR = True
     from numcodecs import Blosc
 except ImportError:
-    warnings.warn("Large Datasets ie. greater than 10**7 datapoints will not be processed")
+    warnings.warn("Large Datasets may not be processed due to computational constraints")
 
 HAS_NUMBA = False
 try:
