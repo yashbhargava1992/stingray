@@ -553,4 +553,6 @@ def createChunkedSpectra(data_type, spec_type, segment_size, norm, gti, power_ty
     elif data_type == 'EventList':
         fin_spec = _chunkEVSpec(data_path=data_path, spec_type=spec_type, segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt1=dt)
 
-    return _combineSpectra(fin_spec)
+    _combineSpectra(fin_spec)
+
+    return
