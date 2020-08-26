@@ -19,7 +19,6 @@ except ImportError:
     pass
 
 
-@pytest.mark.skipif('not HAS_ZARR')
 class TestSaveAndRetrieve(object):
     @classmethod
     def setup_class(cls):
@@ -29,11 +28,13 @@ class TestSaveAndRetrieve(object):
         evtimes = np.sort(np.random.uniform(0, 1e7, 10**7))
         cls.ev = EventList(time=evtimes)
 
+    @pytest.mark.skipif('not HAS_ZARR')
     def test_save_wrong_data(self):
         with pytest.raises(ValueError) as excinfo:
             saveData("A string", 'bububu')
         assert 'Cannot save data of type str' in str(excinfo.value)
 
+    @pytest.mark.skipif('not HAS_ZARR')
     def test_save_lc(self):
         file = tempfile.mkdtemp()
         saveData(self.lc, file)
@@ -41,6 +42,7 @@ class TestSaveAndRetrieve(object):
         # TODO: Retrieve the data and test that they are identical to the
         #  original ones
 
+    @pytest.mark.skipif('not HAS_ZARR')
     def test_save_ev(self):
         file = tempfile.mkdtemp()
         saveData(self.ev, file)
@@ -61,20 +63,22 @@ class TestChunkPS(object):
         saveData(cls.lc1, cls.file1)
         saveData(cls.lc2, cls.file2)
 
+    @pytest.mark.skipif('not HAS_ZARR')
     def test_invalid_data_to_pds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedPowerspectrum("sdfasfsa", segment_size=2048,
                                   large_data=True)
         assert 'Invalid input data type: str' in str(excinfo.value)
 
+    @pytest.mark.skipif('not HAS_ZARR')
     def test_invalid_data_to_cpds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedCrossspectrum("sdfasfsa", "sdfasfsa", segment_size=2048,
                                   large_data=True)
         assert 'Invalid input data type: str' in str(excinfo.value)
 
+    @pytest.mark.skipif('not HAS_ZARR')
     def test_calc_pds(self):
-
         ps_normal = AveragedPowerspectrum(self.lc1, segment_size=2048)
         ps_large = AveragedPowerspectrum(self.lc1, segment_size=2048,
                                          large_data=True)
@@ -82,6 +86,7 @@ class TestChunkPS(object):
             assert np.all(getattr(ps_normal, attr) == getattr(ps_large, attr))
         # TODO: Add more attributes
 
+    @pytest.mark.skipif('not HAS_ZARR')
     def test_calc_cpds(self):
         cs_normal = AveragedCrossspectrum(
             self.lc1, self.lc2, segment_size=2048)
