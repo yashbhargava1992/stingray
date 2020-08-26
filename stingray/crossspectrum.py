@@ -1042,18 +1042,30 @@ class AveragedCrossspectrum(Crossspectrum):
         if data2 is None:
             data2 = lc2
 
-        if large_data:
+        if large_data and data1 is not None and data2 is not None:
+            if isinstance(data1, EventList):
+                input_data = 'EventList'
+            elif isinstance(data1, Lightcurve):
+                input_data = 'Lightcurve'
+            else:
+                raise ValueError(
+                    f'Invalid input data type: {type(data1).__name__}')
+
             if data1 is not None:
                 saveData(data1, 'data1')
 
             if data2 is not None:
                 saveData(data2, 'data2')
 
-            if data1 is not None and data2 is not None:
-                if isinstance(data1, EventList):
-                    return createChunkedSpectra('EventList', 'AveragedCrossspectrum', segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt=dt)
-                else:
-                    return createChunkedSpectra('Lightcurve', 'AveragedCrossspectrum', segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt=dt)
+            spec = createChunkedSpectra(input_data, 'AveragedCrossspectrum',
+                                        segment_size=segment_size,
+                                        norm=norm, gti=gti,
+                                        power_type=power_type,
+                                        silent=silent,
+                                        dt=dt)
+            for key, val in spec.__dict__.items():
+                setattr(self, key, val)
+            return
 
         self.type = "crossspectrum"
 

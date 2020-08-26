@@ -6,13 +6,13 @@ import scipy.fftpack
 import scipy.optimize
 import scipy.stats
 
-import stingray.lightcurve as lightcurve
 import stingray.utils as utils
 from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.largememory import createChunkedSpectra, saveData
 from stingray.stats import pds_probability
 
+from .lightcurve import Lightcurve
 from .events import EventList
 from .gti import cross_two_gtis
 
@@ -365,26 +365,27 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             data = lc
 
         if large_data and data is not None:
+            if isinstance(data, EventList):
+                input_data = 'EventList'
+            elif isinstance(data, Lightcurve):
+                input_data = 'Lightcurve'
+            else:
+                raise ValueError(
+                    f'Invalid input data type: {type(data).__name__}')
+
             saveData(data, 'data')
 
-            if isinstance(data, EventList):
-                return createChunkedSpectra('EventList',
-                                            'AveragedPowerspectrum',
-                                            segment_size=segment_size,
-                                            norm=norm,
-                                            gti=gti,
-                                            power_type=None,
-                                            silent=silent,
-                                            dt=dt)
-            else:
-                return createChunkedSpectra('Lightcurve',
-                                            'AveragedPowerspectrum',
-                                            segment_size=segment_size,
-                                            norm=norm,
-                                            gti=gti,
-                                            power_type=None,
-                                            silent=silent,
-                                            dt=dt)
+            spec = createChunkedSpectra(input_data,
+                                        'AveragedPowerspectrum',
+                                        segment_size=segment_size,
+                                        norm=norm,
+                                        gti=gti,
+                                        power_type=None,
+                                        silent=silent,
+                                        dt=dt)
+            for key, val in spec.__dict__.items():
+                setattr(self, key, val)
+            return
 
         self.type = "powerspectrum"
         if segment_size is None and data is not None:
@@ -426,8 +427,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         nphots_all : ``numpy.ndarray``
             List containing the number of photons for all segments calculated from ``lc``
         """
-        if not isinstance(lc, lightcurve.Lightcurve):
-            raise TypeError("lc must be a lightcurve.Lightcurve object")
+        if not isinstance(lc, Lightcurve):
+            raise TypeError("lc must be a Lightcurve object")
 
         current_gtis = lc.gti
 
@@ -460,9 +461,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                     "No counts in interval {}--{}s".format(time[0], time[-1]))
                 continue
 
-            lc_seg = lightcurve.Lightcurve(time, counts, err=counts_err,
-                                           err_dist=lc.err_dist.lower(),
-                                           skip_checks=True, dt=lc.dt)
+            lc_seg = Lightcurve(time, counts, err=counts_err,
+                                err_dist=lc.err_dist.lower(),
+                                skip_checks=True, dt=lc.dt)
 
             power_seg = Powerspectrum(lc_seg, norm=self.norm)
             power_all.append(power_seg)

@@ -61,7 +61,20 @@ class TestChunkPS(object):
         saveData(cls.lc1, cls.file1)
         saveData(cls.lc2, cls.file2)
 
+    def test_invalid_data_to_pds(self):
+        with pytest.raises(ValueError) as excinfo:
+            AveragedPowerspectrum("sdfasfsa", segment_size=2048,
+                                  large_data=True)
+        assert 'Invalid input data type: str' in str(excinfo.value)
+
+    def test_invalid_data_to_cpds(self):
+        with pytest.raises(ValueError) as excinfo:
+            AveragedCrossspectrum("sdfasfsa", "sdfasfsa", segment_size=2048,
+                                  large_data=True)
+        assert 'Invalid input data type: str' in str(excinfo.value)
+
     def test_calc_pds(self):
+
         ps_normal = AveragedPowerspectrum(self.lc1, segment_size=2048)
         ps_large = AveragedPowerspectrum(self.lc1, segment_size=2048,
                                          large_data=True)
