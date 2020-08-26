@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 
-from stingray import AveragedCrossspectrum, AveragedPowerspectrum, Lightcurve
+import stingray
 from stingray.events import EventList
 
 HAS_ZARR = False
@@ -156,10 +156,11 @@ def _combineSpectra(final_spectra):
     final_spectra.unnorm_power /= final_spectra.m
     # REVIEW: final_spectra.power_err /= final_spectra.m
 
-    if isinstance(final_spectra, AveragedPowerspectrum):
+    if isinstance(final_spectra, stingray.AveragedPowerspectrum):
+
         return final_spectra
 
-    elif isinstance(final_spectra, AveragedCrossspectrum):
+    elif isinstance(final_spectra, stingray.AveragedCrossspectrum):
         final_spectra.pds1.power /= final_spectra.m
         final_spectra.pds2.power /= final_spectra.m
 
@@ -210,10 +211,10 @@ def _addSpectra(final_spectra, curr_spec, flag):
     final_spectra.df = (final_spectra.df + curr_spec.df) / 2
     final_spectra.gti = np.concatenate((final_spectra.gti, curr_spec.gti))
 
-    if isinstance(final_spectra, AveragedPowerspectrum):
+    if isinstance(final_spectra, stingray.AveragedPowerspectrum):
         final_spectra.nphots += curr_spec.nphots
 
-    elif isinstance(final_spectra, AveragedCrossspectrum):
+    elif isinstance(final_spectra, stingray.AveragedCrossspectrum):
         np.multiply(np.add(final_spectra.pds1.power, curr_spec.pds1.power),
                     curr_spec.m,
                     out=final_spectra.pds1.power)
@@ -227,7 +228,7 @@ def _addSpectra(final_spectra, curr_spec, flag):
 
 
 def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
-                 silent, dt1):
+                 silent):
     """
     Create a chunked spectra from Lightcurve stored on disk.
 
@@ -274,7 +275,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     err_dist = zarr.open_array(store=data_path[1], mode='r', path='err_dist')
 
     if spec_type == 'AveragedPowerspectrum':
-        fin_spec = AveragedPowerspectrum()
+        fin_spec = stingray.AveragedPowerspectrum()
 
     elif spec_type == 'AveragedCrossspectrum':
         times_other = zarr.open_array(store=data_path[2],
@@ -295,14 +296,14 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                                          mode='r',
                                          path='err_dist')
 
-        fin_spec = AveragedCrossspectrum()
+        fin_spec = stingray.AveragedCrossspectrum()
 
     else:
         raise ValueError
 
     flag = True
     for i in range(times.chunks[0], times.size, times.chunks[0]):
-        lc1 = Lightcurve(
+        lc1 = stingray.Lightcurve(
             time=times.get_basic_selection(slice(i - times.chunks[0], i)),
             counts=counts.get_basic_selection(slice(i - times.chunks[0], i)),
             err=count_err.get_basic_selection(slice(i - times.chunks[0], i)),
@@ -317,21 +318,21 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                     f"It is advisable to have the segment size greater than or equal to {lc1.time.size / 8192}. Very small segment sizes may greatly increase computation times."
                 )
 
-            avg_pspec = AveragedPowerspectrum(data=lc1, segment_size=lc1.time.size / segment_size, norm=norm, gti=gti, silent=silent, dt=dt1, large_data=False)
+            avg_pspec = stingray.AveragedPowerspectrum(data=lc1, segment_size=lc1.time.size / segment_size, norm=norm, gti=gti, silent=silent, large_data=False)
 
             fin_spec = _addSpectra(fin_spec, avg_pspec, flag)
 
         elif spec_type == 'AveragedCrossspectrum':
-            lc2 = Lightcurve(time=times_other.get_basic_selection(slice(i - times.chunks[0], i)), counts=counts_other.get_basic_selection(slice(i - times.chunks[0], i)), err=count_err_other.get_basic_selection(slice(i - times.chunks[0], i)), err_dist=str(err_dist_other[...]), mjdref=mjdref_other[...], dt=dt_other[...], skip_checks=True)
+            lc2 = stingray.Lightcurve(time=times_other.get_basic_selection(slice(i - times.chunks[0], i)), counts=counts_other.get_basic_selection(slice(i - times.chunks[0], i)), err=count_err_other.get_basic_selection(slice(i - times.chunks[0], i)), err_dist=str(err_dist_other[...]), mjdref=mjdref_other[...], dt=dt_other[...], skip_checks=True)
 
             if segment_size < lc1.time.size / 4096:
                 warnings.warn(
                     f"It is advisable to have the segment size greater than or equal to {lc1.time.size / 4096}. Very small segment sizes may greatly increase computation times."
                 )
 
-                avg_cspec = AveragedCrossspectrum(data1=lc1, data2=lc2, segment_size=lc1.time.size / segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt=dt1, large_data=False)
+            avg_cspec = stingray.AveragedCrossspectrum(data1=lc1, data2=lc2, segment_size=lc1.time.size / segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, large_data=False)
 
-                fin_spec = _addSpectra(fin_spec, avg_cspec, flag)
+            fin_spec = _addSpectra(fin_spec, avg_cspec, flag)
 
         flag = False
 
@@ -401,7 +402,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         pi_channel = None
 
     if spec_type == 'AveragedPowerspectrum':
-        fin_spec = AveragedPowerspectrum()
+        fin_spec = stingray.AveragedPowerspectrum()
 
     elif spec_type == 'AveragedCrossspectrum':
         times_other = zarr.open_array(store=data_path[2],
@@ -437,7 +438,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         except ValueError:
             pi_channel_other = None
 
-        fin_spec = AveragedCrossspectrum()
+        fin_spec = stingray.AveragedCrossspectrum()
 
     else:
         raise ValueError
@@ -460,7 +461,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                     f"It is advisable to have the segment size greater than or equal to {ev1.time.size / 8192}. Very small segment sizes may greatly increase computation times."
                 )
 
-            avg_pspec = AveragedPowerspectrum(data=ev1, segment_size=ev1.time.size / segment_size, norm=norm, gti=gti, silent=silent, dt=dt1, large_data=False)
+            avg_pspec = stingray.AveragedPowerspectrum(data=ev1, segment_size=ev1.time.size / segment_size, norm=norm, gti=gti, silent=silent, dt=dt1, large_data=False)
 
             fin_spec = _addSpectra(fin_spec, avg_pspec, flag)
 
@@ -472,7 +473,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                     f"It is advisable to have the segment size greater than or equal to {ev1.time.size / 4096}. Very small segment sizes may greatly increase computation times."
                 )
 
-            avg_cspec = AveragedCrossspectrum(data1=ev1, data2=ev2, segment_size=ev1.time.size / segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt=dt1, large_data=False)
+            avg_cspec = stingray.AveragedCrossspectrum(data1=ev1, data2=ev2, segment_size=ev1.time.size / segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt=dt1, large_data=False)
 
             fin_spec = _addSpectra(fin_spec, avg_cspec, flag)
 
@@ -497,7 +498,7 @@ def saveData(data_obj, f_name):
     ValueError
         If data is not a Lightcurve or EventList
     """
-    if isinstance(data_obj, Lightcurve):
+    if isinstance(data_obj, stingray.Lightcurve):
         _saveChunkLC(data_obj, f_name)
 
     elif isinstance(data_obj, EventList):
@@ -507,7 +508,7 @@ def saveData(data_obj, f_name):
         raise ValueError
 
 
-def createChunkedSpectra(data_type, spec_type, segment_size, norm, gti, power_type, silent, dt=None):
+def createChunkedSpectra(data_type, spec_type, segment_size, norm, gti, power_type, silent, dt):
     """
     Create a chunked spectra from zarr files stored on disk.
 
@@ -547,7 +548,7 @@ def createChunkedSpectra(data_type, spec_type, segment_size, norm, gti, power_ty
     })
 
     if data_type == 'Lightcurve':
-        fin_spec = _chunkLCSpec(data_path=data_path, spec_type=spec_type, segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt1=None)
+        fin_spec = _chunkLCSpec(data_path=data_path, spec_type=spec_type, segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent)
 
     elif data_type == 'EventList':
         fin_spec = _chunkEVSpec(data_path=data_path, spec_type=spec_type, segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt1=dt)
