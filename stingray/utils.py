@@ -997,16 +997,14 @@ def randomNameGenerate(size=10, chars=string.ascii_letters + string.digits):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=size))
 
 
-def genDataPath(f_name1, f_name2=None, path=os.getcwd()):
+def genDataPath(f_name, path=os.getcwd()):
     """
     Generates data path to chunks.
 
     Parameters
     ----------
-    f_name1 : string
+    f_name : string
         Top level directory name for data
-    f_name2 : string, optional
-        Top level directory name for data, by default None
     path : string, optional
         Path to zarr datastore, by default os.getcwd()
 
@@ -1017,9 +1015,7 @@ def genDataPath(f_name1, f_name2=None, path=os.getcwd()):
     """
     path_list = []
 
-    path_list.append(os.path.join(path, f'{f_name1}/main_data/'))
-    path_list.append(os.path.join(path, f'{f_name1}/meta_data/'))
-    path_list.append(os.path.join(path, f'{f_name2}/main_data/'))
-    path_list.append(os.path.join(path, f'{f_name2}/meta_data/'))
+    path_list.append(os.path.join(path, f'{f_name}/main_data/'))
+    path_list.append(os.path.join(path, f'{f_name}/meta_data/'))
 
     return path_list

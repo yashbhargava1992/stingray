@@ -1053,11 +1053,16 @@ class AveragedCrossspectrum(Crossspectrum):
             f_name1 = saveData(data1)
             f_name2 = saveData(data2)
 
-            data_path = genDataPath(f_name1, f_name2)
-            spec = createChunkedSpectra(input_data, 'AveragedCrossspectrum',
-                                        data_path=data_path,
+            data_path1 = genDataPath(f_name1)
+            data_path2 = genDataPath(f_name2)
+
+            spec = createChunkedSpectra(input_data,
+                                        'AveragedCrossspectrum',
+                                        data_path=list(data_path1 +
+                                                       data_path2),
                                         segment_size=segment_size,
-                                        norm=norm, gti=gti,
+                                        norm=norm,
+                                        gti=gti,
                                         power_type=power_type,
                                         silent=silent,
                                         dt=dt)
