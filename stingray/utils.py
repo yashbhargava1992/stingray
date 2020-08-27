@@ -1,4 +1,7 @@
 import numbers
+import os
+import random
+import string
 import sys
 import warnings
 from collections.abc import Iterable
@@ -90,7 +93,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
            'create_window', 'poisson_symmetrical_errors', 'standard_error',
-           'nearest_power_of_two', 'find_nearest']
+           'nearest_power_of_two', 'find_nearest', 'genDataPath', 'randomNameGenerate']
 
 
 def _root_squared_mean(array):
@@ -973,3 +976,50 @@ def find_nearest(array, value):
         return array[idx - 1], idx - 1
     else:
         return array[idx], idx
+
+
+def randomNameGenerate(size=10, chars=string.ascii_letters + string.digits):
+    """
+    Generates a random alphanumeric name.
+
+    Parameters
+    ----------
+    size : int, optional
+        size of random string to generate, by default 10
+    chars : string type, optional
+        Letters to use to generate random name, by default string.ascii_letters+string.digits
+
+    Returns
+    -------
+    string
+        Random name.
+    """
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=size))
+
+
+def genDataPath(f_name1, f_name2=None, path=os.getcwd()):
+    """
+    Generates data path to chunks.
+
+    Parameters
+    ----------
+    f_name1 : string
+        Top level directory name for data
+    f_name2 : string, optional
+        Top level directory name for data, by default None
+    path : string, optional
+        Path to zarr datastore, by default os.getcwd()
+
+    Returns
+    -------
+    list
+        List of path's to datastore
+    """
+    path_list = []
+
+    path_list.append(os.path.join(path, f'{f_name1}/main_data/'))
+    path_list.append(os.path.join(path, f'{f_name1}/meta_data/'))
+    path_list.append(os.path.join(path, f'{f_name2}/main_data/'))
+    path_list.append(os.path.join(path, f'{f_name2}/meta_data/'))
+
+    return path_list

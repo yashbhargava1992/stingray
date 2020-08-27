@@ -11,10 +11,10 @@ import scipy.stats
 from stingray.exceptions import StingrayError
 from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
 from stingray.largememory import createChunkedSpectra, saveData
-from stingray.lightcurve import Lightcurve
-from stingray.utils import rebin_data, rebin_data_log, simon
+from stingray.utils import genDataPath, rebin_data, rebin_data_log, simon
 
 from .events import EventList
+from .lightcurve import Lightcurve
 from .utils import show_progress
 
 # location of factorial moved between scipy versions
@@ -24,7 +24,6 @@ except ImportError:
     from scipy.special import factorial
 
 try:
-    import pyfftw
     from pyfftw.interfaces.scipy_fftpack import fft, fftfreq
 except ImportError:
     warnings.warn("Using standard scipy fft")
@@ -1051,20 +1050,21 @@ class AveragedCrossspectrum(Crossspectrum):
                 raise ValueError(
                     f'Invalid input data type: {type(data1).__name__}')
 
-            if data1 is not None:
-                saveData(data1, 'data1')
+            f_name1 = saveData(data1)
+            f_name2 = saveData(data2)
 
-            if data2 is not None:
-                saveData(data2, 'data2')
-
+            data_path = genDataPath(f_name1, f_name2)
             spec = createChunkedSpectra(input_data, 'AveragedCrossspectrum',
+                                        data_path=data_path,
                                         segment_size=segment_size,
                                         norm=norm, gti=gti,
                                         power_type=power_type,
                                         silent=silent,
                                         dt=dt)
+
             for key, val in spec.__dict__.items():
                 setattr(self, key, val)
+
             return
 
         self.type = "crossspectrum"

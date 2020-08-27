@@ -11,10 +11,11 @@ from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.largememory import createChunkedSpectra, saveData
 from stingray.stats import pds_probability
+from stingray.utils import genDataPath
 
-from .lightcurve import Lightcurve
 from .events import EventList
 from .gti import cross_two_gtis
+from .lightcurve import Lightcurve
 
 try:
     from tqdm import tqdm as show_progress
@@ -373,18 +374,22 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                 raise ValueError(
                     f'Invalid input data type: {type(data).__name__}')
 
-            saveData(data, 'data')
+            f_name = saveData(data)
 
+            data_path = genDataPath(f_name)
             spec = createChunkedSpectra(input_data,
                                         'AveragedPowerspectrum',
+                                        data_path=data_path,
                                         segment_size=segment_size,
                                         norm=norm,
                                         gti=gti,
                                         power_type=None,
                                         silent=silent,
                                         dt=dt)
+
             for key, val in spec.__dict__.items():
                 setattr(self, key, val)
+
             return
 
         self.type = "powerspectrum"
