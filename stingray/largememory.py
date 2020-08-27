@@ -14,7 +14,8 @@ try:
     from numcodecs import Blosc
 except ImportError:
     warnings.warn(
-        "Large Datasets may not be processed efficiently due to computational constraints")
+        "Large Datasets may not be processed efficiently due to "
+        "computational constraints")
 
 __all__ = ['createChunkedSpectra', 'saveData']
 
@@ -156,15 +157,16 @@ def _combineSpectra(final_spectra):
     final_spectra.unnorm_power /= final_spectra.m
     # REVIEW: final_spectra.power_err /= final_spectra.m
 
-    if isinstance(final_spectra, stingray.AveragedPowerspectrum):
 
-        return final_spectra
+    # Don't look for pds1 and pds2 if it's a power spectrum.
+    # Since Powerspectrum is also a Crossspectrum, we need to specify this
 
-    elif isinstance(final_spectra, stingray.AveragedCrossspectrum):
+    if isinstance(final_spectra, stingray.AveragedCrossspectrum) and not \
+            isinstance(final_spectra, stingray.AveragedPowerspectrum):
         final_spectra.pds1.power /= final_spectra.m
         final_spectra.pds2.power /= final_spectra.m
 
-        return final_spectra
+    return final_spectra
 
 
 def _addSpectra(final_spectra, curr_spec, flag):
@@ -505,7 +507,7 @@ def saveData(data_obj, f_name):
         _saveChunkEV(data_obj, f_name)
 
     else:
-        raise ValueError
+        raise ValueError(f"Cannot save data of type {type(data_obj).__name__}")
 
 
 def createChunkedSpectra(data_type, spec_type, segment_size, norm, gti, power_type, silent, dt):
@@ -553,6 +555,4 @@ def createChunkedSpectra(data_type, spec_type, segment_size, norm, gti, power_ty
     elif data_type == 'EventList':
         fin_spec = _chunkEVSpec(data_path=data_path, spec_type=spec_type, segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt1=dt)
 
-    _combineSpectra(fin_spec)
-
-    return
+    return _combineSpectra(fin_spec)

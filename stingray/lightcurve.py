@@ -1409,7 +1409,8 @@ class Lightcurve(object):
             infinite or nan points. Use at your own risk.
         """
         return Lightcurve(time=lk.time, counts=lk.flux,
-                          err=lk.flux_err, input_counts=False, skip_checks=skip_checks)
+                          err=lk.flux_err, input_counts=False,
+                          skip_checks=skip_checks)
 
     def plot(self, witherrors=False, labels=None, axis=None, title=None,
              marker='-', save=False, filename=None):
