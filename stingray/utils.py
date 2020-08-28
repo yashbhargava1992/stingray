@@ -997,7 +997,7 @@ def randomNameGenerate(size=10, chars=string.ascii_letters + string.digits):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=size))
 
 
-def genDataPath(f_name, path=os.getcwd()):
+def genDataPath(f_name, data_type, path=os.getcwd()):
     """
     Generates data path to chunks.
 
@@ -1005,6 +1005,8 @@ def genDataPath(f_name, path=os.getcwd()):
     ----------
     f_name : string
         Top level directory name for data
+    data_type :  str
+        Type of data object stored in zarr
     path : string, optional
         Path to zarr datastore, by default os.getcwd()
 
@@ -1015,7 +1017,16 @@ def genDataPath(f_name, path=os.getcwd()):
     """
     path_list = []
 
-    path_list.append(os.path.join(path, f'{f_name}/main_data/'))
-    path_list.append(os.path.join(path, f'{f_name}/meta_data/'))
+    if data_type == 'Lightcurve' or data_type == 'EventList':
+        path_list.append(os.path.join(path, f'{f_name}/main_data/'))
+        path_list.append(os.path.join(path, f'{f_name}/meta_data/'))
+
+    elif data_type == 'FITS':
+        path_list = sorted({
+            root[:root.rfind('/', 0, len(root)) + 1]
+            for root, dirs, files in os.walk(os.path.join(path), f_name)
+            if '.zarray' in files
+        })
+        path_list *= 2
 
     return path_list

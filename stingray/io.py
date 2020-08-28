@@ -1,34 +1,24 @@
-
-
-from collections.abc import Iterable
 import logging
 import math
-import numpy as np
 import os
-import six
+import pickle
 import warnings
+from collections.abc import Iterable
 
+import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 
 import stingray.utils as utils
-from .utils import order_list_of_arrays, is_string
-from .utils import assign_value_if_none
 
 from .gti import _get_gti_from_extension, load_gtis
-
-try:
-    # Python 2
-    import cPickle as pickle
-except:
-    # Python 3
-    import pickle
+from .utils import assign_value_if_none, is_string, order_list_of_arrays
 
 _H5PY_INSTALLED = True
 
 try:
     import h5py
-except:
+except ImportError:
     _H5PY_INSTALLED = False
 
 
@@ -64,7 +54,7 @@ def high_precision_keyword_read(hdr, keyword):
     try:
         value = np.longdouble(hdr[keyword])
         return value
-    except:
+    except KeyError:
         pass
     try:
         if len(keyword) == 8:
@@ -72,7 +62,7 @@ def high_precision_keyword_read(hdr, keyword):
         value = np.longdouble(hdr[keyword + 'I'])
         value += np.longdouble(hdr[keyword + 'F'])
         return value
-    except:
+    except KeyError:
         return None
 
 
@@ -82,7 +72,7 @@ def _get_additional_data(lctable, additional_columns):
         for a in additional_columns:
             try:
                 additional_data[a] = np.array(lctable.field(a))
-            except:  # pragma: no cover
+            except KeyError:  # pragma: no cover
                 if a == 'PI':
                     logging.warning('Column PI not found. Trying with PHA')
                     additional_data[a] = np.array(lctable.field('PHA'))
@@ -136,7 +126,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     # Load data table
     try:
         lctable = lchdulist[hduname].data
-    except:  # pragma: no cover
+    except KeyError:  # pragma: no cover
         logging.warning('HDU %s not found. Trying first extension' % hduname)
         lctable = lchdulist[1].data
 
@@ -146,7 +136,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     # Read TIMEZERO keyword and apply it to events
     try:
         timezero = np.longdouble(lchdulist[1].header['TIMEZERO'])
-    except:  # pragma: no cover
+    except KeyError:  # pragma: no cover
         logging.warning("No TIMEZERO in file")
         timezero = np.longdouble(0.)
 
@@ -156,7 +146,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     try:
         t_start = np.longdouble(lchdulist[1].header['TSTART'])
         t_stop = np.longdouble(lchdulist[1].header['TSTOP'])
-    except:  # pragma: no cover
+    except KeyError:  # pragma: no cover
         logging.warning("Tstart and Tstop error. using defaults")
         t_start = ev_list[0]
         t_stop = ev_list[-1]
@@ -170,7 +160,7 @@ def load_events_and_gtis(fits_file, additional_columns=None,
             gti_list = \
                 _get_gti_from_extension(
                     lchdulist, accepted_gtistrings=accepted_gtistrings)
-        except:  # pragma: no cover
+        except KeyError:  # pragma: no cover
             warnings.warn("No extensions found with a valid name. "
                           "Please check the `accepted_gtistrings` values.")
             gti_list = np.array([[t_start, t_stop]],
@@ -558,7 +548,7 @@ def _retrieve_ascii_object(filename, **kwargs):
     data : astropy.Table object
         An astropy.Table object with the data from the file
     """
-    if not isinstance(filename, six.string_types):
+    if not isinstance(filename, str):
         raise TypeError("filename must be string!")
 
     if 'usecols' in list(kwargs.keys()):
@@ -709,7 +699,7 @@ def _retrieve_fits_object(filename, **kwargs):
         The name of file with which object was saved
 
     Other Parameters
-    -----------------------------
+    ----------------
     cols: str iterable
         The names of columns to extract from fits tables.
 

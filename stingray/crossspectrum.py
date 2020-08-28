@@ -29,13 +29,6 @@ except ImportError:
     warnings.warn("Using standard scipy fft")
     from scipy.fftpack import fft, fftfreq
 
-try:
-    from tqdm import tqdm as show_progress
-except ImportError:
-    def show_progress(a, **kwargs):
-        return a
-
-
 __all__ = [
     "Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag",
     "cospectra_pvalue", "normalize_crossspectrum"
@@ -824,13 +817,24 @@ class Crossspectrum(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        fig = plt.figure('crossspectrum')
-        fig = plt.plot(self.freq, np.abs(self.power), marker, color='b',
-                       label='Amplitude')
-        fig = plt.plot(self.freq, np.abs(self.power.real), marker, color='r',
-                       alpha=0.5, label='Real Part')
-        fig = plt.plot(self.freq, np.abs(self.power.imag), marker, color='g',
-                       alpha=0.5, label='Imaginary Part')
+        plt.figure('crossspectrum')
+        plt.plot(self.freq,
+                 np.abs(self.power),
+                 marker,
+                 color='b',
+                 label='Amplitude')
+        plt.plot(self.freq,
+                 np.abs(self.power.real),
+                 marker,
+                 color='r',
+                 alpha=0.5,
+                 label='Real Part')
+        plt.plot(self.freq,
+                 np.abs(self.power.imag),
+                 marker,
+                 color='g',
+                 alpha=0.5,
+                 label='Imaginary Part')
 
         if labels is not None:
             try:

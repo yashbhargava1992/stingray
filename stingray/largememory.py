@@ -2,6 +2,7 @@ import os
 import warnings
 
 import numpy as np
+from astropy.io import fits
 
 import stingray
 
@@ -143,15 +144,61 @@ def _saveChunkEV(ev, fname):
                                        overwrite=True)
 
 
-def saveData(data_obj, f_name=randomNameGenerate()):
+def _saveFITSZarr(f_name, zarr_dir):
+    """
+    Read a FITS file and save it for further processing
+
+    Parameters
+    ----------
+    filename: str
+        The name of file with which object was saved
+    """
+
+    compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)
+    store = zarr.NestedDirectoryStore(zarr_dir)
+    fits_data_group = zarr.group(store=store, overwrite=True)
+
+    with fits.open(f_name, memmap=True) as fits_data:
+        for HDUList in fits_data:
+            if HDUList.name == 'EVENTS':
+                if HDUList.data.names == (['TIME', 'PI'] or ['TIME', 'PHA']):
+                    fits_data_group.create_dataset(name='times',
+                                                   data=HDUList.data['TIME'],
+                                                   compressor=compressor,
+                                                   overwrite=True,
+                                                   chunks=True)
+                    try:
+                        fits_data_group.create_dataset(name='pi_channel',
+                                                       data=HDUList.data['PI'],
+                                                       compressor=compressor,
+                                                       overwrite=True,
+                                                       chunks=True)
+                    except KeyError:
+                        fits_data_group.create_dataset(
+                            name='pi_channel',
+                            data=HDUList.data['PHA'],
+                            compressor=compressor,
+                            overwrite=True,
+                            chunks=True)
+
+            elif HDUList.name == 'GTI':
+                if HDUList.data.names == ['START', 'STOP']:
+                    fits_data_group.create_dataset(name='gti',
+                                                   data=HDUList.data,
+                                                   compressor=compressor,
+                                                   overwrite=True,
+                                                   chunks=True)
+
+
+def saveData(data, f_name=randomNameGenerate()):
     """
     Saves Lightcurve/EventList or any such data in chunks to disk.
 
     Parameters
     ----------
-    data_obj : :class:`stingray.Lightcurve` or :class:`stingray.events.EventList` object
+    data: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList` object or string
         Data to be stored on the disk.
-    f_name : string, optional
+    f_name: string, optional
         Name of top level directory where data is to be stored, by default randomNameGenerate()
 
     Returns
@@ -164,11 +211,17 @@ def saveData(data_obj, f_name=randomNameGenerate()):
     ValueError
         If data is not a Lightcurve or EventList
     """
-    if isinstance(data_obj, Lightcurve):
-        _saveChunkLC(data_obj, f_name)
+    if isinstance(data, Lightcurve):
+        _saveChunkLC(data, f_name)
 
-    elif isinstance(data_obj, EventList):
-        _saveChunkEV(data_obj, f_name)
+    elif isinstance(data, EventList):
+        _saveChunkEV(data, f_name)
+
+    elif os.path.isfile(data):
+        _saveFITSZarr(data, f_name)
+
+    else:
+        raise ValueError((f"Invalid data type {data}"))
 
     return f_name
 
@@ -190,8 +243,8 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
 
     Returns
     -------
-    :class:`stingray.Lightcurve` object
-        Lightcurve retrieved from store.
+    :class:`stingray.Lightcurve` object or tuple
+        Lightcurve retrieved from store or data of Lightcurve
 
     Raises
     ------
@@ -208,7 +261,7 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
     err_dist = zarr.open_array(store=data_path[1], mode='r', path='err_dist')
 
     if raw:
-        return times, counts, count_err, gti, dt, err_dist, mjdref
+        return (times, counts, count_err, gti, dt, err_dist, mjdref)
     else:
         if chunk_size > times.size or chunk_size == 0:
             chunk_size = times.size
@@ -217,7 +270,7 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
             )
 
         if offset > times.size:
-            raise ValueError(f"No element read. Offset cannot be larger than size of array {times.size}")
+            raise ValueError((f"No element read. Offset cannot be larger than size of array {times.size}"))
 
         return Lightcurve(
             time=times.get_basic_selection(slice(offset, chunk_size)),
@@ -247,8 +300,8 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
 
     Returns
     -------
-    :class:`stingray.events.EventList` object
-        EventList retrieved from store.
+    :class:`stingray.events.EventList` object or tuple
+        EventList or data of EventList retrieved from store.
 
     Raises
     ------
@@ -257,29 +310,40 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
     """
     times = zarr.open_array(store=data_path[0], mode='r', path='times')
 
-    dt = zarr.open_array(store=data_path[1], mode='r', path='dt')
-    ncounts = zarr.open_array(store=data_path[1], mode='r', path='ncounts')
-    mjdref = zarr.open_array(store=data_path[1], mode='r', path='mjdref')
+    try:
+        dt = zarr.open_array(store=data_path[1], mode='r', path='dt')
+    except KeyError:
+        dt = None
+
+    try:
+        ncounts = zarr.open_array(store=data_path[1], mode='r', path='ncounts')
+    except KeyError:
+        ncounts = None
+
+    try:
+        mjdref = zarr.open_array(store=data_path[1], mode='r', path='mjdref')
+    except KeyError:
+        mjdref = None
 
     try:
         energy = zarr.open_array(store=data_path[0], mode='r', path='energy')
-    except ValueError:
+    except KeyError:
         energy = None
 
     try:
         gti = zarr.open_array(store=data_path[0], mode='r', path='gti')
-    except ValueError:
+    except KeyError:
         gti = None
 
     try:
         pi_channel = zarr.open_array(store=data_path[0],
                                      mode='r',
                                      path='pi_channel')
-    except ValueError:
+    except KeyError:
         pi_channel = None
 
     if raw:
-        return times, energy, ncounts, mjdref, dt, gti, pi_channel
+        return (times, energy, ncounts, mjdref, dt, gti, pi_channel)
     else:
         if chunk_size > times.size or chunk_size > energy.size or chunk_size == 0:
             chunk_size = times.size if times.size is not None else energy.size
@@ -309,10 +373,8 @@ def retreiveData(data_type, f_name, path=os.getcwd(), chunk_data=False, chunk_si
     ----------
     data_type : string
         Type of data to retrieve i.e. Lightcurve, Eventlist data to retrieve.
-    f_name1 : string
+    f_name : string
         Top level directory name for datastore
-    f_name2 : string, optional
-        Top level directory name for datastore, by default None
     path : string, optional
         path to retrieve data from, by default os.getcwd()
     chunk_data : bool, optional
@@ -324,24 +386,29 @@ def retreiveData(data_type, f_name, path=os.getcwd(), chunk_data=False, chunk_si
     raw : bool, optional
         Only to be used for if raw memory mapped zarr arrays are to be obtained, by default False
 
+    Returns
+    -------
+    :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object or tuple
+        EventList or Lightcurve created from store or raw data
+
     Raises
     ------
     ValueError
-        If datatype is not Lightcurve or EventList
+        If datatype is not Lightcurve or EventList of FITS
     """
-    data_path = genDataPath(f_name, path)
+    data_path = genDataPath(f_name, path, data_type)
 
     if data_type == 'Lightcurve':
         if chunk_data is True and chunk_size is not None:
-            _retrieveDataLC(data_path, chunk_size, offset)
+            return _retrieveDataLC(data_path, chunk_size, offset)
         else:
-            _retrieveDataLC(data_path, raw)
+            return _retrieveDataLC(data_path, raw)
 
-    elif data_type == 'EventList':
+    elif data_type == ('EventList' or 'FITS'):
         if chunk_data is True and chunk_size is not None:
-            _retrieveDataEV(data_path, chunk_size, offset)
+            return _retrieveDataEV(data_path, chunk_size, offset)
         else:
-            _retrieveDataEV(data_path, raw)
+            return _retrieveDataEV(data_path, raw)
 
     else:
         raise TypeError((f"Invalid input data type: {data_type}"))
@@ -482,7 +549,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
             data_path[2:4], raw=True)
 
     else:
-        raise ValueError
+        raise ValueError((f"Invalid spectra-type {spec_type}"))
 
     flag = True
     for i in range(times.chunks[0], times.size, times.chunks[0]):
@@ -581,7 +648,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
             data_path[2:4], raw=True)
 
     else:
-        raise ValueError
+        raise ValueError((f"Invalid spectra {spec_type}"))
 
     flag = True
     for i in range(times.chunks[0], times.size, times.chunks[0]):
