@@ -47,7 +47,6 @@ def _saveChunkLC(lc, dir_name, chunks):
 
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
 
-    # REVIEW: Max chunk size can be 8388608 or 2**23. This efficiently balances time, memory. Memory consumption restricted to 9.1 GB
     main_data_group.create_dataset(name='times',
                                    data=lc.time,
                                    compressor=compressor,
@@ -116,7 +115,6 @@ def _saveChunkEV(ev, dir_name, chunks):
 
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
 
-    # REVIEW: Max chunk size can be 8388608 or 2**23. This efficiently balances time, memory. Memory consumption restricted to 9.1 GB
     if ev.time is not None and (ev.time.all() or ev.time.size != 0):
         main_data_group.create_dataset(name='times',
                                        data=ev.time,
@@ -300,6 +298,7 @@ def saveData(data, dir_name=randomNameGenerate()):
     from sys import platform
 
     # REVIEW: can get more granularity but increases dependenct i.e. psutil
+    # REVIEW: Max chunk size can be 8388608 or 2**23. This efficiently balances time, memory. Memory consumption restricted to 9.1 GB
     if platform == "linux" or platform == "linux2":
         free_m = int(os.popen('free -t -m').readlines()[-1].split()[-1])
         chunks = 8388608 if free_m >= 10000 else 4194304
@@ -575,10 +574,9 @@ def _combineSpectra(final_spectra):
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Final resulting spectra.
     """
-    final_spectra.freq /= final_spectra.m
     final_spectra.power /= final_spectra.m
     final_spectra.unnorm_power /= final_spectra.m
-    # REVIEW: final_spectra.power_err /= final_spectra.m
+    final_spectra.power_err = np.sqrt(final_spectra.power_err) / final_spectra.m
 
     if isinstance(final_spectra, stingray.AveragedCrossspectrum) and not \
             isinstance(final_spectra, stingray.AveragedPowerspectrum):
@@ -588,7 +586,7 @@ def _combineSpectra(final_spectra):
     return final_spectra
 
 
-def _addSpectra(final_spectra, curr_spec, flag):
+def _addSpectra(final_spectra, curr_spec, first_iter):
     """
     Add various Spectra(AveragedCrossspectrum/AveragedPowerspectrum) for combination.
 
@@ -600,15 +598,15 @@ def _addSpectra(final_spectra, curr_spec, flag):
     curr_spec: object
         AveragedCrossspectrum/AveragedPowerspectrum to be combined
 
-    flag: bool
-        Indicator variable
+    first_iter: bool
+        Check for first iteration variable
 
     Returns
     -------
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Combined AveragedCrossspectrum/AveragedPowerspectrum
     """
-    if flag:
+    if first_iter:
         final_spectra = curr_spec
         final_spectra.freq = final_spectra.freq.astype('float128')
         final_spectra.power = final_spectra.power.astype('complex256')
@@ -617,18 +615,13 @@ def _addSpectra(final_spectra, curr_spec, flag):
 
         return final_spectra
 
-    # REVIEW:
-    # assert np.allclose(final_spectra.freq, curr_spec.freq), \
-    #     "Summing a spectrum with incompatible frequency values"
     np.multiply(np.add(final_spectra.power, curr_spec.power),
                 curr_spec.m,
                 out=final_spectra.power)
     np.multiply(np.add(final_spectra.unnorm_power, curr_spec.unnorm_power),
                 curr_spec.m,
                 out=final_spectra.unnorm_power)
-    np.sqrt(np.add(np.square(final_spectra.power_err),
-                   np.square(curr_spec.power_err)),
-            out=final_spectra.power_err)
+    np.add(np.multiply(np.square(curr_spec.power_err), curr_spec.m), final_spectra.power_err, out=final_spectra.power_err)
 
     final_spectra.m += curr_spec.m
     final_spectra.df = (final_spectra.df + curr_spec.df) / 2
@@ -712,7 +705,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     else:
         raise ValueError((f"Invalid spectra-type {spec_type}"))
 
-    flag = True
+    first_iter = True
 
     for i in range(times.chunks[0], times.size, times.chunks[0]):
         lc1 = Lightcurve(
@@ -742,19 +735,19 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
             avg_spec = stingray.AveragedCrossspectrum(data1=lc1, data2=lc2, segment_size=lc1.time.size / segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, large_data=False)
 
-        if flag:
+        if first_iter:
             prev_freq = avg_spec.freq
-            fin_spec = _addSpectra(fin_spec, avg_spec, flag)
+            fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
         else:
             if np.array_equal(prev_freq, avg_spec.freq):
-                fin_spec = _addSpectra(fin_spec, avg_spec, flag)
+                fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
                 prev_freq = avg_spec.freq
             else:
                 raise ValueError((
                     f"Spectra have unequal frequencies {avg_spec.freq.shape}{prev_freq.shape}"
                 ))
 
-        flag = False
+        first_iter = False
 
     return fin_spec
 
@@ -823,7 +816,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         raise ValueError((f"Invalid spectra {spec_type}"))
 
     # TODO: Proper way to retrieve events
-    flag = True
+    first_iter = True
     for i in range(times.chunks[0], times.size, times.chunks[0]):
         ev1 = EventList(
             time=times.get_basic_selection(slice(i - times.chunks[0], i)) if times is not None else None,
@@ -862,19 +855,19 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
             avg_spec = stingray.AveragedCrossspectrum(data1=ev1, data2=ev2, segment_size=ev1.time.size / segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent, dt=dt1, large_data=False)
 
-        if flag:
+        if first_iter:
             prev_freq = avg_spec.freq
-            fin_spec = _addSpectra(fin_spec, avg_spec, flag)
+            fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
         else:
             if np.array_equal(prev_freq, avg_spec.freq):
-                fin_spec = _addSpectra(fin_spec, avg_spec, flag)
+                fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
                 prev_freq = avg_spec.freq
             else:
                 raise ValueError((
                     f"Spectra have unequal frequencies {avg_spec.freq.shape}{prev_freq.shape}"
                 ))
 
-        flag = False
+        first_iter = False
 
     return fin_spec
 
