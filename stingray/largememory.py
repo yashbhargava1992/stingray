@@ -126,7 +126,7 @@ def _saveChunkEV(ev, dir_name, chunks):
     else:
         save_flag = False
 
-    if ev.energy.all() or ev.energy.size != 0:
+    if ev.energy is not None and (ev.energy.all() or ev.energy.size != 0):
         save_flag = True
         main_data_group.create_dataset(name='energy',
                                        data=ev.energy,
@@ -134,7 +134,7 @@ def _saveChunkEV(ev, dir_name, chunks):
                                        overwrite=True,
                                        chunks=(chunks, ))
 
-    if ev.pi.all() or ev.pi.size != 0:
+    if ev.pi is not None and (ev.pi.all() or ev.pi.size != 0):
         save_flag = True
         main_data_group.create_dataset(name='pi_channel',
                                        data=ev.pi,
@@ -146,7 +146,7 @@ def _saveChunkEV(ev, dir_name, chunks):
         raise EOFError(("The EventList passed is empty and hence cannot be saved"))
 
     # FIXME: GTI's are not consistently saved
-    if ev.gti.all() or ev.gti.shape[0] != 0:
+    if ev.gti is not None and (ev.gti.all() or ev.gti.shape[0] != 0):
         main_data_group.create_dataset(name='gti', data=ev.gti, overwrite=True,
                                        chunks=(chunks, ))
 
