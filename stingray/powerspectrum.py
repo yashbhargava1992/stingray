@@ -2,7 +2,6 @@ import warnings
 
 import numpy as np
 import scipy
-import scipy.fftpack
 import scipy.optimize
 import scipy.stats
 

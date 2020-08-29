@@ -847,9 +847,9 @@ def create_window(N, window_type='uniform'):
         a3 = 0.388
         a4 = 0.028
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + \
-                 a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
-                 a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
-                 a4 * np.cos((8 * np.pi * n) / N_minus_1)
+                a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
+                a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
+                a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
 
@@ -986,27 +986,27 @@ def randomNameGenerate(size=10, chars=string.ascii_letters + string.digits):
     ----------
     size : int, optional
         size of random string to generate, by default 10
+
     chars : string type, optional
-        Letters to use to generate random name, by default string.ascii_letters+string.digits
+        Letters to use to generate random name, by default string.ascii_letters+ string.digits
 
     Returns
     -------
     string
         Random name.
+
     """
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=size))
 
 
-def genDataPath(f_name, data_type, path=os.getcwd()):
-    """
-    Generates data path to chunks.
+def genDataPath(dir_name, path=os.getcwd()):
+    """Generates data path to chunks.
 
     Parameters
     ----------
-    f_name : string
+    dir_name : string
         Top level directory name for data
-    data_type :  str
-        Type of data object stored in zarr
+
     path : string, optional
         Path to zarr datastore, by default os.getcwd()
 
@@ -1014,19 +1014,24 @@ def genDataPath(f_name, data_type, path=os.getcwd()):
     -------
     list
         List of path's to datastore
+
+    Raises
+    ------
+    IOError
+        If directory does not exist
+
     """
     path_list = []
 
-    if data_type == 'Lightcurve' or data_type == 'EventList':
-        path_list.append(os.path.join(path, f'{f_name}/main_data/'))
-        path_list.append(os.path.join(path, f'{f_name}/meta_data/'))
+    if os.path.isdir(os.path.join(path, dir_name)):
+        if not (os.path.isdir(os.path.join(path, f'{dir_name}/main_data/')) or os.path.join(path, f'{dir_name}/meta_data/')):
+            raise IOError(("Directory does not exist."))
 
-    elif data_type == 'FITS':
-        path_list = sorted({
-            root[:root.rfind('/', 0, len(root)) + 1]
-            for root, dirs, files in os.walk(os.path.join(path), f_name)
-            if '.zarray' in files
-        })
-        path_list *= 2
+        else:
+            path_list.append(os.path.join(path, f'{dir_name}/main_data/'))
+            path_list.append(os.path.join(path, f'{dir_name}/meta_data/'))
 
-    return path_list
+            return path_list
+
+    else:
+        raise IOError(("Directory does not exist."))

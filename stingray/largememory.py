@@ -24,7 +24,7 @@ except ImportError:
 __all__ = ['createChunkedSpectra', 'saveData', 'retreiveData']
 
 
-def _saveChunkLC(lc, fname):
+def _saveChunkLC(lc, dir_name, chunks):
     """
     Save Lightcurve temporarily on disk.
 
@@ -33,11 +33,15 @@ def _saveChunkLC(lc, fname):
     lc: :class:`stingray.Lightcurve` object
         Lightcurve to be saved
 
-    fname: string
-        High Level diretory name where Lightcurve is to be saved.
+    dir_name: string
+        High Level diretory name where Lightcurve is to be saved
+
+    chunks: int
+        The number of elements per chunk
+
     """
     # Creating a Nested Store and multiple groups for temporary saving
-    store = zarr.NestedDirectoryStore(fname)
+    store = zarr.NestedDirectoryStore(dir_name)
     lc_data_group = zarr.group(store=store, overwrite=True)
     main_data_group = lc_data_group.create_group('main_data', overwrite=True)
     meta_data_group = lc_data_group.create_group('meta_data', overwrite=True)
@@ -45,25 +49,24 @@ def _saveChunkLC(lc, fname):
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
 
     # REVIEW: Max chunk size can be 8388608 or 2**23. This efficiently balances time, memory. Memory consumption restricted to 9.1 GB
-
     main_data_group.create_dataset(name='times',
                                    data=lc.time,
                                    compressor=compressor,
                                    overwrite=True,
-                                   chunks=(8388608, ))
+                                   chunks=(chunks, ))
 
     main_data_group.create_dataset(name='counts',
                                    data=lc.counts,
                                    compressor=compressor,
                                    overwrite=True,
-                                   chunks=(8388608, ))
+                                   chunks=(chunks, ))
 
     # REVIEW: Count_err calculation takes a lot of memory
     main_data_group.create_dataset(name='count_err',
                                    data=lc.counts_err,
                                    compressor=compressor,
                                    overwrite=True,
-                                   chunks=(8388608, ))
+                                   chunks=(chunks, ))
 
     # FIXME: GTI's are not consistently saved
     main_data_group.create_dataset(name='gti', data=lc.gti, overwrite=True)
@@ -84,7 +87,7 @@ def _saveChunkLC(lc, fname):
                                    overwrite=True)
 
 
-def _saveChunkEV(ev, fname):
+def _saveChunkEV(ev, dir_name, chunks):
     """
     Save EventList temporarily on disk.
 
@@ -93,11 +96,22 @@ def _saveChunkEV(ev, fname):
     ev: :class:`stingray.events.EventList` object
         EventList to be saved
 
-    fname: string
-        High Level diretory name where EventList is to be saved.
+    dir_name: string
+        High Level diretory name where EventList is to be saved
+
+    chunks: int
+        The number of elements per chunk
+
+    Raises
+    ------
+    EOFError
+        If there is no data being saved
+
     """
+    # To check if any data is being saved
+    save_flag = True
     # Creating a Nested Store and multiple groups for temporary saving
-    store = zarr.NestedDirectoryStore(fname)
+    store = zarr.NestedDirectoryStore(dir_name)
     ev_data_group = zarr.group(store=store, overwrite=True)
     main_data_group = ev_data_group.create_group('main_data', overwrite=True)
     meta_data_group = ev_data_group.create_group('meta_data', overwrite=True)
@@ -105,81 +119,109 @@ def _saveChunkEV(ev, fname):
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
 
     # REVIEW: Max chunk size can be 8388608 or 2**23. This efficiently balances time, memory. Memory consumption restricted to 9.1 GB
-    main_data_group.create_dataset(name='times',
-                                   data=ev.time,
-                                   compressor=compressor,
-                                   overwrite=True,
-                                   chunks=(8388608, ))
+    if ev.time.all() or ev.time.size != 0:
+        main_data_group.create_dataset(name='times',
+                                       data=ev.time,
+                                       compressor=compressor,
+                                       overwrite=True,
+                                       chunks=(chunks, ))
+    else:
+        save_flag = False
 
-    meta_data_group.create_dataset(name='dt',
-                                   data=ev.dt,
-                                   compressor=compressor,
-                                   overwrite=True)
+    if ev.energy.all() or ev.energy.size != 0:
+        save_flag = True
+        main_data_group.create_dataset(name='energy',
+                                       data=ev.energy,
+                                       compressor=compressor,
+                                       overwrite=True,
+                                       chunks=(chunks, ))
 
-    meta_data_group.create_dataset(name='ncounts',
-                                   data=ev.ncounts,
-                                   compressor=compressor,
-                                   overwrite=True)
+    if ev.pi.all() or ev.pi.size != 0:
+        save_flag = True
+        main_data_group.create_dataset(name='pi_channel',
+                                       data=ev.pi,
+                                       compressor=compressor,
+                                       overwrite=True,
+                                       chunks=(chunks, ))
+
+    if not save_flag:
+        raise EOFError(("The EventList passed is empty and hence cannot be saved"))
+
+    # FIXME: GTI's are not consistently saved
+    if ev.gti.all() or ev.gti.shape[0] != 0:
+        main_data_group.create_dataset(name='gti', data=ev.gti, overwrite=True,
+                                       chunks=(chunks, ))
+
+    if ev.dt != 0:
+        meta_data_group.create_dataset(name='dt',
+                                       data=ev.dt,
+                                       compressor=compressor,
+                                       overwrite=True)
+
+    if ev.ncounts:
+        meta_data_group.create_dataset(name='ncounts',
+                                       data=ev.ncounts,
+                                       compressor=compressor,
+                                       overwrite=True)
+
+    if ev.notes:
+        meta_data_group.create_dataset(name='notes',
+                                       data=ev.notes,
+                                       compressor=compressor,
+                                       overwrite=True)
 
     meta_data_group.create_dataset(name='mjdref',
                                    data=ev.mjdref,
                                    compressor=compressor,
                                    overwrite=True)
 
-    if ev.energy:
-        main_data_group.create_dataset(name='energy',
-                                       data=ev.energy,
-                                       compressor=compressor,
-                                       overwrite=True,
-                                       chunks=(8388608, ))
 
-    # FIXME: GTI's are not consistently saved
-    if ev.gti:
-        main_data_group.create_dataset(name='gti', data=ev.gti, overwrite=True)
-
-    if ev.pi:
-        main_data_group.create_dataset(name='pi_channel',
-                                       data=ev.pi,
-                                       compressor=compressor,
-                                       overwrite=True)
-
-
-def _saveFITSZarr(f_name, zarr_dir):
+def _saveFITSZarr(f_name, dir_name, chunks):
     """
-    Read a FITS file and save it for further processing
+    Read a FITS file and save it for further processing.
 
     Parameters
     ----------
-    filename: str
+    f_name: string
         The name of file with which object was saved
+
+    dir_name: string
+        The name of the top level directory where the file is to be stored
+
+    chunks: int
+        The number of elements per chunk
+
     """
 
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)
-    store = zarr.NestedDirectoryStore(zarr_dir)
-    fits_data_group = zarr.group(store=store, overwrite=True)
 
+    store = zarr.NestedDirectoryStore(dir_name)
+    main_data_group = ev_data_group.create_group('main_data', overwrite=True)
+    meta_data_group = ev_data_group.create_group('meta_data', overwrite=True)
+
+    # TODO: Confirm if column name present but data absent?
+    # TODO: Add metadata for events
     with fits.open(f_name, memmap=True) as fits_data:
         for HDUList in fits_data:
             if HDUList.name == 'EVENTS':
                 if HDUList.data.names == (['TIME', 'PI'] or ['TIME', 'PHA']):
-                    fits_data_group.create_dataset(name='times',
+                    main_data_group.create_dataset(name='times',
                                                    data=HDUList.data['TIME'],
                                                    compressor=compressor,
                                                    overwrite=True,
-                                                   chunks=True)
+                                                   chunks=(chunks, ))
                     try:
-                        fits_data_group.create_dataset(name='pi_channel',
+                        main_data_group.create_dataset(name='pi_channel',
                                                        data=HDUList.data['PI'],
                                                        compressor=compressor,
                                                        overwrite=True,
-                                                       chunks=True)
+                                                       chunks=(chunks, ))
                     except KeyError:
-                        fits_data_group.create_dataset(
-                            name='pi_channel',
-                            data=HDUList.data['PHA'],
-                            compressor=compressor,
-                            overwrite=True,
-                            chunks=True)
+                        main_data_group.create_dataset(name='pi_channel',
+                                                       data=HDUList.data['PHA'],
+                                                       compressor=compressor,
+                                                       overwrite=True,
+                                                       chunks=(chunks, ))
 
             elif HDUList.name == 'GTI':
                 if HDUList.data.names == ['START', 'STOP']:
@@ -187,10 +229,10 @@ def _saveFITSZarr(f_name, zarr_dir):
                                                    data=HDUList.data,
                                                    compressor=compressor,
                                                    overwrite=True,
-                                                   chunks=True)
+                                                   chunks=(chunks, ))
 
 
-def saveData(data, f_name=randomNameGenerate()):
+def saveData(data, dir_name=randomNameGenerate()):
     """
     Saves Lightcurve/EventList or any such data in chunks to disk.
 
@@ -198,7 +240,8 @@ def saveData(data, f_name=randomNameGenerate()):
     ----------
     data: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList` object or string
         Data to be stored on the disk.
-    f_name: string, optional
+
+    dir_name: string, optional
         Name of top level directory where data is to be stored, by default randomNameGenerate()
 
     Returns
@@ -210,20 +253,30 @@ def saveData(data, f_name=randomNameGenerate()):
     ------
     ValueError
         If data is not a Lightcurve or EventList
+
     """
+    from sys import platform
+
+    # REVIEW: can get more granularity but increases dependenct i.e. psutil
+    if platform == "linux" or platform == "linux2":
+        free_m = int(os.popen('free -t -m').readlines()[-1].split()[-1])
+        chunks = 8388608 if free_m >= 10000 else 4194304
+    else:
+        chunks = 8388608
+
     if isinstance(data, Lightcurve):
-        _saveChunkLC(data, f_name)
+        _saveChunkLC(data, dir_name, chunks)
 
     elif isinstance(data, EventList):
-        _saveChunkEV(data, f_name)
+        _saveChunkEV(data, dir_name, chunks)
 
-    elif os.path.isfile(data):
-        _saveFITSZarr(data, f_name)
+    elif os.stat(data).st_size > 0:
+        _saveFITSZarr(data, dir_name, chunks)
 
     else:
         raise ValueError((f"Invalid data type {data}"))
 
-    return f_name
+    return dir_name
 
 
 def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
@@ -232,13 +285,16 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
 
     Parameters
     ----------
-    data_path : list
-        Path to datastore.
-    chunk_size : int
-        Size of data to be retrieved.
-    offset : int, optional
+    data_path: list
+        Path to datastore
+
+    chunk_size: int
+        Size of data to be retrieved
+
+    offset: int, optional
         Offset or start element to read the array from, by default 0
-    raw : bool, optional
+
+    raw: bool, optional
         Only to be used for if raw memory mapped zarr arrays are to be obtained, by default False
 
     Returns
@@ -250,6 +306,7 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
     ------
     ValueError
         If offset provided is larger than size of array.
+
     """
     times = zarr.open_array(store=data_path[0], mode='r', path='times')
     counts = zarr.open_array(store=data_path[0], mode='r', path='counts')
@@ -289,13 +346,16 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
 
     Parameters
     ----------
-    data_path : list
+    data_path: list
         Path to datastore.
-    chunk_size : int
-        Size of data to be retrieved.
-    offset : int, optional
+
+    chunk_size: int
+        Size of data to be retrieved
+
+    offset: int, optional
         Offset or start element to read the array from, by default 0
-    raw : bool, optional
+
+    raw: bool, optional
         Only to be used for if raw memory mapped zarr arrays are to be obtained, by default False
 
     Returns
@@ -306,41 +366,65 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
     Raises
     ------
     ValueError
+        If array does not exist at path
+
+    ValueError
         If offset provided is larger than size of array.
+
+    EOFError
+        If the file to read is empty
+
     """
-    times = zarr.open_array(store=data_path[0], mode='r', path='times')
+    read_flag = True
 
     try:
-        dt = zarr.open_array(store=data_path[1], mode='r', path='dt')
-    except KeyError:
-        dt = None
-
-    try:
-        ncounts = zarr.open_array(store=data_path[1], mode='r', path='ncounts')
-    except KeyError:
-        ncounts = None
-
-    try:
-        mjdref = zarr.open_array(store=data_path[1], mode='r', path='mjdref')
-    except KeyError:
-        mjdref = None
+        times = zarr.open_array(store=data_path[0], mode='r', path='times')
+    except ValueError:
+        times = None
+        read_flag = False
 
     try:
         energy = zarr.open_array(store=data_path[0], mode='r', path='energy')
-    except KeyError:
+        read_flag = True
+    except ValueError:
         energy = None
-
-    try:
-        gti = zarr.open_array(store=data_path[0], mode='r', path='gti')
-    except KeyError:
-        gti = None
 
     try:
         pi_channel = zarr.open_array(store=data_path[0],
                                      mode='r',
                                      path='pi_channel')
-    except KeyError:
+        read_flag = True
+    except ValueError:
         pi_channel = None
+
+    if not read_flag:
+        raise EOFError(
+            ("The stored object is empty and hence cannot be read"))
+
+    try:
+        gti = zarr.open_array(store=data_path[0], mode='r', path='gti')
+    except ValueError:
+        gti = None
+
+    try:
+        dt = zarr.open_array(store=data_path[1], mode='r', path='dt')
+    except ValueError:
+        dt = 0
+
+    try:
+        ncounts = zarr.open_array(store=data_path[1], mode='r', path='ncounts')
+    except ValueError:
+        ncounts = None
+
+    try:
+        mjdref = zarr.open_array(store=data_path[1], mode='r', path='mjdref')
+    except ValueError:
+        mjdref = 0
+
+    try:
+        notes = zarr.open_array(store=data_path[1], mode='r', path='notes')
+    except ValueError:
+        notes = ""
 
     if raw:
         return (times, energy, ncounts, mjdref, dt, gti, pi_channel)
@@ -356,34 +440,42 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
                 "No element read. Offset cannot be larger than size of array")
 
         return EventList(
-            time=times.get_basic_selection(slice(offset, chunk_size)),
-            energy=energy.get_basic_selection(slice(offset, chunk_size)),
-            ncounts=ncounts.get_basic_selection(slice(offset, chunk_size)),
-            mjdref=mjdref,
-            dt=dt,
-            gti=gti,
-            pi=pi_channel)
+            time=times.get_basic_selection(slice(i - times.chunks[0], i)) if times is not None else None,
+            energy=energy.get_basic_selection(slice(i - times.chunks[0], i))
+            if energy is not None else None,
+            ncounts=ncounts[...] if ncounts is not None else None,
+            mjdref=mjdref[...] if mjdref.size > 0 else 0,
+            dt=dt[...] if dt > 0 else 0,
+            gti=gti[...] if gti is not None else None,
+            pi=pi_channel[...] if pi_channel is not None else None
+            notes=notes[...] if notes else "")
 
 
-def retreiveData(data_type, f_name, path=os.getcwd(), chunk_data=False, chunk_size=None, offset=None, raw=False):
+def retreiveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_size=None, offset=None, raw=False):
     """
     Retrieves Lightcurve/EventList or any such data from disk.
 
     Parameters
     ----------
-    data_type : string
-        Type of data to retrieve i.e. Lightcurve, Eventlist data to retrieve.
-    f_name : string
+    data_type: string
+        Type of data to retrieve i.e. Lightcurve, Eventlist data to retrieve
+
+    dir_name: string
         Top level directory name for datastore
-    path : string, optional
+
+    path: string, optional
         path to retrieve data from, by default os.getcwd()
-    chunk_data : bool, optional
+
+    chunk_data: bool, optional
         If only a chunk of data is to be retrieved, by default False
-    chunk_size : int, optional
+
+    chunk_size: int, optional
         Number of values to be retrieved, by default None
-    offset : int, optional
+
+    offset: int, optional
         Start offset from where values are to be retrieved, by default None
-    raw : bool, optional
+
+    raw: bool, optional
         Only to be used for if raw memory mapped zarr arrays are to be obtained, by default False
 
     Returns
@@ -393,10 +485,11 @@ def retreiveData(data_type, f_name, path=os.getcwd(), chunk_data=False, chunk_si
 
     Raises
     ------
-    ValueError
+    TypeError
         If datatype is not Lightcurve or EventList of FITS
+
     """
-    data_path = genDataPath(f_name, path, data_type)
+    data_path = genDataPath(dir_name, path, data_type)
 
     if data_type == 'Lightcurve':
         if chunk_data is True and chunk_size is not None:
@@ -417,14 +510,17 @@ def retreiveData(data_type, f_name, path=os.getcwd(), chunk_data=False, chunk_si
 def _combineSpectra(final_spectra):
     """
     Create a final spectra that is the mean of all spectra.
+
     Parameters
     ----------
     final_spectra: :class:`stingray.AveragedCrossspectrum/AveragedPowerspectrum' object
         Summed spectra of all spectra
+
     Returns
     -------
-    object
+    :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Final resulting spectra.
+
     """
     final_spectra.freq /= final_spectra.m
     final_spectra.power /= final_spectra.m
@@ -447,15 +543,18 @@ def _addSpectra(final_spectra, curr_spec, flag):
     ----------
     final_spectra: object
         Final Combined AveragedCrossspectrum or AveragedPowerspectrum
+
     curr_spec: object
         AveragedCrossspectrum/AveragedPowerspectrum to be combined
+
     flag: bool
         Indicator variable
 
     Returns
     -------
-    object
+    :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Combined AveragedCrossspectrum/AveragedPowerspectrum
+
     """
     if flag:
         final_spectra = curr_spec
@@ -506,37 +605,48 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
     Parameters
     ----------
-    data_path : string
-        Path to stored Lightcurve or EventList chunks on disk.
-    spec_type : string
+    data_path: string
+        Path to stored Lightcurve or EventList chunks on disk
+
+    spec_type: string
         Type of spectra to create AveragedCrossspectrum or AveragedPowerspectrum.
+
     segment_size: float
         The size of each segment to average in the AveragedCrossspectrum/AveragedPowerspectrum.
-    norm : {``frac``, ``abs``, ``leahy``, ``none``}
+
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}
         The normalization of the (real part of the) cross spectrum.
-    gti : 2-d float array
+
+    gti: 2-d float array
         `[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
-    power_type : string
+
+    power_type: string
         Parameter to choose among complete, real part and magnitude of
          the cross spectrum. None for AveragedPowerspectrum
-    silent : bool
+
+    silent: bool
         Do not show a progress bar when generating an averaged cross spectrum.
         Useful for the batch execution of many spectra
+
     dt1: float
         The time resolution of the light curve. Only needed when constructing
         light curves in the case where data1 or data2 are of :class:EventList
 
     Returns
     -------
-    object
-        Summed computed spectra.
+    :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
+        Summed computed spectra
 
     Raises
     ------
     ValueError
         If spectra is not AveragedCrossspectrum or AveragedPowerspectrum
+
+    ValueError
+        If previous and current spectra frequencies are not identical
+
     """
     times, counts, count_err, gti, dt, err_dist, mjdref = _retrieveDataLC(data_path[0:2], raw=True)
 
@@ -604,37 +714,48 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
     Parameters
     ----------
-    data_path : string
-        Path to stored Lightcurve or EventList chunks on disk.
-    spec_type : string
+    data_path: string
+        Path to stored Lightcurve or EventList chunks on disk
+
+    spec_type: string
         Type of spectra to create AveragedCrossspectrum or AveragedPowerspectrum.
+
     segment_size: float
         The size of each segment to average in the AveragedCrossspectrum/AveragedPowerspectrum.
-    norm : {``frac``, ``abs``, ``leahy``, ``none``}
-        The normalization of the (real part of the) cross spectrum.
-    gti : 2-d float array
+
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}
+        The normalization of the (real part of the) cross spectrum
+
+    gti: 2-d float array
         `[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
-    power_type : string
+
+    power_type: string
         Parameter to choose among complete, real part and magnitude of
          the cross spectrum. None for AveragedPowerspectrum
-    silent : bool
+
+    silent: bool
         Do not show a progress bar when generating an averaged cross spectrum.
         Useful for the batch execution of many spectra
+
     dt1: float
         The time resolution of the light curve. Only needed when constructing
         light curves in the case where data1 or data2 are of :class:EventList
 
     Returns
     -------
-    object
-        Summed computed spectra.
+    :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
+        Summed computed spectra
 
     Raises
     ------
     ValueError
         If spectra is not AveragedCrossspectrum or AveragedPowerspectrum
+
+    ValueError
+        If previous and current spectra frequencies are not identical
+
     """
     times, energy, ncounts, mjdref, dt, gti, pi_channel = _retrieveDataEV(
         data_path[0:2], raw=True)
@@ -650,17 +771,19 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     else:
         raise ValueError((f"Invalid spectra {spec_type}"))
 
+    # TODO: Proper way to retrieve events
     flag = True
     for i in range(times.chunks[0], times.size, times.chunks[0]):
         ev1 = EventList(
-            time=times.get_basic_selection(slice(i - times.chunks[0], i)),
+            time=times.get_basic_selection(slice(i - times.chunks[0], i)) if times is not None else None,
             energy=energy.get_basic_selection(slice(i - times.chunks[0], i))
             if energy is not None else None,
-            ncounts=ncounts[...],
-            mjdref=mjdref[...],
-            dt=dt[...],
+            ncounts=ncounts[...] if ncounts is not None else None,
+            mjdref=mjdref[...] if mjdref.size > 0 else 0,
+            dt=dt[...] if dt > 0 else 0,
             gti=gti[...] if gti is not None else None,
-            pi=pi_channel[...] if pi_channel is not None else None)
+            pi=pi_channel[...] if pi_channel is not None else None
+            notes=notes[...] if notes else "")
 
         if spec_type == 'AveragedPowerspectrum':
             if segment_size < ev1.time.size / 8192:
@@ -671,7 +794,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
             avg_spec = stingray.AveragedPowerspectrum(data=ev1, segment_size=ev1.time.size / segment_size, norm=norm, gti=gti, silent=silent, dt=dt1, large_data=False)
 
         elif spec_type == 'AveragedCrossspectrum':
-            ev2 = EventList(time=times_other.get_basic_selection(slice(i - times.chunks[0], i)), energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i) if energy_other is not None else None, ncounts=ncounts_other[...], mjdref=mjdref_other[...], dt=dt_other[...], gti=gti_other[...] if gti_other is not None else None, pi=pi_channel_other[...] if pi_channel_other is not None else None))
+            ev2 = EventList(time=times_other.get_basic_selection(slice(i - times.chunks[0], i)) if time_other is not None else None, energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i)) if energy_other is not None else None, ncounts=ncounts_other[...] if ncounts_other is not None else None, mjdref=mjdref_other[...] if mjdref_other.size > 0 else 0, dt=dt_other[...] if dt_other > 0 else 0, gti=gti_other[...] if gti_other is not None else None, pi=pi_channel_other[...] if pi_channel_other is not None else None, notes=notes_other[...] if notes_other else "")
 
             if segment_size < ev1.time.size / 4096:
                 warnings.warn(
@@ -704,34 +827,43 @@ def createChunkedSpectra(data_type, spec_type, data_path, segment_size, norm,
 
     Parameters
     ----------
-    data_type : string
+    data_type: string
         Data in Lightcurve or EventList
-    spec_type : string
-        Type of spectra to create AveragedCrossspectrum or AveragedPowerspectrum.
-    data_path : list
-        Path to datastore.
+
+    spec_type: string
+        Type of spectra to create AveragedCrossspectrum or AveragedPowerspectrum
+
+    data_path: list
+        Path to datastore
+
     segment_size: float
-        The size of each segment to average in the AveragedCrossspectrum/AveragedPowerspectrum.
-    norm : {``frac``, ``abs``, ``leahy``, ``none``}
-        The normalization of the (real part of the) cross spectrum.
-    gti : 2-d float array
+        The size of each segment to average in the AveragedCrossspectrum/AveragedPowerspectrum
+
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}
+        The normalization of the (real part of the) cross spectrum
+
+    gti: 2-d float array
         `[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
-    power_type : string
+
+    power_type: string
         Parameter to choose among complete, real part and magnitude of
          the cross spectrum. None for AveragedPowerspectrum
-    silent : bool
+
+    silent: bool
         Do not show a progress bar when generating an averaged cross spectrum.
         Useful for the batch execution of many spectra
-    dt : float
+
+    dt: float, optional
         The time resolution of the light curve. Only needed when constructing
-        light curves in the case where data1 or data2 are of :class:EventList
+        light curves in the case where data1 or data2 are of :class:EventList, by default None
 
     Returns
     -------
-    object
-        Final computed spectra.
+    :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
+        Final computed spectra
+
     """
     if data_type == 'Lightcurve':
         fin_spec = _chunkLCSpec(data_path=data_path, spec_type=spec_type, segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent)

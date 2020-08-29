@@ -241,7 +241,7 @@ def read_header_key(fits_file, key, hdu=1):
     hdulist = fits.open(fits_file)
     try:
         value = hdulist[hdu].header[key]
-    except:  # pragma: no cover
+    except KeyError:  # pragma: no cover
         value = ''
     hdulist.close()
     return value
