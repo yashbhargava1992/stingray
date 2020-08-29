@@ -103,7 +103,7 @@ def _saveChunkEV(ev, dir_name, chunks):
 
     Raises
     ------
-    EOFError
+    ValueError
         If there is no data being saved
     """
     # To check if any data is being saved
@@ -117,7 +117,7 @@ def _saveChunkEV(ev, dir_name, chunks):
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
 
     # REVIEW: Max chunk size can be 8388608 or 2**23. This efficiently balances time, memory. Memory consumption restricted to 9.1 GB
-    if ev.time.all() or ev.time.size != 0:
+    if ev.time is not None and (ev.time.all() or ev.time.size != 0):
         main_data_group.create_dataset(name='times',
                                        data=ev.time,
                                        compressor=compressor,
@@ -143,7 +143,7 @@ def _saveChunkEV(ev, dir_name, chunks):
                                        chunks=(chunks, ))
 
     if not save_flag:
-        raise EOFError(("The EventList passed is empty and hence cannot be saved"))
+        raise ValueError(("The EventList passed is empty and hence cannot be saved"))
 
     # FIXME: GTI's are not consistently saved
     if ev.gti is not None and (ev.gti.all() or ev.gti.shape[0] != 0):
@@ -193,42 +193,86 @@ def _saveFITSZarr(f_name, dir_name, chunks):
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)
 
     store = zarr.NestedDirectoryStore(dir_name)
-    ev_data_group = zarr.group(store=store, overwrite=True)
-    main_data_group = ev_data_group.create_group('main_data', overwrite=True)
-    gti_data_group = ev_data_group.create_group('gti_data', overwrite=True)
-    meta_data_group = ev_data_group.create_group('meta_data', overwrite=True)
+    fits_data_group = zarr.group(store=store, overwrite=True)
+    main_data_group = fits_data_group.create_group('main_data', overwrite=True)
+    meta_data_group = fits_data_group.create_group('meta_data', overwrite=True)
 
-    # TODO: Confirm if column name present but data absent?
-    # TODO: Add metadata for events
     with fits.open(f_name, memmap=True) as fits_data:
         for HDUList in fits_data:
             if HDUList.name == 'EVENTS':
                 if HDUList.data.names == (['TIME', 'PI'] or ['TIME', 'PHA']):
-                    main_data_group.create_dataset(name='times',
-                                                   data=HDUList.data['TIME'],
-                                                   compressor=compressor,
-                                                   overwrite=True,
-                                                   chunks=(chunks, ))
+                    if HDUList.data['TIME'] is not None and (
+                            HDUList.data['TIME'].all()
+                            or HDUList.data['TIME'].size != 0):
+                        chunks = HDUList.data['TIME'].size if HDUList.data[
+                            'TIME'].size < chunks else chunks
+
+                        main_data_group.create_dataset(
+                            name='times',
+                            data=HDUList.data['TIME'],
+                            compressor=compressor,
+                            overwrite=True,
+                            chunks=(chunks, ))
                     try:
-                        main_data_group.create_dataset(name='pi_channel',
-                                                       data=HDUList.data['PI'],
-                                                       compressor=compressor,
-                                                       overwrite=True,
-                                                       chunks=(chunks, ))
+                        if HDUList.data['PI'] is not None and (
+                                HDUList.data['PI'].all()
+                                or HDUList.data['PI'].size != 0):
+                            chunks = HDUList.data['PI'].size if HDUList.data[
+                                'PI'].size < chunks else chunks
+
+                            main_data_group.create_dataset(
+                                name='pi_channel',
+                                data=HDUList.data['PI'],
+                                compressor=compressor,
+                                overwrite=True,
+                                chunks=(chunks, ))
                     except KeyError:
-                        main_data_group.create_dataset(name='pi_channel',
-                                                       data=HDUList.data['PHA'],
-                                                       compressor=compressor,
-                                                       overwrite=True,
-                                                       chunks=(chunks, ))
+                        if HDUList.data['PHA'] is not None and (
+                                HDUList.data['PHA'].all()
+                                or HDUList.data['PHA'].size != 0):
+                            chunks = HDUList.data['PHA'].size if HDUList.data[
+                                'PHA'].size < chunks else chunks
+
+                            main_data_group.create_dataset(
+                                name='pi_channel',
+                                data=HDUList.data['PHA'],
+                                compressor=compressor,
+                                overwrite=True,
+                                chunks=(chunks, ))
+
+                    meta_data_group.create_dataset(
+                        name='tstart',
+                        data=HDUList.header['TSTART']
+                        compressor=compressor,
+                        overwrite=True
+                    )
+
+                    meta_data_group.create_dataset(
+                        name='tstop',
+                        data=HDUList.header['TSTOP']
+                        compressor=compressor,
+                        overwrite=True
+                    )
+
+                    meta_data_group.create_dataset(
+                        name='mjdref',
+                        data=HDUList.header['MJDREFI'] + HDUList.header['MJDREFF']
+                        compressor=compressor,
+                        overwrite=True
+                    )
 
             elif HDUList.name == 'GTI':
                 if HDUList.data.names == ['START', 'STOP']:
-                    gti_data_group.create_dataset(name='gti',
-                                                   data=HDUList.data,
-                                                   compressor=compressor,
-                                                   overwrite=True,
-                                                   chunks=(chunks, ))
+                    if HDUList.data['START'] is not None or HDUList.data[
+                            'STOP'] is not None and (
+                                HDUList.data['START'].all()
+                                or HDUList.data['STOP']
+                                or HDUList.data['START'].size != 0
+                                or HDUList.data['STOP'].size != 0):
+                        gti_data_group.create_dataset(name='gti',
+                                                      data=HDUList.data,
+                                                      compressor=compressor,
+                                                      overwrite=True)
 
 
 def saveData(data, dir_name=randomNameGenerate()):
@@ -260,12 +304,21 @@ def saveData(data, dir_name=randomNameGenerate()):
         free_m = int(os.popen('free -t -m').readlines()[-1].split()[-1])
         chunks = 8388608 if free_m >= 10000 else 4194304
     else:
+        warnings.warn("Ensure you have atleast 10GB of free Physical + Virtual Memory")
         chunks = 8388608
 
     if isinstance(data, Lightcurve):
+        if data.time.size > 0 and data.time.size < chunks:
+            chunks = data.time.size
+
         _saveChunkLC(data, dir_name, chunks)
 
     elif isinstance(data, EventList):
+        if data.time.size > 0 and data.time.size < chunks:
+            chunks = data.time.size
+        elif data.energy.size > 0 and data.energy.size < chunks:
+            chunks = data.energy.size
+
         _saveChunkEV(data, dir_name, chunks)
 
     elif os.path.exists(data) and os.stat(data).st_size > 0:
@@ -368,7 +421,7 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
     ValueError
         If offset provided is larger than size of array.
 
-    EOFError
+    ValueError
         If the file to read is empty
     """
     read_flag = True
@@ -394,7 +447,7 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
         pi_channel = None
 
     if not read_flag:
-        raise EOFError(
+        raise ValueError(
             ("The stored object is empty and hence cannot be read"))
 
     try:
@@ -481,25 +534,31 @@ def retreiveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
 
     Raises
     ------
-    TypeError
+    ValueError
         If datatype is not Lightcurve or EventList of FITS
     """
     data_path = genDataPath(dir_name, path, data_type)
 
     if data_type == 'Lightcurve':
         if chunk_data is True and chunk_size is not None:
-            return _retrieveDataLC(data_path, chunk_size, offset)
+            return _retrieveDataLC(data_path, chunk_size, offset, raw=False)
         else:
-            return _retrieveDataLC(data_path, raw)
+            if raw:
+                return _retrieveDataLC(data_path, raw=True)
+            else:
+                return _retrieveDataLC(data_path)
 
     elif data_type == ('EventList' or 'FITS'):
         if chunk_data is True and chunk_size is not None:
-            return _retrieveDataEV(data_path, chunk_size, offset)
+            return _retrieveDataEV(data_path, chunk_size, offset, raw=False)
         else:
-            return _retrieveDataEV(data_path, raw)
+            if raw:
+                return _retrieveDataEV(data_path, raw=True)
+            if not raw:
+                return _retrieveDataEV(data_path)
 
     else:
-        raise TypeError((f"Invalid input data type: {data_type}"))
+        raise ValueError((f"Invalid input data: {data_type}"))
 
 
 def _combineSpectra(final_spectra):
@@ -516,7 +575,6 @@ def _combineSpectra(final_spectra):
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Final resulting spectra.
     """
-    print(final_spectra.__dict__)
     final_spectra.freq /= final_spectra.m
     final_spectra.power /= final_spectra.m
     final_spectra.unnorm_power /= final_spectra.m
@@ -559,8 +617,9 @@ def _addSpectra(final_spectra, curr_spec, flag):
 
         return final_spectra
 
-    assert np.allclose(final_spectra.freq, curr_spec.freq), \
-        "Summing a spectrum with incompatible frequency values"
+    # REVIEW:
+    # assert np.allclose(final_spectra.freq, curr_spec.freq), \
+    #     "Summing a spectrum with incompatible frequency values"
     np.multiply(np.add(final_spectra.power, curr_spec.power),
                 curr_spec.m,
                 out=final_spectra.power)
@@ -641,9 +700,6 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         If previous and current spectra frequencies are not identical
     """
     times, counts, count_err, gti, dt, err_dist, mjdref = _retrieveDataLC(data_path[0:2], raw=True)
-
-    if times.chunks[0] > times.size:
-        raise ValueError("Chunk size is larger than data size")
 
     if spec_type == 'AveragedPowerspectrum':
         fin_spec = stingray.AveragedPowerspectrum()
