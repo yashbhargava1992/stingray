@@ -193,7 +193,9 @@ def _saveFITSZarr(f_name, dir_name, chunks):
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)
 
     store = zarr.NestedDirectoryStore(dir_name)
+    ev_data_group = zarr.group(store=store, overwrite=True)
     main_data_group = ev_data_group.create_group('main_data', overwrite=True)
+    gti_data_group = ev_data_group.create_group('gti_data', overwrite=True)
     meta_data_group = ev_data_group.create_group('meta_data', overwrite=True)
 
     # TODO: Confirm if column name present but data absent?
@@ -222,7 +224,7 @@ def _saveFITSZarr(f_name, dir_name, chunks):
 
             elif HDUList.name == 'GTI':
                 if HDUList.data.names == ['START', 'STOP']:
-                    fits_data_group.create_dataset(name='gti',
+                    gti_data_group.create_dataset(name='gti',
                                                    data=HDUList.data,
                                                    compressor=compressor,
                                                    overwrite=True,

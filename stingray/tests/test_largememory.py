@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 import pytest
@@ -17,6 +18,9 @@ try:
     from numcodecs import Blosc
 except ImportError:
     pass
+
+curdir = os.path.abspath(os.path.dirname(__file__))
+datadir = os.path.join(curdir, 'data')
 
 
 class TestSaveAndRetrieve(object):
@@ -38,6 +42,15 @@ class TestSaveAndRetrieve(object):
     def test_save_lc(self):
         file = tempfile.mkdtemp()
         saveData(self.lc, file)
+        newfile = zarr.open(file, mode='r')
+        # TODO: Retrieve the data and test that they are identical to the
+        #  original ones
+
+    @pytest.mark.skipif('not HAS_ZARR')
+    def test_save_fits_data(self):
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        file = tempfile.mkdtemp()
+        saveData(fname, file)
         newfile = zarr.open(file, mode='r')
         # TODO: Retrieve the data and test that they are identical to the
         #  original ones
