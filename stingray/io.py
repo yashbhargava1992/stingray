@@ -760,7 +760,7 @@ def _retrieve_fits_object(filename, **kwargs):
                 # Normal case. Check for header keys
                 elif c in hdr_keys:
                     data[c] = hdulist[i + 1].header[c]
-
+        hdulist.close()
     return data
 
 
