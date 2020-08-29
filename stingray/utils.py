@@ -994,7 +994,6 @@ def randomNameGenerate(size=10, chars=string.ascii_letters + string.digits):
     -------
     string
         Random name.
-
     """
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=size))
 
@@ -1019,7 +1018,6 @@ def genDataPath(dir_name, path=os.getcwd()):
     ------
     IOError
         If directory does not exist
-
     """
     path_list = []
 

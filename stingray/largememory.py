@@ -38,7 +38,6 @@ def _saveChunkLC(lc, dir_name, chunks):
 
     chunks: int
         The number of elements per chunk
-
     """
     # Creating a Nested Store and multiple groups for temporary saving
     store = zarr.NestedDirectoryStore(dir_name)
@@ -106,7 +105,6 @@ def _saveChunkEV(ev, dir_name, chunks):
     ------
     EOFError
         If there is no data being saved
-
     """
     # To check if any data is being saved
     save_flag = True
@@ -190,7 +188,6 @@ def _saveFITSZarr(f_name, dir_name, chunks):
 
     chunks: int
         The number of elements per chunk
-
     """
 
     compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)
@@ -253,7 +250,6 @@ def saveData(data, dir_name=randomNameGenerate()):
     ------
     ValueError
         If data is not a Lightcurve or EventList
-
     """
     from sys import platform
 
@@ -306,7 +302,6 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
     ------
     ValueError
         If offset provided is larger than size of array.
-
     """
     times = zarr.open_array(store=data_path[0], mode='r', path='times')
     counts = zarr.open_array(store=data_path[0], mode='r', path='counts')
@@ -373,7 +368,6 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
 
     EOFError
         If the file to read is empty
-
     """
     read_flag = True
 
@@ -447,7 +441,7 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
             mjdref=mjdref[...] if mjdref.size > 0 else 0,
             dt=dt[...] if dt > 0 else 0,
             gti=gti[...] if gti is not None else None,
-            pi=pi_channel[...] if pi_channel is not None else None
+            pi=pi_channel[...] if pi_channel is not None else None,
             notes=notes[...] if notes else "")
 
 
@@ -487,7 +481,6 @@ def retreiveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
     ------
     TypeError
         If datatype is not Lightcurve or EventList of FITS
-
     """
     data_path = genDataPath(dir_name, path, data_type)
 
@@ -520,7 +513,6 @@ def _combineSpectra(final_spectra):
     -------
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Final resulting spectra.
-
     """
     final_spectra.freq /= final_spectra.m
     final_spectra.power /= final_spectra.m
@@ -554,7 +546,6 @@ def _addSpectra(final_spectra, curr_spec, flag):
     -------
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Combined AveragedCrossspectrum/AveragedPowerspectrum
-
     """
     if flag:
         final_spectra = curr_spec
@@ -646,7 +637,6 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
     ValueError
         If previous and current spectra frequencies are not identical
-
     """
     times, counts, count_err, gti, dt, err_dist, mjdref = _retrieveDataLC(data_path[0:2], raw=True)
 
@@ -755,7 +745,6 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
     ValueError
         If previous and current spectra frequencies are not identical
-
     """
     times, energy, ncounts, mjdref, dt, gti, pi_channel = _retrieveDataEV(
         data_path[0:2], raw=True)
@@ -782,7 +771,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
             mjdref=mjdref[...] if mjdref.size > 0 else 0,
             dt=dt[...] if dt > 0 else 0,
             gti=gti[...] if gti is not None else None,
-            pi=pi_channel[...] if pi_channel is not None else None
+            pi=pi_channel[...] if pi_channel is not None else None,
             notes=notes[...] if notes else "")
 
         if spec_type == 'AveragedPowerspectrum':
@@ -794,7 +783,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
             avg_spec = stingray.AveragedPowerspectrum(data=ev1, segment_size=ev1.time.size / segment_size, norm=norm, gti=gti, silent=silent, dt=dt1, large_data=False)
 
         elif spec_type == 'AveragedCrossspectrum':
-            ev2 = EventList(time=times_other.get_basic_selection(slice(i - times.chunks[0], i)) if time_other is not None else None, energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i)) if energy_other is not None else None, ncounts=ncounts_other[...] if ncounts_other is not None else None, mjdref=mjdref_other[...] if mjdref_other.size > 0 else 0, dt=dt_other[...] if dt_other > 0 else 0, gti=gti_other[...] if gti_other is not None else None, pi=pi_channel_other[...] if pi_channel_other is not None else None, notes=notes_other[...] if notes_other else "")
+            ev2 = EventList(time=times_other.get_basic_selection(slice(i - times.chunks[0], i)) if time_other is not None else None, energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i)) if energy_other is not None else None, ncounts=ncounts_other[...] if ncounts_other is not None else None, mjdref=mjdref_other[...] if mjdref_other.size > 0 else 0, dt=dt_other[...] if dt_other > 0 else 0, gti=gti_other[...] if gti_other is not None else None, pi=pi_channel_other[...] if pi_channel_other is not None else, None, notes=notes_other[...] if notes_other else "")
 
             if segment_size < ev1.time.size / 4096:
                 warnings.warn(
@@ -863,7 +852,6 @@ def createChunkedSpectra(data_type, spec_type, data_path, segment_size, norm,
     -------
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Final computed spectra
-
     """
     if data_type == 'Lightcurve':
         fin_spec = _chunkLCSpec(data_path=data_path, spec_type=spec_type, segment_size=segment_size, norm=norm, gti=gti, power_type=power_type, silent=silent)
