@@ -783,7 +783,15 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
             avg_spec = stingray.AveragedPowerspectrum(data=ev1, segment_size=ev1.time.size / segment_size, norm=norm, gti=gti, silent=silent, dt=dt1, large_data=False)
 
         elif spec_type == 'AveragedCrossspectrum':
-            ev2 = EventList(time=times_other.get_basic_selection(slice(i - times.chunks[0], i)) if time_other is not None else None, energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i)) if energy_other is not None else None, ncounts=ncounts_other[...] if ncounts_other is not None else None, mjdref=mjdref_other[...] if mjdref_other.size > 0 else 0, dt=dt_other[...] if dt_other > 0 else 0, gti=gti_other[...] if gti_other is not None else None, pi=pi_channel_other[...] if pi_channel_other is not None else, None, notes=notes_other[...] if notes_other else "")
+
+            ev2 = EventList(
+                time=times_other.get_basic_selection(slice(i - times.chunks[0], i)) if time_other is not None else None,
+                energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i)) if energy_other is not None else None,
+                ncounts=ncounts_other[...] if ncounts_other is not None else None,
+                mjdref=mjdref_other[...] if mjdref_other.size > 0 else 0,
+                dt=dt_other[...] if dt_other > 0 else 0, gti=gti_other[...] if gti_other is not None else None,
+                pi=pi_channel_other[...] if pi_channel_other is not None else None,
+                notes=notes_other[...] if notes_other else "")
 
             if segment_size < ev1.time.size / 4096:
                 warnings.warn(
