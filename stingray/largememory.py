@@ -516,6 +516,7 @@ def _combineSpectra(final_spectra):
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Final resulting spectra.
     """
+    print(final_spectra.__dict__)
     final_spectra.freq /= final_spectra.m
     final_spectra.power /= final_spectra.m
     final_spectra.unnorm_power /= final_spectra.m
@@ -558,9 +559,8 @@ def _addSpectra(final_spectra, curr_spec, flag):
 
         return final_spectra
 
-    np.multiply(np.add(final_spectra.freq, curr_spec.freq),
-                curr_spec.m,
-                out=final_spectra.freq)
+    assert np.allclose(final_spectra.freq, curr_spec.freq), \
+        "Summing a spectrum with incompatible frequency values"
     np.multiply(np.add(final_spectra.power, curr_spec.power),
                 curr_spec.m,
                 out=final_spectra.power)
