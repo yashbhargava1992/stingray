@@ -266,11 +266,11 @@ def saveData(data, dir_name=randomNameGenerate()):
     elif isinstance(data, EventList):
         _saveChunkEV(data, dir_name, chunks)
 
-    elif os.stat(data).st_size > 0:
+    elif os.path.exists(data) and os.stat(data).st_size > 0:
         _saveFITSZarr(data, dir_name, chunks)
 
     else:
-        raise ValueError((f"Invalid data type {data}"))
+        raise ValueError((f"Invalid data: {data}"))
 
     return dir_name
 

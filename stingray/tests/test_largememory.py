@@ -32,7 +32,7 @@ class TestSaveAndRetrieve(object):
     def test_save_wrong_data(self):
         with pytest.raises(ValueError) as excinfo:
             saveData("A string", 'bububu')
-        assert 'Cannot save data of type str' in str(excinfo.value)
+        assert 'Invalid data: A string' in str(excinfo.value)
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_save_lc(self):
