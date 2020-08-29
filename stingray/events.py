@@ -88,7 +88,7 @@ class EventList(object):
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
                  notes="", gti=None, pi=None, high_precision=False):
 
-        self.energy = None if energy is None else np.array(energy)
+        self.energy = None if energy is None else np.asarray(energy)
         self.notes = notes
         self.dt = dt
         self.mjdref = mjdref
@@ -162,7 +162,7 @@ class EventList(object):
             idx_end = np.searchsorted(self.time, end, side='left')
             lc = Lightcurve.make_lightcurve(self.time[idx_st:idx_end], dt,
                                             tstart=st,
-                                            gti=np.array([[st, end]]),
+                                            gti=np.asarray([[st, end]]),
                                             tseg=tseg,
                                             mjdref=self.mjdref)
             yield lc
@@ -237,8 +237,8 @@ class EventList(object):
 
         if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
 
-            energy = np.array(spectrum)[0]
-            fluxes = np.array(spectrum)[1]
+            energy = np.asarray(spectrum)[0]
+            fluxes = np.asarray(spectrum)[1]
 
             if not isinstance(energy, np.ndarray):
                 raise IndexError("Spectrum must be a 2-d array or list")
@@ -258,7 +258,7 @@ class EventList(object):
 
         # Assign energies to events corresponding to the random numbers drawn
         self.energy = \
-            np.array([energy[
+            np.asarray([energy[
                 np.argwhere(cum_prob == np.min(cum_prob[(cum_prob - r) > 0]))]
                       for r in R])
 
@@ -396,7 +396,7 @@ class EventList(object):
         data = read(filename, format_, cols=attributes)
 
         if format_ == 'ascii':
-            time = np.array(data.columns[0])
+            time = np.asarray(data.columns[0])
             return EventList(time=time)
 
         elif format_ == 'hdf5' or format_ == 'fits':
@@ -439,7 +439,7 @@ class EventList(object):
         """
 
         if format_ == 'ascii':
-            write(np.array([self.time]).T, filename, format_, fmt=["%s"])
+            write(np.asarray([self.time]).T, filename, format_, fmt=["%s"])
 
         elif format_ == 'pickle':
             write(self, filename, format_)
