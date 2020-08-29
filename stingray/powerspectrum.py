@@ -385,7 +385,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                                         power_type=None,
                                         silent=silent,
                                         dt=dt)
-
             for key, val in spec.__dict__.items():
                 setattr(self, key, val)
 

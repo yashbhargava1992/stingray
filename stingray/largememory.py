@@ -642,6 +642,9 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     """
     times, counts, count_err, gti, dt, err_dist, mjdref = _retrieveDataLC(data_path[0:2], raw=True)
 
+    if times.chunks[0] > times.size:
+        raise ValueError("Chunk size is larger than data size")
+
     if spec_type == 'AveragedPowerspectrum':
         fin_spec = stingray.AveragedPowerspectrum()
 
@@ -654,6 +657,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         raise ValueError((f"Invalid spectra-type {spec_type}"))
 
     flag = True
+
     for i in range(times.chunks[0], times.size, times.chunks[0]):
         lc1 = Lightcurve(
             time=times.get_basic_selection(slice(i - times.chunks[0], i)),

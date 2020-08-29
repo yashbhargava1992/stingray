@@ -69,9 +69,11 @@ class TestChunkPS(object):
         time = np.arange(0, 2048000)
         counts1 = np.random.poisson(10, time.size)
         counts2 = np.random.poisson(10, time.size)
-        cls.lc1 = Lightcurve(time, counts1, skip_checks=True)
+        cls.lc1 = Lightcurve(time, counts1, skip_checks=True,
+                             gti=[[0, 20480000]])
         cls.file1 = tempfile.mkdtemp(suffix='.zarray')
-        cls.lc2 = Lightcurve(time, counts2, skip_checks=True)
+        cls.lc2 = Lightcurve(time, counts2, skip_checks=True,
+                             gti=[[0, 20480000]])
         cls.file2 = tempfile.mkdtemp(suffix='.zarray')
         saveData(cls.lc1, cls.file1)
         saveData(cls.lc2, cls.file2)
