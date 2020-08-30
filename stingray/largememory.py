@@ -61,11 +61,12 @@ def _saveChunkLC(lc, dir_name, chunks):
                                    chunks=(chunks, ))
 
     # REVIEW: count_err calculation takes a lot of memory
-    main_data_group.create_dataset(name='count_err',
-                                   data=lc.counts_err,
-                                   compressor=compressor,
-                                   overwrite=True,
-                                   chunks=(chunks, ))
+    if lc._counts_err is not None:
+        main_data_group.create_dataset(name='count_err',
+                                       data=lc.counts_err,
+                                       compressor=compressor,
+                                       overwrite=True,
+                                       chunks=(chunks, ))
 
     main_data_group.create_dataset(name='gti', data=lc.gti, overwrite=True)
 
