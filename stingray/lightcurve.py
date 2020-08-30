@@ -410,14 +410,16 @@ class Lightcurve(object):
 
         idxs = np.searchsorted(self.time, self.gti)
         uneven = False
-        for idx in range(idxs.size - 1):
-            local_diff = np.diff(self.time[idxs[idx][0]:idxs[idx][1]])
+        for idx in range(idxs.shape[0]):
+            istart, istop = idxs[idx, 0], min(idxs[idx, 1], self.time.size - 1)
+
+            local_diff = np.diff(self.time[istart:istop])
             if np.any(~np.isclose(local_diff, self.dt)):
                 uneven = True
                 break
         if uneven:
-            simon("Bin sizes in input time array aren't equal throughout!"
-                  "This could cause problems with Fourier transforms."
+            simon("Bin sizes in input time array aren't equal throughout! "
+                  "This could cause problems with Fourier transforms. "
                   "Please make the input time evenly sampled.")
 
     def change_mjdref(self, new_mjdref):
