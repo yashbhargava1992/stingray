@@ -104,63 +104,34 @@ class TestSaveSpec(object):
             errors.append("EventList is not saved or does not exist")
 
         else:
-            try:
-                times = zarr.open_array(store=main, mode='r', path='times')
-                if not np.array_equal(self.ev.time, times[...]):
-                    errors.append("ev.time is not saved precisely")
-            except ValueError:
-                pass
+            times = zarr.open_array(store=main, mode='r', path='times')[...]
+            energy = zarr.open_array(store=main, mode='r', path='energy')[...]
+            pi_channel = \
+                zarr.open_array(store=main, mode='r', path='pi_channel')[...]
+            gti = zarr.open_array(store=main, mode='r', path='gti')[...]
+            gti = gti.reshape((gti.size // 2, 2))
+            dt = zarr.open_array(store=meta, mode='r', path='dt')[...]
+            ncounts = \
+                zarr.open_array(store=meta, mode='r', path='ncounts')[...]
+            mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')[...]
+            notes = zarr.open_array(store=meta, mode='r', path='notes')[...]
 
-            try:
-                energy = zarr.open_array(store=main, mode='r', path='energy')
-                if not np.array_equal(self.ev.energy, energy[...]):
-                    errors.append("ev.energy is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                pi_channel = zarr.open_array(store=main,
-                                            mode='r',
-                                            path='pi_channel')
-                if not np.array_equal(self.ev.pi, pi_channel[...]):
-                    errors.append("ev.pi is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                gti = zarr.open_array(store=main, mode='r', path='gti')
-                if not np.array_equal(self.ev.gti, gti[...]):
-                    errors.append("ev.gti is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                dt = zarr.open_array(store=meta, mode='r', path='dt')
-                if self.ev.dt == dt[...]:
-                    errors.append("ev.dt is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                ncounts = zarr.open_array(store=meta, mode='r', path='ncounts')
-                if self.ev.ncounts == ncounts[...]:
-                    errors.append("ev.ncounts is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')
-                if self.ev.mjdref == mjdref[...]:
-                    errors.append("ev.mjdref is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                notes = zarr.open_array(store=meta, mode='r', path='notes')
-                if self.ev.notes == notes[...]:
-                    errors.append("ev.notes is not saved precisely")
-            except ValueError:
-                pass
+            if not np.array_equal(self.ev.time, times[...]):
+                errors.append("ev.time is not saved precisely")
+            if not np.array_equal(self.ev.energy, energy[...]):
+                errors.append("ev.energy is not saved precisely")
+            if not np.array_equal(self.ev.pi, pi_channel[...]):
+                errors.append("ev.pi is not saved precisely")
+            if not np.array_equal(self.ev.gti, gti[...]):
+                errors.append("ev.gti is not saved precisely")
+            if not np.isclose(self.ev.dt, dt[...]):
+                errors.append("ev.dt is not saved precisely")
+            if self.ev.ncounts == ncounts[...]:
+                errors.append("ev.ncounts is not saved precisely")
+            if self.ev.mjdref == mjdref[...]:
+                errors.append("ev.mjdref is not saved precisely")
+            if self.ev.notes == notes[...]:
+                errors.append("ev.notes is not saved precisely")
 
         assert not errors, "Errors encountered:\n{}".format('\n'.join(errors))
 
