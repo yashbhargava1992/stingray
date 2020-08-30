@@ -1,4 +1,5 @@
 import os
+import copy
 import tempfile
 
 import numpy as np
@@ -44,7 +45,12 @@ class TestSaveSpec(object):
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_save_lc(self):
-        saveData(self.lc, self.file)
+        test_lc = copy.deepcopy(self.lc)
+        # Make sure counts_err exists
+        _ = test_lc.counts_err
+
+        print(self.file)
+        saveData(test_lc, self.file)
 
         main = os.path.join(self.file, 'main_data')
         meta = os.path.join(self.file, 'meta_data')
@@ -55,29 +61,31 @@ class TestSaveSpec(object):
             [f for f in os.listdir(meta) if not f.startswith('.')])) == 0:
             errors.append("Lightcurve is not saved or does not exist")
         else:
-            times = zarr.open_array(store=main, mode='r', path='times')
-            counts = zarr.open_array(store=main, mode='r', path='counts')
-            count_err = zarr.open_array(store=main, mode='r', path='count_err')
-            gti = zarr.open_array(store=main, mode='r', path='gti')
+            times = zarr.open_array(store=main, mode='r', path='times')[...]
+            counts = zarr.open_array(store=main, mode='r', path='counts')[...]
+            count_err = \
+                zarr.open_array(store=main, mode='r', path='count_err')[...]
+            gti = zarr.open_array(store=main, mode='r', path='gti')[...]
+            gti = gti.reshape((gti.size // 2, 2))
 
-            dt = zarr.open_array(store=meta, mode='r', path='dt')
-            mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')
-            err_dist = zarr.open_array(store=meta, mode='r', path='err_dist')
+            dt = zarr.open_array(store=meta, mode='r', path='dt')[...]
+            mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')[...]
+            err_dist = \
+                zarr.open_array(store=meta, mode='r', path='err_dist')[...]
 
-            if not np.array_equal(self.lc.time, times[...]):
+            if not np.array_equal(test_lc.time, times):
                 errors.append("lc.time is not saved precisely")
-            if not np.array_equal(self.lc.counts, counts[...]):
+            if not np.array_equal(test_lc.counts, counts):
                 errors.append("lc.counts is not saved precisely")
-            if not np.array_equal(self.lc.counts_err, count_err[...]):
+            if not np.array_equal(test_lc.counts_err, count_err):
                 errors.append("lc.counts_err is not saved precisely")
-            if not np.array_equal(self.lc.gti, gti[...]):
-                print(self.lc.gti, gti[...])
+            if not np.array_equal(test_lc.gti, gti):
                 errors.append("lc.gti is not saved precisely")
-            if not (self.lc.dt == dt[...]):
+            if not (test_lc.dt == dt):
                 errors.append("lc.dt is not saved precisely")
-            if not (self.lc.mjdref == mjdref[...]):
+            if not (test_lc.mjdref == mjdref):
                 errors.append("lc.mjdref is not saved precisely")
-            if not (self.lc.err_dist == err_dist[...]):
+            if not (test_lc.err_dist == err_dist):
                 errors.append("lc.err_dist is not saved precisely")
 
         assert not errors, "Errors encountered:\n{}".format('\n'.join(errors))

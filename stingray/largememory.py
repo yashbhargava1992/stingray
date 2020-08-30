@@ -68,7 +68,8 @@ def _saveChunkLC(lc, dir_name, chunks):
                                        overwrite=True,
                                        chunks=(chunks, ))
 
-    main_data_group.create_dataset(name='gti', data=lc.gti, overwrite=True)
+    main_data_group.create_dataset(name='gti', data=lc.gti.flatten(),
+                                   overwrite=True)
 
     meta_data_group.create_dataset(name='dt',
                                    data=lc.dt,
