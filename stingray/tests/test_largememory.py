@@ -7,7 +7,7 @@ from astropy.io import fits
 
 from stingray.crossspectrum import AveragedCrossspectrum
 from stingray.events import EventList
-from stingray.largememory import createChunkedSpectra, saveData
+from stingray.largememory import createChunkedSpectra, saveData, retrieveData
 from stingray.lightcurve import Lightcurve
 from stingray.powerspectrum import AveragedPowerspectrum
 
@@ -46,8 +46,8 @@ class TestSaveSpec(object):
     def test_save_lc(self):
         saveData(self.lc, self.file)
 
-        main = os.path.join(file, 'main_data')
-        meta = os.path.join(file, 'meta_data')
+        main = os.path.join(self.file, 'main_data')
+        meta = os.path.join(self.file, 'meta_data')
 
         errors = []
 
@@ -71,6 +71,7 @@ class TestSaveSpec(object):
             if not np.array_equal(self.lc.counts_err, count_err[...]):
                 errors.append("lc.counts_err is not saved precisely")
             if not np.array_equal(self.lc.gti, gti[...]):
+                print(self.lc.gti, gti[...])
                 errors.append("lc.gti is not saved precisely")
             if not (self.lc.dt == dt[...]):
                 errors.append("lc.dt is not saved precisely")
@@ -85,8 +86,8 @@ class TestSaveSpec(object):
     def test_save_ev(self):
         saveData(self.ev, self.file)
 
-        main = os.path.join(file, 'main_data')
-        meta = os.path.join(file, 'meta_data')
+        main = os.path.join(self.file, 'main_data')
+        meta = os.path.join(self.file, 'meta_data')
 
         errors = []
 
@@ -174,8 +175,8 @@ class TestSaveSpec(object):
             mjdref_def = fits_data[1].header['MJDREFI'] + fits_data[1].header[
                 'MJDREFF']
 
-        main = os.path.join(file, 'main_data')
-        meta = os.path.join(file, 'meta_data')
+        main = os.path.join(self.file, 'main_data')
+        meta = os.path.join(self.file, 'meta_data')
 
         errors = []
 

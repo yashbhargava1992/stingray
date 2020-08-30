@@ -22,7 +22,7 @@ except ImportError:
         "Large Datasets may not be processed efficiently due to "
         "computational constraints")
 
-__all__ = ['createChunkedSpectra', 'saveData', 'retreiveData']
+__all__ = ['createChunkedSpectra', 'saveData', 'retrieveData']
 
 
 def _saveChunkLC(lc, dir_name, chunks):
@@ -516,7 +516,7 @@ def _retrieveDataEV(data_path, chunk_size, offset, raw):
             notes=notes[...] if notes else "")
 
 
-def retreiveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_size=0, offset=0, raw=False):
+def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_size=0, offset=0, raw=False):
     """
     Retrieves Lightcurve/EventList or any such data from disk.
 
