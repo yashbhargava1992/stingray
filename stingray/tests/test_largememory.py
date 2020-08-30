@@ -33,7 +33,10 @@ class TestSaveSpec(object):
         cls.lc = Lightcurve(time, counts, skip_checks=True)
 
         evtimes = np.sort(np.random.uniform(0, 1e7, 10**7))
-        cls.ev = EventList(time=evtimes)
+        pi = np.random.randint(0, 100, evtimes.size)
+        energy = pi * 0.04 + 1.6
+        cls.ev = EventList(time=evtimes, pi=pi, energy=energy, gti=[[0, 1e7]],
+                           dt=1e-5, notes="Bu")
 
         cls.file = tempfile.mkdtemp()
 
@@ -116,21 +119,21 @@ class TestSaveSpec(object):
             mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')[...]
             notes = zarr.open_array(store=meta, mode='r', path='notes')[...]
 
-            if not np.array_equal(self.ev.time, times[...]):
+            if not np.array_equal(self.ev.time, times):
                 errors.append("ev.time is not saved precisely")
-            if not np.array_equal(self.ev.energy, energy[...]):
+            if not np.array_equal(self.ev.energy, energy):
                 errors.append("ev.energy is not saved precisely")
-            if not np.array_equal(self.ev.pi, pi_channel[...]):
+            if not np.array_equal(self.ev.pi, pi_channel):
                 errors.append("ev.pi is not saved precisely")
-            if not np.array_equal(self.ev.gti, gti[...]):
+            if not np.array_equal(self.ev.gti, gti):
                 errors.append("ev.gti is not saved precisely")
-            if not np.isclose(self.ev.dt, dt[...]):
+            if not np.isclose(self.ev.dt, dt):
                 errors.append("ev.dt is not saved precisely")
-            if self.ev.ncounts == ncounts[...]:
+            if not self.ev.ncounts == ncounts:
                 errors.append("ev.ncounts is not saved precisely")
-            if self.ev.mjdref == mjdref[...]:
+            if not np.isclose(self.ev.mjdref, mjdref):
                 errors.append("ev.mjdref is not saved precisely")
-            if self.ev.notes == notes[...]:
+            if not self.ev.notes == notes:
                 errors.append("ev.notes is not saved precisely")
 
         assert not errors, "Errors encountered:\n{}".format('\n'.join(errors))
