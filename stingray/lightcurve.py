@@ -458,7 +458,6 @@ class Lightcurve(object):
 
         """
         new_lc = Lightcurve(self.time + time_shift, self.counts,
-                            err=self.counts_err,
                             gti=self.gti + time_shift, mjdref=self.mjdref,
                             dt=self.dt, err_dist=self.err_dist,
                             skip_checks=True)
