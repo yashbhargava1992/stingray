@@ -137,8 +137,8 @@ def _saveChunkEV(ev, dir_name, chunks):
                                        chunks=(chunks, ))
 
     if ev.gti is not None and (ev.gti.all() or ev.gti.shape[0] != 0):
-        main_data_group.create_dataset(name='gti', data=ev.gti, overwrite=True,
-                                       chunks=(chunks, ))
+        main_data_group.create_dataset(name='gti', data=ev.gti.flatten(),
+                                       overwrite=True)
 
     if ev.dt != 0:
         meta_data_group.create_dataset(name='dt',
@@ -304,19 +304,13 @@ def saveData(data, dir_name=randomNameGenerate()):
         _saveChunkLC(data, dir_name, chunks)
 
     elif isinstance(data, EventList):
-        if (data.time is not None and
-            (data.time.all() or data.time.size != 0)) and (
-                data.energy is not None and
-                (data.energy.all() or data.energy.size != 0)) and (
-                    data.pi is not None and
-                    (data.pi.all() or data.pi.size != 0)):
+        if not (data.time is not None and
+                (data.time.all() or data.time.size != 0)):
             raise ValueError(
                 ("The EventList passed is empty and hence cannot be saved"))
 
         if data.time.size > 0 and data.time.size < chunks:
             chunks = data.time.size
-        elif data.energy.size > 0 and data.energy.size < chunks:
-            chunks = data.energy.size
 
         _saveChunkEV(data, dir_name, chunks)
 
