@@ -993,9 +993,9 @@ def randomNameGenerate(size=10, chars=string.ascii_letters + string.digits):
     Returns
     -------
     string
-        Random name.
+        Random name
     """
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=size))
+    return ''.join(random.choices(chars, k=size))
 
 
 def genDataPath(dir_name, path=os.getcwd()):

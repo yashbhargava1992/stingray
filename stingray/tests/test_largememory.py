@@ -264,7 +264,7 @@ class TestRetrieveSpec(object):
                           dir_name=self.dir,
                           path=self.path)
 
-        assert lc.__eq__(self.lc) == True
+        assert lc.__eq__(self.lc) is True
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_ev_data(self):
@@ -277,7 +277,7 @@ class TestRetrieveSpec(object):
         lc_main = self.ev.to_lc(dt=1.0)
         lc_other = ev.to_lc(dt=1.0)
 
-        assert lc_main.__eq__(lc_other) == True
+        assert lc_main.__eq__(lc_other) is True
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_fits_data(self):
@@ -291,7 +291,7 @@ class TestRetrieveSpec(object):
         lc_main = self.ev.to_lc(dt=1.0)
         lc_other = ev.to_lc(dt=1.0)
 
-        assert lc_main.__eq__(lc_other) == True
+        assert lc_main.__eq__(lc_other) is True
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_lc_chunk_data(self):
@@ -307,7 +307,7 @@ class TestRetrieveSpec(object):
 
         trunc_lc = self.lc.truncate(stop=10**5)
 
-        assert lc.__eq__(trunc_lc) == True
+        assert lc.__eq__(trunc_lc) is True
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_ev_chunk_data(self):
@@ -326,7 +326,7 @@ class TestRetrieveSpec(object):
 
         lc_other = ev.to_lc(dt=1.0)
 
-        assert lc_main.__eq__(lc_other) == True
+        assert lc_main.__eq__(lc_other) is True
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_lc_offset_data(self):
@@ -342,7 +342,7 @@ class TestRetrieveSpec(object):
 
         trunc_lc = self.lc.truncate(start=10**2, stop=10**5)
 
-        assert lc.__eq__(trunc_lc) == True
+        assert lc.__eq__(trunc_lc) is True
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_ev_offset_data(self):
@@ -361,7 +361,7 @@ class TestRetrieveSpec(object):
 
         lc_other = ev.to_lc(dt=1.0)
 
-        assert lc_main.__eq__(lc_other) == True
+        assert lc_main.__eq__(lc_other) is True
 
 
 class TestChunkPS(object):
@@ -405,7 +405,8 @@ class TestChunkPS(object):
                 'freq', 'power', 'power_err', 'unnorm_power', 'df', 'm', 'n',
                 'nphots', 'gti', 'norm', 'dt', 'power_type', 'type'
         ]:
-            assert np.all(getattr(ps_normal, attr) == getattr(ps_large, attr))
+            assert np.allclose(getattr(ps_normal, attr),
+                               getattr(ps_large, attr))
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_calc_cpds(self):
@@ -419,4 +420,5 @@ class TestChunkPS(object):
                 'nphots1', 'nphots2', 'gti', 'pds1.power', 'pds2.power',
                 'norm', 'dt', 'power_type', 'type'
         ]:
-            assert np.all(getattr(cs_normal, attr) == getattr(cs_large, attr))
+            assert np.allclose(getattr(cs_normal, attr),
+                               getattr(cs_large, attr))

@@ -88,7 +88,7 @@ def _saveChunkLC(lc, dir_name, chunks):
 
 def _saveChunkEV(ev, dir_name, chunks):
     """
-    Save EventList temporarily on disk.
+    Save EventList in chunks on disk.
 
     Parameters
     ----------
@@ -96,7 +96,7 @@ def _saveChunkEV(ev, dir_name, chunks):
         EventList to be saved
 
     dir_name: string
-        High Level diretory name where EventList is to be saved
+        Top Level diretory name where EventList is to be saved
 
     chunks: int
         The number of elements per chunk
