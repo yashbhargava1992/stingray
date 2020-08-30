@@ -60,14 +60,13 @@ def _saveChunkLC(lc, dir_name, chunks):
                                    overwrite=True,
                                    chunks=(chunks, ))
 
-    # REVIEW: Count_err calculation takes a lot of memory
+    # REVIEW: count_err calculation takes a lot of memory
     main_data_group.create_dataset(name='count_err',
                                    data=lc.counts_err,
                                    compressor=compressor,
                                    overwrite=True,
                                    chunks=(chunks, ))
 
-    # FIXME: GTI's are not consistently saved
     main_data_group.create_dataset(name='gti', data=lc.gti, overwrite=True)
 
     meta_data_group.create_dataset(name='dt',
@@ -106,8 +105,6 @@ def _saveChunkEV(ev, dir_name, chunks):
     ValueError
         If there is no data being saved
     """
-    # To check if any data is being saved
-    save_flag = True
     # Creating a Nested Store and multiple groups for temporary saving
     store = zarr.NestedDirectoryStore(dir_name)
     ev_data_group = zarr.group(store=store, overwrite=True)
@@ -122,11 +119,8 @@ def _saveChunkEV(ev, dir_name, chunks):
                                        compressor=compressor,
                                        overwrite=True,
                                        chunks=(chunks, ))
-    else:
-        save_flag = False
 
     if ev.energy is not None and (ev.energy.all() or ev.energy.size != 0):
-        save_flag = True
         main_data_group.create_dataset(name='energy',
                                        data=ev.energy,
                                        compressor=compressor,
@@ -134,17 +128,12 @@ def _saveChunkEV(ev, dir_name, chunks):
                                        chunks=(chunks, ))
 
     if ev.pi is not None and (ev.pi.all() or ev.pi.size != 0):
-        save_flag = True
         main_data_group.create_dataset(name='pi_channel',
                                        data=ev.pi,
                                        compressor=compressor,
                                        overwrite=True,
                                        chunks=(chunks, ))
 
-    if not save_flag:
-        raise ValueError(("The EventList passed is empty and hence cannot be saved"))
-
-    # FIXME: GTI's are not consistently saved
     if ev.gti is not None and (ev.gti.all() or ev.gti.shape[0] != 0):
         main_data_group.create_dataset(name='gti', data=ev.gti, overwrite=True,
                                        chunks=(chunks, ))
@@ -313,6 +302,15 @@ def saveData(data, dir_name=randomNameGenerate()):
         _saveChunkLC(data, dir_name, chunks)
 
     elif isinstance(data, EventList):
+        if (data.time is not None and
+            (data.time.all() or data.time.size != 0)) and (
+                data.energy is not None and
+                (data.energy.all() or data.energy.size != 0)) and (
+                    data.pi is not None and
+                    (data.pi.all() or data.pi.size != 0)):
+            raise ValueError(
+                ("The EventList passed is empty and hence cannot be saved"))
+
         if data.time.size > 0 and data.time.size < chunks:
             chunks = data.time.size
         elif data.energy.size > 0 and data.energy.size < chunks:
@@ -378,6 +376,7 @@ def _retrieveDataLC(data_path, chunk_size, offset, raw):
         if offset > times.size:
             raise ValueError((f"Offset cannot be larger than size of array {times.size}"))
 
+        # REVIEW: Is this the right way to go about gtis?
         gti_new = cross_two_gtis(
             gti[...],
             np.asarray([[
@@ -565,6 +564,7 @@ def retreiveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
         else:
             return _retrieveDataLC(data_path, raw=raw)
 
+    # REVIEW: Check need for creating seperate fits, retrieve function for extensibility and due to different data
     elif data_type.lower() == 'eventlist' or data_type.lower() == 'fits':
         if chunk_data is True and chunk_size > 0:
             return _retrieveDataEV(data_path, int(chunk_size), int(offset), raw=False)
@@ -575,6 +575,7 @@ def retreiveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
         raise ValueError((f"Invalid input data: {data_type}"))
 
 
+# REVIEW: Review computation performed
 def _combineSpectra(final_spectra):
     """
     Create a final spectra that is the mean of all spectra.
@@ -601,6 +602,7 @@ def _combineSpectra(final_spectra):
     return final_spectra
 
 
+# REVIEW: Review computation performed
 def _addSpectra(final_spectra, curr_spec, first_iter):
     """
     Add various Spectra(AveragedCrossspectrum/AveragedPowerspectrum) for combination.
@@ -791,6 +793,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                 silent=silent,
                 large_data=False)
 
+        # REVIEW: Check if freq check is to be done this way
         if first_iter:
             prev_freq = avg_spec.freq
             fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
