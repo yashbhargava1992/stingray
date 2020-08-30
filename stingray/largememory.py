@@ -47,7 +47,7 @@ def _saveChunkLC(lc, dir_name, chunks):
     main_data_group = lc_data_group.create_group('main_data', overwrite=True)
     meta_data_group = lc_data_group.create_group('meta_data', overwrite=True)
 
-    compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
+    compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Optimal
 
     main_data_group.create_dataset(name='times',
                                    data=lc.time,
@@ -61,7 +61,6 @@ def _saveChunkLC(lc, dir_name, chunks):
                                    overwrite=True,
                                    chunks=(chunks, ))
 
-    # REVIEW: count_err calculation takes a lot of memory
     if lc._counts_err is not None:
         main_data_group.create_dataset(name='count_err',
                                        data=lc.counts_err,
@@ -114,7 +113,7 @@ def _saveChunkEV(ev, dir_name, chunks):
     main_data_group = ev_data_group.create_group('main_data', overwrite=True)
     meta_data_group = ev_data_group.create_group('meta_data', overwrite=True)
 
-    compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)  # Tested
+    compressor = Blosc(cname='lz4', clevel=1, shuffle=-1)
 
     if ev.time is not None and (ev.time.all() or ev.time.size != 0):
         main_data_group.create_dataset(name='times',
@@ -196,10 +195,10 @@ def _saveFITSZarr(f_name, dir_name, chunks):
 
                 main_data_group.create_dataset(
                     name='times',
-                    data=HDUList.data['TIME'],
+                    data=times,
                     compressor=compressor,
                     overwrite=True,
-                    chunks=(chunks,))
+                    chunks=(chunks, ))
 
                 for col in ['PI', 'PHA']:
                     if col in HDUList.data.columns.names:
@@ -208,32 +207,32 @@ def _saveFITSZarr(f_name, dir_name, chunks):
                             data=HDUList.data[col],
                             compressor=compressor,
                             overwrite=True,
-                            chunks=(chunks,))
+                            chunks=(chunks, ))
 
-                    meta_data_group.create_dataset(
-                        name='tstart',
-                        data=HDUList.header['TSTART'],
-                        compressor=compressor,
-                        overwrite=True
-                    )
+                meta_data_group.create_dataset(
+                    name='tstart',
+                    data=HDUList.header['TSTART'],
+                    compressor=compressor,
+                    overwrite=True
+                )
 
-                    meta_data_group.create_dataset(
-                        name='tstop',
-                        data=HDUList.header['TSTOP'],
-                        compressor=compressor,
-                        overwrite=True
-                    )
+                meta_data_group.create_dataset(
+                    name='tstop',
+                    data=HDUList.header['TSTOP'],
+                    compressor=compressor,
+                    overwrite=True
+                )
 
-                    meta_data_group.create_dataset(
-                        name='mjdref',
-                        data=high_precision_keyword_read(
-                            HDUList.header, 'MJDREF'),
-                        compressor=compressor,
-                        overwrite=True
-                    )
+                meta_data_group.create_dataset(
+                    name='mjdref',
+                    data=high_precision_keyword_read(
+                        HDUList.header, 'MJDREF'),
+                    compressor=compressor,
+                    overwrite=True
+                )
 
             elif HDUList.name == 'GTI':
-                # Needs to be generalized
+                # TODO: Needs to be generalized
                 start, stop = HDUList.data['START'], HDUList.data['STOP']
                 gti = np.array(list(zip(start, stop)))
                 main_data_group.create_dataset(name='gti',
@@ -276,20 +275,20 @@ def saveData(data, dir_name=randomNameGenerate()):
                 "The chunk size will not depend on available RAM and will slowdown execution."
             )
 
-    ideal_mem, safe_mem = 8388608, 4193404
+    ideal_chunk, safe_chunk = 8388608, 4193404
 
     if HAS_PSUTIL:
         free_m = (psutil.virtual_memory().available + psutil.swap_memory().free)/10**9
-        chunks = ideal_mem if free_m >= 10.0 else safe_mem
+        chunks = ideal_chunk if free_m >= 10.0 else safe_chunk
     else:
         if platform == "linux" or platform == "linux2":
             free_m = int(os.popen('free -t -m').readlines()[-1].split()[-1])
-            chunks = ideal_mem if free_m >= 10000 else safe_mem
+            chunks = ideal_chunk if free_m >= 10000 else safe_chunk
         else:
-            chunks = safe_mem
+            chunks = safe_chunk
 
     if isinstance(data, Lightcurve):
-        if data.time.size > 0 and data.time.size < chunks:
+        if data.time.size < chunks:
             chunks = data.time.size
 
         _saveChunkLC(data, dir_name, chunks)
@@ -344,12 +343,16 @@ def _retrieveDataLC(data_path, chunk_size, offset, raw):
     """
     times = zarr.open_array(store=data_path[0], mode='r', path='times')
     counts = zarr.open_array(store=data_path[0], mode='r', path='counts')
-    count_err = zarr.open_array(store=data_path[0], mode='r', path='count_err')
     gti = zarr.open_array(store=data_path[0], mode='r', path='gti')
+    try:
+        count_err = zarr.open_array(store=data_path[0], mode='r', path='count_err')
+    except ValueError:
+        counts_err = None
 
-    dt = zarr.open_array(store=data_path[1], mode='r', path='dt')
-    mjdref = zarr.open_array(store=data_path[1], mode='r', path='mjdref')
-    err_dist = zarr.open_array(store=data_path[1], mode='r', path='err_dist')
+    dt = zarr.open_array(store=data_path[1], mode='r', path='dt')[...]
+    mjdref = zarr.open_array(store=data_path[1], mode='r', path='mjdref')[...]
+    err_dist = zarr.open_array(store=data_path[1], mode='r',
+                               path='err_dist')[...]
 
     if raw:
         return (times, counts, count_err, gti, dt, err_dist, mjdref)
@@ -365,19 +368,19 @@ def _retrieveDataLC(data_path, chunk_size, offset, raw):
 
         # REVIEW: Is this the right way to go about gtis?
         gti_new = cross_two_gtis(
-            gti[...],
+            gti,
             np.asarray([[
-                times.get_basic_selection(offset) - 0.5 * dt[...],
-                times.get_basic_selection(chunk_size) + 0.5 * dt[...]
+                times.get_basic_selection(offset) - 0.5 * dt,
+                times.get_basic_selection(chunk_size) + 0.5 * dt
             ]]))
 
         return Lightcurve(
             time=times.get_basic_selection(slice(offset, chunk_size)),
             counts=counts.get_basic_selection(slice(offset, chunk_size)),
-            err=count_err.get_basic_selection(slice(offset, chunk_size)),
+            err=count_err.get_basic_selection(slice(offset, chunk_size)) if counts_err is not None else None,
             gti=gti_new,
             dt=dt,
-            err_dist=err_dist,
+            err_dist=str(err_dist),
             mjdref=mjdref,
             skip_checks=True)
 
@@ -443,27 +446,30 @@ def _retrieveDataEV(data_path, chunk_size, offset, raw):
             ("The stored object is empty and hence cannot be read"))
 
     try:
-        gti = zarr.open_array(store=data_path[0], mode='r', path='gti')
+        gti = zarr.open_array(store=data_path[0], mode='r', path='gti')[...]
     except ValueError:
         gti = None
 
     try:
-        dt = zarr.open_array(store=data_path[1], mode='r', path='dt')
+        dt = zarr.open_array(store=data_path[1], mode='r', path='dt')[...]
     except ValueError:
         dt = 0
 
     try:
-        ncounts = zarr.open_array(store=data_path[1], mode='r', path='ncounts')
+        ncounts = zarr.open_array(store=data_path[1], mode='r',
+                                  path='ncounts')[...]
     except ValueError:
         ncounts = None
 
     try:
-        mjdref = zarr.open_array(store=data_path[1], mode='r', path='mjdref')
+        mjdref = zarr.open_array(store=data_path[1], mode='r',
+                                 path='mjdref')[...]
     except ValueError:
         mjdref = 0
 
     try:
-        notes = zarr.open_array(store=data_path[1], mode='r', path='notes')
+        notes = zarr.open_array(store=data_path[1], mode='r',
+                                path='notes')[...]
     except ValueError:
         notes = ""
 
@@ -482,10 +488,10 @@ def _retrieveDataEV(data_path, chunk_size, offset, raw):
 
         if gti is not None:
             gti_new = cross_two_gtis(
-                gti[...],
+                gti,
                 np.asarray([[
-                    times.get_basic_selection(offset) - 0.5 * dt[...],
-                    times.get_basic_selection(chunk_size) + 0.5 * dt[...]
+                    times.get_basic_selection(offset) - 0.5 * dt,
+                    times.get_basic_selection(chunk_size) + 0.5 * dt
                 ]]))
         else:
             gti_new = gti
@@ -495,12 +501,13 @@ def _retrieveDataEV(data_path, chunk_size, offset, raw):
             if times is not None else None,
             energy=energy.get_basic_selection(slice(i - times.chunks[0], i))
             if energy is not None else None,
-            ncounts=ncounts[...] if ncounts is not None else None,
-            mjdref=mjdref[...] if mjdref.size > 0 else 0,
-            dt=dt[...] if dt > 0 else 0,
+            ncounts=ncounts,
+            mjdref=mjdref,
+            dt=dt,
             gti=gti_new,
-            pi=pi_channel[...] if pi_channel is not None else None,
-            notes=notes[...] if notes else "")
+            pi=pi_channel.get_basic_selection(slice(i - times.chunks[0], i))
+            if pi_channel is not None else None,
+            notes=str(notes))
 
 
 def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_size=0, offset=0, raw=False):
@@ -716,20 +723,20 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
     for i in range(times.chunks[0], times.size, times.chunks[0]):
         gti_new = cross_two_gtis(
-            gti_new[...],
+            gti_new,
             np.asarray([[
-                times.get_basic_selection(i - times.chunks[0]) - 0.5 * dt[...],
-                times.get_basic_selection(i) + 0.5 * dt[...]
+                times.get_basic_selection(i - times.chunks[0]) - 0.5 * dt,
+                times.get_basic_selection(i) + 0.5 * dt
             ]]))
 
         lc1 = Lightcurve(
             time=times.get_basic_selection(slice(i - times.chunks[0], i)),
             counts=counts.get_basic_selection(slice(i - times.chunks[0], i)),
-            err=count_err.get_basic_selection(slice(i - times.chunks[0], i)),
+            err=count_err.get_basic_selection(slice(i - times.chunks[0], i)) if count_err is not None else None,
             gti=gti_new,
-            err_dist=str(err_dist[...]),
-            mjdref=mjdref[...],
-            dt=dt[...],
+            err_dist=str(err_dist),
+            mjdref=mjdref,
+            dt=dt,
             skip_checks=True)
 
         if isinstance(fin_spec, stingray.AveragedPowerspectrum):
@@ -748,21 +755,21 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
         elif isinstance(fin_spec, stingray.AveragedCrossspectrum):
             gti_new_other = cross_two_gtis(
-                gti_other[...],
+                gti_other,
                 np.asarray([[
                     times_other.get_basic_selection(i - times_other.chunks[0])
-                    - 0.5 * dt_other[...],
-                    times_other.get_basic_selection(i) + 0.5 * dt_other[...]
+                    - 0.5 * dt_other,
+                    times_other.get_basic_selection(i) + 0.5 * dt_other
                 ]]))
 
             lc2 = Lightcurve(
                 time=times_other.get_basic_selection(slice(i - times.chunks[0], i)),
                 counts=counts_other.get_basic_selection(slice(i - times.chunks[0], i)),
-                err=count_err_other.get_basic_selection(slice(i - times.chunks[0], i)),
+                err=count_err_other.get_basic_selection(slice(i - times.chunks[0], i)) if count_err_other is not None else None,
                 gti=gti_new_other,
-                err_dist=str(err_dist_other[...]),
-                mjdref=mjdref_other[...],
-                dt=dt_other[...],
+                err_dist=str(err_dist_other),
+                mjdref=mjdref_other,
+                dt=dt_other,
                 skip_checks=True)
 
             if segment_size < lc1.time.size / 4096:
@@ -864,17 +871,24 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     # TODO: Proper way to retrieve events
     first_iter = True
     for i in range(times.chunks[0], times.size, times.chunks[0]):
+        gti_new = cross_two_gtis(
+            gti_new,
+            np.asarray([[
+                times.get_basic_selection(i - times.chunks[0]) - 0.5 * dt,
+                times.get_basic_selection(i) + 0.5 * dt
+            ]]))
         ev1 = EventList(
             time=times.get_basic_selection(slice(i - times.chunks[0], i))
             if times is not None else None,
             energy=energy.get_basic_selection(slice(i - times.chunks[0], i))
             if energy is not None else None,
-            ncounts=ncounts[...] if ncounts is not None else None,
-            mjdref=mjdref[...] if mjdref.size > 0 else 0,
-            dt=dt[...] if dt > 0 else 0,
-            gti=gti[...] if gti is not None else None,
-            pi=pi_channel[...] if pi_channel is not None else None,
-            notes=notes[...] if notes else "")
+            ncounts=ncounts,
+            mjdref=mjdref,
+            dt=dt,
+            gti=gti_new,
+            pi=pi_channel.get_basic_selection(slice(i - times.chunks[0], i))
+            if pi_channel is not None else None,
+            notes=str(notes))
 
         if isinstance(fin_spec, stingray.AveragedPowerspectrum):
             if segment_size < ev1.time.size / 8192:
@@ -892,21 +906,23 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                 large_data=False)
 
         elif isinstance(fin_spec, stingray.AveragedCrossspectrum):
+            gti_new_other = cross_two_gtis(
+                gti_other,
+                np.asarray([[
+                    times_other.get_basic_selection(i - times_other.chunks[0])
+                    - 0.5 * dt_other,
+                    times_other.get_basic_selection(i) + 0.5 * dt_other
+                ]]))
+
             ev2 = EventList(
-                time=times_other.get_basic_selection(
-                    slice(i - times.chunks[0], i))
-                if time_other is not None else None,
-                energy=energy_other.get_basic_selection(
-                    slice(i - times.chunks[0], i))
-                if energy_other is not None else None,
-                ncounts=ncounts_other[...]
-                if ncounts_other is not None else None,
-                mjdref=mjdref_other[...] if mjdref_other.size > 0 else 0,
-                dt=dt_other[...] if dt_other > 0 else 0,
-                gti=gti_other[...] if gti_other is not None else None,
-                pi=pi_channel_other[...]
-                if pi_channel_other is not None else None,
-                notes=notes_other[...] if notes_other else "")
+                time=times_other.get_basic_selection(slice(i - times.chunks[0], i)) if time_other is not None else None,
+                energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i)) if energy_other is not None else None,
+                ncounts=ncounts_other,
+                mjdref=mjdref_other,
+                dt=dt_other,
+                gti=gti_new_other,
+                pi=pi_channel_other.get_basic_selection(slice(i - times.chunks[0], i)) if pi_channel_other is not None else None,
+                notes=str(notes_other))
 
             if segment_size < ev1.time.size / 4096:
                 warnings.warn(
