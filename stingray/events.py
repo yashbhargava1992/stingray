@@ -89,7 +89,7 @@ class EventList(object):
         self.notes = notes
         self.dt = dt
         self.mjdref = mjdref
-        self.gti = gti
+        self.gti = np.asarray(gti) if gti is not None else None
         self.pi = pi
         self.ncounts = ncounts
 
