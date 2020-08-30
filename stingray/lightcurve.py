@@ -409,12 +409,13 @@ class Lightcurve(object):
         check_gtis(self.gti)
 
         idxs = np.searchsorted(self.time, self.gti)
-        time_diff = np.empty([1,])
-
+        uneven = False
         for idx in range(idxs.size - 1):
-            np.append(time_diff, np.diff(self.time[idxs[idx][0]:idxs[idx][1]]))
-
-        if not (np.allclose(time_diff, np.repeat(self.dt, time_diff.shape[0]))):
+            local_diff = np.diff(self.time[idxs[idx][0]:idxs[idx][1]])
+            if np.any(~np.isclose(local_diff, self.dt)):
+                uneven = True
+                break
+        if uneven:
             simon("Bin sizes in input time array aren't equal throughout!"
                   "This could cause problems with Fourier transforms."
                   "Please make the input time evenly sampled.")
