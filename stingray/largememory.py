@@ -322,7 +322,7 @@ def saveData(data, dir_name=randomNameGenerate()):
         _saveFITSZarr(data, dir_name, chunks)
 
     else:
-        raise ValueError((f"Invalid data: {data}-{type(data)}"))
+        raise ValueError((f"Invalid data: {data} ({type(data).__name__})"))
 
     return dir_name
 

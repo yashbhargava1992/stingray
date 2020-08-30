@@ -40,7 +40,7 @@ class TestSaveSpec(object):
     def test_save_wrong_data(self):
         with pytest.raises(ValueError) as excinfo:
             saveData("A string", 'bububu')
-        assert 'Invalid data: string' in str(excinfo.value)
+        assert 'Invalid data: A string (str)' in str(excinfo.value)
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_save_lc(self):
@@ -254,7 +254,7 @@ class TestRetrieveSpec(object):
         saveData(self.lc, os.path.join(self.path, self.dir))
         with pytest.raises(ValueError) as excinfo:
             retrieveData("A string", self.dir, self.path)
-        assert 'Invalid data: string' in str(excinfo.value)
+        assert 'Invalid data: A string (str)' in str(excinfo.value)
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_lc_data(self):
