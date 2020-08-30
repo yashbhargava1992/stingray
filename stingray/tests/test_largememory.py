@@ -11,6 +11,7 @@ from stingray.events import EventList
 from stingray.largememory import createChunkedSpectra, saveData, retrieveData
 from stingray.lightcurve import Lightcurve
 from stingray.powerspectrum import AveragedPowerspectrum
+from stingray.io import load_events_and_gtis, ref_mjd
 
 HAS_ZARR = False
 try:
@@ -52,7 +53,6 @@ class TestSaveSpec(object):
         # Make sure counts_err exists
         _ = test_lc.counts_err
 
-        print(self.file)
         saveData(test_lc, self.file)
 
         main = os.path.join(self.file, 'main_data')
@@ -144,18 +144,13 @@ class TestSaveSpec(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         saveData(fname, self.file)
 
-        with fits.open(fname) as fits_data:
-            time_def = fits_data[1].data['TIME']
-            try:
-                pi_channel_def = fits_data[1].data['PI']
-            except KeyError:
-                pi_channel_def = fits_data[1].data['PHA']
-            gti_def = fits_data[2].data
-
-            tstart_def = fits_data[1].header['TSTART']
-            tstop_def = fits_data[1].header['TSTOP']
-            mjdref_def = fits_data[1].header['MJDREFI'] + fits_data[1].header[
-                'MJDREFF']
+        evtdata = load_events_and_gtis(fname, additional_columns=['PI'])
+        mjdref_def = ref_mjd(fname, hdu=1)
+        time_def = evtdata.ev_list
+        pi_channel_def = evtdata.additional_data['PI']
+        gti_def = evtdata.gti_list
+        tstart_def = evtdata.t_start
+        tstop_def = evtdata.t_stop
 
         main = os.path.join(self.file, 'main_data')
         meta = os.path.join(self.file, 'meta_data')
@@ -166,55 +161,35 @@ class TestSaveSpec(object):
             [f for f in os.listdir(meta) if not f.startswith('.')])) == 0:
             errors.append("EventList is not saved or does not exist")
         else:
-            try:
-                times = zarr.open_array(store=main, mode='r', path='times')
-                if not np.array_equal(time_def, times[...]):
-                    errors.append(
-                        "fits.events.data.time is not saved precisely")
-            except ValueError:
-                pass
+            times = zarr.open_array(store=main, mode='r', path='times')[...]
+            pi_channel = \
+                zarr.open_array(store=main, mode='r', path='pi_channel')[...]
+            gti = zarr.open_array(store=main, mode='r', path='gti')[...]
+            gti = gti.reshape((gti.size // 2, 2))
+            tstart = zarr.open_array(store=meta, mode='r', path='tstart')[...]
+            tstop = zarr.open_array(store=meta, mode='r', path='tstop')[...]
+            mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')[...]
 
-            try:
-                pi_channel = zarr.open_array(store=main,
-                                             mode='r',
-                                             path='times')
-                if not np.array_equal(pi_channel_def, pi_channel[...]):
-                    errors.append(
-                        "fits.events.data.pi/fits.events.data.pha is not saved precisely"
-                    )
-            except ValueError:
-                pass
+            order = np.argsort(times)
+            times = times[order]
+            pi_channel = pi_channel[order]
 
-            try:
-                gti = zarr.open_array(store=main, mode='r', path='gti')
-                if not np.array_equal(gti_def, gti[...]):
-                    errors.append("fits.gti.data is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                tstart = zarr.open_array(store=meta, mode='r', path='tstart')
-                if not (tstart == tstart_def):
-                    errors.append(
-                        "fits.events.header.tstart is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                tstop = zarr.open_array(store=meta, mode='r', path='tstop')
-                if not (tstop == tstop_def):
-                    errors.append(
-                        "fits.events.header.tstop is not saved precisely")
-            except ValueError:
-                pass
-
-            try:
-                mjdref = zarr.open_array(store=meta, mode='r', path='tstart')
-                if not (mjdref == mjdref_def):
-                    errors.append(
-                        "fits.events.header.mjdref is not saved precisely")
-            except ValueError:
-                pass
+            if not np.allclose(time_def, times):
+                errors.append(
+                    "fits.events.data.time is not saved precisely")
+            if not np.array_equal(pi_channel_def, pi_channel):
+                errors.append("fits.events.data.pi is not saved precisely")
+            if not np.allclose(gti_def, gti):
+                errors.append("fits.gti.data is not saved precisely")
+            if not (tstart == tstart_def):
+                errors.append(
+                    "fits.events.header.tstart is not saved precisely")
+            if not (tstop == tstop_def):
+                errors.append(
+                    "fits.events.header.tstop is not saved precisely")
+            if not (mjdref == mjdref_def):
+                errors.append(
+                    "fits.events.header.mjdref is not saved precisely")
 
         assert not errors, "Errors encountered:\n{}".format('\n'.join(errors))
 

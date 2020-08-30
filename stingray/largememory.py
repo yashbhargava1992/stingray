@@ -8,6 +8,7 @@ import stingray
 
 from .gti import cross_two_gtis
 from .events import EventList
+from .io import high_precision_keyword_read
 from .lightcurve import Lightcurve
 from .utils import genDataPath, randomNameGenerate
 
@@ -190,36 +191,24 @@ def _saveFITSZarr(f_name, dir_name, chunks):
     with fits.open(f_name, memmap=True) as fits_data:
         for HDUList in fits_data:
             if HDUList.name == 'EVENTS':
-                if HDUList.data.names == (['TIME', 'PI'] or ['TIME', 'PHA']):
-                    if HDUList.data['TIME'] is not None and (HDUList.data['TIME'].all() or HDUList.data['TIME'].size != 0):
-                        chunks = HDUList.data['TIME'].size if HDUList.data['TIME'].size < chunks else chunks
+                times = HDUList.data['TIME']
+                chunks = times.size if times.size < chunks else chunks
 
+                main_data_group.create_dataset(
+                    name='times',
+                    data=HDUList.data['TIME'],
+                    compressor=compressor,
+                    overwrite=True,
+                    chunks=(chunks,))
+
+                for col in ['PI', 'PHA']:
+                    if col in HDUList.data.columns.names:
                         main_data_group.create_dataset(
-                            name='times',
-                            data=HDUList.data['TIME'],
+                            name=f'{col.lower()}_channel',
+                            data=HDUList.data[col],
                             compressor=compressor,
                             overwrite=True,
-                            chunks=(chunks, ))
-                    try:
-                        if HDUList.data['PI'] is not None and (HDUList.data['PI'].all() or HDUList.data['PI'].size != 0):
-                            chunks = HDUList.data['PI'].size if HDUList.data['PI'].size < chunks else chunks
-
-                            main_data_group.create_dataset(
-                                name='pi_channel',
-                                data=HDUList.data['PI'],
-                                compressor=compressor,
-                                overwrite=True,
-                                chunks=(chunks, ))
-                    except KeyError:
-                        if HDUList.data['PHA'] is not None and (HDUList.data['PHA'].all() or HDUList.data['PHA'].size != 0):
-                            chunks = HDUList.data['PHA'].size if HDUList.data['PHA'].size < chunks else chunks
-
-                            main_data_group.create_dataset(
-                                name='pi_channel',
-                                data=HDUList.data['PHA'],
-                                compressor=compressor,
-                                overwrite=True,
-                                chunks=(chunks, ))
+                            chunks=(chunks,))
 
                     meta_data_group.create_dataset(
                         name='tstart',
@@ -237,18 +226,20 @@ def _saveFITSZarr(f_name, dir_name, chunks):
 
                     meta_data_group.create_dataset(
                         name='mjdref',
-                        data=HDUList.header['MJDREFI'] + HDUList.header['MJDREFF'],
+                        data=high_precision_keyword_read(
+                            HDUList.header, 'MJDREF'),
                         compressor=compressor,
                         overwrite=True
                     )
 
             elif HDUList.name == 'GTI':
-                if HDUList.data.names == ['START', 'STOP']:
-                    if HDUList.data['START'] is not None or HDUList.data['STOP'] is not None and (HDUList.data['START'].all() or HDUList.data['STOP'] or HDUList.data['START'].size != 0 or HDUList.data['STOP'].size != 0):
-                        main_data_group.create_dataset(name='gti',
-                                                       data=HDUList.data,
-                                                       compressor=compressor,
-                                                       overwrite=True)
+                # Needs to be generalized
+                start, stop = HDUList.data['START'], HDUList.data['STOP']
+                gti = np.array(list(zip(start, stop)))
+                main_data_group.create_dataset(name='gti',
+                                               data=gti.flatten(),
+                                               compressor=compressor,
+                                               overwrite=True)
 
 
 def saveData(data, dir_name=randomNameGenerate()):
