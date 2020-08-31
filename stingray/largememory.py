@@ -242,7 +242,7 @@ def _saveFITSZarr(f_name, dir_name, chunks):
                                                overwrite=True)
 
 
-def saveData(data, dir_name=randomNameGenerate()):
+def saveData(data, dir_name=randomNameGenerate(), chunks=None):
     """
     Saves Lightcurve/EventList or any such data in chunks to disk.
 
@@ -253,6 +253,10 @@ def saveData(data, dir_name=randomNameGenerate()):
 
     dir_name: string, optional
         Name of top level directory where data is to be stored, by default randomNameGenerate()
+
+    chunks: int, optional
+        Length of data chunks in number of bins. If None, it is calculated
+        based on the system resources
 
     Returns
     -------
@@ -276,22 +280,22 @@ def saveData(data, dir_name=randomNameGenerate()):
                 "The chunk size will not depend on available RAM and will slowdown execution."
             )
 
-    ideal_chunk, safe_chunk = 8388608, 4193404
+    if chunks is None:
+        ideal_chunk, safe_chunk = 8388608, 4193404
 
-    if HAS_PSUTIL:
-        free_m = (psutil.virtual_memory().available + psutil.swap_memory().free)/10**9
-        chunks = ideal_chunk if free_m >= 10.0 else safe_chunk
-    else:
-        if platform == "linux" or platform == "linux2":
-            free_m = int(os.popen('free -t -m').readlines()[-1].split()[-1])
-            chunks = ideal_chunk if free_m >= 10000 else safe_chunk
+        if HAS_PSUTIL:
+            free_m = (psutil.virtual_memory().available + psutil.swap_memory().free)/10**9
+            chunks = ideal_chunk if free_m >= 10.0 else safe_chunk
         else:
-            chunks = safe_chunk
+            if platform == "linux" or platform == "linux2":
+                free_m = int(os.popen('free -t -m').readlines()[-1].split()[-1])
+                chunks = ideal_chunk if free_m >= 10000 else safe_chunk
+            else:
+                chunks = safe_chunk
 
     if isinstance(data, Lightcurve):
         if data.time.size < chunks:
             chunks = data.time.size
-
         _saveChunkLC(data, dir_name, chunks)
 
     elif isinstance(data, EventList):
@@ -806,7 +810,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     ValueError
         If previous and current spectra frequencies are not identical
     """
-    times, counts, count_err, gti_new, dt, err_dist, mjdref = _retrieveDataLC(
+    times, counts, counts_err, gti_new, dt, err_dist, mjdref = _retrieveDataLC(
         data_path[0:2], raw=True)
     gti_new = gti_new.reshape((gti_new.size // 2, 2))
 
@@ -815,27 +819,36 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 
     elif spec_type.lower() == 'averagedcrossspectrum':
         fin_spec = stingray.AveragedCrossspectrum()
-        times_other, counts_other, count_err_other, gti_other, dt_other, err_dist_other, mjdref_other = _retrieveDataLC(
+        times_other, counts_other, counts_err_other, gti_other, dt_other, err_dist_other, mjdref_other = _retrieveDataLC(
             data_path[2:4], raw=True)
         gti_new_other = gti_other.reshape((gti_other.size // 2, 2))
 
     else:
         raise ValueError((f"Invalid spectra-type {spec_type}"))
 
+    nchunks_per_segment = \
+        max(int(np.rint(segment_size / dt / times.chunks[0])), 1)
+
+    new_segment_size = nchunks_per_segment * times.chunks[0] * dt
+    if not np.isclose(new_segment_size, segment_size):
+        warnings.warn("Adapting segment_size to a fixed number of chunks")
+        segment_size = new_segment_size
+
     first_iter = True
-    for i in range(times.chunks[0], times.size, times.chunks[0]):
-        gti_new = cross_two_gtis(
-            gti_new,
-            np.asarray([[
-                times.get_basic_selection(i - times.chunks[0]) - 0.5 * dt,
-                times.get_basic_selection(i) + 0.5 * dt
-            ]]))
+    step = times.chunks[0] * nchunks_per_segment
+    for i in range(0, times.size, step):
+        time = times.get_basic_selection(slice(i, i + step))
+        count = counts.get_basic_selection(slice(i, i + step))
+        count_err =  None
+        if counts_err is not None:
+            count_err = counts_err.get_basic_selection(slice(i, i + step))
+
+        gti_new = np.asarray([[time[0] - 0.5 * dt, time[-1] + 0.5 * dt]])
 
         lc1 = Lightcurve(
-            time=times.get_basic_selection(slice(i - times.chunks[0], i)),
-            counts=counts.get_basic_selection(slice(i - times.chunks[0], i)),
-            err=count_err.get_basic_selection(slice(i - times.chunks[0], i))
-            if count_err is not None else None,
+            time=time,
+            counts=count,
+            err=count_err,
             gti=gti_new,
             err_dist=err_dist,
             mjdref=mjdref,
@@ -852,18 +865,19 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                 large_data=False)
 
         elif isinstance(fin_spec, stingray.AveragedCrossspectrum):
-            gti_new_other = cross_two_gtis(
-                gti_other,
-                np.asarray([[
-                    times_other.get_basic_selection(i - times_other.chunks[0])
-                    - 0.5 * dt_other,
-                    times_other.get_basic_selection(i) + 0.5 * dt_other
-                ]]))
+            time_other = times_other.get_basic_selection(slice(i, i + step))
+            count_other = counts_other.get_basic_selection(slice(i, i + step))
+            count_err_other = None
+            if counts_err_other is not None:
+                count_err_other = counts_err_other.get_basic_selection(slice(i, i + step))
+
+            gti_new_other = np.asarray([[time_other[0] - 0.5 * dt, time_other[-1] + 0.5 * dt]])
+
 
             lc2 = Lightcurve(
-                time=times_other.get_basic_selection(slice(i - times.chunks[0], i)),
-                counts=counts_other.get_basic_selection(slice(i - times.chunks[0], i)),
-                err=count_err_other.get_basic_selection(slice(i - times.chunks[0], i)) if count_err_other is not None else None,
+                time=time_other,
+                counts=count_other,
+                err=count_err_other,
                 gti=gti_new_other,
                 err_dist=err_dist_other,
                 mjdref=mjdref_other,

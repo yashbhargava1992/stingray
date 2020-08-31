@@ -354,29 +354,29 @@ class TestChunkPS(object):
         time = np.arange(2**24)
         counts1 = np.random.poisson(10, time.size)
         cls.lc1 = Lightcurve(time, counts1, skip_checks=True,
-                             gti=[[0, 2**24]])
+                             gti=[[0, 2**21]])
         cls.file1 = tempfile.mkdtemp()
 
         counts2 = np.random.poisson(10, time.size)
         cls.lc2 = Lightcurve(time, counts2, skip_checks=True,
-                             gti=[[0, 2**24]])
+                             gti=[[0, 2**21]])
         cls.file2 = tempfile.mkdtemp()
 
-        saveData(cls.lc1, cls.file1)
-        saveData(cls.lc2, cls.file2)
+        saveData(cls.lc1, cls.file1, chunks=4096)
+        saveData(cls.lc2, cls.file2, chunks=4096)
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_invalid_data_to_pds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedPowerspectrum("sdfasfsa", segment_size=2048,
-                                  large_data=True)
+                                  large_data=True, silent=True)
         assert 'Invalid input data type: str' in str(excinfo.value)
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_invalid_data_to_cpds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedCrossspectrum("sdfasfsa", "sdfasfsa", segment_size=4096,
-                                  large_data=True)
+                                  large_data=True, silent=True)
         assert 'Invalid input data type: str' in str(excinfo.value)
 
     @pytest.mark.skipif('not HAS_ZARR')
@@ -407,7 +407,7 @@ class TestChunkPS(object):
         cs_normal = AveragedCrossspectrum(
             self.lc1, self.lc2, segment_size=4096)
         cs_large = AveragedCrossspectrum(
-            self.lc1,  self.lc2, segment_size=4096, large_data=True)
+            self.lc1, self.lc2, segment_size=4096, large_data=True)
 
         attrs = [
             'freq', 'power', 'power_err', 'unnorm_power', 'df', 'n', 'nphots1', 'nphots2',  'm', 'gti'

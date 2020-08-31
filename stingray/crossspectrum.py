@@ -1054,12 +1054,14 @@ class AveragedCrossspectrum(Crossspectrum):
                 input_data = 'EventList'
             elif isinstance(data1, Lightcurve):
                 input_data = 'Lightcurve'
+                chunks = int(np.rint(segment_size // data1.dt))
+                segment_size = chunks * data1.dt
             else:
                 raise ValueError(
                     f'Invalid input data type: {type(data1).__name__}')
 
-            f_name1 = saveData(data1)
-            f_name2 = saveData(data2)
+            f_name1 = saveData(data1, chunks=chunks)
+            f_name2 = saveData(data2, chunks=chunks)
 
             data_path1 = genDataPath(f_name1)
             data_path2 = genDataPath(f_name2)
