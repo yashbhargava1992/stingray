@@ -228,7 +228,6 @@ class TestRetrieveSpec(object):
         lc = retrieveData(data_type='Lightcurve',
                           dir_name=self.dir,
                           path=self.path)
-
         assert self.lc.__eq__(lc) is True
 
     @pytest.mark.skipif('not HAS_ZARR')

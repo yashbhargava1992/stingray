@@ -380,10 +380,10 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
             ]]))
 
         return Lightcurve(
-            time=times.get_basic_selection(slice(offset, chunk_size)),
-            counts=counts.get_basic_selection(slice(offset, chunk_size)),
-            err=count_err.get_basic_selection(slice(offset, chunk_size))
-            if count_err is not None else None,
+            time=times.get_basic_selection(slice(offset, chunk_size))[...],
+            counts=counts.get_basic_selection(slice(offset, chunk_size))[...],
+            err=count_err.get_basic_selection(slice(offset, chunk_size))[...]
+                if count_err is not None else None,
             gti=gti_new,
             dt=float(dt),
             err_dist=str(err_dist),
@@ -662,9 +662,10 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
 
     if data_type.lower() == 'lightcurve':
         if chunk_data is True and chunk_size > 0:
-            return _retrieveDataLC(data_path, int(chunk_size), int(offset), raw=False)
+            return _retrieveDataLC(
+                data_path, int(chunk_size), int(offset), raw=raw)
         else:
-            return _retrieveDataLC(data_path, raw=True)
+            return _retrieveDataLC(data_path, raw=raw)
 
     # REVIEW: Check need for creating seperate fits, retrieve function for extensibility and due to different data
     elif data_type.lower() == 'eventlist':
