@@ -393,7 +393,7 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
 
 def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
     """
-    Retrieve data from stored Lightcurve on disk.
+    Retrieve data from stored EventList on disk.
 
     Parameters
     ----------
@@ -528,6 +528,96 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
             notes=str(notes))
 
 
+def _retrieveDataFITS(data_path, raw=True):
+    """
+    Retrieve data from stored FITS file on disk.
+
+    Parameters
+    ----------
+    data_path: list
+        Path to datastore.
+
+    chunk_size: int
+        Size of data to be retrieved
+
+    offset: int
+        Offset or start element to read the array from
+
+    raw: bool
+        Only to be used for if raw memory mapped zarr arrays are to be obtained
+
+    Returns
+    -------
+    tuple
+       Data retrieved from FITS file.
+
+    Raises
+    ------
+    ValueError
+        If array does not exist at path
+
+    ValueError
+        If offset provided is larger than size of array.
+
+    ValueError
+        If the file to read is empty
+    """
+    read_flag = True
+
+    try:
+        times = zarr.open_array(store=data_path[0], mode='r', path='times')
+    except ValueError:
+        times = None
+        read_flag = False
+
+    try:
+        pi_channel = zarr.open_array(store=data_path[0], mode='r', path='pi_channel')
+        read_flag = True
+    except ValueError:
+        pi_channel = None
+
+    if pi_channel is None:
+        try:
+            pi_channel = zarr.open_array(store=data_path[0], mode='r', path='pha_channel')
+            read_flag = True
+        except ValueError:
+            pi_channel = None
+
+    if not read_flag:
+        raise ValueError(
+            ("The stored object is empty and hence cannot be read"))
+
+    try:
+        gti = zarr.open_array(store=data_path[0], mode='r', path='gti')[...]
+        gti = gti.reshape((gti.size // 2, 2))
+    except ValueError:
+        gti = None
+
+    try:
+        tstart = zarr.open_array(store=data_path[1], mode='r',
+                                 path='tstart')[...]
+    except ValueError:
+        ncounts = None
+
+    try:
+        tstop = zarr.open_array(store=data_path[1], mode='r',
+                                path='tstop')[...]
+    except ValueError:
+        tstop = ""
+
+    try:
+        mjdref = zarr.open_array(store=data_path[1], mode='r',
+                                 path='mjdref')[...]
+    except ValueError:
+        mjdref = 0
+
+    order = np.argsort(times)
+    times = times[order]
+    pi_channel = pi_channel[order]
+
+    return (times, pi_channel, gti, float(tstart), float(tstop), float(mjdref))
+
+
 def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_size=0, offset=0, raw=False):
     """
     Retrieves Lightcurve/EventList or any such data from disk.
@@ -574,17 +664,20 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
         if chunk_data is True and chunk_size > 0:
             return _retrieveDataLC(data_path, int(chunk_size), int(offset), raw=False)
         else:
-            if raw:
-                return _retrieveDataLC(data_path, raw=True)
-            else:
-                return _retrieveDataLC(data_path, raw=False)
+            return _retrieveDataLC(data_path, raw=True)
 
     # REVIEW: Check need for creating seperate fits, retrieve function for extensibility and due to different data
-    elif data_type.lower() == 'eventlist' or data_type.lower() == 'fits':
+    elif data_type.lower() == 'eventlist':
         if chunk_data is True and chunk_size > 0:
             return _retrieveDataEV(data_path, int(chunk_size), int(offset), raw=False)
         else:
             return _retrieveDataEV(data_path, raw=raw)
+
+    elif data_type.lower() == 'fits':
+        if raw:
+            return _retrieveDataFITS(data_path, raw=True)
+        else:
+            pass
 
     else:
         raise ValueError(
