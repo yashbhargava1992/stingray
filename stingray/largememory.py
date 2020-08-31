@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 from astropy.io import fits
+from astropy import log
 
 import stingray
 
@@ -364,23 +365,21 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
     else:
         if chunk_size == 0 or chunk_size > times.size:
             chunk_size = times.size
-            warnings.warn(
-                f"The chunk size is set to the size of the whole array {chunk_size}"
+            log.info(
+                f"Retrieving the whole array (Chunk size > size of times)"
             )
 
         if offset > times.size:
             raise ValueError((f"Offset cannot be larger than size of array {times.size}"))
 
-        # REVIEW: Is this the right way to go about gtis?
+        times = times.get_basic_selection(slice(offset, chunk_size))[...]
         gti_new = cross_two_gtis(
             gti,
             np.asarray([[
-                times.get_basic_selection(offset) - 0.5 * float(dt),
-                times.get_basic_selection(chunk_size - 1) + 0.5 * float(dt)
-            ]]))
+                times[0] - 0.5 * float(dt), times[-1] + 0.5 * float(dt)]]))
 
         return Lightcurve(
-            time=times.get_basic_selection(slice(offset, chunk_size))[...],
+            time=times,
             counts=counts.get_basic_selection(slice(offset, chunk_size))[...],
             err=count_err.get_basic_selection(slice(offset, chunk_size))[...]
                 if count_err is not None else None,
@@ -479,8 +478,8 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
     else:
         if chunk_size == 0 or chunk_size > times.size:
             chunk_size = times.size
-            warnings.warn(
-                f"The chunk size is set to the size of the whole array {chunk_size}"
+            log.info(
+                f"Retrieving the whole array (Chunk size > size of times)"
             )
 
         if offset > times.size:

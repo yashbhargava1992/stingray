@@ -234,14 +234,14 @@ class TestRetrieveSpec(object):
     def test_retrieve_ev_data(self):
         saveData(self.ev, os.path.join(self.path, self.dir))
 
-        ev = retrieveData(data_type='EventList',
-                          dir_name=self.dir,
-                          path=self.path)
+        with pytest.warns(UserWarning):
+            ev = retrieveData(data_type='EventList',
+                              dir_name=self.dir,
+                              path=self.path)
 
         assert np.allclose(ev.time, self.ev.time)
         assert np.allclose(ev.pi, self.ev.pi)
-        with pytest.warns(UserWarning):
-            assert np.allclose(ev.gti, [[self.ev.time[0], self.ev.time[-1]]])
+        assert np.allclose(ev.gti, [[self.ev.time[0], self.ev.time[-1]]])
 
     # @pytest.mark.skipif('not HAS_ZARR')
     # def test_retrieve_fits_data(self):
