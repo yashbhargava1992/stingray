@@ -381,46 +381,55 @@ class TestChunkPS(object):
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_calc_pds(self):
-        ps_normal = AveragedPowerspectrum(self.lc1, segment_size=8192)
+        ps_normal = AveragedPowerspectrum(self.lc1, segment_size=8192,
+                                          silent=True, norm='leahy')
         ps_large = AveragedPowerspectrum(self.lc1,
                                          segment_size=8192,
-                                         large_data=True)
+                                         large_data=True,
+                                         silent=True, norm='leahy')
 
         attrs = [
             'freq', 'power', 'power_err', 'unnorm_power', 'df', 'n',
             'nphots', 'gti', 'm'
         ]
+        allgood = True
         for attr in attrs:
-            print(f"Attribute = {attr} ")
-            print(
-                f"Raw Array: \nOriginal: {getattr(ps_normal, attr)}, \nLarge: {getattr(ps_large, attr)}"
-            )
-            print(
-                f"Max Deviation: {np.amax(getattr(ps_normal, attr) - getattr(ps_large, attr))}, as %: {np.abs(np.max(getattr(ps_normal, attr) - getattr(ps_large, attr))*100)/np.max(getattr(ps_normal, attr))}"
-            )
-            print("\n")
-            assert np.allclose(getattr(ps_normal, attr),
-                               getattr(ps_large, attr), atol=0.01, rtol=0.05)
+            if not np.allclose(getattr(ps_normal, attr),
+                               getattr(ps_large, attr), rtol=0.2):
+                allgood = False
+                print(f"Attribute = {attr} ")
+                print(
+                    f"Raw Array: \nOriginal: {getattr(ps_normal, attr)}, \nLarge: {getattr(ps_large, attr)}"
+                )
+                print(
+                    f"Max Deviation: {np.amax(getattr(ps_normal, attr) - getattr(ps_large, attr))}, as %: {np.abs(np.max(getattr(ps_normal, attr) - getattr(ps_large, attr))*100)/np.max(getattr(ps_normal, attr))}"
+                )
+                print("\n")
+        assert allgood
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_calc_cpds(self):
         cs_normal = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=4096)
+            self.lc1, self.lc2, segment_size=4096, silent=True, norm='leahy')
         cs_large = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=4096, large_data=True)
+            self.lc1, self.lc2, segment_size=4096,
+            large_data=True, silent=True, norm='leahy')
 
         attrs = [
             'freq', 'power', 'power_err', 'unnorm_power', 'df', 'n', 'nphots1', 'nphots2',  'm', 'gti'
         ]
 
+        allgood = True
         for attr in attrs:
-            print(f"Attribute = {attr} ")
-            print(
-                f"Raw Array: \nOriginal: {getattr(cs_normal, attr)}, \nLarge: {getattr(cs_large, attr)}"
-            )
-            print(
-                f"Max Deviation: {np.amax(getattr(cs_normal, attr) - getattr(cs_large, attr))}, as %: {np.abs(np.max(getattr(cs_normal, attr) - getattr(cs_large, attr))*100)/np.max(getattr(cs_normal, attr))}"
-            )
-            print("\n")
-            assert np.allclose(getattr(cs_normal, attr),
-                               getattr(cs_large, attr), rtol=0.1, atol=0.1)
+            if not np.allclose(getattr(cs_normal, attr),
+                               getattr(cs_large, attr), rtol=0.1, atol=0.1):
+                print(f"Attribute = {attr} ")
+                print(
+                    f"Raw Array: \nOriginal: {getattr(cs_normal, attr)}, \nLarge: {getattr(cs_large, attr)}"
+                )
+                print(
+                    f"Max Deviation: {np.amax(getattr(cs_normal, attr) - getattr(cs_large, attr))}, as %: {np.abs(np.max(getattr(cs_normal, attr) - getattr(cs_large, attr))*100)/np.max(getattr(cs_normal, attr))}"
+                )
+                print("\n")
+                allgood = False
+        assert allgood
