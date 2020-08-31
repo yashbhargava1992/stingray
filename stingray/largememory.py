@@ -581,7 +581,6 @@ def retrieveData(data_type, dir_path, chunk_data=False, chunk_size=0, offset=0, 
         else:
             return _retrieveDataLC(data_path, raw=raw)
 
-    # REVIEW: Check need for creating seperate fits, retrieve function for extensibility and due to different data
     elif data_type.lower() == 'eventlist' or data_type.lower() == 'fits':
         if chunk_data is True and chunk_size > 0:
             return _retrieveDataEV(data_path, int(chunk_size), int(offset), raw=False)
@@ -745,7 +744,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
             continue
         time = times.get_basic_selection(slice(i, i + step))
         count = counts.get_basic_selection(slice(i, i + step))
-        count_err =  None
+        count_err = None
         if counts_err is not None:
             count_err = counts_err.get_basic_selection(slice(i, i + step))
 
