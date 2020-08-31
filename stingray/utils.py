@@ -93,7 +93,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
            'create_window', 'poisson_symmetrical_errors', 'standard_error',
-           'nearest_power_of_two', 'find_nearest', 'genDataPath', 'randomNameGenerate']
+           'nearest_power_of_two', 'find_nearest', 'genDataPath']
 
 
 def _root_squared_mean(array):
@@ -976,26 +976,6 @@ def find_nearest(array, value):
         return array[idx - 1], idx - 1
     else:
         return array[idx], idx
-
-
-def randomNameGenerate(size=10, chars=string.ascii_letters + string.digits):
-    """
-    Generates a random alphanumeric name.
-
-    Parameters
-    ----------
-    size : int, optional
-        size of random string to generate, by default 10
-
-    chars : string type, optional
-        Letters to use to generate random name, by default string.ascii_letters+ string.digits
-
-    Returns
-    -------
-    string
-        Random name
-    """
-    return ''.join(random.choices(chars, k=size))
 
 
 def genDataPath(dir_name, path=os.getcwd()):

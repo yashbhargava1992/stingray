@@ -351,15 +351,16 @@ class TestRetrieveSpec(object):
 class TestChunkPS(object):
     @classmethod
     def setup_class(cls):
-        time = np.arange(2**24)
+        maxtime = 2**21
+        time = np.arange(maxtime)
         counts1 = np.random.poisson(10, time.size)
         cls.lc1 = Lightcurve(time, counts1, skip_checks=True,
-                             gti=[[0, 2**21]])
+                             gti=[[0, maxtime]])
         cls.file1 = tempfile.mkdtemp()
 
         counts2 = np.random.poisson(10, time.size)
         cls.lc2 = Lightcurve(time, counts2, skip_checks=True,
-                             gti=[[0, 2**21]])
+                             gti=[[0, maxtime]])
         cls.file2 = tempfile.mkdtemp()
 
         saveData(cls.lc1, cls.file1, chunks=4096)
@@ -393,9 +394,10 @@ class TestChunkPS(object):
             'nphots', 'gti', 'm'
         ]
         allgood = True
+        assert ps_normal.freq.size == ps_large.freq.size
         for attr in attrs:
             if not np.allclose(getattr(ps_normal, attr),
-                               getattr(ps_large, attr), rtol=0.2):
+                               getattr(ps_large, attr), rtol=0.1, atol=0.1):
                 allgood = False
                 print(f"Attribute = {attr} ")
                 print(
@@ -410,14 +412,15 @@ class TestChunkPS(object):
     @pytest.mark.skipif('not HAS_ZARR')
     def test_calc_cpds(self):
         cs_normal = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=4096, silent=True, norm='leahy')
+            self.lc1, self.lc2, segment_size=8192, silent=True)
         cs_large = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=4096,
-            large_data=True, silent=True, norm='leahy')
+            self.lc1, self.lc2, segment_size=8192,
+            large_data=True, silent=True)
 
         attrs = [
             'freq', 'power', 'power_err', 'unnorm_power', 'df', 'n', 'nphots1', 'nphots2',  'm', 'gti'
         ]
+        assert cs_normal.freq.size == cs_large.freq.size
 
         allgood = True
         for attr in attrs:

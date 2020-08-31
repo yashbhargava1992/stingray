@@ -11,7 +11,7 @@ from .gti import cross_two_gtis
 from .events import EventList
 from .io import high_precision_keyword_read
 from .lightcurve import Lightcurve
-from .utils import genDataPath, randomNameGenerate
+from .utils import genDataPath
 
 HAS_ZARR = False
 try:
@@ -242,7 +242,7 @@ def _saveFITSZarr(f_name, dir_name, chunks):
                                                overwrite=True)
 
 
-def saveData(data, dir_name=randomNameGenerate(), chunks=None):
+def saveData(data, dir_name=None, chunks=None):
     """
     Saves Lightcurve/EventList or any such data in chunks to disk.
 
@@ -280,6 +280,9 @@ def saveData(data, dir_name=randomNameGenerate(), chunks=None):
                 "The chunk size will not depend on available RAM and will slowdown execution."
             )
 
+    import tempfile
+    if dir_name is None:
+        dir_name = tempfile.mkdtemp()
     if chunks is None:
         ideal_chunk, safe_chunk = 8388608, 4193404
 
@@ -522,96 +525,6 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
             notes=str(notes))
 
 
-def _retrieveDataFITS(data_path, raw=True):
-    """
-    Retrieve data from stored FITS file on disk.
-
-    Parameters
-    ----------
-    data_path: list
-        Path to datastore.
-
-    chunk_size: int
-        Size of data to be retrieved
-
-    offset: int
-        Offset or start element to read the array from
-
-    raw: bool
-        Only to be used for if raw memory mapped zarr arrays are to be obtained
-
-    Returns
-    -------
-    tuple
-       Data retrieved from FITS file.
-
-    Raises
-    ------
-    ValueError
-        If array does not exist at path
-
-    ValueError
-        If offset provided is larger than size of array.
-
-    ValueError
-        If the file to read is empty
-    """
-    read_flag = True
-
-    try:
-        times = zarr.open_array(store=data_path[0], mode='r', path='times')
-    except ValueError:
-        times = None
-        read_flag = False
-
-    try:
-        pi_channel = zarr.open_array(store=data_path[0], mode='r', path='pi_channel')
-        read_flag = True
-    except ValueError:
-        pi_channel = None
-
-    if pi_channel is None:
-        try:
-            pi_channel = zarr.open_array(store=data_path[0], mode='r', path='pha_channel')
-            read_flag = True
-        except ValueError:
-            pi_channel = None
-
-    if not read_flag:
-        raise ValueError(
-            ("The stored object is empty and hence cannot be read"))
-
-    try:
-        gti = zarr.open_array(store=data_path[0], mode='r', path='gti')[...]
-        gti = gti.reshape((gti.size // 2, 2))
-    except ValueError:
-        gti = None
-
-    try:
-        tstart = zarr.open_array(store=data_path[1], mode='r',
-                                 path='tstart')[...]
-    except ValueError:
-        ncounts = None
-
-    try:
-        tstop = zarr.open_array(store=data_path[1], mode='r',
-                                path='tstop')[...]
-    except ValueError:
-        tstop = ""
-
-    try:
-        mjdref = zarr.open_array(store=data_path[1], mode='r',
-                                 path='mjdref')[...]
-    except ValueError:
-        mjdref = 0
-
-    order = np.argsort(times)
-    times = times[order]
-    pi_channel = pi_channel[order]
-
-    return (times, pi_channel, gti, float(tstart), float(tstop), float(mjdref))
-
-
 def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_size=0, offset=0, raw=False):
     """
     Retrieves Lightcurve/EventList or any such data from disk.
@@ -679,7 +592,6 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
             (f"Invalid data: {data_type} ({type(data_type).__name__})"))
 
 
-# REVIEW: Review computation performed
 def _combineSpectra(final_spectra):
     """
     Create a final spectra that is the mean of all spectra.
@@ -694,16 +606,24 @@ def _combineSpectra(final_spectra):
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Final resulting spectra.
     """
+    final_spectra.power /= final_spectra.m
+    final_spectra.unnorm_power /= final_spectra.m
+    final_spectra.power_err = \
+        np.sqrt(final_spectra.power_err) / final_spectra.m
+
     if isinstance(final_spectra, stingray.AveragedCrossspectrum) and not \
             isinstance(final_spectra, stingray.AveragedPowerspectrum):
         final_spectra.pds1.power /= final_spectra.m
         final_spectra.pds2.power /= final_spectra.m
+        final_spectra.nphots1 /= final_spectra.m
+        final_spectra.nphots2 /= final_spectra.m
+    else:
+        final_spectra.nphots /= final_spectra.m
 
     return final_spectra
 
 
-# REVIEW: Review computation performed
-def _addSpectra(final_spectra, curr_spec, first_iter):
+def _addSpectra(final_spectra, curr_spec):
     """
     Add various Spectra(AveragedCrossspectrum/AveragedPowerspectrum) for combination.
 
@@ -720,43 +640,25 @@ def _addSpectra(final_spectra, curr_spec, first_iter):
 
     Returns
     -------
-    :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
+    final_spectrum: :class:`stingray.crossspectrum.AveragedCrossspectrum` object or :class:`stingray.powerspectrum.AveragedPowerspectrum` object
         Combined AveragedCrossspectrum/AveragedPowerspectrum
     """
-    if first_iter:
-        final_spectra = curr_spec
-        final_spectra.power = final_spectra.power.astype('complex128')
-        final_spectra.unnorm_power = final_spectra.unnorm_power.astype(
-            'complex256')
 
-        return final_spectra
-
-    np.multiply(np.add(final_spectra.power, curr_spec.power),
-                curr_spec.m,
-                out=final_spectra.power)
-    np.multiply(np.add(final_spectra.unnorm_power, curr_spec.unnorm_power),
-                curr_spec.m,
-                out=final_spectra.unnorm_power)
-    np.sqrt(np.add(np.square(final_spectra.power_err),
-                   np.square(curr_spec.power_err)),
-            out=final_spectra.power_err)
+    final_spectra.power += curr_spec.power * curr_spec.m
+    final_spectra.unnorm_power += curr_spec.unnorm_power * curr_spec.m
+    final_spectra.power_err += curr_spec.power_err ** 2 * curr_spec.m
 
     final_spectra.m += curr_spec.m
-    final_spectra.df = (final_spectra.df + curr_spec.df) / 2
-    final_spectra.gti = np.concatenate((final_spectra.gti, curr_spec.gti))
 
     if isinstance(final_spectra, stingray.AveragedPowerspectrum):
-        final_spectra.nphots += curr_spec.nphots
+        final_spectra.nphots += curr_spec.nphots * curr_spec.m
 
     elif isinstance(final_spectra, stingray.AveragedCrossspectrum):
-        np.multiply(np.add(final_spectra.pds1.power, curr_spec.pds1.power),
-                    curr_spec.m,
-                    out=final_spectra.pds1.power)
-        np.multiply(np.add(final_spectra.pds2.power, curr_spec.pds2.power),
-                    curr_spec.m,
-                    out=final_spectra.pds1.power)
-        final_spectra.nphots1 += curr_spec.nphots1
-        final_spectra.nphots2 += curr_spec.nphots2
+        final_spectra.pds1.power += curr_spec.pds1.power * curr_spec.m
+        final_spectra.pds1.power += curr_spec.pds1.power * curr_spec.m
+
+        final_spectra.nphots1 += curr_spec.nphots1 * curr_spec.m
+        final_spectra.nphots2 += curr_spec.nphots2 * curr_spec.m
 
     return final_spectra
 
@@ -812,7 +714,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     """
     times, counts, counts_err, gti_new, dt, err_dist, mjdref = _retrieveDataLC(
         data_path[0:2], raw=True)
-    gti_new = gti_new.reshape((gti_new.size // 2, 2))
+    final_gti = gti_new.reshape((gti_new.size // 2, 2))
 
     if spec_type.lower() == 'averagedpowerspectrum':
         fin_spec = stingray.AveragedPowerspectrum()
@@ -822,7 +724,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         times_other, counts_other, counts_err_other, gti_other, dt_other, err_dist_other, mjdref_other = _retrieveDataLC(
             data_path[2:4], raw=True)
         gti_new_other = gti_other.reshape((gti_other.size // 2, 2))
-
+        final_gti = cross_two_gtis(final_gti, gti_new_other)
     else:
         raise ValueError((f"Invalid spectra-type {spec_type}"))
 
@@ -834,9 +736,12 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         warnings.warn("Adapting segment_size to a fixed number of chunks")
         segment_size = new_segment_size
 
-    first_iter = True
     step = times.chunks[0] * nchunks_per_segment
+    prev_freq = None
     for i in range(0, times.size, step):
+        nmax = i + step
+        if nmax > times.size and (nmax - times.size) * dt < segment_size:
+            continue
         time = times.get_basic_selection(slice(i, i + step))
         count = counts.get_basic_selection(slice(i, i + step))
         count_err =  None
@@ -860,19 +765,21 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                 data=lc1,
                 segment_size=segment_size,
                 norm=norm,
-                gti=gti,
-                silent=silent,
+                gti=gti_new,
+                silent=True,
                 large_data=False)
 
-        elif isinstance(fin_spec, stingray.AveragedCrossspectrum):
+        else:
             time_other = times_other.get_basic_selection(slice(i, i + step))
             count_other = counts_other.get_basic_selection(slice(i, i + step))
             count_err_other = None
             if counts_err_other is not None:
-                count_err_other = counts_err_other.get_basic_selection(slice(i, i + step))
+                count_err_other = \
+                    counts_err_other.get_basic_selection(slice(i, i + step))
 
-            gti_new_other = np.asarray([[time_other[0] - 0.5 * dt, time_other[-1] + 0.5 * dt]])
-
+            gti_new_other = \
+                np.asarray([[time_other[0] - 0.5 * dt,
+                             time_other[-1] + 0.5 * dt]])
 
             lc2 = Lightcurve(
                 time=time_other,
@@ -884,176 +791,181 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                 dt=dt_other,
                 skip_checks=True)
 
+            assert np.allclose(gti_new, gti_new_other), \
+                "The two light curves should cover identical time frames"
+
             avg_spec = stingray.AveragedCrossspectrum(
                 data1=lc1,
                 data2=lc2,
                 segment_size=segment_size,
                 norm=norm,
-                gti=gti,
+                gti=gti_new,
                 power_type=power_type,
-                silent=silent,
+                silent=True,
                 large_data=False)
 
-        # REVIEW: Check if freq check is to be done this way
-        if first_iter:
+        # First iteration
+        if i == 0:
+            fin_spec = avg_spec
             prev_freq = avg_spec.freq
-            fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
-        else:
-            if np.array_equal(prev_freq, avg_spec.freq):
-                fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
-                prev_freq = avg_spec.freq
-            else:
-                raise ValueError((
-                    f"Spectra have unequal frequencies {avg_spec.freq.shape}{prev_freq.shape}"
-                ))
+            continue
 
-        first_iter = False
+        # All others
+        if not np.allclose(prev_freq, avg_spec.freq):
+            bad = ~np.isclose(prev_freq, avg_spec.freq)
+            raise ValueError((
+                f"Spectra have unequal frequencies: "
+                f"{avg_spec.freq[bad]} vs {prev_freq[bad]}"))
+        fin_spec = _addSpectra(fin_spec, avg_spec)
+        prev_freq = avg_spec.freq
 
+    fin_spec.gti = final_gti
     return fin_spec
 
 
-def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
-                 silent, dt1):
-    """
-    Create a chunked spectra from EventList stored on disk.
-
-    Parameters
-    ----------
-    data_path: string
-        Path to stored Lightcurve or EventList chunks on disk
-
-    spec_type: string
-        Type of spectra to create AveragedCrossspectrum or AveragedPowerspectrum.
-
-    segment_size: float
-        The size of each segment to average in the AveragedCrossspectrum/AveragedPowerspectrum.
-
-    norm: {``frac``, ``abs``, ``leahy``, ``none``}
-        The normalization of the (real part of the) cross spectrum
-
-    gti: 2-d float array
-        `[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
-        This choice overrides the GTIs in the single light curves. Use with
-        care!
-
-    power_type: string
-        Parameter to choose among complete, real part and magnitude of
-         the cross spectrum. None for AveragedPowerspectrum
-
-    silent: bool
-        Do not show a progress bar when generating an averaged cross spectrum.
-        Useful for the batch execution of many spectra
-
-    dt1: float
-        The time resolution of the light curve. Only needed when constructing
-        light curves in the case where data1 or data2 are of :class:EventList
-
-    Returns
-    -------
-    :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
-        Summed computed spectra
-
-    Raises
-    ------
-    ValueError
-        If spectra is not AveragedCrossspectrum or AveragedPowerspectrum
-
-    ValueError
-        If previous and current spectra frequencies are not identical
-    """
-    times, energy, ncounts, mjdref, dt, gti_new, pi_channel, notes = _retrieveDataEV(
-        data_path[0:2], raw=True)
-    gti_new = gti_new.reshape((gti_new.size // 2, 2))
-
-    if spec_type.lower() == 'averagedpowerspectrum':
-        fin_spec = stingray.AveragedPowerspectrum()
-
-    elif spec_type.lower() == 'averagedcrossspectrum':
-        fin_spec = stingray.AveragedCrossspectrum()
-        times_other, energy_other, ncounts_other, mjdref_other, dt_other, gti_other, pi_channel_other = _retrieveDataEV(
-            data_path[2:4], raw=True)
-        gti_new_other = gti_other.reshape((gti_other.size // 2, 2))
-
-    else:
-        raise ValueError((f"Invalid spectra {spec_type}"))
-
-    # TODO: Proper way to retrieve events
-    first_iter = True
-    for i in range(times.chunks[0], times.size, times.chunks[0]):
-        gti_new = cross_two_gtis(
-            gti_new,
-            np.asarray([[
-                times.get_basic_selection(i - times.chunks[0]) - 0.5 * dt,
-                times.get_basic_selection(i) + 0.5 * dt
-            ]]))
-        ev1 = EventList(
-            time=times.get_basic_selection(slice(i - times.chunks[0], i))
-            if times is not None else None,
-            energy=energy.get_basic_selection(slice(i - times.chunks[0], i))
-            if energy is not None else None,
-            ncounts=ncounts,
-            mjdref=mjdref,
-            dt=dt,
-            gti=gti_new,
-            pi=pi_channel.get_basic_selection(slice(i - times.chunks[0], i))
-            if isinstance(pi_channel, zarr.core.Array) else pi_channel,
-            notes=notes)
-
-        if isinstance(fin_spec, stingray.AveragedPowerspectrum):
-            avg_spec = stingray.AveragedPowerspectrum(
-                data=ev1,
-                segment_size=segment_size,
-                norm=norm,
-                gti=gti,
-                silent=silent,
-                dt=dt1,
-                large_data=False)
-
-        elif isinstance(fin_spec, stingray.AveragedCrossspectrum):
-            gti_new_other = cross_two_gtis(
-                gti_other,
-                np.asarray([[
-                    times_other.get_basic_selection(i - times_other.chunks[0])
-                    - 0.5 * dt_other,
-                    times_other.get_basic_selection(i) + 0.5 * dt_other
-                ]]))
-
-            ev2 = EventList(
-                time=times_other.get_basic_selection(slice(i - times.chunks[0], i)) if time_other is not None else None,
-                energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i)) if energy_other is not None else None,
-                ncounts=ncounts_other,
-                mjdref=mjdref_other,
-                dt=dt_other,
-                gti=gti_new_other,
-                pi=pi_channel_other.get_basic_selection(slice(i - times.chunks[0], i)) if isinstance(pi_channel_other, zarr.core.Array) else pi_channel_other,
-                notes=notes_other)
-
-            avg_spec = stingray.AveragedCrossspectrum(
-                data1=ev1,
-                data2=ev2,
-                segment_size=segment_size,
-                norm=norm,
-                gti=gti,
-                power_type=power_type,
-                silent=silent,
-                dt=dt1,
-                large_data=False)
-
-        if first_iter:
-            prev_freq = avg_spec.freq
-            fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
-        else:
-            if np.array_equal(prev_freq, avg_spec.freq):
-                fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
-                prev_freq = avg_spec.freq
-            else:
-                raise ValueError((
-                    f"Spectra have unequal frequencies {avg_spec.freq.shape}{prev_freq.shape}"
-                ))
-
-        first_iter = False
-
-    return fin_spec
+# def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
+#                  silent, dt1):
+#     """
+#     Create a chunked spectra from EventList stored on disk.
+#
+#     Parameters
+#     ----------
+#     data_path: string
+#         Path to stored Lightcurve or EventList chunks on disk
+#
+#     spec_type: string
+#         Type of spectra to create AveragedCrossspectrum or AveragedPowerspectrum.
+#
+#     segment_size: float
+#         The size of each segment to average in the AveragedCrossspectrum/AveragedPowerspectrum.
+#
+#     norm: {``frac``, ``abs``, ``leahy``, ``none``}
+#         The normalization of the (real part of the) cross spectrum
+#
+#     gti: 2-d float array
+#         `[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+#         This choice overrides the GTIs in the single light curves. Use with
+#         care!
+#
+#     power_type: string
+#         Parameter to choose among complete, real part and magnitude of
+#          the cross spectrum. None for AveragedPowerspectrum
+#
+#     silent: bool
+#         Do not show a progress bar when generating an averaged cross spectrum.
+#         Useful for the batch execution of many spectra
+#
+#     dt1: float
+#         The time resolution of the light curve. Only needed when constructing
+#         light curves in the case where data1 or data2 are of :class:EventList
+#
+#     Returns
+#     -------
+#     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
+#         Summed computed spectra
+#
+#     Raises
+#     ------
+#     ValueError
+#         If spectra is not AveragedCrossspectrum or AveragedPowerspectrum
+#
+#     ValueError
+#         If previous and current spectra frequencies are not identical
+#     """
+#     times, energy, ncounts, mjdref, dt, gti_new, pi_channel, notes = _retrieveDataEV(
+#         data_path[0:2], raw=True)
+#     gti_new = gti_new.reshape((gti_new.size // 2, 2))
+#
+#     if spec_type.lower() == 'averagedpowerspectrum':
+#         fin_spec = stingray.AveragedPowerspectrum()
+#
+#     elif spec_type.lower() == 'averagedcrossspectrum':
+#         fin_spec = stingray.AveragedCrossspectrum()
+#         times_other, energy_other, ncounts_other, mjdref_other, dt_other, gti_other, pi_channel_other = _retrieveDataEV(
+#             data_path[2:4], raw=True)
+#         gti_new_other = gti_other.reshape((gti_other.size // 2, 2))
+#
+#     else:
+#         raise ValueError((f"Invalid spectra {spec_type}"))
+#
+#     # TODO: Proper way to retrieve events
+#     first_iter = True
+#     for i in range(times.chunks[0], times.size, times.chunks[0]):
+#         gti_new = cross_two_gtis(
+#             gti_new,
+#             np.asarray([[
+#                 times.get_basic_selection(i - times.chunks[0]) - 0.5 * dt,
+#                 times.get_basic_selection(i) + 0.5 * dt
+#             ]]))
+#         ev1 = EventList(
+#             time=times.get_basic_selection(slice(i - times.chunks[0], i))
+#             if times is not None else None,
+#             energy=energy.get_basic_selection(slice(i - times.chunks[0], i))
+#             if energy is not None else None,
+#             ncounts=ncounts,
+#             mjdref=mjdref,
+#             dt=dt,
+#             gti=gti_new,
+#             pi=pi_channel.get_basic_selection(slice(i - times.chunks[0], i))
+#             if isinstance(pi_channel, zarr.core.Array) else pi_channel,
+#             notes=notes)
+#
+#         if isinstance(fin_spec, stingray.AveragedPowerspectrum):
+#             avg_spec = stingray.AveragedPowerspectrum(
+#                 data=ev1,
+#                 segment_size=segment_size,
+#                 norm=norm,
+#                 gti=gti,
+#                 silent=silent,
+#                 dt=dt1,
+#                 large_data=False)
+#
+#         elif isinstance(fin_spec, stingray.AveragedCrossspectrum):
+#             gti_new_other = cross_two_gtis(
+#                 gti_other,
+#                 np.asarray([[
+#                     times_other.get_basic_selection(i - times_other.chunks[0])
+#                     - 0.5 * dt_other,
+#                     times_other.get_basic_selection(i) + 0.5 * dt_other
+#                 ]]))
+#
+#             ev2 = EventList(
+#                 time=times_other.get_basic_selection(slice(i - times.chunks[0], i)) if time_other is not None else None,
+#                 energy=energy_other.get_basic_selection(slice(i - times.chunks[0], i)) if energy_other is not None else None,
+#                 ncounts=ncounts_other,
+#                 mjdref=mjdref_other,
+#                 dt=dt_other,
+#                 gti=gti_new_other,
+#                 pi=pi_channel_other.get_basic_selection(slice(i - times.chunks[0], i)) if isinstance(pi_channel_other, zarr.core.Array) else pi_channel_other,
+#                 notes=notes_other)
+#
+#             avg_spec = stingray.AveragedCrossspectrum(
+#                 data1=ev1,
+#                 data2=ev2,
+#                 segment_size=segment_size,
+#                 norm=norm,
+#                 gti=gti,
+#                 power_type=power_type,
+#                 silent=silent,
+#                 dt=dt1,
+#                 large_data=False)
+#
+#         if first_iter:
+#             prev_freq = avg_spec.freq
+#             fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
+#         else:
+#             if np.array_equal(prev_freq, avg_spec.freq):
+#                 fin_spec = _addSpectra(fin_spec, avg_spec, first_iter)
+#                 prev_freq = avg_spec.freq
+#             else:
+#                 raise ValueError((
+#                     f"Spectra have unequal frequencies {avg_spec.freq.shape}{prev_freq.shape}"
+#                 ))
+#
+#         first_iter = False
+#     fin_spec.gti = cross_two_gtis(gti_new, gti_new_other)
+#
+#     return fin_spec
 
 
 def createChunkedSpectra(data_type, spec_type, data_path, segment_size, norm,
@@ -1109,14 +1021,7 @@ def createChunkedSpectra(data_type, spec_type, data_path, segment_size, norm,
                                 power_type=power_type,
                                 silent=silent)
 
-    elif data_type.upper() == 'eventlist':
-        fin_spec = _chunkEVSpec(data_path=data_path,
-                                spec_type=spec_type,
-                                segment_size=segment_size,
-                                norm=norm,
-                                gti=gti,
-                                power_type=power_type,
-                                silent=silent,
-                                dt1=dt)
+    else:
+        raise RuntimeError("Only input ight curves are allowed")
 
     return _combineSpectra(fin_spec)
