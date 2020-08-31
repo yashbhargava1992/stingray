@@ -430,12 +430,10 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
     try:
         times = zarr.open_array(store=data_path[0], mode='r', path='times')
     except ValueError:
-        times = None
-        read_flag = False
+        raise ValueError("This file contains no events.")
 
     try:
         energy = zarr.open_array(store=data_path[0], mode='r', path='energy')
-        read_flag = True
     except ValueError:
         energy = None
 
@@ -443,15 +441,8 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
         pi_channel = zarr.open_array(store=data_path[0],
                                      mode='r',
                                      path='pi_channel')
-        if isinstance(pi_channel, int):
-            pi_channel = int(pi_channel[...])
-        read_flag = True
     except ValueError:
         pi_channel = None
-
-    if not read_flag:
-        raise ValueError(
-            ("The stored object is empty and hence cannot be read"))
 
     try:
         gti = zarr.open_array(store=data_path[0], mode='r', path='gti')[...]
@@ -496,31 +487,31 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
             raise ValueError(
                 "No element read. Offset cannot be larger than size of array")
 
+        time = times.get_basic_selection(slice(offset, chunk_size))
+        energy = energy.get_basic_selection(slice(offset, chunk_size)) \
+            if energy is not None else None
+        pi = pi_channel.get_basic_selection(slice(offset, chunk_size)) \
+            if pi_channel is not None else None
+
+        gti_new = None
         if gti is not None:
             gti_new = cross_two_gtis(
                 gti,
-                np.asarray([[
-                    times.get_basic_selection(offset) - 0.5 * float(dt),
-                    times.get_basic_selection(chunk_size - 1) + 0.5 * float(dt)
-                ]]))
-        else:
-            gti_new = gti
+                np.asarray([[time[0], time[-1]]]))
+            warnings.warn(
+                "GTI management is tricky when partially loading event lists "
+                "from ZARR arrays. Please use with care.", UserWarning)
 
         if pi_channel is not None:
-            if isinstance(pi_channel, int):
-                pi_channel = int(pi_channel[...])
-            elif isinstance(pi_channel, zarr.core.Array):
-                pi_channel = pi_channel.get_basic_selection(
-                    slice(offset, chunk_size))
+            pi_channel = pi_channel.get_basic_selection(
+                slice(offset, chunk_size))
         else:
             pi_channel = None
 
         return EventList(
-            time=times.get_basic_selection(slice(offset, chunk_size))
-            if times is not None else None,
-            energy=energy.get_basic_selection(slice(offset, chunk_size))
-            if energy is not None else None,
-            ncounts=float(ncounts),
+            time=time,
+            energy=energy,
+            ncounts=ncounts,
             mjdref=float(mjdref),
             dt=float(dt),
             gti=gti_new,

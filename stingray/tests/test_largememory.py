@@ -238,10 +238,10 @@ class TestRetrieveSpec(object):
                           dir_name=self.dir,
                           path=self.path)
 
-        lc_main = self.ev.to_lc(dt=1.0)
-        lc_other = ev.to_lc(dt=1.0)
-
-        assert lc_other.__eq__(lc_main) is True
+        assert np.allclose(ev.time, self.ev.time)
+        assert np.allclose(ev.pi, self.ev.pi)
+        with pytest.warns(UserWarning):
+            assert np.allclose(ev.gti, [[self.ev.time[0], self.ev.time[-1]]])
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_fits_data(self):
