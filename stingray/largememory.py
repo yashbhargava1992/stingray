@@ -1,14 +1,16 @@
 import os
+import random
+import string
 import warnings
 
 import numpy as np
-from astropy.io import fits
 from astropy import log
+from astropy.io import fits
 
 import stingray
 
-from .gti import cross_two_gtis
 from .events import EventList
+from .gti import cross_two_gtis
 from .io import high_precision_keyword_read
 from .lightcurve import Lightcurve
 from .utils import genDataPath
@@ -242,7 +244,7 @@ def _saveFITSZarr(f_name, dir_name, chunks):
                                                overwrite=True)
 
 
-def saveData(data, dir_name=None, chunks=None):
+def saveData(data, persist=False, dir_name=None, chunks=None):
     """
     Saves Lightcurve/EventList or any such data in chunks to disk.
 
@@ -250,6 +252,9 @@ def saveData(data, dir_name=None, chunks=None):
     ----------
     data: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList` object or string
         Data to be stored on the disk.
+
+    persist: bool
+        If the data is to be stored on the disk permanently.
 
     dir_name: string, optional
         Name of top level directory where data is to be stored, by default randomNameGenerate()
@@ -280,9 +285,14 @@ def saveData(data, dir_name=None, chunks=None):
                 "The chunk size will not depend on available RAM and will slowdown execution."
             )
 
-    import tempfile
-    if dir_name is None:
+    if not persist:
+        import tempfile
         dir_name = tempfile.mkdtemp()
+    else:
+        dir_name = ''.join(
+            random.choices(string.ascii_letters + string.digits,
+                           k=10)) if dir_name is None else dir_name
+
     if chunks is None:
         ideal_chunk, safe_chunk = 8388608, 4193404
 
@@ -389,7 +399,7 @@ def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
             time=times,
             counts=counts.get_basic_selection(slice(offset, chunk_size))[...],
             err=count_err.get_basic_selection(slice(offset, chunk_size))[...]
-                if count_err is not None else None,
+            if count_err is not None else None,
             gti=gti_new,
             dt=float(dt),
             err_dist=str(err_dist),
@@ -431,8 +441,6 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
     ValueError
         If the file to read is empty
     """
-    read_flag = True
-
     try:
         times = zarr.open_array(store=data_path[0], mode='r', path='times')
     except ValueError:
@@ -503,7 +511,9 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
         if gti is not None:
             gti_new = cross_two_gtis(
                 gti,
-                np.asarray([[time[0], time[-1]]]))
+                np.asarray(
+                    [[times[0] - 0.5 * float(dt),
+                      times[-1] + 0.5 * float(dt)]]))
             warnings.warn(
                 "GTI management is tricky when partially loading event lists "
                 "from ZARR arrays. Please use with care.", UserWarning)
@@ -525,7 +535,7 @@ def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
             notes=str(notes))
 
 
-def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_size=0, offset=0, raw=False):
+def retrieveData(data_type, dir_path, chunk_data=False, chunk_size=0, offset=0, raw=False):
     """
     Retrieves Lightcurve/EventList or any such data from disk.
 
@@ -534,11 +544,8 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
     data_type: string
         Type of data to retrieve i.e. Lightcurve, Eventlist, FITS data to retrieve
 
-    dir_name: string
-        Top level directory name for datastore
-
-    path: string, optional
-        path to retrieve data from, by default os.getcwd()
+    dir_path: string
+        Path to zarr datastore + Top level directory name for data
 
     chunk_data: bool, optional
         If only a chunk of data is to be retrieved, by default False
@@ -562,7 +569,7 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
     ValueError
         If datatype is not Lightcurve or EventList of FITS
     """
-    data_path = genDataPath(dir_name, path)
+    data_path = genDataPath(dir_path)
 
     if chunk_data is True and offset >= chunk_size:
         raise ValueError(("offset should be less than chunk_size"))
@@ -575,17 +582,11 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
             return _retrieveDataLC(data_path, raw=raw)
 
     # REVIEW: Check need for creating seperate fits, retrieve function for extensibility and due to different data
-    elif data_type.lower() == 'eventlist':
+    elif data_type.lower() == 'eventlist' or data_type.lower() == 'fits':
         if chunk_data is True and chunk_size > 0:
             return _retrieveDataEV(data_path, int(chunk_size), int(offset), raw=False)
         else:
             return _retrieveDataEV(data_path, raw=raw)
-
-    elif data_type.lower() == 'fits':
-        if raw:
-            return _retrieveDataFITS(data_path, raw=True)
-        else:
-            pass
 
     else:
         raise ValueError(
@@ -823,6 +824,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     return fin_spec
 
 
+# TODO: Add support for eventlist soon!
 # def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 #                  silent, dt1):
 #     """
@@ -888,7 +890,6 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
 #     else:
 #         raise ValueError((f"Invalid spectra {spec_type}"))
 #
-#     # TODO: Proper way to retrieve events
 #     first_iter = True
 #     for i in range(times.chunks[0], times.size, times.chunks[0]):
 #         gti_new = cross_two_gtis(
@@ -1022,6 +1023,6 @@ def createChunkedSpectra(data_type, spec_type, data_path, segment_size, norm,
                                 silent=silent)
 
     else:
-        raise RuntimeError("Only input ight curves are allowed")
+        raise RuntimeError("Only input light curves are allowed")
 
     return _combineSpectra(fin_spec)

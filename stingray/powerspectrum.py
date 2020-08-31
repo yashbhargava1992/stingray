@@ -370,7 +370,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             raise ValueError("segment_size must be finite!")
 
         if large_data and data is not None:
-            chunks=None
+            chunks = None
+
             if isinstance(data, EventList):
                 input_data = 'EventList'
             elif isinstance(data, Lightcurve):
@@ -381,9 +382,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                 raise ValueError(
                     f'Invalid input data type: {type(data).__name__}')
 
-            f_name = saveData(data, chunks=chunks)
+            dir_path = saveData(data, persist=False, chunks=chunks)
 
-            data_path = genDataPath(f_name)
+            data_path = genDataPath(dir_path)
             spec = createChunkedSpectra(input_data,
                                         'AveragedPowerspectrum',
                                         data_path=data_path,

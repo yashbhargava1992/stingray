@@ -978,16 +978,13 @@ def find_nearest(array, value):
         return array[idx], idx
 
 
-def genDataPath(dir_name, path=os.getcwd()):
+def genDataPath(dir_path):
     """Generates data path to chunks.
 
     Parameters
     ----------
-    dir_name : string
-        Top level directory name for data
-
-    path : string, optional
-        Path to zarr datastore, by default os.getcwd()
+    dir_path: string
+        Path to zarr datastore + Top level directory name for data
 
     Returns
     -------
@@ -1000,14 +997,14 @@ def genDataPath(dir_name, path=os.getcwd()):
         If directory does not exist
     """
     path_list = []
-
-    if os.path.isdir(os.path.join(path, dir_name)):
-        if not (os.path.isdir(os.path.join(path, f'{dir_name}/main_data/')) or os.path.join(path, f'{dir_name}/meta_data/')):
+    if os.path.isdir(dir_path):
+        if not (os.path.isdir(os.path.join(dir_path, 'main_data/'))
+                or os.path.join(dir_path, 'meta_data/')):
             raise IOError(("Directory does not exist."))
 
         else:
-            path_list.append(os.path.join(path, f'{dir_name}/main_data/'))
-            path_list.append(os.path.join(path, f'{dir_name}/meta_data/'))
+            path_list.append(os.path.join(dir_path, 'main_data/'))
+            path_list.append(os.path.join(dir_path, 'meta_data/'))
 
             return path_list
 

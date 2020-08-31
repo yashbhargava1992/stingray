@@ -39,8 +39,6 @@ class TestSaveSpec(object):
         cls.ev = EventList(time=evtimes, pi=pi, energy=energy, gti=[[0, 1e7]],
                            dt=1e-5, notes="Bu")
 
-        cls.file = tempfile.mkdtemp()
-
     @pytest.mark.skipif('not HAS_ZARR')
     def test_save_wrong_data(self):
         with pytest.raises(ValueError) as excinfo:
@@ -53,10 +51,10 @@ class TestSaveSpec(object):
         # Make sure counts_err exists
         _ = test_lc.counts_err
 
-        saveData(test_lc, self.file)
+        dir_name = saveData(test_lc, persist=False)
 
-        main = os.path.join(self.file, 'main_data')
-        meta = os.path.join(self.file, 'meta_data')
+        main = os.path.join(dir_name, 'main_data')
+        meta = os.path.join(dir_name, 'meta_data')
 
         errors = []
 
@@ -95,10 +93,10 @@ class TestSaveSpec(object):
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_save_ev(self):
-        saveData(self.ev, self.file)
+        dir_name = saveData(self.ev, persist=False)
 
-        main = os.path.join(self.file, 'main_data')
-        meta = os.path.join(self.file, 'meta_data')
+        main = os.path.join(dir_name, 'main_data')
+        meta = os.path.join(dir_name, 'meta_data')
 
         errors = []
 
@@ -142,7 +140,7 @@ class TestSaveSpec(object):
     @pytest.mark.skipif('not HAS_ZARR')
     def test_save_fits_data(self):
         fname = os.path.join(datadir, 'monol_testA.evt')
-        saveData(fname, self.file)
+        dir_name = saveData(fname, persist=False)
 
         evtdata = load_events_and_gtis(fname, additional_columns=['PI'])
         mjdref_def = ref_mjd(fname, hdu=1)
@@ -152,8 +150,8 @@ class TestSaveSpec(object):
         tstart_def = evtdata.t_start
         tstop_def = evtdata.t_stop
 
-        main = os.path.join(self.file, 'main_data')
-        meta = os.path.join(self.file, 'meta_data')
+        main = os.path.join(dir_name, 'main_data')
+        meta = os.path.join(dir_name, 'meta_data')
 
         errors = []
 
@@ -211,37 +209,35 @@ class TestRetrieveSpec(object):
                            dt=1e-5,
                            notes="Bu")
 
-        file = tempfile.mkdtemp()
-        cls.path, cls.dir = os.path.split(file)
+        cls.lc_path = saveData(cls.lc, persist=False)
+        cls.ev_path = saveData(cls.ev, persist=False)
+
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_wrong_data(self):
-        saveData(self.lc, os.path.join(self.path, self.dir))
         with pytest.raises(ValueError) as excinfo:
-            retrieveData("A string", self.dir, self.path)
+            retrieveData("A string", self.lc_path)
+
         assert 'Invalid data: A string (str)' in str(excinfo.value)
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_lc_data(self):
-        saveData(self.lc, os.path.join(self.path, self.dir))
-
         lc = retrieveData(data_type='Lightcurve',
-                          dir_name=self.dir,
-                          path=self.path)
+                          dir_path=self.lc_path)
+
         assert self.lc.__eq__(lc) is True
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_ev_data(self):
-        saveData(self.ev, os.path.join(self.path, self.dir))
-
         with pytest.warns(UserWarning):
             ev = retrieveData(data_type='EventList',
-                              dir_name=self.dir,
-                              path=self.path)
+                              dir_path=self.ev_path)
+
+        gti = np.asarray([[self.ev.time[0], self.ev.time[-1]]])
 
         assert np.allclose(ev.time, self.ev.time)
         assert np.allclose(ev.pi, self.ev.pi)
-        assert np.allclose(ev.gti, [[self.ev.time[0], self.ev.time[-1]]])
+        assert np.allclose(ev.gti, gti)
 
     # @pytest.mark.skipif('not HAS_ZARR')
     # def test_retrieve_fits_data(self):
@@ -280,11 +276,8 @@ class TestRetrieveSpec(object):
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_lc_chunk_data(self):
-        saveData(self.lc, os.path.join(self.path, self.dir))
-
         lc = retrieveData(data_type='Lightcurve',
-                          dir_name=self.dir,
-                          path=self.path,
+                          dir_path=self.lc_path,
                           chunk_data=True,
                           chunk_size=10**5,
                           offset=0,
@@ -296,29 +289,24 @@ class TestRetrieveSpec(object):
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_ev_chunk_data(self):
-        saveData(self.ev, os.path.join(self.path, self.dir))
-
         maxidx = 10**5
         ev = retrieveData(data_type='EventList',
-                          dir_name=self.dir,
-                          path=self.path,
+                          dir_path=self.ev_path,
                           chunk_data=True,
                           chunk_size=maxidx,
                           offset=0,
                           raw=False)
 
+        gti = np.asarray([[self.ev.time[0], self.ev.time[-1]]])
+
         assert np.allclose(ev.time, self.ev.time[:maxidx])
         assert np.allclose(ev.pi, self.ev.pi[:maxidx])
-        assert np.allclose(
-            ev.gti, [[self.ev.time[0], self.ev.time[maxidx - 1]]])
+        assert np.allclose(ev.gti, gti)
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_lc_offset_data(self):
-        saveData(self.lc, os.path.join(self.path, self.dir))
-
         lc = retrieveData(data_type='Lightcurve',
-                          dir_name=self.dir,
-                          path=self.path,
+                          dir_path=self.lc_path,
                           chunk_data=True,
                           chunk_size=10**5,
                           offset=10**2,
@@ -330,22 +318,20 @@ class TestRetrieveSpec(object):
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_ev_offset_data(self):
-        saveData(self.ev, os.path.join(self.path, self.dir))
-
         maxidx = 10 ** 5
         offset = 100
         ev = retrieveData(data_type='EventList',
-                          dir_name=self.dir,
-                          path=self.path,
+                          dir_path=self.ev_path,
                           chunk_data=True,
                           chunk_size=maxidx,
                           offset=offset,
                           raw=False)
 
+        gti = np.asarray([[self.ev.time[0], self.ev.time[-1]]])
+
         assert np.allclose(ev.time, self.ev.time[offset:maxidx])
         assert np.allclose(ev.pi, self.ev.pi[offset:maxidx])
-        assert np.allclose(
-            ev.gti, [[self.ev.time[offset], self.ev.time[maxidx - 1]]])
+        assert np.allclose(ev.gti, gti)
 
 
 class TestChunkPS(object):
@@ -356,15 +342,10 @@ class TestChunkPS(object):
         counts1 = np.random.poisson(10, time.size)
         cls.lc1 = Lightcurve(time, counts1, skip_checks=True,
                              gti=[[0, maxtime]])
-        cls.file1 = tempfile.mkdtemp()
 
         counts2 = np.random.poisson(10, time.size)
         cls.lc2 = Lightcurve(time, counts2, skip_checks=True,
                              gti=[[0, maxtime]])
-        cls.file2 = tempfile.mkdtemp()
-
-        saveData(cls.lc1, cls.file1, chunks=4096)
-        saveData(cls.lc2, cls.file2, chunks=4096)
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_invalid_data_to_pds(self):

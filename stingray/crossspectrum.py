@@ -1060,11 +1060,11 @@ class AveragedCrossspectrum(Crossspectrum):
                 raise ValueError(
                     f'Invalid input data type: {type(data1).__name__}')
 
-            f_name1 = saveData(data1, chunks=chunks)
-            f_name2 = saveData(data2, chunks=chunks)
+            dir_path1 = saveData(data1, persist=False, chunks=chunks)
+            dir_path2 = saveData(data2, persist=False, chunks=chunks)
 
-            data_path1 = genDataPath(f_name1)
-            data_path2 = genDataPath(f_name2)
+            data_path1 = genDataPath(dir_path1)
+            data_path2 = genDataPath(dir_path2)
 
             spec = createChunkedSpectra(input_data,
                                         'AveragedCrossspectrum',
