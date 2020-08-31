@@ -364,6 +364,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if data is None:
             data = lc
 
+        if segment_size is None and data is not None:
+            raise ValueError("segment_size must be specified")
+        if segment_size is not None and not np.isfinite(segment_size):
+            raise ValueError("segment_size must be finite!")
+
         if large_data and data is not None:
             if isinstance(data, EventList):
                 input_data = 'EventList'
@@ -391,11 +396,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             return
 
         self.type = "powerspectrum"
-        if segment_size is None and data is not None:
-            raise ValueError("segment_size must be specified")
-        if segment_size is not None and not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite!")
-
         self.dt = dt
 
         if isinstance(data, EventList):

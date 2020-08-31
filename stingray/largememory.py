@@ -313,7 +313,7 @@ def saveData(data, dir_name=randomNameGenerate()):
     return dir_name
 
 
-def _retrieveDataLC(data_path, chunk_size, offset, raw):
+def _retrieveDataLC(data_path, chunk_size=0, offset=0, raw=False):
     """
     Retrieve data from stored Lightcurve on disk.
 
@@ -322,14 +322,14 @@ def _retrieveDataLC(data_path, chunk_size, offset, raw):
     data_path: list
         Path to datastore
 
-    chunk_size: int
-        Size of data to be retrieved
+    chunk_size: int, optional
+        Size of data to be retrieved, default 0
 
-    offset: int
-        Offset or start element to read the array from
+    offset: int, optional
+        Offset or start element to read the array from, default 0
 
-    raw: bool
-        Only to be used for if raw memory mapped zarr arrays are to be obtained
+    raw: bool, optional
+        Only to be used for if raw memory mapped zarr arrays are to be obtained, default False
 
     Returns
     -------
@@ -343,11 +343,15 @@ def _retrieveDataLC(data_path, chunk_size, offset, raw):
     """
     times = zarr.open_array(store=data_path[0], mode='r', path='times')
     counts = zarr.open_array(store=data_path[0], mode='r', path='counts')
-    gti = zarr.open_array(store=data_path[0], mode='r', path='gti')
     try:
-        count_err = zarr.open_array(store=data_path[0], mode='r', path='count_err')
+        count_err = zarr.open_array(store=data_path[0],
+                                    mode='r',
+                                    path='count_err')
     except ValueError:
-        counts_err = None
+        count_err = None
+
+    gti = zarr.open_array(store=data_path[0], mode='r', path='gti')[...]
+    gti = gti.reshape((gti.size // 2, 2))
 
     dt = zarr.open_array(store=data_path[1], mode='r', path='dt')[...]
     mjdref = zarr.open_array(store=data_path[1], mode='r', path='mjdref')[...]
@@ -355,9 +359,10 @@ def _retrieveDataLC(data_path, chunk_size, offset, raw):
                                path='err_dist')[...]
 
     if raw:
-        return (times, counts, count_err, gti, dt, err_dist, mjdref)
+        return (times, counts, count_err, gti, float(dt), str(err_dist),
+                float(mjdref))
     else:
-        if chunk_size > times.size:
+        if chunk_size == 0 or chunk_size > times.size:
             chunk_size = times.size
             warnings.warn(
                 f"The chunk size is set to the size of the whole array {chunk_size}"
@@ -370,22 +375,23 @@ def _retrieveDataLC(data_path, chunk_size, offset, raw):
         gti_new = cross_two_gtis(
             gti,
             np.asarray([[
-                times.get_basic_selection(offset) - 0.5 * dt,
-                times.get_basic_selection(chunk_size) + 0.5 * dt
+                times.get_basic_selection(offset) - 0.5 * float(dt),
+                times.get_basic_selection(chunk_size - 1) + 0.5 * float(dt)
             ]]))
 
         return Lightcurve(
             time=times.get_basic_selection(slice(offset, chunk_size)),
             counts=counts.get_basic_selection(slice(offset, chunk_size)),
-            err=count_err.get_basic_selection(slice(offset, chunk_size)) if counts_err is not None else None,
+            err=count_err.get_basic_selection(slice(offset, chunk_size))
+            if count_err is not None else None,
             gti=gti_new,
-            dt=dt,
+            dt=float(dt),
             err_dist=str(err_dist),
-            mjdref=mjdref,
+            mjdref=float(mjdref),
             skip_checks=True)
 
 
-def _retrieveDataEV(data_path, chunk_size, offset, raw):
+def _retrieveDataEV(data_path, chunk_size=0, offset=0, raw=False):
     """
     Retrieve data from stored Lightcurve on disk.
 
@@ -437,6 +443,8 @@ def _retrieveDataEV(data_path, chunk_size, offset, raw):
         pi_channel = zarr.open_array(store=data_path[0],
                                      mode='r',
                                      path='pi_channel')
+        if isinstance(pi_channel, int):
+            pi_channel = int(pi_channel[...])
         read_flag = True
     except ValueError:
         pi_channel = None
@@ -447,6 +455,7 @@ def _retrieveDataEV(data_path, chunk_size, offset, raw):
 
     try:
         gti = zarr.open_array(store=data_path[0], mode='r', path='gti')[...]
+        gti = gti.reshape((gti.size // 2, 2))
     except ValueError:
         gti = None
 
@@ -474,15 +483,16 @@ def _retrieveDataEV(data_path, chunk_size, offset, raw):
         notes = ""
 
     if raw:
-        return (times, energy, ncounts, mjdref, dt, gti, pi_channel)
+        return (times, energy, int(ncounts), float(mjdref), dt, gti,
+                pi_channel, str(notes))
     else:
-        if chunk_size > times.size or chunk_size > energy.size or chunk_size == 0:
-            chunk_size = times.size if times.size is not None else energy.size
+        if chunk_size == 0 or chunk_size > times.size:
+            chunk_size = times.size
             warnings.warn(
                 f"The chunk size is set to the size of the whole array {chunk_size}"
             )
 
-        if offset > times.size or offset > energy.size:
+        if offset > times.size:
             raise ValueError(
                 "No element read. Offset cannot be larger than size of array")
 
@@ -490,23 +500,31 @@ def _retrieveDataEV(data_path, chunk_size, offset, raw):
             gti_new = cross_two_gtis(
                 gti,
                 np.asarray([[
-                    times.get_basic_selection(offset) - 0.5 * dt,
-                    times.get_basic_selection(chunk_size) + 0.5 * dt
+                    times.get_basic_selection(offset) - 0.5 * float(dt),
+                    times.get_basic_selection(chunk_size - 1) + 0.5 * float(dt)
                 ]]))
         else:
             gti_new = gti
 
+        if pi_channel is not None:
+            if isinstance(pi_channel, int):
+                pi_channel = int(pi_channel[...])
+            elif isinstance(pi_channel, zarr.core.Array):
+                pi_channel = pi_channel.get_basic_selection(
+                    slice(offset, chunk_size))
+        else:
+            pi_channel = None
+
         return EventList(
-            time=times.get_basic_selection(slice(i - times.chunks[0], i))
+            time=times.get_basic_selection(slice(offset, chunk_size))
             if times is not None else None,
-            energy=energy.get_basic_selection(slice(i - times.chunks[0], i))
+            energy=energy.get_basic_selection(slice(offset, chunk_size))
             if energy is not None else None,
-            ncounts=ncounts,
-            mjdref=mjdref,
-            dt=dt,
+            ncounts=float(ncounts),
+            mjdref=float(mjdref),
+            dt=float(dt),
             gti=gti_new,
-            pi=pi_channel.get_basic_selection(slice(i - times.chunks[0], i))
-            if pi_channel is not None else None,
+            pi=pi_channel,
             notes=str(notes))
 
 
@@ -517,7 +535,7 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
     Parameters
     ----------
     data_type: string
-        Type of data to retrieve i.e. Lightcurve, Eventlist data to retrieve
+        Type of data to retrieve i.e. Lightcurve, Eventlist, FITS data to retrieve
 
     dir_name: string
         Top level directory name for datastore
@@ -547,7 +565,7 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
     ValueError
         If datatype is not Lightcurve or EventList of FITS
     """
-    data_path = genDataPath(dir_name, path, data_type)
+    data_path = genDataPath(dir_name, path)
 
     if chunk_data is True and offset >= chunk_size:
         raise ValueError(("offset should be less than chunk_size"))
@@ -556,7 +574,10 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
         if chunk_data is True and chunk_size > 0:
             return _retrieveDataLC(data_path, int(chunk_size), int(offset), raw=False)
         else:
-            return _retrieveDataLC(data_path, raw=raw)
+            if raw:
+                return _retrieveDataLC(data_path, raw=True)
+            else:
+                return _retrieveDataLC(data_path, raw=False)
 
     # REVIEW: Check need for creating seperate fits, retrieve function for extensibility and due to different data
     elif data_type.lower() == 'eventlist' or data_type.lower() == 'fits':
@@ -566,7 +587,8 @@ def retrieveData(data_type, dir_name, path=os.getcwd(), chunk_data=False, chunk_
             return _retrieveDataEV(data_path, raw=raw)
 
     else:
-        raise ValueError((f"Invalid input data: {data_type}"))
+        raise ValueError(
+            (f"Invalid data: {data_type} ({type(data_type).__name__})"))
 
 
 # REVIEW: Review computation performed
@@ -584,10 +606,6 @@ def _combineSpectra(final_spectra):
     :class:`stingray.events.EventList` object or :class:`stingray.Lighrcurve` object
         Final resulting spectra.
     """
-    final_spectra.power /= final_spectra.m
-    final_spectra.unnorm_power /= final_spectra.m
-    final_spectra.power_err = np.sqrt(final_spectra.power_err) / final_spectra.m
-
     if isinstance(final_spectra, stingray.AveragedCrossspectrum) and not \
             isinstance(final_spectra, stingray.AveragedPowerspectrum):
         final_spectra.pds1.power /= final_spectra.m
@@ -619,8 +637,7 @@ def _addSpectra(final_spectra, curr_spec, first_iter):
     """
     if first_iter:
         final_spectra = curr_spec
-        final_spectra.freq = final_spectra.freq.astype('float128')
-        final_spectra.power = final_spectra.power.astype('complex256')
+        final_spectra.power = final_spectra.power.astype('complex128')
         final_spectra.unnorm_power = final_spectra.unnorm_power.astype(
             'complex256')
 
@@ -632,9 +649,9 @@ def _addSpectra(final_spectra, curr_spec, first_iter):
     np.multiply(np.add(final_spectra.unnorm_power, curr_spec.unnorm_power),
                 curr_spec.m,
                 out=final_spectra.unnorm_power)
-    np.add(np.multiply(np.square(curr_spec.power_err), curr_spec.m),
-           final_spectra.power_err,
-           out=final_spectra.power_err)
+    np.sqrt(np.add(np.square(final_spectra.power_err),
+                   np.square(curr_spec.power_err)),
+            out=final_spectra.power_err)
 
     final_spectra.m += curr_spec.m
     final_spectra.df = (final_spectra.df + curr_spec.df) / 2
@@ -707,6 +724,7 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     """
     times, counts, count_err, gti_new, dt, err_dist, mjdref = _retrieveDataLC(
         data_path[0:2], raw=True)
+    gti_new = gti_new.reshape((gti_new.size // 2, 2))
 
     if spec_type.lower() == 'averagedpowerspectrum':
         fin_spec = stingray.AveragedPowerspectrum()
@@ -715,12 +733,12 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         fin_spec = stingray.AveragedCrossspectrum()
         times_other, counts_other, count_err_other, gti_other, dt_other, err_dist_other, mjdref_other = _retrieveDataLC(
             data_path[2:4], raw=True)
+        gti_new_other = gti_other.reshape((gti_other.size // 2, 2))
 
     else:
         raise ValueError((f"Invalid spectra-type {spec_type}"))
 
     first_iter = True
-
     for i in range(times.chunks[0], times.size, times.chunks[0]):
         gti_new = cross_two_gtis(
             gti_new,
@@ -732,22 +750,18 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         lc1 = Lightcurve(
             time=times.get_basic_selection(slice(i - times.chunks[0], i)),
             counts=counts.get_basic_selection(slice(i - times.chunks[0], i)),
-            err=count_err.get_basic_selection(slice(i - times.chunks[0], i)) if count_err is not None else None,
+            err=count_err.get_basic_selection(slice(i - times.chunks[0], i))
+            if count_err is not None else None,
             gti=gti_new,
-            err_dist=str(err_dist),
+            err_dist=err_dist,
             mjdref=mjdref,
             dt=dt,
             skip_checks=True)
 
         if isinstance(fin_spec, stingray.AveragedPowerspectrum):
-            if segment_size < lc1.time.size / 8192:
-                warnings.warn(
-                    f"It is advisable to have the segment size greater than or equal to {lc1.time.size / 8192}. Very small segment sizes may greatly increase computation times."
-                )
-
             avg_spec = stingray.AveragedPowerspectrum(
                 data=lc1,
-                segment_size=lc1.time.size / segment_size,
+                segment_size=segment_size,
                 norm=norm,
                 gti=gti,
                 silent=silent,
@@ -767,20 +781,15 @@ def _chunkLCSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                 counts=counts_other.get_basic_selection(slice(i - times.chunks[0], i)),
                 err=count_err_other.get_basic_selection(slice(i - times.chunks[0], i)) if count_err_other is not None else None,
                 gti=gti_new_other,
-                err_dist=str(err_dist_other),
+                err_dist=err_dist_other,
                 mjdref=mjdref_other,
                 dt=dt_other,
                 skip_checks=True)
 
-            if segment_size < lc1.time.size / 4096:
-                warnings.warn(
-                    f"It is advisable to have the segment size greater than or equal to {lc1.time.size / 4096}. Very small segment sizes may greatly increase computation times."
-                )
-
             avg_spec = stingray.AveragedCrossspectrum(
                 data1=lc1,
                 data2=lc2,
-                segment_size=lc1.time.size / segment_size,
+                segment_size=segment_size,
                 norm=norm,
                 gti=gti,
                 power_type=power_type,
@@ -854,8 +863,9 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
     ValueError
         If previous and current spectra frequencies are not identical
     """
-    times, energy, ncounts, mjdref, dt, gti, pi_channel = _retrieveDataEV(
+    times, energy, ncounts, mjdref, dt, gti_new, pi_channel, notes = _retrieveDataEV(
         data_path[0:2], raw=True)
+    gti_new = gti_new.reshape((gti_new.size // 2, 2))
 
     if spec_type.lower() == 'averagedpowerspectrum':
         fin_spec = stingray.AveragedPowerspectrum()
@@ -864,6 +874,7 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
         fin_spec = stingray.AveragedCrossspectrum()
         times_other, energy_other, ncounts_other, mjdref_other, dt_other, gti_other, pi_channel_other = _retrieveDataEV(
             data_path[2:4], raw=True)
+        gti_new_other = gti_other.reshape((gti_other.size // 2, 2))
 
     else:
         raise ValueError((f"Invalid spectra {spec_type}"))
@@ -887,18 +898,13 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
             dt=dt,
             gti=gti_new,
             pi=pi_channel.get_basic_selection(slice(i - times.chunks[0], i))
-            if pi_channel is not None else None,
-            notes=str(notes))
+            if isinstance(pi_channel, zarr.core.Array) else pi_channel,
+            notes=notes)
 
         if isinstance(fin_spec, stingray.AveragedPowerspectrum):
-            if segment_size < ev1.time.size / 8192:
-                warnings.warn(
-                    f"It is advisable to have the segment size greater than or equal to {ev1.time.size / 8192}. Very small segment sizes may greatly increase computation times."
-                )
-
             avg_spec = stingray.AveragedPowerspectrum(
                 data=ev1,
-                segment_size=ev1.time.size / segment_size,
+                segment_size=segment_size,
                 norm=norm,
                 gti=gti,
                 silent=silent,
@@ -921,18 +927,13 @@ def _chunkEVSpec(data_path, spec_type, segment_size, norm, gti, power_type,
                 mjdref=mjdref_other,
                 dt=dt_other,
                 gti=gti_new_other,
-                pi=pi_channel_other.get_basic_selection(slice(i - times.chunks[0], i)) if pi_channel_other is not None else None,
-                notes=str(notes_other))
-
-            if segment_size < ev1.time.size / 4096:
-                warnings.warn(
-                    f"It is advisable to have the segment size greater than or equal to {ev1.time.size / 4096}. Very small segment sizes may greatly increase computation times."
-                )
+                pi=pi_channel_other.get_basic_selection(slice(i - times.chunks[0], i)) if isinstance(pi_channel_other, zarr.core.Array) else pi_channel_other,
+                notes=notes_other)
 
             avg_spec = stingray.AveragedCrossspectrum(
                 data1=ev1,
                 data2=ev2,
-                segment_size=ev1.time.size / segment_size,
+                segment_size=segment_size,
                 norm=norm,
                 gti=gti,
                 power_type=power_type,
