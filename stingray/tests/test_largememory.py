@@ -298,20 +298,19 @@ class TestRetrieveSpec(object):
     def test_retrieve_ev_chunk_data(self):
         saveData(self.ev, os.path.join(self.path, self.dir))
 
+        maxidx = 10**5
         ev = retrieveData(data_type='EventList',
                           dir_name=self.dir,
                           path=self.path,
                           chunk_data=True,
-                          chunk_size=10**5,
+                          chunk_size=maxidx,
                           offset=0,
                           raw=False)
 
-        lc_main = self.ev.to_lc(dt=1.0)
-        lc_main = lc_main.truncate(stop=10**5)
-
-        lc_other = ev.to_lc(dt=1.0)
-
-        assert lc_main.__eq__(lc_other) is True
+        assert np.allclose(ev.time, self.ev.time[:maxidx])
+        assert np.allclose(ev.pi, self.ev.pi[:maxidx])
+        assert np.allclose(
+            ev.gti, [[self.ev.time[0], self.ev.time[maxidx - 1]]])
 
     @pytest.mark.skipif('not HAS_ZARR')
     def test_retrieve_lc_offset_data(self):
@@ -333,20 +332,20 @@ class TestRetrieveSpec(object):
     def test_retrieve_ev_offset_data(self):
         saveData(self.ev, os.path.join(self.path, self.dir))
 
+        maxidx = 10 ** 5
+        offset = 100
         ev = retrieveData(data_type='EventList',
                           dir_name=self.dir,
                           path=self.path,
                           chunk_data=True,
-                          chunk_size=10**5,
-                          offset=10**2,
+                          chunk_size=maxidx,
+                          offset=offset,
                           raw=False)
 
-        lc_main = self.ev.to_lc(dt=1.0)
-        lc_main = lc_main.truncate(start=10**2, stop=10**5)
-
-        lc_other = ev.to_lc(dt=1.0)
-
-        assert lc_main.__eq__(lc_other) is True
+        assert np.allclose(ev.time, self.ev.time[offset:maxidx])
+        assert np.allclose(ev.pi, self.ev.pi[offset:maxidx])
+        assert np.allclose(
+            ev.gti, [[self.ev.time[offset], self.ev.time[maxidx - 1]]])
 
 
 class TestChunkPS(object):
