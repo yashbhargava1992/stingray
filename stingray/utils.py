@@ -895,7 +895,7 @@ def poisson_symmetrical_errors(counts):
     err_high -= np.asarray(count_values)
     err = (np.absolute(err_low) + np.absolute(err_high)) / 2.0
 
-    idxs = np.searchsorted(count_values, counts_int.sort())
+    idxs = np.searchsorted(count_values, counts_int)
     return err[idxs]
 
 
