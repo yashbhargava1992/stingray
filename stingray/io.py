@@ -727,7 +727,7 @@ def _retrieve_fits_object(filename, **kwargs):
     else:
         cols = []
 
-    with fits.open(filename) as hdulist:
+    with fits.open(filename, memmap=False) as hdulist:
         fits_cols = []
 
         # Get columns from all tables
