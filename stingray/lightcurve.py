@@ -408,14 +408,16 @@ class Lightcurve(object):
 
         check_gtis(self.gti)
 
-        dt_array = []
-        for g in self.gti:
-            mask = create_gti_mask(self.time, [g], dt=self.dt)
-            t = self.time[mask]
-            dt_array.extend(np.diff(t))
-        dt_array = np.asarray(dt_array)
+        idxs = np.searchsorted(self.time, self.gti)
+        uneven = False
+        for idx in range(idxs.shape[0]):
+            istart, istop = idxs[idx, 0], min(idxs[idx, 1], self.time.size - 1)
 
-        if not (np.allclose(dt_array, np.repeat(self.dt, dt_array.shape[0]))):
+            local_diff = np.diff(self.time[istart:istop])
+            if np.any(~np.isclose(local_diff, self.dt)):
+                uneven = True
+                break
+        if uneven:
             simon("Bin sizes in input time array aren't equal throughout! "
                   "This could cause problems with Fourier transforms. "
                   "Please make the input time evenly sampled.")
@@ -457,10 +459,13 @@ class Lightcurve(object):
             The new LC shifted by ``time_shift``
 
         """
-        new_lc = Lightcurve(self.time + time_shift, self.counts,
-                            err=self.counts_err,
-                            gti=self.gti + time_shift, mjdref=self.mjdref,
-                            dt=self.dt, err_dist=self.err_dist,
+        new_lc = Lightcurve(self.time + time_shift,
+                            self.counts,
+                            err=self._counts_err,
+                            gti=self.gti + time_shift,
+                            mjdref=self.mjdref,
+                            dt=self.dt,
+                            err_dist=self.err_dist,
                             skip_checks=True)
 
         return new_lc
@@ -510,10 +515,10 @@ class Lightcurve(object):
                   "We are setting the errors to zero to avoid complications.")
             new_counts_err = np.zeros_like(new_counts)
         elif self.err_dist.lower() in valid_statistics:
-                new_counts_err = \
-                    np.sqrt(np.add(self.counts_err[mask_self]**2,
-                                   other.counts_err[mask_other]**2))
-            # More conditions can be implemented for other statistics
+            new_counts_err = \
+                np.sqrt(np.add(self.counts_err[mask_self]**2,
+                               other.counts_err[mask_other]**2))
+        # More conditions can be implemented for other statistics
         else:
             raise StingrayError("Statistics not recognized."
                                 " Please use one of these: "
