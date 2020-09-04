@@ -717,7 +717,7 @@ def _retrieve_fits_object(filename, **kwargs):
     else:
         cols = []
 
-    with fits.open(filename) as hdulist:
+    with fits.open(filename, memmap=False) as hdulist:
         fits_cols = []
 
         # Get columns from all tables
@@ -750,7 +750,7 @@ def _retrieve_fits_object(filename, **kwargs):
                 # Normal case. Check for header keys
                 elif c in hdr_keys:
                     data[c] = hdulist[i + 1].header[c]
-
+        hdulist.close()
     return data
 
 

@@ -234,7 +234,7 @@ class TestLightcurve(object):
                     "transforms. Please make the input time evenly sampled.")
 
         with warnings.catch_warnings(record=True) as w:
-            lc = Lightcurve(times, counts, err_dist="poisson")
+            _ = Lightcurve(times, counts, err_dist="poisson")
             assert np.any([str(wi.message) == warn_str for wi in w])
 
     def test_unrecognize_err_dist_warning(self):

@@ -28,6 +28,12 @@ class TestEvents(object):
                          [1000, 2040, 1000, 3000, 4020, 2070]]
         self.gti = np.asarray([[0, 4]])
 
+    def test_create_high_precision_object(self):
+        times = np.sort(
+            np.random.uniform(1e8, 1e8 + 1000, 101).astype(np.longdouble))
+        ev = EventList(times, high_precision=True)
+        assert np.allclose(ev.time, times, atol=1e-15)
+
     def test_inequal_length(self):
         """Check that exception is raised in case of
         disparity in length of 'time' and 'energy'

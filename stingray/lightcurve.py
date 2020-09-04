@@ -410,14 +410,16 @@ class Lightcurve(object):
 
         check_gtis(self.gti)
 
-        dt_array = []
-        for g in self.gti:
-            mask = create_gti_mask(self.time, [g], dt=self.dt)
-            t = self.time[mask]
-            dt_array.extend(np.diff(t))
-        dt_array = np.asarray(dt_array)
+        idxs = np.searchsorted(self.time, self.gti)
+        uneven = False
+        for idx in range(idxs.shape[0]):
+            istart, istop = idxs[idx, 0], min(idxs[idx, 1], self.time.size - 1)
 
-        if not (np.allclose(dt_array, np.repeat(self.dt, dt_array.shape[0]))):
+            local_diff = np.diff(self.time[istart:istop])
+            if np.any(~np.isclose(local_diff, self.dt)):
+                uneven = True
+                break
+        if uneven:
             simon("Bin sizes in input time array aren't equal throughout! "
                   "This could cause problems with Fourier transforms. "
                   "Please make the input time evenly sampled.")
@@ -459,10 +461,13 @@ class Lightcurve(object):
             The new LC shifted by ``time_shift``
 
         """
-        new_lc = Lightcurve(self.time + time_shift, self.counts,
-                            err=self.counts_err,
-                            gti=self.gti + time_shift, mjdref=self.mjdref,
-                            dt=self.dt, err_dist=self.err_dist,
+        new_lc = Lightcurve(self.time + time_shift,
+                            self.counts,
+                            err=self._counts_err,
+                            gti=self.gti + time_shift,
+                            mjdref=self.mjdref,
+                            dt=self.dt,
+                            err_dist=self.err_dist,
                             skip_checks=True)
 
         return new_lc
