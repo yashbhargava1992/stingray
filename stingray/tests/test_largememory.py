@@ -23,7 +23,7 @@ except ImportError:
     pass
 
 curdir = os.path.abspath(os.path.dirname(__file__))
-datadir = os.path.join(curdir, 'data')
+datadir = os.path.join(curdir, "data")
 
 
 class TestSaveSpec(object):
@@ -33,19 +33,25 @@ class TestSaveSpec(object):
         counts = np.random.poisson(10, time.size)
         cls.lc = Lightcurve(time, counts, skip_checks=True)
 
-        evtimes = np.sort(np.random.uniform(0, 1e7, 10**7))
+        evtimes = np.sort(np.random.uniform(0, 1e7, 10 ** 7))
         pi = np.random.randint(0, 100, evtimes.size)
         energy = pi * 0.04 + 1.6
-        cls.ev = EventList(time=evtimes, pi=pi, energy=energy, gti=[[0, 1e7]],
-                           dt=1e-5, notes="Bu")
+        cls.ev = EventList(
+            time=evtimes,
+            pi=pi,
+            energy=energy,
+            gti=[[0, 1e7]],
+            dt=1e-5,
+            notes="Bu",
+        )
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_save_wrong_data(self):
         with pytest.raises(ValueError) as excinfo:
-            saveData("A string", 'bububu')
-        assert 'Invalid data: A string (str)' in str(excinfo.value)
+            saveData("A string", "bububu")
+        assert "Invalid data: A string (str)" in str(excinfo.value)
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_save_lc(self):
         test_lc = copy.deepcopy(self.lc)
         # Make sure counts_err exists
@@ -53,26 +59,30 @@ class TestSaveSpec(object):
 
         dir_name = saveData(test_lc, persist=False)
 
-        main = os.path.join(dir_name, 'main_data')
-        meta = os.path.join(dir_name, 'meta_data')
+        main = os.path.join(dir_name, "main_data")
+        meta = os.path.join(dir_name, "meta_data")
 
         errors = []
 
-        if (len([f for f in os.listdir(main) if not f.startswith('.')]) or len(
-            [f for f in os.listdir(meta) if not f.startswith('.')])) == 0:
+        if (
+            len([f for f in os.listdir(main) if not f.startswith(".")])
+            or len([f for f in os.listdir(meta) if not f.startswith(".")])
+        ) == 0:
             errors.append("Lightcurve is not saved or does not exist")
         else:
-            times = zarr.open_array(store=main, mode='r', path='times')[...]
-            counts = zarr.open_array(store=main, mode='r', path='counts')[...]
-            count_err = \
-                zarr.open_array(store=main, mode='r', path='count_err')[...]
-            gti = zarr.open_array(store=main, mode='r', path='gti')[...]
+            times = zarr.open_array(store=main, mode="r", path="times")[...]
+            counts = zarr.open_array(store=main, mode="r", path="counts")[...]
+            count_err = zarr.open_array(
+                store=main, mode="r", path="count_err"
+            )[...]
+            gti = zarr.open_array(store=main, mode="r", path="gti")[...]
             gti = gti.reshape((gti.size // 2, 2))
 
-            dt = zarr.open_array(store=meta, mode='r', path='dt')[...]
-            mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')[...]
-            err_dist = \
-                zarr.open_array(store=meta, mode='r', path='err_dist')[...]
+            dt = zarr.open_array(store=meta, mode="r", path="dt")[...]
+            mjdref = zarr.open_array(store=meta, mode="r", path="mjdref")[...]
+            err_dist = zarr.open_array(store=meta, mode="r", path="err_dist")[
+                ...
+            ]
 
             if not np.array_equal(test_lc.time, times):
                 errors.append("lc.time is not saved precisely")
@@ -89,33 +99,37 @@ class TestSaveSpec(object):
             if not (test_lc.err_dist == err_dist):
                 errors.append("lc.err_dist is not saved precisely")
 
-        assert not errors, "Errors encountered:\n{}".format('\n'.join(errors))
+        assert not errors, "Errors encountered:\n{}".format("\n".join(errors))
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_save_ev(self):
         dir_name = saveData(self.ev, persist=False)
 
-        main = os.path.join(dir_name, 'main_data')
-        meta = os.path.join(dir_name, 'meta_data')
+        main = os.path.join(dir_name, "main_data")
+        meta = os.path.join(dir_name, "meta_data")
 
         errors = []
 
-        if (len([f for f in os.listdir(main) if not f.startswith('.')]) or len(
-            [f for f in os.listdir(meta) if not f.startswith('.')])) == 0:
+        if (
+            len([f for f in os.listdir(main) if not f.startswith(".")])
+            or len([f for f in os.listdir(meta) if not f.startswith(".")])
+        ) == 0:
             errors.append("EventList is not saved or does not exist")
 
         else:
-            times = zarr.open_array(store=main, mode='r', path='times')[...]
-            energy = zarr.open_array(store=main, mode='r', path='energy')[...]
-            pi_channel = \
-                zarr.open_array(store=main, mode='r', path='pi_channel')[...]
-            gti = zarr.open_array(store=main, mode='r', path='gti')[...]
+            times = zarr.open_array(store=main, mode="r", path="times")[...]
+            energy = zarr.open_array(store=main, mode="r", path="energy")[...]
+            pi_channel = zarr.open_array(
+                store=main, mode="r", path="pi_channel"
+            )[...]
+            gti = zarr.open_array(store=main, mode="r", path="gti")[...]
             gti = gti.reshape((gti.size // 2, 2))
-            dt = zarr.open_array(store=meta, mode='r', path='dt')[...]
-            ncounts = \
-                zarr.open_array(store=meta, mode='r', path='ncounts')[...]
-            mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')[...]
-            notes = zarr.open_array(store=meta, mode='r', path='notes')[...]
+            dt = zarr.open_array(store=meta, mode="r", path="dt")[...]
+            ncounts = zarr.open_array(store=meta, mode="r", path="ncounts")[
+                ...
+            ]
+            mjdref = zarr.open_array(store=meta, mode="r", path="mjdref")[...]
+            notes = zarr.open_array(store=meta, mode="r", path="notes")[...]
 
             if not np.array_equal(self.ev.time, times):
                 errors.append("ev.time is not saved precisely")
@@ -134,62 +148,66 @@ class TestSaveSpec(object):
             if not self.ev.notes == notes:
                 errors.append("ev.notes is not saved precisely")
 
-        assert not errors, "Errors encountered:\n{}".format('\n'.join(errors))
+        assert not errors, "Errors encountered:\n{}".format("\n".join(errors))
 
-
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_save_fits_data(self):
-        fname = os.path.join(datadir, 'monol_testA.evt')
+        fname = os.path.join(datadir, "monol_testA.evt")
         dir_name = saveData(fname, persist=False)
 
-        evtdata = load_events_and_gtis(fname, additional_columns=['PI'])
+        evtdata = load_events_and_gtis(fname, additional_columns=["PI"])
         mjdref_def = ref_mjd(fname, hdu=1)
         time_def = evtdata.ev_list
-        pi_channel_def = evtdata.additional_data['PI']
+        pi_channel_def = evtdata.additional_data["PI"]
         gti_def = evtdata.gti_list
         tstart_def = evtdata.t_start
         tstop_def = evtdata.t_stop
 
-        main = os.path.join(dir_name, 'main_data')
-        meta = os.path.join(dir_name, 'meta_data')
+        main = os.path.join(dir_name, "main_data")
+        meta = os.path.join(dir_name, "meta_data")
 
         errors = []
 
-        if (len([f for f in os.listdir(main) if not f.startswith('.')]) or len(
-            [f for f in os.listdir(meta) if not f.startswith('.')])) == 0:
+        if (
+            len([f for f in os.listdir(main) if not f.startswith(".")])
+            or len([f for f in os.listdir(meta) if not f.startswith(".")])
+        ) == 0:
             errors.append("EventList is not saved or does not exist")
         else:
-            times = zarr.open_array(store=main, mode='r', path='times')[...]
-            pi_channel = \
-                zarr.open_array(store=main, mode='r', path='pi_channel')[...]
-            gti = zarr.open_array(store=main, mode='r', path='gti')[...]
+            times = zarr.open_array(store=main, mode="r", path="times")[...]
+            pi_channel = zarr.open_array(
+                store=main, mode="r", path="pi_channel"
+            )[...]
+            gti = zarr.open_array(store=main, mode="r", path="gti")[...]
             gti = gti.reshape((gti.size // 2, 2))
-            tstart = zarr.open_array(store=meta, mode='r', path='tstart')[...]
-            tstop = zarr.open_array(store=meta, mode='r', path='tstop')[...]
-            mjdref = zarr.open_array(store=meta, mode='r', path='mjdref')[...]
+            tstart = zarr.open_array(store=meta, mode="r", path="tstart")[...]
+            tstop = zarr.open_array(store=meta, mode="r", path="tstop")[...]
+            mjdref = zarr.open_array(store=meta, mode="r", path="mjdref")[...]
 
             order = np.argsort(times)
             times = times[order]
             pi_channel = pi_channel[order]
 
             if not np.allclose(time_def, times):
-                errors.append(
-                    "fits.events.data.time is not saved precisely")
+                errors.append("fits.events.data.time is not saved precisely")
             if not np.array_equal(pi_channel_def, pi_channel):
                 errors.append("fits.events.data.pi is not saved precisely")
             if not np.allclose(gti_def, gti):
                 errors.append("fits.gti.data is not saved precisely")
             if not (tstart == tstart_def):
                 errors.append(
-                    "fits.events.header.tstart is not saved precisely")
+                    "fits.events.header.tstart is not saved precisely"
+                )
             if not (tstop == tstop_def):
                 errors.append(
-                    "fits.events.header.tstop is not saved precisely")
+                    "fits.events.header.tstop is not saved precisely"
+                )
             if not (mjdref == mjdref_def):
                 errors.append(
-                    "fits.events.header.mjdref is not saved precisely")
+                    "fits.events.header.mjdref is not saved precisely"
+                )
 
-        assert not errors, "Errors encountered:\n{}".format('\n'.join(errors))
+        assert not errors, "Errors encountered:\n{}".format("\n".join(errors))
 
 
 class TestRetrieveSpec(object):
@@ -199,39 +217,38 @@ class TestRetrieveSpec(object):
         counts = np.random.poisson(10, time.size)
         cls.lc = Lightcurve(time, counts, skip_checks=True)
 
-        evtimes = np.sort(np.random.uniform(0, 1e7, 10**7))
+        evtimes = np.sort(np.random.uniform(0, 1e7, 10 ** 7))
         pi = np.random.randint(0, 100, evtimes.size)
         energy = pi * 0.04 + 1.6
-        cls.ev = EventList(time=evtimes,
-                           pi=pi,
-                           energy=energy,
-                           gti=[[0, 1e7]],
-                           dt=1e-5,
-                           notes="Bu")
+        cls.ev = EventList(
+            time=evtimes,
+            pi=pi,
+            energy=energy,
+            gti=[[0, 1e7]],
+            dt=1e-5,
+            notes="Bu",
+        )
 
         cls.lc_path = saveData(cls.lc, persist=False)
         cls.ev_path = saveData(cls.ev, persist=False)
 
-
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_wrong_data(self):
         with pytest.raises(ValueError) as excinfo:
             retrieveData("A string", self.lc_path)
 
-        assert 'Invalid data: A string (str)' in str(excinfo.value)
+        assert "Invalid data: A string (str)" in str(excinfo.value)
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_lc_data(self):
-        lc = retrieveData(data_type='Lightcurve',
-                          dir_path=self.lc_path)
+        lc = retrieveData(data_type="Lightcurve", dir_path=self.lc_path)
 
         assert self.lc.__eq__(lc) is True
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_ev_data(self):
         with pytest.warns(UserWarning):
-            ev = retrieveData(data_type='EventList',
-                              dir_path=self.ev_path)
+            ev = retrieveData(data_type="EventList", dir_path=self.ev_path)
 
         gti = np.asarray([[self.ev.time[0], self.ev.time[-1]]])
 
@@ -274,28 +291,32 @@ class TestRetrieveSpec(object):
     #
     #     assert not errors, "Errors encountered:\n{}".format('\n'.join(errors))
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_lc_chunk_data(self):
-        lc = retrieveData(data_type='Lightcurve',
-                          dir_path=self.lc_path,
-                          chunk_data=True,
-                          chunk_size=10**5,
-                          offset=0,
-                          raw=False)
+        lc = retrieveData(
+            data_type="Lightcurve",
+            dir_path=self.lc_path,
+            chunk_data=True,
+            chunk_size=10 ** 5,
+            offset=0,
+            raw=False,
+        )
 
-        trunc_lc = self.lc.truncate(stop=10**5)
+        trunc_lc = self.lc.truncate(stop=10 ** 5)
 
         assert trunc_lc.__eq__(lc) is True
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_ev_chunk_data(self):
-        maxidx = 10**5
-        ev = retrieveData(data_type='EventList',
-                          dir_path=self.ev_path,
-                          chunk_data=True,
-                          chunk_size=maxidx,
-                          offset=0,
-                          raw=False)
+        maxidx = 10 ** 5
+        ev = retrieveData(
+            data_type="EventList",
+            dir_path=self.ev_path,
+            chunk_data=True,
+            chunk_size=maxidx,
+            offset=0,
+            raw=False,
+        )
 
         gti = np.asarray([[self.ev.time[0], self.ev.time[-1]]])
 
@@ -303,29 +324,33 @@ class TestRetrieveSpec(object):
         assert np.allclose(ev.pi, self.ev.pi[:maxidx])
         assert np.allclose(ev.gti, gti)
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_lc_offset_data(self):
-        lc = retrieveData(data_type='Lightcurve',
-                          dir_path=self.lc_path,
-                          chunk_data=True,
-                          chunk_size=10**5,
-                          offset=10**2,
-                          raw=False)
+        lc = retrieveData(
+            data_type="Lightcurve",
+            dir_path=self.lc_path,
+            chunk_data=True,
+            chunk_size=10 ** 5,
+            offset=10 ** 2,
+            raw=False,
+        )
 
-        trunc_lc = self.lc.truncate(start=10**2, stop=10**5)
+        trunc_lc = self.lc.truncate(start=10 ** 2, stop=10 ** 5)
 
         assert trunc_lc.__eq__(lc) is True
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_ev_offset_data(self):
         maxidx = 10 ** 5
         offset = 100
-        ev = retrieveData(data_type='EventList',
-                          dir_path=self.ev_path,
-                          chunk_data=True,
-                          chunk_size=maxidx,
-                          offset=offset,
-                          raw=False)
+        ev = retrieveData(
+            data_type="EventList",
+            dir_path=self.ev_path,
+            chunk_data=True,
+            chunk_size=maxidx,
+            offset=offset,
+            raw=False,
+        )
 
         gti = np.asarray([[self.ev.time[0], self.ev.time[-1]]])
 
@@ -337,83 +362,132 @@ class TestRetrieveSpec(object):
 class TestChunkPS(object):
     @classmethod
     def setup_class(cls):
-        maxtime = 2**21
+        maxtime = 2 ** 21
         time = np.arange(maxtime)
         counts1 = np.random.poisson(10, time.size)
-        cls.lc1 = Lightcurve(time, counts1, skip_checks=True,
-                             gti=[[0, maxtime]])
+        cls.lc1 = Lightcurve(
+            time, counts1, skip_checks=True, gti=[[0, maxtime]]
+        )
 
         counts2 = np.random.poisson(10, time.size)
-        cls.lc2 = Lightcurve(time, counts2, skip_checks=True,
-                             gti=[[0, maxtime]])
+        cls.lc2 = Lightcurve(
+            time, counts2, skip_checks=True, gti=[[0, maxtime]]
+        )
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_invalid_data_to_pds(self):
         with pytest.raises(ValueError) as excinfo:
-            AveragedPowerspectrum("sdfasfsa", segment_size=2048,
-                                  large_data=True, silent=True)
-        assert 'Invalid input data type: str' in str(excinfo.value)
+            AveragedPowerspectrum(
+                "sdfasfsa", segment_size=2048, large_data=True, silent=True
+            )
+        assert "Invalid input data type: str" in str(excinfo.value)
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_invalid_data_to_cpds(self):
         with pytest.raises(ValueError) as excinfo:
-            AveragedCrossspectrum("sdfasfsa", "sdfasfsa", segment_size=4096,
-                                  large_data=True, silent=True)
-        assert 'Invalid input data type: str' in str(excinfo.value)
+            AveragedCrossspectrum(
+                "sdfasfsa",
+                "sdfasfsa",
+                segment_size=4096,
+                large_data=True,
+                silent=True,
+            )
+        assert "Invalid input data type: str" in str(excinfo.value)
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_pds(self):
-        ps_normal = AveragedPowerspectrum(self.lc1, segment_size=8192,
-                                          silent=True, norm='leahy')
-        ps_large = AveragedPowerspectrum(self.lc1,
-                                         segment_size=8192,
-                                         large_data=True,
-                                         silent=True, norm='leahy')
+        ps_normal = AveragedPowerspectrum(
+            self.lc1, segment_size=8192, silent=True, norm="leahy"
+        )
+        ps_large = AveragedPowerspectrum(
+            self.lc1,
+            segment_size=8192,
+            large_data=True,
+            silent=True,
+            norm="leahy",
+        )
 
         attrs = [
-            'freq', 'power', 'power_err', 'unnorm_power', 'df', 'n',
-            'nphots', 'gti', 'm'
+            "freq",
+            "power",
+            "power_err",
+            "unnorm_power",
+            "df",
+            "n",
+            "nphots",
+            "gti",
+            "m",
         ]
         allgood = True
         assert ps_normal.freq.size == ps_large.freq.size
         for attr in attrs:
-            if not np.allclose(getattr(ps_normal, attr),
-                               getattr(ps_large, attr), rtol=0.1, atol=0.1):
+            if not np.allclose(
+                getattr(ps_normal, attr),
+                getattr(ps_large, attr),
+                rtol=0.1,
+                atol=0.1,
+            ):
                 allgood = False
                 print(f"Attribute = {attr} ")
                 print(
-                    f"Raw Array: \nOriginal: {getattr(ps_normal, attr)}, \nLarge: {getattr(ps_large, attr)}"
+                    f"Raw Array: \nOriginal: {getattr(ps_normal, attr)}, "
+                    f"\nLarge: {getattr(ps_large, attr)}"
                 )
-                print(
-                    f"Max Deviation: {np.amax(getattr(ps_normal, attr) - getattr(ps_large, attr))}, as %: {np.abs(np.max(getattr(ps_normal, attr) - getattr(ps_large, attr))*100)/np.max(getattr(ps_normal, attr))}"
+                maxdev = np.amax(
+                    getattr(ps_normal, attr) - getattr(ps_large, attr)
                 )
+                maxdev_percent = np.abs(
+                    np.max(getattr(ps_normal, attr) - getattr(ps_large, attr))
+                    * 100
+                ) / np.max(getattr(ps_normal, attr))
+                print(f"Max Deviation: {maxdev}, as %: {maxdev_percent}")
                 print("\n")
         assert allgood
 
-    @pytest.mark.skipif('not HAS_ZARR')
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_cpds(self):
         cs_normal = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=8192, silent=True)
+            self.lc1, self.lc2, segment_size=8192, silent=True
+        )
         cs_large = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=8192,
-            large_data=True, silent=True)
+            self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
+        )
 
         attrs = [
-            'freq', 'power', 'power_err', 'unnorm_power', 'df', 'n', 'nphots1', 'nphots2',  'm', 'gti'
+            "freq",
+            "power",
+            "power_err",
+            "unnorm_power",
+            "df",
+            "n",
+            "nphots1",
+            "nphots2",
+            "m",
+            "gti",
         ]
         assert cs_normal.freq.size == cs_large.freq.size
 
         allgood = True
         for attr in attrs:
-            if not np.allclose(getattr(cs_normal, attr),
-                               getattr(cs_large, attr), rtol=0.1, atol=0.1):
+            if not np.allclose(
+                getattr(cs_normal, attr),
+                getattr(cs_large, attr),
+                rtol=0.1,
+                atol=0.1,
+            ):
                 print(f"Attribute = {attr} ")
                 print(
-                    f"Raw Array: \nOriginal: {getattr(cs_normal, attr)}, \nLarge: {getattr(cs_large, attr)}"
+                    f"Raw Array: \nOriginal: {getattr(cs_normal, attr)}, \n"
+                    f"Large: {getattr(cs_large, attr)}"
                 )
-                print(
-                    f"Max Deviation: {np.amax(getattr(cs_normal, attr) - getattr(cs_large, attr))}, as %: {np.abs(np.max(getattr(cs_normal, attr) - getattr(cs_large, attr))*100)/np.max(getattr(cs_normal, attr))}"
+                maxdev = np.amax(
+                    getattr(cs_normal, attr) - getattr(cs_large, attr)
                 )
+                maxdev_percent = np.abs(
+                    np.max(getattr(cs_normal, attr) - getattr(cs_large, attr))
+                    * 100
+                ) / np.max(getattr(cs_normal, attr))
+                print(f"Max Deviation: {maxdev}, as %: {maxdev_percent}")
                 print("\n")
                 allgood = False
         assert allgood
