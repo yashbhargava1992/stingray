@@ -457,10 +457,13 @@ class Lightcurve(object):
             The new LC shifted by ``time_shift``
 
         """
-        new_lc = Lightcurve(self.time + time_shift, self.counts,
-                            err=self.counts_err,
-                            gti=self.gti + time_shift, mjdref=self.mjdref,
-                            dt=self.dt, err_dist=self.err_dist,
+        new_lc = Lightcurve(self.time + time_shift,
+                            self.counts,
+                            err=self._counts_err,
+                            gti=self.gti + time_shift,
+                            mjdref=self.mjdref,
+                            dt=self.dt,
+                            err_dist=self.err_dist,
                             skip_checks=True)
 
         return new_lc
@@ -510,10 +513,10 @@ class Lightcurve(object):
                   "We are setting the errors to zero to avoid complications.")
             new_counts_err = np.zeros_like(new_counts)
         elif self.err_dist.lower() in valid_statistics:
-                new_counts_err = \
-                    np.sqrt(np.add(self.counts_err[mask_self]**2,
-                                   other.counts_err[mask_other]**2))
-            # More conditions can be implemented for other statistics
+            new_counts_err = \
+                np.sqrt(np.add(self.counts_err[mask_self]**2,
+                               other.counts_err[mask_other]**2))
+        # More conditions can be implemented for other statistics
         else:
             raise StingrayError("Statistics not recognized."
                                 " Please use one of these: "
