@@ -1094,13 +1094,13 @@ class AveragedCrossspectrum(Crossspectrum):
             lengths = data1.gti[:, 1] - data1.gti[:, 0]
             good = lengths >= segment_size
             data1.gti = data1.gti[good]
-            data1 = list(data1.to_lc_list(dt))
+            data1 = data1.to_lc_list(dt)
 
         if isinstance(data2, EventList):
             lengths = data2.gti[:, 1] - data2.gti[:, 0]
             good = lengths >= segment_size
             data2.gti = data2.gti[good]
-            data2 = list(data2.to_lc_list(dt))
+            data2 = data2.to_lc_list(dt)
 
         Crossspectrum.__init__(self, data1, data2, norm, gti=gti,
                                power_type=power_type, dt=dt)
