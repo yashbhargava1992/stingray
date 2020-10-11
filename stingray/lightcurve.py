@@ -27,8 +27,11 @@ class Lightcurve(object):
 
     Parameters
     ----------
-    time: iterable
-        A list or array of time stamps for a light curve
+    time: Iterable
+        A list or array of time stamps for a light curve. Must be a type that
+        can be cast to `:class:np.array` or `:class:List` of floats, or that
+        has a `value` attribute that does (e.g. a
+        `:class:astropy.units.Quantity` or `:class:astropy.time.Time` object).
 
     counts: iterable, optional, default ``None``
         A list or array of the counts in each bin corresponding to the
@@ -133,6 +136,8 @@ class Lightcurve(object):
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
                  skip_checks=False, low_memory=False):
 
+        if hasattr(time, 'value'):
+            time = time.value
         time = np.asarray(time)
         counts = np.asarray(counts)
         if err is not None:
