@@ -48,7 +48,11 @@ except ImportError:
             wrapped_f = np.vectorize(func)
 
             return wrapped_f
-    float32 = float64 = int32 = int64 = lambda x, y: None
+
+    def generic(x, y=None):
+        return None
+
+    float32 = float64 = int32 = int64 = generic
 
     def prange(x):
         return range(x)
