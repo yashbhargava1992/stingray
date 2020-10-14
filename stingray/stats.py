@@ -42,31 +42,36 @@ def _extended_equiv_gaussian_sigma(logp):
     return t - num / denom
 
 
-def equivalent_gaussian_sigma_from_logp(logp):
+@np.vectorize
+def _equivalent_gaussian_sigma_from_logp(logp):
     """Return the number of sigmas corresponding to a log-p-value.
-
-    Examples
-    --------
-    >>> logp = np.log(0.15865525393145707)
-    >>> np.isclose(equivalent_gaussian_sigma_from_logp(logp), 1, atol=0.01)
-    True
-    >>> logp = np.log(0.0013498980316301035 )
-    >>> np.isclose(equivalent_gaussian_sigma_from_logp(logp), 3, atol=0.01)
-    True
-    >>> logp = np.log(9.865877004244794e-10)
-    >>> np.isclose(equivalent_gaussian_sigma_from_logp(logp), 6, atol=0.01)
-    True
-    >>> logp = np.log(6.661338147750939e-16)
-    >>> np.isclose(equivalent_gaussian_sigma_from_logp(logp), 8, atol=0.01)
-    True
-    >>> logp = np.log(6.11345e-138)
-    >>> np.isclose(equivalent_gaussian_sigma_from_logp(logp), 25, atol=0.1)
-    True
     """
     if logp < -300:
         # print("Extended")
         return _extended_equiv_gaussian_sigma(logp)
     return stats.norm.isf(np.exp(logp))
+
+
+def equivalent_gaussian_sigma_from_logp(logp):
+    """Return the number of sigmas corresponding to a log-p-value.
+
+    Examples
+    --------
+    >>> pvalues = [0.15865525393145707, 0.0013498980316301035,
+    ...            9.865877004244794e-10, 6.661338147750939e-16,
+    ...            3.09e-138]
+    >>> log_pvalues = np.log(np.array(pvalues))
+    >>> sigmas = np.array([1, 3, 6, 8, 25])
+    >>> # Single number
+    >>> np.isclose(equivalent_gaussian_sigma_from_logp(log_pvalues[0]),
+    ...            sigmas[0], atol=0.01)
+    True
+    >>> # Array
+    >>> np.allclose(equivalent_gaussian_sigma_from_logp(log_pvalues),
+    ...             sigmas, atol=0.01)
+    True
+    """
+    return _equivalent_gaussian_sigma_from_logp(logp)
 
 
 def equivalent_gaussian_sigma(p):
