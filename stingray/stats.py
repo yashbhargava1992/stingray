@@ -132,22 +132,40 @@ def _log_asymptotic_gamma(z):
     return x
 
 
+@np.vectorize
+def _chi2_logp(chi2, dof):
+    """Log survival function of the chi-squared distribution.
+    """
+
+    if (chi2 / dof > 15.0) or ((dof > 150) and (chi2 / dof > 6.0)):
+        return _log_asymptotic_incomplete_gamma(0.5 * dof, 0.5 * chi2) - \
+               _log_asymptotic_gamma(0.5 * dof)
+
+    return stats.chi2.logsf(chi2, dof)
+
+
 def chi2_logp(chi2, dof):
     """Log survival function of the chi-squared distribution.
 
     Examples
     --------
     >>> chi2 = 31
+    >>> # Test check on dof
+    >>> chi2_logp(chi2, 1) # doctest:+ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ValueError: The number of degrees of freedom cannot be < 2
     >>> # Test that approximate function works as expected. chi2 / dof > 15,
     >>> # but small and safe number in order to compare to scipy.stats
     >>> np.isclose(chi2_logp(chi2, 2), stats.chi2.logsf(chi2, 2), atol=0.1)
     True
+    >>> chi2 = np.array([5, 32])
+    >>> np.allclose(chi2_logp(chi2, 2), stats.chi2.logsf(chi2, 2), atol=0.1)
+    True
     """
-    if (chi2 / dof > 15.0) or ((dof > 150) and (chi2 / dof > 6.0)):
-        return _log_asymptotic_incomplete_gamma(0.5 * dof, 0.5 * chi2) - \
-               _log_asymptotic_gamma(0.5 * dof)
-
-    return stats.chi2.logsf(chi2, dof)
+    if dof < 2:
+        raise ValueError("The number of degrees of freedom cannot be < 2")
+    return _chi2_logp(chi2, dof)
 
 
 @vectorize([float64(float32, int32),
@@ -449,7 +467,6 @@ def z2_n_logprobability(z2, n=2, ntrial=1, n_summed_spectra=1):
 
     epsilon_1 = chi2_logp(np.double(z2 * n_summed_spectra),
                           2 * n * n_summed_spectra)
-    print(epsilon_1, z2 * n_summed_spectra, 2 * n * n_summed_spectra)
     epsilon = _logp_multitrial_from_single_logp(epsilon_1, ntrial)
     return epsilon
 
