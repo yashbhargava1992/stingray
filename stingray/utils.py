@@ -158,6 +158,24 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     step_size: float
         The size of the binning step
+
+    Examples
+    --------
+    >>> x = np.arange(0, 100, 0.01)
+    >>> y = np.ones(x.size)
+    >>> yerr = np.ones(x.size)
+    >>> xbin, ybin, ybinerr, step_size = rebin_data(
+    ...     x, y, 4, yerr=yerr, method='sum')
+    >>> np.allclose(ybin, 400)
+    True
+    >>> np.allclose(ybinerr, 20)
+    True
+    >>> xbin, ybin, ybinerr, step_size = rebin_data(
+    ...     x, y, 4, yerr=yerr, method='mean')
+    >>> np.allclose(ybin, 1)
+    True
+    >>> np.allclose(ybinerr, 0.05)
+    True
     """
 
     y = np.asarray(y)
@@ -191,7 +209,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
             totalerr += next_frac * (yerr[next_bin] ** 2)
 
         total += sum(y[int(i + 1):int(i + step_size)])
-        totalerr += sum(yerr[int(i + 1):int(step_size)] ** 2)
+        totalerr += sum(yerr[int(i + 1):int(i + step_size)] ** 2)
         output.append(total)
         outputerr.append(np.sqrt(totalerr))
 
@@ -200,7 +218,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     if method in ['mean', 'avg', 'average', 'arithmetic mean']:
         ybin = output / np.float(step_size)
-        ybinerr = outputerr / np.sqrt(np.float(step_size))
+        ybinerr = outputerr / np.float(step_size)
 
     elif method == "sum":
         ybin = output
