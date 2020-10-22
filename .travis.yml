@@ -173,6 +173,11 @@ matrix:
           env: TOXENV=py38-test-devdeps
 
 before_install:
+    - if [[ $TRAVIS_OS_NAME == windows ]]; then
+        choco install --no-progress python --version 3.8;
+        python -m pip install --upgrade pip;
+      fi
+
     - if [[ $TOXENV == *-cov ]]; then
         export TOXPOSARGS=$TOXPOSARGS" --cov-report=xml:"$TRAVIS_BUILD_DIR"/coverage.xml";
       fi
