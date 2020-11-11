@@ -468,13 +468,13 @@ def _retrieve_hdf5_object(filename):
                 if key[-2:] in ['_I', '_F']:
                     m_key = key[:-2]
                     # Add integer and float parts
-                    data[m_key] = np.longdouble(hf[m_key + '_I'].value)
-                    data[m_key] += np.longdouble(hf[m_key + '_F'].value)
+                    data[m_key] = np.longdouble(hf[m_key + '_I'][()])
+                    data[m_key] += np.longdouble(hf[m_key + '_F'][()])
                     # Remove integer and float parts from attributes
                     dset_copy.remove(m_key + '_I')
                     dset_copy.remove(m_key + '_F')
                 else:
-                    data[key] = hf[key].value
+                    data[key] = hf[key][()]
 
         attr_copy = list(attr_keys)[:]
         for key in attr_keys:
