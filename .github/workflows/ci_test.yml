@@ -17,6 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -38,9 +39,9 @@ jobs:
           - os: ubuntu-latest
             python: '3.7'
             tox_env: 'py37-test-astropy30-numpy117'
-          - os: ubuntu-latest
-            python: '3.8'
-            tox_env: 'codestyle'
+#          - os: ubuntu-latest
+#            python: '3.8'
+#            tox_env: 'codestyle'
 
     steps:
     - name: Check out repository
