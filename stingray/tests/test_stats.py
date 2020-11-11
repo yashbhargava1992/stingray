@@ -198,3 +198,17 @@ class TestClassicalSignificances(object):
         chi2 = np.array([5, 32])
         assert np.allclose(chi2_logp(chi2, 2), stats.chi2.logsf(chi2, 2),
                            atol=0.1)
+
+    @pytest.mark.parametrize('nbin', [8, 16, 23, 72])
+    def test_compare_fold_logprob_with_prob(self, nbin):
+        stat = np.random.uniform(5, 200, 5)
+        logp = fold_profile_logprobability(stat, nbin)
+        p = fold_profile_probability(stat, nbin)
+        assert np.allclose(logp, np.log(p))
+
+    @pytest.mark.parametrize('n', [2, 16, 23, 72])
+    def test_compare_z2n_logprob_with_prob(self, n):
+        stat = np.random.uniform(5, 200, 5)
+        logp = z2_n_logprobability(stat, n=n)
+        p = z2_n_probability(stat, n=n)
+        assert np.allclose(logp, np.log(p))
