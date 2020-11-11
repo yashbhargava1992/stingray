@@ -149,7 +149,7 @@ def _log_asymptotic_gamma(z):
     one_over_1260 = 7.9365079365079365079365e-4
     x = (z - 0.5) * np.log(z) - z + half_log_twopi
     y = 1.0 / (z * z)
-    x += (((-one_over_1680 * y + one_over_1260) * y - one_degree) * y + one_twelfth) / z
+    x += (((-one_over_1680 * y + one_over_1260)* y - one_degree) * y + one_twelfth) / z
     return x
 
 
@@ -175,6 +175,8 @@ def chi2_logp(chi2, dof):
     """
     if dof < 2:
         raise ValueError("The number of degrees of freedom cannot be < 2")
+
+    # If very large reduced chi squared, use approximation
     if (chi2 / dof > 15.0) or ((dof > 150) and (chi2 / dof > 6.0)):
         return _log_asymptotic_incomplete_gamma(0.5 * dof, 0.5 * chi2) - \
                _log_asymptotic_gamma(0.5 * dof)
