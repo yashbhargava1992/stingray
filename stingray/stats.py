@@ -10,11 +10,13 @@ from stingray.utils import vectorize, float64, float32, int32, int64
 __all__ = ['p_multitrial_from_single_trial',
            'p_single_trial_from_p_multitrial',
            'fold_profile_probability',
+           'fold_profile_logprobability',
            'fold_detection_level',
            'pds_probability',
            'pds_detection_level',
            'z2_n_detection_level',
            'z2_n_probability',
+           'z2_n_logprobability',
            'classical_pvalue',
            'chi2_logp',
            'equivalent_gaussian_Nsigma',
@@ -423,7 +425,7 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     return stats.chi2.isf(epsilon.astype(np.double), nbin - 1)
 
 
-def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
+def z2_n_probability(z2, n, ntrial=1, n_summed_spectra=1):
     """Calculate the probability of a certain folded profile, due to noise.
 
     Parameters
@@ -451,7 +453,7 @@ def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
     return epsilon
 
 
-def z2_n_logprobability(z2, n=2, ntrial=1, n_summed_spectra=1):
+def z2_n_logprobability(z2, n, ntrial=1, n_summed_spectra=1):
     """Calculate the probability of a certain folded profile, due to noise.
 
     Parameters
