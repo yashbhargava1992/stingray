@@ -17,7 +17,8 @@ __all__ = ['p_multitrial_from_single_trial',
            'z2_n_probability',
            'classical_pvalue',
            'chi2_logp',
-           'equivalent_gaussian_Nsigma']
+           'equivalent_gaussian_Nsigma',
+           'equivalent_gaussian_Nsigma_from_logp']
 
 
 @vectorize([float64(float32),
@@ -43,17 +44,14 @@ def _extended_equiv_gaussian_Nsigma(logp):
 
 
 @np.vectorize
-def _equivalent_gaussian_Nsigma_from_logp(logp):
-    """Return the number of sigmas corresponding to a log-p-value.
-    """
-    if logp < -300:
-        # print("Extended")
-        return _extended_equiv_gaussian_Nsigma(logp)
-    return stats.norm.isf(np.exp(logp))
-
-
 def equivalent_gaussian_Nsigma_from_logp(logp):
-    """Return the number of sigmas corresponding to a log-p-value.
+    """Number of Gaussian sigmas corresponding to tail log-probability.
+
+    This function computes the value of the characteristic function of a
+    standard Gaussian distribution for the tail probability equivalent to the
+    provided p-value, and turns this value into units of standard deviations
+    away from the Gaussian mean. This allows the user to make a statement
+    about the signal such as “I detected this pulsation at 4.1 sigma
 
     Examples
     --------
@@ -71,21 +69,34 @@ def equivalent_gaussian_Nsigma_from_logp(logp):
     ...             sigmas, atol=0.01)
     True
     """
-    return _equivalent_gaussian_Nsigma_from_logp(logp)
+    if logp < -300:
+        # print("Extended")
+        return _extended_equiv_gaussian_Nsigma(logp)
+    return stats.norm.isf(np.exp(logp))
 
 
 def equivalent_gaussian_Nsigma(p):
-    """Return the number of sigmas corresponding to a p-value.
+    """Number of Gaussian sigmas corresponding to tail probability.
+
+    This function computes the value of the characteristic function of a
+    standard Gaussian distribution for the tail probability equivalent to the
+    provided p-value, and turns this value into units of standard deviations
+    away from the Gaussian mean. This allows the user to make a statement
+    about the signal such as “I detected this pulsation at 4.1 sigma
 
     Examples
     --------
-    >>> np.isclose(equivalent_gaussian_Nsigma(0.15865525393145707), 1, atol=0.01)
+    >>> np.isclose(equivalent_gaussian_Nsigma(0.15865525393145707), 1,
+    ...                                       atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_Nsigma(0.0013498980316301035), 3, atol=0.01)
+    >>> np.isclose(equivalent_gaussian_Nsigma(0.0013498980316301035), 3,
+    ...                                       atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_Nsigma(9.865877004244794e-10), 6, atol=0.01)
+    >>> np.isclose(equivalent_gaussian_Nsigma(9.865877004244794e-10), 6,
+    ...                                       atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_Nsigma(6.661338147750939e-16), 8, atol=0.01)
+    >>> np.isclose(equivalent_gaussian_Nsigma(6.661338147750939e-16), 8,
+    ...                                       atol=0.01)
     True
     >>> np.isclose(equivalent_gaussian_Nsigma(6.11345e-138), 25, atol=0.1)
     True
@@ -138,17 +149,6 @@ def _log_asymptotic_gamma(z):
 
 
 @np.vectorize
-def _chi2_logp(chi2, dof):
-    """Log survival function of the chi-squared distribution.
-    """
-
-    if (chi2 / dof > 15.0) or ((dof > 150) and (chi2 / dof > 6.0)):
-        return _log_asymptotic_incomplete_gamma(0.5 * dof, 0.5 * chi2) - \
-               _log_asymptotic_gamma(0.5 * dof)
-
-    return stats.chi2.logsf(chi2, dof)
-
-
 def chi2_logp(chi2, dof):
     """Log survival function of the chi-squared distribution.
 
@@ -170,7 +170,11 @@ def chi2_logp(chi2, dof):
     """
     if dof < 2:
         raise ValueError("The number of degrees of freedom cannot be < 2")
-    return _chi2_logp(chi2, dof)
+    if (chi2 / dof > 15.0) or ((dof > 150) and (chi2 / dof > 6.0)):
+        return _log_asymptotic_incomplete_gamma(0.5 * dof, 0.5 * chi2) - \
+               _log_asymptotic_gamma(0.5 * dof)
+
+    return stats.chi2.logsf(chi2, dof)
 
 
 @vectorize([float64(float32, int32),
