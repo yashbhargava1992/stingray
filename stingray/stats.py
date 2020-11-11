@@ -17,12 +17,12 @@ __all__ = ['p_multitrial_from_single_trial',
            'z2_n_probability',
            'classical_pvalue',
            'chi2_logp',
-           'equivalent_gaussian_sigma']
+           'equivalent_gaussian_Nsigma']
 
 
 @vectorize([float64(float32),
             float64(float64)], nopython=True)
-def _extended_equiv_gaussian_sigma(logp):
+def _extended_equiv_gaussian_Nsigma(logp):
     """Equivalent gaussian sigma for small log-probability.
 
     Return the equivalent gaussian sigma corresponding to the
@@ -43,16 +43,16 @@ def _extended_equiv_gaussian_sigma(logp):
 
 
 @np.vectorize
-def _equivalent_gaussian_sigma_from_logp(logp):
+def _equivalent_gaussian_Nsigma_from_logp(logp):
     """Return the number of sigmas corresponding to a log-p-value.
     """
     if logp < -300:
         # print("Extended")
-        return _extended_equiv_gaussian_sigma(logp)
+        return _extended_equiv_gaussian_Nsigma(logp)
     return stats.norm.isf(np.exp(logp))
 
 
-def equivalent_gaussian_sigma_from_logp(logp):
+def equivalent_gaussian_Nsigma_from_logp(logp):
     """Return the number of sigmas corresponding to a log-p-value.
 
     Examples
@@ -63,34 +63,34 @@ def equivalent_gaussian_sigma_from_logp(logp):
     >>> log_pvalues = np.log(np.array(pvalues))
     >>> sigmas = np.array([1, 3, 6, 8, 25])
     >>> # Single number
-    >>> np.isclose(equivalent_gaussian_sigma_from_logp(log_pvalues[0]),
+    >>> np.isclose(equivalent_gaussian_Nsigma_from_logp(log_pvalues[0]),
     ...            sigmas[0], atol=0.01)
     True
     >>> # Array
-    >>> np.allclose(equivalent_gaussian_sigma_from_logp(log_pvalues),
+    >>> np.allclose(equivalent_gaussian_Nsigma_from_logp(log_pvalues),
     ...             sigmas, atol=0.01)
     True
     """
-    return _equivalent_gaussian_sigma_from_logp(logp)
+    return _equivalent_gaussian_Nsigma_from_logp(logp)
 
 
-def equivalent_gaussian_sigma(p):
+def equivalent_gaussian_Nsigma(p):
     """Return the number of sigmas corresponding to a p-value.
 
     Examples
     --------
-    >>> np.isclose(equivalent_gaussian_sigma(0.15865525393145707), 1, atol=0.01)
+    >>> np.isclose(equivalent_gaussian_Nsigma(0.15865525393145707), 1, atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_sigma(0.0013498980316301035), 3, atol=0.01)
+    >>> np.isclose(equivalent_gaussian_Nsigma(0.0013498980316301035), 3, atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_sigma(9.865877004244794e-10), 6, atol=0.01)
+    >>> np.isclose(equivalent_gaussian_Nsigma(9.865877004244794e-10), 6, atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_sigma(6.661338147750939e-16), 8, atol=0.01)
+    >>> np.isclose(equivalent_gaussian_Nsigma(6.661338147750939e-16), 8, atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_sigma(6.11345e-138), 25, atol=0.1)
+    >>> np.isclose(equivalent_gaussian_Nsigma(6.11345e-138), 25, atol=0.1)
     True
     """
-    return equivalent_gaussian_sigma_from_logp(np.log(p))
+    return equivalent_gaussian_Nsigma_from_logp(np.log(p))
 
 
 @vectorize([float64(float32, float32),
