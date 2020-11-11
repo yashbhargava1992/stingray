@@ -142,11 +142,14 @@ def _log_asymptotic_gamma(z):
 
     Translated from Scott Ransom's PRESTO
     """
-    x = (z - 0.5) * np.log(z) - z + 0.91893853320467267
+    half_log_twopi = 0.91893853320467267  # (1/2)*log(2*pi)
+    one_twelfth = 8.3333333333333333333333e-2
+    one_degree = 2.7777777777777777777778e-3  # 1 / 360
+    one_over_1680 = 5.9523809523809529e-4
+    one_over_1260 = 7.9365079365079365079365e-4
+    x = (z - 0.5) * np.log(z) - z + half_log_twopi
     y = 1.0 / (z * z)
-    x += (((-5.9523809523809529e-4 * y
-            + 7.9365079365079365079365e-4) * y
-           - 2.7777777777777777777778e-3) * y + 8.3333333333333333333333e-2) / z
+    x += (((-one_over_1680 * y + one_over_1260) * y - one_degree) * y + one_twelfth) / z
     return x
 
 
