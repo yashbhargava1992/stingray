@@ -28,13 +28,14 @@ __all__ = ['p_multitrial_from_single_trial',
 def _extended_equiv_gaussian_Nsigma(logp):
     """Equivalent gaussian sigma for small log-probability.
 
-    Return the equivalent gaussian sigma corresponding to the
-    natural log of the cumulative gaussian probability logp.
-    In other words, return x, such that Q(x) = p, where Q(x)
-    is the cumulative normal distribution.  This version uses
-    the rational approximation from Abramowitz and Stegun,
-    eqn 26.2.23.  Using the log(P) as input gives a much
-    extended range.
+    Return the equivalent gaussian sigma corresponding to the natural log of
+    the cumulative gaussian probability logp. In other words, return x, such
+    that Q(x) = p, where Q(x) is the cumulative normal distribution. This
+    version uses the rational approximation from Abramowitz and Stegun,
+    eqn 26.2.23, that claims to be precise to ~1e-4. Using the log(P) as input
+    gives a much extended range.
+
+    The parameters here are the result of a best-fit, with no physical meaning.
 
     Translated from Scott Ransom's PRESTO
     """
