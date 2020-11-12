@@ -56,11 +56,15 @@ def equivalent_gaussian_Nsigma_from_logp(logp):
     away from the Gaussian mean. This allows the user to make a statement
     about the signal such as “I detected this pulsation at 4.1 sigma
 
+    The example values below are obtained by brute-force integrating the
+    Gaussian probability density function using the mpmath library
+    between Nsigma and +inf.
+
     Examples
     --------
     >>> pvalues = [0.15865525393145707, 0.0013498980316301035,
-    ...            9.865877004244794e-10, 6.661338147750939e-16,
-    ...            3.09e-138]
+    ...            9.865877e-10, 6.22096e-16,
+    ...            3.0567e-138]
     >>> log_pvalues = np.log(np.array(pvalues))
     >>> sigmas = np.array([1, 3, 6, 8, 25])
     >>> # Single number
@@ -87,6 +91,10 @@ def equivalent_gaussian_Nsigma(p):
     away from the Gaussian mean. This allows the user to make a statement
     about the signal such as “I detected this pulsation at 4.1 sigma
 
+    The example values below are obtained by brute-force integrating the
+    Gaussian probability density function using the mpmath library
+    between Nsigma and +inf.
+
     Examples
     --------
     >>> np.isclose(equivalent_gaussian_Nsigma(0.15865525393145707), 1,
@@ -95,13 +103,13 @@ def equivalent_gaussian_Nsigma(p):
     >>> np.isclose(equivalent_gaussian_Nsigma(0.0013498980316301035), 3,
     ...                                       atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_Nsigma(9.865877004244794e-10), 6,
+    >>> np.isclose(equivalent_gaussian_Nsigma(9.865877e-10), 6,
     ...                                       atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_Nsigma(6.661338147750939e-16), 8,
+    >>> np.isclose(equivalent_gaussian_Nsigma(6.22096e-16), 8,
     ...                                       atol=0.01)
     True
-    >>> np.isclose(equivalent_gaussian_Nsigma(6.11345e-138), 25, atol=0.1)
+    >>> np.isclose(equivalent_gaussian_Nsigma(3.0567e-138), 25, atol=0.1)
     True
     """
     return equivalent_gaussian_Nsigma_from_logp(np.log(p))
@@ -177,7 +185,10 @@ def chi2_logp(chi2, dof):
     if dof < 2:
         raise ValueError("The number of degrees of freedom cannot be < 2")
 
-    # If very large reduced chi squared, use approximation
+    # If very large reduced chi squared, use approximation. This is an
+    # eyeballed limit parameter space where the difference between the
+    # approximation and the scipy version is tiny, but above which the scipy
+    # version starts failing.
     if (chi2 / dof > 15.0) or ((dof > 150) and (chi2 / dof > 6.0)):
         return _log_asymptotic_incomplete_gamma(0.5 * dof, 0.5 * chi2) - \
                _log_asymptotic_gamma(0.5 * dof)
