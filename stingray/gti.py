@@ -59,7 +59,19 @@ def load_gtis(fits_file, gtistring=None):
 
 
 def get_gti_extensions_from_pattern(lchdulist, name_pattern="GTI"):
-    """Gets the GTIs from the first available extension.
+    """Gets the GTI extensions that match a given pattern.
+
+    Parameters
+    ----------
+    lchdulist: `:class:astropy.io.fits.HDUList` object
+        The full content of a FITS file.
+    name_pattern: str
+        Pattern indicating all the GTI extensions
+
+    Returns
+    -------
+    ext_list: list
+        List of GTI extension numbers whose name matches the input pattern
 
     Examples
     --------
@@ -86,8 +98,17 @@ def get_gti_extensions_from_pattern(lchdulist, name_pattern="GTI"):
 
 
 def get_gti_from_hdu(gtihdu):
-
     """Get the GTIs from a given extension.
+
+    Parameters
+    ----------
+    gtihdu: `:class:astropy.io.fits.TableHDU` object
+        The GTI hdu
+
+    Returns
+    -------
+    gti_list: [[gti00, gti01], [gti10, gti11], ...]
+        List of good time intervals
 
     Examples
     --------
@@ -112,16 +133,33 @@ def get_gti_from_hdu(gtihdu):
 
     gtistart = np.array(gtitable.field(startstr), dtype=np.longdouble)
     gtistop = np.array(gtitable.field(stopstr), dtype=np.longdouble)
-    gti_list = np.array(
-        [[a, b] for a, b in zip(gtistart, gtistop)], dtype=np.longdouble
-    )
+    gti_list = np.vstack((gtistart, gtistop)).T
+
     return gti_list
 
 
 def get_gti_from_all_extensions(
     lchdulist, accepted_gtistrings=["GTI"], det_numbers=None
 ):
-    """Intersects the GTIs from the all accepted extension.
+    """Intersect the GTIs from the all accepted extensions.
+
+    Parameters
+    ----------
+    lchdulist: `:class:astropy.io.fits.HDUList` object
+        The full content of a FITS file.
+    accepted_gtistrings: list of str
+        Base strings of GTI extensions. For missions adding the detector number
+        to GTI extensions like, e.g., XMM and Chandra, this function
+        automatically adds the detector number and looks for all matching
+        GTI extensions (e.g. "STDGTI" will also retrieve "STDGTI05"; "GTI0"
+        will also retrieve "GTI00501").
+
+    Returns
+    -------
+    gti_list: [[gti00, gti01], [gti10, gti11], ...]
+        List of good time intervals, as the intersection of all matching GTIs.
+        If there are two matching extensions, with GTIs [[0, 50], [100, 200]]
+        and [[40, 70]] respectively, this function will return [[40, 50]].
 
     Examples
     --------
