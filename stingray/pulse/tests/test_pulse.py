@@ -38,7 +38,7 @@ class TestAll(object):
                             planets=False, include_bipm=False)
         model = mb.get_model(parfile)
 
-        pint_resids_us = Residuals(toas, model, False).time_resids.to(u.s)
+        pint_resids_us = Residuals(toas, model).time_resids.to(u.s)
 
         # Due to the gps2utc clock correction. We are at 3e-8 seconds level.
         assert np.all(np.abs(pint_resids_us.value) < 3e-6)

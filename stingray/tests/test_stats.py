@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-
+from scipy import stats
 from stingray.stats import *
 
 
@@ -168,3 +168,47 @@ class TestClassicalSignificances(object):
         with pytest.warns(DeprecationWarning):
             pval = classical_pvalue(power, nspec)
         assert np.isclose(pval, 0.0)
+
+    def test_equivalent_Nsigma_logp(self):
+        pvalues = [0.15865525393145707, 0.0013498980316301035,
+                   9.865877004244794e-10,
+                   6.661338147750939e-16,
+                   3.09e-138]
+        log_pvalues = np.log(np.array(pvalues))
+        sigmas = np.array([1, 3, 6, 8, 25])
+        # Single number
+        assert np.isclose(equivalent_gaussian_Nsigma_from_logp(log_pvalues[0]),
+                          sigmas[0], atol = 0.01)
+        # Array
+        assert np.allclose(equivalent_gaussian_Nsigma_from_logp(log_pvalues),
+                           sigmas, atol = 0.01)
+
+    def test_chi2_logp(self):
+        chi2 = 31
+        # Test check on dof
+        with pytest.raises(ValueError) as excinfo:
+            chi2_logp(chi2, 1)
+        message = str(excinfo.value)
+        assert "The number of degrees of freedom cannot be < 2" in message
+
+         # Test that approximate function works as expected. chi2 / dof > 15,
+         # but small and safe number in order to compare to scipy.stats
+        assert np.isclose(chi2_logp(chi2, 2), stats.chi2.logsf(chi2, 2),
+                          atol=0.1)
+        chi2 = np.array([5, 32])
+        assert np.allclose(chi2_logp(chi2, 2), stats.chi2.logsf(chi2, 2),
+                           atol=0.1)
+
+    @pytest.mark.parametrize('nbin', [8, 16, 23, 72])
+    def test_compare_fold_logprob_with_prob(self, nbin):
+        stat = np.random.uniform(5, 200, 5)
+        logp = fold_profile_logprobability(stat, nbin)
+        p = fold_profile_probability(stat, nbin)
+        assert np.allclose(logp, np.log(p))
+
+    @pytest.mark.parametrize('n', [2, 16, 23, 72])
+    def test_compare_z2n_logprob_with_prob(self, n):
+        stat = np.random.uniform(5, 200, 5)
+        logp = z2_n_logprobability(stat, n=n)
+        p = z2_n_probability(stat, n=n)
+        assert np.allclose(logp, np.log(p))
