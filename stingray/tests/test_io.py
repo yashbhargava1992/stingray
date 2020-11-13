@@ -25,6 +25,7 @@ except ImportError:
 skip_condition = pytest.mark.skipif(not _H5PY_INSTALLED,
     reason = "H5PY not installed.")
 
+
 class TestIO(object):
 
     def test_common_name(self):
@@ -109,6 +110,7 @@ class TestIOReadWrite(object):
 
     def test_operation(self):
         return self.number * 10
+
 
 class TestFileFormats(object):
 
