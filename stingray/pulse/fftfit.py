@@ -45,7 +45,23 @@ def _find_delay_with_ccf(amp, pha):
 
 
 def best_phase_func(tau, amp, pha, ngood=20):
-    """Function to minimize for FFTFIT (Taylor 1992)."""
+    """Function to minimize for FFTFIT (Taylor 1992), eqn. A7.
+
+    Input
+    -----
+    tau: float
+        Trial phase shift
+    amp: array of floats
+        Absolute value of the product between the Fourier transform of the
+        pulse profile and of the template (|P S|)
+    pha: array of floats
+        Difference between the angles of P and S
+
+    Results
+    -------
+    res: float
+        Result of the function
+    """
     good = slice(1, ngood + 1)
     idx = np.arange(1, ngood + 1, dtype=int)
     res = np.sum(idx * amp[good] * np.sin(-pha[good] + TWOPI * idx * tau))
@@ -143,7 +159,7 @@ def fftfit(prof, template):
     nmax = ngood
     good = slice(1, nmax)
 
-    # We end with the error calculation, from Taylor 1992.
+    # We end with the error calculation, from Taylor 1992, eqns. A10--11
     big_sum = np.sum(
             idx[good] ** 2 *
             amp[good] * np.cos(-pha[good] + 2 * np.pi * idx[good] * -shift)
