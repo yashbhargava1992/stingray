@@ -27,7 +27,7 @@ class Lightcurve(object):
 
     Parameters
     ----------
-    time: Iterable
+    time: Iterable, `:class:astropy.time.Time`, or `:class:astropy.units.Quantity` object
         A list or array of time stamps for a light curve. Must be a type that
         can be cast to `:class:np.array` or `:class:List` of floats, or that
         has a `value` attribute that does (e.g. a
