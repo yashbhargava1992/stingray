@@ -368,11 +368,6 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
     """
     prof = prof - np.mean(prof)
 
-    nbin = len(prof)
-
-    ph = np.arange(0, 1, 1 / nbin)
-    if template is None:
-        template = np.cos(2 * np.pi * ph)
     template = template - np.mean(template)
 
     return taylor_fftfit(prof, template)
@@ -433,6 +428,11 @@ def get_TOA(prof, period, tstart, template=None, additional_phase=0,
     toa, toastd : floats
         Mean and standard deviation of the TOA
     """
+    nbin = len(prof)
+
+    ph = np.arange(0, 1, 1 / nbin)
+    if template is None:
+        template = np.cos(2 * np.pi * ph)
 
     mean_amp, std_amp, phase_res, phase_res_err = \
         fftfit(prof, template=template, quick=quick,
