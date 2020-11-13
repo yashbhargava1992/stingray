@@ -34,7 +34,9 @@ except:
 
 
 def rough_calibration(pis, mission):
-    """
+    """Make a rough conversion betwenn PI channel and energy.
+
+    Only works for NICER, NuSTAR, and XMM.
 
     Parameters
     ----------
@@ -132,7 +134,10 @@ def _get_additional_data(lctable, additional_columns):
 
 
 def _get_detector_id(lctable):
-    """Multi-mission detector id finder
+    """Multi-mission detector id finder.
+
+    Given a FITS table, look for known columns containing detector ID numbers.
+    This is relevant to a few missions, like XMM, Chandra, XTE.
 
     Examples
     --------
@@ -324,7 +329,9 @@ def load_events_and_gtis(
         # additional_data.pop("PHA")
 
     # additional_data.pop("PI")
-
+    # EvtData() is an empty class. We will assign a number of attributes to
+    # it, like the arrival times of photons, the energies, and some information
+    # from the header.
     returns = EvtData()
 
     returns.ev_list = ev_list
