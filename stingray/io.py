@@ -74,8 +74,25 @@ def rough_calibration(pis, mission):
 
 
 def get_file_extension(fname):
-    """Get the extension from the file name."""
-    return os.path.splitext(fname)[1]
+    """Get the extension from the file name.
+
+    If g-zipped, add '.gz' to extension.
+
+    Examples
+    --------
+    >>> get_file_extension('ciao.tar')
+    '.tar'
+    >>> get_file_extension('ciao.tar.gz')
+    '.tar.gz'
+    >>> get_file_extension('ciao.evt.gz')
+    '.evt.gz'
+    >>> get_file_extension('ciao.a.tutti.evt.gz')
+    '.evt.gz'
+    """
+    fname_root = fname.replace('.gz', '')
+    fname_root = os.path.splitext(fname_root)[0]
+
+    return fname.replace(fname_root, '')
 
 
 def high_precision_keyword_read(hdr, keyword):
@@ -256,14 +273,11 @@ def load_events_and_gtis(
         warnings.warn("No TIMEZERO in file", AstropyUserWarning)
         timezero = np.longdouble(0.0)
 
-    try:
+    instr = mission = 'unknown'
+    if "INSTRUME" in header:
         instr = header["INSTRUME"].lower()
-    except Exception:
-        instr = "unknown"
-    try:
+    if "TELESCOP" in header:
         mission = header["TELESCOP"].strip().lower()
-    except Exception:
-        mission = "unknown"
 
     ev_list += timezero
 

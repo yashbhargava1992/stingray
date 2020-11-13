@@ -57,6 +57,26 @@ class TestIO(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_events_and_gtis(fname, additional_columns=["PI"])
 
+    def test_event_file_read_xmm(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'xmm_test.fits')
+        load_events_and_gtis(fname, additional_columns=['PRIOR'])
+
+    def test_event_file_read_no_mission(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'nomission.evt')
+        load_events_and_gtis(fname)
+
+    def test_event_file_read_no_additional(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        load_events_and_gtis(fname)
+
+    def test_event_file_read_no_pi(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        load_events_and_gtis(fname)
+
     def test_read_header_key(self):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
