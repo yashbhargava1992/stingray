@@ -5,6 +5,8 @@ import warnings
 import os
 import matplotlib.pyplot as plt
 from numpy.testing import assert_allclose
+import astropy.units as u
+from astropy.time import Time
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
@@ -64,6 +66,20 @@ class TestProperties(object):
         assert lc._bin_lo is None
         _ = lc.bin_lo
         assert lc._bin_lo is not None
+
+    def test_time_is_quantity_or_astropy_time(self):
+        counts = [34, 21.425]
+        times = [57000, 58000]
+
+        times_q = times * u.d
+        times_t = Time(times, format='mjd')
+
+        lc = Lightcurve(time=times, counts=counts)
+        lc_q = Lightcurve(time=times_q, counts=counts)
+        lc_t = Lightcurve(time=times_t, counts=counts)
+        assert_allclose(lc.time, lc_q.time)
+        assert_allclose(lc.time, lc_t.time)
+
 
     def test_gti(self):
         lc = copy.deepcopy(self.lc)
