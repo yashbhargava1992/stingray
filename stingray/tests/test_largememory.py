@@ -254,7 +254,7 @@ class TestRetrieveSpec(object):
 
         assert np.allclose(ev.time, self.ev.time)
         assert np.allclose(ev.pi, self.ev.pi)
-        assert np.allclose(ev.gti, gti)
+        assert np.allclose(ev.gti, gti, atol=0.0001)
 
     # @pytest.mark.skipif('not HAS_ZARR')
     # def test_retrieve_fits_data(self):
@@ -322,7 +322,7 @@ class TestRetrieveSpec(object):
 
         assert np.allclose(ev.time, self.ev.time[:maxidx])
         assert np.allclose(ev.pi, self.ev.pi[:maxidx])
-        assert np.allclose(ev.gti, gti)
+        assert np.allclose(ev.gti, gti, atol=0.0001)
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_lc_offset_data(self):
