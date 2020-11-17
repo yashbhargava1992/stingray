@@ -1,5 +1,7 @@
 import copy
 import os
+import sys
+from sys import platform
 import tempfile
 
 import numpy as np
@@ -9,7 +11,8 @@ from astropy.io import fits
 from stingray.crossspectrum import AveragedCrossspectrum
 from stingray.events import EventList
 from stingray.io import load_events_and_gtis, ref_mjd
-from stingray.largememory import createChunkedSpectra, retrieveData, saveData
+from stingray.largememory import retrieveData, saveData
+from stingray.largememory import _retrieveDataEV, _retrieveDataLC
 from stingray.lightcurve import Lightcurve
 from stingray.powerspectrum import AveragedPowerspectrum
 
@@ -25,6 +28,9 @@ except ImportError:
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
 
+IS_LINUX = True
+if not (platform == "linux" or platform == "linux2"):
+    IS_LINUX = False
 
 class TestSaveSpec(object):
     @classmethod
@@ -50,6 +56,15 @@ class TestSaveSpec(object):
         with pytest.raises(ValueError) as excinfo:
             saveData("A string", "bububu")
         assert "Invalid data: A string (str)" in str(excinfo.value)
+
+    @pytest.mark.skipif("not HAS_ZARR")
+    def test_save_lc_small(self):
+        test_lc = copy.deepcopy(self.lc)
+        # Make sure counts_err exists
+        _ = test_lc.counts_err
+
+        # Save small part of data, < certainly chunk_size
+        _ = saveData(test_lc[:300], persist=False, chunks=100000)
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_save_lc(self):
@@ -100,6 +115,27 @@ class TestSaveSpec(object):
                 errors.append("lc.err_dist is not saved precisely")
 
         assert not errors, "Errors encountered:\n{}".format("\n".join(errors))
+
+    @pytest.mark.skipif("not HAS_ZARR")
+    def test_save_ev_small(self):
+        # Save small part of data, < certainly chunk_size
+        ev = EventList(time=np.arange(1000))
+        _ = saveData(self.ev, persist=False, chunks=100000)
+
+    @pytest.mark.skipif("not (HAS_ZARR and IS_LINUX)")
+    def test_save_ev_missing_psutil_linux(self, monkeypatch):
+        monkeypatch.setitem(sys.modules, "psutil", None)
+
+        _ = saveData(self.ev, persist=False)
+
+    @pytest.mark.skipif("not HAS_ZARR or IS_LINUX")
+    def test_save_ev_missing_psutil_not_linux(self, monkeypatch):
+        monkeypatch.setitem(sys.modules, "psutil", None)
+
+        with pytest.warns(UserWarning) as record:
+            _ = saveData(self.ev, persist=False)
+        assert np.any(['will not depend on available RAM' in r.message.args[0]
+                       for r in record])
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_save_ev(self):
@@ -254,7 +290,7 @@ class TestRetrieveSpec(object):
 
         assert np.allclose(ev.time, self.ev.time)
         assert np.allclose(ev.pi, self.ev.pi)
-        assert np.allclose(ev.gti, gti, atol=0.0001)
+        assert np.allclose(ev.gti, gti, atol=0.001)
 
     # @pytest.mark.skipif('not HAS_ZARR')
     # def test_retrieve_fits_data(self):
@@ -357,6 +393,25 @@ class TestRetrieveSpec(object):
         assert np.allclose(ev.time, self.ev.time[offset:maxidx])
         assert np.allclose(ev.pi, self.ev.pi[offset:maxidx])
         assert np.allclose(ev.gti, gti)
+
+    @pytest.mark.skipif("not HAS_ZARR")
+    def test_retrieve_data_bad_offset(self):
+        with pytest.raises(ValueError):
+            _ = retrieveData(data_type="EventList", dir_path=self.ev_path,
+                             chunk_data=True,
+                             offset=101010101010)
+
+    @pytest.mark.skipif("not HAS_ZARR")
+    def test_retrieve_ev_data_bad_offset(self):
+        with pytest.raises(ValueError):
+            _ = _retrieveDataEV(data_path=os.path.abspath(self.ev_path),
+                                offset=101010101010)
+
+    @pytest.mark.skipif("not HAS_ZARR")
+    def test_retrieve_lc_data_bad_offset(self):
+        with pytest.raises(ValueError):
+            _ = _retrieveDataLC(data_path=os.path.abspath(self.ev_path),
+                                offset=101010101010)
 
 
 class TestChunkPS(object):
