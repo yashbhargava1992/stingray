@@ -11,7 +11,7 @@ from astropy.io import fits
 from stingray.crossspectrum import AveragedCrossspectrum
 from stingray.events import EventList
 from stingray.io import load_events_and_gtis, ref_mjd
-from stingray.largememory import retrieveData, saveData
+from stingray.largememory import retrieveData, saveData, genDataPath
 from stingray.largememory import _retrieveDataEV, _retrieveDataLC
 from stingray.lightcurve import Lightcurve
 from stingray.powerspectrum import AveragedPowerspectrum
@@ -264,9 +264,17 @@ class TestRetrieveSpec(object):
             dt=1e-5,
             notes="Bu",
         )
+        cls.ev_noattrs = copy.deepcopy(cls.ev)
+        cls.ev_noattrs.energy = None
+        cls.ev_noattrs.pi = None
+        cls.ev_noattrs.mjdref = 0
+        cls.ev_noattrs.gti = None
+        cls.ev_noattrs.dt = 0
+        cls.ev_noattrs.notes = None
 
         cls.lc_path = saveData(cls.lc, persist=False)
         cls.ev_path = saveData(cls.ev, persist=False)
+        cls.ev_path_noattrs = saveData(cls.ev_noattrs, persist=False)
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_wrong_data(self):
@@ -392,7 +400,7 @@ class TestRetrieveSpec(object):
 
         assert np.allclose(ev.time, self.ev.time[offset:maxidx])
         assert np.allclose(ev.pi, self.ev.pi[offset:maxidx])
-        assert np.allclose(ev.gti, gti)
+        assert np.allclose(ev.gti, gti, atol=0.1)
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_data_bad_offset(self):
@@ -403,16 +411,37 @@ class TestRetrieveSpec(object):
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_ev_data_bad_offset(self):
-        with pytest.raises(ValueError):
-            _ = _retrieveDataEV(data_path=os.path.abspath(self.ev_path),
+        with pytest.raises(ValueError) as excinfo:
+            _ = _retrieveDataEV(data_path=genDataPath(self.ev_path),
                                 offset=101010101010)
+        assert "Offset cannot be larger than size of" in str(excinfo.value)
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_lc_data_bad_offset(self):
-        with pytest.raises(ValueError):
-            _ = _retrieveDataLC(data_path=os.path.abspath(self.ev_path),
+        with pytest.raises(ValueError) as excinfo:
+            _ = _retrieveDataLC(data_path=genDataPath(self.lc_path),
                                 offset=101010101010)
+        assert "Offset cannot be larger than size of " in str(excinfo.value)
 
+    @pytest.mark.skipif("not HAS_ZARR")
+    def test_retrieve_ev_data_no_attrs(self):
+        ev = _retrieveDataEV(data_path=genDataPath(self.ev_path_noattrs))
+        assert ev.mjdref == 0
+        assert ev.pi is None
+        assert ev.energy is None
+        assert ev.gti is None
+        assert ev.notes == ""
+
+    @pytest.mark.skipif("not HAS_ZARR")
+    def test_retrieve_ev_data_raw(self):
+        res = _retrieveDataEV(data_path=genDataPath(self.ev_path_noattrs),
+                              raw=True)
+        times, energy, ncounts, mjdref, dt, gti, pi, notes = res
+        assert mjdref == 0
+        assert pi is None
+        assert energy is None
+        assert gti is None
+        assert notes == ""
 
 class TestChunkPS(object):
     @classmethod
