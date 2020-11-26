@@ -18,7 +18,7 @@ A successful project is not just built by amazing programmers but by the combine
 
 ---
 
-Contributions from everyone, experienced and inexperienced, are welcome! If you don't know where to start, look at the [Open Issues](https://github.com/StingraySoftware/stingray/issues) and/or get involved in our [Slack channel](http://slack-invite.timelabtechnologies.com/) . This code is written in Python 3.6+. Tests run at each commit during Pull Requests, so it is easy to single out points in the code that break this compatibility.
+Contributions from everyone, experienced and inexperienced, are welcome! If you don't know where to start, look at the [Open Issues](https://github.com/StingraySoftware/stingray/issues) and/or get involved in our [Slack channel](http://slack-invite.timelabtechnologies.com/) . This code is written in Python 3.6+, but in general we will follow the Astropy/Numpy minimum Python versions. Tests run at each commit during Pull Requests, so it is easy to single out points in the code that break this compatibility.
 
 - **Branches:**
     - Don't use your master **branch(forked) for anything. Consider deleting your master** branch.
@@ -41,14 +41,14 @@ These, conceptually, are the steps you will follow in contributing to stingray. 
 1. Regularly fetch latest stingray development version `stingray/master` from GitHub.
 2. Make a new feature branch. **Recommended:** Use virtual environments to work on branch.
 3. Editing Workflow:
-    1. One commit per logical changes.
+    1. One commit per logical change.
     2. Run tests to make sure that changes don't break existing code.
     3. Code should have appropriate docstring.
     4. Update appropriate documentation if necessary and test it on sphinx.
     5. Write a test for code changes.
     6. If  modifications require more than one commit, break changes into smaller commits.
     7. Push the code on your remote(forked) repository.
-4. All code changes should be submitted via PR's (i.e. fork, branch, work on stuff, just submit pull request).
+4. All code changes should be submitted via PRs (i.e. fork, branch, work on stuff, just submit pull request).
 Code Reviews are super-useful: another contributor can review the code, which means both the contributor and reviewer will be up to date with how everything fits together, and can get better by reading each other's code! :)
 5. Take feedback and make changes/revise the PR as asked.
 <!-- 6. Don't merge using web interface if your branch falls behind master. Fetch and rebase. -->
@@ -116,7 +116,7 @@ Code Reviews are super-useful: another contributor can review the code, which me
 
 ---
 
-The testing framework used by stingray is the pytest framework with tox, it is accessed through the python [setup.py](https://github.com/StingraySoftware/stingray/blob/master/setup.py) test command. To run the tests, you will need to make sure you have the pytest package (version 3.1 or later) as well as the tox tool installed.
+The testing framework used by stingray is the pytest framework with tox. To run the tests, you will need to make sure you have the pytest package (version 3.1 or later) as well as the tox tool installed.
 
 - Execute tests using the ```tox -e <test environment>``` command.
 - All tests should be py.test compliant: [http://pytest.org/latest/](http://pytest.org/latest/).
