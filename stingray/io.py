@@ -270,7 +270,6 @@ def load_events_and_gtis(
     try:
         timezero = np.longdouble(header["TIMEZERO"])
     except Exception:  # pragma: no cover
-        warnings.warn("No TIMEZERO in file", AstropyUserWarning)
         timezero = np.longdouble(0.0)
 
     instr = mission = 'unknown'
