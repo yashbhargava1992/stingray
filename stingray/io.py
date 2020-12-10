@@ -342,10 +342,10 @@ def load_events_and_gtis(
         # additional_data.pop("PHA")
 
     # additional_data.pop("PI")
-    # EvtData() is an empty class. We will assign a number of attributes to
+    # EventReadOutput() is an empty class. We will assign a number of attributes to
     # it, like the arrival times of photons, the energies, and some information
     # from the header.
-    returns = EvtData()
+    returns = EventReadOutput()
 
     returns.ev_list = ev_list
     returns.gti_list = gti_list
@@ -367,7 +367,7 @@ def load_events_and_gtis(
     return returns
 
 
-class EvtData():
+class EventReadOutput():
     def __init__(self):
         pass
 
