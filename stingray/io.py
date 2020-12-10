@@ -217,36 +217,36 @@ def load_events_and_gtis(
     Returns
     -------
     retvals : Object with the following attributes:
-    ev_list : array-like
-        Event times in Mission Epoch Time
-    gti_list: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        GTIs in Mission Epoch Time
-    additional_data: dict
-        A dictionary, where each key is the one specified in additional_colums.
-        The data are an array with the values of the specified column in the
-        fits file.
-    t_start : float
-        Start time in Mission Epoch Time
-    t_stop : float
-        Stop time in Mission Epoch Time
-    pi_list : array-like
-        Raw Instrument energy channels
-    cal_pi_list : array-like
-        Calibrated PI channels (those that can be easily converted to energy
-        values, regardless of the instrument setup.)
-    energy_list : array-like
-        Energy of each photon in keV (only for NuSTAR, NICER, XMM)
-    instr : str
-        Name of the instrument (e.g. EPIC-pn or FPMA)
-    mission : str
-        Name of the instrument (e.g. XMM or NuSTAR)
-    mjdref : float
-        MJD reference time for the mission
-    header : str
-        Full header of the FITS file, for debugging purposes
-    detector_id : array-like, int
-        Detector id for each photon (e.g. each of the CCDs composing XMM's or
-        Chandra's instruments)
+        ev_list : array-like
+            Event times in Mission Epoch Time
+        gti_list: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            GTIs in Mission Epoch Time
+        additional_data: dict
+            A dictionary, where each key is the one specified in additional_colums.
+            The data are an array with the values of the specified column in the
+            fits file.
+        t_start : float
+            Start time in Mission Epoch Time
+        t_stop : float
+            Stop time in Mission Epoch Time
+        pi_list : array-like
+            Raw Instrument energy channels
+        cal_pi_list : array-like
+            Calibrated PI channels (those that can be easily converted to energy
+            values, regardless of the instrument setup.)
+        energy_list : array-like
+            Energy of each photon in keV (only for NuSTAR, NICER, XMM)
+        instr : str
+            Name of the instrument (e.g. EPIC-pn or FPMA)
+        mission : str
+            Name of the instrument (e.g. XMM or NuSTAR)
+        mjdref : float
+            MJD reference time for the mission
+        header : str
+            Full header of the FITS file, for debugging purposes
+        detector_id : array-like, int
+            Detector id for each photon (e.g. each of the CCDs composing XMM's or
+            Chandra's instruments)
     """
     from astropy.io import fits as pf
 
