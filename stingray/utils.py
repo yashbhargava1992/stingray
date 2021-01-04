@@ -101,6 +101,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
 
 
 def _root_squared_mean(array):
+    array = np.asarray(array)
     return np.sqrt(np.sum(array ** 2)) / len(array)
 
 
