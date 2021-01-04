@@ -501,7 +501,7 @@ def z_n_events(phase, n):
     return all_zs[-1]
 
 
-def z_n(data, n, kind="poisson", err=None):
+def z_n(data, n, kind="poisson", err=None, norm=None):
     '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
 
     If kind is "poisson" or "gauss", uses the formulation from
@@ -523,12 +523,21 @@ def z_n(data, n, kind="poisson", err=None):
     err : float
         The uncertainty on the pulse profile fluxes (required for
         kind="gauss", ignored otherwise)
-
+    norm : float
+        For backwards compatibility; if norm is not None, it is 
+        substituted to ``data``, and data is ignored. This raises
+        a DeprecationWarning
+        
     Returns
     -------
     z2_n : float
         The Z^2_n statistics of the events.
     '''
+    if norm is not None and norm != 1:
+        warnings.warn("The use of ``z_n(phase, norm=profile)`` is deprecated. Use "
+                      "``z_n(profile, kind='poisson')`` instead")
+        if isinstance(norm, Iterable):
+            data = norm
     if kind == "poisson":
         return z_n_poisson(data, n)
     elif kind == "events":
