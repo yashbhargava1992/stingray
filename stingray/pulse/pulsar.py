@@ -2,8 +2,10 @@
 Basic pulsar-related functions and statistics.
 """
 
+import functools
 from collections.abc import Iterable
 import warnings
+from scipy.optimize import minimize, basinhopping
 import numpy as np
 
 from .fftfit import fftfit as taylor_fftfit
@@ -302,7 +304,105 @@ def profile_stat(profile, err=None):
     return np.sum((profile - mean) ** 2 / err ** 2)
 
 
-def z_n(phase, n=2, norm=1):
+
+@functools.lru_cache(maxsize=128)
+def _cached_sin_harmonics(nbin, z_n_n):
+    dph = 1.0 / nbin
+    twopiphases = np.pi * 2 * np.arange(dph / 2, 1, dph)
+    cached_sin = np.zeros(z_n_n * nbin)
+    for i in range(z_n_n):
+        cached_sin[i * nbin : (i + 1) * nbin] = np.sin(twopiphases)
+    return cached_sin
+
+
+@functools.lru_cache(maxsize=128)
+def _cached_cos_harmonics(nbin, z_n_n):
+    dph = 1.0 / nbin
+    twopiphases = np.pi * 2 * np.arange(dph / 2, 1, dph)
+    cached_cos = np.zeros(z_n_n * nbin)
+    for i in range(z_n_n):
+        cached_cos[i * nbin : (i + 1) * nbin] = np.cos(twopiphases)
+    return cached_cos
+
+
+@njit()
+def _z_n_fast_cached_sums_unnorm(prof, ks, cached_sin, cached_cos):
+    all_zs = np.zeros(ks.size)
+    N = prof.size
+
+    total_sum = 0
+    for k in ks:
+        local_z = (
+            np.sum(cached_cos[: N * k : k] * prof) ** 2
+            + np.sum(cached_sin[: N * k : k] * prof) ** 2
+        )
+        total_sum += local_z
+        all_zs[k - 1] = total_sum
+
+    return all_zs
+
+
+def z_n_poisson_all(profile, nmax=20):
+    '''Z^2_n statistic for multiple harmonics and Poissonian pulse profiles
+
+    See Bachetti+2021, arXiv:2012.11397
+
+    Parameters
+    ----------
+    profile : array of floats
+        The folded pulse profile (containing the number of
+        photons falling in each pulse bin)
+    n : int
+        Number of harmonics, including the fundamental
+
+    Returns
+    -------
+    ks : list of ints
+        Harmonic numbers, from 1 to nmax (included)
+    z2_n : float
+        The value of the statistic for all ks
+    '''
+    cached_sin = _cached_sin_harmonics(profile.size, nmax)
+    cached_cos = _cached_cos_harmonics(profile.size, nmax)
+    ks = np.arange(1, nmax + 1, dtype=int)
+
+    all_zs = _z_n_fast_cached_sums_unnorm(profile, ks, cached_sin, cached_cos)
+
+    return ks, all_zs * 2 / np.sum(profile)
+
+
+def z_n_gauss_all(profile, err, nmax=20):
+    '''Z^2_n statistic for multiple harmonics and Gaussian pulse profiles
+
+    See Bachetti+2021, arXiv:2012.11397
+
+    Parameters
+    ----------
+    profile : array of floats
+        The folded pulse profile
+    err : float
+        The (assumed constant) uncertainty on the flux in each bin.
+    nmax : int
+        Maximum number of harmonics, including the fundamental
+
+    Returns
+    -------
+    ks : list of ints
+        Harmonic numbers, from 1 to nmax (included)
+    z2_n : list of floats
+        The value of the statistic for all ks
+    '''
+    cached_sin = _cached_sin_harmonics(profile.size, nmax)
+    cached_cos = _cached_cos_harmonics(profile.size, nmax)
+    ks = np.arange(1, nmax + 1, dtype=int)
+
+    all_zs = _z_n_fast_cached_sums_unnorm(profile, ks, cached_sin, cached_cos)
+
+    return ks, all_zs * (2 / profile.size / err**2)
+
+
+@njit()
+def z_n_events_all(phase, nmax=20):
     '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
 
     Parameters
@@ -312,31 +412,182 @@ def z_n(phase, n=2, norm=1):
     n : int, default 2
         Number of harmonics, including the fundamental
 
+    Returns
+    -------
+    ks : list of ints
+        Harmonic numbers, from 1 to nmax (included)
+    z2_n : float
+        The Z^2_n statistic for all ks
+    '''
+    all_zs = np.zeros(nmax)
+    ks = np.arange(1, nmax + 1)
+    nphot = phase.size
+
+    total_sum = 0
+    phase = phase * 2 * np.pi
+
+    for k in ks:
+        local_z = (
+            np.sum(np.cos(k * phase)) ** 2
+            + np.sum(np.sin(k * phase)) ** 2
+        )
+        total_sum += local_z
+        all_zs[k - 1] = total_sum
+
+    return ks, 2 / nphot * all_zs
+
+
+def z_n_poisson(profile, n):
+    '''Z^2_n statistic for Poissonian pulse profiles
+
+    See Bachetti+2021, arXiv:2012.11397
+
+    Parameters
+    ----------
+    profile : array of floats
+        The folded pulse profile (containing the number of
+        photons falling in each pulse bin)
+    n : int
+        Number of harmonics, including the fundamental
+
+    Returns
+    -------
+    z2_n : float
+        The value of the statistic
+    '''
+    _, all_zs = z_n_poisson_all(profile, nmax=n)
+    return all_zs[-1]
+
+
+def z_n_gauss(profile, err, n):
+    '''Z^2_n statistic for Gaussian pulse profiles
+
+    See Bachetti+2021, arXiv:2012.11397
+
+    Parameters
+    ----------
+    profile : array of floats
+        The folded pulse profile
+    err : float
+        The (assumed constant) uncertainty on the flux in each bin.
+    n : int
+        Number of harmonics, including the fundamental
+
+    Returns
+    -------
+    z2_n : float
+        The value of the statistic
+    '''
+    _, all_zs = z_n_gauss_all(profile, err, nmax=n)
+    return all_zs[-1]
+
+
+def z_n_events(phase, n):
+    '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
+
+    Parameters
+    ----------
+    phase : array of floats
+        The phases of the events
+    n : int, default 2
+        Number of harmonics, including the fundamental
+
+    Returns
+    -------
+    z2_n : float
+        The Z^2_n statistic
+    '''
+    ks, all_zs = z_n_events_all(phase, nmax=n)
+    return all_zs[-1]
+
+
+def z_n(data, n, kind="poisson", err=None):
+    '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
+
+    If kind is "poisson" or "gauss", uses the formulation from
+    Bachetti+2021, ApJ, arxiv:2012.11397
+
+    Parameters
+    ----------
+    data : array of floats
+        Phase values or binned flux values
+    n : int, default 2
+        Number of harmonics, including the fundamental
+
     Other Parameters
     ----------------
-    norm : float or array of floats
-        A normalization factor that gets multiplied as a weight.
+    kind : str
+        The kind of data: "events" if phase values between 0 and 1,
+        "poisson" if folded pulse profile from photons, "gauss" if
+        folded pulse profile with normally-distributed fluxes
+    err : float
+        The uncertainty on the pulse profile fluxes (required for
+        kind="gauss", ignored otherwise)
 
     Returns
     -------
     z2_n : float
         The Z^2_n statistics of the events.
     '''
-    nbin = len(phase)
+    if kind == "poisson":
+        return z_n_poisson(data, n)
+    elif kind == "events":
+        return z_n_events(data, n)
+    elif kind == "gauss":
+        if err is None:
+            raise ValueError(
+                "If kind='gauss', you need to specify an uncertainty (err)")
+        return z_n_gauss(data, n, err=err)
 
-    if nbin == 0:
-        return 0
+    raise ValueError(f"Unknown kind requested for Z_n ({kind})")
 
-    norm = np.asarray(norm)
-    if norm.size == 1:
-        total_norm = nbin * norm
+
+def H(data, nmax=20, kind="poisson", err=None):
+    '''H-test statistic, a` la De Jager+89, A&A, 221, 180D, eq. 2.
+
+    If kind is "poisson" or "gauss", uses the formulation from
+    Bachetti+2021, ApJ, arxiv:2012.11397
+
+    Parameters
+    ----------
+    data : array of floats
+        Phase values or binned flux values
+    nmax : int, default 20
+        Maximum of harmonics for Z^2_n
+
+    Other Parameters
+    ----------------
+    kind : str
+        The kind of data: "events" if phase values between 0 and 1,
+        "poisson" if folded pulse profile from photons, "gauss" if
+        folded pulse profile with normally-distributed fluxes
+    err : float
+        The uncertainty on the pulse profile fluxes (required for
+        kind="gauss", ignored otherwise)
+
+    Returns
+    -------
+    M : int
+        The best number of harmonics that describe the signal.
+    H : float
+        The H statistics of the events.
+    '''
+    if kind == "poisson":
+        ks, zs = z_n_poisson_all(data, nmax)
+    elif kind == "events":
+        ks, zs = z_n_events_all(data, nmax)
+    elif kind == "gauss":
+        if err is None:
+            raise ValueError(
+                "If kind='gauss', you need to specify an uncertainty (err)")
+        ks, zs = z_n_gauss_all(data, nmax=nmax, err=err)
     else:
-        total_norm = np.sum(norm)
-    phase = phase * 2 * np.pi
-    return 2 / total_norm * \
-        np.sum([np.sum(np.cos(k * phase) * norm) ** 2 +
-                np.sum(np.sin(k * phase) * norm) ** 2
-                for k in range(1, n + 1)])
+        raise ValueError(f"Unknown kind requested for Z_n ({kind})")
+
+    Hs = zs - 4 * ks + 4
+    bestidx = np.argmax(Hs)
+
+    return ks[bestidx], Hs[bestidx]
 
 
 def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
