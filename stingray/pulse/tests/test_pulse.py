@@ -1,6 +1,8 @@
 import numpy as np
 from stingray.pulse.pulsar import fold_events, get_TOA, phase_exposure
 from stingray.pulse.pulsar import profile_stat, z_n, pulse_phase
+from stingray.pulse.pulsar import z_n, z_n_events, z_n_poisson, z_n_gauss, H
+from stingray.pulse.pulsar import z_n_events_all, z_n_poisson_all, z_n_gauss_all
 from stingray.pulse.pulsar import get_orbital_correction_from_ephemeris_file
 from stingray.pulse.pulsar import HAS_PINT
 from astropy.tests.helper import remote_data
@@ -82,12 +84,12 @@ class TestAll(object):
     def test_zn(self):
         """Test pulse phase calculation, frequency only."""
         ph = np.array([0, 1])
-        np.testing.assert_array_almost_equal(z_n(ph), 8)
+        np.testing.assert_array_almost_equal(z_n(ph, 2), 8)
         ph = np.array([])
-        np.testing.assert_array_almost_equal(z_n(ph), 0)
+        np.testing.assert_array_almost_equal(z_n(ph, 2), 0)
         ph = np.array([0.2, 0.7])
         ph2 = np.array([0, 0.5])
-        np.testing.assert_array_almost_equal(z_n(ph), z_n(ph2))
+        np.testing.assert_array_almost_equal(z_n(ph, 2), z_n(ph2, 2))
 
     def test_pulse_phase1(self):
         """Test pulse phase calculation, frequency only."""
@@ -287,9 +289,15 @@ def create_pulsed_events(nevents, freq, t0=0, t1=1000, nback=0):
 
     if nback > 0:
       events = np.concatenate((events, rg.uniform(0, 1, nback)))
-    pulse_no = rg.integers(0, np.rint((t1 - t0) * f), nevents)
+    pulse_no = rg.integers(0, np.rint((t1 - t0) * freq), nevents)
     events = np.sort(events + pulse_no)
-    return t1 + events / f
+    return t1 + events / freq
+
+
+def poissonize_gaussian_profile(prof, err):
+    lam = 10000
+    factor = np.sqrt(lam) / err
+    return (prof - prof.mean()) * factor + lam
 
 
 class TestZandH(object):
@@ -341,20 +349,20 @@ class TestZandH(object):
 
     def test_wrong_args_H_kind(self):
         with pytest.raises(ValueError) as excinfo:
-            H([1], kind="gibberish")
+            H([1], 2, kind="gibberish")
         assert "Unknown kind requested for H (gibberish)" in str(excinfo.value)
 
     def test_wrong_args_Z_kind(self):
         with pytest.raises(ValueError) as excinfo:
-            z_n([1], kind="gibberish")
+            z_n([1], 2, kind="gibberish")
         assert "Unknown kind requested for Z_n (gibberish)" in str(excinfo.value)
 
     def test_wrong_args_H_gauss_noerr(self):
         with pytest.raises(ValueError) as excinfo:
-            H([1], kind="gauss")
+            H([1], 2, kind="gauss")
         assert "If kind='gauss', you need to " in str(excinfo.value)
 
     def test_wrong_args_Z_gauss_noerr(self):
         with pytest.raises(ValueError) as excinfo:
-            z_n([1], kind="gauss")
+            z_n([1], 2, kind="gauss")
         assert "If kind='gauss', you need to " in str(excinfo.value)

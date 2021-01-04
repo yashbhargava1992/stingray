@@ -216,16 +216,14 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
                              ' specify the GTIs')
 
         def stat_fun(t, f, fd=0, **kwargs):
-            return z_n(phase, n=nharm,
-                       norm=fold_events(t, f, fd, nbin=nbin, **kwargs)[1])
+            return z_n(fold_events(t, f, fd, nbin=nbin, **kwargs)[1], n=nharm, kind='poisson')
         return \
             _folding_search(stat_fun, times, frequencies,
                             segment_size=segment_size,
                             use_times=True, expocorr=expocorr, weights=weights,
                             gti=gti, fdots=fdots)
 
-    return _folding_search(lambda x: z_n(phase, n=nharm,
-                                         norm=_profile_fast(x, nbin=nbin)),
+    return _folding_search(lambda x: z_n(_profile_fast(x, nbin=nbin), n=nharm, kind='poisson'),
                            times, frequencies, segment_size=segment_size,
                            fdots=fdots)
 
