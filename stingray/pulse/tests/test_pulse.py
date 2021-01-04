@@ -277,3 +277,84 @@ class TestAll(object):
 
         real_toa = tstart + start_phase * period
         assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
+
+
+def create_pulsed_events(nevents, freq, t0=0, t1=1000, nback=0):
+    from numpy.random import Generator, PCG64
+    rg = Generator(PCG64())
+    events = rg.normal(0.5, 0.1, nevents - nback)
+    events = events - np.floor(events)
+
+    if nback > 0:
+      events = np.concatenate((events, rg.uniform(0, 1, nback)))
+    pulse_no = rg.integers(0, np.rint((t1 - t0) * f), nevents)
+    events = np.sort(events + pulse_no)
+    return t1 + events / f
+
+
+class TestZandH(object):
+    """Unit tests for the stingray.pulsar module."""
+    @classmethod
+    def setup_class(cls):
+        nevents = 10000
+        f = 1.2123
+        cls.events = create_pulsed_events(nevents, f)
+        phases = cls.events * f
+        cls.phases = phases - np.floor(phases)
+
+    def test_zn_events(self):
+        phases = self.phases
+        ks, ze = z_n_events_all(phases, nmax=10)
+        m, h = H(phases, nmax=10, kind="events")
+        assert np.isclose(h + 4 * m - 4, z_n(phases, n=m, kind="events"))
+        assert np.isclose(h + 4 * m - 4, ze[m - 1])
+
+    def test_zn_poisson(self):
+        phases = self.phases
+        prof512, bins = np.histogram(phases, range=[0, 1], bins=512)
+        ks, ze = z_n_events_all(phases, nmax=10)
+        ksp, zp = z_n_poisson_all(prof512, nmax=10)
+        assert np.allclose(ze, zp, rtol=0.01)
+        m, h = H(prof512, kind="poisson", nmax=10)
+
+        assert np.isclose(h + 4 * m - 4, z_n(prof512, n=m, kind="poisson"))
+        assert np.isclose(h + 4 * m - 4, zp[m - 1])
+
+    def test_zn_gauss(self):
+        nbin=512
+        dph = 1 / nbin
+        err = 0.1
+        ph = np.arange(-0.5 + dph / 2, 0.5, dph)
+        prof = np.random.normal(np.exp(-ph**2 / 2 / 0.1**2), err)
+
+        prof_poiss = poissonize_gaussian_profile(prof, err)
+
+        ksp, zp = z_n_poisson_all(prof_poiss, nmax=10)
+        ksg, zg = z_n_gauss_all(prof, err, nmax=10)
+        assert np.allclose(zg, zp, rtol=0.01)
+
+        mg, hg = H(prof, err=err, kind="gauss", nmax=10)
+        mp, hp = H(prof_poiss, kind="poisson", nmax=10)
+
+        assert np.isclose(hg, hp)
+        assert np.isclose(mg, mp)
+
+    def test_wrong_args_H_kind(self):
+        with pytest.raises(ValueError) as excinfo:
+            H([1], kind="gibberish")
+        assert "Unknown kind requested for H (gibberish)" in str(excinfo.value)
+
+    def test_wrong_args_Z_kind(self):
+        with pytest.raises(ValueError) as excinfo:
+            z_n([1], kind="gibberish")
+        assert "Unknown kind requested for Z_n (gibberish)" in str(excinfo.value)
+
+    def test_wrong_args_H_gauss_noerr(self):
+        with pytest.raises(ValueError) as excinfo:
+            H([1], kind="gauss")
+        assert "If kind='gauss', you need to " in str(excinfo.value)
+
+    def test_wrong_args_Z_gauss_noerr(self):
+        with pytest.raises(ValueError) as excinfo:
+            z_n([1], kind="gauss")
+        assert "If kind='gauss', you need to " in str(excinfo.value)

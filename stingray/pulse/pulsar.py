@@ -325,7 +325,7 @@ def _cached_cos_harmonics(nbin, z_n_n):
     return cached_cos
 
 
-@njit()
+@jit(nopython=True)
 def _z_n_fast_cached_sums_unnorm(prof, ks, cached_sin, cached_cos):
     all_zs = np.zeros(ks.size)
     N = prof.size
@@ -401,7 +401,7 @@ def z_n_gauss_all(profile, err, nmax=20):
     return ks, all_zs * (2 / profile.size / err**2)
 
 
-@njit()
+@jit(nopython=True)
 def z_n_events_all(phase, nmax=20):
     '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
 
@@ -582,7 +582,7 @@ def H(data, nmax=20, kind="poisson", err=None):
                 "If kind='gauss', you need to specify an uncertainty (err)")
         ks, zs = z_n_gauss_all(data, nmax=nmax, err=err)
     else:
-        raise ValueError(f"Unknown kind requested for Z_n ({kind})")
+        raise ValueError(f"Unknown kind requested for H ({kind})")
 
     Hs = zs - 4 * ks + 4
     bestidx = np.argmax(Hs)
