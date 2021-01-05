@@ -304,14 +304,13 @@ def profile_stat(profile, err=None):
     return np.sum((profile - mean) ** 2 / err ** 2)
 
 
-
 @functools.lru_cache(maxsize=128)
 def _cached_sin_harmonics(nbin, z_n_n):
     dph = 1.0 / nbin
     twopiphases = np.pi * 2 * np.arange(dph / 2, 1, dph)
     cached_sin = np.zeros(z_n_n * nbin)
     for i in range(z_n_n):
-        cached_sin[i * nbin : (i + 1) * nbin] = np.sin(twopiphases)
+        cached_sin[i * nbin: (i + 1) * nbin] = np.sin(twopiphases)
     return cached_sin
 
 
@@ -321,7 +320,7 @@ def _cached_cos_harmonics(nbin, z_n_n):
     twopiphases = np.pi * 2 * np.arange(dph / 2, 1, dph)
     cached_cos = np.zeros(z_n_n * nbin)
     for i in range(z_n_n):
-        cached_cos[i * nbin : (i + 1) * nbin] = np.cos(twopiphases)
+        cached_cos[i * nbin: (i + 1) * nbin] = np.cos(twopiphases)
     return cached_cos
 
 
@@ -333,8 +332,8 @@ def _z_n_fast_cached_sums_unnorm(prof, ks, cached_sin, cached_cos):
     total_sum = 0
     for k in ks:
         local_z = (
-            np.sum(cached_cos[: N * k : k] * prof) ** 2
-            + np.sum(cached_sin[: N * k : k] * prof) ** 2
+            np.sum(cached_cos[: N * k: k] * prof) ** 2
+            + np.sum(cached_sin[: N * k: k] * prof) ** 2
         )
         total_sum += local_z
         all_zs[k - 1] = total_sum
@@ -366,9 +365,12 @@ def z_n_poisson_all(profile, nmax=20):
     cached_cos = _cached_cos_harmonics(profile.size, nmax)
     ks = np.arange(1, nmax + 1, dtype=int)
 
+    total = np.sum(profile)
+    if total == 0:
+        return ks, np.zeros(nmax)
     all_zs = _z_n_fast_cached_sums_unnorm(profile, ks, cached_sin, cached_cos)
 
-    return ks, all_zs * 2 / np.sum(profile)
+    return ks, all_zs * 2 / total
 
 
 def z_n_gauss_all(profile, err, nmax=20):
@@ -524,28 +526,30 @@ def z_n(data, n, kind="events", err=None, norm=None):
         The uncertainty on the pulse profile fluxes (required for
         kind="gauss", ignored otherwise)
     norm : float
-        For backwards compatibility; if norm is not None, it is 
+        For backwards compatibility; if norm is not None, it is
         substituted to ``data``, and data is ignored. This raises
         a DeprecationWarning
-        
+
     Returns
     -------
     z2_n : float
         The Z^2_n statistics of the events.
     '''
     data = np.asarray(data)
-    
+
     if norm is not None:
         warnings.warn("The use of ``z_n(phase, norm=profile)`` is deprecated. Use "
-                      "``z_n(profile, kind='poisson')`` instead")
+                      "``z_n(profile, kind='poisson')`` instead",
+                      DeprecationWarning)
         if isinstance(norm, Iterable):
             data = norm
             kind = "poisson"
         else:
             kind = "events"
-            
-    if data.size == 0: return 0
-    
+
+    if data.size == 0:
+        return 0
+
     if kind == "poisson":
         return z_n_poisson(data, n)
     elif kind == "events":
@@ -554,7 +558,7 @@ def z_n(data, n, kind="events", err=None, norm=None):
         if err is None:
             raise ValueError(
                 "If kind='gauss', you need to specify an uncertainty (err)")
-        return z_n_gauss(data, n, err=err)
+        return z_n_gauss(data, n=n, err=err)
 
     raise ValueError(f"Unknown kind requested for Z_n ({kind})")
 
@@ -605,6 +609,12 @@ def H(data, nmax=20, kind="poisson", err=None):
     bestidx = np.argmax(Hs)
 
     return ks[bestidx], Hs[bestidx]
+
+
+def fftfit_fun(profile, template, amplitude, phase):
+    '''Function to be minimized for the FFTFIT method.'''
+
+    pass
 
 
 def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,

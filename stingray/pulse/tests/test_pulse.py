@@ -191,10 +191,15 @@ class TestAll(object):
         np.testing.assert_array_almost_equal(pe, expected_err)
 
     def test_zn_2(self):
-        np.testing.assert_almost_equal(z_n(np.arange(1), n=1, norm=1), 2)
-        np.testing.assert_almost_equal(z_n(np.arange(1), n=2, norm=1), 4)
-        np.testing.assert_almost_equal(z_n(np.arange(2), n=2, norm=1), 8)
-        np.testing.assert_almost_equal(z_n(np.arange(2)+0.5, n=2, norm=1), 8)
+        with pytest.warns(DeprecationWarning) as record:
+            np.testing.assert_almost_equal(z_n(np.arange(1), n=1, norm=1), 2)
+            np.testing.assert_almost_equal(z_n(np.arange(1), n=2, norm=1), 4)
+            np.testing.assert_almost_equal(z_n(np.arange(2), n=2, norm=1), 8)
+            np.testing.assert_almost_equal(
+                z_n(np.arange(2)+0.5, n=2, norm=1), 8)
+
+        assert np.any(["The use of ``z_n(phase, norm=profile)``"
+                       in r.message.args[0] for r in record])
 
     def test_get_TOA1(self):
         np.random.seed(1234)
@@ -288,7 +293,7 @@ def create_pulsed_events(nevents, freq, t0=0, t1=1000, nback=0):
     events = events - np.floor(events)
 
     if nback > 0:
-      events = np.concatenate((events, rg.uniform(0, 1, nback)))
+        events = np.concatenate((events, rg.uniform(0, 1, nback)))
     pulse_no = rg.integers(0, np.rint((t1 - t0) * freq), nevents)
     events = np.sort(events + pulse_no)
     return t1 + events / freq
@@ -310,6 +315,9 @@ class TestZandH(object):
         phases = cls.events * f
         cls.phases = phases - np.floor(phases)
 
+        cls.prof512, cls.bins = \
+            np.histogram(cls.phases, range=[0, 1], bins=512)
+
     def test_zn_events(self):
         phases = self.phases
         ks, ze = z_n_events_all(phases, nmax=10)
@@ -319,17 +327,33 @@ class TestZandH(object):
 
     def test_zn_poisson(self):
         phases = self.phases
-        prof512, bins = np.histogram(phases, range=[0, 1], bins=512)
+        prof512, bins = self.prof512, self.bins
         ks, ze = z_n_events_all(phases, nmax=10)
         ksp, zp = z_n_poisson_all(prof512, nmax=10)
+
         assert np.allclose(ze, zp, rtol=0.01)
         m, h = H(prof512, kind="poisson", nmax=10)
 
         assert np.isclose(h + 4 * m - 4, z_n(prof512, n=m, kind="poisson"))
         assert np.isclose(h + 4 * m - 4, zp[m - 1])
 
+    def test_zn_poisson_zeros(self):
+        prof512 = np.zeros(512)
+        ksp, zp = z_n_poisson_all(prof512, nmax=10)
+        assert np.all(zp == 0)
+
+    def test_deprecated_norm_use(self):
+        prof512, bins = self.prof512, self.bins
+        with pytest.warns(DeprecationWarning) as record:
+            z = z_n(prof512, n=3, kind="poisson")
+            z_dep = z_n(np.zeros(prof512.size), norm=prof512, n=3, kind="poisson")
+            np.testing.assert_almost_equal(z, z_dep)
+
+        assert np.any(["The use of ``z_n(phase, norm=profile)``"
+                       in r.message.args[0] for r in record])
+
     def test_zn_gauss(self):
-        nbin=512
+        nbin = 512
         dph = 1 / nbin
         err = 0.1
         ph = np.arange(-0.5 + dph / 2, 0.5, dph)
@@ -346,6 +370,8 @@ class TestZandH(object):
 
         assert np.isclose(hg, hp)
         assert np.isclose(mg, mp)
+        assert np.isclose(hg + 4 * mg - 4,
+                          z_n(prof, n=mg, err=err, kind="gauss"))
 
     def test_wrong_args_H_kind(self):
         with pytest.raises(ValueError) as excinfo:
