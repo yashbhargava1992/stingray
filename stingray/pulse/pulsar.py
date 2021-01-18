@@ -2,12 +2,14 @@
 Basic pulsar-related functions and statistics.
 """
 
-import numpy as np
-import collections
+import functools
+from collections.abc import Iterable
 import warnings
-from ..utils import simon, jit, mad
-from scipy.optimize import minimize, basinhopping, curve_fit
-from scipy import stats
+from scipy.optimize import minimize, basinhopping
+import numpy as np
+
+from .fftfit import fftfit as taylor_fftfit
+from ..utils import simon, jit
 
 try:
     import pint.toa as toa
@@ -18,10 +20,8 @@ except ImportError:
     HAS_PINT = False
 
 
-__all__ = ['pulse_phase', 'phase_exposure', 'fold_events', 'stat',
-           'fold_profile_probability', 'fold_detection_level',
-           'z_n', 'z2_n_detection_level', 'z2_n_probability', 'fftfit_fun',
-           'fftfit', 'fftfit_error', 'get_TOA']
+__all__ = ['pulse_phase', 'phase_exposure', 'fold_events', 'profile_stat',
+           'z_n', 'fftfit', 'get_TOA']
 
 
 def _default_value_if_no_key(dictionary, key, default):
@@ -244,7 +244,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     ref_time = _default_value_if_no_key(opts, "ref_time", 0)
     expocorr = _default_value_if_no_key(opts, "expocorr", False)
 
-    if not isinstance(weights, collections.Iterable):
+    if not isinstance(weights, Iterable):
         weights *= np.ones(len(times))
 
     gtis = gtis - ref_time
@@ -280,7 +280,7 @@ def fold_events(times, *frequency_derivatives, **opts):
         raw_profile_err / expo_norm
 
 
-def stat(profile, err=None):
+def profile_stat(profile, err=None):
     """Calculate the epoch folding statistics \'a la Leahy et al. (1983).
 
     Parameters
@@ -304,64 +304,140 @@ def stat(profile, err=None):
     return np.sum((profile - mean) ** 2 / err ** 2)
 
 
-def fold_profile_probability(stat, nbin, ntrial=1):
-    """Calculate the probability of a certain folded profile, due to noise.
-
-    Parameters
-    ----------
-    stat : float
-        The epoch folding statistics
-    nbin : int
-        The number of bins in the profile
-
-    Other Parameters
-    ----------------
-    ntrial : int
-        The number of trials executed to find this profile
-
-    Returns
-    -------
-    p : float
-        The probability that the profile has been produced by noise
-    """
-    if ntrial > 1:
-        simon("fold: The treatment of ntrial is very rough. Use with caution")
-    from scipy import stats
-    return stats.chi2.sf(stat, (nbin - 1)) * ntrial
-
-
-def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
-    """Return the detection level for a folded profile.
-
-    See Leahy et al. (1983).
+@functools.lru_cache(maxsize=128)
+def _cached_sin_harmonics(nbin, z_n_n):
+    """Cached sine values corresponding to each of the nbin bins.
 
     Parameters
     ----------
     nbin : int
-        The number of bins in the profile
-    epsilon : float, default 0.01
-        The fractional probability that the signal has been produced by noise
+        Number of bins
+    z_n_n : int
+        The number of harmonics (n) in the Z^2_n search
+    """
+    dph = 1.0 / nbin
+    twopiphases = np.pi * 2 * np.arange(dph / 2, 1, dph)
+    cached_sin = np.zeros(z_n_n * nbin)
+    for i in range(z_n_n):
+        cached_sin[i * nbin: (i + 1) * nbin] = np.sin(twopiphases)
+    return cached_sin
 
-    Other Parameters
-    ----------------
-    ntrial : int
-        The number of trials executed to find this profile
+
+@functools.lru_cache(maxsize=128)
+def _cached_cos_harmonics(nbin, z_n_n):
+    """Cached cosine values corresponding to each of the nbin bins.
+
+    Parameters
+    ----------
+    nbin : int
+        Number of bins
+    z_n_n : int
+        The number of harmonics (n) in the Z^2_n search
+    """
+    dph = 1.0 / nbin
+    twopiphases = np.pi * 2 * np.arange(dph / 2, 1, dph)
+    cached_cos = np.zeros(z_n_n * nbin)
+    for i in range(z_n_n):
+        cached_cos[i * nbin: (i + 1) * nbin] = np.cos(twopiphases)
+    return cached_cos
+
+
+@jit(nopython=True)
+def _z_n_fast_cached_sums_unnorm(prof, ks, cached_sin, cached_cos):
+    '''Calculate the unnormalized Z^2_k, for (k=1,.. n), of a pulsed profile.
+
+    Parameters
+    ----------
+    prof : :class:`numpy.array`
+        The pulsed profile
+    ks : :class:`numpy.array` of int
+        The harmonic numbers, from 1 to n
+    cached_sin : :class:`numpy.array`
+        Cached sine values for each phase bin in the profile
+    cached_cos : :class:`numpy.array`
+        Cached cosine values for each phase bin in the profile
+    '''
+
+    all_zs = np.zeros(ks.size)
+    N = prof.size
+
+    total_sum = 0
+    for k in ks:
+        local_z = (
+            np.sum(cached_cos[: N * k: k] * prof) ** 2
+            + np.sum(cached_sin[: N * k: k] * prof) ** 2
+        )
+        total_sum += local_z
+        all_zs[k - 1] = total_sum
+
+    return all_zs
+
+
+def z_n_binned_events_all(profile, nmax=20):
+    '''Z^2_n statistic for multiple harmonics and binned events
+
+    See Bachetti+2021, arXiv:2012.11397
+
+    Parameters
+    ----------
+    profile : array of floats
+        The folded pulse profile (containing the number of
+        photons falling in each pulse bin)
+    n : int
+        Number of harmonics, including the fundamental
 
     Returns
     -------
-    detlev : float
-        The epoch folding statistics corresponding to a probability
-        epsilon * 100 % that the signal has been produced by noise
-    """
-    if ntrial > 1:
-        simon("fold: The treatment of ntrial is very rough. Use with caution")
-    from scipy import stats
+    ks : list of ints
+        Harmonic numbers, from 1 to nmax (included)
+    z2_n : float
+        The value of the statistic for all ks
+    '''
+    cached_sin = _cached_sin_harmonics(profile.size, nmax)
+    cached_cos = _cached_cos_harmonics(profile.size, nmax)
+    ks = np.arange(1, nmax + 1, dtype=int)
 
-    return stats.chi2.isf(epsilon/ntrial, nbin - 1)
+    total = np.sum(profile)
+    if total == 0:
+        return ks, np.zeros(nmax)
+    all_zs = _z_n_fast_cached_sums_unnorm(profile, ks, cached_sin, cached_cos)
+
+    return ks, all_zs * 2 / total
 
 
-def z_n(phase, n=2, norm=1):
-    '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
+def z_n_gauss_all(profile, err, nmax=20):
+    '''Z^2_n statistic for n harmonics and normally-distributed profiles
+
+    See Bachetti+2021, arXiv:2012.11397
+
+    Parameters
+    ----------
+    profile : array of floats
+        The folded pulse profile
+    err : float
+        The (assumed constant) uncertainty on the flux in each bin.
+    nmax : int
+        Maximum number of harmonics, including the fundamental
+
+    Returns
+    -------
+    ks : list of ints
+        Harmonic numbers, from 1 to nmax (included)
+    z2_n : list of floats
+        The value of the statistic for all ks
+    '''
+    cached_sin = _cached_sin_harmonics(profile.size, nmax)
+    cached_cos = _cached_cos_harmonics(profile.size, nmax)
+    ks = np.arange(1, nmax + 1, dtype=int)
+
+    all_zs = _z_n_fast_cached_sums_unnorm(profile, ks, cached_sin, cached_cos)
+
+    return ks, all_zs * (2 / profile.size / err**2)
+
+
+@jit(nopython=True)
+def z_n_events_all(phase, nmax=20):
+    '''Z^2_n statistics, a` la Buccheri+83, A&A, 128, 245, eq. 2.
 
     Parameters
     ----------
@@ -370,130 +446,207 @@ def z_n(phase, n=2, norm=1):
     n : int, default 2
         Number of harmonics, including the fundamental
 
+    Returns
+    -------
+    ks : list of ints
+        Harmonic numbers, from 1 to nmax (included)
+    z2_n : float
+        The Z^2_n statistic for all ks
+    '''
+    all_zs = np.zeros(nmax)
+    ks = np.arange(1, nmax + 1)
+    nphot = phase.size
+
+    total_sum = 0
+    phase = phase * 2 * np.pi
+
+    for k in ks:
+        local_z = (
+            np.sum(np.cos(k * phase)) ** 2
+            + np.sum(np.sin(k * phase)) ** 2
+        )
+        total_sum += local_z
+        all_zs[k - 1] = total_sum
+
+    return ks, 2 / nphot * all_zs
+
+
+def z_n_binned_events(profile, n):
+    '''Z^2_n statistic for pulse profiles from binned events
+
+    See Bachetti+2021, arXiv:2012.11397
+
+    Parameters
+    ----------
+    profile : array of floats
+        The folded pulse profile (containing the number of
+        photons falling in each pulse bin)
+    n : int
+        Number of harmonics, including the fundamental
+
+    Returns
+    -------
+    z2_n : float
+        The value of the statistic
+    '''
+    _, all_zs = z_n_binned_events_all(profile, nmax=n)
+    return all_zs[-1]
+
+
+def z_n_gauss(profile, err, n):
+    '''Z^2_n statistic for normally-distributed profiles
+
+    See Bachetti+2021, arXiv:2012.11397
+
+    Parameters
+    ----------
+    profile : array of floats
+        The folded pulse profile
+    err : float
+        The (assumed constant) uncertainty on the flux in each bin.
+    n : int
+        Number of harmonics, including the fundamental
+
+    Returns
+    -------
+    z2_n : float
+        The value of the statistic
+    '''
+    _, all_zs = z_n_gauss_all(profile, err, nmax=n)
+    return all_zs[-1]
+
+
+def z_n_events(phase, n):
+    '''Z^2_n statistics, a` la Buccheri+83, A&A, 128, 245, eq. 2.
+
+    Parameters
+    ----------
+    phase : array of floats
+        The phases of the events
+    n : int, default 2
+        Number of harmonics, including the fundamental
+
+    Returns
+    -------
+    z2_n : float
+        The Z^2_n statistic
+    '''
+    ks, all_zs = z_n_events_all(phase, nmax=n)
+    return all_zs[-1]
+
+
+def z_n(data, n, datatype="events", err=None, norm=None):
+    '''Z^2_n statistics, a` la Buccheri+83, A&A, 128, 245, eq. 2.
+
+    If datatype is "binned" or "gauss", uses the formulation from
+    Bachetti+2021, ApJ, arxiv:2012.11397
+
+    Parameters
+    ----------
+    data : array of floats
+        Phase values or binned flux values
+    n : int, default 2
+        Number of harmonics, including the fundamental
+
     Other Parameters
     ----------------
-    norm : float or array of floats
-        A normalization factor that gets multiplied as a weight.
+    datatype : str
+        The data type: "events" if phase values between 0 and 1,
+        "binned" if folded pulse profile from photons, "gauss" if
+        folded pulse profile with normally-distributed fluxes
+    err : float
+        The uncertainty on the pulse profile fluxes (required for
+        datatype="gauss", ignored otherwise)
+    norm : float
+        For backwards compatibility; if norm is not None, it is
+        substituted to ``data``, and data is ignored. This raises
+        a DeprecationWarning
 
     Returns
     -------
     z2_n : float
         The Z^2_n statistics of the events.
     '''
-    nbin = len(phase)
+    data = np.asarray(data)
 
-    if nbin == 0:
+    if norm is not None:
+        warnings.warn("The use of ``z_n(phase, norm=profile)`` is deprecated. Use "
+                      "``z_n(profile, datatype='binned')`` instead",
+                      DeprecationWarning)
+        if isinstance(norm, Iterable):
+            data = norm
+            datatype = "binned"
+        else:
+            datatype = "events"
+
+    if data.size == 0:
         return 0
 
-    norm = np.asarray(norm)
-    if norm.size == 1:
-        total_norm = nbin * norm
+    if datatype == "binned":
+        return z_n_binned_events(data, n)
+    elif datatype == "events":
+        return z_n_events(data, n)
+    elif datatype == "gauss":
+        if err is None:
+            raise ValueError(
+                "If datatype='gauss', you need to specify an uncertainty (err)")
+        return z_n_gauss(data, n=n, err=err)
+
+    raise ValueError(f"Unknown datatype requested for Z_n ({datatype})")
+
+
+def htest(data, nmax=20, datatype="binned", err=None):
+    '''htest-test statistic, a` la De Jager+89, A&A, 221, 180D, eq. 2.
+
+    If datatype is "binned" or "gauss", uses the formulation from
+    Bachetti+2021, ApJ, arxiv:2012.11397
+
+    Parameters
+    ----------
+    data : array of floats
+        Phase values or binned flux values
+    nmax : int, default 20
+        Maximum of harmonics for Z^2_n
+
+    Other Parameters
+    ----------------
+    datatype : str
+        The datatype of data: "events" if phase values between 0 and 1,
+        "binned" if folded pulse profile from photons, "gauss" if
+        folded pulse profile with normally-distributed fluxes
+    err : float
+        The uncertainty on the pulse profile fluxes (required for
+        datatype="gauss", ignored otherwise)
+
+    Returns
+    -------
+    M : int
+        The best number of harmonics that describe the signal.
+    htest : float
+        The htest statistics of the events.
+    '''
+    if datatype == "binned":
+        ks, zs = z_n_binned_events_all(data, nmax)
+    elif datatype == "events":
+        ks, zs = z_n_events_all(data, nmax)
+    elif datatype == "gauss":
+        if err is None:
+            raise ValueError(
+                "If datatype='gauss', you need to specify an uncertainty (err)")
+        ks, zs = z_n_gauss_all(data, nmax=nmax, err=err)
     else:
-        total_norm = np.sum(norm)
-    phase = phase * 2 * np.pi
-    return 2 / total_norm * \
-        np.sum([np.sum(np.cos(k * phase) * norm) ** 2 +
-                np.sum(np.sin(k * phase) * norm) ** 2
-                for k in range(1, n + 1)])
+        raise ValueError(f"Unknown datatype requested for htest ({datatype})")
 
+    Hs = zs - 4 * ks + 4
+    bestidx = np.argmax(Hs)
 
-def z2_n_detection_level(n=2, epsilon=0.01, ntrial=1, n_summed_spectra=1):
-    """Return the detection level for the Z^2_n statistics.
-
-    See Buccheri et al. (1983), Bendat and Piersol (1971).
-
-    Parameters
-    ----------
-    n : int, default 2
-        The ``n`` in $Z^2_n$ (number of harmonics, including the fundamental)
-    epsilon : float, default 0.01
-        The fractional probability that the signal has been produced by noise
-
-    Other Parameters
-    ----------------
-    ntrial : int
-        The number of trials executed to find this profile
-    n_summed_spectra : int
-        Number of Z_2^n periodograms that are being averaged
-
-    Returns
-    -------
-    detlev : float
-        The epoch folding statistics corresponding to a probability
-        epsilon * 100 % that the signal has been produced by noise
-    """
-    retlev = stats.chi2.isf(epsilon / ntrial, 2 * n_summed_spectra * n) \
-        / (n_summed_spectra)
-
-    return retlev
-
-
-def z2_n_probability(z2, n=2, ntrial=1, n_summed_spectra=1):
-    """Calculate the probability of a certain folded profile, due to noise.
-
-    Parameters
-    ----------
-    z2 : float
-        A Z^2_n statistics value
-    n : int, default 2
-        The ``n`` in $Z^2_n$ (number of harmonics, including the fundamental)
-
-    Other Parameters
-    ----------------
-    ntrial : int
-        The number of trials executed to find this profile
-    n_summed_spectra : int
-        Number of Z_2^n periodograms that were averaged to obtain z2
-
-    Returns
-    -------
-    p : float
-        The probability that the Z^2_n value has been produced by noise
-    """
-    if ntrial > 1:
-        simon("Z2_n: The treatment of ntrial is very rough. Use with caution")
-
-    epsilon = ntrial * stats.chi2.sf(z2 * n_summed_spectra,
-                                     2 * n * n_summed_spectra)
-    return epsilon
+    return ks[bestidx], Hs[bestidx]
 
 
 def fftfit_fun(profile, template, amplitude, phase):
-    '''Function to be minimized for the FFTFIT method.
+    '''Function to be minimized for the FFTFIT method.'''
 
-    From Taylor (1992).
-
-    Parameters
-    ----------
-    profile : array
-        The pulse profile
-    template : array
-        A pulse shape template, of the same length as profile.
-    amplitude, phase : float
-        The amplitude and phase of the template w.r.t the real profile.
-
-    Returns
-    -------
-    fftfit_chisq : float
-        The chi square-like statistics of FFTFIT
-    '''
-
-    prof_ft = np.fft.fft(profile)
-    temp_ft = np.fft.fft(template)
-    freq = np.fft.fftfreq(len(profile))
-    good = freq > 0
-    idx = np.arange(0, len(prof_ft), dtype=int)
-    sigma = np.std(prof_ft[good])
-    return np.sum(np.absolute(prof_ft -
-                  temp_ft*amplitude*np.exp(-2*np.pi*1.0j*idx*phase))**2 /
-                  sigma)
-
-
-def _fft_fun_wrap(pars, data):
-    '''Wrap parameters and input data up for minimization algorithms.'''
-    amplitude, phase = pars
-    profile, template = data
-    return fftfit_fun(profile, template, amplitude, phase)
+    pass
 
 
 def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
@@ -525,138 +678,9 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
     """
     prof = prof - np.mean(prof)
 
-    nbin = len(prof)
-
-    ph = np.arange(0, 1, 1 / nbin)
-    if template is None:
-        template = np.cos(2 * np.pi * ph)
     template = template - np.mean(template)
 
-    dph = normalize_phase_0d5(
-        float((np.argmax(prof) - np.argmax(template) - 0.2) / nbin))
-
-    if quick:
-        min_chisq = 1e32
-
-        binsize = 1 / nbin
-        for d in np.linspace(-0.5, 0.5, int(nbin / 2)):
-            p0 = [1, dph + d]
-
-            res_trial = minimize(_fft_fun_wrap, p0, args=([prof, template],),
-                                 method='L-BFGS-B',
-                                 bounds=[[0, None], [dph + d - binsize,
-                                                     dph + d + binsize]],
-                                 options={'maxiter': 10000})
-            chisq = _fft_fun_wrap(res_trial.x, [prof, template])
-
-            if chisq < min_chisq:
-                min_chisq = chisq
-                res = res_trial
-    else:
-        p0 = [np.max(prof), dph]
-
-        res = basinhopping(_fft_fun_wrap, p0,
-                           minimizer_kwargs={'args': ([prof, template],),
-                                             'bounds': [[0, None], [-1, 1]]},
-                           niter=1000,
-                           niter_success=200).lowest_optimization_result
-
-    res.x[1] = normalize_phase_0d5(res.x[1])
-
-    if not use_bootstrap:
-        return res.x[0], 0, res.x[1], 0.5 / nbin
-    else:
-        mean_amp, std_amp, mean_ph, std_ph = \
-            fftfit_error(template, sigma=mad(np.diff(prof)), **fftfit_kwargs)
-        return res.x[0] + mean_amp, std_amp, res.x[1] + mean_ph, std_ph
-
-
-def normalize_phase_0d5(phase):
-    """Normalize phase between -0.5 and 0.5
-
-    Examples
-    --------
-    >>> normalize_phase_0d5(0.5)
-    0.5
-    >>> normalize_phase_0d5(-0.5)
-    0.5
-    >>> normalize_phase_0d5(4.25)
-    0.25
-    >>> normalize_phase_0d5(-3.25)
-    -0.25
-    """
-    while phase > 0.5:
-        phase -= 1
-    while phase <= -0.5:
-        phase += 1
-    return phase
-
-
-def fftfit_error(template, sigma=None, **fftfit_kwargs):
-    """Calculate the error on the fit parameters from FFTFIT.
-
-    Parameters
-    ----------
-    phase : array
-        The phases corresponding to each bin of the profile
-    prof : array
-        The pulse profile
-    template : array
-        The template of the pulse used to perform the TOA calculation
-    p0 : list
-        The initial parameters for the fit
-
-    Other parameters
-    ----------------
-    nstep : int, optional, default 100
-        Number of steps for the bootstrap method
-    sigma : array, default None
-        error on profile bins. If None, the square root of the mean profile
-        is used.
-
-    Returns
-    -------
-    mean_amp, std_amp : floats
-        Mean and standard deviation of the amplitude
-    mean_phase, std_phase : floats
-        Mean and standard deviation of the phase
-
-    """
-    nstep = _default_value_if_no_key(fftfit_kwargs, "nstep", 100)
-
-    if sigma is None:
-        sigma = np.sqrt(np.mean(template))
-
-    nbin = len(template)
-
-    ph_fit = np.zeros(nstep)
-    amp_fit = np.zeros(nstep)
-    # use bootstrap method to calculate errors
-    for i in range(nstep):
-        newprof = np.random.normal(0, sigma, len(template)) + template
-        dph = np.random.normal(0, 0.5 / nbin)
-        p0 = [1, dph]
-        res = minimize(_fft_fun_wrap, p0, args=([newprof, template],),
-                       method='L-BFGS-B',
-                       bounds=[[0, None], [-1, 1]],
-                       options={'maxiter': 10000})
-
-        amp_fit[i] = res.x[0]
-
-        ph_fit[i] = normalize_phase_0d5(res.x[1])
-
-    std_save = 1e32
-    # avoid problems if phase around 0 or 1: shift, calculate std,
-    # if less save new std
-    for shift in np.arange(0, 0.8, 0.2):
-        phs = ph_fit + shift
-        phs -= np.floor(phs)
-        std = mad(phs)
-        if std < std_save:
-            std_save = std
-            mean_save = np.median(phs) - shift
-
-    return np.mean(amp_fit), np.std(amp_fit), mean_save, std_save
+    return taylor_fftfit(prof, template)
 
 
 def _plot_TOA_fit(profile, template, toa, mod=None, toaerr=None,
@@ -714,6 +738,11 @@ def get_TOA(prof, period, tstart, template=None, additional_phase=0,
     toa, toastd : floats
         Mean and standard deviation of the TOA
     """
+    nbin = len(prof)
+
+    ph = np.arange(0, 1, 1 / nbin)
+    if template is None:
+        template = np.cos(2 * np.pi * ph)
 
     mean_amp, std_amp, phase_res, phase_res_err = \
         fftfit(prof, template=template, quick=quick,
@@ -790,12 +819,12 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
 
     def correction_mjd(mjds):
         """Get the orbital correction.
-        
+
         Parameters
         ----------
         mjds : array-like
             The input times in MJD
-        
+
         Returns
         -------
         mjds: Corrected times in MJD
@@ -810,14 +839,14 @@ def get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop, parfile,
 
     def correction_sec(times, mjdref):
         """Get the orbital correction.
-        
+
         Parameters
         ----------
         times : array-like
             The input times in seconds of Mission Elapsed Time (MET)
         mjdref : float
             MJDREF, reference MJD for the mission
-       
+
         Returns
         -------
         mets: array-like

@@ -1,133 +1,26 @@
+import warnings
 
 import numpy as np
 import scipy
-import scipy.stats
 import scipy.fftpack
 import scipy.optimize
+import scipy.stats
 
 import stingray.lightcurve as lightcurve
 import stingray.utils as utils
-from stingray.gti import bin_intervals_from_gtis, check_gtis
-from stingray.utils import simon
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
+from stingray.gti import bin_intervals_from_gtis, check_gtis
+from stingray.stats import pds_probability
+from .events import EventList
+from .gti import cross_two_gtis
+
+try:
+    from tqdm import tqdm as show_progress
+except ImportError:
+    def show_progress(a, **kwargs):
+        return a
 
 __all__ = ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]
-
-
-def classical_pvalue(power, nspec):
-    """
-    Compute the probability of detecting the current power under
-    the assumption that there is no periodic oscillation in the data.
-
-    This computes the single-trial p-value that the power was
-    observed under the null hypothesis that there is no signal in
-    the data.
-
-    Important: the underlying assumptions that make this calculation valid
-    are:
-
-    1. the powers in the power spectrum follow a chi-square distribution
-    2. the power spectrum is normalized according to [Leahy 1983]_, such
-       that the powers have a mean of 2 and a variance of 4
-    3. there is only white noise in the light curve. That is, there is no
-       aperiodic variability that would change the overall shape of the power
-       spectrum.
-
-    Also note that the p-value is for a *single trial*, i.e. the power
-    currently being tested. If more than one power or more than one power
-    spectrum are being tested, the resulting p-value must be corrected for the
-    number of trials (Bonferroni correction).
-
-    Mathematical formulation in [Groth 1975]_.
-    Original implementation in IDL by Anna L. Watts.
-
-    Parameters
-    ----------
-    power :  float
-        The squared Fourier amplitude of a spectrum to be evaluated
-
-    nspec : int
-        The number of spectra or frequency bins averaged in ``power``.
-        This matters because averaging spectra or frequency bins increases
-        the signal-to-noise ratio, i.e. makes the statistical distributions
-        of the noise narrower, such that a smaller power might be very
-        significant in averaged spectra even though it would not be in a single
-        power spectrum.
-
-    Returns
-    -------
-    pval : float
-        The classical p-value of the observed power being consistent with
-        the null hypothesis of white noise
-
-    References
-    ----------
-
-    * .. [Leahy 1983] https://ui.adsabs.harvard.edu/#abs/1983ApJ...266..160L/abstract
-    * .. [Groth 1975] https://ui.adsabs.harvard.edu/#abs/1975ApJS...29..285G/abstract
-
-    """
-    if not np.isfinite(power):
-        raise ValueError("power must be a finite floating point number!")
-
-    if power < 0:
-        raise ValueError("power must be a positive real number!")
-
-    if not np.isfinite(nspec):
-        raise ValueError("nspec must be a finite integer number")
-
-    if nspec < 1:
-        raise ValueError("nspec must be larger or equal to 1")
-
-    if not np.isclose(nspec % 1, 0):
-        raise ValueError("nspec must be an integer number!")
-
-    # If the power is really big, it's safe to say it's significant,
-    # and the p-value will be nearly zero
-    if (power * nspec) > 30000:
-        simon("Probability of no signal too miniscule to calculate.")
-        return 0.0
-
-    else:
-        pval = _pavnosigfun(power, nspec)
-        return pval
-
-
-def _pavnosigfun(power, nspec):
-    """
-    Helper function doing the actual calculation of the p-value.
-
-    Parameters
-    ----------
-    power : float
-        The measured candidate power
-
-    nspec : int
-        The number of power spectral bins that were averaged in `power`
-        (note: can be either through averaging spectra or neighbouring bins)
-    """
-    sum = 0.0
-    m = nspec - 1
-
-    pn = power * nspec
-
-    while m >= 0:
-
-        s = 0.0
-        for i in range(int(m) - 1):
-            s += np.log(float(m - i))
-
-        logterm = m * np.log(pn / 2) - pn / 2 - s
-        term = np.exp(logterm)
-        ratio = sum / term
-
-        if ratio > 1.0e15:
-            return sum
-
-        sum += term
-        m -= 1
-
-    return sum
 
 
 class Powerspectrum(Crossspectrum):
@@ -142,7 +35,7 @@ class Powerspectrum(Crossspectrum):
 
     Parameters
     ----------
-    lc: :class:`stingray.Lightcurve` object, optional, default ``None``
+    data: :class:`stingray.Lightcurve` object, optional, default ``None``
         The light curve data to be Fourier-transformed.
 
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
@@ -188,9 +81,18 @@ class Powerspectrum(Crossspectrum):
         The total number of photons in the light curve
 
     """
-    def __init__(self, lc=None, norm='frac', gti=None):
-        Crossspectrum.__init__(self, lc1=lc, lc2=lc, norm=norm, gti=gti)
+    def __init__(self, data=None, norm="frac", gti=None,
+                 dt=None, lc=None):
+        if lc is not None:
+            warnings.warn("The lc keyword is now deprecated. Use data "
+                          "instead", DeprecationWarning)
+        if data is None:
+            data = lc
+
+        Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
+                               dt=dt)
         self.nphots = self.nphots1
+        self.dt = dt
 
     def rebin(self, df=None, f=None, method="mean"):
         """
@@ -356,19 +258,20 @@ class Powerspectrum(Crossspectrum):
             raise ValueError("This method only works on "
                              "Leahy-normalized power spectra!")
 
+        if trial_correction:
+            ntrial = self.power.shape[0]
+        else:
+            ntrial = 1
+
         if np.size(self.m) == 1:
             # calculate p-values for all powers
             # leave out zeroth power since it just encodes the number of photons!
-            pv = np.array([classical_pvalue(power, self.m)
-                           for power in self.power])
+            pv = pds_probability(self.power, n_summed_spectra=self.m,
+                                 ntrial=ntrial)
         else:
-            pv = np.array([classical_pvalue(power, m)
+            pv = np.array([pds_probability(power, n_summed_spectra=m,
+                                           ntrial=ntrial)
                            for power, m in zip(self.power, self.m)])
-
-        # if trial correction is used, then correct the threshold for
-        # the number of powers in the power spectrum
-        if trial_correction:
-            threshold /= self.power.shape[0]
 
         # need to add 1 to the indices to make up for the fact that
         # we left out the first power above!
@@ -387,7 +290,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     Parameters
     ----------
-    lc: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
+    data: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         The light curve data to be Fourier-transformed.
 
     segment_size: float
@@ -406,6 +309,15 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
         care!
+
+    silent : bool, default False
+         Do not show a progress bar when generating an averaged cross spectrum.
+         Useful for the batch execution of many spectra
+
+    dt: float
+        The time resolution of the light curve. Only needed when constructing
+        light curves in the case where data is of :class:EventList
+
 
     Attributes
     ----------
@@ -439,25 +351,39 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The total number of photons in the light curve
 
     """
-    def __init__(self, lc=None, segment_size=None, norm="frac", gti=None):
+    def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
+                 silent=False, dt=None, lc=None):
 
         self.type = "powerspectrum"
+        if lc is not None:
+            warnings.warn("The lc keyword is now deprecated. Use data "
+                          "instead", DeprecationWarning)
+        # Backwards compatibility: user might have supplied lc instead
+        if data is None:
+            data = lc
 
-        if segment_size is None and lc is not None:
+        if segment_size is None and data is not None:
             raise ValueError("segment_size must be specified")
         if segment_size is not None and not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")
 
-        self.segment_size = segment_size
+        self.dt = dt
 
-        Powerspectrum.__init__(self, lc, norm, gti=gti)
+        if isinstance(data, EventList):
+            lengths = data.gti[:, 1] - data.gti[:, 0]
+            good = lengths >= segment_size
+            data.gti = data.gti[good]
+
+        self.segment_size = segment_size
+        self.show_progress = not silent
+        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt)
 
         return
 
     def _make_segment_spectrum(self, lc, segment_size):
         """
-        Split the light curves into segments of size ``segment_size``, and calculate a power spectrum for
-        each.
+        Split the light curves into segments of size ``segment_size``, and
+        calculate a power spectrum for each.
 
         Parameters
         ----------
@@ -478,6 +404,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if not isinstance(lc, lightcurve.Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
 
+        current_gtis = lc.gti
+
         if self.gti is None:
             self.gti = lc.gti
         else:
@@ -487,17 +415,30 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         check_gtis(self.gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(lc.gti, segment_size, lc.time, dt=lc.dt)
+            bin_intervals_from_gtis(current_gtis, segment_size, lc.time, dt=lc.dt)
 
         power_all = []
         nphots_all = []
-        for start_ind, end_ind in zip(start_inds, end_inds):
+
+        local_show_progress = show_progress
+        if not self.show_progress:
+            local_show_progress = lambda a: a
+
+        for start_ind, end_ind in \
+                local_show_progress(zip(start_inds, end_inds)):
             time = lc.time[start_ind:end_ind]
             counts = lc.counts[start_ind:end_ind]
             counts_err = lc.counts_err[start_ind: end_ind]
+
+            if np.sum(counts) == 0:
+                warnings.warn(
+                    "No counts in interval {}--{}s".format(time[0], time[-1]))
+                continue
+
             lc_seg = lightcurve.Lightcurve(time, counts, err=counts_err,
                                            err_dist=lc.err_dist.lower(),
                                            skip_checks=True, dt=lc.dt)
+
             power_seg = Powerspectrum(lc_seg, norm=self.norm)
             power_all.append(power_seg)
             nphots_all.append(np.sum(lc_seg.counts))
@@ -563,7 +504,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         The time resolution
     """
 
-    def __init__(self, lc, segment_size, norm="frac", gti=None):
+    def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
         if segment_size < 2 * lc.dt:
             raise ValueError("Length of the segment is too short to form a "
                              "light curve!")
@@ -572,7 +513,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
                              "any segments of the light curve!")
         AveragedPowerspectrum.__init__(self, lc=lc,
                                        segment_size=segment_size, norm=norm,
-                                       gti=gti)
+                                       gti=gti, dt=dt)
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
@@ -589,9 +530,13 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.dyn_ps = np.array([ps.power for ps in ps_all]).T
 
         self.freq = ps_all[0].freq
+        current_gti = lc.gti
+        if self.gti is not None:
+            current_gti = cross_two_gtis(self.gti, current_gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(self.gti, self.segment_size, lc.time, dt=lc.dt)
+            bin_intervals_from_gtis(current_gti, self.segment_size, lc.time,
+                                    dt=lc.dt)
 
 
         tstart = lc.time[start_inds]

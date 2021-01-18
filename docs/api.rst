@@ -63,10 +63,6 @@ Powerspectrum
 
 ----
 
-.. autofunction:: stingray.powerspectrum.classical_pvalue
-
-----
-
 AveragedCrossspectrum
 ---------------------
 
@@ -107,6 +103,19 @@ AutoCorrelation
 .. autoclass:: stingray.AutoCorrelation
    :members:
    :inherited-members:
+
+----
+
+Dead-Time Corrections
+---------------------
+
+.. automodule:: stingray.deadtime.fad
+   :members:
+   :imported-members:
+
+.. automodule:: stingray.deadtime.model
+   :members:
+   :imported-members:
 
 ----
 
@@ -188,6 +197,12 @@ Utilities
 Commonly used utility functionality, including Good Time Interval operations and input/output
 helper methods.
 
+Statistical Functions
+---------------------
+
+.. automodule:: stingray.stats
+   :members:
+   :imported-members:
 
 GTI Functionality
 -----------------
@@ -364,4 +379,3 @@ Some basic Stingray-related errors and exceptions.
 .. autoclass:: stingray.exceptions.StingrayError
    :members:
    :undoc-members:
-

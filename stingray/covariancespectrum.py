@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import collections
+from collections.abc import Iterable
 
 import numpy as np
 
@@ -419,7 +419,7 @@ class Covariancespectrum(object):
         """Return std calculated for the possible types of `std`"""
         if self.std is None:
             std = np.mean(lc)**0.5
-        elif isinstance(self.std, collections.Iterable):
+        elif isinstance(self.std, Iterable):
             std = np.mean(self.std)  # Iterable of numbers
         else:  # Single float number
             std = self.std

@@ -1,7 +1,7 @@
 
 import numpy as np
-import collections
-from .pulsar import stat, fold_events, z_n, pulse_phase
+from collections.abc import Iterable
+from .pulsar import profile_stat, fold_events, z_n, pulse_phase
 from ..utils import jit, HAS_NUMBA
 from ..utils import contiguous_regions
 from astropy.stats import poisson_conf_interval
@@ -44,7 +44,7 @@ def _folding_search(stat_func, times, frequencies, segment_size=5000,
                 if use_times:
                     kwargs_copy = {}
                     for key in kwargs.keys():
-                        if isinstance(kwargs[key], collections.Iterable) and \
+                        if isinstance(kwargs[key], Iterable) and \
                                 len(kwargs[key]) == len(times):
 
                             kwargs_copy[key] = kwargs[key][good]
@@ -133,13 +133,13 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
     stats : array-like
         the epoch folding statistics corresponding to each frequency bin.
     """
-    if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
+    if expocorr or not HAS_NUMBA or isinstance(weights, Iterable):
         if expocorr and gti is None:
             raise ValueError('To calculate exposure correction, you need to'
                              ' specify the GTIs')
 
         def stat_fun(t, f, fd=0, **kwargs):
-            return stat(fold_events(t, f, fd, **kwargs)[1])
+            return profile_stat(fold_events(t, f, fd, **kwargs)[1])
 
         return \
             _folding_search(stat_fun, times, frequencies,
@@ -147,7 +147,7 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
                             use_times=True, expocorr=expocorr, weights=weights,
                             gti=gti, nbin=nbin, fdots=fdots)
 
-    return _folding_search(lambda x: stat(_profile_fast(x, nbin=nbin)),
+    return _folding_search(lambda x: profile_stat(_profile_fast(x, nbin=nbin)),
                            times, frequencies, segment_size=segment_size,
                            fdots=fdots)
 
@@ -210,22 +210,20 @@ def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
         the Z^2_n statistics corresponding to each frequency bin.
     """
     phase = np.arange(0, 1, 1 / nbin)
-    if expocorr or not HAS_NUMBA or isinstance(weights, collections.Iterable):
+    if expocorr or not HAS_NUMBA or isinstance(weights, Iterable):
         if expocorr and gti is None:
             raise ValueError('To calculate exposure correction, you need to'
                              ' specify the GTIs')
 
         def stat_fun(t, f, fd=0, **kwargs):
-            return z_n(phase, n=nharm,
-                       norm=fold_events(t, f, fd, nbin=nbin, **kwargs)[1])
+            return z_n(fold_events(t, f, fd, nbin=nbin, **kwargs)[1], n=nharm, datatype='binned')
         return \
             _folding_search(stat_fun, times, frequencies,
                             segment_size=segment_size,
                             use_times=True, expocorr=expocorr, weights=weights,
                             gti=gti, fdots=fdots)
 
-    return _folding_search(lambda x: z_n(phase, n=nharm,
-                                         norm=_profile_fast(x, nbin=nbin)),
+    return _folding_search(lambda x: z_n(_profile_fast(x, nbin=nbin), n=nharm, datatype='binned'),
                            times, frequencies, segment_size=segment_size,
                            fdots=fdots)
 
@@ -486,7 +484,7 @@ def phaseogram(times, f, nph=128, nt=32, ph0=0, mjdref=None, fdot=0, fddot=0,
     allts = \
         np.concatenate([times, times]).astype('float64')
 
-    if weights is not None and isinstance(weights, collections.Iterable):
+    if weights is not None and isinstance(weights, Iterable):
         if len(weights) != len(times):
             raise ValueError('The length of weights must match the length of '
                              'times')

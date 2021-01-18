@@ -4,7 +4,7 @@ Definition of :class::class:`Lightcurve`.
 :class::class:`Lightcurve` is used to create light curves out of photon counting data
 or to save existing light curves in a class that's easy to use.
 """
-
+import warnings
 import logging
 import numpy as np
 import stingray.io as io
@@ -13,7 +13,7 @@ from stingray.exceptions import StingrayError
 from stingray.utils import simon, assign_value_if_none, baseline_als
 from stingray.utils import poisson_symmetrical_errors
 from stingray.gti import cross_two_gtis, join_gtis, gti_border_bins
-from stingray.gti import check_gtis, create_gti_mask_complete, create_gti_mask, bin_intervals_from_gtis
+from stingray.gti import check_gtis, create_gti_mask, bin_intervals_from_gtis
 
 __all__ = ["Lightcurve"]
 
@@ -27,8 +27,11 @@ class Lightcurve(object):
 
     Parameters
     ----------
-    time: iterable
-        A list or array of time stamps for a light curve
+    time: Iterable, `:class:astropy.time.Time`, or `:class:astropy.units.Quantity` object
+        A list or array of time stamps for a light curve. Must be a type that
+        can be cast to `:class:np.array` or `:class:List` of floats, or that
+        has a `value` attribute that does (e.g. a
+        `:class:astropy.units.Quantity` or `:class:astropy.time.Time` object).
 
     counts: iterable, optional, default ``None``
         A list or array of the counts in each bin corresponding to the
@@ -133,6 +136,8 @@ class Lightcurve(object):
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
                  skip_checks=False, low_memory=False):
 
+        if hasattr(time, 'value'):
+            time = time.value
         time = np.asarray(time)
         counts = np.asarray(counts)
         if err is not None:
@@ -408,14 +413,16 @@ class Lightcurve(object):
 
         check_gtis(self.gti)
 
-        dt_array = []
-        for g in self.gti:
-            mask = create_gti_mask(self.time, [g], dt=self.dt)
-            t = self.time[mask]
-            dt_array.extend(np.diff(t))
-        dt_array = np.asarray(dt_array)
+        idxs = np.searchsorted(self.time, self.gti)
+        uneven = False
+        for idx in range(idxs.shape[0]):
+            istart, istop = idxs[idx, 0], min(idxs[idx, 1], self.time.size - 1)
 
-        if not (np.allclose(dt_array, np.repeat(self.dt, dt_array.shape[0]))):
+            local_diff = np.diff(self.time[istart:istop])
+            if np.any(~np.isclose(local_diff, self.dt)):
+                uneven = True
+                break
+        if uneven:
             simon("Bin sizes in input time array aren't equal throughout! "
                   "This could cause problems with Fourier transforms. "
                   "Please make the input time evenly sampled.")
@@ -435,7 +442,7 @@ class Lightcurve(object):
         new_lc : lightcurve.Lightcurve object
             The new LC shifted by MJDREF
         """
-        time_shift = (new_mjdref - self.mjdref) * 86400
+        time_shift = -(new_mjdref - self.mjdref) * 86400
 
         new_lc = self.shift(time_shift)
         new_lc.mjdref = new_mjdref
@@ -457,10 +464,13 @@ class Lightcurve(object):
             The new LC shifted by ``time_shift``
 
         """
-        new_lc = Lightcurve(self.time + time_shift, self.counts,
-                            err=self.counts_err,
-                            gti=self.gti + time_shift, mjdref=self.mjdref,
-                            dt=self.dt, err_dist=self.err_dist,
+        new_lc = Lightcurve(self.time + time_shift,
+                            self.counts,
+                            err=self._counts_err,
+                            gti=self.gti + time_shift,
+                            mjdref=self.mjdref,
+                            dt=self.dt,
+                            err_dist=self.err_dist,
                             skip_checks=True)
 
         return new_lc
@@ -485,7 +495,8 @@ class Lightcurve(object):
             The new light curve calculated in ``operation``
         """
         if self.mjdref != other.mjdref:
-            raise ValueError("MJDref is different in the two light curves")
+            warnings.warn("MJDref is different in the two light curves")
+            other = other.change_mjdref(self.mjdref)
 
         common_gti = cross_two_gtis(self.gti, other.gti)
         mask_self = create_gti_mask(self.time, common_gti, dt=self.dt)
@@ -509,10 +520,10 @@ class Lightcurve(object):
                   "We are setting the errors to zero to avoid complications.")
             new_counts_err = np.zeros_like(new_counts)
         elif self.err_dist.lower() in valid_statistics:
-                new_counts_err = \
-                    np.sqrt(np.add(self.counts_err[mask_self]**2,
-                                   other.counts_err[mask_other]**2))
-            # More conditions can be implemented for other statistics
+            new_counts_err = \
+                np.sqrt(np.add(self.counts_err[mask_self]**2,
+                               other.counts_err[mask_other]**2))
+        # More conditions can be implemented for other statistics
         else:
             raise StingrayError("Statistics not recognized."
                                 " Please use one of these: "
@@ -886,7 +897,7 @@ class Lightcurve(object):
                             skip_checks=True)
         return lc_new
 
-    def join(self, other):
+    def join(self, other, skip_checks=False):
         """
         Join two lightcurves into a single object.
 
@@ -903,6 +914,9 @@ class Lightcurve(object):
         ----------
         other : :class:`Lightcurve` object
             The other :class:`Lightcurve` object which is supposed to be joined with.
+        skip_checks: bool
+            If True, the user specifies that data are already sorted and
+            contain no infinite or nan points. Use at your own risk.
 
         Returns
         -------
@@ -924,7 +938,8 @@ class Lightcurve(object):
         array([ 300,  100,  400,  600, 1200,  800])
         """
         if self.mjdref != other.mjdref:
-            raise ValueError("MJDref is different in the two light curves")
+            warnings.warn("MJDref is different in the two light curves")
+            other = other.change_mjdref(self.mjdref)
 
         if self.dt != other.dt:
             utils.simon("The two light curves have different bin widths.")
@@ -999,7 +1014,7 @@ class Lightcurve(object):
         gti = join_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(new_time, new_counts, err=new_counts_err, gti=gti,
-                            mjdref=self.mjdref, dt=self.dt)
+                            mjdref=self.mjdref, dt=self.dt, skip_checks=skip_checks)
 
         return lc_new
 
@@ -1077,7 +1092,7 @@ class Lightcurve(object):
                                         time_new[-1] + 0.5 * self.dt]]))
 
         return Lightcurve(time_new, counts_new, err=counts_err_new, gti=gti,
-                          dt=self.dt)
+                          dt=self.dt, skip_checks=True)
 
     def _truncate_by_time(self, start, stop):
         """Helper method for truncation using time values.
@@ -1133,8 +1148,8 @@ class Lightcurve(object):
         lc_split : iterable of `Lightcurve` objects
             The list of all contiguous light curves
 
-        Example
-        -------
+        Examples
+        --------
         >>> time = np.array([1, 2, 3, 6, 7, 8, 11, 12, 13])
         >>> counts = np.random.rand(time.shape[0])
         >>> lc = Lightcurve(time, counts, dt=1)
@@ -1367,6 +1382,42 @@ class Lightcurve(object):
         if len(results.shape) == 2:
             results = [results[:, i] for i in range(results.shape[1])]
         return start_times, stop_times, results
+
+    def to_lightkurve(self):
+        """
+        Returns a `lightkurve.LightCurve` object.
+        This feature requires `Lightkurve
+        <https://docs.lightkurve.org/index.html/>`_ to be installed
+        (e.g. ``pip install lightkurve``).  An `ImportError` will
+        be raised if this package is not available.
+
+        Returns
+        -------
+        lightcurve : `lightkurve.LightCurve`
+            A lightkurve LightCurve object.
+        """
+        try:
+            from lightkurve import LightCurve as lk
+        except ImportError:
+            raise ImportError("You need to install Lightkurve to use "
+                              "the Lightcurve.to_lightkurve() method.")
+        return lk(time=self.time, flux=self.counts, flux_err=self.counts_err)
+
+    @staticmethod
+    def from_lightkurve(lk, skip_checks=True):
+        """
+        Creates a new `Lightcurve` from a `lightkurve.LightCurve`.
+
+        Parameters
+        ----------
+        lk : `lightkurve.LightCurve`
+            A lightkurve LightCurve object
+        skip_checks: bool
+            If True, the user specifies that data are already sorted and contain no
+            infinite or nan points. Use at your own risk.
+        """
+        return Lightcurve(time=lk.time, counts=lk.flux,
+                          err=lk.flux_err, input_counts=False, skip_checks=skip_checks)
 
     def plot(self, witherrors=False, labels=None, axis=None, title=None,
              marker='-', save=False, filename=None):

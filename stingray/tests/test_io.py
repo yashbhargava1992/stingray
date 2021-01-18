@@ -25,6 +25,7 @@ except ImportError:
 skip_condition = pytest.mark.skipif(not _H5PY_INSTALLED,
     reason = "H5PY not installed.")
 
+
 class TestIO(object):
 
     def test_common_name(self):
@@ -56,6 +57,26 @@ class TestIO(object):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_events_and_gtis(fname, additional_columns=["PI"])
+
+    def test_event_file_read_xmm(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'xmm_test.fits')
+        load_events_and_gtis(fname, additional_columns=['PRIOR'])
+
+    def test_event_file_read_no_mission(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'nomission.evt')
+        load_events_and_gtis(fname)
+
+    def test_event_file_read_no_additional(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        load_events_and_gtis(fname)
+
+    def test_event_file_read_no_pi(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        load_events_and_gtis(fname)
 
     def test_read_header_key(self):
         """Test event file reading."""
@@ -89,6 +110,7 @@ class TestIOReadWrite(object):
 
     def test_operation(self):
         return self.number * 10
+
 
 class TestFileFormats(object):
 

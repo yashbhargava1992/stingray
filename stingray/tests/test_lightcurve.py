@@ -4,6 +4,9 @@ from astropy.tests.helper import pytest
 import warnings
 import os
 import matplotlib.pyplot as plt
+from numpy.testing import assert_allclose
+import astropy.units as u
+from astropy.time import Time
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
@@ -12,11 +15,17 @@ from stingray.gti import create_gti_mask
 np.random.seed(20150907)
 
 _H5PY_INSTALLED = True
+_HAS_LIGHTKURVE = True
 
 try:
     import h5py
 except ImportError:
     _H5PY_INSTALLED = False
+
+try:
+    import Lightkurve
+except ImportError:
+    _HAS_LIGHTKURVE = False
 
 def fvar_fun(lc):
     from stingray.utils import excess_variance
@@ -57,6 +66,20 @@ class TestProperties(object):
         assert lc._bin_lo is None
         _ = lc.bin_lo
         assert lc._bin_lo is not None
+
+    def test_time_is_quantity_or_astropy_time(self):
+        counts = [34, 21.425]
+        times = [57000, 58000]
+
+        times_q = times * u.d
+        times_t = Time(times, format='mjd')
+
+        lc = Lightcurve(time=times, counts=counts)
+        lc_q = Lightcurve(time=times_q, counts=counts)
+        lc_t = Lightcurve(time=times_t, counts=counts)
+        assert_allclose(lc.time, lc_q.time)
+        assert_allclose(lc.time, lc_t.time)
+
 
     def test_gti(self):
         lc = copy.deepcopy(self.lc)
@@ -207,7 +230,7 @@ class TestLightcurve(object):
         cls.times = np.array([1, 2, 3, 4])
         cls.counts = np.array([2, 2, 2, 2])
         cls.dt = 1.0
-        cls.gti = [[0.5, 4.5]]
+        cls.gti = np.array([[0.5, 4.5]])
 
     def test_create(self):
         """
@@ -227,7 +250,7 @@ class TestLightcurve(object):
                     "transforms. Please make the input time evenly sampled.")
 
         with warnings.catch_warnings(record=True) as w:
-            lc = Lightcurve(times, counts, err_dist="poisson")
+            _ = Lightcurve(times, counts, err_dist="poisson")
             assert np.any([str(wi.message) == warn_str for wi in w])
 
     def test_unrecognize_err_dist_warning(self):
@@ -455,12 +478,6 @@ class TestLightcurve(object):
         lc = lc1 + lc2
         np.testing.assert_almost_equal(lc.gti, self.gti)
 
-    def test_add_with_different_mjdref(self):
-        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
-        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
-        with pytest.raises(ValueError):
-            lc1 + lc2
-
     def test_add_with_different_gtis(self):
         gti = [[0., 3.5]]
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
@@ -507,12 +524,6 @@ class TestLightcurve(object):
             lc = lc1 - lc2
             assert np.any(["ightcurves have different statistics"
                            in str(wi.message) for wi in w])
-
-    def test_sub_with_different_mjdref(self):
-        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
-        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
-        with pytest.raises(ValueError):
-            lc1 - lc2
 
     def test_subtraction(self):
         _counts = [3, 4, 5, 6]
@@ -590,10 +601,37 @@ class TestLightcurve(object):
                            in str(wi.message) for wi in w])
 
     def test_join_with_different_mjdref(self):
-        lc1 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57000)
+        shift = 86400.  # day
+        lc1 = Lightcurve(self.times + shift, self.counts, gti=self.gti + shift,
+                         mjdref=57000)
         lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
-        with pytest.raises(ValueError):
-            lc1.join(lc2)
+        newlc = lc1.join(lc2)
+        # The join operation *averages* the overlapping arrays
+        assert np.allclose(newlc.counts, lc1.counts)
+
+    def test_sum_with_different_mjdref(self):
+        shift = 86400.  # day
+        lc1 = Lightcurve(self.times + shift, self.counts, gti=self.gti + shift,
+                         mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.warns(UserWarning) as record:
+            newlc = lc1 + lc2
+        assert np.any(["MJDref"
+                       in r.message.args[0] for r in record])
+
+        assert np.allclose(newlc.counts, lc1.counts * 2)
+
+    def test_subtract_with_different_mjdref(self):
+        shift = 86400.  # day
+        lc1 = Lightcurve(self.times + shift, self.counts, gti=self.gti + shift,
+                         mjdref=57000)
+        lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
+        with pytest.warns(UserWarning) as record:
+            newlc = lc1 - lc2
+        assert np.any(["MJDref"
+                       in r.message.args[0] for r in record])
+
+        assert np.allclose(newlc.counts, 0)
 
     def test_join_disjoint_time_arrays(self):
         _times = [5, 6, 7, 8]
@@ -799,6 +837,26 @@ class TestLightcurve(object):
         lc_long = lc_1.join(lc_2)  # Or vice-versa
         new_lc_long = lc_long[:]  # Copying into a new object
         assert new_lc_long.n == lc_long.n
+
+    @pytest.mark.skipif('not _HAS_LIGHTKURVE')
+    def test_to_lightkurve(self):
+        time, counts, counts_err = range(3), np.ones(3), np.zeros(3)
+        lc = Lightcurve(time, counts, counts_err)
+        lk = lc.to_lightkurve()
+        assert_allclose(lk.time, time)
+        assert_allclose(lk.flux, counts)
+        assert_allclose(lk.flux_err, counts_err)
+
+    @pytest.mark.skipif(not _HAS_LIGHTKURVE,
+                        reason='Lightkurve not installed')
+    def test_from_lightkurve(self):
+        from Lightkurve import LightCurve
+        time, flux, flux_err = range(3), np.ones(3), np.zeros(3)
+        lk = LightCurve(time, flux, flux_err)
+        sr = Lightcurve.from_lightkurve(lk)
+        assert_allclose(sr.time, lc.time)
+        assert_allclose(sr.counts, lc.flux)
+        assert_allclose(sr.counts_err, lc.flux_err)
 
     def test_plot_matplotlib_not_installed(self):
         try:

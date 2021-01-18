@@ -1,6 +1,6 @@
 
 import sys
-import collections
+from collections.abc import Iterable
 import numbers
 from six import string_types
 
@@ -16,7 +16,7 @@ try:
     from numba import jit
 
     HAS_NUMBA = True
-    from numba import njit, prange
+    from numba import njit, prange, vectorize, float32, float64, int32, int64
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
 
@@ -40,8 +40,28 @@ except ImportError:
 
             return wrapped_f
 
+    class vectorize(object):
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __call__(self, func):
+            wrapped_f = np.vectorize(func)
+
+            return wrapped_f
+
+    def generic(x, y=None):
+        return None
+
+    float32 = float64 = int32 = int64 = generic
+
     def prange(x):
         return range(x)
+
+try:
+    from tqdm import tqdm as show_progress
+except ImportError:
+    def show_progress(a):
+        return a
 
 try:
     from statsmodels.robust import mad as mad  # pylint: disable=unused-import
@@ -81,7 +101,8 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
 
 
 def _root_squared_mean(array):
-    return np.sqrt(np.sum(array ** 2)) / len(array)
+    array = np.asarray(array)
+    return np.sqrt(np.sum(array ** 2)) / array.size
 
 
 def simon(message, **kwargs):
@@ -142,6 +163,24 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     step_size: float
         The size of the binning step
+
+    Examples
+    --------
+    >>> x = np.arange(0, 100, 0.01)
+    >>> y = np.ones(x.size)
+    >>> yerr = np.ones(x.size)
+    >>> xbin, ybin, ybinerr, step_size = rebin_data(
+    ...     x, y, 4, yerr=yerr, method='sum')
+    >>> np.allclose(ybin, 400)
+    True
+    >>> np.allclose(ybinerr, 20)
+    True
+    >>> xbin, ybin, ybinerr, step_size = rebin_data(
+    ...     x, y, 4, yerr=yerr, method='mean')
+    >>> np.allclose(ybin, 1)
+    True
+    >>> np.allclose(ybinerr, 0.05)
+    True
     """
 
     y = np.asarray(y)
@@ -175,7 +214,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
             totalerr += next_frac * (yerr[next_bin] ** 2)
 
         total += sum(y[int(i + 1):int(i + step_size)])
-        totalerr += sum(yerr[int(i + 1):int(step_size)] ** 2)
+        totalerr += sum(yerr[int(i + 1):int(i + step_size)] ** 2)
         output.append(total)
         outputerr.append(np.sqrt(totalerr))
 
@@ -184,7 +223,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     if method in ['mean', 'avg', 'average', 'arithmetic mean']:
         ybin = output / np.float(step_size)
-        ybinerr = outputerr / np.sqrt(np.float(step_size))
+        ybinerr = outputerr / np.float(step_size)
 
     elif method == "sum":
         ybin = output
@@ -290,7 +329,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
         x.astype(np.double), real_err.astype(np.double),
         statistic=_root_squared_mean, bins=binx)
 
-    if isinstance(y[0], np.complex):
+    if np.iscomplexobj(y):
         imag = y.imag
         biny_imag, bin_edges, binno = scipy.stats.binned_statistic(
             x.astype(np.double), imag.astype(np.double),
@@ -298,7 +337,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
         biny = biny + 1j * biny_imag
 
-    if isinstance(y_err[0], np.complex):
+    if np.iscomplexobj(y_err):
         imag_err = y_err.imag
 
         biny_err_imag, bin_edges, binno = scipy.stats.binned_statistic(
@@ -424,7 +463,7 @@ def is_iterable(var):
     is_iter : bool
         Returns ``True`` if ``var`` is an ``Iterable``, ``False`` otherwise
     """
-    return isinstance(var, collections.Iterable)
+    return isinstance(var, Iterable)
 
 
 def order_list_of_arrays(data, order):
@@ -870,7 +909,7 @@ def poisson_symmetrical_errors(counts):
     """
     from astropy.stats import poisson_conf_interval
     counts_int = np.asarray(counts, dtype=np.int64)
-    count_values = np.unique(counts_int)
+    count_values = np.nonzero(np.bincount(counts_int))[0]
     err_low, err_high = \
         poisson_conf_interval(count_values,
                               interval='frequentist-confidence', sigma=1)

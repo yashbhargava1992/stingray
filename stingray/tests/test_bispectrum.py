@@ -15,6 +15,18 @@ except ImportError:
     HAS_MPL = False
 
 
+def allclose_with_wrap(array1, array2):
+    """Calculates if numbers are all close, considering -pi = pi."""
+    for a1, a2 in zip(array1.flatten(), array2.flatten()):
+        condition = np.isclose(a1, a2)
+        if np.isclose(a1, np.pi) or np.isclose(a1, -np.pi):
+            condition = condition or np.isclose(a1, -a2)
+
+        if not condition:
+            return False
+    return True
+
+
 class TestBispectrum(object):
     @classmethod
     def setup_class(cls):
@@ -95,7 +107,7 @@ class TestBispectrum(object):
         assert np.allclose(bs.cum3, cum3)
         assert np.allclose(bs.bispec, bispec)
         assert np.allclose(bs.bispec_mag, bispec_mag)
-        assert np.allclose(bs.bispec_phase, bispec_phase)
+        assert allclose_with_wrap(bs.bispec_phase, bispec_phase)
 
     def test_wrong_scale_type(self):
         with pytest.raises(TypeError):
@@ -163,7 +175,7 @@ class TestBispectrum(object):
         assert np.allclose(bs.cum3, cum3)
         assert np.allclose(bs.bispec, bispec)
         assert np.allclose(bs.bispec_mag, bispec_mag)
-        assert np.allclose(bs.bispec_phase, bispec_phase)
+        assert allclose_with_wrap(bs.bispec_phase, bispec_phase)
 
     def test_lc1_with_diff_lag(self):
         bs = Bispectrum(self.lc1, maxlag=1)
@@ -198,7 +210,7 @@ class TestBispectrum(object):
         assert np.allclose(bs.cum3, cum3)
         assert np.allclose(bs.bispec, bispec)
         assert np.allclose(bs.bispec_mag, bispec_mag)
-        assert np.allclose(bs.bispec_phase, bispec_phase)
+        assert allclose_with_wrap(bs.bispec_phase, bispec_phase)
 
     def test_lc1_unbiased_scale(self):
         bs = Bispectrum(self.lc1, maxlag=1, scale='unbiased')
@@ -234,7 +246,7 @@ class TestBispectrum(object):
         assert np.allclose(bs.cum3, cum3)
         assert np.allclose(bs.bispec, bispec)
         assert np.allclose(bs.bispec_mag, bispec_mag)
-        assert np.allclose(bs.bispec_phase, bispec_phase)
+        assert allclose_with_wrap(bs.bispec_phase, bispec_phase)
 
     def test_bispectrum_window_none(self):
         bs = Bispectrum(self.lc, scale='unbiased')
@@ -261,7 +273,7 @@ class TestBispectrum(object):
                             0.12704520 + 9.59589442e-01j, 0.52344952 + 1.79651918e+00j,
                             1.23378944 + 1.03450204e+00j]])
 
-        window = np.array([[0, 0, 0, 1, 1], 
+        window = np.array([[0, 0, 0, 1, 1],
                   [0, 0, 1, 1, 1],
                   [0, 1, 1, 1, 0],
                   [1, 1, 1, 0, 0],
@@ -518,7 +530,7 @@ class TestBispectrum(object):
         window_not = 'kaiser'
         with pytest.raises(ValueError):
             bs = Bispectrum(self.lc, maxlag=2, window=window_not)
-    
+
     @pytest.mark.skipif(HAS_MPL, reason='Matplotlib is already installed if condition is met')
     def test_plot_matplotlib_not_installed(self):
         bs = Bispectrum(self.lc)
@@ -564,45 +576,3 @@ class TestBispectrum(object):
         bs = Bispectrum(self.lc)
         bs.plot_phase(axis=[0, 1, 0, 100])
         assert plt.fignum_exists(1)
-
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
-    def test_plot_cum3_default_filename(self):
-        bs = Bispectrum(self.lc)
-        bs.plot_cum3(save=True)
-        assert os.path.isfile('bispec_cum3.png')
-        os.unlink('bispec_cum3.png')
-
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
-    def test_plot_mag_default_filename(self):
-        bs = Bispectrum(self.lc)
-        bs.plot_mag(save=True)
-        assert os.path.isfile('bispec_mag.png')
-        os.unlink('bispec_mag.png')
-
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
-    def test_plot_phase_default_filename(self):
-        bs = Bispectrum(self.lc)
-        bs.plot_phase(save=True)
-        assert os.path.isfile('bispec_phase.png')
-        os.unlink('bispec_phase.png')
-
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
-    def test_plot_cum3_custom_filename(self):
-        bs = Bispectrum(self.lc)
-        bs.plot_cum3(save=True, filename='cum3.png')
-        assert os.path.isfile('cum3.png')
-        os.unlink('cum3.png')
-
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
-    def test_plot_mag_custom_filename(self):
-        bs = Bispectrum(self.lc)
-        bs.plot_phase(save=True, filename='mag.png')
-        assert os.path.isfile('mag.png')
-        os.unlink('mag.png')
-
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
-    def test_plot_phase_custom_filename(self):
-        bs = Bispectrum(self.lc)
-        bs.plot_phase(save=True, filename='phase.png')
-        assert os.path.isfile('phase.png')
-        os.unlink('phase.png')

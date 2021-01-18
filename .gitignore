@@ -15,10 +15,20 @@ __pycache__
 htmlcov
 .coverage
 MANIFEST
+.ipynb_checkpoints
 
 # Sphinx
 docs/api
 docs/_build
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # Eclipse editor project files
 .project
@@ -28,12 +38,20 @@ docs/_build
 # Pycharm editor project files
 .idea
 
+# VSCode editor project files
+.vscode/*
+
+# Floobits project files
+.floo
+.flooignore
+
 # Packages/installer info
 *.egg
 *.egg-info
 dist
 build
 eggs
+.eggs
 parts
 bin
 var
@@ -47,11 +65,12 @@ distribute-*.tar.gz
 .tox
 .*.sw[op]
 *~
+.project
+.pydevproject
+.settings
 .pytest_cache
+pip-wheel-metadata/
 v
 
 # Mac OSX
 .DS_Store
-
-# virtualenv
-.venv

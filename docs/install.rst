@@ -41,6 +41,7 @@ Now ``cd`` into the newly created ``stingray`` directory and install the necessa
 dependencies: ::
 
     $ cd stingray
+    $ pip install astropy scipy matplotlib numpy pytest pytest-astropy h5py tqdm
 
 Finally, install ``stingray`` itself: ::
 
@@ -51,6 +52,37 @@ the ``modeling`` subpackage. In order to install ``stingray`` with these depende
 (``emcee``, ``corner`` and ``statsmodels``), execute :: 
 
     $ pip install -e ".[modeling]"
+
+Installing development environment (for new contributors)
+---------------------------------------------------------
+
+For those of you wanting to contribute to the project, install the bleeding-edge development version from
+source. First fork
+`our repository <https://github.com/StingraySoftware/stingray>`_ on GitHub and clone the forked repository using: ::
+
+    $ git clone --recursive https://github.com/<your github username>/stingray.git
+
+Now, navigate to this folder and run 
+the following command to add an upstream remote that's linked to Stingray's main repository. 
+(This will be necessary when submitting PRs later.): ::
+    
+    $ cd stingray
+    $ git remote add upstream https://github.com/StingraySoftware/stingray.git
+
+
+Now, install the necessary dependencies: ::
+
+    $ pip install astropy scipy matplotlib numpy pytest pytest-astropy h5py tqdm
+
+Finally, install ``stingray`` itself: ::
+
+    $ pip install -e "."
+
+Note that this will install the package *without* the optional dependencies required by 
+the ``modeling`` subpackage. In order to install ``stingray`` with these dependencies
+(``emcee``, ``corner`` and ``statsmodels``), execute :: 
+
+    $ pip install -e ".[modeling]"    
 
 .. _testsuite:
 
@@ -64,6 +96,20 @@ Stingray uses `py.test <https://doc.pytest.org/en/latest/>`_ for testing. To run
 the ``stingray`` root directory and execute ::
 
     $ python setup.py test
+
+If you have installed Stingray via pip or conda, the source directory might
+not be easily accessible. Once installed, you can also run the tests using::
+
+   $ python -c 'import stingray; stingray.test()'
+
+or from within a python interpreter:
+
+.. doctest-skip::
+
+   >>> import stingray
+   >>> stingray.test()
+
+
 
 Documentation
 -------------
