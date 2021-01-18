@@ -9,7 +9,7 @@ from scipy.optimize import minimize, basinhopping
 import numpy as np
 
 from .fftfit import fftfit as taylor_fftfit
-from ..utils import simon
+from ..utils import simon, jit
 
 try:
     import pint.toa as toa
