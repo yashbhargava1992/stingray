@@ -260,3 +260,20 @@ class TestAll(object):
 
         real_toa = tstart + start_phase * period
         assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
+
+    @pytest.mark.skipif('not HAS_MPL')
+    def test_get_TOA_notemplate(self):
+        np.random.seed(1234)
+        period = 1.2
+        tstart = 122
+        start_phase = 0.2123
+        phases = np.arange(0, 1, 1 / 32)
+        template = _template_fun(phases, start_phase, 10, 20)
+        prof = np.random.poisson(template)
+
+        toa, toaerr = \
+            get_TOA(prof, period, tstart, nstep=200,
+                    debug=True)
+
+        real_toa = tstart + start_phase * period
+        assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
