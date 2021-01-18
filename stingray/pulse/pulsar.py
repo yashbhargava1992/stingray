@@ -306,6 +306,15 @@ def profile_stat(profile, err=None):
 
 @functools.lru_cache(maxsize=128)
 def _cached_sin_harmonics(nbin, z_n_n):
+    """Cached sine values corresponding to each of the nbin bins.
+
+    Parameters
+    ----------
+    nbin : int
+        Number of bins
+    z_n_n : int
+        The number of harmonics (n) in the Z^2_n search
+    """
     dph = 1.0 / nbin
     twopiphases = np.pi * 2 * np.arange(dph / 2, 1, dph)
     cached_sin = np.zeros(z_n_n * nbin)
@@ -316,6 +325,15 @@ def _cached_sin_harmonics(nbin, z_n_n):
 
 @functools.lru_cache(maxsize=128)
 def _cached_cos_harmonics(nbin, z_n_n):
+    """Cached cosine values corresponding to each of the nbin bins.
+
+    Parameters
+    ----------
+    nbin : int
+        Number of bins
+    z_n_n : int
+        The number of harmonics (n) in the Z^2_n search
+    """
     dph = 1.0 / nbin
     twopiphases = np.pi * 2 * np.arange(dph / 2, 1, dph)
     cached_cos = np.zeros(z_n_n * nbin)
@@ -326,6 +344,20 @@ def _cached_cos_harmonics(nbin, z_n_n):
 
 @jit(nopython=True)
 def _z_n_fast_cached_sums_unnorm(prof, ks, cached_sin, cached_cos):
+    '''Calculate the unnormalized Z^2_k, for (k=1,.. n), of a pulsed profile.
+
+    Parameters
+    ----------
+    prof : :class:`numpy.array`
+        The pulsed profile
+    ks : :class:`numpy.array` of int
+        The harmonic numbers, from 1 to n
+    cached_sin : :class:`numpy.array`
+        Cached sine values for each phase bin in the profile
+    cached_cos : :class:`numpy.array`
+        Cached cosine values for each phase bin in the profile
+    '''
+
     all_zs = np.zeros(ks.size)
     N = prof.size
 
