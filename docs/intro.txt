@@ -75,7 +75,7 @@ Other future additions we are currently implementing are:
 * Fourier-frequency-resolved spectroscopy
 * power colours
 * full HEASARC-compatible mission support
-* pulsar searches with $htest$-test
+* pulsar searches with $H$-test
 * binary pulsar searches
 
 
