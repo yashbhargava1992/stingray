@@ -534,6 +534,8 @@ def split_numbers(number, shift=0):
     (10.0, 2.34)
     """
     if isinstance(number, Iterable):
+        number = np.asarray(number)
+        number *= 10**shift
         mods = [math.modf(n) for n in number]
         number_F = [f for f, _ in mods]
         number_I = [i for _, i in mods]

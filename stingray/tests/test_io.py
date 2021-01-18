@@ -98,10 +98,11 @@ class TestIO(object):
 
         assert (numbers == r_numbers).all()
 
-        n = [1234.567]
-        shift = 2
+        n = [1234.567, 12.345]
+        shift = -2
         n_i, n_f = split_numbers(n, shift)
-        r_n = (n_i + n_f) / (10**shift)
+        assert np.allclose(n_i, [1200, 0])
+        r_n = (n_i + n_f)
         assert (n == r_n).all()
 
 class TestIOReadWrite(object):
