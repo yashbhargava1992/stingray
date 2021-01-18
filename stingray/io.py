@@ -496,15 +496,19 @@ def common_name(str1, str2, default='common'):
     return common_str
 
 
-def split_numbers(number):
+def split_numbers(number, shift=0):
     """
-    Split high precision number(s) into doubles.
-    TODO: Consider the option of using a third number to specify shift.
+    Split high precision number(s) into doubles. You can specify the number of shifts to move the decimal point.
 
     Parameters
     ----------
     number: long double
         The input high precision number which is to be split
+
+    Other parameters
+    ----------------
+    shift: integer
+        Number of places to move the decimal point to the right
 
     Returns
     -------
@@ -513,13 +517,23 @@ def split_numbers(number):
 
     number_F: double
         Second part of high precision number
-    """
 
+    Examples
+    --------
+    n = 12.34
+    >>> split_numbers(n)
+    (12.0, 0.33999999999999986)
+    >>> split_numbers(n, 2)
+    (1234.0, 0.0)
+    >>> split_numbers(n, -2)
+    (0.0, 0.1234)
+    """
     if isinstance(number, Iterable):
         mods = [math.modf(n) for n in number]
         number_F = [f for f, _ in mods]
         number_I = [i for _, i in mods]
     else:
+        number *= 10**shift
         number_F, number_I = math.modf(number)
 
     return np.double(number_I), np.double(number_F)

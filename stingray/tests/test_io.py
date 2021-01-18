@@ -98,6 +98,12 @@ class TestIO(object):
 
         assert (numbers == r_numbers).all()
 
+        n = [1234.567]
+        shift = 2
+        n_i, n_f = split_numbers(n, shift)
+        r_n = (n_i + n_f) / (10**shift)
+        assert (n == r_n).all()
+
 class TestIOReadWrite(object):
     """A class to test all the read and write functions."""
     def __init__(self):
