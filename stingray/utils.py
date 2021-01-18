@@ -123,7 +123,7 @@ def simon(message, **kwargs):
     warnings.warn("SIMON says: {0}".format(message), **kwargs)
 
 
-def rebin_data(x, y, dx_new, yerr=None, method='sum'):
+def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     """Rebin some data to an arbitrary new data resolution. Either sum
     the data points in the new bins or average them.
 
@@ -149,7 +149,8 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum'):
         each new bin of ``x``, or take the arithmetic mean.
 
     dx: float
-        The old resolution (otherwise, calculated from median diff)
+        The old resolution (otherwise, calculated from difference between 
+        time bins)
 
     Returns
     -------
@@ -169,7 +170,10 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum'):
     y = np.asarray(y)
     yerr = np.asarray(apply_function_if_none(yerr, y, np.zeros_like))
 
-    dx_old = np.diff(x)
+    if not dx:
+        dx_old = np.diff(x)
+    else:
+        dx_old = np.array([dx])
 
     if np.any(dx_new < dx_old):
         raise ValueError("New frequency resolution must be larger than "
@@ -178,7 +182,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum'):
     # left and right bin edges
     # assumes that the points given in `x` correspond to 
     # the left bin edges
-    xedges = np.hstack([x, x[-1]+np.diff(x)[-1]])
+    xedges = np.hstack([x, x[-1]+dx_old[-1]])
 
     # new regularly binned resolution
     xbin = np.arange(xedges[0], xedges[-1]+dx_new, dx_new)
