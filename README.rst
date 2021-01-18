@@ -53,13 +53,13 @@ Citing Stingray
 Please cite `Huppenkothen et al. (2019)
 <https://arxiv.org/abs/1901.07681>`_ if you find this package useful in your
 research.
- 
+
 The BibTeX entry for the paper is::
 
     @ARTICLE{2019arXiv190107681H,
            author = {{Huppenkothen}, D. and {Bachetti}, M. and {Stevens}, A.~L. and
              {Migliari}, S. and {Balm}, P. and {Hammad}, O. and {Khan}, U.~M. and
-             {Mishra}, H. and {Rashid}, H. and {Sharma}, S.},
+             {Mishra}, htest. and {Rashid}, htest. and {Sharma}, S.},
             title = "{Stingray: A Modern Python Library For Spectral Timing}",
           journal = {arXiv e-prints},
          keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - High Energy Astrophysical Phenomena},
@@ -100,7 +100,7 @@ Future Additions
 - Fourier-frequency-resolved spectroscopy
 - power colours
 - full HEASARC-compatible mission support
-- pulsar searches with $H$-test
+- pulsar searches with $htest$-test
 - binary pulsar searches
 - (...) Feel free to propose! Use the `Issues`_ page!
 
@@ -131,7 +131,7 @@ Stingray uses `py.test` for testing. To run the tests, try::
 
    $ python setup.py test
 
-If you have installed Stingray via pip or conda, the source directory might 
+If you have installed Stingray via pip or conda, the source directory might
 not be easily accessible. Once installed, you can also run the tests using::
 
    $ python -c 'import stingray; stingray.test()'

@@ -341,8 +341,8 @@ def _z_n_fast_cached_sums_unnorm(prof, ks, cached_sin, cached_cos):
     return all_zs
 
 
-def z_n_poisson_all(profile, nmax=20):
-    '''Z^2_n statistic for multiple harmonics and Poissonian pulse profiles
+def z_n_binned_events_all(profile, nmax=20):
+    '''Z^2_n statistic for multiple harmonics and binned events
 
     See Bachetti+2021, arXiv:2012.11397
 
@@ -374,7 +374,7 @@ def z_n_poisson_all(profile, nmax=20):
 
 
 def z_n_gauss_all(profile, err, nmax=20):
-    '''Z^2_n statistic for multiple harmonics and Gaussian pulse profiles
+    '''Z^2_n statistic for n harmonics and normally-distributed profiles
 
     See Bachetti+2021, arXiv:2012.11397
 
@@ -405,7 +405,7 @@ def z_n_gauss_all(profile, err, nmax=20):
 
 @jit(nopython=True)
 def z_n_events_all(phase, nmax=20):
-    '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
+    '''Z^2_n statistics, a` la Buccheri+83, A&A, 128, 245, eq. 2.
 
     Parameters
     ----------
@@ -439,8 +439,8 @@ def z_n_events_all(phase, nmax=20):
     return ks, 2 / nphot * all_zs
 
 
-def z_n_poisson(profile, n):
-    '''Z^2_n statistic for Poissonian pulse profiles
+def z_n_binned_events(profile, n):
+    '''Z^2_n statistic for pulse profiles from binned events
 
     See Bachetti+2021, arXiv:2012.11397
 
@@ -457,12 +457,12 @@ def z_n_poisson(profile, n):
     z2_n : float
         The value of the statistic
     '''
-    _, all_zs = z_n_poisson_all(profile, nmax=n)
+    _, all_zs = z_n_binned_events_all(profile, nmax=n)
     return all_zs[-1]
 
 
 def z_n_gauss(profile, err, n):
-    '''Z^2_n statistic for Gaussian pulse profiles
+    '''Z^2_n statistic for normally-distributed profiles
 
     See Bachetti+2021, arXiv:2012.11397
 
@@ -485,7 +485,7 @@ def z_n_gauss(profile, err, n):
 
 
 def z_n_events(phase, n):
-    '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
+    '''Z^2_n statistics, a` la Buccheri+83, A&A, 128, 245, eq. 2.
 
     Parameters
     ----------
@@ -503,10 +503,10 @@ def z_n_events(phase, n):
     return all_zs[-1]
 
 
-def z_n(data, n, kind="events", err=None, norm=None):
-    '''Z^2_n statistics, a` la Buccheri+03, A&A, 128, 245, eq. 2.
+def z_n(data, n, datatype="events", err=None, norm=None):
+    '''Z^2_n statistics, a` la Buccheri+83, A&A, 128, 245, eq. 2.
 
-    If kind is "poisson" or "gauss", uses the formulation from
+    If datatype is "binned" or "gauss", uses the formulation from
     Bachetti+2021, ApJ, arxiv:2012.11397
 
     Parameters
@@ -518,13 +518,13 @@ def z_n(data, n, kind="events", err=None, norm=None):
 
     Other Parameters
     ----------------
-    kind : str
-        The kind of data: "events" if phase values between 0 and 1,
-        "poisson" if folded pulse profile from photons, "gauss" if
+    datatype : str
+        The data type: "events" if phase values between 0 and 1,
+        "binned" if folded pulse profile from photons, "gauss" if
         folded pulse profile with normally-distributed fluxes
     err : float
         The uncertainty on the pulse profile fluxes (required for
-        kind="gauss", ignored otherwise)
+        datatype="gauss", ignored otherwise)
     norm : float
         For backwards compatibility; if norm is not None, it is
         substituted to ``data``, and data is ignored. This raises
@@ -539,34 +539,34 @@ def z_n(data, n, kind="events", err=None, norm=None):
 
     if norm is not None:
         warnings.warn("The use of ``z_n(phase, norm=profile)`` is deprecated. Use "
-                      "``z_n(profile, kind='poisson')`` instead",
+                      "``z_n(profile, datatype='binned')`` instead",
                       DeprecationWarning)
         if isinstance(norm, Iterable):
             data = norm
-            kind = "poisson"
+            datatype = "binned"
         else:
-            kind = "events"
+            datatype = "events"
 
     if data.size == 0:
         return 0
 
-    if kind == "poisson":
-        return z_n_poisson(data, n)
-    elif kind == "events":
+    if datatype == "binned":
+        return z_n_binned_events(data, n)
+    elif datatype == "events":
         return z_n_events(data, n)
-    elif kind == "gauss":
+    elif datatype == "gauss":
         if err is None:
             raise ValueError(
-                "If kind='gauss', you need to specify an uncertainty (err)")
+                "If datatype='gauss', you need to specify an uncertainty (err)")
         return z_n_gauss(data, n=n, err=err)
 
-    raise ValueError(f"Unknown kind requested for Z_n ({kind})")
+    raise ValueError(f"Unknown datatype requested for Z_n ({datatype})")
 
 
-def H(data, nmax=20, kind="poisson", err=None):
-    '''H-test statistic, a` la De Jager+89, A&A, 221, 180D, eq. 2.
+def htest(data, nmax=20, datatype="binned", err=None):
+    '''htest-test statistic, a` la De Jager+89, A&A, 221, 180D, eq. 2.
 
-    If kind is "poisson" or "gauss", uses the formulation from
+    If datatype is "binned" or "gauss", uses the formulation from
     Bachetti+2021, ApJ, arxiv:2012.11397
 
     Parameters
@@ -578,32 +578,32 @@ def H(data, nmax=20, kind="poisson", err=None):
 
     Other Parameters
     ----------------
-    kind : str
-        The kind of data: "events" if phase values between 0 and 1,
-        "poisson" if folded pulse profile from photons, "gauss" if
+    datatype : str
+        The datatype of data: "events" if phase values between 0 and 1,
+        "binned" if folded pulse profile from photons, "gauss" if
         folded pulse profile with normally-distributed fluxes
     err : float
         The uncertainty on the pulse profile fluxes (required for
-        kind="gauss", ignored otherwise)
+        datatype="gauss", ignored otherwise)
 
     Returns
     -------
     M : int
         The best number of harmonics that describe the signal.
-    H : float
-        The H statistics of the events.
+    htest : float
+        The htest statistics of the events.
     '''
-    if kind == "poisson":
-        ks, zs = z_n_poisson_all(data, nmax)
-    elif kind == "events":
+    if datatype == "binned":
+        ks, zs = z_n_binned_events_all(data, nmax)
+    elif datatype == "events":
         ks, zs = z_n_events_all(data, nmax)
-    elif kind == "gauss":
+    elif datatype == "gauss":
         if err is None:
             raise ValueError(
-                "If kind='gauss', you need to specify an uncertainty (err)")
+                "If datatype='gauss', you need to specify an uncertainty (err)")
         ks, zs = z_n_gauss_all(data, nmax=nmax, err=err)
     else:
-        raise ValueError(f"Unknown kind requested for H ({kind})")
+        raise ValueError(f"Unknown datatype requested for htest ({datatype})")
 
     Hs = zs - 4 * ks + 4
     bestidx = np.argmax(Hs)

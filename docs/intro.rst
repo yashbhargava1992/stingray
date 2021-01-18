@@ -75,7 +75,7 @@ Other future additions we are currently implementing are:
 * Fourier-frequency-resolved spectroscopy
 * power colours
 * full HEASARC-compatible mission support
-* pulsar searches with $H$-test
+* pulsar searches with $htest$-test
 * binary pulsar searches
 
 
@@ -101,7 +101,7 @@ of the academic world, and pointing to citations is *the* best way to help us en
 continues to be supported and we can continue working on it!
 
 Stingray now has an official citation! When using Stingray, pleace cite the
-`ApJ paper <https://ui.adsabs.harvard.edu/abs/2019ApJ...881...39H/abstract>`_. Here's the bibtex entry 
+`ApJ paper <https://ui.adsabs.harvard.edu/abs/2019ApJ...881...39H/abstract>`_. Here's the bibtex entry
 for your convenience::
 
 	@ARTICLE{2019ApJ...881...39H,
