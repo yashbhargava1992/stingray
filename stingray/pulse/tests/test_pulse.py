@@ -1,6 +1,8 @@
 import numpy as np
 from stingray.pulse.pulsar import fold_events, get_TOA, phase_exposure
 from stingray.pulse.pulsar import profile_stat, z_n, pulse_phase
+from stingray.pulse.pulsar import z_n, z_n_events, z_n_binned_events, z_n_gauss, htest
+from stingray.pulse.pulsar import z_n_events_all, z_n_binned_events_all, z_n_gauss_all
 from stingray.pulse.pulsar import get_orbital_correction_from_ephemeris_file
 from stingray.pulse.pulsar import HAS_PINT
 from astropy.tests.helper import remote_data
@@ -82,12 +84,12 @@ class TestAll(object):
     def test_zn(self):
         """Test pulse phase calculation, frequency only."""
         ph = np.array([0, 1])
-        np.testing.assert_array_almost_equal(z_n(ph), 8)
+        np.testing.assert_array_almost_equal(z_n(ph, 2), 8)
         ph = np.array([])
-        np.testing.assert_array_almost_equal(z_n(ph), 0)
+        np.testing.assert_array_almost_equal(z_n(ph, 2), 0)
         ph = np.array([0.2, 0.7])
         ph2 = np.array([0, 0.5])
-        np.testing.assert_array_almost_equal(z_n(ph), z_n(ph2))
+        np.testing.assert_array_almost_equal(z_n(ph, 2), z_n(ph2, 2))
 
     def test_pulse_phase1(self):
         """Test pulse phase calculation, frequency only."""
@@ -189,10 +191,15 @@ class TestAll(object):
         np.testing.assert_array_almost_equal(pe, expected_err)
 
     def test_zn_2(self):
-        np.testing.assert_almost_equal(z_n(np.arange(1), n=1, norm=1), 2)
-        np.testing.assert_almost_equal(z_n(np.arange(1), n=2, norm=1), 4)
-        np.testing.assert_almost_equal(z_n(np.arange(2), n=2, norm=1), 8)
-        np.testing.assert_almost_equal(z_n(np.arange(2)+0.5, n=2, norm=1), 8)
+        with pytest.warns(DeprecationWarning) as record:
+            np.testing.assert_almost_equal(z_n(np.arange(1), n=1, norm=1), 2)
+            np.testing.assert_almost_equal(z_n(np.arange(1), n=2, norm=1), 4)
+            np.testing.assert_almost_equal(z_n(np.arange(2), n=2, norm=1), 8)
+            np.testing.assert_almost_equal(
+                z_n(np.arange(2)+0.5, n=2, norm=1), 8)
+
+        assert np.any(["The use of ``z_n(phase, norm=profile)``"
+                       in r.message.args[0] for r in record])
 
     def test_get_TOA1(self):
         np.random.seed(1234)
@@ -277,3 +284,111 @@ class TestAll(object):
 
         real_toa = tstart + start_phase * period
         assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
+
+
+def create_pulsed_events(nevents, freq, t0=0, t1=1000, nback=0):
+    from numpy.random import Generator, PCG64
+    rg = Generator(PCG64())
+    events = rg.normal(0.5, 0.1, nevents - nback)
+    events = events - np.floor(events)
+
+    if nback > 0:
+        events = np.concatenate((events, rg.uniform(0, 1, nback)))
+    pulse_no = rg.integers(0, np.rint((t1 - t0) * freq), nevents)
+    events = np.sort(events + pulse_no)
+    return t1 + events / freq
+
+
+def poissonize_gaussian_profile(prof, err):
+    lam = 10000
+    factor = np.sqrt(lam) / err
+    return (prof - prof.mean()) * factor + lam
+
+
+class TestZandH(object):
+    """Unit tests for the stingray.pulsar module."""
+    @classmethod
+    def setup_class(cls):
+        nevents = 10000
+        f = 1.2123
+        cls.events = create_pulsed_events(nevents, f)
+        phases = cls.events * f
+        cls.phases = phases - np.floor(phases)
+
+        cls.prof512, cls.bins = \
+            np.histogram(cls.phases, range=[0, 1], bins=512)
+
+    def test_zn_events(self):
+        phases = self.phases
+        ks, ze = z_n_events_all(phases, nmax=10)
+        m, h = htest(phases, nmax=10, datatype="events")
+        assert np.isclose(h + 4 * m - 4, z_n(phases, n=m, datatype="events"))
+        assert np.isclose(h + 4 * m - 4, ze[m - 1])
+
+    def test_zn_poisson(self):
+        phases = self.phases
+        prof512, bins = self.prof512, self.bins
+        ks, ze = z_n_events_all(phases, nmax=10)
+        ksp, zp = z_n_binned_events_all(prof512, nmax=10)
+
+        assert np.allclose(ze, zp, rtol=0.01)
+        m, h = htest(prof512, datatype="binned", nmax=10)
+
+        assert np.isclose(h + 4 * m - 4, z_n(prof512, n=m, datatype="binned"))
+        assert np.isclose(h + 4 * m - 4, zp[m - 1])
+
+    def test_zn_poisson_zeros(self):
+        prof512 = np.zeros(512)
+        ksp, zp = z_n_binned_events_all(prof512, nmax=10)
+        assert np.all(zp == 0)
+
+    def test_deprecated_norm_use(self):
+        prof512, bins = self.prof512, self.bins
+        with pytest.warns(DeprecationWarning) as record:
+            z = z_n(prof512, n=3, datatype="binned")
+            z_dep = z_n(np.zeros(prof512.size), norm=prof512, n=3, datatype="binned")
+            np.testing.assert_almost_equal(z, z_dep)
+
+        assert np.any(["The use of ``z_n(phase, norm=profile)``"
+                       in r.message.args[0] for r in record])
+
+    def test_zn_gauss(self):
+        nbin = 512
+        dph = 1 / nbin
+        err = 0.1
+        ph = np.arange(-0.5 + dph / 2, 0.5, dph)
+        prof = np.random.normal(np.exp(-ph**2 / 2 / 0.1**2), err)
+
+        prof_poiss = poissonize_gaussian_profile(prof, err)
+
+        ksp, zp = z_n_binned_events_all(prof_poiss, nmax=10)
+        ksg, zg = z_n_gauss_all(prof, err, nmax=10)
+        assert np.allclose(zg, zp, rtol=0.01)
+
+        mg, hg = htest(prof, err=err, datatype="gauss", nmax=10)
+        mp, hp = htest(prof_poiss, datatype="binned", nmax=10)
+
+        assert np.isclose(hg, hp)
+        assert np.isclose(mg, mp)
+        assert np.isclose(hg + 4 * mg - 4,
+                          z_n(prof, n=mg, err=err, datatype="gauss"))
+
+    def test_wrong_args_H_datatype(self):
+        with pytest.raises(ValueError) as excinfo:
+            htest([1], 2, datatype="gibberish")
+        assert "Unknown datatype requested for htest (gibberish)" in str(excinfo.value)
+
+    def test_wrong_args_Z_datatype(self):
+        with pytest.raises(ValueError) as excinfo:
+            z_n([1], 2, datatype="gibberish")
+        assert "Unknown datatype requested for Z_n (gibberish)" in str(excinfo.value)
+
+    def test_wrong_args_H_gauss_noerr(self):
+        with pytest.raises(ValueError) as excinfo:
+            htest([1], 2, datatype="gauss")
+        assert "If datatype='gauss', you need to " in str(excinfo.value)
+
+    def test_wrong_args_Z_gauss_noerr(self):
+        with pytest.raises(ValueError) as excinfo:
+            z_n([1], 2, datatype="gauss")
+        assert "If datatype='gauss', you need to " in str(excinfo.value)

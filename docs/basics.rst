@@ -3,7 +3,7 @@ The basics about Stingray and astrophysics clarified
 ####################################################
 
 1. What does Stingray do?
-==========================
+=========================
 
 Stingray is a community-developed spectral-timing software package in Python for astrophysical data. It provides a basis for advanced spectral-timing analysis with a correct statistical framework while also being open-source.
 
@@ -121,7 +121,7 @@ Let's first understand the concept of spectral density which we have mentioned.
 |
 
 References
-***********
+==========
 
 .. [#f1] http://web.stanford.edu/class/earthsys214/notes/series.html
 .. [#f2] https://www.investopedia.com/terms/t/timeseries.asp
