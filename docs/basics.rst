@@ -121,7 +121,7 @@ Let's first understand the concept of spectral density which we have mentioned.
 |
 
 References
-**********
+==========
 
 .. [#f1] http://web.stanford.edu/class/earthsys214/notes/series.html
 .. [#f2] https://www.investopedia.com/terms/t/timeseries.asp
