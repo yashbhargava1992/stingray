@@ -417,7 +417,7 @@ def read_header_key(fits_file, key, hdu=1):
         The value stored under ``key`` in ``fits_file``
     """
 
-    hdulist = fits.open(fits_file)
+    hdulist = fits.open(fits_file, ignore_missing_end=True)
     try:
         value = hdulist[hdu].header[key]
     except:  # pragma: no cover
@@ -450,7 +450,7 @@ def ref_mjd(fits_file, hdu=1):
         fits_file = fits_file[0]
         logging.info("opening %s" % fits_file)
 
-    hdulist = fits.open(fits_file)
+    hdulist = fits.open(fits_file, ignore_missing_end=True)
 
     ref_mjd_val = high_precision_keyword_read(hdulist[hdu].header, "MJDREF")
 
@@ -896,7 +896,7 @@ def _retrieve_fits_object(filename, **kwargs):
     else:
         cols = []
 
-    with fits.open(filename, memmap=False) as hdulist:
+    with fits.open(filename, memmap=False, ignore_missing_end=True) as hdulist:
         fits_cols = []
 
         # Get columns from all tables
