@@ -8,11 +8,15 @@ from collections.abc import Iterable
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
+from astropy.logger import AstropyUserWarning
 
 import stingray.utils as utils
 
-from .gti import _get_gti_from_extension, load_gtis
 from .utils import assign_value_if_none, is_string, order_list_of_arrays
+from .gti import get_gti_from_all_extensions, load_gtis
+
+# Python 3
+import pickle
 
 _H5PY_INSTALLED = True
 
@@ -22,9 +26,66 @@ except ImportError:
     _H5PY_INSTALLED = False
 
 
+def rough_calibration(pis, mission):
+    """Make a rough conversion betwenn PI channel and energy.
+
+    Only works for NICER, NuSTAR, and XMM.
+
+    Parameters
+    ----------
+    pis: float or array of floats
+        PI channels in data
+    mission: str
+        Mission name
+
+    Returns
+    -------
+    energies : float or array of floats
+        Energy values
+
+    Examples
+    --------
+    >>> rough_calibration(0, 'nustar')
+    1.6
+    >>> # It's case-insensitive
+    >>> rough_calibration(1200, 'XMm')
+    1.2
+    >>> rough_calibration(10, 'asDf')
+    Traceback (most recent call last):
+        ...
+    ValueError: Mission asdf not recognized
+    >>> rough_calibration(100, 'nicer')
+    1.0
+    """
+    if mission.lower() == "nustar":
+        return pis * 0.04 + 1.6
+    elif mission.lower() == "xmm":
+        return pis * 0.001
+    elif mission.lower() == "nicer":
+        return pis * 0.01
+    raise ValueError(f"Mission {mission.lower()} not recognized")
+
+
 def get_file_extension(fname):
-    """Get the extension from the file name."""
-    return os.path.splitext(fname)[1]
+    """Get the extension from the file name.
+
+    If g-zipped, add '.gz' to extension.
+
+    Examples
+    --------
+    >>> get_file_extension('ciao.tar')
+    '.tar'
+    >>> get_file_extension('ciao.tar.gz')
+    '.tar.gz'
+    >>> get_file_extension('ciao.evt.gz')
+    '.evt.gz'
+    >>> get_file_extension('ciao.a.tutti.evt.gz')
+    '.evt.gz'
+    """
+    fname_root = fname.replace('.gz', '')
+    fname_root = os.path.splitext(fname_root)[0]
+
+    return fname.replace(fname_root, '')
 
 
 def high_precision_keyword_read(hdr, keyword):
@@ -82,46 +143,108 @@ def _get_additional_data(lctable, additional_columns):
     return additional_data
 
 
-def load_events_and_gtis(fits_file, additional_columns=None,
-                         gtistring='GTI,STDGTI',
-                         gti_file=None, hduname='EVENTS', column='TIME'):
+def _get_detector_id(lctable):
+    """Multi-mission detector id finder.
 
+    Given a FITS table, look for known columns containing detector ID numbers.
+    This is relevant to a few missions, like XMM, Chandra, XTE.
+
+    Examples
+    --------
+    >>> from astropy.io import fits
+    >>> import numpy as np
+    >>> a = fits.Column(name='CCDNR', array=np.array([1, 2]), format='K')
+    >>> t = fits.TableHDU.from_columns([a])
+    >>> det_id1 = _get_detector_id(t.data)
+    >>> a = fits.Column(name='pcuid', array=np.array([1, 2]), format='K')
+    >>> t = fits.TableHDU.from_columns([a])
+    >>> det_id2 = _get_detector_id(t.data)
+    >>> np.all(det_id1 == det_id2)
+    True
+    >>> a = fits.Column(name='asdfasdf', array=np.array([1, 2]), format='K')
+    >>> t = fits.TableHDU.from_columns([a])
+    >>> _get_detector_id(t.data) is None
+    True
+    """
+    for column in ["CCDNR", "ccd_id", "PCUID"]:  # XMM  # Chandra  # XTE
+        for name in lctable.columns.names:
+            if column.lower() == name.lower():
+                return np.array(lctable.field(name), dtype=np.int)
+
+    return None
+
+
+def load_events_and_gtis(
+    fits_file,
+    additional_columns=None,
+    gtistring="GTI,GTI0,STDGTI",
+    gti_file=None,
+    hduname="EVENTS",
+    column="TIME",
+):
     """Load event lists and GTIs from one or more files.
 
-    Loads event list from HDU EVENTS of file ``fits_file``, with Good Time
+    Loads event list from HDU EVENTS of file fits_file, with Good Time
     intervals. Optionally, returns additional columns of data from the same
     HDU of the events.
 
     Parameters
     ----------
     fits_file : str
-        The file name and absolute path to the event file.
 
-    return_limits: bool, optional
-        Return the ``TSTART`` and ``TSTOP`` keyword values
-
+    Other parameters
+    ----------------
     additional_columns: list of str, optional
         A list of keys corresponding to the additional columns to extract from
-        the event HDU (ex.: ``['PI', 'X']``)
+        the event HDU (ex.: ['PI', 'X'])
+    gtistring : str
+        Comma-separated list of accepted GTI extensions (default GTI,STDGTI),
+        with or without appended integer number denoting the detector
+    gti_file : str, default None
+        External GTI file
+    hduname : str, default 'EVENTS'
+        Name of the HDU containing the event list
+    return_limits: bool, optional
+        Return the TSTART and TSTOP keyword values
 
     Returns
     -------
-    ev_list : array-like
-        An array of time stamps of events
-
-    gtis: list of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
-        Good Time Intervals
-
-    additional_data: dict
-        A dictionary, where each key is the one specified in ``additional_colums``.
-        The data are an array with the values of the specified column in the
-        fits file.
-    t_start, t_stop : float
-        Start and stop times of the observation
+    retvals : Object with the following attributes:
+        ev_list : array-like
+            Event times in Mission Epoch Time
+        gti_list: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            GTIs in Mission Epoch Time
+        additional_data: dict
+            A dictionary, where each key is the one specified in additional_colums.
+            The data are an array with the values of the specified column in the
+            fits file.
+        t_start : float
+            Start time in Mission Epoch Time
+        t_stop : float
+            Stop time in Mission Epoch Time
+        pi_list : array-like
+            Raw Instrument energy channels
+        cal_pi_list : array-like
+            Calibrated PI channels (those that can be easily converted to energy
+            values, regardless of the instrument setup.)
+        energy_list : array-like
+            Energy of each photon in keV (only for NuSTAR, NICER, XMM)
+        instr : str
+            Name of the instrument (e.g. EPIC-pn or FPMA)
+        mission : str
+            Name of the instrument (e.g. XMM or NuSTAR)
+        mjdref : float
+            MJD reference time for the mission
+        header : str
+            Full header of the FITS file, for debugging purposes
+        detector_id : array-like, int
+            Detector id for each photon (e.g. each of the CCDs composing XMM's or
+            Chandra's instruments)
     """
+    from astropy.io import fits as pf
 
-    gtistring = assign_value_if_none(gtistring, 'GTI,STDGTI')
-    lchdulist = fits.open(fits_file)
+    gtistring = assign_value_if_none(gtistring, "GTI,GTI0,STDGTI")
+    lchdulist = pf.open(fits_file)
 
     # Load data table
     try:
@@ -129,44 +252,67 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     except KeyError:  # pragma: no cover
         logging.warning('HDU %s not found. Trying first extension' % hduname)
         lctable = lchdulist[1].data
+        hduname = 1
 
     # Read event list
     ev_list = np.array(lctable.field(column), dtype=np.longdouble)
-
+    detector_id = _get_detector_id(lctable)
+    det_number = None if detector_id is None else list(set(detector_id))
+    header = lchdulist[1].header
     # Read TIMEZERO keyword and apply it to events
     try:
-        timezero = np.longdouble(lchdulist[1].header['TIMEZERO'])
+        timezero = np.longdouble(header["TIMEZERO"])
     except KeyError:  # pragma: no cover
-        logging.warning("No TIMEZERO in file")
-        timezero = np.longdouble(0.)
+        timezero = np.longdouble(0.0)
+
+    instr = mission = 'unknown'
+    if "INSTRUME" in header:
+        instr = header["INSTRUME"].lower()
+    if "TELESCOP" in header:
+        mission = header["TELESCOP"].strip().lower()
 
     ev_list += timezero
 
     # Read TSTART, TSTOP from header
     try:
-        t_start = np.longdouble(lchdulist[1].header['TSTART'])
-        t_stop = np.longdouble(lchdulist[1].header['TSTOP'])
+        t_start = np.longdouble(header["TSTART"])
+        t_stop = np.longdouble(header["TSTOP"])
     except KeyError:  # pragma: no cover
-        logging.warning("Tstart and Tstop error. using defaults")
+        warnings.warn(
+            "Tstart and Tstop error. using defaults", AstropyUserWarning
+        )
         t_start = ev_list[0]
         t_stop = ev_list[-1]
 
+    mjdref = np.longdouble(high_precision_keyword_read(header, "MJDREF"))
+
     # Read and handle GTI extension
-    accepted_gtistrings = gtistring.split(',')
+    accepted_gtistrings = gtistring.split(",")
 
     if gti_file is None:
         # Select first GTI with accepted name
         try:
-            gti_list = \
-                _get_gti_from_extension(
-                    lchdulist, accepted_gtistrings=accepted_gtistrings)
-        except KeyError:  # pragma: no cover
-            warnings.warn("No extensions found with a valid name. "
-                          "Please check the `accepted_gtistrings` values.")
-            gti_list = np.array([[t_start, t_stop]],
-                                dtype=np.longdouble)
+            gti_list = get_gti_from_all_extensions(
+                lchdulist,
+                accepted_gtistrings=accepted_gtistrings,
+                det_numbers=det_number,
+            )
+        except Exception:  # pragma: no cover
+            warnings.warn(
+                "No extensions found with a valid name. "
+                "Please check the `accepted_gtistrings` values.",
+                AstropyUserWarning,
+            )
+            gti_list = np.array([[t_start, t_stop]], dtype=np.longdouble)
     else:
         gti_list = load_gtis(gti_file, gtistring)
+
+    if additional_columns is None:
+        additional_columns = ["PI"]
+    if "PI" not in additional_columns:
+        additional_columns.append("PI")
+    if "PHA" not in additional_columns and mission.lower() in ["swift", "xmm"]:
+        additional_columns.append("PHA")
 
     additional_data = _get_additional_data(lctable, additional_columns)
 
@@ -175,20 +321,46 @@ def load_events_and_gtis(fits_file, additional_columns=None,
     # Sort event list
     order = np.argsort(ev_list)
     ev_list = ev_list[order]
+    if detector_id is not None:
+        detector_id = detector_id[order]
 
     additional_data = order_list_of_arrays(additional_data, order)
 
-    returns = EvtData()
+    pi = additional_data["PI"].astype(np.float32)
+    cal_pi = pi
+
+    if mission.lower() in ["xmm", "swift"]:
+        pi = additional_data["PHA"].astype(np.float32)
+        cal_pi = additional_data["PI"]
+        # additional_data.pop("PHA")
+
+    # additional_data.pop("PI")
+    # EventReadOutput() is an empty class. We will assign a number of attributes to
+    # it, like the arrival times of photons, the energies, and some information
+    # from the header.
+    returns = EventReadOutput()
+
     returns.ev_list = ev_list
     returns.gti_list = gti_list
+    returns.pi_list = pi
+    returns.cal_pi_list = cal_pi
+    try:
+        returns.energy_list = rough_calibration(cal_pi, mission)
+    except ValueError:
+        returns.energy_list = None
+    returns.instr = instr
+    returns.mission = mission
+    returns.mjdref = mjdref
+    returns.header = header.tostring()
     returns.additional_data = additional_data
     returns.t_start = t_start
     returns.t_stop = t_stop
+    returns.detector_id = detector_id
 
     return returns
 
 
-class EvtData():
+class EventReadOutput():
     def __init__(self):
         pass
 
@@ -238,7 +410,7 @@ def read_header_key(fits_file, key, hdu=1):
         The value stored under ``key`` in ``fits_file``
     """
 
-    hdulist = fits.open(fits_file)
+    hdulist = fits.open(fits_file, ignore_missing_end=True)
     try:
         value = hdulist[hdu].header[key]
     except KeyError:  # pragma: no cover
@@ -271,7 +443,7 @@ def ref_mjd(fits_file, hdu=1):
         fits_file = fits_file[0]
         logging.info("opening %s" % fits_file)
 
-    hdulist = fits.open(fits_file)
+    hdulist = fits.open(fits_file, ignore_missing_end=True)
 
     ref_mjd_val = high_precision_keyword_read(hdulist[hdu].header, "MJDREF")
 
@@ -717,7 +889,7 @@ def _retrieve_fits_object(filename, **kwargs):
     else:
         cols = []
 
-    with fits.open(filename, memmap=False) as hdulist:
+    with fits.open(filename, memmap=False, ignore_missing_end=True) as hdulist:
         fits_cols = []
 
         # Get columns from all tables
