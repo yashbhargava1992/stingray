@@ -1006,7 +1006,7 @@ class TestLightcurve(object):
         """
         N = len(self.times)
         lc = Lightcurve(self.times, self.counts, mission="BUBU", instr="BABA",
-                       mjdref=53467.)
+                        mjdref=53467.)
 
         ts = lc.to_astropy_timeseries()
         new_lc = lc.from_astropy_timeseries(ts)

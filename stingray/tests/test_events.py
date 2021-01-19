@@ -318,4 +318,3 @@ class TestEvents(object):
             assert np.all(getattr(ev, attr) == getattr(new_ev, attr))
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(ev, attr) == getattr(new_ev, attr)
-
