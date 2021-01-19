@@ -53,7 +53,7 @@ Citing Stingray
 Please cite `Huppenkothen et al. (2019)
 <https://arxiv.org/abs/1901.07681>`_ if you find this package useful in your
 research.
- 
+
 The BibTeX entry for the paper is::
 
     @ARTICLE{2019arXiv190107681H,
@@ -131,7 +131,7 @@ Stingray uses `py.test` for testing. To run the tests, try::
 
    $ python setup.py test
 
-If you have installed Stingray via pip or conda, the source directory might 
+If you have installed Stingray via pip or conda, the source directory might
 not be easily accessible. Once installed, you can also run the tests using::
 
    $ python -c 'import stingray; stingray.test()'
