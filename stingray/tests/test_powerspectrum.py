@@ -673,12 +673,14 @@ class TestDynamicalPowerspectrum(object):
     def setup_class(cls):
         # generate timestamps
         timestamps = np.linspace(1, 100, 10000)
+        dt = np.median(np.diff(timestamps))
         freq = 25 + 1.2 * np.sin(2 * np.pi * timestamps / 130)
         # variability signal with drifiting frequency
         vari = 25 * np.sin(2 * np.pi * freq * timestamps)
         signal = vari + 50
         # create a lightcurve
-        lc = Lightcurve(timestamps, signal, err_dist='gauss')
+        lc = Lightcurve(timestamps, signal, err_dist='gauss',
+                        dt=dt, gti=[[1 - dt/2, 100 + dt/2]])
         cls.lc = lc
 
         # Simple lc to demonstrate rebinning of dyn ps
