@@ -16,6 +16,7 @@ np.random.seed(20150907)
 
 _H5PY_INSTALLED = True
 _HAS_LIGHTKURVE = True
+_HAS_YAML = True
 
 try:
     import h5py
@@ -26,6 +27,11 @@ try:
     import Lightkurve
 except ImportError:
     _HAS_LIGHTKURVE = False
+
+try:
+    import yaml
+except ImportError:
+    _HAS_YAML = False
 
 def fvar_fun(lc):
     from stingray.utils import excess_variance
@@ -1000,6 +1006,7 @@ class TestLightcurve(object):
         assert np.all(lc2.counts == lc.counts)
         assert np.all(lc2.countrate == lc.countrate)
 
+    @pytest.skipif('not _HAS_YAML')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.

@@ -10,12 +10,16 @@ curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
 
 _H5PY_INSTALLED = True
-
+_HAS_YAML = True
 try:
     import h5py
 except ImportError:
     _H5PY_INSTALLED = False
 
+try:
+    import yaml
+except ImportError:
+    _HAS_YAML = False
 
 class TestEvents(object):
 
@@ -304,6 +308,7 @@ class TestEvents(object):
         with pytest.raises(KeyError):
             ev.read('ev.pickle', format_="unsupported")
 
+    @pytest.skipif('not _HAS_YAML')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.
