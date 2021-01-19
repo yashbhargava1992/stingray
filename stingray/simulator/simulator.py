@@ -4,9 +4,10 @@ import numbers
 from scipy import signal
 import astropy.modeling.models
 
-from stingray import Lightcurve, AveragedPowerspectrum, io, utils
-import stingray.simulator.models as models
 
+__all__ = ['Simulator']
+
+# from stingray import Lightcurve, AveragedPowerspectrum, io, utils
 
 class Simulator(object):
     """
@@ -34,7 +35,7 @@ class Simulator(object):
 
     def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
                  random_state=None, tstart=0.0):
-
+        from stingray import utils
         self.dt = dt
         self.N = N
         self.mean = mean
@@ -128,7 +129,7 @@ class Simulator(object):
         lightCurve : `LightCurve` object
 
         """
-
+        from stingray import utils
         if isinstance(args[0], (numbers.Integral, float)) and len(args) == 1:
             return  self._simulate_power_law(args[0])
 
@@ -331,7 +332,7 @@ class Simulator(object):
         -------
         lightCurve : array-like
         """
-
+        from stingray import Lightcurve
         # Define frequencies at which to compute PSD
         w = np.fft.rfftfreq(self.red_noise*self.N, d=self.dt)[1:]
 
@@ -364,7 +365,7 @@ class Simulator(object):
         -------
         lightCurve : `LightCurve` object
         """
-
+        from stingray import Lightcurve
         # Cast spectrum as numpy array
         s = np.array(s)
 
@@ -398,8 +399,9 @@ class Simulator(object):
 
         Returns
         -------
-        lightCurve : `LightCurve` object
+        lightCurve : :class:`stingray.lightcurve.LightCurve` object
         """
+        from stingray import Lightcurve
 
         # Frequencies at which the PSD is to be computed
         # (only positive frequencies, since the signal is real)
@@ -434,9 +436,10 @@ class Simulator(object):
 
         Returns
         -------
-        lightCurve : `LightCurve` object
+        lightCurve : :class:`stingray.lightcurve.LightCurve` object
         """
-
+        from . import models
+        from stingray import Lightcurve
         # Frequencies at which the PSD is to be computed
         # (only positive frequencies, since the signal is real)
         nbins = self.red_noise*self.N
@@ -488,8 +491,9 @@ class Simulator(object):
 
         Returns
         -------
-        lightCurve : `LightCurve` object
+        lightCurve : :class:`stingray.lightcurve.LightCurve` object
         """
+        from stingray import Lightcurve
         lc = signal.fftconvolve(s, h)
 
         if mode == 'same':
@@ -582,6 +586,8 @@ class Simulator(object):
             amplitudes
 
         """
+        from stingray import AveragedPowerspectrum
+
         if seg_size is None:
             seg_size = lc.tseg
 
@@ -604,9 +610,9 @@ class Simulator(object):
         -------
         object : `Simulator` object
         """
-
+        from stingray.io import read
         if format_ == 'pickle':
-            data = io.read(filename, 'pickle')
+            data = read(filename, 'pickle')
             return data
         else:
             raise KeyError("Format not supported.")
@@ -623,8 +629,8 @@ class Simulator(object):
         format_ : str
             Available options are 'pickle' and 'hdf5'.
         """
-
+        from stingray.io import write
         if format_ == 'pickle':
-            io.write(self, filename)
+            write(self, filename)
         else:
             raise KeyError("Format not supported.")
