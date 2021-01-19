@@ -13,6 +13,7 @@ try:
     HAS_PINT = True
 except ImportError:
     HAS_PINT = False
+    get_model = toa = None
 
 
 # For egg_info test builds to pass, put package imports here.

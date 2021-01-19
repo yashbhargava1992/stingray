@@ -10,6 +10,8 @@ import numpy as np
 
 from .fftfit import fftfit as taylor_fftfit
 from ..utils import simon, jit
+from . import HAS_PINT, get_model, toa
+
 
 __all__ = ['pulse_phase', 'phase_exposure', 'fold_events', 'profile_stat',
            'z_n', 'fftfit', 'get_TOA', 'z_n_binned_events', 'z_n_gauss',
