@@ -590,7 +590,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         new_dynspec_object.df = df_new
         return new_dynspec_object
 
-    def trace_maximum(self, min_freq=None, max_freq=None, sigmaclip=False):
+    def trace_maximum(self, min_freq=None, max_freq=None):
         """
         Return the indices of the maximum powers in each segment :class:`Powerspectrum`
         between specified frequencies.
