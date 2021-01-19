@@ -207,8 +207,8 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     # new regularly binned resolution
     xbin = np.arange(xedges[0], xedges[-1]+dx_new, dx_new)
 
-    output = np.zeros(xbin.shape[0] - 1, dtype=np.complex128)
-    outputerr = np.zeros(xbin.shape[0] - 1, dtype=np.complex128)
+    output = np.zeros(xbin.shape[0] - 1, dtype=type(y[0]))
+    outputerr = np.zeros(xbin.shape[0] - 1, dtype=type(y[0]))
     step_size = np.zeros(xbin.shape[0] - 1)
 
     for i in range(len(xbin)-1):
