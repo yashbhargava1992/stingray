@@ -208,7 +208,7 @@ class CrossCorrelation(object):
             self.dt = dt
 
         if self.corr is None:
-            if (self.lc1 is None or self.lc2 is None) or (self.cross is None):
+            if (self.lc1 is None or self.lc2 is None) and (self.cross is None):
                 raise StingrayError('Please provide either two lightcurve objects or \
                  a [average]crossspectrum object to calculate correlation and time_shift')
             else:
