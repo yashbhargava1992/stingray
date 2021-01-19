@@ -8,7 +8,7 @@ from ..io import read, write, split_numbers
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
 from ..io import load_events_and_gtis
-from ..io import read_header_key
+from ..io import read_header_key, _retrieve_ascii_object
 
 import warnings
 
@@ -191,6 +191,10 @@ class TestFileFormats(object):
         write(np.array([time, counts]).T,
               filename="ascii_test.txt", format_="ascii",
               fmt=["%s", "%s"])
+
+    def test_retrieve_bad(self):
+        with pytest.raises(TypeError):
+            _retrieve_ascii_object(1)
 
     def test_read_ascii(self):
         time = [1,2,3,4,5]
