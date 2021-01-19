@@ -165,6 +165,24 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     step_size: float
         The size of the binning step
+
+    Examples
+    --------
+    >>> x = np.arange(0, 100, 0.01)
+    >>> y = np.ones(x.size)
+    >>> yerr = np.ones(x.size)
+    >>> xbin, ybin, ybinerr, step_size = rebin_data(
+    ...     x, y, 4, yerr=yerr, method='sum')
+    >>> np.allclose(ybin, 400)
+    True
+    >>> np.allclose(ybinerr, 20)
+    True
+    >>> xbin, ybin, ybinerr, step_size = rebin_data(
+    ...     x, y, 4, yerr=yerr, method='mean')
+    >>> np.allclose(ybin, 1)
+    True
+    >>> np.allclose(ybinerr, 0.05)
+    True
     """
 
     y = np.asarray(y)
@@ -172,8 +190,10 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     if not dx:
         dx_old = np.diff(x)
-    else:
+    elif np.size(dx) == 1:
         dx_old = np.array([dx])
+    else:
+        dx_old = dx
 
     if np.any(dx_new < dx_old):
         raise ValueError("New frequency resolution must be larger than "
@@ -187,8 +207,8 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     # new regularly binned resolution
     xbin = np.arange(xedges[0], xedges[-1]+dx_new, dx_new)
 
-    output = np.zeros(xbin.shape[0] - 1)
-    outputerr = np.zeros(xbin.shape[0] - 1)
+    output = np.zeros(xbin.shape[0] - 1, dtype=np.complex128)
+    outputerr = np.zeros(xbin.shape[0] - 1, dtype=np.complex128)
     step_size = np.zeros(xbin.shape[0] - 1)
 
     for i in range(len(xbin)-1):
