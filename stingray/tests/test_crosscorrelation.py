@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.fftpack
 
 import pytest
 import warnings
