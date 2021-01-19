@@ -8,6 +8,4 @@ from .._astropy_init import *
 
 # For egg_info test builds to pass, put package imports here.
 if not _ASTROPY_SETUP_:
-    from stingray.lightcurve import *
-    from stingray.utils import *
-    from stingray.powerspectrum import *
+    from stingray.simulator.simulator import *
