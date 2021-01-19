@@ -519,12 +519,15 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def _make_matrix(self, lc):
         """
-        Create a matrix of powers for each time step (rows) and each frequency step (columns).
+        Create a matrix of powers for each time step and each frequency step.
+
+        Time increases with row index, frequency with column index.
 
         Parameters
         ----------
         lc : :class:`Lightcurve` object
-            The :class:`Lightcurve` object from which to generate the dynamical power spectrum
+            The :class:`Lightcurve` object from which to generate the dynamical
+            power spectrum
         """
         ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
             self, lc, self.segment_size)
