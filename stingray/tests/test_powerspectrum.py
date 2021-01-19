@@ -216,6 +216,12 @@ class TestPowerspectrum(object):
         std_lc = np.var(self.lc.counts) / np.mean(self.lc.counts) ** 2
         assert np.isclose(ps_int, std_lc, atol=0.01, rtol=0.01)
 
+    def test_compute_rms_wrong_norm(self):
+        ps = Powerspectrum(self.lc)
+        ps.norm = 'gibberish'
+        with pytest.raises(TypeError):
+            ps.compute_rms(0, 10)
+
     def test_fractional_rms_in_frac_norm_is_consistent(self):
         time = np.arange(0, 100, 1) + 0.5
 
