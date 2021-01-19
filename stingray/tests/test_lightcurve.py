@@ -913,11 +913,19 @@ class TestLightcurve(object):
         lc.plot(title="Test Lightcurve")
         assert plt.fignum_exists(1)
 
+    # def test_io_with_ascii(self):
+    #     lc = Lightcurve(self.times, self.counts)
+    #     lc.write('ascii_lc.txt', format_='ascii')
+    #     lc.read('ascii_lc.txt', format_='ascii')
+    #     os.remove('ascii_lc.txt')
+
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write('ascii_lc.txt', format_='ascii')
-        lc.read('ascii_lc.txt', format_='ascii')
-        os.remove('ascii_lc.txt')
+        lc.write('ascii_lc.ecsv', format_='ascii')
+        lc = lc.read('ascii_lc.ecsv', format_='ascii')
+        assert np.all(lc.time == self.times)
+        assert np.all(lc.counts == self.counts)
+        os.remove('ascii_lc.ecsv')
 
     def test_io_with_pickle(self):
         lc = Lightcurve(self.times, self.counts)
@@ -991,6 +999,21 @@ class TestLightcurve(object):
         lc2 = lc.shift(1)
         assert np.all(lc2.counts == lc.counts)
         assert np.all(lc2.countrate == lc.countrate)
+
+    def test_timeseries_roundtrip(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.times)
+        lc = Lightcurve(self.times, self.counts, mission="BUBU", instr="BABA",
+                       mjdref=53467.)
+
+        ts = lc.to_astropy_timeseries()
+        new_lc = lc.from_astropy_timeseries(ts)
+        for attr in ['time', 'gti', 'counts']:
+            assert np.all(getattr(lc, attr) == getattr(new_lc, attr))
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(lc, attr) == getattr(new_lc, attr)
 
 
 class TestLightcurveRebin(object):

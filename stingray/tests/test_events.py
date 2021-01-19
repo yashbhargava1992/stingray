@@ -250,13 +250,12 @@ class TestEvents(object):
                 np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert np.allclose(ev_new.gti, np.array([[5, 6]]))
 
-    @pytest.mark.xfail
     def test_io_with_ascii(self):
         ev = EventList(self.time)
-        ev.write('ascii_ev.txt', format_='ascii')
-        ev = ev.read('ascii_ev.txt', format_='ascii')
+        ev.write('ascii_ev.ecsv', format_='ascii')
+        ev = ev.read('ascii_ev.ecsv', format_='ascii')
         assert np.all(ev.time == self.time)
-        os.remove('ascii_ev.txt')
+        os.remove('ascii_ev.ecsv')
 
     def test_io_with_pickle(self):
         ev = EventList(self.time)
@@ -304,3 +303,19 @@ class TestEvents(object):
 
         with pytest.raises(KeyError):
             ev.read('ev.pickle', format_="unsupported")
+
+    def test_timeseries_roundtrip(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.time)
+        ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),
+                       pi=np.ones(N), mission="BUBU", instr="BABA",
+                       mjdref=53467.)
+        ts = ev.to_astropy_timeseries()
+        new_ev = ev.from_astropy_timeseries(ts)
+        for attr in ['time', 'energy', 'pi', 'gti']:
+            assert np.all(getattr(ev, attr) == getattr(new_ev, attr))
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
+
