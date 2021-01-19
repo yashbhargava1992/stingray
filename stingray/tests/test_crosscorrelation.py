@@ -5,6 +5,7 @@ import warnings
 import os
 
 from stingray import Lightcurve
+from stingray import Crossspectrum
 from stingray.crosscorrelation import CrossCorrelation, AutoCorrelation
 from stingray.exceptions import StingrayError
 
