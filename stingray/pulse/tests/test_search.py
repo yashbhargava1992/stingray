@@ -1,8 +1,8 @@
 
-from stingray.pulse.search import epoch_folding_search, z_n_search
-from stingray.pulse.search import _profile_fast, phaseogram, plot_phaseogram
-from stingray.pulse.search import plot_profile
-from stingray.pulse.pulsar import fold_events
+from stingray.pulse import epoch_folding_search, z_n_search
+from stingray.pulse import _profile_fast, phaseogram, plot_phaseogram
+from stingray.pulse import plot_profile
+from stingray.pulse import fold_events
 import numpy as np
 from stingray import Lightcurve
 from stingray.events import EventList

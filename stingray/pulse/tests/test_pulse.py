@@ -1,10 +1,10 @@
 import numpy as np
-from stingray.pulse.pulsar import fold_events, get_TOA, phase_exposure
-from stingray.pulse.pulsar import profile_stat, z_n, pulse_phase
-from stingray.pulse.pulsar import z_n, z_n_events, z_n_binned_events, z_n_gauss, htest
-from stingray.pulse.pulsar import z_n_events_all, z_n_binned_events_all, z_n_gauss_all
-from stingray.pulse.pulsar import get_orbital_correction_from_ephemeris_file
-from stingray.pulse.pulsar import HAS_PINT
+from stingray.pulse import fold_events, get_TOA, phase_exposure
+from stingray.pulse import profile_stat, z_n, pulse_phase
+from stingray.pulse import z_n, z_n_events, z_n_binned_events, z_n_gauss, htest
+from stingray.pulse import z_n_events_all, z_n_binned_events_all, z_n_gauss_all
+from stingray.pulse import get_orbital_correction_from_ephemeris_file
+from stingray.pulse import HAS_PINT
 from astropy.tests.helper import remote_data
 import pytest
 import os
