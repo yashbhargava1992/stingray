@@ -79,7 +79,7 @@ class TestCrossCorrelation(object):
 
     def test_crossparam_input(self):
         # need to create new results to check against
-        spec = Crossspectrum(self.lc1, self.lc2)
+        spec = Crossspectrum(self.lc1, self.lc2, fullspec=True)
         ifft = abs(scipy.fft.ifft(spec.power).real)
         time = scipy.fft.fftfreq(len(ifft), spec.df)
         time, resultifft = (list(t) for t in zip(*sorted(zip(time, ifft))))
