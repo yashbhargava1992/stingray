@@ -1006,7 +1006,7 @@ class TestLightcurve(object):
         assert np.all(lc2.counts == lc.counts)
         assert np.all(lc2.countrate == lc.countrate)
 
-    @pytest.skipif('not _HAS_YAML')
+    @pytest.mark.skipif('not _HAS_YAML')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.
