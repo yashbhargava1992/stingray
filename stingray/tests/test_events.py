@@ -2,6 +2,7 @@
 import numpy as np
 import os
 import pytest
+from astropy.time import Time
 
 from ..events import EventList
 from ..lightcurve import Lightcurve
@@ -27,6 +28,22 @@ class TestEvents(object):
         self.spectrum = [[1, 2, 3, 4, 5, 6],
                          [1000, 2040, 1000, 3000, 4020, 2070]]
         self.gti = np.asarray([[0, 4]])
+
+    def test_initiate_from_ndarray(self):
+        times = np.sort(
+            np.random.uniform(1e8, 1e8 + 1000, 101).astype(np.longdouble))
+        ev = EventList(times, mjdref=54600)
+        assert np.allclose(ev.time, times, atol=1e-15)
+        assert np.allclose(ev.mjdref, 54600)
+
+    def test_initiate_from_astropy_time(self):
+        times = np.sort(
+            np.random.uniform(1e8, 1e8 + 1000, 101).astype(np.longdouble))
+        mjdref = 54600
+        mjds = Time(mjdref + times / 86400, format='mjd')
+        ev = EventList(mjds, mjdref=mjdref)
+        assert np.allclose(ev.time, times, atol=1e-15)
+        assert np.allclose(ev.mjdref, mjdref)
 
     def test_create_high_precision_object(self):
         times = np.sort(

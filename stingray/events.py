@@ -15,7 +15,7 @@ from .filters import get_deadtime_mask
 from .gti import append_gtis, check_separate, cross_gtis
 from .io import read, write
 from .lightcurve import Lightcurve
-from .utils import assign_value_if_none, simon
+from .utils import assign_value_if_none, simon, interpret_times
 
 __all__ = ['EventList']
 
@@ -97,6 +97,7 @@ class EventList(object):
         self.ncounts = ncounts
 
         if time is not None:
+            time, mjdref = interpret_times(time, mjdref)
             if not high_precision:
                 self.time = np.asarray(time)
             else:
