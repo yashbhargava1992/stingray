@@ -27,6 +27,7 @@ except ImportError:
     use_corner = False
 
 import logging
+from multiprocessing import Pool
 
 import numpy as np
 import scipy
@@ -558,7 +559,7 @@ class ParameterEstimation(object):
 
     def sample(self, lpost, t0, cov=None,
                nwalkers=500, niter=100, burnin=100, threads=1,
-               print_results=True, plot=False, namestr="test"):
+               print_results=True, plot=False, namestr="test", pool=False):
         """
         Sample the :class:`Posterior` distribution defined in ``lpost`` using MCMC.
         Here we use the ``emcee`` package, but other implementations could
@@ -592,9 +593,12 @@ class ParameterEstimation(object):
             before sampling from what is then assumed to be the posterior
             distribution desired.
 
-        threads : int, optional, default 1
+        threads : **DEPRECATED** int, optional, default 1
             The number of threads for parallelization.
             Default is ``1``, i.e. no parallelization
+            With the change to the new emcee version 3, threads is 
+            deprecated. Use the `pool` keyword argument instead.
+            This will no longer have any effect.
 
         print_results : bool, optional, default ``True``
             Boolean flag setting whether the results of the MCMC run should
@@ -607,6 +611,9 @@ class ParameterEstimation(object):
         namestr : str, optional, default ``test``
             Optional string for output file names for the plotting.
 
+        pool : bool, default False
+            If True, use pooling to parallelize the operation.
+
         Returns
         -------
 
@@ -615,6 +622,10 @@ class ParameterEstimation(object):
             results of the MCMC run.
 
         """
+
+        if threads > 1 :
+            raise DeprecationWarning("Keyword 'threads' is deprecated. Please use 'pool' instead.")
+
         if not can_sample:
             raise ImportError("emcee not installed! Can't sample!")
 
@@ -629,18 +640,32 @@ class ParameterEstimation(object):
         # a multivariate Gaussian
         p0 = np.array([np.random.multivariate_normal(t0, cov) for
                        i in range(nwalkers)])
+        if pool:
+            with Pool() as pooling:
 
-        # initialize the sampler
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False],
-                                        threads=threads)
+                # initialize the sampler
+                sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False],
+                                                pool=pooling)
+    
+                # run the burn-in
+                pos, prob, state = sampler.run_mcmc(p0, burnin)
+    
+                sampler.reset()
+    
+                # do the actual MCMC run
+                _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
 
-        # run the burn-in
-        pos, prob, state = sampler.run_mcmc(p0, burnin)
+        else:
+            # initialize the sampler
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False])
 
-        sampler.reset()
+            # run the burn-in
+            pos, prob, state = sampler.run_mcmc(p0, burnin)
 
-        # do the actual MCMC run
-        _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
+            sampler.reset()
+
+            # do the actual MCMC run
+            _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
 
         res = SamplingResults(sampler)
 
@@ -929,13 +954,14 @@ class SamplingResults(object):
     def __init__(self, sampler, ci_min=5, ci_max=95):
 
         # store all the samples
-        self.samples = sampler.flatchain
+        self.samples = sampler.get_chain(flat=True)
 
-        self.nwalkers = np.float(sampler.chain.shape[0])
-        self.niter = np.float(sampler.chain.shape[1])
+        chain_dims = sampler.get_chain().shape
+        self.nwalkers = np.float(chain_dims[0])
+        self.niter = np.float(chain_dims[1])
 
         # store number of dimensions
-        self.ndim = sampler.chain.shape[2]
+        self.ndim = chain_dims[2]
 
         # compute and store acceptance fraction
         self.acceptance = np.nanmean(sampler.acceptance_fraction)
@@ -966,7 +992,7 @@ class SamplingResults(object):
 
         # compute and store autocorrelation time
         try:
-            self.acor = sampler.acor
+            self.acor = sampler.get_autocorr_time()
         except emcee.autocorr.AutocorrError:
             logging.info("Chains too short to compute autocorrelation lengths.")
 
@@ -985,11 +1011,12 @@ class SamplingResults(object):
         .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
 
         """
+        chain = sampler.get_chain()
         # between-sequence variance
-        mean_samples_iter = np.nanmean(sampler.chain, axis=1)
+        mean_samples_iter = np.nanmean(chain, axis=1)
 
         # mean over the means over iterations: (self.ndim)
-        mean_samples = np.nanmean(sampler.chain, axis=(0,1))
+        mean_samples = np.nanmean(chain, axis=(0,1))
 
         # now compute between-sequence variance
         bb = (self.niter / (self.nwalkers - 1)) * np.sum((mean_samples_iter -
@@ -997,7 +1024,7 @@ class SamplingResults(object):
                                                          axis=0)
 
         # compute variance of each chain
-        var_samples = np.nanvar(sampler.chain, axis=1)
+        var_samples = np.nanvar(chain, axis=1)
 
         # compute mean of variance
         ww = np.nanmean(var_samples, axis=0)
@@ -1441,7 +1468,7 @@ class PSDParEst(ParameterEstimation):
                                   nsim=1000, niter=200, nwalkers=500,
                                   burnin=200, namestr="test", seed=None):
 
-        """
+        r"""
         Calibrate the highest outlier in a data set using MCMC-simulated
         power spectra.
 
@@ -1519,7 +1546,6 @@ class PSDParEst(ParameterEstimation):
 
             * Vaughan, 2010: https://arxiv.org/abs/0910.2706
             * Huppenkothen et al, 2013: https://arxiv.org/abs/1212.1011
-
         """
         # fit the model to the data
         res = self.fit(lpost, t0, neg=True)
@@ -1567,7 +1593,7 @@ class PSDParEst(ParameterEstimation):
 
     def simulate_highest_outlier(self, s_all, lpost, t0, max_post=True,
                                  seed=None):
-        """
+        r"""
         Simulate :math:`n` power spectra from a model and then find the highest
         data/model outlier in each.
 
@@ -1609,7 +1635,6 @@ class PSDParEst(ParameterEstimation):
         -------
         max_y_all : numpy.ndarray
             An array of maximum outliers for each simulated power spectrum
-
         """
         # the number of simulations
         nsim = s_all.shape[0]
@@ -1650,7 +1675,7 @@ class PSDParEst(ParameterEstimation):
         return np.hstack(max_y_all)
 
     def _compute_highest_outlier(self, lpost, res, nmax=1):
-        """
+        r"""
         Auxiliary method calculating the highest outlier statistic in
         a power spectrum.
 
@@ -1687,7 +1712,6 @@ class PSDParEst(ParameterEstimation):
 
         max_ind : {int | numpy.ndarray}
             The indices corresponding to the outliers in ``max_y``
-
         """
         residuals = 2.0 * lpost.y/ res.mfit
 

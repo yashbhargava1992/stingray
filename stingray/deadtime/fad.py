@@ -206,7 +206,7 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
                 smoothing_alg))
 
         if plot:
-            ax.scatter(freq, fourier_diff, s=1)
+            ax.scatter(freq, fourier_diff.real, s=1)
 
         p1 = (f1 * f1.conj()).real
         p1 = p1 / smooth_real * 2
@@ -231,8 +231,8 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
 
         if n == 0 and plot:
             ax.plot(freq, smooth_real, zorder=10, lw=3)
-            ax.plot(freq, f1_leahy, zorder=5, lw=1)
-            ax.plot(freq, f2_leahy, zorder=5, lw=1)
+            ax.plot(freq, f1_leahy.real, zorder=5, lw=1)
+            ax.plot(freq, f2_leahy.real, zorder=5, lw=1)
 
         ptot += power_tot
         pds1 += power1

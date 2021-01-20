@@ -130,7 +130,8 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     Parameters
     ----------
     x: iterable
-        The dependent variable with some resolution ``dx_old = x[1]-x[0]``
+        The dependent variable with some resolution, which can vary throughout 
+        the time series.
 
     y: iterable
         The independent variable to be binned
@@ -148,7 +149,8 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         each new bin of ``x``, or take the arithmetic mean.
 
     dx: float
-        The old resolution (otherwise, calculated from median diff)
+        The old resolution (otherwise, calculated from difference between 
+        time bins)
 
     Returns
     -------
@@ -186,63 +188,82 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     y = np.asarray(y)
     yerr = np.asarray(apply_function_if_none(yerr, y, np.zeros_like))
 
-    dx_old = apply_function_if_none(dx, np.diff(x), np.median)
+    if not dx:
+        dx_old = np.diff(x)
+    elif np.size(dx) == 1:
+        dx_old = np.array([dx])
+    else:
+        dx_old = dx
 
-    if dx_new < dx_old:
+    if np.any(dx_new < dx_old):
         raise ValueError("New frequency resolution must be larger than "
                          "old frequency resolution.")
 
-    step_size = dx_new / dx_old
+    # left and right bin edges
+    # assumes that the points given in `x` correspond to 
+    # the left bin edges
+    xedges = np.hstack([x, x[-1]+dx_old[-1]])
 
-    output = []
-    outputerr = []
-    for i in np.arange(0, y.shape[0], step_size):
-        total = 0
-        totalerr = 0
+    # new regularly binned resolution
+    xbin = np.arange(xedges[0], xedges[-1]+dx_new, dx_new)
 
-        int_i = int(i)
-        prev_frac = int_i + 1 - i
-        prev_bin = int_i
-        total += prev_frac * y[prev_bin]
-        totalerr += prev_frac * (yerr[prev_bin] ** 2)
+    output = np.zeros(xbin.shape[0] - 1, dtype=type(y[0]))
+    outputerr = np.zeros(xbin.shape[0] - 1, dtype=type(y[0]))
+    step_size = np.zeros(xbin.shape[0] - 1)
 
-        if i + step_size < len(x):
-            # Fractional part of next bin:
-            next_frac = i + step_size - int(i + step_size)
-            next_bin = int(i + step_size)
-            total += next_frac * y[next_bin]
-            totalerr += next_frac * (yerr[next_bin] ** 2)
+    for i in range(len(xbin)-1):
 
-        total += sum(y[int(i + 1):int(i + step_size)])
-        totalerr += sum(yerr[int(i + 1):int(i + step_size)] ** 2)
-        output.append(total)
-        outputerr.append(np.sqrt(totalerr))
+        xmin = xbin[i]
+        xmax = xbin[i+1]
+        min_ind = xedges.searchsorted(xmin)
+        max_ind = xedges.searchsorted(xmax)
+        
+        output[i] = np.sum(y[min_ind:max_ind-1])
+        outputerr[i] = np.sum(yerr[min_ind:max_ind-1])
+        step_size[i] = len(y[min_ind:max_ind-1])
 
-    output = np.asarray(output)
-    outputerr = np.asarray(outputerr)
+        prev_dx = xedges[min_ind] - xedges[min_ind-1]
+        prev_frac = (xedges[min_ind] - xmin)/prev_dx
+        output[i] += y[min_ind-1]*prev_frac
+        outputerr[i] += yerr[min_ind-1]*prev_frac
+        step_size[i] += prev_frac
 
+        if not max_ind == len(xedges):
+            dx_post = xedges[max_ind] - xedges[max_ind-1]
+            post_frac = (xmax-xedges[max_ind-1])/dx_post
+            output[i] += y[max_ind-1]*post_frac
+            outputerr[i] += yerr[max_ind-1]*post_frac
+            step_size[i] += post_frac
+        
     if method in ['mean', 'avg', 'average', 'arithmetic mean']:
-        ybin = output / np.float(step_size)
-        ybinerr = outputerr / np.float(step_size)
+        ybin = output / step_size
+        ybinerr = np.sqrt(outputerr) / step_size
 
     elif method == "sum":
         ybin = output
-        ybinerr = outputerr
+        ybinerr = np.sqrt(outputerr)
 
     else:
         raise ValueError("Method for summing or averaging not recognized. "
                          "Please enter either 'sum' or 'mean'.")
 
-    tseg = x[-1] - x[0] + dx_old
+    tseg = x[-1] - x[0] + dx_old[-1]
 
     if (tseg / dx_new % 1) > 0:
         ybin = ybin[:-1]
         ybinerr = ybinerr[:-1]
+        step_size = step_size[:-1]
+        
+    dx_var = np.var(dx_old) / np.mean(dx_old)
 
-    new_x0 = (x[0] - (0.5 * dx_old)) + (0.5 * dx_new)
+    if np.size(dx_old) == 1 or dx_var < 1e-6:
+        step_size = step_size[0] 
+
+    new_x0 = (x[0] - (0.5 * dx_old[0])) + (0.5 * dx_new)
     xbin = np.arange(ybin.shape[0]) * dx_new + new_x0
 
     return xbin, ybin, ybinerr, step_size
+
 
 
 def rebin_data_log(x, y, f, y_err=None, dx=None):
