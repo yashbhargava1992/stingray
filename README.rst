@@ -1,10 +1,8 @@
-
+========
 Stingray
 ========
 
-+------------------+-------------------------+---------------+---------+--------+---------------------------+------------------+
-| Master           | |Build Status Master|   | |Readthedocs| | |Slack| | |joss| | |Coverage Status Master|  | |GitHub release| |
-+------------------+-------------------------+---------------+---------+--------+---------------------------+------------------+
+|Build Status Master| |Readthedocs| |Slack| |joss| |Coverage Status Master| |GitHub release|
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
