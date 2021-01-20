@@ -1,35 +1,28 @@
-
-
-from collections.abc import Iterable
 import logging
 import math
-import numpy as np
 import os
-import six
+import pickle
 import warnings
+from collections.abc import Iterable
 
+import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 from astropy.logger import AstropyUserWarning
 
 import stingray.utils as utils
-from .utils import order_list_of_arrays, is_string
-from .utils import assign_value_if_none
 
+from .utils import assign_value_if_none, is_string, order_list_of_arrays
 from .gti import get_gti_from_all_extensions, load_gtis
 
-try:
-    # Python 2
-    import cPickle as pickle
-except:
-    # Python 3
-    import pickle
+# Python 3
+import pickle
 
 _H5PY_INSTALLED = True
 
 try:
     import h5py
-except:
+except ImportError:
     _H5PY_INSTALLED = False
 
 
@@ -122,7 +115,7 @@ def high_precision_keyword_read(hdr, keyword):
     try:
         value = np.longdouble(hdr[keyword])
         return value
-    except:
+    except KeyError:
         pass
     try:
         if len(keyword) == 8:
@@ -130,7 +123,7 @@ def high_precision_keyword_read(hdr, keyword):
         value = np.longdouble(hdr[keyword + 'I'])
         value += np.longdouble(hdr[keyword + 'F'])
         return value
-    except:
+    except KeyError:
         return None
 
 
@@ -140,7 +133,7 @@ def _get_additional_data(lctable, additional_columns):
         for a in additional_columns:
             try:
                 additional_data[a] = np.array(lctable.field(a))
-            except:  # pragma: no cover
+            except KeyError:  # pragma: no cover
                 if a == 'PI':
                     logging.warning('Column PI not found. Trying with PHA')
                     additional_data[a] = np.array(lctable.field('PHA'))
@@ -256,8 +249,8 @@ def load_events_and_gtis(
     # Load data table
     try:
         lctable = lchdulist[hduname].data
-    except Exception:  # pragma: no cover
-        warnings.warn("HDU %s not found. Trying first extension" % hduname)
+    except KeyError:  # pragma: no cover
+        logging.warning('HDU %s not found. Trying first extension' % hduname)
         lctable = lchdulist[1].data
         hduname = 1
 
@@ -269,7 +262,7 @@ def load_events_and_gtis(
     # Read TIMEZERO keyword and apply it to events
     try:
         timezero = np.longdouble(header["TIMEZERO"])
-    except Exception:  # pragma: no cover
+    except KeyError:  # pragma: no cover
         timezero = np.longdouble(0.0)
 
     instr = mission = 'unknown'
@@ -284,7 +277,7 @@ def load_events_and_gtis(
     try:
         t_start = np.longdouble(header["TSTART"])
         t_stop = np.longdouble(header["TSTOP"])
-    except Exception:  # pragma: no cover
+    except KeyError:  # pragma: no cover
         warnings.warn(
             "Tstart and Tstop error. using defaults", AstropyUserWarning
         )
@@ -420,7 +413,7 @@ def read_header_key(fits_file, key, hdu=1):
     hdulist = fits.open(fits_file, ignore_missing_end=True)
     try:
         value = hdulist[hdu].header[key]
-    except:  # pragma: no cover
+    except KeyError:  # pragma: no cover
         value = ''
     hdulist.close()
     return value
@@ -496,15 +489,21 @@ def common_name(str1, str2, default='common'):
     return common_str
 
 
-def split_numbers(number):
+def split_numbers(number, shift=0):
     """
     Split high precision number(s) into doubles.
-    TODO: Consider the option of using a third number to specify shift.
+
+    You can specify the number of shifts to move the decimal point.
 
     Parameters
     ----------
     number: long double
         The input high precision number which is to be split
+
+    Other parameters
+    ----------------
+    shift: integer
+        Move the cut by `shift` decimal points to the right (left if negative)
 
     Returns
     -------
@@ -513,16 +512,31 @@ def split_numbers(number):
 
     number_F: double
         Second part of high precision number
-    """
 
+    Examples
+    --------
+    >>> n = 12.34
+    >>> i, f = split_numbers(n)
+    >>> i == 12
+    True
+    >>> np.isclose(f, 0.34)
+    True
+    >>> split_numbers(n, 2)
+    (12.34, 0.0)
+    >>> split_numbers(n, -1)
+    (10.0, 2.34)
+    """
     if isinstance(number, Iterable):
+        number = np.asarray(number)
+        number *= 10**shift
         mods = [math.modf(n) for n in number]
         number_F = [f for f, _ in mods]
         number_I = [i for _, i in mods]
     else:
+        number *= 10**shift
         number_F, number_I = math.modf(number)
 
-    return np.double(number_I), np.double(number_F)
+    return np.double(number_I) / 10**shift, np.double(number_F) / 10**shift
 
 
 def _save_pickle_object(object, filename):
@@ -727,7 +741,7 @@ def _retrieve_ascii_object(filename, **kwargs):
     data : astropy.Table object
         An astropy.Table object with the data from the file
     """
-    if not isinstance(filename, six.string_types):
+    if not isinstance(filename, str):
         raise TypeError("filename must be string!")
 
     if 'usecols' in list(kwargs.keys()):
@@ -878,7 +892,7 @@ def _retrieve_fits_object(filename, **kwargs):
         The name of file with which object was saved
 
     Other Parameters
-    -----------------------------
+    ----------------
     cols: str iterable
         The names of columns to extract from fits tables.
 

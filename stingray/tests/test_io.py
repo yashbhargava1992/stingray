@@ -8,7 +8,7 @@ from ..io import read, write, split_numbers
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
 from ..io import load_events_and_gtis
-from ..io import read_header_key
+from ..io import read_header_key, _retrieve_ascii_object
 
 import warnings
 
@@ -97,6 +97,13 @@ class TestIO(object):
         r_numbers = np.longdouble(number_I) + np.longdouble(number_F)
 
         assert (numbers == r_numbers).all()
+
+        n = [1234.567, 12.345]
+        shift = -2
+        n_i, n_f = split_numbers(n, shift)
+        assert np.allclose(n_i, [1200, 0])
+        r_n = (n_i + n_f)
+        assert (n == r_n).all()
 
 class TestIOReadWrite(object):
     """A class to test all the read and write functions."""
@@ -191,6 +198,10 @@ class TestFileFormats(object):
         write(np.array([time, counts]).T,
               filename="ascii_test.txt", format_="ascii",
               fmt=["%s", "%s"])
+
+    def test_retrieve_bad(self):
+        with pytest.raises(TypeError):
+            _retrieve_ascii_object(1)
 
     def test_read_ascii(self):
         time = [1,2,3,4,5]
