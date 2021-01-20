@@ -1,4 +1,4 @@
-
+import warnings
 import numpy as np
 import os
 import pytest
@@ -99,7 +99,8 @@ class TestEvents(object):
 
     def test_simulate_energies_with_counts_not_set(self):
         ev = EventList()
-        ev.simulate_energies(self.spectrum)
+        with warnings.catch_warnings(record=True):
+            ev.simulate_energies(self.spectrum)
 
     def test_compare_energy(self):
         """Compare the simulated energy distribution to actual distribution.
@@ -137,17 +138,20 @@ class TestEvents(object):
         """
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList()
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList(time=[1, 2, 3])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList()
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert ev_new.time == None
         assert ev_new.gti == None
         assert ev_new.pi == None
@@ -155,17 +159,21 @@ class TestEvents(object):
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList([])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
         ev = EventList([])
         ev_other = EventList(time=[1, 2, 3])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
 
     def test_join_different_dt(self):
         ev = EventList(time=[10, 20, 30], dt = 1)
         ev_other = EventList(time=[40, 50, 60], dt = 3)
-        ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning):
+            ev_new = ev.join(ev_other)
+
         assert ev_new.dt == 3
 
     def test_join_without_energy(self):
@@ -185,19 +193,22 @@ class TestEvents(object):
     def test_join_with_gti_none(self):
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5], gti=[[3.5, 5.5]])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
 
         assert np.all(ev_new.gti == [[1, 3], [3.5, 5.5]])
 
         ev = EventList(time=[1, 2, 3], gti=[[0.5, 3.5]])
         ev_other = EventList(time=[4, 5])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
 
         assert np.all(ev_new.gti == [[0.5, 3.5], [4, 5]])
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
 
         assert ev_new.gti == None
 
@@ -208,7 +219,11 @@ class TestEvents(object):
                         energy=[3, 4, 7, 4, 3], gti=[[1, 2],[3, 4]])
         ev_other = EventList(time=[5, 6, 6, 7, 10],
                             energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
-        ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning) as record:
+            ev_new = ev.join(ev_other)
+
+        assert np.any(["GTIs in these" in r.message.args[0]
+                       for r in record])
 
         assert (ev_new.time ==
                 np.array([1, 1, 2, 3, 4, 5, 6, 6, 7, 10])).all()
@@ -299,8 +314,9 @@ class TestEvents(object):
         wrong format is provided.
         """
         ev = EventList()
-        with pytest.raises(KeyError):
-            ev.write('ev.pickle', format_="unsupported")
+        with warnings.catch_warnings(record=True):
+            with pytest.raises(KeyError):
+                ev.write('ev.pickle', format_="unsupported")
 
-        with pytest.raises(KeyError):
-            ev.read('ev.pickle', format_="unsupported")
+            with pytest.raises(KeyError):
+                ev.read('ev.pickle', format_="unsupported")
