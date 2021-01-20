@@ -1,16 +1,16 @@
-
-import sys
-from collections.abc import Iterable
 import numbers
-from six import string_types
-
+import os
+import random
+import string
+import sys
 import warnings
+from collections.abc import Iterable
+
 import numpy as np
 import scipy
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
-
 HAS_NUMBA = False
 try:
     from numba import jit
@@ -97,7 +97,7 @@ __all__ = ['simon', 'rebin_data', 'rebin_data_log', 'look_for_array_in_array',
            'optimal_bin_time', 'contiguous_regions', 'is_int',
            'get_random_state', 'baseline_als', 'excess_variance',
            'create_window', 'poisson_symmetrical_errors', 'standard_error',
-           'nearest_power_of_two', 'find_nearest']
+           'nearest_power_of_two', 'find_nearest', 'genDataPath']
 
 
 def _root_squared_mean(array):
@@ -386,6 +386,7 @@ def apply_function_if_none(variable, value, func):
         return func(value)
     else:
         return variable
+
 
 def assign_value_if_none(value, default):
     """
@@ -803,7 +804,7 @@ def create_window(N, window_type='uniform'):
     windows = ['uniform', 'parzen', 'hamming', 'hanning', 'triangular',
                'welch', 'blackmann', 'flat-top']
 
-    if not isinstance(window_type, string_types):
+    if not isinstance(window_type, str):
         raise TypeError('type of window must be specified as string!')
 
     window_type = window_type.lower()
@@ -869,9 +870,9 @@ def create_window(N, window_type='uniform'):
         a3 = 0.388
         a4 = 0.028
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + \
-                 a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
-                 a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
-                 a4 * np.cos((8 * np.pi * n) / N_minus_1)
+                a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
+                a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
+                a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
 
@@ -998,3 +999,37 @@ def find_nearest(array, value):
         return array[idx - 1], idx - 1
     else:
         return array[idx], idx
+
+
+def genDataPath(dir_path):
+    """Generates data path to chunks.
+
+    Parameters
+    ----------
+    dir_path: string
+        Path to zarr datastore + Top level directory name for data
+
+    Returns
+    -------
+    list
+        List of path's to datastore
+
+    Raises
+    ------
+    IOError
+        If directory does not exist
+    """
+    path_list = []
+    if os.path.isdir(dir_path):
+        if not (os.path.isdir(os.path.join(dir_path, 'main_data/'))
+                or os.path.join(dir_path, 'meta_data/')):
+            raise IOError(("Directory does not exist."))
+
+        else:
+            path_list.append(os.path.join(dir_path, 'main_data/'))
+            path_list.append(os.path.join(dir_path, 'meta_data/'))
+
+            return path_list
+
+    else:
+        raise IOError(("Directory does not exist."))
