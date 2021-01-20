@@ -1,3 +1,4 @@
+import copy
 import warnings
 
 import numpy as np
@@ -551,12 +552,15 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def _make_matrix(self, lc):
         """
-        Create a matrix of powers for each time step (rows) and each frequency step (columns).
+        Create a matrix of powers for each time step and each frequency step.
+
+        Time increases with row index, frequency with column index.
 
         Parameters
         ----------
         lc : :class:`Lightcurve` object
-            The :class:`Lightcurve` object from which to generate the dynamical power spectrum
+            The :class:`Lightcurve` object from which to generate the dynamical
+            power spectrum
         """
         ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
             self, lc, self.segment_size)
@@ -608,6 +612,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
         """
+        new_dynspec_object = copy.deepcopy(self)
         dynspec_new = []
         for data in self.dyn_ps.T:
             freq_new, bin_counts, bin_err, _ = \
@@ -615,11 +620,12 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
                                  method=method)
             dynspec_new.append(bin_counts)
 
-        self.freq = freq_new
-        self.dyn_ps = np.array(dynspec_new).T
-        self.df = df_new
+        new_dynspec_object.freq = freq_new
+        new_dynspec_object.dyn_ps = np.array(dynspec_new).T
+        new_dynspec_object.df = df_new
+        return new_dynspec_object
 
-    def trace_maximum(self, min_freq=None, max_freq=None, sigmaclip=False):
+    def trace_maximum(self, min_freq=None, max_freq=None):
         """
         Return the indices of the maximum powers in each segment :class:`Powerspectrum`
         between specified frequencies.
@@ -680,10 +686,11 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         dynspec_new: numpy.ndarray
             New rebinned Dynamical Power Spectrum.
         """
-
         if dt_new < self.dt:
             raise ValueError("New time resolution must be larger than "
                              "old time resolution!")
+
+        new_dynspec_object = copy.deepcopy(self)
 
         dynspec_new = []
         for data in self.dyn_ps:
@@ -692,6 +699,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
                                  method=method)
             dynspec_new.append(bin_counts)
 
-        self.time = time_new
-        self.dyn_ps = np.array(dynspec_new)
-        self.dt = dt_new
+        new_dynspec_object.time = time_new
+        new_dynspec_object.dyn_ps = np.array(dynspec_new)
+        new_dynspec_object.dt = dt_new
+        return new_dynspec_object
