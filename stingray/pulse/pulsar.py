@@ -10,18 +10,13 @@ import numpy as np
 
 from .fftfit import fftfit as taylor_fftfit
 from ..utils import simon, jit
-
-try:
-    import pint.toa as toa
-    import pint
-    from pint.models import get_model
-    HAS_PINT = True
-except ImportError:
-    HAS_PINT = False
+from . import HAS_PINT, get_model, toa
 
 
 __all__ = ['pulse_phase', 'phase_exposure', 'fold_events', 'profile_stat',
-           'z_n', 'fftfit', 'get_TOA']
+           'z_n', 'fftfit', 'get_TOA', 'z_n_binned_events', 'z_n_gauss',
+           'z_n_events', 'htest', 'z_n_binned_events_all', 'z_n_gauss_all',
+           'z_n_events_all', 'get_orbital_correction_from_ephemeris_file']
 
 
 def _default_value_if_no_key(dictionary, key, default):

@@ -4,7 +4,8 @@ import os
 from astropy.tests.helper import pytest
 import astropy.modeling.models
 from stingray import Lightcurve, Crossspectrum, sampledata
-from stingray.simulator import simulator, models
+from stingray.simulator import Simulator
+from stingray.simulator import models
 
 _H5PY_INSTALLED = True
 
@@ -18,8 +19,8 @@ class TestSimulator(object):
 
     @classmethod
     def setup_class(self):
-        self.simulator = simulator.Simulator(N=1024, mean=0.5, dt=0.125)
-        self.simulator_odd = simulator.Simulator(N=2039, mean=0.5, dt=0.125)
+        self.simulator = Simulator(N=1024, mean=0.5, dt=0.125)
+        self.simulator_odd = Simulator(N=2039, mean=0.5, dt=0.125)
 
     def calculate_lag(self, lc, h, delay):
         """
@@ -41,7 +42,7 @@ class TestSimulator(object):
         """
         Simulate with a random seed value.
         """
-        self.simulator = simulator.Simulator(N=1024, random_state=12)
+        self.simulator = Simulator(N=1024, random_state=12)
         assert len(self.simulator.simulate(2).counts), 1024
 
     def test_simulate_with_tstart(self):
@@ -49,12 +50,12 @@ class TestSimulator(object):
         Simulate with a random seed value.
         """
         tstart = 10.0
-        self.simulator = simulator.Simulator(N=1024, tstart=tstart)
+        self.simulator = Simulator(N=1024, tstart=tstart)
         assert self.simulator.time[0] == tstart
 
 
     def test_simulate_with_random_state(self):
-        self.simulator = simulator.Simulator(N=1024, random_state=np.random.RandomState(12))
+        self.simulator = Simulator(N=1024, random_state=np.random.RandomState(12))
 
     def test_simulate_with_incorrect_arguments(self):
         with pytest.raises(ValueError):
@@ -154,7 +155,7 @@ class TestSimulator(object):
         """
         B, N, red_noise, dt = 2, 1024, 10, 1
 
-        self.simulator = simulator.Simulator(N=N, dt=dt, mean=5, rms=1,
+        self.simulator = Simulator(N=N, dt=dt, mean=5, rms=1,
                                              red_noise=red_noise)
         lc = [self.simulator.simulate(B) for i in range(1, 30)]
         simulated = self.simulator.powerspectrum(lc, lc[0].tseg)
@@ -196,7 +197,7 @@ class TestSimulator(object):
         """
         N, red_noise, dt = 1024, 10, 1
 
-        self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1,
+        self.simulator = Simulator(N=N, dt=dt, mean=0.1,
                                              rms=0.4, red_noise=red_noise)
         lc = [self.simulator.simulate('generalized_lorentzian',
                                       [0.3, 0.9, 0.6, 0.5])
@@ -225,7 +226,7 @@ class TestSimulator(object):
         """
         N, red_noise, dt = 1024, 10, 1
 
-        self.simulator = simulator.Simulator(N=N, dt=dt, mean=0.1, rms=0.7,
+        self.simulator = Simulator(N=N, dt=dt, mean=0.1, rms=0.7,
                                              red_noise=red_noise)
         lc = [self.simulator.simulate('smoothbknpo', [0.6, 0.2, 0.6, 0.5])
               for i in range(1, 30)]
@@ -249,7 +250,7 @@ class TestSimulator(object):
         assert len(self.simulator.simulate('GeneralizedLorentz1D',
                                            {'x_0':10, 'fwhm':1., 'value':10.,
                                             'power_coeff':2})), 1024
-        
+
     def test_simulate_GeneralizedLorentz1D_odd_str(self):
         """
         Simulate a light curve using the GeneralizedLorentz1D model
@@ -265,9 +266,10 @@ class TestSimulator(object):
         Simulate a light curve using the GeneralizedLorentz1D model
         called as a astropy.modeling.Model class
         """
-        mod = models.GeneralizedLorentz1D(x_0=10, fwhm=1., value=10., power_coeff=2)
+        mod = models.GeneralizedLorentz1D(x_0=10, fwhm=1., value=10.,
+                                          power_coeff=2)
         assert len(self.simulator.simulate(mod)), 1024
-        
+
     def test_simulate_SmoothBrokenPowerLaw_str(self):
         """
         Simulate a light curve using SmoothBrokenPowerLaw model
@@ -277,7 +279,7 @@ class TestSimulator(object):
             self.simulator.simulate('SmoothBrokenPowerLaw',
                                     {'norm':1., 'gamma_low':1.,
                                      'gamma_high':2., 'break_freq':1.})), 1024
-    
+
     def test_simulate_SmoothBrokenPowerLaw(self):
         """
         Simulate a light curve using SmoothBrokenPowerLaw model
@@ -286,8 +288,8 @@ class TestSimulator(object):
         mod = models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2.,
                                           break_freq=1.)
         assert len(self.simulator.simulate(mod)), 1024
-        
-        
+
+
     def test_simulate_generic_model(self):
         """
         Simulate a light curve using a generic model
@@ -315,15 +317,15 @@ class TestSimulator(object):
         N = 50000
         dt = 0.01
         m = 30000.
-        
-        self.simulator = simulator.Simulator(N=N, mean=m, dt=dt)
+
+        self.simulator = Simulator(N=N, mean=m, dt=dt)
         smoothbknpo = \
             models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2.,
                                         break_freq=1.)
         lorentzian = models.GeneralizedLorentz1D(x_0=10, fwhm=1., value=10.,
                                                  power_coeff=2.)
         myModel = smoothbknpo + lorentzian
-        
+
         lc = [self.simulator.simulate(myModel) for i in range(1, 50)]
 
         simulated = self.simulator.powerspectrum(lc, lc[0].tseg)
@@ -336,8 +338,8 @@ class TestSimulator(object):
 
         assert np.all(np.abs(actual_prob - simulated_prob) <
                       3*np.sqrt(actual_prob))
-        
-        
+
+
     def test_simulate_wrong_model(self):
         """
         Simulate with a model that does not exist.
@@ -386,7 +388,7 @@ class TestSimulator(object):
         lc = sampledata.sample_data()
         s = lc.counts
         h = self.simulator.simple_ir(10, 1, 1)
-        output = self.simulator.simulate(s, h)
+        _ = self.simulator.simulate(s, h)
 
     def test_simulate_simple_impulse_odd(self):
         """
@@ -395,7 +397,7 @@ class TestSimulator(object):
         lc = sampledata.sample_data()
         s = lc.counts
         h = self.simulator_odd.simple_ir(10, 1, 1)
-        output = self.simulator_odd.simulate(s, h)
+        _ = self.simulator_odd.simulate(s, h)
 
     def test_powerspectrum(self):
         """
@@ -529,14 +531,14 @@ class TestSimulator(object):
         assert np.abs(5-h_cutoffs[1]) < np.sqrt(5)
 
     def test_io(self):
-        sim = simulator.Simulator(N=1024)
+        sim = Simulator(N=1024)
         sim.write('sim.pickle')
         sim = sim.read('sim.pickle')
         assert sim.N == 1024
         os.remove('sim.pickle')
 
     def test_io_with_unsupported_format(self):
-        sim = simulator.Simulator(N=1024)
+        sim = Simulator(N=1024)
         with pytest.raises(KeyError):
             sim.write('sim.hdf5', format_='hdf5')
         with pytest.raises(KeyError):
