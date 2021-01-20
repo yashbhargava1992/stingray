@@ -1431,14 +1431,14 @@ class Lightcurve(object):
         from astropy import units as u
         data = {}
         for attr in ['_counts', '_counts_err', '_countrate', '_countrate_err',
-                     '_bin_lo', '_bin_hi', 'dt']:
+                     '_bin_lo', '_bin_hi']:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 data[attr.lstrip('_')] = np.asarray(getattr(self, attr))
         if data == {}:
             data = None
         ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
         for attr in ['_gti', 'mjdref', '_meancounts', '_meancountrate',
-                     'instr', 'mission']:
+                     'instr', 'mission', 'dt']:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 ts.meta[attr.lstrip('_')] = getattr(self, attr)
 
