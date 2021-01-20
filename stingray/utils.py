@@ -8,6 +8,9 @@ from collections.abc import Iterable
 
 import numpy as np
 import scipy
+from astropy.time import Time, TimeDelta
+import astropy.units as u
+from astropy.units import Quantity
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
@@ -130,7 +133,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     Parameters
     ----------
     x: iterable
-        The dependent variable with some resolution, which can vary throughout 
+        The dependent variable with some resolution, which can vary throughout
         the time series.
 
     y: iterable
@@ -149,7 +152,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         each new bin of ``x``, or take the arithmetic mean.
 
     dx: float
-        The old resolution (otherwise, calculated from difference between 
+        The old resolution (otherwise, calculated from difference between
         time bins)
 
     Returns
@@ -200,7 +203,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
                          "old frequency resolution.")
 
     # left and right bin edges
-    # assumes that the points given in `x` correspond to 
+    # assumes that the points given in `x` correspond to
     # the left bin edges
     xedges = np.hstack([x, x[-1]+dx_old[-1]])
 
@@ -217,7 +220,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         xmax = xbin[i+1]
         min_ind = xedges.searchsorted(xmin)
         max_ind = xedges.searchsorted(xmax)
-        
+
         output[i] = np.sum(y[min_ind:max_ind-1])
         outputerr[i] = np.sum(yerr[min_ind:max_ind-1])
         step_size[i] = len(y[min_ind:max_ind-1])
@@ -234,7 +237,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
             output[i] += y[max_ind-1]*post_frac
             outputerr[i] += yerr[max_ind-1]*post_frac
             step_size[i] += post_frac
-        
+
     if method in ['mean', 'avg', 'average', 'arithmetic mean']:
         ybin = output / step_size
         ybinerr = np.sqrt(outputerr) / step_size
@@ -253,11 +256,11 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         ybin = ybin[:-1]
         ybinerr = ybinerr[:-1]
         step_size = step_size[:-1]
-        
+
     dx_var = np.var(dx_old) / np.mean(dx_old)
 
     if np.size(dx_old) == 1 or dx_var < 1e-6:
-        step_size = step_size[0] 
+        step_size = step_size[0]
 
     new_x0 = (x[0] - (0.5 * dx_old[0])) + (0.5 * dx_new)
     xbin = np.arange(ybin.shape[0]) * dx_new + new_x0
@@ -1054,3 +1057,80 @@ def genDataPath(dir_path):
 
     else:
         raise IOError(("Directory does not exist."))
+
+
+def interpret_times(time, mjdref=0):
+    """Get time interval in seconds from an astropy Time object
+
+    Examples
+    --------
+    >>> time = Time(57483, format='mjd')
+    >>> newt, mjdref = interpret_times(time)
+    >>> newt == 0
+    True
+    >>> mjdref == 57483
+    True
+    >>> time = Time([57483], format='mjd')
+    >>> newt, mjdref = interpret_times(time)
+    >>> np.all(newt == 0)
+    True
+    >>> mjdref == 57483
+    True
+    >>> time = TimeDelta([3, 4, 5] * u.s)
+    >>> newt, mjdref = interpret_times(time)
+    >>> np.allclose(newt, [3, 4, 5])
+    True
+    >>> time = np.array([3, 4, 5])
+    >>> newt, mjdref = interpret_times(time, mjdref=45000)
+    >>> np.allclose(newt, [3, 4, 5])
+    True
+    >>> mjdref == 45000
+    True
+    >>> time = np.array([3, 4, 5] * u.s)
+    >>> newt, mjdref = interpret_times(time, mjdref=45000)
+    >>> np.allclose(newt, [3, 4, 5])
+    True
+    >>> mjdref == 45000
+    True
+    >>> newt, mjdref = interpret_times(1, mjdref=45000)
+    >>> newt == 1
+    True
+    >>> newt, mjdref = interpret_times(list, mjdref=45000)
+    Traceback (most recent call last):
+    ...
+    ValueError: Unknown time format: ...
+    >>> newt, mjdref = interpret_times("guadfkljfd", mjdref=45000)
+    Traceback (most recent call last):
+    ...
+    ValueError: Unknown time format: ...
+    """
+    if isinstance(time, TimeDelta):
+        out_times = time.to('s').value
+        return out_times, mjdref
+
+    if isinstance(time, Time):
+        mjds = time.mjd
+        if mjdref == 0:
+            if isinstance(mjds, Iterable):
+                mjdref = mjds[0]
+            else:
+                mjdref = mjds
+
+        out_times = (mjds - mjdref) * 86400
+        return out_times, mjdref
+
+    if isinstance(time, Quantity):
+        out_times = time.to('s').value
+        return out_times, mjdref
+
+    if isinstance(time, (tuple, list, np.ndarray)):
+        return time, mjdref
+
+    if not isinstance(time, Iterable):
+        try:
+            float(time)
+            return time, mjdref
+        except (ValueError, TypeError):
+            pass
+
+    raise ValueError(f"Unknown time format: {type(time)}")
