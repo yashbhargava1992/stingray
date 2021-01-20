@@ -329,18 +329,18 @@ class TestLightcurve(object):
         lc = Lightcurve.make_lightcurve(self.times * u.s, self.dt,
                                         use_hist=True, tstart=0.5)
         lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
-                                        tstart=0.5)
+                                         tstart=0.5)
         assert np.allclose(lc.time, lc2.time)
         assert np.all(lc.counts == lc2.counts)
 
     def test_lightcurve_from_toa_Time(self):
         mjdref = 56789
-        mjds = Time(self.times /86400 + mjdref, format='mjd')
+        mjds = Time(self.times / 86400 + mjdref, format='mjd')
 
         lc = Lightcurve.make_lightcurve(mjds, self.dt, mjdref=mjdref,
                                         use_hist=True, tstart=0.5)
         lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
-                                        tstart=0.5, mjdref=mjdref)
+                                         tstart=0.5, mjdref=mjdref)
         assert np.allclose(lc.time, lc2.time)
         assert np.all(lc.counts == lc2.counts)
 
