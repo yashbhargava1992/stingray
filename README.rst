@@ -150,8 +150,8 @@ Pull requests are welcome! If you are interested in the further development of
 this project, please `get in touch via the issues
 <https://github.com/dhuppenkothen/stingray/issues>`_!
 
-.. |Build Status Master| image:: https://github.com/StingraySoftware/stingray/workflows/CI/badge.svg
-    :target: https://github.com/StingraySoftware/stingray/workflows/
+.. |Build Status Master| image:: https://github.com/StingraySoftware/stingray/workflows/CI%20Tests/badge.svg
+    :target: https://github.com/StingraySoftware/stingray/actions/
 .. |Readthedocs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
     :target: https://stingray.readthedocs.io/
 .. |Slack| image:: http://slack-invite.timelabtechnologies.com/badge.svg
