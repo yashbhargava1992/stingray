@@ -1100,6 +1100,10 @@ def interpret_times(time, mjdref=0):
     ...
     ValueError: Unknown time format: ...
     """
+    if isinstance(time, TimeDelta):
+        out_times = time.to('s').value
+        return out_times, mjdref
+
     if isinstance(time, Time):
         mjds = time.mjd
         if mjdref == 0:
@@ -1109,10 +1113,6 @@ def interpret_times(time, mjdref=0):
                 mjdref = mjds
 
         out_times = (mjds - mjdref) * 86400
-        return out_times, mjdref
-
-    if isinstance(time, TimeDelta):
-        out_times = time.to('s').value
         return out_times, mjdref
 
     if isinstance(time, Quantity):
