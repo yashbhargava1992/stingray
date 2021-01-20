@@ -9,8 +9,6 @@ import copy
 import numpy as np
 import numpy.random as ra
 
-from stingray.simulator.base import simulate_times
-
 from .filters import get_deadtime_mask
 from .gti import append_gtis, check_separate, cross_gtis
 from .io import read, write
