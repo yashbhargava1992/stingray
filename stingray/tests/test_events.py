@@ -1,4 +1,4 @@
-
+import warnings
 import numpy as np
 import os
 import pytest
@@ -137,17 +137,20 @@ class TestEvents(object):
         """
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList()
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(UserWarning):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList(time=[1, 2, 3])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(UserWarning):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList()
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(UserWarning):
+            ev_new = ev.join(ev_other)
         assert ev_new.time == None
         assert ev_new.gti == None
         assert ev_new.pi == None
