@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import warnings
 
 from astropy.tests.helper import pytest
 
@@ -707,21 +708,27 @@ class TestDynamicalPowerspectrum(object):
             dps = DynamicalPowerspectrum(self.lc, segment_size=1000)
 
     def test_matrix(self):
-        dps = DynamicalPowerspectrum(self.lc, segment_size=3)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc, segment_size=3)
         nsegs = int(self.lc.tseg / dps.segment_size)
         nfreq = int((1 / self.lc.dt) / (2 * (dps.freq[1] - dps.freq[0])) -
                     (1 / self.lc.tseg))
         assert dps.dyn_ps.shape == (nfreq, nsegs)
 
     def test_trace_maximum_without_boundaries(self):
-        dps = DynamicalPowerspectrum(self.lc, segment_size=3)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc, segment_size=3)
         max_pos = dps.trace_maximum()
 
         assert np.max(dps.freq[max_pos]) <= 1 / self.lc.dt
         assert np.min(dps.freq[max_pos]) >= 1 / dps.segment_size
 
     def test_trace_maximum_with_boundaries(self):
-        dps = DynamicalPowerspectrum(self.lc, segment_size=3)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc, segment_size=3)
         minfreq = 21
         maxfreq = 24
         max_pos = dps.trace_maximum(min_freq=minfreq, max_freq=maxfreq)
@@ -730,20 +737,26 @@ class TestDynamicalPowerspectrum(object):
         assert np.min(dps.freq[max_pos]) >= minfreq
 
     def test_size_of_trace_maximum(self):
-        dps = DynamicalPowerspectrum(self.lc, segment_size=3)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc, segment_size=3)
         max_pos = dps.trace_maximum()
         nsegs = int(self.lc.tseg / dps.segment_size)
         assert len(max_pos) == nsegs
 
     def test_rebin_small_dt(self):
         segment_size = 3
-        dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
         with pytest.raises(ValueError):
             dps.rebin_time(dt_new=2.0)
 
     def test_rebin_small_df(self):
         segment_size = 3
-        dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
         with pytest.raises(ValueError):
             dps.rebin_frequency(df_new=dps.df/2.0)
 
@@ -768,7 +781,9 @@ class TestDynamicalPowerspectrum(object):
                               [6.24846189e+00],
                               [5.77470465e-05],
                               [1.76918128e-05]])
-        dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
         new_dps = dps.rebin_frequency(df_new=df_new)
         assert np.allclose(new_dps.freq, rebin_freq)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
@@ -779,7 +794,9 @@ class TestDynamicalPowerspectrum(object):
         dt_new = 4.0
         rebin_time = np.array([ 2.,  6., 10.])
         rebin_dps = np.array([[0.59722222, 0.87301587, 0.21428571]])
-        dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
         new_dps = dps.rebin_time(dt_new=dt_new, method='mean')
         assert np.allclose(new_dps.time, rebin_time)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
@@ -795,7 +812,9 @@ class TestDynamicalPowerspectrum(object):
                               [1.24993989e-02],
                               [1.15516968e-07],
                               [3.53906336e-08]])
-        dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
         new_dps = dps.rebin_frequency(df_new=df_new, method="mean")
         assert np.allclose(new_dps.freq, rebin_freq)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
@@ -806,7 +825,10 @@ class TestDynamicalPowerspectrum(object):
         dt_new = 4.0
         rebin_time = np.array([ 2.,  6., 10.])
         rebin_dps = np.array([[0.59722222, 0.87301587, 0.21428571]])
-        dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
         new_dps = dps.rebin_time(dt_new=dt_new, method='average')
         assert np.allclose(new_dps.time, rebin_time)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
@@ -822,7 +844,9 @@ class TestDynamicalPowerspectrum(object):
                               [1.24993989e-02],
                               [1.15516968e-07],
                               [3.53906336e-08]])
-        dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
         new_dps = dps.rebin_frequency(df_new=df_new, method="average")
         assert np.allclose(new_dps.freq, rebin_freq)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)

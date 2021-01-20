@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import pytest
+#import warnings
+import warnings
 
 from astropy.table import Table
 from stingray.lightcurve import Lightcurve
@@ -265,7 +267,7 @@ def test_fad_power_spectrum_non_compliant(ctrate):
     lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
                                deadtime=deadtime)
 
-    with warnings.catch_warning(record=True) as record:
+    with warnings.catch_warnings(record=True) as record:
         results = \
             calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
                               smoothing_alg='gauss',

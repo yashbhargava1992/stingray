@@ -8,6 +8,8 @@ from stingray.pulse.pulsar import HAS_PINT
 from astropy.tests.helper import remote_data
 import pytest
 import os
+import warnings 
+
 try:
     import matplotlib.pyplot as plt
     HAS_MPL = True
