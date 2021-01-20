@@ -662,7 +662,7 @@ class Crossspectrum(object):
                 raise AttributeError(
                     'Spectrum has no attribute named nphots2.')
 
-        bin_cs.m = np.rint(step_size[0] * self.m)
+        bin_cs.m = np.rint(step_size * self.m)
 
         return bin_cs
 

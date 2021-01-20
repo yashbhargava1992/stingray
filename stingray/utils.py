@@ -254,6 +254,11 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         ybinerr = ybinerr[:-1]
         step_size = step_size[:-1]
         
+    dx_var = np.var(dx_old) / np.mean(dx_old)
+
+    if np.size(dx_old) == 1 or dx_var < 1e-6:
+        step_size = step_size[0] 
+
     new_x0 = (x[0] - (0.5 * dx_old[0])) + (0.5 * dx_new)
     xbin = np.arange(ybin.shape[0]) * dx_new + new_x0
 
