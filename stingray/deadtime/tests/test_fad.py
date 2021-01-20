@@ -145,7 +145,7 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
     results_out = \
         calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
                           strict=True, verbose=True,
-                          tolerance=0.05, all_leahy=True,
+                          tolerance=0.05, norm="leahy",
                           output_file='table.hdf5')
 
     results = Table.read('table.hdf5')
@@ -202,7 +202,7 @@ def test_fad_power_spectrum_compliant_leahy_objects(ctrate):
     results_out = \
         calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
                           strict=True, verbose=True,
-                          tolerance=0.05, all_leahy=True,
+                          tolerance=0.05, norm="leahy",
                           output_file='table.hdf5', return_objects=True)
 
     results = Table.read('table.hdf5')
@@ -265,18 +265,18 @@ def test_fad_power_spectrum_non_compliant(ctrate):
     lc2 = generate_deadtime_lc(ev2, dt, tstart=0, tseg=length,
                                deadtime=deadtime)
 
-    with pytest.warns(UserWarning) as record:
+    with warnings.catch_warning(record=True) as record:
         results = \
             calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
                               smoothing_alg='gauss',
                               strict=False, verbose=False,
                               tolerance=0.0001)
-    assert np.any(["results ARE NOT complying"
+        assert np.any(["results ARE NOT complying"
                    in r.message.args[0] for r in record])
 
-    is_compliant = results.meta['is_compliant']
+        is_compliant = results.meta['is_compliant']
 
-    assert not is_compliant
+        assert not is_compliant
 
 
 @pytest.mark.parametrize('ctrate', [50])
