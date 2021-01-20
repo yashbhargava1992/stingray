@@ -108,14 +108,14 @@ def _create_responses(range_z):
         m = np.max([np.abs(np.int( 2 * z)), 40])
         sign = z / np.abs(z)
         absz = np.abs(z)
-        factor = sign * 1 / scipy.sqrt( 2 * absz)
+        factor = sign * 1 / np.sqrt( 2 * absz)
 
         q_ks = np.arange(-m / 2, m / 2+ 1)
 
-        exponentials = scipy.exp(1j * np.pi * q_ks**2 / z)
+        exponentials = np.exp(1j * np.pi * q_ks**2 / z)
 
-        Yks = sign * scipy.sqrt( 2 / absz ) * q_ks
-        Zks = sign * scipy.sqrt( 2 / absz ) * ( q_ks + z )
+        Yks = sign * np.sqrt( 2 / absz ) * q_ks
+        Zks = sign * np.sqrt( 2 / absz ) * ( q_ks + z )
         # print(Yks, Zks)
         [SZs, CZs] = special.fresnel(Zks)
         [SYs, CYs] = special.fresnel(Yks)
