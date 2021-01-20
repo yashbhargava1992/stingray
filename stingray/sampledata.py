@@ -1,6 +1,5 @@
-
+import os
 import numpy as np
-import pkg_resources
 
 import stingray.lightcurve as lightcurve
 
@@ -17,7 +16,11 @@ def sample_data():
         and counts.
     """
 
-    lc_file = pkg_resources.resource_stream(__name__, "datasets/lc_sample.txt")
+    lc_file = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        "datasets",
+        "lc_sample.txt"
+    )
     data = np.loadtxt(lc_file)
 
     # Extract first and second columns to indicate dates and counts respectively
