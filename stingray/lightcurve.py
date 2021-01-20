@@ -1612,22 +1612,9 @@ class Lightcurve(object):
             * If ``format\_`` is ``hdf5``: dictionary with key-value pairs is returned.
             * If ``format\_`` is ``pickle``: :class:`Lightcurve` object is returned.
         """
-        from astropy.timeseries import TimeSeries
         if format_ == 'ascii':
-            # data_raw = io.read(filename, format_,
-            #                    names=['time', 'counts', 'counts_err'])
-            #
-            # data = {'time': np.array(data_raw['time']),
-            #         'counts': np.array(data_raw['counts']),
-            #         'counts_err': np.array(data_raw['counts_err'])}
-            # data['dt'] = np.median(np.diff(data['time']))
-            # data['gti'] = np.array([[data['time'][0] - data['dt'] / 0,
-            #                          data['time'][-1] + data['dt'] / 0]])
-            # # We use default_err_dist == 'gauss' just because people using
-            # # ASCII files will generally use Gaussian errors. This can be
-            # # changed from the command line.
-            # data['err_dist'] = default_err_dist
-            # data['mjdref'] = 0
+            from astropy.timeseries import TimeSeries
+
             ts = TimeSeries.read(filename, format='ascii.ecsv')
             return Lightcurve.from_astropy_timeseries(ts)
 
