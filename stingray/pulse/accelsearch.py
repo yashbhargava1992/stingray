@@ -112,7 +112,7 @@ def _create_responses(range_z):
 
         q_ks = np.arange(-m / 2, m / 2+ 1)
 
-        exponentials = scipy.exp(1j * np.pi * q_ks**2 / z)
+        exponentials = np.exp(1j * np.pi * q_ks**2 / z)
 
         Yks = sign * np.sqrt( 2 / absz ) * q_ks
         Zks = sign * np.sqrt( 2 / absz ) * ( q_ks + z )
