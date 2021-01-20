@@ -1431,7 +1431,7 @@ class Lightcurve(object):
         from astropy import units as u
         data = {}
         for attr in ['_counts', '_counts_err', '_countrate', '_countrate_err',
-                     '_bin_lo', '_bin_hi']:
+                     '_bin_lo', '_bin_hi', 'dt']:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 data[attr.lstrip('_')] = np.asarray(getattr(self, attr))
         if data == {}:
@@ -1448,14 +1448,16 @@ class Lightcurve(object):
     def from_astropy_timeseries(ts):
         from astropy.timeseries import TimeSeries
         from astropy import units as u
-        gti = instr = mission = mjdref = None
 
+        dt = None
+        if 'dt' in ts.meta:
+            dt = ts.meta['dt']
         if 'counts' in ts.colnames:
             lc = Lightcurve(ts.time.to(u.s).value, ts['counts'],
-                            skip_checks=True)
+                            skip_checks=True, dt=dt)
         elif 'countrate' in ts.colnames:
             lc = Lightcurve(ts.time.to(u.s).value, ts['countrate'],
-                            input_counts=False, skip_checks=True)
+                            input_counts=False, skip_checks=True, dt=dt)
         else:
             raise ValueError('Input timeseries must contain at least a '
                              '`counts` or a `countrate` column')
