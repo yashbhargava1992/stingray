@@ -1434,8 +1434,7 @@ class Lightcurve(object):
                      '_bin_lo', '_bin_hi']:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 data[attr.lstrip('_')] = np.asarray(getattr(self, attr))
-        if data == {}:
-            data = None
+
         ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
         for attr in ['_gti', 'mjdref', '_meancounts', '_meancountrate',
                      'instr', 'mission', 'dt']:

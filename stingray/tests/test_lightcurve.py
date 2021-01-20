@@ -1030,6 +1030,37 @@ class TestLightcurve(object):
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
+    def test_timeseries_roundtrip_ctrate(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.times)
+        dt = 0.5
+        mean_counts = 2.0
+        times = np.arange(0 + dt / 2, 5 - dt / 2, dt)
+        countrate = np.zeros_like(times) + mean_counts
+
+        lc = Lightcurve(times, countrate, mission="BUBU", instr="BABA",
+                        mjdref=53467., input_counts=False)
+
+        ts = lc.to_astropy_timeseries()
+        new_lc = lc.from_astropy_timeseries(ts)
+        for attr in ['time', 'gti', 'countrate']:
+            assert np.allclose(getattr(lc, attr), getattr(new_lc, attr))
+        assert np.allclose(new_lc.counts, lc.countrate * lc.dt)
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(lc, attr) == getattr(new_lc, attr)
+
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
+    def test_from_timeseries_bad(self):
+        from astropy.time import TimeDelta
+        times = TimeDelta(np.arange(10) * u.s)
+        ts = TimeSeries(time=times)
+        with pytest.raises(ValueError) as excinfo:
+            Lightcurve.from_astropy_timeseries(ts)
+        assert "Input timeseries must contain at least" in str(excinfo.value)
+
 
 class TestLightcurveRebin(object):
 
