@@ -1095,6 +1095,10 @@ def interpret_times(time, mjdref=0):
     >>> newt, mjdref = interpret_times(1, mjdref=45000)
     >>> newt == 1
     True
+    >>> newt, mjdref = interpret_times(list, mjdref=45000)
+    Traceback (most recent call last):
+    ...
+    ValueError: Unknown time format: ...
     >>> newt, mjdref = interpret_times("guadfkljfd", mjdref=45000)
     Traceback (most recent call last):
     ...
@@ -1126,7 +1130,7 @@ def interpret_times(time, mjdref=0):
         try:
             float(time)
             return time, mjdref
-        except ValueError:
+        except (ValueError, TypeError):
             pass
 
     raise ValueError(f"Unknown time format: {type(time)}")
