@@ -67,19 +67,23 @@ class TestProperties(object):
         _ = lc.bin_lo
         assert lc._bin_lo is not None
 
+    def test_lightcurve_from_astropy_time(self):
+        time = Time([57483, 57484], format='mjd')
+        counts = np.array([2, 2])
+        lc = Lightcurve(time, counts)
+        assert lc.dt == 86400
+        assert np.all(lc.counts == counts)
+
     def test_time_is_quantity_or_astropy_time(self):
         counts = [34, 21.425]
-        times = [57000, 58000]
+        times = np.array([57000, 58000])
 
-        times_q = times * u.d
+        times_q = (times - times[0]) * u.d
         times_t = Time(times, format='mjd')
 
-        lc = Lightcurve(time=times, counts=counts)
-        lc_q = Lightcurve(time=times_q, counts=counts)
+        lc_q = Lightcurve(time=times_q, counts=counts, mjdref=times[0])
         lc_t = Lightcurve(time=times_t, counts=counts)
-        assert_allclose(lc.time, lc_q.time)
-        assert_allclose(lc.time, lc_t.time)
-
+        assert_allclose(lc_q.time, lc_t.time)
 
     def test_gti(self):
         lc = copy.deepcopy(self.lc)
@@ -318,6 +322,25 @@ class TestLightcurve(object):
                                         tstart=0.5)
         lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
                                         tstart=0.5)
+        assert np.allclose(lc.time, lc2.time)
+        assert np.all(lc.counts == lc2.counts)
+
+    def test_lightcurve_from_toa_quantity(self):
+        lc = Lightcurve.make_lightcurve(self.times * u.s, self.dt,
+                                        use_hist=True, tstart=0.5)
+        lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
+                                        tstart=0.5)
+        assert np.allclose(lc.time, lc2.time)
+        assert np.all(lc.counts == lc2.counts)
+
+    def test_lightcurve_from_toa_Time(self):
+        mjdref = 56789
+        mjds = Time(self.times /86400 + mjdref, format='mjd')
+
+        lc = Lightcurve.make_lightcurve(mjds, self.dt, mjdref=mjdref,
+                                        use_hist=True, tstart=0.5)
+        lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
+                                        tstart=0.5, mjdref=mjdref)
         assert np.allclose(lc.time, lc2.time)
         assert np.all(lc.counts == lc2.counts)
 

@@ -15,7 +15,8 @@ from stingray.exceptions import StingrayError
 from stingray.gti import (bin_intervals_from_gtis, check_gtis, create_gti_mask,
                           cross_two_gtis, gti_border_bins, join_gtis)
 from stingray.utils import (assign_value_if_none, baseline_als,
-                            poisson_symmetrical_errors, simon)
+                            poisson_symmetrical_errors, simon, interpret_times)
+
 
 __all__ = ["Lightcurve"]
 
@@ -138,8 +139,8 @@ class Lightcurve(object):
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
                  skip_checks=False, low_memory=False):
 
-        if hasattr(time, 'value'):
-            time = time.value
+        time, mjdref = interpret_times(time, mjdref=mjdref)
+
         time = np.asarray(time)
         counts = np.asarray(counts)
         if err is not None:
@@ -793,6 +794,7 @@ class Lightcurve(object):
         lc: :class:`Lightcurve` object
             A :class:`Lightcurve` object with the binned light curve
         """
+        toa, mjdref = interpret_times(toa, mjdref=mjdref)
 
         toa = np.sort(np.asarray(toa))
         # tstart is an optional parameter to set a starting time for
