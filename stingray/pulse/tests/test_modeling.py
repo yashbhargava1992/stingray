@@ -87,8 +87,10 @@ def test_gaussian_tied():
 def test_pickle_SincSquared():
     import pickle
     a = SincSquareModel(amplitude=13., mean=3, width=12.)
-    pickle.dump(a, open('bubufile.p', 'wb'))
-    b = pickle.load(open('bubufile.p', 'rb'))
+    with open('bubufile.p', 'wb') as f:
+        pickle.dump(a, f)
+    with open('bubufile.p', 'rb') as f:
+        b = pickle.load(f)
     assert a.amplitude == b.amplitude
     assert a.mean == b.mean
     assert a.width == b.width
