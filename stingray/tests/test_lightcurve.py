@@ -16,6 +16,7 @@ np.random.seed(20150907)
 
 _H5PY_INSTALLED = True
 _HAS_LIGHTKURVE = True
+_HAS_TIMESERIES = True
 _HAS_YAML = True
 
 try:
@@ -27,6 +28,12 @@ try:
     import Lightkurve
 except ImportError:
     _HAS_LIGHTKURVE = False
+
+try:
+    import astropy.timeseries
+    from astropy.timeseries import TimeSeries
+except ImportError:
+    _HAS_TIMESERIES = False
 
 try:
     import yaml
@@ -925,7 +932,7 @@ class TestLightcurve(object):
     #     lc.read('ascii_lc.txt', format_='ascii')
     #     os.remove('ascii_lc.txt')
 
-    @pytest.mark.skipif('not _HAS_YAML')
+    @pytest.mark.skipif('not (_HAS_YAML and _HAS_TIMESERIES)')
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('ascii_lc.ecsv', format_='ascii')
@@ -1007,6 +1014,7 @@ class TestLightcurve(object):
         assert np.all(lc2.counts == lc.counts)
         assert np.all(lc2.countrate == lc.countrate)
 
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.

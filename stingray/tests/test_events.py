@@ -11,10 +11,18 @@ datadir = os.path.join(curdir, 'data')
 
 _H5PY_INSTALLED = True
 _HAS_YAML = True
+_HAS_TIMESERIES = True
+
 try:
     import h5py
 except ImportError:
     _H5PY_INSTALLED = False
+
+try:
+    import astropy.timeseries
+    from astropy.timeseries import TimeSeries
+except ImportError:
+    _HAS_TIMESERIES = False
 
 try:
     import yaml
@@ -254,7 +262,7 @@ class TestEvents(object):
                 np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert np.allclose(ev_new.gti, np.array([[5, 6]]))
 
-    @pytest.mark.skipif('not _HAS_YAML')
+    @pytest.mark.skipif('not (_HAS_YAML and _HAS_TIMESERIES)')
     def test_io_with_ascii(self):
         ev = EventList(self.time)
         ev.write('ascii_ev.ecsv', format_='ascii')
@@ -309,6 +317,7 @@ class TestEvents(object):
         with pytest.raises(KeyError):
             ev.read('ev.pickle', format_="unsupported")
 
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.
