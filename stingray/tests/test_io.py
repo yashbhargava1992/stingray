@@ -212,26 +212,30 @@ class TestFileFormats(object):
 
     def test_fits_write(self):
         test_object = TmpIOReadWrite()
-        write(test_object, 'test.fits', 'fits')
+        with warnings.catch_warnings(record=True) as w:
+            write(test_object, 'test.fits', 'fits')
         os.remove('test.fits')
 
     def test_fits_read(self):
         test_object = TmpIOReadWrite()
-        write(test_object, 'test.fits', 'fits')
-        read('test.fits','fits',cols=['array','number','long_number'])
+        with warnings.catch_warnings(record=True) as w:
+            write(test_object, 'test.fits', 'fits')
+            read('test.fits','fits',cols=['array','number','long_number'])
         os.remove('test.fits')
 
     def test_fits_with_multiple_tables(self):
         test_object = TmpIOReadWrite()
-        write(test_object, 'test.fits', 'fits', tnames=['EVENTS', 'GTI'],
-            colsassign={'number':'GTI', 'array':'GTI'})
+        with warnings.catch_warnings(record=True) as w:
+            write(test_object, 'test.fits', 'fits', tnames=['EVENTS', 'GTI'],
+                colsassign={'number':'GTI', 'array':'GTI'})
         os.remove('test.fits')
 
     def test_fits_data_recovery(self):
         test_object = TmpIOReadWrite()
-        write(test_object, 'test.fits', 'fits')
-        rec_object = read('test.fits', 'fits', cols = ['number', 'str', 'list',
-            'array','long_array','long_number'])
+        with warnings.catch_warnings(record=True) as w:
+            write(test_object, 'test.fits', 'fits')
+            rec_object = read('test.fits', 'fits', cols = ['number', 'str', 'list',
+                'array','long_array','long_number'])
 
         assert rec_object['NUMBER'] == test_object.number
         assert rec_object['STR'] == test_object.str
