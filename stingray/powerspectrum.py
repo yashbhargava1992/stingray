@@ -1,18 +1,21 @@
+import copy
 import warnings
 
 import numpy as np
 import scipy
-import scipy.fftpack
 import scipy.optimize
 import scipy.stats
 
-import stingray.lightcurve as lightcurve
 import stingray.utils as utils
-from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
+from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
+from stingray.largememory import createChunkedSpectra, saveData
 from stingray.stats import pds_probability
+from stingray.utils import genDataPath
+
 from .events import EventList
 from .gti import cross_two_gtis
+from .lightcurve import Lightcurve
 
 try:
     from tqdm import tqdm as show_progress
@@ -302,7 +305,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
         The normaliation of the periodogram to be used.
 
-
     Other Parameters
     ----------------
     gti: 2-d float array
@@ -318,6 +320,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The time resolution of the light curve. Only needed when constructing
         light curves in the case where data is of :class:EventList
 
+    large_data : bool, default False
+        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
 
     Attributes
     ----------
@@ -352,9 +356,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     """
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
-                 silent=False, dt=None, lc=None):
+                 silent=False, dt=None, lc=None, large_data=False):
 
-        self.type = "powerspectrum"
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
                           "instead", DeprecationWarning)
@@ -367,6 +370,37 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if segment_size is not None and not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")
 
+        if large_data and data is not None:
+            chunks = None
+
+            if isinstance(data, EventList):
+                input_data = 'EventList'
+            elif isinstance(data, Lightcurve):
+                input_data = 'Lightcurve'
+                chunks = int(np.rint(segment_size // data.dt))
+                segment_size = chunks * data.dt
+            else:
+                raise ValueError(
+                    f'Invalid input data type: {type(data).__name__}')
+
+            dir_path = saveData(data, persist=False, chunks=chunks)
+
+            data_path = genDataPath(dir_path)
+            spec = createChunkedSpectra(input_data,
+                                        'AveragedPowerspectrum',
+                                        data_path=data_path,
+                                        segment_size=segment_size,
+                                        norm=norm,
+                                        gti=gti,
+                                        power_type=None,
+                                        silent=silent,
+                                        dt=dt)
+            for key, val in spec.__dict__.items():
+                setattr(self, key, val)
+
+            return
+
+        self.type = "powerspectrum"
         self.dt = dt
 
         if isinstance(data, EventList):
@@ -401,8 +435,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         nphots_all : ``numpy.ndarray``
             List containing the number of photons for all segments calculated from ``lc``
         """
-        if not isinstance(lc, lightcurve.Lightcurve):
-            raise TypeError("lc must be a lightcurve.Lightcurve object")
+        if not isinstance(lc, Lightcurve):
+            raise TypeError("lc must be a Lightcurve object")
 
         current_gtis = lc.gti
 
@@ -435,9 +469,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                     "No counts in interval {}--{}s".format(time[0], time[-1]))
                 continue
 
-            lc_seg = lightcurve.Lightcurve(time, counts, err=counts_err,
-                                           err_dist=lc.err_dist.lower(),
-                                           skip_checks=True, dt=lc.dt)
+            lc_seg = Lightcurve(time, counts, err=counts_err,
+                                err_dist=lc.err_dist.lower(),
+                                skip_checks=True, dt=lc.dt)
 
             power_seg = Powerspectrum(lc_seg, norm=self.norm)
             power_all.append(power_seg)
@@ -518,12 +552,15 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def _make_matrix(self, lc):
         """
-        Create a matrix of powers for each time step (rows) and each frequency step (columns).
+        Create a matrix of powers for each time step and each frequency step.
+
+        Time increases with row index, frequency with column index.
 
         Parameters
         ----------
         lc : :class:`Lightcurve` object
-            The :class:`Lightcurve` object from which to generate the dynamical power spectrum
+            The :class:`Lightcurve` object from which to generate the dynamical
+            power spectrum
         """
         ps_all, _ = AveragedPowerspectrum._make_segment_spectrum(
             self, lc, self.segment_size)
@@ -538,11 +575,10 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             bin_intervals_from_gtis(current_gti, self.segment_size, lc.time,
                                     dt=lc.dt)
 
-
         tstart = lc.time[start_inds]
         tend = lc.time[end_inds]
 
-        self.time = tstart + 0.5*(tend - tstart)
+        self.time = tstart + 0.5 * (tend - tstart)
 
         # Assign length of lightcurve as time resolution if only one value
         if len(self.time) > 1:
@@ -576,6 +612,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
         """
+        new_dynspec_object = copy.deepcopy(self)
         dynspec_new = []
         for data in self.dyn_ps.T:
             freq_new, bin_counts, bin_err, _ = \
@@ -583,11 +620,12 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
                                  method=method)
             dynspec_new.append(bin_counts)
 
-        self.freq = freq_new
-        self.dyn_ps = np.array(dynspec_new).T
-        self.df = df_new
+        new_dynspec_object.freq = freq_new
+        new_dynspec_object.dyn_ps = np.array(dynspec_new).T
+        new_dynspec_object.df = df_new
+        return new_dynspec_object
 
-    def trace_maximum(self, min_freq=None, max_freq=None, sigmaclip=False):
+    def trace_maximum(self, min_freq=None, max_freq=None):
         """
         Return the indices of the maximum powers in each segment :class:`Powerspectrum`
         between specified frequencies.
@@ -648,10 +686,11 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         dynspec_new: numpy.ndarray
             New rebinned Dynamical Power Spectrum.
         """
-
         if dt_new < self.dt:
             raise ValueError("New time resolution must be larger than "
                              "old time resolution!")
+
+        new_dynspec_object = copy.deepcopy(self)
 
         dynspec_new = []
         for data in self.dyn_ps:
@@ -660,6 +699,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
                                  method=method)
             dynspec_new.append(bin_counts)
 
-        self.time = time_new
-        self.dyn_ps = np.array(dynspec_new)
-        self.dt = dt_new
+        new_dynspec_object.time = time_new
+        new_dynspec_object.dyn_ps = np.array(dynspec_new)
+        new_dynspec_object.dt = dt_new
+        return new_dynspec_object

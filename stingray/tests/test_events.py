@@ -236,11 +236,11 @@ class TestEvents(object):
         """Join two non-overlapping event lists.
         """
         ev = EventList(time=[1, 1, 10, 6, 5],
-                       energy=[10, 6, 3, 11, 2], gti=[[1, 3],[5, 6]],
+                       energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]],
                        mjdref=57001)
         ev_other = EventList(time=np.asarray([5, 7, 6, 6, 10]) + 86400,
                              energy=[2, 3, 8, 1, 2],
-                             gti=np.asarray([[5, 7],[8, 10]]) + 86400,
+                             gti=np.asarray([[5, 7], [8, 10]]) + 86400,
                              mjdref=57000)
         ev_new = ev.join(ev_other)
 
@@ -304,4 +304,3 @@ class TestEvents(object):
 
         with pytest.raises(KeyError):
             ev.read('ev.pickle', format_="unsupported")
-
