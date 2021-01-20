@@ -105,8 +105,8 @@ class TestIO(object):
         r_n = (n_i + n_f)
         assert (n == r_n).all()
 
-class TestIOReadWrite(object):
-    """A class to test all the read and write functions."""
+class TmpIOReadWrite(object):
+    """A temporary helper class to test all the read and write functions."""
     def __init__(self):
         self.number = 10
         self.str = 'Test'
@@ -122,14 +122,14 @@ class TestIOReadWrite(object):
 class TestFileFormats(object):
 
     def test_pickle_read_write(self):
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, filename='test.pickle', format_='pickle')
         assert read('test.pickle', 'pickle') is not None
         os.remove('test.pickle')
 
     def test_pickle_attributes(self):
         """Test if pickle maintains class object attributes."""
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, filename='test.pickle', format_='pickle')
         rec_object = read('test.pickle', 'pickle')
         assert rec_object.number == test_object.number
@@ -143,27 +143,27 @@ class TestFileFormats(object):
 
     def test_pickle_functions(self):
         """Test if pickle maintains class methods."""
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object,'test.pickle', 'pickle')
         assert read('test.pickle', 'pickle').test_operation() == test_object.number * 10
         os.remove('test.pickle')
 
     @skip_condition
     def test_hdf5_write(self):
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         os.remove('test.hdf5')
 
     @skip_condition
     def test_hdf5_read(self):
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         read('test.hdf5','hdf5')
         os.remove('test.hdf5')
 
     @skip_condition
     def test_hdf5_data_recovery(self):
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, 'test.hdf5', 'hdf5')
         rec_object = read('test.hdf5','hdf5')
 
@@ -211,24 +211,24 @@ class TestFileFormats(object):
         os.remove("ascii_test.txt")
 
     def test_fits_write(self):
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, 'test.fits', 'fits')
         os.remove('test.fits')
 
     def test_fits_read(self):
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, 'test.fits', 'fits')
         read('test.fits','fits',cols=['array','number','long_number'])
         os.remove('test.fits')
 
     def test_fits_with_multiple_tables(self):
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, 'test.fits', 'fits', tnames=['EVENTS', 'GTI'],
             colsassign={'number':'GTI', 'array':'GTI'})
         os.remove('test.fits')
 
     def test_fits_data_recovery(self):
-        test_object = TestIOReadWrite()
+        test_object = TmpIOReadWrite()
         write(test_object, 'test.fits', 'fits')
         rec_object = read('test.fits', 'fits', cols = ['number', 'str', 'list',
             'array','long_array','long_number'])
