@@ -254,6 +254,7 @@ class TestEvents(object):
                 np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert np.allclose(ev_new.gti, np.array([[5, 6]]))
 
+    @pytest.mark.skipif('not _HAS_YAML')
     def test_io_with_ascii(self):
         ev = EventList(self.time)
         ev.write('ascii_ev.ecsv', format_='ascii')
@@ -308,7 +309,6 @@ class TestEvents(object):
         with pytest.raises(KeyError):
             ev.read('ev.pickle', format_="unsupported")
 
-    @pytest.mark.skipif('not _HAS_YAML')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.

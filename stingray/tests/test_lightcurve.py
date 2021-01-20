@@ -925,6 +925,7 @@ class TestLightcurve(object):
     #     lc.read('ascii_lc.txt', format_='ascii')
     #     os.remove('ascii_lc.txt')
 
+    @pytest.mark.skipif('not _HAS_YAML')
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('ascii_lc.ecsv', format_='ascii')
@@ -1006,7 +1007,6 @@ class TestLightcurve(object):
         assert np.all(lc2.counts == lc.counts)
         assert np.all(lc2.countrate == lc.countrate)
 
-    @pytest.mark.skipif('not _HAS_YAML')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.
