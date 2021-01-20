@@ -21,7 +21,7 @@ class TestRebinData(object):
         dx_new = 2.0
         xbin, ybin, yerr, step_size = utils.rebin_data(self.x, self.y, dx_new,
                                                        self.yerr)
-        assert step_size == dx_new / self.dx
+        assert np.all(step_size == dx_new / self.dx)
 
     def test_arrays(self):
         dx_new = 2.0
@@ -64,6 +64,39 @@ class TestRebinData(object):
             utils.rebin_data(self.x, self.y, dx_new, self.yerr,
                              method='not_allowed_method')
 
+    def test_rebin_variable_input_sampling(self):
+        x1 = np.linspace(0,10,11)
+        x2 = np.linspace(10.33, 20.0, 30)
+        x3 = np.linspace(21, 30, 10 )
+        x = np.hstack([x1, x2, x3])
+        
+        counts = 2.0
+        y = np.zeros_like(x) + counts
+        
+        yerr = np.sqrt(y)
+        dx_new = 1.5
+        xbin, ybin, yerr_bin, step_size = utils.rebin_data(x, y, dx_new, yerr)
+        
+        assert np.all(ybin == counts * step_size)
+        assert len(xbin) == 20
+        
+    def test_rebin_variable_input_mean(self):
+
+        x1 = np.linspace(0,10,11)
+        x2 = np.linspace(10.33, 20.0, 30)
+        x3 = np.linspace(21, 30, 10 )
+        x = np.hstack([x1, x2, x3])
+    
+        counts = 2.0
+        y = np.zeros_like(x) + counts
+    
+        yerr = np.sqrt(y)
+        dx_new = 1.5
+        xbin, ybin, yerr_bin, step_size = utils.rebin_data(x, y, dx_new, yerr, method="average")
+        assert len(xbin) == 20
+        assert np.all(ybin == counts)
+    
+         
 
 class TestRebinDataLog(object):
 
