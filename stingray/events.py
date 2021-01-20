@@ -372,13 +372,15 @@ class EventList(object):
 
         * ``time``:  the time stamps of the photon arrivals
         * ``energy``: the photon energy corresponding to each time stamp
-        * ``ncounts``: the total number of photon counts recorded
         * ``mjdref``: a reference time in Modified Julian Date
-        * ``dt``: the time resolution of the data
         * ``notes``: other possible meta-data
         * ``gti``: Good Time Intervals
         * ``pi``: some instruments record energies as "Pulse Invariant", an integer number recorded from
           the Pulse Height Amplitude
+
+        Ascii files need to be ECSV files with an
+        :class:`astropy.timeseries.TimeSeries` containing time, energy and pi
+        in the data cols and the remaining metadata in the ``meta`` attribute
 
         Parameters
         ----------

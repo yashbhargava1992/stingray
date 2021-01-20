@@ -1588,6 +1588,11 @@ class Lightcurve(object):
         * HDF5
         * ASCII
 
+        Ascii files need to be ECSV files with an
+        :class:`astropy.timeseries.TimeSeries` containing time and counts
+        (+possibly counts_err, countrate, etc.) in the data cols and the
+        remaining metadata in the ``meta`` attribute
+
         Parameters
         ----------
         filename: str
@@ -1607,8 +1612,8 @@ class Lightcurve(object):
 
         Returns
         --------
-        lc : ``astropy.table`` or ``dict`` or :class:`Lightcurve` object
-            * If ``format\_`` is ``ascii``: ``astropy.table`` is returned.
+        lc : ``dict`` or :class:`Lightcurve` object
+            * If ``format\_`` is ``ascii``: :class:`Lightcurve` is returned.
             * If ``format\_`` is ``hdf5``: dictionary with key-value pairs is returned.
             * If ``format\_`` is ``pickle``: :class:`Lightcurve` object is returned.
         """
