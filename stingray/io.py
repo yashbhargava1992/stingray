@@ -489,15 +489,21 @@ def common_name(str1, str2, default='common'):
     return common_str
 
 
-def split_numbers(number):
+def split_numbers(number, shift=0):
     """
     Split high precision number(s) into doubles.
-    TODO: Consider the option of using a third number to specify shift.
+
+    You can specify the number of shifts to move the decimal point.
 
     Parameters
     ----------
     number: long double
         The input high precision number which is to be split
+
+    Other parameters
+    ----------------
+    shift: integer
+        Move the cut by `shift` decimal points to the right (left if negative)
 
     Returns
     -------
@@ -506,16 +512,31 @@ def split_numbers(number):
 
     number_F: double
         Second part of high precision number
-    """
 
+    Examples
+    --------
+    >>> n = 12.34
+    >>> i, f = split_numbers(n)
+    >>> i == 12
+    True
+    >>> np.isclose(f, 0.34)
+    True
+    >>> split_numbers(n, 2)
+    (12.34, 0.0)
+    >>> split_numbers(n, -1)
+    (10.0, 2.34)
+    """
     if isinstance(number, Iterable):
+        number = np.asarray(number)
+        number *= 10**shift
         mods = [math.modf(n) for n in number]
         number_F = [f for f, _ in mods]
         number_I = [i for _, i in mods]
     else:
+        number *= 10**shift
         number_F, number_I = math.modf(number)
 
-    return np.double(number_I), np.double(number_F)
+    return np.double(number_I) / 10**shift, np.double(number_F) / 10**shift
 
 
 def _save_pickle_object(object, filename):
