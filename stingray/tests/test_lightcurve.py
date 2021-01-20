@@ -16,6 +16,8 @@ np.random.seed(20150907)
 
 _H5PY_INSTALLED = True
 _HAS_LIGHTKURVE = True
+_HAS_TIMESERIES = True
+_HAS_YAML = True
 
 try:
     import h5py
@@ -26,6 +28,17 @@ try:
     import Lightkurve
 except ImportError:
     _HAS_LIGHTKURVE = False
+
+try:
+    import astropy.timeseries
+    from astropy.timeseries import TimeSeries
+except ImportError:
+    _HAS_TIMESERIES = False
+
+try:
+    import yaml
+except ImportError:
+    _HAS_YAML = False
 
 def fvar_fun(lc):
     from stingray.utils import excess_variance
@@ -944,11 +957,20 @@ class TestLightcurve(object):
             lc.plot(title="Test Lightcurve")
         assert plt.fignum_exists(1)
 
+    # def test_io_with_ascii(self):
+    #     lc = Lightcurve(self.times, self.counts)
+    #     lc.write('ascii_lc.txt', format_='ascii')
+    #     lc.read('ascii_lc.txt', format_='ascii')
+    #     os.remove('ascii_lc.txt')
+
+    @pytest.mark.skipif('not (_HAS_YAML and _HAS_TIMESERIES)')
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write('ascii_lc.txt', format_='ascii')
-        lc.read('ascii_lc.txt', format_='ascii')
-        os.remove('ascii_lc.txt')
+        lc.write('ascii_lc.ecsv', format_='ascii')
+        lc = lc.read('ascii_lc.ecsv', format_='ascii')
+        assert np.all(lc.time == self.times)
+        assert np.all(lc.counts == self.counts)
+        os.remove('ascii_lc.ecsv')
 
     def test_io_with_pickle(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1022,6 +1044,53 @@ class TestLightcurve(object):
         lc2 = lc.shift(1)
         assert np.all(lc2.counts == lc.counts)
         assert np.all(lc2.countrate == lc.countrate)
+
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
+    def test_timeseries_roundtrip(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.times)
+        lc = Lightcurve(self.times, self.counts, mission="BUBU", instr="BABA",
+                        mjdref=53467.)
+
+        ts = lc.to_astropy_timeseries()
+        new_lc = lc.from_astropy_timeseries(ts)
+        for attr in ['time', 'gti', 'counts']:
+            assert np.all(getattr(lc, attr) == getattr(new_lc, attr))
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(lc, attr) == getattr(new_lc, attr)
+
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
+    def test_timeseries_roundtrip_ctrate(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.times)
+        dt = 0.5
+        mean_counts = 2.0
+        times = np.arange(0 + dt / 2, 5 - dt / 2, dt)
+        countrate = np.zeros_like(times) + mean_counts
+
+        lc = Lightcurve(times, countrate, mission="BUBU", instr="BABA",
+                        mjdref=53467., input_counts=False)
+
+        ts = lc.to_astropy_timeseries()
+        new_lc = lc.from_astropy_timeseries(ts)
+        for attr in ['time', 'gti', 'countrate']:
+            assert np.allclose(getattr(lc, attr), getattr(new_lc, attr))
+        assert np.allclose(new_lc.counts, lc.countrate * lc.dt)
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(lc, attr) == getattr(new_lc, attr)
+
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
+    def test_from_timeseries_bad(self):
+        from astropy.time import TimeDelta
+        times = TimeDelta(np.arange(10) * u.s)
+        ts = TimeSeries(time=times)
+        with pytest.raises(ValueError) as excinfo:
+            Lightcurve.from_astropy_timeseries(ts)
+        assert "Input timeseries must contain at least" in str(excinfo.value)
 
 
 class TestLightcurveRebin(object):

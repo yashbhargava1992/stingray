@@ -86,7 +86,8 @@ class EventList(object):
 
     """
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
-                 notes="", gti=None, pi=None, high_precision=False):
+                 notes="", gti=None, pi=None, high_precision=False,
+                 mission=None, instr=None):
 
         self.energy = None if energy is None else np.asarray(energy)
         self.notes = notes
@@ -95,6 +96,8 @@ class EventList(object):
         self.gti = np.asarray(gti) if gti is not None else None
         self.pi = pi
         self.ncounts = ncounts
+        self.mission = mission
+        self.instr = instr
 
         if time is not None:
             if not high_precision:
@@ -369,13 +372,15 @@ class EventList(object):
 
         * ``time``:  the time stamps of the photon arrivals
         * ``energy``: the photon energy corresponding to each time stamp
-        * ``ncounts``: the total number of photon counts recorded
         * ``mjdref``: a reference time in Modified Julian Date
-        * ``dt``: the time resolution of the data
         * ``notes``: other possible meta-data
         * ``gti``: Good Time Intervals
         * ``pi``: some instruments record energies as "Pulse Invariant", an integer number recorded from
           the Pulse Height Amplitude
+
+        Ascii files need to be ECSV files with an
+        :class:`astropy.timeseries.TimeSeries` containing time, energy and pi
+        in the data cols and the remaining metadata in the ``meta`` attribute
 
         Parameters
         ----------
@@ -391,15 +396,17 @@ class EventList(object):
             The :class:`EventList` object reconstructed from file
         """
 
+        if format_ == 'ascii':
+            from astropy.timeseries import TimeSeries
+            # time = np.asarray(data.columns[0])
+            ts = TimeSeries.read(filename, format='ascii.ecsv')
+            return EventList.from_astropy_timeseries(ts)
+
         attributes = ['time', 'energy', 'ncounts', 'mjdref', 'dt',
                       'notes', 'gti', 'pi']
         data = read(filename, format_, cols=attributes)
 
-        if format_ == 'ascii':
-            time = np.asarray(data.columns[0])
-            return EventList(time=time)
-
-        elif format_ == 'hdf5' or format_ == 'fits':
+        if format_ == 'hdf5' or format_ == 'fits':
             keys = data.keys()
             values = []
 
@@ -439,7 +446,9 @@ class EventList(object):
         """
 
         if format_ == 'ascii':
-            write(np.asarray([self.time]).T, filename, format_, fmt=["%s"])
+            # write(np.asarray([self.time]).T, filename, format_, fmt=["%s"])
+            ts = self.to_astropy_timeseries()
+            ts.write(filename, format='ascii.ecsv', overwrite=True)
 
         elif format_ == 'pickle':
             write(self, filename, format_)
@@ -564,3 +573,43 @@ class EventList(object):
         new_ev.gti = new_ev.gti + time_shift
 
         return new_ev
+
+    def to_astropy_timeseries(self):
+        from astropy.timeseries import TimeSeries
+        from astropy.time import TimeDelta
+        from astropy import units as u
+        data = {}
+        for attr in ['energy', 'pi']:
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                data[attr] = np.asarray(getattr(self, attr))
+        if data == {}:
+            data = None
+        ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
+        ts.meta['gti'] = self.gti
+        ts.meta['mjdref'] = self.mjdref
+        ts.meta['instr'] = self.instr
+        ts.meta['mission'] = self.mission
+        return ts
+
+    @staticmethod
+    def from_astropy_timeseries(ts):
+        from astropy.timeseries import TimeSeries
+        from astropy import units as u
+        energy = pi = gti = instr = mission = mjdref = None
+        if 'energy' in ts.colnames:
+            energy = ts['energy']
+        if 'pi' in ts.colnames:
+            pi = ts['pi']
+        if 'gti' in ts.meta:
+            gti = ts.meta['gti']
+        if 'instr' in ts.meta:
+            instr = ts.meta['instr']
+        if 'mission' in ts.meta:
+            mission = ts.meta['mission']
+        if 'mjdref' in ts.meta:
+            mjdref = ts.meta['mjdref']
+
+        ev = EventList(time=ts.time.to(u.s).value, energy=energy, pi=pi,
+                       gti=gti, mission=mission, instr=instr, mjdref=mjdref)
+
+        return ev

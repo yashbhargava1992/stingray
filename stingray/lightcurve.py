@@ -136,7 +136,8 @@ class Lightcurve(object):
     """
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
-                 skip_checks=False, low_memory=False):
+                 skip_checks=False, low_memory=False, mission=None,
+                 instr=None):
 
         if hasattr(time, 'value'):
             time = time.value
@@ -202,6 +203,8 @@ class Lightcurve(object):
         self._bin_lo = None
         self._bin_hi = None
         self._n = None
+        self.mission = mission
+        self.instr = instr
 
         self.input_counts = input_counts
         self.low_memory = low_memory
@@ -1422,6 +1425,54 @@ class Lightcurve(object):
                           err=lk.flux_err, input_counts=False,
                           skip_checks=skip_checks)
 
+    def to_astropy_timeseries(self):
+        from astropy.timeseries import TimeSeries
+        from astropy.time import TimeDelta
+        from astropy import units as u
+        data = {}
+        for attr in ['_counts', '_counts_err', '_countrate', '_countrate_err',
+                     '_bin_lo', '_bin_hi']:
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                data[attr.lstrip('_')] = np.asarray(getattr(self, attr))
+
+        ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
+        for attr in ['_gti', 'mjdref', '_meancounts', '_meancountrate',
+                     'instr', 'mission', 'dt']:
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                ts.meta[attr.lstrip('_')] = getattr(self, attr)
+
+        return ts
+
+    @staticmethod
+    def from_astropy_timeseries(ts):
+        from astropy.timeseries import TimeSeries
+        from astropy import units as u
+
+        dt = None
+        if 'dt' in ts.meta:
+            dt = ts.meta['dt']
+        if 'counts' in ts.colnames:
+            lc = Lightcurve(ts.time.to(u.s).value, ts['counts'],
+                            skip_checks=True, dt=dt)
+        elif 'countrate' in ts.colnames:
+            lc = Lightcurve(ts.time.to(u.s).value, ts['countrate'],
+                            input_counts=False, skip_checks=True, dt=dt)
+        else:
+            raise ValueError('Input timeseries must contain at least a '
+                             '`counts` or a `countrate` column')
+
+        for attr in ['counts', 'counts_err', 'countrate', 'countrate_err',
+                     'bin_hi', 'bin_low']:
+            if attr in ts.colnames and getattr(lc, '_' + attr) is None:
+                setattr(lc, attr, ts[attr])
+
+        for attr in ['gti', 'mjdref', 'meancounts', 'meancountrate',
+                     'instr', 'mission']:
+            if attr in ts.meta and ts.meta[attr] is not None:
+                setattr(lc, attr, ts.meta[attr])
+
+        return lc
+
     def plot(self, witherrors=False, labels=None, axis=None, title=None,
              marker='-', save=False, filename=None):
         """
@@ -1518,8 +1569,11 @@ class Lightcurve(object):
             self.countrate, self.countrate_err, \
             self.gti
         if format_ == 'ascii':
-            io.write(np.array([self.time, self.counts, self.counts_err]).T,
-                     filename, format_, fmt=["%s", "%s", "%s"])
+            # io.write(np.array([self.time, self.counts, self.counts_err]).T,
+            #          filename, format_, fmt=["%s", "%s", "%s"])
+            ts = self.to_astropy_timeseries()
+            return ts.write(filename, format='ascii.ecsv', overwrite=True)
+
         elif format_ == 'pickle':
             io.write(self, filename, format_)
         elif format_ == 'hdf5':
@@ -1534,6 +1588,11 @@ class Lightcurve(object):
         * pickle (not recommended for long-term storage)
         * HDF5
         * ASCII
+
+        Ascii files need to be ECSV files with an
+        :class:`astropy.timeseries.TimeSeries` containing time and counts
+        (+possibly counts_err, countrate, etc.) in the data cols and the
+        remaining metadata in the ``meta`` attribute
 
         Parameters
         ----------
@@ -1554,28 +1613,18 @@ class Lightcurve(object):
 
         Returns
         --------
-        lc : ``astropy.table`` or ``dict`` or :class:`Lightcurve` object
-            * If ``format\_`` is ``ascii``: ``astropy.table`` is returned.
+        lc : ``dict`` or :class:`Lightcurve` object
+            * If ``format\_`` is ``ascii``: :class:`Lightcurve` is returned.
             * If ``format\_`` is ``hdf5``: dictionary with key-value pairs is returned.
             * If ``format\_`` is ``pickle``: :class:`Lightcurve` object is returned.
         """
-
         if format_ == 'ascii':
-            data_raw = io.read(filename, format_,
-                               names=['time', 'counts', 'counts_err'])
+            from astropy.timeseries import TimeSeries
 
-            data = {'time': np.array(data_raw['time']),
-                    'counts': np.array(data_raw['counts']),
-                    'counts_err': np.array(data_raw['counts_err'])}
-            data['dt'] = np.median(np.diff(data['time']))
-            data['gti'] = np.array([[data['time'][0] - data['dt'] / 0,
-                                     data['time'][-1] + data['dt'] / 0]])
-            # We use default_err_dist == 'gauss' just because people using
-            # ASCII files will generally use Gaussian errors. This can be
-            # changed from the command line.
-            data['err_dist'] = default_err_dist
-            data['mjdref'] = 0
-        elif format_ == 'hdf5':
+            ts = TimeSeries.read(filename, format='ascii.ecsv')
+            return Lightcurve.from_astropy_timeseries(ts)
+
+        if format_ == 'hdf5':
             data_raw = io.read(filename, format_)
 
             data = {'time': np.array(data_raw['_time']),
