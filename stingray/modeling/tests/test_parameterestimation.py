@@ -383,13 +383,14 @@ if can_sample:
     class SamplingResultsDummy(SamplingResults):
         def __init__(self, sampler, ci_min=0.05, ci_max=0.95):
             # store all the samples
-            self.samples = sampler.flatchain
+            self.samples = sampler.get_chain(flat=True)
 
-            self.nwalkers = np.float(sampler.chain.shape[0])
-            self.niter = np.float(sampler.chain.shape[1])
+            chain_ndims = sampler.get_chain().shape
+            self.nwalkers = np.float(chain_ndims[0])
+            self.niter = np.float(chain_ndims[1])
 
             # store number of dimensions
-            self.ndim = sampler.chain.shape[2]
+            self.ndim = chain_ndims[2]
 
             # compute and store acceptance fraction
             self.acceptance = np.nanmean(sampler.acceptance_fraction)
@@ -444,7 +445,7 @@ if can_sample:
 
             cls.sampler = emcee.EnsembleSampler(cls.nwalkers,
                                                 len(res.p_opt), cls.lpost,
-                                                args=[False], threads=1)
+                                                args=[False])
 
             with catch_warnings(RuntimeWarning):
                 _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
