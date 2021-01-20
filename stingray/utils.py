@@ -237,11 +237,11 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         
     if method in ['mean', 'avg', 'average', 'arithmetic mean']:
         ybin = output / step_size
-        ybinerr = outputerr / step_size
+        ybinerr = np.sqrt(outputerr) / step_size
 
     elif method == "sum":
         ybin = output
-        ybinerr = outputerr
+        ybinerr = np.sqrt(outputerr)
 
     else:
         raise ValueError("Method for summing or averaging not recognized. "
