@@ -64,7 +64,7 @@ class TestAll(object):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
-                correction_sec, correction_mjd, model = \
+            correction_sec, correction_mjd, model = \
                 get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop,
                                                            parfile, ntimes=1000,
                                                            return_pint_model=True)
