@@ -1111,10 +1111,11 @@ def interpret_times(time, mjdref=0):
     if isinstance(time, Time):
         mjds = time.mjd
         if mjdref == 0:
-            if isinstance(mjds, Iterable):
-                mjdref = mjds[0]
-            else:
-                mjdref = mjds
+            if np.all(mjds > 10000):
+                if isinstance(mjds, Iterable):
+                    mjdref = mjds[0]
+                else:
+                    mjdref = mjds
 
         out_times = (mjds - mjdref) * 86400
         return out_times, mjdref

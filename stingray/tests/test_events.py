@@ -299,35 +299,31 @@ class TestEvents(object):
         ev = EventList(self.time)
         ev.write('ascii_ev.ecsv', format_='ascii')
         ev = ev.read('ascii_ev.ecsv', format_='ascii')
-        assert np.all(ev.time == self.time)
+        print(ev.time, self.time)
+        assert np.allclose(ev.time, self.time)
         os.remove('ascii_ev.ecsv')
 
     def test_io_with_pickle(self):
-        ev = EventList(self.time)
+        ev = EventList(self.time, mjdref=54000)
         ev.write('ev.pickle', format_='pickle')
         ev = ev.read('ev.pickle',format_='pickle')
         assert np.all(ev.time == self.time)
         os.remove('ev.pickle')
 
+    @pytest.mark.skipif("not _H5PY_INSTALLED")
     def test_io_with_hdf5(self):
-        ev = EventList(time=self.time)
+        ev = EventList(time=self.time, mjdref=54000)
         ev.write('ev.hdf5', format_='hdf5')
 
-        if _H5PY_INSTALLED:
-            ev = ev.read('ev.hdf5',format_='hdf5')
-            assert np.all(ev.time == self.time)
-            os.remove('ev.hdf5')
-
-        else:
-            ev = ev.read('ev.pickle',format_='pickle')
-            assert np.all(ev.time == self.time)
-            os.remove('ev.pickle')
+        ev = ev.read('ev.hdf5',format_='hdf5')
+        assert np.allclose(ev.time, self.time)
+        os.remove('ev.hdf5')
 
     def test_io_with_fits(self):
-        ev = EventList(time = self.time)
+        ev = EventList(time = self.time, mjdref=54000)
         ev.write('ev.fits', format_='fits')
         ev = ev.read('ev.fits', format_='fits')
-        assert np.all(ev.time == self.time)
+        assert np.allclose(ev.time, self.time)
         os.remove('ev.fits')
 
     def test_fits_with_standard_file(self):
@@ -336,19 +332,19 @@ class TestEvents(object):
         """
         fname = os.path.join(datadir, 'monol_testA.evt')
         ev = EventList()
-        ev = ev.read(fname, format_='fits')
+        ev = ev.read(fname, format_='hea')
 
-    def test_io_with_wrong_format(self):
-        """Test that io methods raise Key Error when
-        wrong format is provided.
-        """
-        ev = EventList()
-        with warnings.catch_warnings(record=True):
-            with pytest.raises(KeyError):
-                ev.write('ev.pickle', format_="unsupported")
-
-        with pytest.raises(KeyError):
-            ev.read('ev.pickle', format_="unsupported")
+    # def test_io_with_wrong_format(self):
+    #     """Test that io methods raise Key Error when
+    #     wrong format is provided.
+    #     """
+    #     ev = EventList()
+    #     with warnings.catch_warnings(record=True):
+    #         with pytest.raises(KeyError):
+    #             ev.write('ev.pickle', format_="unsupported")
+    #
+    #     with pytest.raises(KeyError):
+    #         ev.read('ev.pickle', format_="unsupported")
 
     @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
@@ -362,7 +358,22 @@ class TestEvents(object):
         ts = ev.to_astropy_timeseries()
         new_ev = ev.from_astropy_timeseries(ts)
         for attr in ['time', 'energy', 'pi', 'gti']:
-            assert np.all(getattr(ev, attr) == getattr(new_ev, attr))
+            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
+
+    def test_table_roundtrip(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.time)
+        ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),
+                       pi=np.ones(N), mission="BUBU", instr="BABA",
+                       mjdref=53467.)
+        ts = ev.to_astropy_table()
+        new_ev = ev.from_astropy_table(ts)
+        for attr in ['time', 'energy', 'pi', 'gti']:
+            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(ev, attr) == getattr(new_ev, attr)
 
