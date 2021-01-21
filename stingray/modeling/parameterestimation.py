@@ -27,6 +27,7 @@ except ImportError:
     use_corner = False
 
 import logging
+from multiprocessing import Pool
 
 import numpy as np
 import scipy
@@ -62,12 +63,16 @@ class OptimizationResults(object):
     res: instance of ``scipy.OptimizeResult``
         The object containing the results from a optimization run
 
-    Attributes
-    ----------
     neg : bool, optional, default ``True``
         A flag that sets whether the log-likelihood or negative log-likelihood
         is being used
 
+    log : a logging.getLogger() object, default None
+        You can pass a pre-defined object for logging, else a new 
+        logger will be instantiated
+
+    Attributes
+    ----------
     result : float
         The result of the optimization, i.e. the function value at the
         minimum that the optimizer found
@@ -124,16 +129,25 @@ class OptimizationResults(object):
     .. [bic] https://projecteuclid.org/euclid.aos/1176344136
 
     """
-    def __init__(self, lpost, res, neg=True):
+    def __init__(self, lpost, res, neg=True, log=None):
         self.neg = neg
         self.result = res.fun
         self.p_opt = np.atleast_1d(res.x)
         self.model = lpost.model
 
+        if log is None:
+            self.log = logging.getLogger('Fitting summary')
+            self.log.setLevel(logging.DEBUG)
+            if not self.log.handlers:
+                ch = logging.StreamHandler()
+                ch.setLevel(logging.DEBUG)
+                self.log.addHandler(ch)
+
         self._compute_covariance(lpost, res)
         self._compute_model(lpost)
         self._compute_criteria(lpost)
         self._compute_statistics(lpost)
+
 
     def _compute_covariance(self, lpost, res):
         """
@@ -165,7 +179,7 @@ class OptimizationResults(object):
         else:
             if comp_hessian:
                 # calculate Hessian approximating with finite differences
-                logging.info("Approximating Hessian with finite differences ...")
+                self.log.info("Approximating Hessian with finite differences ...")
 
                 phess = approx_hess(np.atleast_1d(self.p_opt), lpost)
 
@@ -246,7 +260,7 @@ class OptimizationResults(object):
         self.ssd = np.sqrt(2.0*self.sexp)
         self.sobs = np.sum(lpost.y-self.mfit)
 
-    def print_summary(self, lpost, log=None):
+    def print_summary(self, lpost):
         """
         Print a useful summary of the fitting procedure to screen or
         a log file.
@@ -256,19 +270,9 @@ class OptimizationResults(object):
         lpost : instance of :class:`Posterior` or one of its subclasses
             The object containing the function that is being optimized
             in the regression
-
-        log : logging handler, optional, default None
-            A handler used for logging the output properly
         """
-        if log is None:
-            log = logging.getLogger('Fitting summary')
-            log.setLevel(logging.DEBUG)
 
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.DEBUG)
-            log.addHandler(ch)
-
-        log.info("The best-fit model parameters plus errors are:")
+        self.log.info("The best-fit model parameters plus errors are:")
 
         fixed = [lpost.model.fixed[n] for n in lpost.model.param_names]
         tied = [lpost.model.tied[n] for n in lpost.model.param_names]
@@ -280,7 +284,7 @@ class OptimizationResults(object):
 
         all_parnames = [n for n in lpost.model.param_names]
         for i, par in enumerate(all_parnames):
-            log.info("{:3}) Parameter {:<20}: ".format(i, par))
+            self.log.info("{:3}) Parameter {:<20}: ".format(i, par))
 
             if par in parnames:
                 idx = parnames.index(par)
@@ -288,29 +292,29 @@ class OptimizationResults(object):
                 err_info = " (no error estimate)"
                 if self.err is not None:
                     err_info = " +/- {:<20.5f}".format(self.err[idx])
-                log.info("{:<20.5f}{} ".format(self.p_opt[idx], err_info))
-                log.info("[{:>10} {:>10}]".format(str(bounds[i][0]),
+                self.log.info("{:<20.5f}{} ".format(self.p_opt[idx], err_info))
+                self.log.info("[{:>10} {:>10}]".format(str(bounds[i][0]),
                                                str(bounds[i][1])))
             elif fixed[i]:
-                log.info("{:<20.5f} (Fixed) ".format(lpost.model.parameters[i]))
+                self.log.info("{:<20.5f} (Fixed) ".format(lpost.model.parameters[i]))
             elif tied[i]:
-                log.info("{:<20.5f} (Tied) ".format(lpost.model.parameters[i]))
+                self.log.info("{:<20.5f} (Tied) ".format(lpost.model.parameters[i]))
 
-        log.info("\n")
+        self.log.info("\n")
 
-        log.info("Fitting statistics: ")
-        log.info(" -- number of data points: %i"%(len(lpost.x)))
+        self.log.info("Fitting statistics: ")
+        self.log.info(" -- number of data points: %i"%(len(lpost.x)))
 
         try:
             self.deviance
         except AttributeError:
             self._compute_criteria(lpost)
 
-        log.info(" -- Deviance [-2 log L] D = %f.3"%self.deviance)
-        log.info(" -- The Akaike Information Criterion of the model is: " +
+        self.log.info(" -- Deviance [-2 log L] D = %f.3"%self.deviance)
+        self.log.info(" -- The Akaike Information Criterion of the model is: " +
               str(self.aic) + ".")
 
-        log.info(" -- The Bayesian Information Criterion of the model is: " +
+        self.log.info(" -- The Bayesian Information Criterion of the model is: " +
               str(self.bic) + ".")
 
         try:
@@ -318,13 +322,13 @@ class OptimizationResults(object):
         except AttributeError:
             self._compute_statistics(lpost)
 
-        log.info(" -- The figure-of-merit function for this model " +
+        self.log.info(" -- The figure-of-merit function for this model " +
               " is: %f.5f"%self.merit +
               " and the fit for %i dof is %f.3f"%(self.dof,
                                                   self.merit/self.dof))
 
-        log.info(" -- Summed Residuals S = %f.5f"%self.sobs)
-        log.info(" -- Expected S ~ %f.5 +/- %f.5"%(self.sexp, self.ssd))
+        self.log.info(" -- Summed Residuals S = %f.5f"%self.sobs)
+        self.log.info(" -- Expected S ~ %f.5 +/- %f.5"%(self.sexp, self.ssd))
 
         return
 
@@ -558,7 +562,7 @@ class ParameterEstimation(object):
 
     def sample(self, lpost, t0, cov=None,
                nwalkers=500, niter=100, burnin=100, threads=1,
-               print_results=True, plot=False, namestr="test"):
+               print_results=True, plot=False, namestr="test", pool=False):
         """
         Sample the :class:`Posterior` distribution defined in ``lpost`` using MCMC.
         Here we use the ``emcee`` package, but other implementations could
@@ -592,9 +596,12 @@ class ParameterEstimation(object):
             before sampling from what is then assumed to be the posterior
             distribution desired.
 
-        threads : int, optional, default 1
+        threads : **DEPRECATED** int, optional, default 1
             The number of threads for parallelization.
             Default is ``1``, i.e. no parallelization
+            With the change to the new emcee version 3, threads is 
+            deprecated. Use the `pool` keyword argument instead.
+            This will no longer have any effect.
 
         print_results : bool, optional, default ``True``
             Boolean flag setting whether the results of the MCMC run should
@@ -607,6 +614,9 @@ class ParameterEstimation(object):
         namestr : str, optional, default ``test``
             Optional string for output file names for the plotting.
 
+        pool : bool, default False
+            If True, use pooling to parallelize the operation.
+
         Returns
         -------
 
@@ -615,6 +625,10 @@ class ParameterEstimation(object):
             results of the MCMC run.
 
         """
+
+        if threads > 1 :
+            raise DeprecationWarning("Keyword 'threads' is deprecated. Please use 'pool' instead.")
+
         if not can_sample:
             raise ImportError("emcee not installed! Can't sample!")
 
@@ -629,18 +643,32 @@ class ParameterEstimation(object):
         # a multivariate Gaussian
         p0 = np.array([np.random.multivariate_normal(t0, cov) for
                        i in range(nwalkers)])
+        if pool:
+            with Pool() as pooling:
 
-        # initialize the sampler
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False],
-                                        threads=threads)
+                # initialize the sampler
+                sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False],
+                                                pool=pooling)
+    
+                # run the burn-in
+                pos, prob, state = sampler.run_mcmc(p0, burnin)
+    
+                sampler.reset()
+    
+                # do the actual MCMC run
+                _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
 
-        # run the burn-in
-        pos, prob, state = sampler.run_mcmc(p0, burnin)
+        else:
+            # initialize the sampler
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False])
 
-        sampler.reset()
+            # run the burn-in
+            pos, prob, state = sampler.run_mcmc(p0, burnin)
 
-        # do the actual MCMC run
-        _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
+            sampler.reset()
+
+            # do the actual MCMC run
+            _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
 
         res = SamplingResults(sampler)
 
@@ -876,7 +904,9 @@ class SamplingResults(object):
     ci_max: float out of [0,100]
         The upper bound percentile for printing credible intervals
         on the parameters
-
+    log : a logging.getLogger() object, default None
+        You can pass a pre-defined object for logging, else a new 
+        logger will be instantiated
 
     Attributes
     ----------
@@ -926,16 +956,26 @@ class SamplingResults(object):
     .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
     """
 
-    def __init__(self, sampler, ci_min=5, ci_max=95):
+    def __init__(self, sampler, ci_min=5, ci_max=95, log=None):
+
+        if log is None:
+            self.log = logging.getLogger('MCMC summary')
+            self.log.setLevel(logging.DEBUG)
+
+            if not self.log.handlers:
+                ch = logging.StreamHandler()
+                ch.setLevel(logging.DEBUG)
+                self.log.addHandler(ch)
 
         # store all the samples
-        self.samples = sampler.flatchain
+        self.samples = sampler.get_chain(flat=True)
 
-        self.nwalkers = np.float(sampler.chain.shape[0])
-        self.niter = np.float(sampler.chain.shape[1])
+        chain_dims = sampler.get_chain().shape
+        self.nwalkers = np.float(chain_dims[0])
+        self.niter = np.float(chain_dims[1])
 
         # store number of dimensions
-        self.ndim = sampler.chain.shape[2]
+        self.ndim = chain_dims[2]
 
         # compute and store acceptance fraction
         self.acceptance = np.nanmean(sampler.acceptance_fraction)
@@ -966,9 +1006,9 @@ class SamplingResults(object):
 
         # compute and store autocorrelation time
         try:
-            self.acor = sampler.acor
+            self.acor = sampler.get_autocorr_time()
         except emcee.autocorr.AutocorrError:
-            logging.info("Chains too short to compute autocorrelation lengths.")
+            self.log.info("Chains too short to compute autocorrelation lengths.")
 
         self.rhat = self._compute_rhat(sampler)
 
@@ -985,11 +1025,12 @@ class SamplingResults(object):
         .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
 
         """
+        chain = sampler.get_chain()
         # between-sequence variance
-        mean_samples_iter = np.nanmean(sampler.chain, axis=1)
+        mean_samples_iter = np.nanmean(chain, axis=1)
 
         # mean over the means over iterations: (self.ndim)
-        mean_samples = np.nanmean(sampler.chain, axis=(0,1))
+        mean_samples = np.nanmean(chain, axis=(0,1))
 
         # now compute between-sequence variance
         bb = (self.niter / (self.nwalkers - 1)) * np.sum((mean_samples_iter -
@@ -997,7 +1038,7 @@ class SamplingResults(object):
                                                          axis=0)
 
         # compute variance of each chain
-        var_samples = np.nanvar(sampler.chain, axis=1)
+        var_samples = np.nanvar(chain, axis=1)
 
         # compute mean of variance
         ww = np.nanmean(var_samples, axis=0)
@@ -1027,37 +1068,26 @@ class SamplingResults(object):
         self.std = np.std(self.samples, axis=0)
         self.ci = np.percentile(self.samples, [ci_min, ci_max], axis=0)
 
-    def print_results(self, log=None):
+    def print_results(self):
         """
         Print results of the MCMC run on screen or to a log-file.
 
-        Parameters
-        ----------
-        log : a ``logging.getLogger()`` object
-            Object to handle logging output
 
         """
-        if log is None:
-            log = logging.getLogger('MCMC summary')
-            log.setLevel(logging.DEBUG)
 
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.DEBUG)
-            log.addHandler(ch)
-
-        log.info("-- The acceptance fraction is: %f.5"%self.acceptance)
+        self.log.info("-- The acceptance fraction is: %f.5"%self.acceptance)
         try:
-            log.info("-- The autocorrelation time is: {}".format(self.acor))
+            self.log.info("-- The autocorrelation time is: {}".format(self.acor))
         except AttributeError:
             pass
 
-        log.info("R_hat for the parameters is: " + str(self.rhat))
+        self.log.info("R_hat for the parameters is: " + str(self.rhat))
 
-        log.info("-- Posterior Summary of Parameters: \n")
-        log.info("parameter \t mean \t\t sd \t\t 5% \t\t 95% \n")
-        log.info("---------------------------------------------\n")
+        self.log.info("-- Posterior Summary of Parameters: \n")
+        self.log.info("parameter \t mean \t\t sd \t\t 5% \t\t 95% \n")
+        self.log.info("---------------------------------------------\n")
         for i in range(self.ndim):
-            log.info("theta[" + str(i) + "] \t " +
+            self.log.info("theta[" + str(i) + "] \t " +
                   str(self.mean[i]) + "\t" + str(self.std[i]) + "\t" +
                   str(self.ci[0, i]) + "\t" + str(self.ci[1, i]) + "\n")
 
@@ -1124,7 +1154,7 @@ class SamplingResults(object):
 
                     if i == j:
                         ntemp, binstemp, patchestemp = \
-                            ax.hist(samples[:, i], 30, normed=True,
+                            ax.hist(samples[:, i], 30, density=True,
                                     histtype='stepfilled')
                         ax.axis([ymin, ymax, 0, np.max(ntemp)*1.2])
 
@@ -1441,7 +1471,7 @@ class PSDParEst(ParameterEstimation):
                                   nsim=1000, niter=200, nwalkers=500,
                                   burnin=200, namestr="test", seed=None):
 
-        """
+        r"""
         Calibrate the highest outlier in a data set using MCMC-simulated
         power spectra.
 
@@ -1519,7 +1549,6 @@ class PSDParEst(ParameterEstimation):
 
             * Vaughan, 2010: https://arxiv.org/abs/0910.2706
             * Huppenkothen et al, 2013: https://arxiv.org/abs/1212.1011
-
         """
         # fit the model to the data
         res = self.fit(lpost, t0, neg=True)
@@ -1567,7 +1596,7 @@ class PSDParEst(ParameterEstimation):
 
     def simulate_highest_outlier(self, s_all, lpost, t0, max_post=True,
                                  seed=None):
-        """
+        r"""
         Simulate :math:`n` power spectra from a model and then find the highest
         data/model outlier in each.
 
@@ -1609,7 +1638,6 @@ class PSDParEst(ParameterEstimation):
         -------
         max_y_all : numpy.ndarray
             An array of maximum outliers for each simulated power spectrum
-
         """
         # the number of simulations
         nsim = s_all.shape[0]
@@ -1650,7 +1678,7 @@ class PSDParEst(ParameterEstimation):
         return np.hstack(max_y_all)
 
     def _compute_highest_outlier(self, lpost, res, nmax=1):
-        """
+        r"""
         Auxiliary method calculating the highest outlier statistic in
         a power spectrum.
 
@@ -1687,7 +1715,6 @@ class PSDParEst(ParameterEstimation):
 
         max_ind : {int | numpy.ndarray}
             The indices corresponding to the outliers in ``max_y``
-
         """
         residuals = 2.0 * lpost.y/ res.mfit
 

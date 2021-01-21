@@ -8,7 +8,7 @@ from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
 from stingray.crossspectrum import  cospectra_pvalue, normalize_crossspectrum
 from stingray import StingrayError
-from ..simulator.simulator import Simulator
+from ..simulator import Simulator
 
 from stingray.events import EventList
 import copy

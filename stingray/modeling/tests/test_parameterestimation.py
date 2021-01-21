@@ -43,7 +43,15 @@ class LogLikelihoodDummy(LogLikelihood):
 
 class OptimizationResultsSubclassDummy(OptimizationResults):
 
-    def __init__(self, lpost, res, neg):
+    def __init__(self, lpost, res, neg, log=None):
+        if log is None:
+            self.log = logging.getLogger('Fitting summary')
+            self.log.setLevel(logging.DEBUG)
+            if not self.log.handlers:
+                ch = logging.StreamHandler()
+                ch.setLevel(logging.DEBUG)
+                self.log.addHandler(ch)
+
         self.neg = neg
         if res is not None:
             self.result = res.fun
@@ -175,6 +183,18 @@ class TestParameterEstimation(object):
         assert os.path.exists("test_corner.pdf")
         assert sample_res.acceptance > 0.25
         assert isinstance(sample_res, SamplingResults)
+
+# TODO: Fix pooling with the current setup of logprior
+#    @pytest.mark.skipif("not can_sample", "not can_plot")
+#    def test_sampler_pooling(self):
+#        pe = ParameterEstimation()
+#        if os.path.exists("test_corner.pdf"):
+#            os.unlink("test_corner.pdf")
+#        with catch_warnings(RuntimeWarning):
+#            sample_res = pe.sample(self.lpost, [2.0], nwalkers=50, niter=10,
+#                                   burnin=50, print_results=True, plot=True, 
+#                                   pool=True)
+
 
     @pytest.mark.skipif("can_sample")
     def test_sample_raises_error_without_emcee(self):
@@ -381,15 +401,25 @@ class TestOptimizationResults(object):
 
 if can_sample:
     class SamplingResultsDummy(SamplingResults):
-        def __init__(self, sampler, ci_min=0.05, ci_max=0.95):
-            # store all the samples
-            self.samples = sampler.flatchain
+        def __init__(self, sampler, ci_min=0.05, ci_max=0.95, log=None):
 
-            self.nwalkers = np.float(sampler.chain.shape[0])
-            self.niter = np.float(sampler.chain.shape[1])
+            if log is None:
+                self.log = logging.getLogger('Fitting summary')
+                self.log.setLevel(logging.DEBUG)
+                if not self.log.handlers:
+                    ch = logging.StreamHandler()
+                    ch.setLevel(logging.DEBUG)
+                    self.log.addHandler(ch)
+
+            # store all the samples
+            self.samples = sampler.get_chain(flat=True)
+
+            chain_ndims = sampler.get_chain().shape
+            self.nwalkers = np.float(chain_ndims[0])
+            self.niter = np.float(chain_ndims[1])
 
             # store number of dimensions
-            self.ndim = sampler.chain.shape[2]
+            self.ndim = chain_ndims[2]
 
             # compute and store acceptance fraction
             self.acceptance = np.nanmean(sampler.acceptance_fraction)
@@ -444,7 +474,7 @@ if can_sample:
 
             cls.sampler = emcee.EnsembleSampler(cls.nwalkers,
                                                 len(res.p_opt), cls.lpost,
-                                                args=[False], threads=1)
+                                                args=[False])
 
             with catch_warnings(RuntimeWarning):
                 _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)

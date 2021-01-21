@@ -1,12 +1,20 @@
-
+import copy
 import warnings
 from collections.abc import Iterable, Iterator
+
 import numpy as np
 import scipy
-import scipy.stats
-import scipy.fftpack
 import scipy.optimize
-import copy
+import scipy.stats
+
+from stingray.exceptions import StingrayError
+from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
+from stingray.largememory import createChunkedSpectra, saveData
+from stingray.utils import genDataPath, rebin_data, rebin_data_log, simon
+
+from .events import EventList
+from .lightcurve import Lightcurve
+from .utils import show_progress
 
 # location of factorial moved between scipy versions
 try:
@@ -15,30 +23,15 @@ except ImportError:
     from scipy.special import factorial
 
 try:
-    import pyfftw
     from pyfftw.interfaces.scipy_fftpack import fft, fftfreq
 except ImportError:
     warnings.warn("Using standard scipy fft")
     from scipy.fftpack import fft, fftfreq
 
-
-from stingray.lightcurve import Lightcurve
-from stingray.utils import rebin_data, simon, rebin_data_log
-from stingray.exceptions import StingrayError
-from stingray.gti import cross_two_gtis, bin_intervals_from_gtis, check_gtis
-from .events import EventList
-from .utils import show_progress
-
-
-try:
-    from tqdm import tqdm as show_progress
-except ImportError:
-    def show_progress(a, **kwargs):
-        return a
-
-__all__ = ["Crossspectrum", "AveragedCrossspectrum",
-           "coherence", "time_lag", "cospectra_pvalue",
-            "normalize_crossspectrum"]
+__all__ = [
+    "Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag",
+    "cospectra_pvalue", "normalize_crossspectrum"
+]
 
 
 def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="none", power_type="real"):
@@ -107,7 +100,6 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
     return power
 
 
-
 def _averaged_cospectra_cdf(xcoord, n):
     """
     Function calculating the cumulative distribution function for
@@ -139,8 +131,8 @@ def _averaged_cospectra_cdf(xcoord, n):
                 n - 1 - j) * factorial(j)
             prefac_bottom3 = 2.0 ** (n + j)
 
-            prefac = prefac_top / (
-            prefac_bottom1 * prefac_bottom2 * prefac_bottom3)
+            prefac = prefac_top / (prefac_bottom1 * prefac_bottom2 *
+                                   prefac_bottom3)
 
             gf = -j + n
 
@@ -210,7 +202,7 @@ def cospectra_pvalue(power, nspec):
     if not np.all(np.isfinite(power)):
         raise ValueError("power must be a finite floating point number!")
 
-    #if power < 0:
+    # if power < 0:
     #    raise ValueError("power must be a positive real number!")
 
     if not np.isfinite(nspec):
@@ -710,7 +702,6 @@ class Crossspectrum(object):
             unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm,
             self.power_type)
 
-
     def rebin_log(self, f=0.01):
         """
         Logarithmic rebin of the periodogram.
@@ -845,13 +836,24 @@ class Crossspectrum(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        fig = plt.figure('crossspectrum')
-        fig = plt.plot(self.freq, np.abs(self.power), marker, color='b',
-                       label='Amplitude')
-        fig = plt.plot(self.freq, np.abs(self.power.real), marker, color='r',
-                       alpha=0.5, label='Real Part')
-        fig = plt.plot(self.freq, np.abs(self.power.imag), marker, color='g',
-                       alpha=0.5, label='Imaginary Part')
+        plt.figure('crossspectrum')
+        plt.plot(self.freq,
+                 np.abs(self.power),
+                 marker,
+                 color='b',
+                 label='Amplitude')
+        plt.plot(self.freq,
+                 np.abs(self.power.real),
+                 marker,
+                 color='r',
+                 alpha=0.5,
+                 label='Real Part')
+        plt.plot(self.freq,
+                 np.abs(self.power.imag),
+                 marker,
+                 color='g',
+                 alpha=0.5,
+                 label='Imaginary Part')
 
         if labels is not None:
             try:
@@ -1013,6 +1015,10 @@ class AveragedCrossspectrum(Crossspectrum):
     fullspec: boolean, optional, default ``False`` Parameter to either
     return the full array of frequencies (True) or just the positive (False)
 
+    large_data : bool, default False
+        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
+
+
     Attributes
     ----------
     freq: numpy.ndarray
@@ -1047,12 +1053,12 @@ class AveragedCrossspectrum(Crossspectrum):
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         They are calculated by taking the common GTI between the
         two light curves
-
     """
 
     def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
                  gti=None, power_type="real", silent=False, lc1=None, lc2=None,
-                 dt=None, fullspec=False):
+                 dt=None, fullspec=False, large_data=False):
+
 
         if lc1 is not None or lc2 is not None:
             warnings.warn("The lcN keywords are now deprecated. Use dataN "
@@ -1063,12 +1069,45 @@ class AveragedCrossspectrum(Crossspectrum):
         if data2 is None:
             data2 = lc2
 
-        self.type = "crossspectrum"
-
         if segment_size is None and data1 is not None:
             raise ValueError("segment_size must be specified")
         if segment_size is not None and not np.isfinite(segment_size):
             raise ValueError("segment_size must be finite!")
+
+        if large_data and data1 is not None and data2 is not None:
+            if isinstance(data1, EventList):
+                input_data = 'EventList'
+            elif isinstance(data1, Lightcurve):
+                input_data = 'Lightcurve'
+                chunks = int(np.rint(segment_size // data1.dt))
+                segment_size = chunks * data1.dt
+            else:
+                raise ValueError(
+                    f'Invalid input data type: {type(data1).__name__}')
+
+            dir_path1 = saveData(data1, persist=False, chunks=chunks)
+            dir_path2 = saveData(data2, persist=False, chunks=chunks)
+
+            data_path1 = genDataPath(dir_path1)
+            data_path2 = genDataPath(dir_path2)
+
+            spec = createChunkedSpectra(input_data,
+                                        'AveragedCrossspectrum',
+                                        data_path=list(data_path1 +
+                                                       data_path2),
+                                        segment_size=segment_size,
+                                        norm=norm,
+                                        gti=gti,
+                                        power_type=power_type,
+                                        silent=silent,
+                                        dt=dt)
+
+            for key, val in spec.__dict__.items():
+                setattr(self, key, val)
+
+            return
+
+        self.type = "crossspectrum"
 
 
         self.segment_size = segment_size
@@ -1179,7 +1218,6 @@ class AveragedCrossspectrum(Crossspectrum):
         cs_all = []
         nphots1_all = []
         nphots2_all = []
-
 
         start_inds, end_inds = \
             bin_intervals_from_gtis(current_gtis, segment_size, lc1.time,

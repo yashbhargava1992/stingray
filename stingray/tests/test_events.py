@@ -1,7 +1,8 @@
-
+import warnings
 import numpy as np
 import os
 import pytest
+from astropy.time import Time
 
 from ..events import EventList
 from ..lightcurve import Lightcurve
@@ -10,12 +11,24 @@ curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
 
 _H5PY_INSTALLED = True
+_HAS_YAML = True
+_HAS_TIMESERIES = True
 
 try:
     import h5py
 except ImportError:
     _H5PY_INSTALLED = False
 
+try:
+    import astropy.timeseries
+    from astropy.timeseries import TimeSeries
+except ImportError:
+    _HAS_TIMESERIES = False
+
+try:
+    import yaml
+except ImportError:
+    _HAS_YAML = False
 
 class TestEvents(object):
 
@@ -27,6 +40,22 @@ class TestEvents(object):
         self.spectrum = [[1, 2, 3, 4, 5, 6],
                          [1000, 2040, 1000, 3000, 4020, 2070]]
         self.gti = np.asarray([[0, 4]])
+
+    def test_initiate_from_ndarray(self):
+        times = np.sort(
+            np.random.uniform(1e8, 1e8 + 1000, 101).astype(np.longdouble))
+        ev = EventList(times, mjdref=54600)
+        assert np.allclose(ev.time, times, atol=1e-15)
+        assert np.allclose(ev.mjdref, 54600)
+
+    def test_initiate_from_astropy_time(self):
+        times = np.sort(
+            np.random.uniform(1e8, 1e8 + 1000, 101).astype(np.longdouble))
+        mjdref = 54600
+        mjds = Time(mjdref + times / 86400, format='mjd')
+        ev = EventList(mjds, mjdref=mjdref)
+        assert np.allclose(ev.time, times, atol=1e-15)
+        assert np.allclose(ev.mjdref, mjdref)
 
     def test_create_high_precision_object(self):
         times = np.sort(
@@ -99,7 +128,8 @@ class TestEvents(object):
 
     def test_simulate_energies_with_counts_not_set(self):
         ev = EventList()
-        ev.simulate_energies(self.spectrum)
+        with warnings.catch_warnings(record=True):
+            ev.simulate_energies(self.spectrum)
 
     def test_compare_energy(self):
         """Compare the simulated energy distribution to actual distribution.
@@ -137,17 +167,20 @@ class TestEvents(object):
         """
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList()
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList(time=[1, 2, 3])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList()
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert ev_new.time == None
         assert ev_new.gti == None
         assert ev_new.pi == None
@@ -155,17 +188,21 @@ class TestEvents(object):
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList([])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
         ev = EventList([])
         ev_other = EventList(time=[1, 2, 3])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
         assert np.all(ev_new.time == [1, 2, 3])
 
     def test_join_different_dt(self):
         ev = EventList(time=[10, 20, 30], dt = 1)
         ev_other = EventList(time=[40, 50, 60], dt = 3)
-        ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning):
+            ev_new = ev.join(ev_other)
+
         assert ev_new.dt == 3
 
     def test_join_without_energy(self):
@@ -185,19 +222,22 @@ class TestEvents(object):
     def test_join_with_gti_none(self):
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5], gti=[[3.5, 5.5]])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
 
         assert np.all(ev_new.gti == [[1, 3], [3.5, 5.5]])
 
         ev = EventList(time=[1, 2, 3], gti=[[0.5, 3.5]])
         ev_other = EventList(time=[4, 5])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
 
         assert np.all(ev_new.gti == [[0.5, 3.5], [4, 5]])
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5])
-        ev_new = ev.join(ev_other)
+        with warnings.catch_warnings(record=True):
+            ev_new = ev.join(ev_other)
 
         assert ev_new.gti == None
 
@@ -208,7 +248,11 @@ class TestEvents(object):
                         energy=[3, 4, 7, 4, 3], gti=[[1, 2],[3, 4]])
         ev_other = EventList(time=[5, 6, 6, 7, 10],
                             energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
-        ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning) as record:
+            ev_new = ev.join(ev_other)
+
+        assert np.any(["GTIs in these" in r.message.args[0]
+                       for r in record])
 
         assert (ev_new.time ==
                 np.array([1, 1, 2, 3, 4, 5, 6, 6, 7, 10])).all()
@@ -236,11 +280,11 @@ class TestEvents(object):
         """Join two non-overlapping event lists.
         """
         ev = EventList(time=[1, 1, 10, 6, 5],
-                       energy=[10, 6, 3, 11, 2], gti=[[1, 3],[5, 6]],
+                       energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]],
                        mjdref=57001)
         ev_other = EventList(time=np.asarray([5, 7, 6, 6, 10]) + 86400,
                              energy=[2, 3, 8, 1, 2],
-                             gti=np.asarray([[5, 7],[8, 10]]) + 86400,
+                             gti=np.asarray([[5, 7], [8, 10]]) + 86400,
                              mjdref=57000)
         ev_new = ev.join(ev_other)
 
@@ -250,13 +294,13 @@ class TestEvents(object):
                 np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert np.allclose(ev_new.gti, np.array([[5, 6]]))
 
-    @pytest.mark.xfail
+    @pytest.mark.skipif('not (_HAS_YAML and _HAS_TIMESERIES)')
     def test_io_with_ascii(self):
         ev = EventList(self.time)
-        ev.write('ascii_ev.txt', format_='ascii')
-        ev = ev.read('ascii_ev.txt', format_='ascii')
+        ev.write('ascii_ev.ecsv', format_='ascii')
+        ev = ev.read('ascii_ev.ecsv', format_='ascii')
         assert np.all(ev.time == self.time)
-        os.remove('ascii_ev.txt')
+        os.remove('ascii_ev.ecsv')
 
     def test_io_with_pickle(self):
         ev = EventList(self.time)
@@ -299,9 +343,26 @@ class TestEvents(object):
         wrong format is provided.
         """
         ev = EventList()
-        with pytest.raises(KeyError):
-            ev.write('ev.pickle', format_="unsupported")
+        with warnings.catch_warnings(record=True):
+            with pytest.raises(KeyError):
+                ev.write('ev.pickle', format_="unsupported")
 
         with pytest.raises(KeyError):
             ev.read('ev.pickle', format_="unsupported")
+
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
+    def test_timeseries_roundtrip(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.time)
+        ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),
+                       pi=np.ones(N), mission="BUBU", instr="BABA",
+                       mjdref=53467.)
+        ts = ev.to_astropy_timeseries()
+        new_ev = ev.from_astropy_timeseries(ts)
+        for attr in ['time', 'energy', 'pi', 'gti']:
+            assert np.all(getattr(ev, attr) == getattr(new_ev, attr))
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
 

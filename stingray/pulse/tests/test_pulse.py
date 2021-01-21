@@ -1,13 +1,15 @@
 import numpy as np
-from stingray.pulse.pulsar import fold_events, get_TOA, phase_exposure
-from stingray.pulse.pulsar import profile_stat, z_n, pulse_phase
-from stingray.pulse.pulsar import z_n, z_n_events, z_n_binned_events, z_n_gauss, htest
-from stingray.pulse.pulsar import z_n_events_all, z_n_binned_events_all, z_n_gauss_all
-from stingray.pulse.pulsar import get_orbital_correction_from_ephemeris_file
-from stingray.pulse.pulsar import HAS_PINT
+from stingray.pulse import fold_events, get_TOA, phase_exposure
+from stingray.pulse import profile_stat, z_n, pulse_phase
+from stingray.pulse import z_n, z_n_events, z_n_binned_events, z_n_gauss, htest
+from stingray.pulse import z_n_events_all, z_n_binned_events_all, z_n_gauss_all
+from stingray.pulse import get_orbital_correction_from_ephemeris_file
+from stingray.pulse import HAS_PINT
 from astropy.tests.helper import remote_data
 import pytest
 import os
+import warnings 
+
 try:
     import matplotlib.pyplot as plt
     HAS_MPL = True
@@ -29,19 +31,23 @@ class TestAll(object):
     @remote_data
     @pytest.mark.skipif('not HAS_PINT')
     def test_pint_installed_correctly(self):
-        import pint.toa as toa
-        from pint.residuals import Residuals
-        import pint.models.model_builder as mb
-        import astropy.units as u
-        parfile = os.path.join(self.datadir, 'example_pint.par')
-        timfile = os.path.join(self.datadir, 'example_pint.tim')
 
-        toas = toa.get_TOAs(timfile, ephem="DE405",
-                            planets=False, include_bipm=False)
-        model = mb.get_model(parfile)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=ResourceWarning)
 
-        pint_resids_us = Residuals(toas, model).time_resids.to(u.s)
-
+            import pint.toa as toa
+            from pint.residuals import Residuals
+            import pint.models.model_builder as mb
+            import astropy.units as u
+            parfile = os.path.join(self.datadir, 'example_pint.par')
+            timfile = os.path.join(self.datadir, 'example_pint.tim')
+    
+            toas = toa.get_TOAs(timfile, ephem="DE405",
+                                planets=False, include_bipm=False)
+            model = mb.get_model(parfile)
+    
+            pint_resids_us = Residuals(toas, model).time_resids.to(u.s)
+    
         # Due to the gps2utc clock correction. We are at 3e-8 seconds level.
         assert np.all(np.abs(pint_resids_us.value) < 3e-6)
 
@@ -58,10 +64,12 @@ class TestAll(object):
 
         mjdstart, mjdstop = mjds[0] - 1, mjds[-1] + 1
 
-        correction_sec, correction_mjd, model = \
-            get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop,
-                                                       parfile, ntimes=1000,
-                                                       return_pint_model=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            correction_sec, correction_mjd, model = \
+                get_orbital_correction_from_ephemeris_file(mjdstart, mjdstop,
+                                                           parfile, ntimes=1000,
+                                                           return_pint_model=True)
 
         mjdref = 50000
         toa_sec = (mjds - mjdref) * 86400
@@ -153,7 +161,9 @@ class TestAll(object):
         times = np.arange(0, 1, 1/nbin)
 
         period = 1
-        ph, p, pe = fold_events(times, 1, nbin=nbin)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            ph, p, pe = fold_events(times, 1, nbin=nbin)
 
         np.testing.assert_array_almost_equal(p, np.ones(nbin))
         np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
@@ -167,7 +177,9 @@ class TestAll(object):
         gtis = np.array([[-0.5*dt, 2 + 0.5*dt]])
 
         period = 1
-        ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True, gtis=gtis)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True, gtis=gtis)
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
                                              0.5/nbin)
@@ -180,7 +192,9 @@ class TestAll(object):
         times = np.arange(0, 2 - dt, dt)
         gtis = np.array([[-0.5*dt, 2 - dt]])
 
-        ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True,
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True,
                                 gtis=gtis)
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +

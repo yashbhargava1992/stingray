@@ -3,10 +3,12 @@ import numpy as np
 import numbers
 from scipy import signal
 import astropy.modeling.models
+from stingray.io import write, read
+from stingray import utils
+from stingray import Lightcurve
+from stingray import AveragedPowerspectrum
 
-from stingray import Lightcurve, AveragedPowerspectrum, io, utils
-import stingray.simulator.models as models
-
+__all__ = ['Simulator']
 
 class Simulator(object):
     """
@@ -34,7 +36,6 @@ class Simulator(object):
 
     def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
                  random_state=None, tstart=0.0):
-
         self.dt = dt
         self.N = N
         self.mean = mean
@@ -128,7 +129,6 @@ class Simulator(object):
         lightCurve : `LightCurve` object
 
         """
-
         if isinstance(args[0], (numbers.Integral, float)) and len(args) == 1:
             return  self._simulate_power_law(args[0])
 
@@ -331,7 +331,6 @@ class Simulator(object):
         -------
         lightCurve : array-like
         """
-
         # Define frequencies at which to compute PSD
         w = np.fft.rfftfreq(self.red_noise*self.N, d=self.dt)[1:]
 
@@ -364,7 +363,6 @@ class Simulator(object):
         -------
         lightCurve : `LightCurve` object
         """
-
         # Cast spectrum as numpy array
         s = np.array(s)
 
@@ -398,9 +396,8 @@ class Simulator(object):
 
         Returns
         -------
-        lightCurve : `LightCurve` object
+        lightCurve : :class:`stingray.lightcurve.LightCurve` object
         """
-
         # Frequencies at which the PSD is to be computed
         # (only positive frequencies, since the signal is real)
         nbins = self.red_noise*self.N
@@ -434,9 +431,9 @@ class Simulator(object):
 
         Returns
         -------
-        lightCurve : `LightCurve` object
+        lightCurve : :class:`stingray.lightcurve.LightCurve` object
         """
-
+        from . import models
         # Frequencies at which the PSD is to be computed
         # (only positive frequencies, since the signal is real)
         nbins = self.red_noise*self.N
@@ -488,7 +485,7 @@ class Simulator(object):
 
         Returns
         -------
-        lightCurve : `LightCurve` object
+        lightCurve : :class:`stingray.lightcurve.LightCurve` object
         """
         lc = signal.fftconvolve(s, h)
 
@@ -604,9 +601,8 @@ class Simulator(object):
         -------
         object : `Simulator` object
         """
-
         if format_ == 'pickle':
-            data = io.read(filename, 'pickle')
+            data = read(filename, 'pickle')
             return data
         else:
             raise KeyError("Format not supported.")
@@ -623,8 +619,7 @@ class Simulator(object):
         format_ : str
             Available options are 'pickle' and 'hdf5'.
         """
-
         if format_ == 'pickle':
-            io.write(self, filename)
+            write(self, filename)
         else:
             raise KeyError("Format not supported.")

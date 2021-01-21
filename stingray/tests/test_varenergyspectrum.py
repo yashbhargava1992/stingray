@@ -17,7 +17,7 @@ class DummyVarEnergy(VarEnergySpectrum):
 class TestExcVarEnergySpectrum(object):
     @classmethod
     def setup_class(cls):
-        from ..simulator.simulator import Simulator
+        from ..simulator import Simulator
 
         simulator = Simulator(0.1, 10000, rms=0.4, mean=200)
         test_lc = simulator.simulate(1)
@@ -135,7 +135,7 @@ class TestVarEnergySpectrum(object):
 class TestRMSEnergySpectrum(object):
     @classmethod
     def setup_class(cls):
-        from ..simulator.simulator import Simulator
+        from ..simulator import Simulator
 
         simulator = Simulator(0.1, 1000, rms=0.4, mean=200)
         test_lc = simulator.simulate(1)
@@ -175,7 +175,7 @@ class TestRMSEnergySpectrum(object):
 class TestLagEnergySpectrum(object):
     @classmethod
     def setup_class(cls):
-        from ..simulator.simulator import Simulator
+        from ..simulator import Simulator
         dt = 0.1
         simulator = Simulator(dt, 1000, rms=0.4, mean=200)
         test_lc1 = simulator.simulate(2)
