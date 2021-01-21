@@ -5,10 +5,14 @@
 + Lots of performance improvements
 + Fixes in rebin functions
 + New statistical functions for signal detection in power spectra and pulsar search periodograms
-+ Improved data loading from X-ray satellites (XMM, NICER, NuSTAR, XTE)
++ Improved event and light curve data loading from X-ray satellites (XMM, NICER, NuSTAR, XTE)
 + New implementation of the FFTFIT method to calculate pulsar times of arrival
 + H-test for pulsar searches
 + Z^2_n search adapted to binned and normally distribute pulse profiles
++ Large data processing (e.g. from NICER) allowed
++ Rebinning function now accepts unevenly sampled data
++ New saving and loading from/to Astropy Tables and Timeseries
++ Improved I/O to ascii, hdf5 and other formats
 
 Full set of changes: [`v0.2...HEAD`](git@github.com:stingraysoftware/stingray/compare/v0.2...HEAD)
 
