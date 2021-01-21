@@ -6,6 +6,7 @@ Definition of :class:`EventList`.
 
 import copy
 import pickle
+import warnings
 
 import numpy as np
 import numpy.random as ra
@@ -13,7 +14,7 @@ from astropy.table import Table
 
 from .filters import get_deadtime_mask
 from .gti import append_gtis, check_separate, cross_gtis
-from .io import read, write
+from .io import load_events_and_gtis
 from .lightcurve import Lightcurve
 from .utils import assign_value_if_none, simon, interpret_times
 
@@ -87,7 +88,8 @@ class EventList(object):
     """
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
                  notes="", gti=None, pi=None, high_precision=False,
-                 mission=None, instr=None, header=None, detector_id=None):
+                 mission=None, instr=None, header=None, detector_id=None,
+                 **other_kw):
 
         self.energy = None if energy is None else np.asarray(energy)
         self.notes = notes
@@ -100,6 +102,9 @@ class EventList(object):
         self.instr = instr
         self.detector_id = detector_id
         self.header = header
+
+        if other_kw != {}:
+            warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
         if time is not None:
             time, mjdref = interpret_times(time, mjdref)
@@ -371,36 +376,37 @@ class EventList(object):
     @staticmethod
     def read(filename, format_="pickle", **kwargs):
         """
-        Read an event list from a file on disk. The file must be either a Python pickle file (not recommended
-        for long-term storage), an HDF5 file, an ASCII or a FITS file. The file can have the following
-        attributes in the data or meta-data:
+        Read a :class:`Lightcurve` object from file.
 
-        * ``time``:  the time stamps of the photon arrivals
-        * ``energy``: the photon energy corresponding to each time stamp
-        * ``mjdref``: a reference time in Modified Julian Date
-        * ``notes``: other possible meta-data
-        * ``gti``: Good Time Intervals
-        * ``pi``: some instruments record energies as "Pulse Invariant", an integer number recorded from
-          the Pulse Height Amplitude
+        Currently supported formats are
 
-        Ascii files need to be ECSV files with an
-        :class:`astropy.timeseries.TimeSeries` containing time, energy and pi
-        in the data cols and the remaining metadata in the ``meta`` attribute
+        * pickle (not recommended for long-term storage)
+        * hea : LC files from all (well, some) HEASARC-supported missions
+        * ascii.ecsv, hdf5, etc.: through an :class:`astropy.table.Table`
+
+        Files that need the :class:`astropy.table.Table` interface MUST contain
+        at least a ``time`` column. Other recognized columns are ``energy`` and
+        ``pi``.
+        The default ascii format is enhanced CSV (ECSV). Data formats
+        supporting the serialization of metadata (such as ECSV and HDF5) can
+        contain all eventlist attributes such as ``mission``, ``gti``, etc with
+        no significant loss of information. Other file formats might lose part
+        of the metadata, so must be used with care.
 
         Parameters
         ----------
         filename: str
-            Name of the :class:`EventList` object to be read.
+            Path and file name for the file to be read.
 
-        format_: str
-            Available options are ``pickle``, ``hdf5``, ``ascii`` and `fits``.
+        format\_: str
+            Available options are 'pickle', 'hea', and any `Table`-supported
+            format such as 'hdf5', 'ascii.ecsv', etc.
 
         Returns
         -------
         ev: :class:`EventList` object
             The :class:`EventList` object reconstructed from file
         """
-        from stingray.io import load_events_and_gtis
         if format_ == 'pickle':
             with open(filename, 'rb') as fobj:
                 return pickle.load(fobj)

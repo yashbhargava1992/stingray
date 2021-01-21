@@ -41,6 +41,12 @@ class TestEvents(object):
                          [1000, 2040, 1000, 3000, 4020, 2070]]
         self.gti = np.asarray([[0, 4]])
 
+    def test_warn_wrong_keywords(self):
+        with pytest.warns(UserWarning) as record:
+            _ = EventList(self.time, self.counts, gti=self.gti, bubu='settete')
+        assert np.any(["Unrecognized keywords:" in r.message.args[0]
+                       for r in record])
+
     def test_initiate_from_ndarray(self):
         times = np.sort(
             np.random.uniform(1e8, 1e8 + 1000, 101).astype(np.longdouble))

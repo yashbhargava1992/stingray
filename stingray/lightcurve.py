@@ -14,7 +14,6 @@ from astropy.table import Table
 from astropy.time import TimeDelta
 from astropy import units as u
 
-import stingray.io as io
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.gti import (bin_intervals_from_gtis, check_gtis, create_gti_mask,
@@ -143,7 +142,10 @@ class Lightcurve(object):
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
                  skip_checks=False, low_memory=False, mission=None,
-                 instr=None, header=None):
+                 instr=None, header=None, **other_kw):
+
+        if other_kw != {}:
+            warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
         time, mjdref = interpret_times(time, mjdref=mjdref)
 
@@ -1617,16 +1619,21 @@ class Lightcurve(object):
     def read(filename, format_='pickle', err_dist='gauss',
              skip_checks=False):
         """
-        Read a :class:`Lightcurve` object from file. Currently supported formats are
+        Read a :class:`Lightcurve` object from file.
+
+        Currently supported formats are
 
         * pickle (not recommended for long-term storage)
-        * HDF5
-        * ASCII
+        * hea : LC files from all (well, some) HEASARC-supported missions
+        * ascii.ecsv, hdf5, etc.: through an :class:`astropy.table.Table`
 
-        Ascii files need to be ECSV files with an
-        :class:`astropy.timeseries.TimeSeries` containing time and counts
-        (+possibly counts_err, countrate, etc.) in the data cols and the
-        remaining metadata in the ``meta`` attribute
+        Files that need the :class:`astropy.table.Table` interface MUST contain
+        at least a ``time`` column and a ``counts`` or ``countrate`` column.
+        The default ascii format is enhanced CSV (ECSV). Data formats
+        supporting the serialization of metadata (such as ECSV and HDF5) can
+        contain all lightcurve attributes such as ``dt``, ``gti``, etc with
+        no significant loss of information. Other file formats might lose part
+        of the metadata, so must be used with care.
 
         Parameters
         ----------
@@ -1634,7 +1641,8 @@ class Lightcurve(object):
             Path and file name for the file to be read.
 
         format\_: str
-            Available options are 'pickle', 'hdf5', 'ascii'
+            Available options are 'pickle', 'hea', and any `Table`-supported
+            format such as 'hdf5', 'ascii.ecsv', etc.
 
         Other parameters
         ----------------
@@ -1644,13 +1652,12 @@ class Lightcurve(object):
             ASCII files). The default is 'gauss' just because it is likely
             that people using ASCII light curves will want to specify Gaussian
             error bars, if any.
+        skip_checks : bool
+            See :class:`Lightcurve` documentation
 
         Returns
         --------
-        lc : ``dict`` or :class:`Lightcurve` object
-            * If ``format\_`` is ``ascii``: :class:`Lightcurve` is returned.
-            * If ``format\_`` is ``hdf5``: dictionary with key-value pairs is returned.
-            * If ``format\_`` is ``pickle``: :class:`Lightcurve` object is returned.
+        lc : :class:`Lightcurve` object
         """
         if format_ == 'pickle':
             with open(filename, 'rb') as fobj:

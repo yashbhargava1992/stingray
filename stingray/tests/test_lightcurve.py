@@ -71,6 +71,13 @@ class TestProperties(object):
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
 
+    def test_warn_wrong_keywords(self):
+        lc = copy.deepcopy(self.lc)
+        with pytest.warns(UserWarning) as record:
+            _ = Lightcurve(lc.time, lc.counts, gti=lc.gti, bubu='settete')
+        assert np.any(["Unrecognized keywords:" in r.message.args[0]
+                       for r in record])
+
     def test_time(self):
         lc = copy.deepcopy(self.lc)
         assert lc._bin_lo is None
