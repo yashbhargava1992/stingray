@@ -63,12 +63,16 @@ class OptimizationResults(object):
     res: instance of ``scipy.OptimizeResult``
         The object containing the results from a optimization run
 
-    Attributes
-    ----------
     neg : bool, optional, default ``True``
         A flag that sets whether the log-likelihood or negative log-likelihood
         is being used
 
+    log : a logging.getLogger() object, default None
+        You can pass a pre-defined object for logging, else a new 
+        logger will be instantiated
+
+    Attributes
+    ----------
     result : float
         The result of the optimization, i.e. the function value at the
         minimum that the optimizer found
@@ -900,7 +904,9 @@ class SamplingResults(object):
     ci_max: float out of [0,100]
         The upper bound percentile for printing credible intervals
         on the parameters
-
+    log : a logging.getLogger() object, default None
+        You can pass a pre-defined object for logging, else a new 
+        logger will be instantiated
 
     Attributes
     ----------
@@ -950,7 +956,7 @@ class SamplingResults(object):
     .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
     """
 
-    def __init__(self, sampler, ci_min=5, ci_max=95):
+    def __init__(self, sampler, ci_min=5, ci_max=95, log=None):
 
         if log is None:
             self.log = logging.getLogger('MCMC summary')
@@ -1148,7 +1154,7 @@ class SamplingResults(object):
 
                     if i == j:
                         ntemp, binstemp, patchestemp = \
-                            ax.hist(samples[:, i], 30, normed=True,
+                            ax.hist(samples[:, i], 30, density=True,
                                     histtype='stepfilled')
                         ax.axis([ymin, ymax, 0, np.max(ntemp)*1.2])
 
