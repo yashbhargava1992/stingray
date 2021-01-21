@@ -1457,49 +1457,52 @@ class Lightcurve(object):
             raise ValueError("Invalid kind (accepted: table or timeseries)")
 
         for attr in ['_gti', 'mjdref', '_meancounts', '_meancountrate',
-                     'instr', 'mission', 'dt']:
+                     'instr', 'mission', 'dt', 'err_dist']:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 ts.meta[attr.lstrip('_')] = getattr(self, attr)
 
         return ts
 
     @staticmethod
-    def from_astropy_timeseries(ts):
-        return Lightcurve._from_astropy_object(ts)
+    def from_astropy_timeseries(ts, **kwargs):
+        return Lightcurve._from_astropy_object(ts, **kwargs)
 
     @staticmethod
-    def from_astropy_table(ts):
-        return Lightcurve._from_astropy_object(ts)
+    def from_astropy_table(ts, **kwargs):
+        return Lightcurve._from_astropy_object(ts, **kwargs)
 
     @staticmethod
-    def _from_astropy_object(ts):
+    def _from_astropy_object(
+            ts, err_dist='poisson', skip_checks=True):
 
         if hasattr(ts, 'time'):
             time = ts.time
         else:
             time = ts['time']
-        dt = None
-        if 'dt' in ts.meta:
-            dt = ts.meta['dt']
+
+        kwargs = ts.meta
+        err = None
+        input_counts = True
+
+        if "counts_err" in ts.colnames:
+            err = ts["counts_err"]
+        elif "countrate_err" in ts.colnames:
+            err = ts["countrate_err"]
+
         if 'counts' in ts.colnames:
-            lc = Lightcurve(time, ts['counts'],
-                            skip_checks=True, dt=dt)
+            counts = ts['counts']
         elif 'countrate' in ts.colnames:
-            lc = Lightcurve(time, ts['countrate'],
-                            input_counts=False, skip_checks=True, dt=dt)
+            counts = ts['countrate']
+            input_counts = False
         else:
             raise ValueError('Input timeseries must contain at least a '
                              '`counts` or a `countrate` column')
 
-        for attr in ['counts', 'counts_err', 'countrate', 'countrate_err',
-                     'bin_hi', 'bin_low']:
-            if attr in ts.colnames and getattr(lc, '_' + attr) is None:
-                setattr(lc, attr, ts[attr])
+        kwargs.update({'time': time, 'counts': counts, 'err': err,
+                       'input_counts': input_counts,
+                       'skip_checks': skip_checks, 'err_dist': err_dist})
 
-        for attr in ['gti', 'mjdref', 'meancounts', 'meancountrate',
-                     'instr', 'mission']:
-            if attr in ts.meta and ts.meta[attr] is not None:
-                setattr(lc, attr, ts.meta[attr])
+        lc = Lightcurve(**kwargs)
 
         return lc
 
@@ -1611,7 +1614,8 @@ class Lightcurve(object):
             ts.write(filename, format=format_, overwrite=True)
 
     @staticmethod
-    def read(filename, format_='pickle', default_err_dist='gauss'):
+    def read(filename, format_='pickle', err_dist='gauss',
+             skip_checks=False):
         """
         Read a :class:`Lightcurve` object from file. Currently supported formats are
 
@@ -1635,7 +1639,7 @@ class Lightcurve(object):
         Other parameters
         ----------------
 
-        default_err_dist: str, default='gauss'
+        err_dist: str, default='gauss'
             Default error distribution if not specified in the file (e.g. for
             ASCII files). The default is 'gauss' just because it is likely
             that people using ASCII light curves will want to specify Gaussian
@@ -1654,13 +1658,15 @@ class Lightcurve(object):
 
         if format_ == 'hea':
             data = lcurve_from_fits(filename)
+            data.update({'err_dist': err_dist, 'skip_checks': skip_checks})
             return Lightcurve(**data)
 
         if format_ == 'ascii':
             format_ = 'ascii.ecsv'
 
         ts = Table.read(filename, format=format_)
-        return Lightcurve.from_astropy_table(ts)
+        return Lightcurve.from_astropy_table(
+            ts, err_dist=err_dist, skip_checks=skip_checks)
 
 
     def split_by_gti(self, min_points=2):

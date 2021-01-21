@@ -199,9 +199,9 @@ def lcurve_from_fits(
 
     Returns
     -------
-    outfile : [str]
-        Returned as a list with a single element for consistency with
-        `lcurve_from_events`
+    data : dict
+        Dictionary containing all information needed to create a
+        :class:`stingray.Lightcurve` object
 
     Other Parameters
     ----------------
@@ -215,8 +215,6 @@ def lcurve_from_fits(
         Name or index of the FITS extension containing the light curve
     fracexp_limit : float
         Minimum exposure fraction allowed
-    outfile : str
-        Output file name
     noclobber : bool
         If True, do not overwrite existing files
     """
@@ -231,13 +229,6 @@ def lcurve_from_fits(
     from astropy.time import Time
     import numpy as np
     from stingray.gti import create_gti_from_condition
-
-    if noclobber and os.path.exists(outfile):
-        warnings.warn(
-            "File exists, and noclobber option used. Skipping",
-            AstropyUserWarning,
-        )
-        return [outfile]
 
     lchdulist = pf.open(fits_file)
     lctable = lchdulist[ratehdu].data
@@ -266,7 +257,7 @@ def lcurve_from_fits(
             lchdulist[ratehdu].header, "TSTART"
         )
         tstop = high_precision_keyword_read(lchdulist[ratehdu].header, "TSTOP")
-    except Exception:
+    except Exception:  # pragma: no cover
         raise (Exception("TSTART and TSTOP need to be specified"))
 
     # For nulccorr lcs this whould work
@@ -318,7 +309,9 @@ def lcurve_from_fits(
             " light curve times",
             AstropyUserWarning,
         )
-        dt = np.median(np.diff(time))
+        # Avoid NaNs
+        good = time == time
+        dt = np.median(np.diff(time[good]))
 
     # ----------------------------------------------------------------
     if ratecolumn is None:
@@ -326,14 +319,18 @@ def lcurve_from_fits(
             if name in lctable.names:
                 ratecolumn = name
                 break
-        else:
+        else:  # pragma: no cover
             raise ValueError(
                 "None of the accepted rate columns were found in the file")
 
     rate = np.array(lctable.field(ratecolumn), dtype=np.float)
 
+    errorcolumn = "ERROR"
+    if ratecolumn == "RATE1":
+        errorcolumn = "ERROR1"
+
     try:
-        rate_e = np.array(lctable.field("ERROR"), dtype=np.longdouble)
+        rate_e = np.array(lctable.field(errorcolumn), dtype=np.longdouble)
     except Exception:
         rate_e = np.zeros_like(rate)
 
