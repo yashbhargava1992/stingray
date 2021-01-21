@@ -312,7 +312,7 @@ class TestEvents(object):
     def test_io_with_pickle(self):
         ev = EventList(self.time, mjdref=54000)
         ev.write('ev.pickle', format_='pickle')
-        ev = ev.read('ev.pickle',format_='pickle')
+        ev = ev.read('ev.pickle', format_='pickle')
         assert np.all(ev.time == self.time)
         os.remove('ev.pickle')
 
@@ -321,12 +321,12 @@ class TestEvents(object):
         ev = EventList(time=self.time, mjdref=54000)
         ev.write('ev.hdf5', format_='hdf5')
 
-        ev = ev.read('ev.hdf5',format_='hdf5')
+        ev = ev.read('ev.hdf5', format_='hdf5')
         assert np.allclose(ev.time, self.time)
         os.remove('ev.hdf5')
 
     def test_io_with_fits(self):
-        ev = EventList(time = self.time, mjdref=54000)
+        ev = EventList(time=self.time, mjdref=54000)
         ev.write('ev.fits', format_='fits')
         ev = ev.read('ev.fits', format_='fits')
         assert np.allclose(ev.time, self.time)

@@ -257,6 +257,7 @@ class TestLightcurve(object):
     def setup_class(cls):
         cls.times = np.array([1, 2, 3, 4])
         cls.counts = np.array([2, 2, 2, 2])
+        cls.counts_err = np.array([0.2, 0.2, 0.2, 0.2])
         cls.dt = 1.0
         cls.gti = np.array([[0.5, 4.5]])
 
@@ -1081,7 +1082,8 @@ class TestLightcurve(object):
         wrong format is provided.
         """
         N = len(self.times)
-        lc = Lightcurve(self.times, self.counts, mission="BUBU", instr="BABA",
+        lc = Lightcurve(self.times, self.counts, err=self.counts_err,
+                        mission="BUBU", instr="BABA",
                         mjdref=53467.)
 
         ts = lc.to_astropy_table()
@@ -1100,8 +1102,10 @@ class TestLightcurve(object):
         mean_counts = 2.0
         times = np.arange(0 + dt / 2, 5 - dt / 2, dt)
         countrate = np.zeros_like(times) + mean_counts
+        err = np.zeros_like(times) + mean_counts / 2
 
-        lc = Lightcurve(times, countrate, mission="BUBU", instr="BABA",
+        lc = Lightcurve(times, countrate, err=err,
+                        mission="BUBU", instr="BABA",
                         mjdref=53467., input_counts=False)
 
         ts = lc.to_astropy_table()

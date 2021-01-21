@@ -1455,7 +1455,7 @@ class Lightcurve(object):
         elif kind.lower() == "timeseries":
             from astropy.timeseries import TimeSeries
             ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
-        else:
+        else:  # pragma: no cover
             raise ValueError("Invalid kind (accepted: table or timeseries)")
 
         for attr in ['_gti', 'mjdref', '_meancounts', '_meancountrate',
@@ -1502,7 +1502,9 @@ class Lightcurve(object):
 
         kwargs.update({'time': time, 'counts': counts, 'err': err,
                        'input_counts': input_counts,
-                       'skip_checks': skip_checks, 'err_dist': err_dist})
+                       'skip_checks': skip_checks})
+        if 'err_dist' not in kwargs:
+            kwargs['err_dist'] = err_dist
 
         lc = Lightcurve(**kwargs)
 
