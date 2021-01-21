@@ -43,7 +43,15 @@ class LogLikelihoodDummy(LogLikelihood):
 
 class OptimizationResultsSubclassDummy(OptimizationResults):
 
-    def __init__(self, lpost, res, neg):
+    def __init__(self, lpost, res, neg, log=None):
+        if log is None:
+            self.log = logging.getLogger('Fitting summary')
+            self.log.setLevel(logging.DEBUG)
+            if not self.log.handlers:
+                ch = logging.StreamHandler()
+                ch.setLevel(logging.DEBUG)
+                self.log.addHandler(ch)
+
         self.neg = neg
         if res is not None:
             self.result = res.fun
@@ -175,6 +183,18 @@ class TestParameterEstimation(object):
         assert os.path.exists("test_corner.pdf")
         assert sample_res.acceptance > 0.25
         assert isinstance(sample_res, SamplingResults)
+
+# TODO: Fix pooling with the current setup of logprior
+#    @pytest.mark.skipif("not can_sample", "not can_plot")
+#    def test_sampler_pooling(self):
+#        pe = ParameterEstimation()
+#        if os.path.exists("test_corner.pdf"):
+#            os.unlink("test_corner.pdf")
+#        with catch_warnings(RuntimeWarning):
+#            sample_res = pe.sample(self.lpost, [2.0], nwalkers=50, niter=10,
+#                                   burnin=50, print_results=True, plot=True, 
+#                                   pool=True)
+
 
     @pytest.mark.skipif("can_sample")
     def test_sample_raises_error_without_emcee(self):
@@ -381,7 +401,16 @@ class TestOptimizationResults(object):
 
 if can_sample:
     class SamplingResultsDummy(SamplingResults):
-        def __init__(self, sampler, ci_min=0.05, ci_max=0.95):
+        def __init__(self, sampler, ci_min=0.05, ci_max=0.95, log=None):
+
+            if log is None:
+                self.log = logging.getLogger('Fitting summary')
+                self.log.setLevel(logging.DEBUG)
+                if not self.log.handlers:
+                    ch = logging.StreamHandler()
+                    ch.setLevel(logging.DEBUG)
+                    self.log.addHandler(ch)
+
             # store all the samples
             self.samples = sampler.get_chain(flat=True)
 
