@@ -341,18 +341,6 @@ class TestEvents(object):
         ev = ev.read(fname, format_='hea')
         assert np.isclose(ev.mjdref, 55197.00076601852)
 
-    # def test_io_with_wrong_format(self):
-    #     """Test that io methods raise Key Error when
-    #     wrong format is provided.
-    #     """
-    #     ev = EventList()
-    #     with warnings.catch_warnings(record=True):
-    #         with pytest.raises(KeyError):
-    #             ev.write('ev.pickle', format_="unsupported")
-    #
-    #     with pytest.raises(KeyError):
-    #         ev.read('ev.pickle', format_="unsupported")
-
     @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
