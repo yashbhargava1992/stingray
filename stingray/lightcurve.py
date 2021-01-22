@@ -1302,7 +1302,7 @@ class Lightcurve(object):
         >>> count[2:4] = 1
         >>> lc = Lightcurve(time, count, dt=1)
         >>> lc.estimate_chunk_length(min_total_counts=3, min_time_bins=1)
-        4.0
+        3.0
         """
 
         rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt
