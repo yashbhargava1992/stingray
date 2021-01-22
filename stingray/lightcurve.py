@@ -1163,14 +1163,11 @@ class Lightcurve(object):
         >>> split_lc = lc.split(1.5)
 
         """
-        print("min_gap "  + str(min_gap))
 
         # calculate the difference between time bins
         tdiff = np.diff(self.time)
         # find all distances between time bins that are larger than `min_gap`
         gap_idx = np.where(tdiff >= min_gap)[0]
-        print("tdiff: " + str(tdiff))
-        print("gap_idx: " + str(gap_idx))
 
         # tolerance for the newly created GTIs: Note that this seems to work
         # with a tolerance of 2, but not if I substitute 10. I don't know why
@@ -1184,7 +1181,7 @@ class Lightcurve(object):
         if hasattr(self, 'gti') and self.gti is not None:
             gti = cross_two_gtis(self.gti, gti)
 
-        lc_split = self.split_by_gti(min_points=min_points)
+        lc_split = self.split_by_gti(gti, min_points=min_points)
         return lc_split
 
     def sort(self, reverse=False):
@@ -1651,7 +1648,7 @@ class Lightcurve(object):
                           err_dist=data['err_dist'],
                           mjdref=data['mjdref'])
 
-    def split_by_gti(self, min_points=2):
+    def split_by_gti(self, gti=None, min_points=2):
         """
         Split the current :class:`Lightcurve` object into a list of :class:`Lightcurve` objects, one
         for each continuous GTI segment as defined in the ``gti`` attribute.
@@ -1667,9 +1664,13 @@ class Lightcurve(object):
         list_of_lcs : list
             A list of :class:`Lightcurve` objects, one for each GTI segment
         """
+
+        if gti is None:
+             gti = self.gti
+
         list_of_lcs = []
 
-        start_bins, stop_bins = gti_border_bins(self.gti, self.time, self.dt)
+        start_bins, stop_bins = gti_border_bins(gti, self.time, self.dt)
         for i in range(len(start_bins)):
             start = start_bins[i]
             stop = stop_bins[i]
@@ -1683,7 +1684,7 @@ class Lightcurve(object):
             # Note: GTIs are consistent with default in this case!
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
                                 err=self.counts_err[start:stop],
-                                mjdref=self.mjdref, gti=[self.gti[i]],
+                                mjdref=self.mjdref, gti=[gti[i]],
                                 dt=self.dt, err_dist=self.err_dist,
                                 skip_checks=True)
             list_of_lcs.append(new_lc)
