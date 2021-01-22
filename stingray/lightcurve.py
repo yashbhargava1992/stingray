@@ -1163,10 +1163,14 @@ class Lightcurve(object):
         >>> split_lc = lc.split(1.5)
 
         """
+        print("min_gap "  + str(min_gap))
+
         # calculate the difference between time bins
         tdiff = np.diff(self.time)
         # find all distances between time bins that are larger than `min_gap`
         gap_idx = np.where(tdiff >= min_gap)[0]
+        print("tdiff: " + str(tdiff))
+        print("gap_idx: " + str(gap_idx))
 
         # tolerance for the newly created GTIs: Note that this seems to work
         # with a tolerance of 2, but not if I substitute 10. I don't know why
@@ -1179,7 +1183,6 @@ class Lightcurve(object):
         gti = np.vstack([gti_start, gti_stop]).T
         if hasattr(self, 'gti') and self.gti is not None:
             gti = cross_two_gtis(self.gti, gti)
-        self.gti = gti
 
         lc_split = self.split_by_gti(min_points=min_points)
         return lc_split
