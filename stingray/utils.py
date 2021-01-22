@@ -189,11 +189,14 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     """
 
     y = np.asarray(y)
-    yerr = np.asarray(apply_function_if_none(yerr, y, np.zeros_like))
+    if yerr is None:
+        yerr = np.zeros_like(y)
+    else:
+        yerr = np.asarray(yerr)
 
-    if not dx:
+    if dx is None or not dx:
         dx_old = np.diff(x)
-    elif np.size(dx) == 1:
+    elif dx.size == 1:
         dx_old = np.array([dx])
     else:
         dx_old = dx
@@ -214,13 +217,12 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     outputerr = np.zeros(xbin.shape[0] - 1, dtype=type(y[0]))
     step_size = np.zeros(xbin.shape[0] - 1)
 
-    for i in range(len(xbin)-1):
-
-        xmin = xbin[i]
-        xmax = xbin[i+1]
-        min_ind = xedges.searchsorted(xmin)
-        max_ind = xedges.searchsorted(xmax)
-
+    all_x = np.searchsorted(xedges, xbin)
+    min_inds = all_x[:-1]
+    max_inds = all_x[1:]
+    xmins = xbin[:-1]
+    xmaxs = xbin[1:]
+    for i, (xmin, xmax, min_ind, max_ind) in enumerate(zip(xmins, xmaxs, min_inds, max_inds)):
         output[i] = np.sum(y[min_ind:max_ind-1])
         outputerr[i] = np.sum(yerr[min_ind:max_ind-1])
         step_size[i] = len(y[min_ind:max_ind-1])
@@ -259,7 +261,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     dx_var = np.var(dx_old) / np.mean(dx_old)
 
-    if np.size(dx_old) == 1 or dx_var < 1e-6:
+    if dx_old.size == 1 or dx_var < 1e-6:
         step_size = step_size[0]
 
     new_x0 = (x[0] - (0.5 * dx_old[0])) + (0.5 * dx_new)
