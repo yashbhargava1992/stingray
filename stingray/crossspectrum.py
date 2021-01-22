@@ -1168,7 +1168,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
         """
 
-        # TODO: need to update this for making cross spectra.
         assert isinstance(lc1, Lightcurve)
         assert isinstance(lc2, Lightcurve)
 
