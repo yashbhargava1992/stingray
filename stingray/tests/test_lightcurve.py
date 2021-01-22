@@ -992,15 +992,23 @@ class TestLightcurve(object):
             lc.plot(title="Test Lightcurve")
         assert plt.fignum_exists(1)
 
-    @pytest.mark.parametrize('fname', ['lcurveA.fits', 'lcurve_new.fits'])
-    def test_read_from_lcurve(self, fname):
+    def test_read_from_lcurve_1(self):
+        fname = 'lcurveA.fits'
         with pytest.warns(UserWarning):
             lc = Lightcurve.read(os.path.join(datadir, fname),
                                  format_='hea', skip_checks=True)
-            ctrate = 0.91
-            if fname == 'lcurveA.fits':
-                ctrate = 1
-            assert np.isclose(lc.countrate[0], ctrate)
+        ctrate = 1
+        assert np.isclose(lc.countrate[0], ctrate)
+
+    def test_read_from_lcurve_2(self):
+        fname = 'lcurve_new.fits'
+        with pytest.warns(UserWarning):
+            lc = Lightcurve.read(os.path.join(datadir, fname),
+                                 format_='hea', skip_checks=True)
+        ctrate = 0.91
+
+        assert np.isclose(lc.countrate[0], ctrate)
+        assert np.isclose(lc.mjdref, 55197.00076601852)
 
     @pytest.mark.skipif('not _HAS_YAML')
     def test_io_with_ascii(self):

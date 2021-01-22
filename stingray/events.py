@@ -417,6 +417,7 @@ class EventList(object):
                              gti=evtdata.gti_list,
                              pi=evtdata.pi_list,
                              energy=evtdata.energy_list,
+                             mjdref=evtdata.mjdref,
                              instr=evtdata.instr,
                              mission=evtdata.mission,
                              header=evtdata.header,
