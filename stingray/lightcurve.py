@@ -1317,7 +1317,7 @@ class Lightcurve(object):
             if mincounts >= min_total_counts:
                 keep_searching = False
             else:
-                chunk_length *= np.ceil(min_total_counts / mincounts) * self.dt
+                chunk_length += self.dt 
 
         return chunk_length
 
@@ -1372,7 +1372,7 @@ class Lightcurve(object):
                                               self.time,
                                               fraction_step=fraction_step,
                                               dt=self.dt)
-        start_times = self.time[start] - self.dt * 0.5
+        start_times = self.time[start] - 0.5 * self.dt
 
         # Remember that stop is one element above the last element, because
         # it's defined to be used in intervals start:stop
