@@ -223,9 +223,11 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     xmins = xbin[:-1]
     xmaxs = xbin[1:]
     for i, (xmin, xmax, min_ind, max_ind) in enumerate(zip(xmins, xmaxs, min_inds, max_inds)):
-        output[i] = np.sum(y[min_ind:max_ind-1])
-        outputerr[i] = np.sum(yerr[min_ind:max_ind-1])
-        step_size[i] = len(y[min_ind:max_ind-1])
+        filtered_y = y[min_ind:max_ind-1]
+        filtered_yerr = yerr[min_ind:max_ind-1]
+        output[i] = np.sum(filtered_y)
+        outputerr[i] = np.sum(filtered_yerr)
+        step_size[i] = max_ind -1 - min_ind
 
         prev_dx = xedges[min_ind] - xedges[min_ind-1]
         prev_frac = (xedges[min_ind] - xmin)/prev_dx
@@ -233,7 +235,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         outputerr[i] += yerr[min_ind-1]*prev_frac
         step_size[i] += prev_frac
 
-        if not max_ind == len(xedges):
+        if not max_ind == xedges.size:
             dx_post = xedges[max_ind] - xedges[max_ind-1]
             post_frac = (xmax-xedges[max_ind-1])/dx_post
             output[i] += y[max_ind-1]*post_frac
