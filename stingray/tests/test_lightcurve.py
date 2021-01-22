@@ -292,6 +292,7 @@ class TestLightcurve(object):
                     "the moment")
 
         with warnings.catch_warnings(record=True) as w:
+            warnings.filterwarnings("always")
             lc = Lightcurve(times, counts, err_dist='gauss')
             assert np.any([warn_str in str(wi.message) for wi in w])
 

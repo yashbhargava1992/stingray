@@ -1194,7 +1194,7 @@ def _isattribute(data):
         True if the data is a single number, False if it is an iterable.
     """
 
-    if isinstance(data, np.ndarray) or isinstance(data, list):
+    if isinstance(data, Iterable) and not isinstance(data, (str, bytes)):
         return False
     else:
         return True
