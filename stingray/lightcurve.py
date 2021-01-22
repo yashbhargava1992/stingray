@@ -1307,12 +1307,11 @@ class Lightcurve(object):
         >>> dt=0.2
         >>> time = np.arange(0, 1000, dt)
         >>> counts = np.random.poisson(100, size=len(time))
-        >>> min_total_counts =  100
-        >>> min_total_bins = 2
-        >>> lc.estimate_chunk_length(min_total_counts, min_total_bins)
+        >>> lc = Lightcurve(time, counts, dt=dt)
+        >>> lc.estimate_chunk_length(100, 2)
         0.4
         >>> min_total_bins = 40
-        >>> lc.estimate_chunk_length(min_total_counts, min_total_bins)
+        >>> lc.estimate_chunk_length(100, 40)
         8.0
         """
 
