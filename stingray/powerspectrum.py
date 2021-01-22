@@ -356,7 +356,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     """
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
-                 silent=False, dt=None, lc=None, large_data=False, 
+                 silent=False, dt=None, lc=None, large_data=False,
                  save_all=False):
 
         if lc is not None:
@@ -416,7 +416,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         return
 
-    def _make_segment_spectrum(self, lc, segment_size):
+    def _make_segment_spectrum(self, lc, segment_size, silent=False):
         """
         Split the light curves into segments of size ``segment_size``, and
         calculate a power spectrum for each.
@@ -457,7 +457,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         nphots_all = []
 
         local_show_progress = show_progress
-        if not self.show_progress:
+        if not self.show_progress or silent:
             local_show_progress = lambda a: a
 
         for start_ind, end_ind in \
