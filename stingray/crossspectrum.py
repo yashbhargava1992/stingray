@@ -614,7 +614,6 @@ class Crossspectrum(object):
         binfreq, bincs, binerr, step_size = \
             rebin_data(self.freq, self.power, df, self.power_err,
                        method=method, dx=self.df)
-
         # make an empty cross spectrum object
         # note: syntax deliberate to work with subclass Powerspectrum
         bin_cs = copy.copy(self)
@@ -1033,7 +1032,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
     def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
                  gti=None, power_type="real", silent=False, lc1=None, lc2=None,
-                 dt=None, large_data=False):
+                 dt=None, large_data=False, save_all=False):
 
         if lc1 is not None or lc2 is not None:
             warnings.warn("The lcN keywords are now deprecated. Use dataN "
@@ -1089,6 +1088,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         self.show_progress = not silent
         self.dt = dt
+        self.save_all = save_all
 
         if isinstance(data1, EventList):
             lengths = data1.gti[:, 1] - data1.gti[:, 0]
@@ -1128,14 +1128,14 @@ class AveragedCrossspectrum(Crossspectrum):
                                               segment_size=self.segment_size,
                                               norm='none', gti=self.gti,
                                               power_type=self.power_type,
-                                              dt=self.dt)
+                                              dt=self.dt, save_all=self.save_all)
             self.pds2 = AveragedCrossspectrum(lc2, lc2,
                                               segment_size=self.segment_size,
                                               norm='none', gti=self.gti,
                                               power_type=self.power_type,
-                                              dt=self.dt)
+                                              dt=self.dt, save_all=self.save_all)
 
-    def _make_segment_spectrum(self, lc1, lc2, segment_size):
+    def _make_segment_spectrum(self, lc1, lc2, segment_size, silent=False):
         """
         Split the light curves into segments of size ``segment_size``, and calculate a cross spectrum for
         each.
@@ -1199,7 +1199,7 @@ class AveragedCrossspectrum(Crossspectrum):
               "Please report any inconsistencies.")
 
         local_show_progress = show_progress
-        if not self.show_progress:
+        if not self.show_progress or silent:
             local_show_progress = lambda a: a
 
         for start_ind, end_ind in \
@@ -1259,47 +1259,49 @@ class AveragedCrossspectrum(Crossspectrum):
                 isinstance(lc2, Lightcurve):
 
             if self.type == "crossspectrum":
-                self.cs_all, nphots1_all, nphots2_all = \
+                cs_all, nphots1_all, nphots2_all = \
                     self._make_segment_spectrum(lc1, lc2, self.segment_size)
 
             elif self.type == "powerspectrum":
-                self.cs_all, nphots1_all = \
+                cs_all, nphots1_all = \
                     self._make_segment_spectrum(lc1, self.segment_size)
 
             else:
                 raise ValueError("Type of spectrum not recognized!")
 
         else:
-            self.cs_all, nphots1_all, nphots2_all = [], [], []
+            cs_all, nphots1_all, nphots2_all = [], [], []
 
             for lc1_seg, lc2_seg in local_show_progress(zip(lc1, lc2)):
                 if self.type == "crossspectrum":
                     cs_sep, nphots1_sep, nphots2_sep = \
                         self._make_segment_spectrum(lc1_seg, lc2_seg,
-                                                    self.segment_size)
+                                                    self.segment_size,
+                                                    silent=True)
                     nphots2_all.append(nphots2_sep)
                 elif self.type == "powerspectrum":
                     cs_sep, nphots1_sep = \
-                        self._make_segment_spectrum(lc1_seg, self.segment_size)
+                        self._make_segment_spectrum(lc1_seg, self.segment_size,
+                            silent=True)
 
                 else:
                     raise ValueError("Type of spectrum not recognized!")
-                self.cs_all.append(cs_sep)
+                cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
 
-            self.cs_all = np.hstack(self.cs_all)
+            cs_all = np.hstack(cs_all)
             nphots1_all = np.hstack(nphots1_all)
 
             if self.type == "crossspectrum":
                 nphots2_all = np.hstack(nphots2_all)
 
-        m = len(self.cs_all)
+        m = len(cs_all)
         nphots1 = np.mean(nphots1_all)
 
-        power_avg = np.zeros_like(self.cs_all[0].power)
-        power_err_avg = np.zeros_like(self.cs_all[0].power_err)
-        unnorm_power_avg = np.zeros_like(self.cs_all[0].unnorm_power)
-        for cs in self.cs_all:
+        power_avg = np.zeros_like(cs_all[0].power)
+        power_err_avg = np.zeros_like(cs_all[0].power_err)
+        unnorm_power_avg = np.zeros_like(cs_all[0].unnorm_power)
+        for cs in cs_all:
             power_avg += cs.power
             unnorm_power_avg += cs.unnorm_power
             power_err_avg += (cs.power_err) ** 2
@@ -1308,14 +1310,16 @@ class AveragedCrossspectrum(Crossspectrum):
         power_err_avg = np.sqrt(power_err_avg) / m
         unnorm_power_avg /= np.float(m)
 
-        self.freq = self.cs_all[0].freq
+        self.freq = cs_all[0].freq
         self.power = power_avg
         self.unnorm_power = unnorm_power_avg
         self.m = m
         self.power_err = power_err_avg
-        self.df = self.cs_all[0].df
-        self.n = self.cs_all[0].n
+        self.df = cs_all[0].df
+        self.n = cs_all[0].n
         self.nphots1 = nphots1
+        if self.save_all:
+            self.cs_all = cs_all
 
         if self.type == "crossspectrum":
             self.nphots1 = nphots1

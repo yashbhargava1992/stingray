@@ -356,7 +356,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     """
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
-                 silent=False, dt=None, lc=None, large_data=False):
+                 silent=False, dt=None, lc=None, large_data=False, 
+                 save_all=False):
 
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
@@ -402,6 +403,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         self.type = "powerspectrum"
         self.dt = dt
+        self.save_all = save_all
 
         if isinstance(data, EventList):
             lengths = data.gti[:, 1] - data.gti[:, 0]
