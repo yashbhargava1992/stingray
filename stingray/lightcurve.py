@@ -83,6 +83,18 @@ class Lightcurve(object):
         countrate_err if input_counts is True) will _not_ be stored in memory,
         but calculated every time they are requested.
 
+    mission : str
+        Mission that recorded the data (e.g. NICER)
+
+    instr : str
+        Instrument onboard the mission
+
+    header : str
+        The full header of the original FITS file, if relevant
+
+    **other_kw :
+        Used internally. Any other keyword arguments will be ignored
+
     Attributes
     ----------
     time: numpy.ndarray
@@ -137,6 +149,18 @@ class Lightcurve(object):
         Statistic of the Lightcurve, it is used to calculate the
         uncertainties and other statistical values appropriately.
         It propagates to Spectrum classes.
+
+    mission : str
+        Mission that recorded the data (e.g. NICER)
+
+    instr : str
+        Instrument onboard the mission
+
+    detector_id : iterable
+        The detector that recoded each photon, if relevant (e.g. XMM, Chandra)
+
+    header : str
+        The full header of the original FITS file, if relevant
 
     """
     def __init__(self, time, counts, err=None, input_counts=True,

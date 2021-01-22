@@ -40,7 +40,7 @@ class EventList(object):
         to produce light curves with similar bin time.
 
     energy: iterable
-        A list of array of photon energy values
+        A list of array of photon energy values in keV
 
     mjdref : float
         The MJD used as a reference for the time array.
@@ -56,6 +56,21 @@ class EventList(object):
 
     notes : str
         Any useful annotations
+
+    high_precision : bool
+        Change the precision of self.time to float128. Useful while dealing with fast pulsars.
+
+    mission : str
+        Mission that recorded the data (e.g. NICER)
+
+    instr : str
+        Instrument onboard the mission
+
+    header : str
+        The full header of the original FITS file, if relevant
+
+    **other_kw :
+        Used internally. Any other keyword arguments will be ignored
 
     Attributes
     ----------
@@ -84,6 +99,18 @@ class EventList(object):
 
     high_precision : bool
         Change the precision of self.time to float128. Useful while dealing with fast pulsars.
+
+    mission : str
+        Mission that recorded the data (e.g. NICER)
+
+    instr : str
+        Instrument onboard the mission
+
+    detector_id : iterable
+        The detector that recoded each photon, if relevant (e.g. XMM, Chandra)
+
+    header : str
+        The full header of the original FITS file, if relevant
 
     """
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
