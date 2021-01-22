@@ -1626,8 +1626,9 @@ class Lightcurve(object):
         Currently supported formats are
 
         * pickle (not recommended for long-term storage)
-        * hea : LC files from all (well, some) HEASARC-supported missions
-        * ascii.ecsv, hdf5, etc.: through an :class:`astropy.table.Table`
+        * hea : FITS Light curves from HEASARC-supported missions.
+        * any other formats compatible with the writers in
+          :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
 
         Files that need the :class:`astropy.table.Table` interface MUST contain
         at least a ``time`` column and a ``counts`` or ``countrate`` column.

@@ -185,8 +185,7 @@ def lcurve_from_fits(
     noclobber=False,
     outdir=None,
 ):
-    """
-    Load a lightcurve from a fits file and save it in HENDRICS format.
+    """Load a lightcurve from a fits file.
 
     .. note ::
         FITS light curve handling is still under testing.

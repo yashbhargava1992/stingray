@@ -381,8 +381,9 @@ class EventList(object):
         Currently supported formats are
 
         * pickle (not recommended for long-term storage)
-        * hea : LC files from all (well, some) HEASARC-supported missions
-        * ascii.ecsv, hdf5, etc.: through an :class:`astropy.table.Table`
+        * hea : FITS Event files from (well, some) HEASARC-supported missions.
+        * any other formats compatible with the writers in
+          :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
 
         Files that need the :class:`astropy.table.Table` interface MUST contain
         at least a ``time`` column. Other recognized columns are ``energy`` and
@@ -431,8 +432,13 @@ class EventList(object):
 
     def write(self, filename, format_='pickle'):
         """
-        Write an :class:`EventList` object to file. Possible file formats are ``pickle``, ``hdf5``, ``ascii``
-        or ``fits``.
+        Write an :class:`EventList` object to file.
+
+        Possible file formats are
+
+        * pickle (not recommended for long-term storage)
+        * any other formats compatible with the writers in
+          :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
 
         Parameters
         ----------
