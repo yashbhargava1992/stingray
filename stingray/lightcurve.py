@@ -1666,7 +1666,7 @@ class Lightcurve(object):
         """
 
         if gti is None:
-             gti = self.gti
+            gti = self.gti
 
         list_of_lcs = []
 
