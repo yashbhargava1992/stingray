@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import binned_statistic
-from scipy.fftpack import fft, ifft
+from scipy.fft import fft, ifft
 from scipy.optimize import brent
 
 

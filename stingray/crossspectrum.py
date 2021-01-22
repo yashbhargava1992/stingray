@@ -23,10 +23,10 @@ except ImportError:
     from scipy.special import factorial
 
 try:
-    from pyfftw.interfaces.scipy_fftpack import fft, fftfreq
+    from pyfftw.interfaces.scipy_fft import fft, fftfreq
 except ImportError:
     warnings.warn("pyfftw not installed. Using standard scipy fft")
-    from scipy.fftpack import fft, fftfreq
+    from scipy.fft import fft, fftfreq
 
 __all__ = [
     "Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag",
