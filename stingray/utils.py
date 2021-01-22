@@ -175,7 +175,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     >>> y = np.ones(x.size)
     >>> yerr = np.ones(x.size)
     >>> xbin, ybin, ybinerr, step_size = rebin_data(
-    ...     x, y, 4, yerr=yerr, method='sum')
+    ...     x, y, 4, yerr=yerr, method='sum', dx=0.01)
     >>> np.allclose(ybin, 400)
     True
     >>> np.allclose(ybinerr, 20)
@@ -194,9 +194,9 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     else:
         yerr = np.asarray(yerr)
 
-    if dx is None or not dx:
+    if not dx:
         dx_old = np.diff(x)
-    elif dx.size == 1:
+    elif np.size(dx) == 1:
         dx_old = np.array([dx])
     else:
         dx_old = dx
@@ -263,7 +263,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
 
     dx_var = np.var(dx_old) / np.mean(dx_old)
 
-    if dx_old.size == 1 or dx_var < 1e-6:
+    if np.size(dx_old) == 1 or dx_var < 1e-6:
         step_size = step_size[0]
 
     new_x0 = (x[0] - (0.5 * dx_old[0])) + (0.5 * dx_new)
