@@ -2,6 +2,7 @@
 
 import numpy as np
 from scipy.linalg import toeplitz
+import warnings
 
 try:
     from pyfftw.interfaces.scipy_fft import fftshift, fft2, ifftshift, fft
