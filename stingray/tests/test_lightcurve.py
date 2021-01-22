@@ -280,6 +280,7 @@ class TestLightcurve(object):
                     "the moment")
 
         with warnings.catch_warnings(record=True) as w:
+            warnings.filterwarnings("always")
             lc = Lightcurve(times, counts, err_dist='gauss')
             assert np.any([warn_str in str(wi.message) for wi in w])
 
@@ -558,7 +559,7 @@ class TestLightcurve(object):
         lc1 = Lightcurve(self.times, self.counts)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
- 
+
             lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
                              err_dist="gauss")
         with warnings.catch_warnings(record=True) as w:
@@ -651,7 +652,7 @@ class TestLightcurve(object):
             newlc = lc1.join(lc2)
             # The join operation *averages* the overlapping arrays
             assert np.allclose(newlc.counts, lc1.counts)
-            assert np.any(["MJDref is different in the two light curves" 
+            assert np.any(["MJDref is different in the two light curves"
                            in str(wi.message) for wi in w])
             assert np.any(["The two light curves have overlapping time ranges"
                            in str(wi.message) for wi in w])
@@ -807,7 +808,7 @@ class TestLightcurve(object):
             warnings.simplefilter("ignore", category=UserWarning)
             lc_test = Lightcurve(test_time, test_counts)
         slc = lc_test.split(1.5)
- 
+
         assert len(slc) == 3
 
     def test_threeway_split_has_correct_data_points(self):
