@@ -458,6 +458,16 @@ class EventList(object):
         except TypeError:
             ts.write(filename, format=format_, overwrite=True)
 
+    def apply_mask(self, mask, inplace=False):
+        if inplace:
+            new_ev = self
+        else:
+            new_ev = copy.deepcopy(self)
+        for attr in 'time', 'energy', 'pi':
+            if hasattr(new_ev, attr):
+                setattr(new_ev, attr, getattr(new_ev, attr)[mask])
+        return new_ev
+
     def apply_deadtime(self, deadtime, inplace=False, **kwargs):
         """Apply deadtime filter to this event list.
 
@@ -506,20 +516,13 @@ class EventList(object):
         >>> filt_events is events
         True
         """
-        if inplace:
-            new_ev = self
-        else:
-            new_ev = copy.deepcopy(self)
-
         local_retall = kwargs.pop('return_all', False)
 
-        mask, retall = get_deadtime_mask(new_ev.time, deadtime,
+        mask, retall = get_deadtime_mask(self.time, deadtime,
                                          return_all=True,
                                          **kwargs)
 
-        for attr in 'time', 'energy', 'pi':
-            if hasattr(new_ev, attr):
-                setattr(new_ev, attr, getattr(new_ev, attr)[mask])
+        new_ev = self.apply_mask(mask, inplace=inplace)
 
         if local_retall:
             new_ev = [new_ev, retall]
