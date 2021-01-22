@@ -25,7 +25,7 @@ except ImportError:
 try:
     from pyfftw.interfaces.scipy_fftpack import fft, fftfreq
 except ImportError:
-    warnings.warn("Using standard scipy fft")
+    warnings.warn("pyfftw not installed. Using standard scipy fft")
     from scipy.fftpack import fft, fftfreq
 
 __all__ = [
