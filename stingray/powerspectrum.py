@@ -323,6 +323,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     large_data : bool, default False
         Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
 
+    save_all : bool, default False
+        Save all intermediate PDSs used for the final average. Use with care.
+        This is likely to fill up your RAM on medium-sized datasets, and to
+        slow down the computation when rebinning.
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
@@ -428,6 +433,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         segment_size : ``numpy.float``
             Size of each light curve segment to use for averaging.
+
+        Other parameters
+        ----------------
+        silent : bool, default False
+            Suppress progress bars
 
         Returns
         -------
