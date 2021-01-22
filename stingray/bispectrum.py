@@ -2,7 +2,13 @@
 
 import numpy as np
 from scipy.linalg import toeplitz
-from scipy.fftpack import fftshift, fft2, ifftshift, fft
+
+try:
+    from pyfftw.interfaces.scipy_fft import fftshift, fft2, ifftshift, fft
+except ImportError:
+    warnings.warn("pyfftw not installed. Using standard scipy fft")
+    from scipy.fft import fftshift, fft2, ifftshift, fft
+
 from  scipy.linalg import hankel
 
 from stingray import lightcurve
