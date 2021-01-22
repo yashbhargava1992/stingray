@@ -6,17 +6,21 @@ or to save existing light curves in a class that's easy to use.
 """
 import logging
 import warnings
+import pickle
 
 import numpy as np
 
-import stingray.io as io
+from astropy.table import Table
+from astropy.time import TimeDelta
+from astropy import units as u
+
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.gti import (bin_intervals_from_gtis, check_gtis, create_gti_mask,
                           cross_two_gtis, gti_border_bins, join_gtis)
 from stingray.utils import (assign_value_if_none, baseline_als,
                             poisson_symmetrical_errors, simon, interpret_times)
-
+from stingray.io import lcurve_from_fits
 
 __all__ = ["Lightcurve"]
 
@@ -79,6 +83,18 @@ class Lightcurve(object):
         countrate_err if input_counts is True) will _not_ be stored in memory,
         but calculated every time they are requested.
 
+    mission : str
+        Mission that recorded the data (e.g. NICER)
+
+    instr : str
+        Instrument onboard the mission
+
+    header : str
+        The full header of the original FITS file, if relevant
+
+    **other_kw :
+        Used internally. Any other keyword arguments will be ignored
+
     Attributes
     ----------
     time: numpy.ndarray
@@ -134,11 +150,26 @@ class Lightcurve(object):
         uncertainties and other statistical values appropriately.
         It propagates to Spectrum classes.
 
+    mission : str
+        Mission that recorded the data (e.g. NICER)
+
+    instr : str
+        Instrument onboard the mission
+
+    detector_id : iterable
+        The detector that recoded each photon, if relevant (e.g. XMM, Chandra)
+
+    header : str
+        The full header of the original FITS file, if relevant
+
     """
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
                  skip_checks=False, low_memory=False, mission=None,
-                 instr=None):
+                 instr=None, header=None, **other_kw):
+
+        if other_kw != {}:
+            warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
         time, mjdref = interpret_times(time, mjdref=mjdref)
 
@@ -206,6 +237,7 @@ class Lightcurve(object):
         self._n = None
         self.mission = mission
         self.instr = instr
+        self.header = header
 
         self.input_counts = input_counts
         self.low_memory = low_memory
@@ -1438,50 +1470,77 @@ class Lightcurve(object):
                           skip_checks=skip_checks)
 
     def to_astropy_timeseries(self):
-        from astropy.timeseries import TimeSeries
-        from astropy.time import TimeDelta
-        from astropy import units as u
+        return self._to_astropy_object(kind="timeseries")
+
+    def to_astropy_table(self):
+        return self._to_astropy_object(kind="table")
+
+    def _to_astropy_object(self, kind="table"):
         data = {}
+
         for attr in ['_counts', '_counts_err', '_countrate', '_countrate_err',
                      '_bin_lo', '_bin_hi']:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 data[attr.lstrip('_')] = np.asarray(getattr(self, attr))
 
-        ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
+        if kind.lower() == "table":
+            data['time'] = self.time
+            ts = Table(data)
+        elif kind.lower() == "timeseries":
+            from astropy.timeseries import TimeSeries
+            ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
+        else:  # pragma: no cover
+            raise ValueError("Invalid kind (accepted: table or timeseries)")
+
         for attr in ['_gti', 'mjdref', '_meancounts', '_meancountrate',
-                     'instr', 'mission', 'dt']:
+                     'instr', 'mission', 'dt', 'err_dist']:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 ts.meta[attr.lstrip('_')] = getattr(self, attr)
 
         return ts
 
     @staticmethod
-    def from_astropy_timeseries(ts):
-        from astropy.timeseries import TimeSeries
-        from astropy import units as u
+    def from_astropy_timeseries(ts, **kwargs):
+        return Lightcurve._from_astropy_object(ts, **kwargs)
 
-        dt = None
-        if 'dt' in ts.meta:
-            dt = ts.meta['dt']
+    @staticmethod
+    def from_astropy_table(ts, **kwargs):
+        return Lightcurve._from_astropy_object(ts, **kwargs)
+
+    @staticmethod
+    def _from_astropy_object(
+            ts, err_dist='poisson', skip_checks=True):
+
+        if hasattr(ts, 'time'):
+            time = ts.time
+        else:
+            time = ts['time']
+
+        kwargs = ts.meta
+        err = None
+        input_counts = True
+
+        if "counts_err" in ts.colnames:
+            err = ts["counts_err"]
+        elif "countrate_err" in ts.colnames:
+            err = ts["countrate_err"]
+
         if 'counts' in ts.colnames:
-            lc = Lightcurve(ts.time.to(u.s).value, ts['counts'],
-                            skip_checks=True, dt=dt)
+            counts = ts['counts']
         elif 'countrate' in ts.colnames:
-            lc = Lightcurve(ts.time.to(u.s).value, ts['countrate'],
-                            input_counts=False, skip_checks=True, dt=dt)
+            counts = ts['countrate']
+            input_counts = False
         else:
             raise ValueError('Input timeseries must contain at least a '
                              '`counts` or a `countrate` column')
 
-        for attr in ['counts', 'counts_err', 'countrate', 'countrate_err',
-                     'bin_hi', 'bin_low']:
-            if attr in ts.colnames and getattr(lc, '_' + attr) is None:
-                setattr(lc, attr, ts[attr])
+        kwargs.update({'time': time, 'counts': counts, 'err': err,
+                       'input_counts': input_counts,
+                       'skip_checks': skip_checks})
+        if 'err_dist' not in kwargs:
+            kwargs['err_dist'] = err_dist
 
-        for attr in ['gti', 'mjdref', 'meancounts', 'meancountrate',
-                     'instr', 'mission']:
-            if attr in ts.meta and ts.meta[attr] is not None:
-                setattr(lc, attr, ts.meta[attr])
+        lc = Lightcurve(**kwargs)
 
         return lc
 
@@ -1577,34 +1636,41 @@ class Lightcurve(object):
         format\_: str
             Available options are 'pickle', 'hdf5', 'ascii'
         """
-        _ = self.counts, self.counts_err, \
-            self.countrate, self.countrate_err, \
-            self.gti
+        if format_ == 'pickle':
+            with open(filename, "wb") as fobj:
+                pickle.dump(self, fobj)
+            return
+
         if format_ == 'ascii':
-            # io.write(np.array([self.time, self.counts, self.counts_err]).T,
-            #          filename, format_, fmt=["%s", "%s", "%s"])
-            ts = self.to_astropy_timeseries()
-            return ts.write(filename, format='ascii.ecsv', overwrite=True)
+            format_ = 'ascii.ecsv'
 
-        elif format_ == 'pickle':
-            io.write(self, filename, format_)
-        elif format_ == 'hdf5':
-            io.write(self, filename, format_)
-        else:
-            utils.simon("Format not understood.")
+        ts = self.to_astropy_table()
+        try:
+            ts.write(filename, format=format_, overwrite=True,
+                     serialize_meta=True)
+        except TypeError:
+            ts.write(filename, format=format_, overwrite=True)
 
-    def read(self, filename, format_='pickle', default_err_dist='gauss'):
+    @staticmethod
+    def read(filename, format_='pickle', err_dist='gauss',
+             skip_checks=False):
         """
-        Read a :class:`Lightcurve` object from file. Currently supported formats are
+        Read a :class:`Lightcurve` object from file.
+
+        Currently supported formats are
 
         * pickle (not recommended for long-term storage)
-        * HDF5
-        * ASCII
+        * hea : FITS Light curves from HEASARC-supported missions.
+        * any other formats compatible with the writers in
+          :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
 
-        Ascii files need to be ECSV files with an
-        :class:`astropy.timeseries.TimeSeries` containing time and counts
-        (+possibly counts_err, countrate, etc.) in the data cols and the
-        remaining metadata in the ``meta`` attribute
+        Files that need the :class:`astropy.table.Table` interface MUST contain
+        at least a ``time`` column and a ``counts`` or ``countrate`` column.
+        The default ascii format is enhanced CSV (ECSV). Data formats
+        supporting the serialization of metadata (such as ECSV and HDF5) can
+        contain all lightcurve attributes such as ``dt``, ``gti``, etc with
+        no significant loss of information. Other file formats might lose part
+        of the metadata, so must be used with care.
 
         Parameters
         ----------
@@ -1612,51 +1678,40 @@ class Lightcurve(object):
             Path and file name for the file to be read.
 
         format\_: str
-            Available options are 'pickle', 'hdf5', 'ascii'
+            Available options are 'pickle', 'hea', and any `Table`-supported
+            format such as 'hdf5', 'ascii.ecsv', etc.
 
         Other parameters
         ----------------
 
-        default_err_dist: str, default='gauss'
+        err_dist: str, default='gauss'
             Default error distribution if not specified in the file (e.g. for
             ASCII files). The default is 'gauss' just because it is likely
             that people using ASCII light curves will want to specify Gaussian
             error bars, if any.
+        skip_checks : bool
+            See :class:`Lightcurve` documentation
 
         Returns
         --------
-        lc : ``dict`` or :class:`Lightcurve` object
-            * If ``format\_`` is ``ascii``: :class:`Lightcurve` is returned.
-            * If ``format\_`` is ``hdf5``: dictionary with key-value pairs is returned.
-            * If ``format\_`` is ``pickle``: :class:`Lightcurve` object is returned.
+        lc : :class:`Lightcurve` object
         """
+        if format_ == 'pickle':
+            with open(filename, 'rb') as fobj:
+                return pickle.load(fobj)
+
+        if format_ == 'hea':
+            data = lcurve_from_fits(filename)
+            data.update({'err_dist': err_dist, 'skip_checks': skip_checks})
+            return Lightcurve(**data)
+
         if format_ == 'ascii':
-            from astropy.timeseries import TimeSeries
+            format_ = 'ascii.ecsv'
 
-            ts = TimeSeries.read(filename, format='ascii.ecsv')
-            return Lightcurve.from_astropy_timeseries(ts)
+        ts = Table.read(filename, format=format_)
+        return Lightcurve.from_astropy_table(
+            ts, err_dist=err_dist, skip_checks=skip_checks)
 
-        if format_ == 'hdf5':
-            data_raw = io.read(filename, format_)
-
-            data = {'time': np.array(data_raw['_time']),
-                    'counts': np.array(data_raw['_counts']),
-                    'counts_err': np.array(data_raw['_counts_err'])}
-            data['dt'] = data_raw['dt']
-            data['gti'] = None
-            if 'gti' in data_raw:
-                data['gti'] = data_raw['gti']
-            data['err_dist'] = data_raw['err_dist']
-            data['mjdref'] = data_raw['mjdref']
-        elif format_ == 'pickle':
-            return io.read(filename, format_)
-        else:
-            utils.simon("Format not understood.")
-            return None
-        return Lightcurve(data['time'], data['counts'], err=data['counts_err'],
-                          dt=data['dt'], skip_checks=True, gti=data['gti'],
-                          err_dist=data['err_dist'],
-                          mjdref=data['mjdref'])
 
     def split_by_gti(self, gti=None, min_points=2):
         """

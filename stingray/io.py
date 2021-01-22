@@ -174,6 +174,210 @@ def _get_detector_id(lctable):
     return None
 
 
+def lcurve_from_fits(
+    fits_file,
+    gtistring="GTI",
+    timecolumn="TIME",
+    ratecolumn=None,
+    ratehdu=1,
+    fracexp_limit=0.9,
+    outfile=None,
+    noclobber=False,
+    outdir=None,
+):
+    """Load a lightcurve from a fits file.
+
+    .. note ::
+        FITS light curve handling is still under testing.
+        Absolute times might be incorrect depending on the light curve format.
+
+    Parameters
+    ----------
+    fits_file : str
+        File name of the input light curve in FITS format
+
+    Returns
+    -------
+    data : dict
+        Dictionary containing all information needed to create a
+        :class:`stingray.Lightcurve` object
+
+    Other Parameters
+    ----------------
+    gtistring : str
+        Name of the GTI extension in the FITS file
+    timecolumn : str
+        Name of the column containing times in the FITS file
+    ratecolumn : str
+        Name of the column containing rates in the FITS file
+    ratehdu : str or int
+        Name or index of the FITS extension containing the light curve
+    fracexp_limit : float
+        Minimum exposure fraction allowed
+    noclobber : bool
+        If True, do not overwrite existing files
+    """
+    warnings.warn(
+        """WARNING! FITS light curve handling is still under testing.
+        Absolute times might be incorrect."""
+    )
+    # TODO:
+    # treat consistently TDB, UTC, TAI, etc. This requires some documentation
+    # reading. For now, we assume TDB
+    from astropy.io import fits as pf
+    from astropy.time import Time
+    import numpy as np
+    from stingray.gti import create_gti_from_condition
+
+    lchdulist = pf.open(fits_file)
+    lctable = lchdulist[ratehdu].data
+
+    # Units of header keywords
+    tunit = lchdulist[ratehdu].header["TIMEUNIT"]
+
+    try:
+        mjdref = high_precision_keyword_read(
+            lchdulist[ratehdu].header, "MJDREF"
+        )
+        mjdref = Time(mjdref, scale="tdb", format="mjd")
+    except Exception:
+        mjdref = None
+
+    try:
+        instr = lchdulist[ratehdu].header["INSTRUME"]
+    except Exception:
+        instr = "EXTERN"
+
+    # ----------------------------------------------------------------
+    # Trying to comply with all different formats of fits light curves.
+    # It's a madness...
+    try:
+        tstart = high_precision_keyword_read(
+            lchdulist[ratehdu].header, "TSTART"
+        )
+        tstop = high_precision_keyword_read(lchdulist[ratehdu].header, "TSTOP")
+    except Exception:  # pragma: no cover
+        raise (Exception("TSTART and TSTOP need to be specified"))
+
+    # For nulccorr lcs this whould work
+
+    timezero = high_precision_keyword_read(
+        lchdulist[ratehdu].header, "TIMEZERO"
+    )
+    # Sometimes timezero is "from tstart", sometimes it's an absolute time.
+    # This tries to detect which case is this, and always consider it
+    # referred to tstart
+    timezero = assign_value_if_none(timezero, 0)
+
+    # for lcurve light curves this should instead work
+    if tunit == "d":
+        # TODO:
+        # Check this. For now, I assume TD (JD - 2440000.5).
+        # This is likely wrong
+        timezero = Time(2440000.5 + timezero, scale="tdb", format="jd")
+        tstart = Time(2440000.5 + tstart, scale="tdb", format="jd")
+        tstop = Time(2440000.5 + tstop, scale="tdb", format="jd")
+        # if None, use NuSTAR defaulf MJDREF
+        mjdref = assign_value_if_none(
+            mjdref,
+            Time(
+                np.longdouble("55197.00076601852"), scale="tdb", format="mjd"
+            ),
+        )
+
+        timezero = (timezero - mjdref).to("s").value
+        tstart = (tstart - mjdref).to("s").value
+        tstop = (tstop - mjdref).to("s").value
+
+    if timezero > tstart:
+        timezero -= tstart
+
+    time = np.array(lctable.field(timecolumn), dtype=np.longdouble)
+    if time[-1] < tstart:
+        time += timezero + tstart
+    else:
+        time += timezero
+
+    try:
+        dt = high_precision_keyword_read(lchdulist[ratehdu].header, "TIMEDEL")
+        if tunit == "d":
+            dt *= 86400
+    except Exception:
+        warnings.warn(
+            "Assuming that TIMEDEL is the median difference between the"
+            " light curve times",
+            AstropyUserWarning,
+        )
+        # Avoid NaNs
+        good = time == time
+        dt = np.median(np.diff(time[good]))
+
+    # ----------------------------------------------------------------
+    if ratecolumn is None:
+        for name in ["RATE", "RATE1", "COUNTS"]:
+            if name in lctable.names:
+                ratecolumn = name
+                break
+        else:  # pragma: no cover
+            raise ValueError(
+                "None of the accepted rate columns were found in the file")
+
+    rate = np.array(lctable.field(ratecolumn), dtype=np.float)
+
+    errorcolumn = "ERROR"
+    if ratecolumn == "RATE1":
+        errorcolumn = "ERROR1"
+
+    try:
+        rate_e = np.array(lctable.field(errorcolumn), dtype=np.longdouble)
+    except Exception:
+        rate_e = np.zeros_like(rate)
+
+    if "RATE" in ratecolumn:
+        rate *= dt
+        rate_e *= dt
+
+    try:
+        fracexp = np.array(lctable.field("FRACEXP"), dtype=np.longdouble)
+    except Exception:
+        fracexp = np.ones_like(rate)
+
+    good_intervals = (
+        (rate == rate) * (fracexp >= fracexp_limit) * (fracexp <= 1)
+    )
+
+    rate[good_intervals] /= fracexp[good_intervals]
+    rate_e[good_intervals] /= fracexp[good_intervals]
+
+    rate[~good_intervals] = 0
+
+    try:
+        gtitable = lchdulist[gtistring].data
+        gti_list = np.array(
+            [
+                [a, b]
+                for a, b in zip(
+                    gtitable.field("START"), gtitable.field("STOP")
+                )
+            ],
+            dtype=np.longdouble,
+        )
+    except Exception:
+        gti_list = create_gti_from_condition(time, good_intervals)
+
+    lchdulist.close()
+
+    res = {"time": time,
+           "counts": rate,
+           "err": rate_e,
+           "gti": gti_list,
+           "mjdref": mjdref.mjd,
+           "dt": dt,
+           "instr": instr,
+           "header": lchdulist[ratehdu].header.tostring()}
+    return res
+
+
 def load_events_and_gtis(
     fits_file,
     additional_columns=None,
