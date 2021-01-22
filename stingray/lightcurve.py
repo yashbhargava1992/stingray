@@ -1302,7 +1302,17 @@ class Lightcurve(object):
         >>> count[2:4] = 1
         >>> lc = Lightcurve(time, count, dt=1)
         >>> lc.estimate_chunk_length(min_total_counts=3, min_time_bins=1)
-        4.0
+        3.0
+        >>> # A slightly more complex example
+        >>> dt=0.2
+        >>> time = np.arange(0, 1000, dt)
+        >>> counts = np.random.poisson(100, size=len(time))
+        >>> lc = Lightcurve(time, counts, dt=dt)
+        >>> lc.estimate_chunk_length(100, 2)
+        0.4
+        >>> min_total_bins = 40
+        >>> lc.estimate_chunk_length(100, 40)
+        8.0
         """
 
         rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt
@@ -1317,7 +1327,7 @@ class Lightcurve(object):
             if mincounts >= min_total_counts:
                 keep_searching = False
             else:
-                chunk_length *= np.ceil(min_total_counts / mincounts) * self.dt
+                chunk_length += self.dt 
 
         return chunk_length
 
@@ -1372,7 +1382,7 @@ class Lightcurve(object):
                                               self.time,
                                               fraction_step=fraction_step,
                                               dt=self.dt)
-        start_times = self.time[start] - self.dt * 0.5
+        start_times = self.time[start] - 0.5 * self.dt
 
         # Remember that stop is one element above the last element, because
         # it's defined to be used in intervals start:stop
