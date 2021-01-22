@@ -1303,6 +1303,20 @@ class Lightcurve(object):
         >>> lc = Lightcurve(time, count, dt=1)
         >>> lc.estimate_chunk_length(min_total_counts=3, min_time_bins=1)
         3.0
+        >>> # A slightly more complex example
+        >>> dt=0.2
+        >>> time = np.arange(0, 1000, dt)
+        >>> counts = np.random.poisson(100, size=len(time))
+        >>> min_total_counts =  100
+        >>> 
+        >>> for i in [2, 3, 40, 55, 660]:
+        >>>     estimated_chunk_length = lc.estimate_chunk_length(min_total_counts, i)
+        >>>     print("The minimum number of bins to satisfy both conditions is " + str(estimated_chunk_length))
+        The minimum number of bins to satisfy both conditions is 0.4
+        The minimum number of bins to satisfy both conditions is 0.6000000000000001
+        The minimum number of bins to satisfy both conditions is 8.0
+        The minimum number of bins to satisfy both conditions is 11.0
+        The minimum number of bins to satisfy both conditions is 132.0
         """
 
         rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt
