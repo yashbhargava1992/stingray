@@ -106,7 +106,7 @@ Installation
 
 You can find install Stingray via `conda`, `pip` or from the source repository itself.
 More details on how to install Stingray can be found `on the Installations page
-<https://stingray.readthedocs.io/en/latest/stingray/docs/install.html>_.
+<https://stingray.readthedocs.io/en/latest/stingray/docs/install.html>`_.
 
 Documentation
 -------------
