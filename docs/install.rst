@@ -10,13 +10,13 @@ There are currently two ways to install Stingray:
 Installing via ``conda``
 ------------------------
 
-If you manage your Python installation and packages 
-via Anaconda or miniconda, you can install ``stingray`` 
+If you manage your Python installation and packages
+via Anaconda or miniconda, you can install ``stingray``
 via the ``conda-forge`` build: ::
 
     $ conda install -c conda-forge stingray
 
-That should be all you need to do! Just remember to :ref:`run the tests <testsuite>` before 
+That should be all you need to do! Just remember to :ref:`run the tests <testsuite>` before
 you use it!
 
 Installing via ``pip``
@@ -56,19 +56,18 @@ source. First fork
 
     $ git clone --recursive https://github.com/<your github username>/stingray.git
 
-Now, navigate to this folder and run 
-the following command to add an upstream remote that's linked to Stingray's main repository. 
+Now, navigate to this folder and run
+the following command to add an upstream remote that's linked to Stingray's main repository.
 (This will be necessary when submitting PRs later.): ::
-    
+
     $ cd stingray
     $ git remote add upstream https://github.com/StingraySoftware/stingray.git
 
-
-Now, install the necessary dependencies: ::
+Now, install the necessary dependencies::
 
     $ pip install astropy scipy matplotlib numpy pytest pytest-astropy h5py tqdm
 
-Finally, install ``stingray`` itself: ::
+Finally, install ``stingray`` itself::
 
     $ pip install -e "."
 
@@ -96,8 +95,6 @@ or from within a python interpreter:
 
    >>> import stingray
    >>> stingray.test()
-
-
 
 Documentation
 -------------
