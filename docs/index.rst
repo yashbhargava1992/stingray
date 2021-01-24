@@ -11,7 +11,10 @@ Contents
 
    basics
    install
+   core
+   modeling
    simulator
+   pulsar
    api
 
 

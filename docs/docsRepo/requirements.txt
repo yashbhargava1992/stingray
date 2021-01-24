@@ -1,7 +1,0 @@
-nbsphinx
-astropy-sphinx-theme
-sphinx>=1.7
-pandoc
-nbconvert
-ipykernel
-
