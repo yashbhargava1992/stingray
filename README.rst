@@ -106,7 +106,7 @@ Installation
 
 You can find install Stingray via `conda`, `pip` or from the source repository itself.
 More details on how to install Stingray can be found `on the Installations page
-<https://stingray.readthedocs.io/en/latest/stingray/docs/install.html>_.
+<https://stingray.readthedocs.io/en/latest/stingray/docs/install.html>`_.
 
 Documentation
 -------------
@@ -124,9 +124,14 @@ Then open ``./docs/_build/index.html`` in the browser of your choice.
 Test suite
 ----------
 
-Stingray uses `py.test` for testing. To run the tests, try::
+Stingray uses `py.test <https://pytest.org>`_ and `tox
+<https://tox.readthedocs.io>`_ for testing. To run the tests, try::
 
-   $ python setup.py test
+   $ tox -e test
+
+You may need to install tox first::
+
+   $ pip install tox
 
 If you have installed Stingray via pip or conda, the source directory might
 not be easily accessible. Once installed, you can also run the tests using::
