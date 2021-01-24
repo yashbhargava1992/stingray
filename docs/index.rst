@@ -4,7 +4,7 @@ Stingray: Next-Generation Spectral Timing
 
 Stingray is a community-developed astrophysical spectral-timing software package written in Python.
 
-.. image:: stingray_logo.png
+.. image:: images/stingray_logo.png
    :width: 700
    :scale: 40%
    :alt: Stingray logo, outline of a stingray on top of a graph of the power spectrum of an X-ray binary
