@@ -232,7 +232,8 @@ def cospectra_pvalue(power, nspec):
 def coherence(lc1, lc2):
     """
     Estimate coherence function of two light curves.
-    For details on the definition of the coherence, see [vaughan-1996].
+    For details on the definition of the coherence, see Vaughan and Nowak,
+    1996 [#]_.
 
     Parameters
     ----------
@@ -249,8 +250,7 @@ def coherence(lc1, lc2):
 
     References
     ----------
-    .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
-
+    .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
     """
 
     if not isinstance(lc1, Lightcurve):
@@ -745,7 +745,7 @@ class Crossspectrum(object):
     def coherence(self):
         """ Compute Coherence function of the cross spectrum.
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
+        Coherence is defined in Vaughan and Nowak, 1996 [#]_.
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -756,8 +756,7 @@ class Crossspectrum(object):
 
         References
         ----------
-        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
-
+        .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -1340,7 +1339,7 @@ class AveragedCrossspectrum(Crossspectrum):
         """Averaged Coherence function.
 
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
+        Coherence is defined in Vaughan and Nowak, 1996 [#]_.
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -1359,8 +1358,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         References
         ----------
-        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
-
+        .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
         """
         if np.any(self.m < 50):
             simon("Number of segments used in averaging is "
