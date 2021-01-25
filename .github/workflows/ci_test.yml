@@ -48,6 +48,8 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v2
+      with:
+        submodules: true
     - name: Set up Python ${{ matrix.python }}
       uses: actions/setup-python@v2
       with:
@@ -56,9 +58,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install tox
-    - name: Install graphviz dependency
+    - name: Install system dependencies
       if: "endsWith(matrix.tox_env, 'build_docs')"
-      run: sudo apt-get -y install graphviz
+      run: sudo apt-get -y install graphviz pandoc
     - name: Print Python, pip, setuptools, and tox versions
       run: |
         python -c "import sys; print(f'Python {sys.version}')"
