@@ -303,7 +303,8 @@ class Crossspectrum(object):
     Make a cross spectrum from a (binned) light curve.
     You can also make an empty :class:`Crossspectrum` object to populate with your
     own Fourier-transformed data (this can sometimes be useful when making
-    binned power spectra).
+    binned power spectra). Stingray uses the scipy.fft standards for the sign 
+    of the Nyquist frequency.
 
     Parameters
     ----------
@@ -316,8 +317,11 @@ class Crossspectrum(object):
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
         The normalization of the (real part of the) cross spectrum.
 
-    power_type: string, optional, default ``real`` Parameter to choose among
-    complete, real part and magnitude of the cross spectrum.
+    power_type: string, optional, default ``real`` 
+        Parameter to choose among complete, real part and magnitude of the cross spectrum.
+    
+    fullspec: boolean, optional, default ``False``
+        If False, keep only the positive frequencies, or if True, keep all of them .
 
     Other Parameters
     ----------------
@@ -373,7 +377,7 @@ class Crossspectrum(object):
     """
 
     def __init__(self, data1=None, data2=None, norm='none', gti=None,
-                 lc1=None, lc2=None, power_type="real", dt=None):
+                 lc1=None, lc2=None, power_type="real", dt=None, fullspec=False):
 
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
@@ -431,7 +435,10 @@ class Crossspectrum(object):
         self.lc1 = lc1
         self.lc2 = lc2
         self.power_type = power_type
-        self._make_crossspectrum(lc1, lc2)
+        self.fullspec = fullspec
+
+        self._make_crossspectrum(lc1, lc2, fullspec)
+
         # These are needed to calculate coherence
         self._make_auxil_pds(lc1, lc2)
 
@@ -449,7 +456,7 @@ class Crossspectrum(object):
             self.pds1 = Crossspectrum(lc1, lc1, norm='none')
             self.pds2 = Crossspectrum(lc2, lc2, norm='none')
 
-    def _make_crossspectrum(self, lc1, lc2):
+    def _make_crossspectrum(self, lc1, lc2, fullspec=False):
         """
         Auxiliary method computing the normalized cross spectrum from two
         light curves. This includes checking for the presence of and
@@ -463,7 +470,11 @@ class Crossspectrum(object):
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
 
+        fullspec: boolean, default ``False``
+            Return full frequency array (True) or just positive frequencies (False)
+
         """
+
         # make sure the inputs work!
         if not isinstance(lc1, Lightcurve):
             raise TypeError("lc1 must be a lightcurve.Lightcurve object")
@@ -520,7 +531,7 @@ class Crossspectrum(object):
         self.m = 1
 
         # make the actual Fourier transform and compute cross spectrum
-        self.freq, self.unnorm_power = self._fourier_cross(lc1, lc2)
+        self.freq, self.unnorm_power = self._fourier_cross(lc1, lc2, fullspec)
 
         # If co-spectrum is desired, normalize here. Otherwise, get raw back
         # with the imaginary part still intact.
@@ -550,11 +561,12 @@ class Crossspectrum(object):
         else:
             self.power_err = np.zeros(len(self.power))
 
-    def _fourier_cross(self, lc1, lc2):
+    def _fourier_cross(self, lc1, lc2, fullspec=False):
         """
         Fourier transform the two light curves, then compute the cross spectrum.
         Computed as CS = lc1 x lc2* (where lc2 is the one that gets
-        complex-conjugated)
+        complex-conjugated). The user has the option to either get just the
+        positive frequencies or the full spectrum.
 
         Parameters
         ----------
@@ -566,6 +578,9 @@ class Crossspectrum(object):
             Another light curve to be Fourier transformed.
             This is the reference band.
 
+        fullspec: boolean. Default is False. 
+            If True, return the whole array of frequencies, or only positive frequencies (False).
+
         Returns
         -------
         fr: numpy.ndarray
@@ -575,10 +590,13 @@ class Crossspectrum(object):
         fourier_1 = fft(lc1.counts)  # do Fourier transform 1
         fourier_2 = fft(lc2.counts)  # do Fourier transform 2
 
-        freqs = fftfreq(lc1.n, lc1.dt)
-        cross = np.multiply(fourier_1[freqs > 0], np.conj(fourier_2[freqs > 0]))
-
-        return freqs[freqs > 0], cross
+        freqs = scipy.fftpack.fftfreq(lc1.n, lc1.dt)
+        cross = np.multiply(fourier_1, np.conj(fourier_2))
+        
+        if fullspec is  True:
+            return freqs, cross
+        else:
+            return freqs[freqs > 0], cross[freqs > 0]
 
     def rebin(self, df=None, f=None, method="mean"):
         """
@@ -990,6 +1008,10 @@ class AveragedCrossspectrum(Crossspectrum):
         For backwards compatibility only. Like ``data2``, but no
         :class:`stingray.events.EventList` objects allowed
 
+    fullspec: boolean, optional, default ``False`` 
+        If True, return the full array of frequencies, otherwise return just the 
+        positive frequencies.
+
     large_data : bool, default False
         Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
 
@@ -1036,7 +1058,8 @@ class AveragedCrossspectrum(Crossspectrum):
 
     def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
                  gti=None, power_type="real", silent=False, lc1=None, lc2=None,
-                 dt=None, large_data=False, save_all=False):
+                 dt=None, fullspec=False, large_data=False, save_all=False):
+
 
         if lc1 is not None or lc2 is not None:
             warnings.warn("The lcN keywords are now deprecated. Use dataN "
@@ -1087,8 +1110,10 @@ class AveragedCrossspectrum(Crossspectrum):
 
         self.type = "crossspectrum"
 
+
         self.segment_size = segment_size
         self.power_type = power_type
+        self.fullspec = fullspec
 
         self.show_progress = not silent
         self.dt = dt
@@ -1107,7 +1132,7 @@ class AveragedCrossspectrum(Crossspectrum):
             data2 = list(data2.to_lc_list(dt))
 
         Crossspectrum.__init__(self, data1, data2, norm, gti=gti,
-                               power_type=power_type, dt=dt)
+                               power_type=power_type, dt=dt, fullspec=fullspec)
 
         return
 
@@ -1132,12 +1157,15 @@ class AveragedCrossspectrum(Crossspectrum):
                                               segment_size=self.segment_size,
                                               norm='none', gti=self.gti,
                                               power_type=self.power_type,
-                                              dt=self.dt, save_all=self.save_all)
+                                              dt=self.dt, fullspec=self.fullspec, 
+                                              save_all=self.save_all)
+
             self.pds2 = AveragedCrossspectrum(lc2, lc2,
                                               segment_size=self.segment_size,
                                               norm='none', gti=self.gti,
                                               power_type=self.power_type,
-                                              dt=self.dt, save_all=self.save_all)
+                                              dt=self.dt, fullspec=self.fullspec,
+                                              save_all=self.save_all)
 
     def _make_segment_spectrum(self, lc1, lc2, segment_size, silent=False):
         """
@@ -1236,9 +1264,9 @@ class AveragedCrossspectrum(Crossspectrum):
                                  err_dist=lc2.err_dist,
                                  gti=gti2,
                                  dt=lc2.dt, skip_checks=True)
-            # with warnings.catch_warnings(record=True) as w:
-            cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
-                                   power_type=self.power_type)
+            with warnings.catch_warnings(record=True) as w:
+                cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
+                                   power_type=self.power_type, fullspec=self.fullspec)
 
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
@@ -1246,17 +1274,21 @@ class AveragedCrossspectrum(Crossspectrum):
 
         return cs_all, nphots1_all, nphots2_all
 
-    def _make_crossspectrum(self, lc1, lc2):
+    def _make_crossspectrum(self, lc1, lc2, fullspec=False):
         """
         Auxiliary method computing the normalized cross spectrum from two light curves.
         This includes checking for the presence of and applying Good Time Intervals, computing the
         unnormalized Fourier cross-amplitude, and then renormalizing using the required normalization.
-        Also computes an uncertainty estimate on the cross spectral powers.
+        Also computes an uncertainty estimate on the cross spectral powers. Stingray uses the 
+        scipy.fftpack standards for the sign of the Nyquist frequency.
 
         Parameters
         ----------
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
+
+        fullspec: boolean, default ``False``, 
+            If True, return all frequencies otherwise return only positive frequencies 
         """
         local_show_progress = show_progress
         if not self.show_progress:
