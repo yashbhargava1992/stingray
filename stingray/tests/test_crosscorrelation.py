@@ -84,6 +84,7 @@ class TestCrossCorrelation(object):
         time = scipy.fft.fftfreq(len(ifft), spec.df)
         time, resultifft = (list(t) for t in zip(*sorted(zip(time, ifft))))
         cr2 = CrossCorrelation(cross=spec)
+        lags_result = np.array([-2, -1, 0, 1, 2])
 
         assert np.allclose(cr2.cross.power, spec.power)
         assert np.allclose(cr2.cross.freq, spec.freq)
