@@ -1,0 +1,3 @@
+[submodule "docs/notebooks"]
+	path = docs/notebooks
+	url = https://github.com/StingraySoftware/notebooks.git

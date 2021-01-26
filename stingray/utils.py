@@ -175,7 +175,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     >>> y = np.ones(x.size)
     >>> yerr = np.ones(x.size)
     >>> xbin, ybin, ybinerr, step_size = rebin_data(
-    ...     x, y, 4, yerr=yerr, method='sum')
+    ...     x, y, 4, yerr=yerr, method='sum', dx=0.01)
     >>> np.allclose(ybin, 400)
     True
     >>> np.allclose(ybinerr, 20)
@@ -189,7 +189,10 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     """
 
     y = np.asarray(y)
-    yerr = np.asarray(apply_function_if_none(yerr, y, np.zeros_like))
+    if yerr is None:
+        yerr = np.zeros_like(y)
+    else:
+        yerr = np.asarray(yerr)
 
     if not dx:
         dx_old = np.diff(x)
@@ -214,16 +217,17 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     outputerr = np.zeros(xbin.shape[0] - 1, dtype=type(y[0]))
     step_size = np.zeros(xbin.shape[0] - 1)
 
-    for i in range(len(xbin)-1):
-
-        xmin = xbin[i]
-        xmax = xbin[i+1]
-        min_ind = xedges.searchsorted(xmin)
-        max_ind = xedges.searchsorted(xmax)
-
-        output[i] = np.sum(y[min_ind:max_ind-1])
-        outputerr[i] = np.sum(yerr[min_ind:max_ind-1])
-        step_size[i] = len(y[min_ind:max_ind-1])
+    all_x = np.searchsorted(xedges, xbin)
+    min_inds = all_x[:-1]
+    max_inds = all_x[1:]
+    xmins = xbin[:-1]
+    xmaxs = xbin[1:]
+    for i, (xmin, xmax, min_ind, max_ind) in enumerate(zip(xmins, xmaxs, min_inds, max_inds)):
+        filtered_y = y[min_ind:max_ind-1]
+        filtered_yerr = yerr[min_ind:max_ind-1]
+        output[i] = np.sum(filtered_y)
+        outputerr[i] = np.sum(filtered_yerr)
+        step_size[i] = max_ind -1 - min_ind
 
         prev_dx = xedges[min_ind] - xedges[min_ind-1]
         prev_frac = (xedges[min_ind] - xmin)/prev_dx
@@ -231,7 +235,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         outputerr[i] += yerr[min_ind-1]*prev_frac
         step_size[i] += prev_frac
 
-        if not max_ind == len(xedges):
+        if not max_ind == xedges.size:
             dx_post = xedges[max_ind] - xedges[max_ind-1]
             post_frac = (xmax-xedges[max_ind-1])/dx_post
             output[i] += y[max_ind-1]*post_frac
@@ -1111,10 +1115,11 @@ def interpret_times(time, mjdref=0):
     if isinstance(time, Time):
         mjds = time.mjd
         if mjdref == 0:
-            if isinstance(mjds, Iterable):
-                mjdref = mjds[0]
-            else:
-                mjdref = mjds
+            if np.all(mjds > 10000):
+                if isinstance(mjds, Iterable):
+                    mjdref = mjds[0]
+                else:
+                    mjdref = mjds
 
         out_times = (mjds - mjdref) * 86400
         return out_times, mjdref

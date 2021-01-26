@@ -59,7 +59,7 @@ setup_cfg = dict(conf.items('metadata'))
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns.append('_templates')
+exclude_patterns += ['_templates', 'notebooks/README.rst']
 
 # This is added to the end of RST files - a good place to put substitutions to
 # be used globally.
@@ -112,7 +112,7 @@ html_theme_options = {
 
 extensions += [
     'matplotlib.sphinxext.plot_directive', 'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon', 'nbsphinx'
 ]
 
 # Custom sidebar templates, maps document names to template names.
@@ -168,28 +168,6 @@ if setup_cfg.get('edit_on_github').lower() == 'true':
 github_issues_url = 'https://github.com/{0}/issues/'.format(
     setup_cfg['github_project'])
 
-# -- Turn on nitpicky mode for sphinx (to warn about references not found) ----
-#
-# nitpicky = True
-# nitpick_ignore = []
-#
-# Some warnings are impossible to suppress, and you can list specific references
-# that should be ignored in a nitpick-exceptions file which should be inside
-# the docs/ directory. The format of the file should be:
-#
-# <type> <class>
-#
-# for example:
-#
-# py:class astropy.io.votable.tree.Element
-# py:class astropy.io.votable.tree.SimpleElement
-# py:class astropy.io.votable.tree.SimpleElementWithContent
-#
-# Uncomment the following lines to enable the exceptions:
-#
-# for line in open('nitpick-exceptions'):
-#     if line.strip() == "" or line.startswith("#"):
-#         continue
-#     dtype, target = line.split(None, 1)
-#     target = target.strip()
-#     nitpick_ignore.append((dtype, six.u(target)))
+# -- Configuration for nbsphinx -----------------------------------------------
+# disable notebook execution
+nbsphinx_execute = 'never'

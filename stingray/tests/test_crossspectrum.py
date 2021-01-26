@@ -166,14 +166,10 @@ class TestAveragedCrossspectrumEvents(object):
                                        segment_size=np.inf, dt=self.dt)
 
     def test_coherence(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-
+        with pytest.warns(UserWarning) as w:
             coh = self.acs.coherence()
-
-            assert len(coh[0]) == 4999
-            assert len(coh[1]) == 4999
-            assert issubclass(w[-1].category, UserWarning)
+        assert len(coh[0]) == 4999
+        assert len(coh[1]) == 4999
 
     def test_failure_when_normalization_not_recognized(self):
         with pytest.raises(ValueError):
@@ -633,6 +629,11 @@ class TestAveragedCrossspectrum(object):
         with pytest.warns(UserWarning) as record:
             self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
 
+    def test_save_all(self):
+        cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                   save_all=True)
+        assert hasattr(cs, 'cs_all')
+
     def test_lc_keyword_deprecation(self):
         cs1 = AveragedCrossspectrum(data1=self.lc1, data2=self.lc2,
                                     segment_size=1)
@@ -738,8 +739,12 @@ class TestAveragedCrossspectrum(object):
         lc1 = Lightcurve(x, y1)
         lc2 = Lightcurve(x, y2)
 
-        acs = AveragedCrossspectrum(lc1, lc2, segment_size=5.0, norm="leahy")
+        with pytest.warns(UserWarning) as record:
+            acs = AveragedCrossspectrum(
+                lc1, lc2, segment_size=5.0, norm="leahy")
         assert acs.m == 1
+        assert np.any(["No counts in interval" in r.message.args[0]
+                       for r in record])
 
 
     def test_rebin_with_invalid_type_attribute(self):
@@ -875,14 +880,15 @@ class TestAveragedCrossspectrum(object):
         test_lc1 = simulator.simulate(2)
         test_lc1.counts -= np.min(test_lc1.counts)
 
-        test_lc1 = Lightcurve(test_lc1.time,
-                              test_lc1.counts,
-                              err_dist=test_lc1.err_dist,
-                              dt=dt)
-        test_lc2 = Lightcurve(test_lc1.time,
-                              np.array(np.roll(test_lc1.counts, 2)),
-                              err_dist=test_lc1.err_dist,
-                              dt=dt)
+        with pytest.warns(UserWarning):
+            test_lc1 = Lightcurve(test_lc1.time,
+                                  test_lc1.counts,
+                                  err_dist=test_lc1.err_dist,
+                                  dt=dt)
+            test_lc2 = Lightcurve(test_lc1.time,
+                                  np.array(np.roll(test_lc1.counts, 2)),
+                                  err_dist=test_lc1.err_dist,
+                                  dt=dt)
 
         with warnings.catch_warnings(record=True) as w:
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5,

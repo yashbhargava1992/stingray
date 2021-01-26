@@ -40,6 +40,10 @@ try:
 except ImportError:
     _HAS_YAML = False
 
+curdir = os.path.abspath(os.path.dirname(__file__))
+datadir = os.path.join(curdir, 'data')
+
+
 def fvar_fun(lc):
     from stingray.utils import excess_variance
     return excess_variance(lc, normalization='fvar')
@@ -66,6 +70,13 @@ class TestProperties(object):
 
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
+
+    def test_warn_wrong_keywords(self):
+        lc = copy.deepcopy(self.lc)
+        with pytest.warns(UserWarning) as record:
+            _ = Lightcurve(lc.time, lc.counts, gti=lc.gti, bubu='settete')
+        assert np.any(["Unrecognized keywords:" in r.message.args[0]
+                       for r in record])
 
     def test_time(self):
         lc = copy.deepcopy(self.lc)
@@ -246,6 +257,7 @@ class TestLightcurve(object):
     def setup_class(cls):
         cls.times = np.array([1, 2, 3, 4])
         cls.counts = np.array([2, 2, 2, 2])
+        cls.counts_err = np.array([0.2, 0.2, 0.2, 0.2])
         cls.dt = 1.0
         cls.gti = np.array([[0.5, 4.5]])
 
@@ -280,6 +292,7 @@ class TestLightcurve(object):
                     "the moment")
 
         with warnings.catch_warnings(record=True) as w:
+            warnings.filterwarnings("always")
             lc = Lightcurve(times, counts, err_dist='gauss')
             assert np.any([warn_str in str(wi.message) for wi in w])
 
@@ -558,7 +571,7 @@ class TestLightcurve(object):
         lc1 = Lightcurve(self.times, self.counts)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
- 
+
             lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2,
                              err_dist="gauss")
         with warnings.catch_warnings(record=True) as w:
@@ -651,7 +664,7 @@ class TestLightcurve(object):
             newlc = lc1.join(lc2)
             # The join operation *averages* the overlapping arrays
             assert np.allclose(newlc.counts, lc1.counts)
-            assert np.any(["MJDref is different in the two light curves" 
+            assert np.any(["MJDref is different in the two light curves"
                            in str(wi.message) for wi in w])
             assert np.any(["The two light curves have overlapping time ranges"
                            in str(wi.message) for wi in w])
@@ -807,7 +820,7 @@ class TestLightcurve(object):
             warnings.simplefilter("ignore", category=UserWarning)
             lc_test = Lightcurve(test_time, test_counts)
         slc = lc_test.split(1.5)
- 
+
         assert len(slc) == 3
 
     def test_threeway_split_has_correct_data_points(self):
@@ -980,13 +993,25 @@ class TestLightcurve(object):
             lc.plot(title="Test Lightcurve")
         assert plt.fignum_exists(1)
 
-    # def test_io_with_ascii(self):
-    #     lc = Lightcurve(self.times, self.counts)
-    #     lc.write('ascii_lc.txt', format_='ascii')
-    #     lc.read('ascii_lc.txt', format_='ascii')
-    #     os.remove('ascii_lc.txt')
+    def test_read_from_lcurve_1(self):
+        fname = 'lcurveA.fits'
+        with pytest.warns(UserWarning):
+            lc = Lightcurve.read(os.path.join(datadir, fname),
+                                 format_='hea', skip_checks=True)
+        ctrate = 1
+        assert np.isclose(lc.countrate[0], ctrate)
 
-    @pytest.mark.skipif('not (_HAS_YAML and _HAS_TIMESERIES)')
+    def test_read_from_lcurve_2(self):
+        fname = 'lcurve_new.fits'
+        with pytest.warns(UserWarning):
+            lc = Lightcurve.read(os.path.join(datadir, fname),
+                                 format_='hea', skip_checks=True)
+        ctrate = 0.91
+
+        assert np.isclose(lc.countrate[0], ctrate)
+        assert np.isclose(lc.mjdref, 55197.00076601852)
+
+    @pytest.mark.skipif('not _HAS_YAML')
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('ascii_lc.ecsv', format_='ascii')
@@ -1004,23 +1029,16 @@ class TestLightcurve(object):
         assert np.all(lc.gti == self.gti)
         os.remove('lc.pickle')
 
+    @pytest.mark.skipif('not _H5PY_INSTALLED')
     def test_io_with_hdf5(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('lc.hdf5', format_='hdf5')
 
-        if _H5PY_INSTALLED:
-            data = lc.read('lc.hdf5', format_='hdf5')
-            assert np.all(data.time == self.times)
-            assert np.all(data.counts == self.counts)
-            assert np.all(data.gti == self.gti)
-            os.remove('lc.hdf5')
-
-        else:
-            lc.read('lc.pickle', format_='pickle')
-            assert np.all(lc.time == self.times)
-            assert np.all(lc.counts == self.counts)
-            assert np.all(lc.gti == self.gti)
-            os.remove('lc.pickle')
+        data = lc.read('lc.hdf5', format_='hdf5')
+        assert np.all(data.time == self.times)
+        assert np.all(data.counts == self.counts)
+        assert np.all(data.gti == self.gti)
+        os.remove('lc.hdf5')
 
     def test_split_lc_by_gtis(self):
         times = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -1067,6 +1085,45 @@ class TestLightcurve(object):
         lc2 = lc.shift(1)
         assert np.all(lc2.counts == lc.counts)
         assert np.all(lc2.countrate == lc.countrate)
+
+    def test_table_roundtrip(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.times)
+        lc = Lightcurve(self.times, self.counts, err=self.counts_err,
+                        mission="BUBU", instr="BABA",
+                        mjdref=53467.)
+
+        ts = lc.to_astropy_table()
+        new_lc = lc.from_astropy_table(ts)
+        for attr in ['time', 'gti', 'counts']:
+            assert np.all(getattr(lc, attr) == getattr(new_lc, attr))
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(lc, attr) == getattr(new_lc, attr)
+
+    def test_table_roundtrip_ctrate(self):
+        """Test that io methods raise Key Error when
+        wrong format is provided.
+        """
+        N = len(self.times)
+        dt = 0.5
+        mean_counts = 2.0
+        times = np.arange(0 + dt / 2, 5 - dt / 2, dt)
+        countrate = np.zeros_like(times) + mean_counts
+        err = np.zeros_like(times) + mean_counts / 2
+
+        lc = Lightcurve(times, countrate, err=err,
+                        mission="BUBU", instr="BABA",
+                        mjdref=53467., input_counts=False)
+
+        ts = lc.to_astropy_table()
+        new_lc = Lightcurve.from_astropy_table(ts)
+        for attr in ['time', 'gti', 'countrate']:
+            assert np.allclose(getattr(lc, attr), getattr(new_lc, attr))
+        assert np.allclose(new_lc.counts, lc.countrate * lc.dt)
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(lc, attr) == getattr(new_lc, attr)
 
     @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):

@@ -99,12 +99,12 @@ class OptimizationResults(object):
     aic : float
         The Akaike Information Criterion, derived from the log(likelihood) and often used
         in model comparison between non-nested models;
-        For more details, see [aic]
+        For more details, see [#]_
 
     bic : float
         The Bayesian Information Criterion, derived from the log(likelihood) and often used
         in model comparison between non-nested models;
-        For more details, see [bic]
+        For more details, see [#]_
 
     merit : float
         sum of squared differences between data and model, normalized by the
@@ -125,8 +125,8 @@ class OptimizationResults(object):
 
     References
     ----------
-    .. [aic] http://ieeexplore.ieee.org/document/1100705/?reload=true
-    .. [bic] https://projecteuclid.org/euclid.aos/1176344136
+    .. [#] http://ieeexplore.ieee.org/document/1100705/?reload=true
+    .. [#] https://projecteuclid.org/euclid.aos/1176344136
 
     """
     def __init__(self, lpost, res, neg=True, log=None):
@@ -209,8 +209,8 @@ class OptimizationResults(object):
         Compute various information criteria useful for model comparison in
         non-nested models.
 
-        Currently implemented are the Akaike Information Criterion [aic] and the
-        Bayesian Information Criterion [bic].
+        Currently implemented are the Akaike Information Criterion [#]_ and the
+        Bayesian Information Criterion [#]_.
 
         Parameters
         ----------
@@ -220,8 +220,8 @@ class OptimizationResults(object):
 
         References
         ----------
-        .. [aic] http://ieeexplore.ieee.org/document/1100705/?reload=true
-        .. [bic] https://projecteuclid.org/euclid.aos/1176344136
+        .. [#] http://ieeexplore.ieee.org/document/1100705/?reload=true
+        .. [#] https://projecteuclid.org/euclid.aos/1176344136
 
         """
         if isinstance(lpost, Posterior):
@@ -936,7 +936,7 @@ class SamplingResults(object):
 
     rhat : float
         weighted average of between-sequence variance and within-sequence
-        variance; Gelman-Rubin convergence statistic [gelman-rubin]_
+        variance; Gelman-Rubin convergence statistic [#]_
 
     mean : numpy.ndarray
         An array of size ``ndim``, with the posterior means of the parameters
@@ -953,7 +953,7 @@ class SamplingResults(object):
 
     References
     ----------
-    .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
+    .. [#] https://projecteuclid.org/euclid.ss/1177011136
     """
 
     def __init__(self, sampler, ci_min=5, ci_max=95, log=None):
@@ -991,8 +991,8 @@ class SamplingResults(object):
         converged, these present reasonable heuristics to give an
         indication whether convergence is very far off or reasonably close.
 
-        Currently implemented are the autocorrelation time [autocorr]_ and the
-        Gelman-Rubin convergence criterion [gelman-rubin]_.
+        Currently implemented are the autocorrelation time [#]_ and the
+        Gelman-Rubin convergence criterion [#]_.
 
         Parameters
         ----------
@@ -1000,8 +1000,8 @@ class SamplingResults(object):
 
         References
         ----------
-        .. [autocorr] https://arxiv.org/abs/1202.3665
-        .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
+        .. [#] https://arxiv.org/abs/1202.3665
+        .. [#] https://projecteuclid.org/euclid.ss/1177011136
         """
 
         # compute and store autocorrelation time
@@ -1014,7 +1014,7 @@ class SamplingResults(object):
 
     def _compute_rhat(self, sampler):
         """
-        Compute Gelman-Rubin convergence criterion [gelman-rubin]_.
+        Compute Gelman-Rubin convergence criterion [#]_.
 
         Parameters
         ----------
@@ -1022,8 +1022,7 @@ class SamplingResults(object):
 
         References
         ----------
-        .. [gelman-rubin] https://projecteuclid.org/euclid.ss/1177011136
-
+        .. [#] https://projecteuclid.org/euclid.ss/1177011136
         """
         chain = sampler.get_chain()
         # between-sequence variance

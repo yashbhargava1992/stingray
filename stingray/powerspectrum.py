@@ -323,6 +323,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     large_data : bool, default False
         Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
 
+    save_all : bool, default False
+        Save all intermediate PDSs used for the final average. Use with care.
+        This is likely to fill up your RAM on medium-sized datasets, and to
+        slow down the computation when rebinning.
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
@@ -356,7 +361,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     """
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
-                 silent=False, dt=None, lc=None, large_data=False):
+                 silent=False, dt=None, lc=None, large_data=False,
+                 save_all=False):
 
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
@@ -402,6 +408,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         self.type = "powerspectrum"
         self.dt = dt
+        self.save_all = save_all
 
         if isinstance(data, EventList):
             lengths = data.gti[:, 1] - data.gti[:, 0]
@@ -414,7 +421,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         return
 
-    def _make_segment_spectrum(self, lc, segment_size):
+    def _make_segment_spectrum(self, lc, segment_size, silent=False):
         """
         Split the light curves into segments of size ``segment_size``, and
         calculate a power spectrum for each.
@@ -426,6 +433,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         segment_size : ``numpy.float``
             Size of each light curve segment to use for averaging.
+
+        Other parameters
+        ----------------
+        silent : bool, default False
+            Suppress progress bars
 
         Returns
         -------
@@ -455,7 +467,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         nphots_all = []
 
         local_show_progress = show_progress
-        if not self.show_progress:
+        if not self.show_progress or silent:
             local_show_progress = lambda a: a
 
         for start_ind, end_ind in \

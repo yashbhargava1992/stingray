@@ -5,13 +5,16 @@ Definition of :class:`EventList`.
 """
 
 import copy
+import pickle
+import warnings
 
 import numpy as np
 import numpy.random as ra
+from astropy.table import Table
 
 from .filters import get_deadtime_mask
 from .gti import append_gtis, check_separate, cross_gtis
-from .io import read, write
+from .io import load_events_and_gtis
 from .lightcurve import Lightcurve
 from .utils import assign_value_if_none, simon, interpret_times
 
@@ -37,7 +40,7 @@ class EventList(object):
         to produce light curves with similar bin time.
 
     energy: iterable
-        A list of array of photon energy values
+        A list of array of photon energy values in keV
 
     mjdref : float
         The MJD used as a reference for the time array.
@@ -53,6 +56,21 @@ class EventList(object):
 
     notes : str
         Any useful annotations
+
+    high_precision : bool
+        Change the precision of self.time to float128. Useful while dealing with fast pulsars.
+
+    mission : str
+        Mission that recorded the data (e.g. NICER)
+
+    instr : str
+        Instrument onboard the mission
+
+    header : str
+        The full header of the original FITS file, if relevant
+
+    **other_kw :
+        Used internally. Any other keyword arguments will be ignored
 
     Attributes
     ----------
@@ -82,10 +100,23 @@ class EventList(object):
     high_precision : bool
         Change the precision of self.time to float128. Useful while dealing with fast pulsars.
 
+    mission : str
+        Mission that recorded the data (e.g. NICER)
+
+    instr : str
+        Instrument onboard the mission
+
+    detector_id : iterable
+        The detector that recoded each photon, if relevant (e.g. XMM, Chandra)
+
+    header : str
+        The full header of the original FITS file, if relevant
+
     """
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
                  notes="", gti=None, pi=None, high_precision=False,
-                 mission=None, instr=None):
+                 mission=None, instr=None, header=None, detector_id=None,
+                 **other_kw):
 
         self.energy = None if energy is None else np.asarray(energy)
         self.notes = notes
@@ -96,6 +127,11 @@ class EventList(object):
         self.ncounts = ncounts
         self.mission = mission
         self.instr = instr
+        self.detector_id = detector_id
+        self.header = header
+
+        if other_kw != {}:
+            warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
         if time is not None:
             time, mjdref = interpret_times(time, mjdref)
@@ -365,76 +401,71 @@ class EventList(object):
         return ev_new
 
     @staticmethod
-    def read(filename, format_='pickle'):
+    def read(filename, format_="pickle", **kwargs):
         """
-        Read an event list from a file on disk. The file must be either a Python pickle file (not recommended
-        for long-term storage), an HDF5 file, an ASCII or a FITS file. The file can have the following
-        attributes in the data or meta-data:
+        Read a :class:`Lightcurve` object from file.
 
-        * ``time``:  the time stamps of the photon arrivals
-        * ``energy``: the photon energy corresponding to each time stamp
-        * ``mjdref``: a reference time in Modified Julian Date
-        * ``notes``: other possible meta-data
-        * ``gti``: Good Time Intervals
-        * ``pi``: some instruments record energies as "Pulse Invariant", an integer number recorded from
-          the Pulse Height Amplitude
+        Currently supported formats are
 
-        Ascii files need to be ECSV files with an
-        :class:`astropy.timeseries.TimeSeries` containing time, energy and pi
-        in the data cols and the remaining metadata in the ``meta`` attribute
+        * pickle (not recommended for long-term storage)
+        * hea : FITS Event files from (well, some) HEASARC-supported missions.
+        * any other formats compatible with the writers in
+          :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
+
+        Files that need the :class:`astropy.table.Table` interface MUST contain
+        at least a ``time`` column. Other recognized columns are ``energy`` and
+        ``pi``.
+        The default ascii format is enhanced CSV (ECSV). Data formats
+        supporting the serialization of metadata (such as ECSV and HDF5) can
+        contain all eventlist attributes such as ``mission``, ``gti``, etc with
+        no significant loss of information. Other file formats might lose part
+        of the metadata, so must be used with care.
 
         Parameters
         ----------
         filename: str
-            Name of the :class:`EventList` object to be read.
+            Path and file name for the file to be read.
 
-        format_: str
-            Available options are ``pickle``, ``hdf5``, ``ascii`` and `fits``.
+        format\_: str
+            Available options are 'pickle', 'hea', and any `Table`-supported
+            format such as 'hdf5', 'ascii.ecsv', etc.
 
         Returns
         -------
         ev: :class:`EventList` object
             The :class:`EventList` object reconstructed from file
         """
+        if format_ == 'pickle':
+            with open(filename, 'rb') as fobj:
+                return pickle.load(fobj)
+
+        if format_ in ('hea'):
+            evtdata = load_events_and_gtis(filename, **kwargs)
+            return EventList(time=evtdata.ev_list,
+                             gti=evtdata.gti_list,
+                             pi=evtdata.pi_list,
+                             energy=evtdata.energy_list,
+                             mjdref=evtdata.mjdref,
+                             instr=evtdata.instr,
+                             mission=evtdata.mission,
+                             header=evtdata.header,
+                             detector_id=evtdata.detector_id)
 
         if format_ == 'ascii':
-            from astropy.timeseries import TimeSeries
-            # time = np.asarray(data.columns[0])
-            ts = TimeSeries.read(filename, format='ascii.ecsv')
-            return EventList.from_astropy_timeseries(ts)
+            format_ = 'ascii.ecsv'
 
-        attributes = ['time', 'energy', 'ncounts', 'mjdref', 'dt',
-                      'notes', 'gti', 'pi']
-        data = read(filename, format_, cols=attributes)
-
-        if format_ == 'hdf5' or format_ == 'fits':
-            keys = data.keys()
-            values = []
-
-            if format_ == 'fits':
-                attributes = [a.upper() for a in attributes]
-
-            for attribute in attributes:
-                if attribute in keys:
-                    values.append(data[attribute])
-
-                else:
-                    values.append(None)
-
-            return EventList(time=values[0], energy=values[1],
-                             ncounts=values[2], mjdref=values[3], dt=values[4],
-                             notes=values[5], gti=values[6], pi=values[7])
-
-        elif format_ == 'pickle':
-            return data
-
-        else:
-            raise KeyError("Format not understood.")
+        ts = Table.read(filename, format=format_)
+        return EventList.from_astropy_table(ts)
 
     def write(self, filename, format_='pickle'):
         """
-        Write an :class:`EventList` object to file. Possible file formats are ``pickle``, ``hdf5``, ``ascii``
-        or ``fits``.
+        Write an :class:`EventList` object to file.
+
+        Possible file formats are
+
+        * pickle (not recommended for long-term storage)
+        * any other formats compatible with the writers in
+          :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
 
         Parameters
         ----------
@@ -445,24 +476,30 @@ class EventList(object):
             The file format to store the data in.
             Available options are ``pickle``, ``hdf5``, ``ascii``, ``fits``
         """
+        if format_ == 'pickle':
+            with open(filename, "wb") as fobj:
+                pickle.dump(self, fobj)
+            return
 
         if format_ == 'ascii':
-            # write(np.asarray([self.time]).T, filename, format_, fmt=["%s"])
-            ts = self.to_astropy_timeseries()
-            ts.write(filename, format='ascii.ecsv', overwrite=True)
+            format_ = 'ascii.ecsv'
 
-        elif format_ == 'pickle':
-            write(self, filename, format_)
+        ts = self.to_astropy_table()
+        try:
+            ts.write(filename, format=format_, overwrite=True,
+                     serialize_meta=True)
+        except TypeError:
+            ts.write(filename, format=format_, overwrite=True)
 
-        elif format_ == 'hdf5':
-            write(self, filename, format_)
-
-        elif format_ == 'fits':
-            write(self, filename, format_, tnames=['EVENTS', 'GTI'],
-                  colsassign={'gti': 'GTI'})
-
+    def apply_mask(self, mask, inplace=False):
+        if inplace:
+            new_ev = self
         else:
-            raise KeyError("Format not understood.")
+            new_ev = copy.deepcopy(self)
+        for attr in 'time', 'energy', 'pi':
+            if hasattr(new_ev, attr):
+                setattr(new_ev, attr, getattr(new_ev, attr)[mask])
+        return new_ev
 
     def apply_deadtime(self, deadtime, inplace=False, **kwargs):
         """Apply deadtime filter to this event list.
@@ -512,20 +549,13 @@ class EventList(object):
         >>> filt_events is events
         True
         """
-        if inplace:
-            new_ev = self
-        else:
-            new_ev = copy.deepcopy(self)
-
         local_retall = kwargs.pop('return_all', False)
 
-        mask, retall = get_deadtime_mask(new_ev.time, deadtime,
+        mask, retall = get_deadtime_mask(self.time, deadtime,
                                          return_all=True,
                                          **kwargs)
 
-        for attr in 'time', 'energy', 'pi':
-            if hasattr(new_ev, attr):
-                setattr(new_ev, attr, getattr(new_ev, attr)[mask])
+        new_ev = self.apply_mask(mask, inplace=inplace)
 
         if local_retall:
             new_ev = [new_ev, retall]
@@ -583,13 +613,20 @@ class EventList(object):
         for attr in ['energy', 'pi']:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 data[attr] = np.asarray(getattr(self, attr))
+
         if data == {}:
             data = None
-        ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
+
+        if self.time is not None and self.time.size > 0:
+            times = TimeDelta(self.time * u.s)
+            ts = TimeSeries(data=data, time=times)
+        else:
+            ts = TimeSeries()
         ts.meta['gti'] = self.gti
         ts.meta['mjdref'] = self.mjdref
         ts.meta['instr'] = self.instr
         ts.meta['mission'] = self.mission
+        ts.meta['header'] = self.header
         return ts
 
     @staticmethod
@@ -601,16 +638,34 @@ class EventList(object):
             energy = ts['energy']
         if 'pi' in ts.colnames:
             pi = ts['pi']
-        if 'gti' in ts.meta:
-            gti = ts.meta['gti']
-        if 'instr' in ts.meta:
-            instr = ts.meta['instr']
-        if 'mission' in ts.meta:
-            mission = ts.meta['mission']
-        if 'mjdref' in ts.meta:
-            mjdref = ts.meta['mjdref']
 
-        ev = EventList(time=ts.time.to(u.s).value, energy=energy, pi=pi,
-                       gti=gti, mission=mission, instr=instr, mjdref=mjdref)
+        kwargs = ts.meta
+        ev = EventList(time=ts.time, energy=energy, pi=pi, **kwargs)
+
+        return ev
+
+    def to_astropy_table(self):
+        data = {}
+        for attr in ['time', 'energy', 'pi']:
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                data[attr] = np.asarray(getattr(self, attr))
+
+        ts = Table(data)
+
+        ts.meta['gti'] = self.gti
+        ts.meta['mjdref'] = self.mjdref
+        ts.meta['instr'] = self.instr
+        ts.meta['mission'] = self.mission
+        ts.meta['header'] = self.header
+        return ts
+
+    @staticmethod
+    def from_astropy_table(ts):
+        kwargs = dict([(key.lower(), val) for (key, val) in ts.meta.items()])
+        for attr in ['time', 'energy', 'pi']:
+            if attr in ts.colnames:
+                kwargs[attr] = ts[attr]
+
+        ev = EventList(**kwargs)
 
         return ev

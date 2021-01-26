@@ -23,10 +23,10 @@ except ImportError:
     from scipy.special import factorial
 
 try:
-    from pyfftw.interfaces.scipy_fftpack import fft, fftfreq
+    from pyfftw.interfaces.scipy_fft import fft, fftfreq
 except ImportError:
-    warnings.warn("Using standard scipy fft")
-    from scipy.fftpack import fft, fftfreq
+    warnings.warn("pyfftw not installed. Using standard scipy fft")
+    from scipy.fft import fft, fftfreq
 
 __all__ = [
     "Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag",
@@ -232,7 +232,8 @@ def cospectra_pvalue(power, nspec):
 def coherence(lc1, lc2):
     """
     Estimate coherence function of two light curves.
-    For details on the definition of the coherence, see [vaughan-1996].
+    For details on the definition of the coherence, see Vaughan and Nowak,
+    1996 [#]_.
 
     Parameters
     ----------
@@ -249,8 +250,7 @@ def coherence(lc1, lc2):
 
     References
     ----------
-    .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
-
+    .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
     """
 
     if not isinstance(lc1, Lightcurve):
@@ -634,7 +634,6 @@ class Crossspectrum(object):
         binfreq, bincs, binerr, step_size = \
             rebin_data(self.freq, self.power, df, self.power_err,
                        method=method, dx=self.df)
-
         # make an empty cross spectrum object
         # note: syntax deliberate to work with subclass Powerspectrum
         bin_cs = copy.copy(self)
@@ -766,7 +765,7 @@ class Crossspectrum(object):
     def coherence(self):
         """ Compute Coherence function of the cross spectrum.
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
+        Coherence is defined in Vaughan and Nowak, 1996 [#]_.
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -777,8 +776,7 @@ class Crossspectrum(object):
 
         References
         ----------
-        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
-
+        .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -1018,6 +1016,10 @@ class AveragedCrossspectrum(Crossspectrum):
     large_data : bool, default False
         Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
 
+    save_all : bool, default False
+        Save all intermediate PDSs used for the final average. Use with care.
+        This is likely to fill up your RAM on medium-sized datasets, and to
+        slow down the computation when rebinning.
 
     Attributes
     ----------
@@ -1057,7 +1059,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
     def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
                  gti=None, power_type="real", silent=False, lc1=None, lc2=None,
-                 dt=None, fullspec=False, large_data=False):
+                 dt=None, fullspec=False, large_data=False, save_all=False):
 
 
         if lc1 is not None or lc2 is not None:
@@ -1116,6 +1118,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         self.show_progress = not silent
         self.dt = dt
+        self.save_all = save_all
 
         if isinstance(data1, EventList):
             lengths = data1.gti[:, 1] - data1.gti[:, 0]
@@ -1155,14 +1158,18 @@ class AveragedCrossspectrum(Crossspectrum):
                                               segment_size=self.segment_size,
                                               norm='none', gti=self.gti,
                                               power_type=self.power_type,
-                                              dt=self.dt, fullspec=self.fullspec)
+
+                                              dt=self.dt, fullspec=self.fullspec, 
+                                              save_all=self.save_all)
+
             self.pds2 = AveragedCrossspectrum(lc2, lc2,
                                               segment_size=self.segment_size,
                                               norm='none', gti=self.gti,
                                               power_type=self.power_type,
-                                              dt=self.dt, fullspec=self.fullspec)
+                                              dt=self.dt, fullspec=self.fullspec,
+                                              save_all=self.save_all)
 
-    def _make_segment_spectrum(self, lc1, lc2, segment_size):
+    def _make_segment_spectrum(self, lc1, lc2, segment_size, silent=False):
         """
         Split the light curves into segments of size ``segment_size``, and calculate a cross spectrum for
         each.
@@ -1175,6 +1182,11 @@ class AveragedCrossspectrum(Crossspectrum):
         segment_size : ``numpy.float``
             Size of each light curve segment to use for averaging.
 
+        Other parameters
+        ----------------
+        silent : bool, default False
+            Suppress progress bars
+
         Returns
         -------
         cs_all : list of :class:`Crossspectrum`` objects
@@ -1185,7 +1197,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
         """
 
-        # TODO: need to update this for making cross spectra.
         assert isinstance(lc1, Lightcurve)
         assert isinstance(lc2, Lightcurve)
 
@@ -1226,7 +1237,7 @@ class AveragedCrossspectrum(Crossspectrum):
               "Please report any inconsistencies.")
 
         local_show_progress = show_progress
-        if not self.show_progress:
+        if not self.show_progress or silent:
             local_show_progress = lambda a: a
 
         for start_ind, end_ind in \
@@ -1291,47 +1302,49 @@ class AveragedCrossspectrum(Crossspectrum):
                 isinstance(lc2, Lightcurve):
 
             if self.type == "crossspectrum":
-                self.cs_all, nphots1_all, nphots2_all = \
+                cs_all, nphots1_all, nphots2_all = \
                     self._make_segment_spectrum(lc1, lc2, self.segment_size)
 
             elif self.type == "powerspectrum":
-                self.cs_all, nphots1_all = \
+                cs_all, nphots1_all = \
                     self._make_segment_spectrum(lc1, self.segment_size)
 
             else:
                 raise ValueError("Type of spectrum not recognized!")
 
         else:
-            self.cs_all, nphots1_all, nphots2_all = [], [], []
+            cs_all, nphots1_all, nphots2_all = [], [], []
 
             for lc1_seg, lc2_seg in local_show_progress(zip(lc1, lc2)):
                 if self.type == "crossspectrum":
                     cs_sep, nphots1_sep, nphots2_sep = \
                         self._make_segment_spectrum(lc1_seg, lc2_seg,
-                                                    self.segment_size)
+                                                    self.segment_size,
+                                                    silent=True)
                     nphots2_all.append(nphots2_sep)
                 elif self.type == "powerspectrum":
                     cs_sep, nphots1_sep = \
-                        self._make_segment_spectrum(lc1_seg, self.segment_size)
+                        self._make_segment_spectrum(lc1_seg, self.segment_size,
+                            silent=True)
 
                 else:
                     raise ValueError("Type of spectrum not recognized!")
-                self.cs_all.append(cs_sep)
+                cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
 
-            self.cs_all = np.hstack(self.cs_all)
+            cs_all = np.hstack(cs_all)
             nphots1_all = np.hstack(nphots1_all)
 
             if self.type == "crossspectrum":
                 nphots2_all = np.hstack(nphots2_all)
 
-        m = len(self.cs_all)
+        m = len(cs_all)
         nphots1 = np.mean(nphots1_all)
 
-        power_avg = np.zeros_like(self.cs_all[0].power)
-        power_err_avg = np.zeros_like(self.cs_all[0].power_err)
-        unnorm_power_avg = np.zeros_like(self.cs_all[0].unnorm_power)
-        for cs in self.cs_all:
+        power_avg = np.zeros_like(cs_all[0].power)
+        power_err_avg = np.zeros_like(cs_all[0].power_err)
+        unnorm_power_avg = np.zeros_like(cs_all[0].unnorm_power)
+        for cs in cs_all:
             power_avg += cs.power
             unnorm_power_avg += cs.unnorm_power
             power_err_avg += (cs.power_err) ** 2
@@ -1340,14 +1353,16 @@ class AveragedCrossspectrum(Crossspectrum):
         power_err_avg = np.sqrt(power_err_avg) / m
         unnorm_power_avg /= np.float(m)
 
-        self.freq = self.cs_all[0].freq
+        self.freq = cs_all[0].freq
         self.power = power_avg
         self.unnorm_power = unnorm_power_avg
         self.m = m
         self.power_err = power_err_avg
-        self.df = self.cs_all[0].df
-        self.n = self.cs_all[0].n
+        self.df = cs_all[0].df
+        self.n = cs_all[0].n
         self.nphots1 = nphots1
+        if self.save_all:
+            self.cs_all = cs_all
 
         if self.type == "crossspectrum":
             self.nphots1 = nphots1
@@ -1359,7 +1374,7 @@ class AveragedCrossspectrum(Crossspectrum):
         """Averaged Coherence function.
 
 
-        Coherence is defined in Vaughan and Nowak, 1996 [vaughan-1996].
+        Coherence is defined in Vaughan and Nowak, 1996 [#]_.
         It is a Fourier frequency dependent measure of the linear correlation
         between time series measured simultaneously in two energy channels.
 
@@ -1378,8 +1393,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         References
         ----------
-        .. [vaughan-1996] http://iopscience.iop.org/article/10.1086/310430/pdf
-
+        .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
         """
         if np.any(self.m < 50):
             simon("Number of segments used in averaging is "

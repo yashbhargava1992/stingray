@@ -1,4 +1,3 @@
-
 Stingray Simulator (`stingray.simulator`)
 *****************************************
 
@@ -171,3 +170,57 @@ Alternatively, assume that we have light curves in the simulated energy channels
   >>> chans = sim.get_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5'])
   >>> sim.delete_channels(['3.5 - 4.5','4.5 - 5.5','5.5 - 6.5'])
 
+Tutorials
+=========
+
+Important Concepts
+------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Simulator/Concepts/Simulator.ipynb
+   notebooks/Simulator/Concepts/Inverse Transform Sampling.ipynb
+   notebooks/Simulator/Concepts/PowerLaw Spectrum.ipynb
+
+
+The Simulator Object
+--------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Simulator/Simulator Tutorial.ipynb
+
+Available Spectral Models
+-------------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Simulator/Spectral Models.ipynb
+
+An Example Lag Analysis
+-----------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Simulator/Lag Analysis.ipynb
+
+Transfer Functions
+------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Transfer Functions/Data Preparation.ipynb
+   notebooks/Transfer Functions/TransferFunction Tutorial.ipynb
+
+Window Functions
+----------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Window Functions/window_functions.ipynb
