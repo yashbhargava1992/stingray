@@ -1,7 +1,12 @@
 
 import numpy as np
 from scipy import signal
-from scipy.fftpack import ifft
+
+try:
+    from pyfftw.interfaces.scipy_fft import ifft, fftfreq
+except ImportError:
+    warnings.warn("pyfftw not installed. Using standard scipy fft")
+    from scipy.fft import ifft, fftfreq
 
 from stingray.lightcurve import Lightcurve
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum
@@ -135,7 +140,7 @@ class CrossCorrelation(object):
         # where n is the last positive frequency
         # correcting for this by putting them in order
 
-        times = np.fft.fftfreq(self.n, cross.df)
+        times = fftfreq(self.n, cross.df)
         time, corr = np.array(sorted(zip(times, prelim_corr))).T
         self.corr = corr
         self.time_shift, self.time_lags, self.n = self.cal_timeshift(dt=self.dt)
