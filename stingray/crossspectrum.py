@@ -303,7 +303,7 @@ class Crossspectrum(object):
     Make a cross spectrum from a (binned) light curve.
     You can also make an empty :class:`Crossspectrum` object to populate with your
     own Fourier-transformed data (this can sometimes be useful when making
-    binned power spectra). Stingray uses the scipy.fftpack standards for the sign 
+    binned power spectra). Stingray uses the scipy.fft standards for the sign 
     of the Nyquist frequency.
 
     Parameters
@@ -317,11 +317,11 @@ class Crossspectrum(object):
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
         The normalization of the (real part of the) cross spectrum.
 
-    power_type: string, optional, default ``real`` Parameter to choose among
-    complete, real part and magnitude of the cross spectrum.
+    power_type: string, optional, default ``real`` 
+        Parameter to choose among complete, real part and magnitude of the cross spectrum.
     
     fullspec: boolean, optional, default ``False``
-    Parameter to either only keep the positive frequencies, or all of them.
+        If False, keep only the positive frequencies, or if True, keep all of them .
 
     Other Parameters
     ----------------
@@ -471,7 +471,7 @@ class Crossspectrum(object):
             Two light curves used for computing the cross spectrum.
 
         fullspec: boolean, default ``False``
-            Full frequency array (True) or just positive (False)
+            Return full frequency array (True) or just positive frequencies (False)
 
         """
 
@@ -578,8 +578,8 @@ class Crossspectrum(object):
             Another light curve to be Fourier transformed.
             This is the reference band.
 
-        fullspec: boolean. Default is False. Whole array of frequencies (True)
-        or only positive (False).
+        fullspec: boolean. Default is False. 
+            If True, return the whole array of frequencies, or only positive frequencies (False).
 
         Returns
         -------
@@ -591,14 +591,12 @@ class Crossspectrum(object):
         fourier_2 = fft(lc2.counts)  # do Fourier transform 2
 
         freqs = scipy.fftpack.fftfreq(lc1.n, lc1.dt)
-
+        cross = np.multiply(fourier_1, np.conj(fourier_2))
+        
         if fullspec is  True:
-            cross = np.multiply(fourier_1, np.conj(fourier_2))
             return freqs, cross
-
         else:
-            cross = np.multiply(fourier_1[freqs > 0], np.conj(fourier_2[freqs > 0]))
-            return freqs[freqs > 0], cross
+            return freqs[freqs > 0], cross[freqs > 0]
 
     def rebin(self, df=None, f=None, method="mean"):
         """
@@ -1010,8 +1008,9 @@ class AveragedCrossspectrum(Crossspectrum):
         For backwards compatibility only. Like ``data2``, but no
         :class:`stingray.events.EventList` objects allowed
 
-    fullspec: boolean, optional, default ``False`` Parameter to either
-    return the full array of frequencies (True) or just the positive (False)
+    fullspec: boolean, optional, default ``False`` 
+        If True, return the full array of frequencies, otherwise return just the 
+        positive frequencies.
 
     large_data : bool, default False
         Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
@@ -1158,7 +1157,6 @@ class AveragedCrossspectrum(Crossspectrum):
                                               segment_size=self.segment_size,
                                               norm='none', gti=self.gti,
                                               power_type=self.power_type,
-
                                               dt=self.dt, fullspec=self.fullspec, 
                                               save_all=self.save_all)
 
@@ -1289,9 +1287,8 @@ class AveragedCrossspectrum(Crossspectrum):
         lc1, lc2 : :class:`stingray.Lightcurve` objects
             Two light curves used for computing the cross spectrum.
 
-        fullspec: boolean, default ``False``, all frequencies returned (True),
-        or just positive (False)
-
+        fullspec: boolean, default ``False``, 
+            If True, return all frequencies otherwise return only positive frequencies 
         """
         local_show_progress = show_progress
         if not self.show_progress:
