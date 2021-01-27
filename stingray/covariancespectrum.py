@@ -119,7 +119,7 @@ class Covariancespectrum(object):
 
         # if band_interest is None, extract the energy bins and make an array
         # with the lower and upper bounds of the energy bins
-        if not band_interest:
+        if band_interest is None:
             if not self.use_lc:
                 self._create_band_interest(data)
             else:
