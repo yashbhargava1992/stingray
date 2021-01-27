@@ -22,7 +22,7 @@ try:
     HAS_PYFFTW = True
 except ImportError:
     warnings.warn("Using standard numpy fft")
-    from scipy.fftpack import fft, fftfreq, fftn, ifftn
+    from scipy.fft import fft, fftfreq, fftn, ifftn
     HAS_PYFFTW = False
 
 from stingray.pulse.overlapandsave.ols import ols

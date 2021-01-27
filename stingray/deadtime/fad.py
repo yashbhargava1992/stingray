@@ -50,9 +50,9 @@ def _get_fourier_intv(lc, start_ind, end_ind):
     time = lc.time[start_ind:end_ind]
     counts = lc.counts[start_ind:end_ind]
 
-    fourier = scipy.fftpack.fft(counts)
+    fourier = scipy.fft.fft(counts)
 
-    freq = scipy.fftpack.fftfreq(len(time), lc.dt)
+    freq = scipy.fft.fftfreq(len(time), lc.dt)
     good = freq > 0
 
     nbins = time.size
