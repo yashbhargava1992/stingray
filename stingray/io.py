@@ -322,7 +322,7 @@ def lcurve_from_fits(
             raise ValueError(
                 "None of the accepted rate columns were found in the file")
 
-    rate = np.array(lctable.field(ratecolumn), dtype=np.float)
+    rate = np.array(lctable.field(ratecolumn), dtype=float)
 
     errorcolumn = "ERROR"
     if ratecolumn == "RATE1":

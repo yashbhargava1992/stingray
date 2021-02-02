@@ -83,7 +83,7 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
         assert actual_mean > 0.0, \
             "Mean count rate is <= 0. Something went wrong."
 
-        c = c_num / np.float(nbins ** 2.)
+        c = c_num / float(nbins ** 2.)
         power = c * 2. * tseg / (actual_mean ** 2.0)
 
     elif norm.lower() == 'abs':
@@ -1346,9 +1346,9 @@ class AveragedCrossspectrum(Crossspectrum):
             unnorm_power_avg += cs.unnorm_power
             power_err_avg += (cs.power_err) ** 2
 
-        power_avg /= np.float(m)
+        power_avg /= float(m)
         power_err_avg = np.sqrt(power_err_avg) / m
-        unnorm_power_avg /= np.float(m)
+        unnorm_power_avg /= float(m)
 
         self.freq = cs_all[0].freq
         self.power = power_avg

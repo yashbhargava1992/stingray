@@ -457,7 +457,7 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
 
     newgtis = np.zeros_like(gtis)
     # Whose GTIs, including safe intervals, are longer than min_length
-    newgtimask = np.zeros(len(newgtis), dtype=np.bool)
+    newgtimask = np.zeros(len(newgtis), dtype=bool)
 
     for ig, gti in enumerate(gtis):
         limmin, limmax = gti

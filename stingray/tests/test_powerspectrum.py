@@ -193,7 +193,7 @@ class TestPowerspectrum(object):
         """
         ps = Powerspectrum(self.lc)
         nn = ps.n
-        pp = ps.unnorm_power / np.float(nn) ** 2
+        pp = ps.unnorm_power / float(nn) ** 2
         p_int = np.sum(pp[:-1] * ps.df) + (pp[-1] * ps.df) / 2
         var_lc = np.var(self.lc.counts) / (2. * self.lc.tseg)
         assert np.isclose(p_int, var_lc, atol=0.01, rtol=0.01)

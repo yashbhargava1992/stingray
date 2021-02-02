@@ -192,7 +192,7 @@ class TestParameterEstimation(object):
 #            os.unlink("test_corner.pdf")
 #        with catch_warnings(RuntimeWarning):
 #            sample_res = pe.sample(self.lpost, [2.0], nwalkers=50, niter=10,
-#                                   burnin=50, print_results=True, plot=True, 
+#                                   burnin=50, print_results=True, plot=True,
 #                                   pool=True)
 
 
@@ -415,8 +415,8 @@ if can_sample:
             self.samples = sampler.get_chain(flat=True)
 
             chain_ndims = sampler.get_chain().shape
-            self.nwalkers = np.float(chain_ndims[0])
-            self.niter = np.float(chain_ndims[1])
+            self.nwalkers = float(chain_ndims[0])
+            self.niter = float(chain_ndims[1])
 
             # store number of dimensions
             self.ndim = chain_ndims[2]

@@ -68,7 +68,7 @@ class OptimizationResults(object):
         is being used
 
     log : a logging.getLogger() object, default None
-        You can pass a pre-defined object for logging, else a new 
+        You can pass a pre-defined object for logging, else a new
         logger will be instantiated
 
     Attributes
@@ -599,7 +599,7 @@ class ParameterEstimation(object):
         threads : **DEPRECATED** int, optional, default 1
             The number of threads for parallelization.
             Default is ``1``, i.e. no parallelization
-            With the change to the new emcee version 3, threads is 
+            With the change to the new emcee version 3, threads is
             deprecated. Use the `pool` keyword argument instead.
             This will no longer have any effect.
 
@@ -649,12 +649,12 @@ class ParameterEstimation(object):
                 # initialize the sampler
                 sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False],
                                                 pool=pooling)
-    
+
                 # run the burn-in
                 pos, prob, state = sampler.run_mcmc(p0, burnin)
-    
+
                 sampler.reset()
-    
+
                 # do the actual MCMC run
                 _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
 
@@ -750,7 +750,7 @@ class ParameterEstimation(object):
         ntail = sim[sim > obs_val].shape[0]
 
         # divide by the total number of simulations
-        pval = np.float(ntail) / np.float(sim.shape[0])
+        pval = float(ntail) / float(sim.shape[0])
 
         return pval
 
@@ -905,7 +905,7 @@ class SamplingResults(object):
         The upper bound percentile for printing credible intervals
         on the parameters
     log : a logging.getLogger() object, default None
-        You can pass a pre-defined object for logging, else a new 
+        You can pass a pre-defined object for logging, else a new
         logger will be instantiated
 
     Attributes
@@ -971,8 +971,8 @@ class SamplingResults(object):
         self.samples = sampler.get_chain(flat=True)
 
         chain_dims = sampler.get_chain().shape
-        self.nwalkers = np.float(chain_dims[0])
-        self.niter = np.float(chain_dims[1])
+        self.nwalkers = float(chain_dims[0])
+        self.niter = float(chain_dims[1])
 
         # store number of dimensions
         self.ndim = chain_dims[2]
