@@ -553,12 +553,12 @@ def cross_two_gtis(gti0, gti1):
     --------
     >>> gti1 = np.array([[1, 2]])
     >>> gti2 = np.array([[1, 2]])
-    >>> newgti = cross_gtis([gti1, gti2])
+    >>> newgti = cross_two_gtis(gti1, gti2)
     >>> np.allclose(newgti, [[1, 2]])
     True
     >>> gti1 = np.array([[1, 4]])
     >>> gti2 = np.array([[1, 2], [2, 4]])
-    >>> newgti = cross_gtis([gti1, gti2])
+    >>> newgti = cross_two_gtis(gti1, gti2)
     >>> np.allclose(newgti, [[1, 4]])
     True
     """
@@ -649,6 +649,19 @@ def cross_gtis(gti_list):
     See Also
     --------
     cross_two_gtis : Extract the common intervals from two GTI lists *EXACTLY*
+
+    Examples
+    --------
+    >>> gti1 = np.array([[1, 2]])
+    >>> gti2 = np.array([[1, 2]])
+    >>> newgti = cross_gtis([gti1, gti2])
+    >>> np.allclose(newgti, [[1, 2]])
+    True
+    >>> gti1 = np.array([[1, 4]])
+    >>> gti2 = np.array([[1, 2], [2, 4]])
+    >>> newgti = cross_gtis([gti1, gti2])
+    >>> np.allclose(newgti, [[1, 4]])
+    True
     """
     for g in gti_list:
         check_gtis(g)
