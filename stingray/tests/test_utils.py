@@ -69,34 +69,34 @@ class TestRebinData(object):
         x2 = np.linspace(10.33, 20.0, 30)
         x3 = np.linspace(21, 30, 10 )
         x = np.hstack([x1, x2, x3])
-        
+
         counts = 2.0
         y = np.zeros_like(x) + counts
-        
+
         yerr = np.sqrt(y)
         dx_new = 1.5
         xbin, ybin, yerr_bin, step_size = utils.rebin_data(x, y, dx_new, yerr)
-        
+
         assert np.all(ybin == counts * step_size)
         assert len(xbin) == 20
-        
+
     def test_rebin_variable_input_mean(self):
 
         x1 = np.linspace(0,10,11)
         x2 = np.linspace(10.33, 20.0, 30)
         x3 = np.linspace(21, 30, 10 )
         x = np.hstack([x1, x2, x3])
-    
+
         counts = 2.0
         y = np.zeros_like(x) + counts
-    
+
         yerr = np.sqrt(y)
         dx_new = 1.5
         xbin, ybin, yerr_bin, step_size = utils.rebin_data(x, y, dx_new, yerr, method="average")
         assert len(xbin) == 20
         assert np.all(ybin == counts)
-    
-         
+
+
 
 class TestRebinDataLog(object):
 
@@ -179,13 +179,13 @@ class TestRebinDataLog(object):
         im = np.arange(self.xmin, self.xmax, self.dx)
 
         y = np.zeros(re.shape[0], dtype=np.complex64)
-        yerr = np.zeros(re.shape[0], dtype=np.complex)
+        yerr = np.zeros(re.shape[0], dtype=complex)
 
         for k, (r, i) in enumerate(zip(re, im)):
             y[k] = r + i * 1j
             yerr[k] = r + i * 1j
 
-        real_binned = np.zeros(self.true_values.shape[0], dtype=np.complex)
+        real_binned = np.zeros(self.true_values.shape[0], dtype=complex)
 
         for i in range(self.true_values.shape[0]):
             real_binned[i] = self.true_values[i] + self.true_values[i] * 1j
