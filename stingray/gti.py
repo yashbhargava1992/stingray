@@ -1079,7 +1079,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
     if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
         raise ValueError("Invalid time interval for the given GTIs")
 
-    spectrum_start_bins = np.array([], dtype=np.long)
+    spectrum_start_bins = np.array([], dtype=int)
     time_low = time - dt / 2
     time_high = time + dt / 2
     for g in gtis:
@@ -1104,7 +1104,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
             stopbin -= 1
 
         newbins = np.arange(startbin, stopbin - nbin + 1,
-                            int(nbin * fraction_step), dtype=np.long)
+                            int(nbin * fraction_step), dtype=int)
         spectrum_start_bins = \
             np.append(spectrum_start_bins,
                       newbins)
@@ -1155,8 +1155,8 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
         dt = np.median(np.diff(time))
 
     epsilon_times_dt = epsilon * dt
-    spectrum_start_bins = np.array([], dtype=np.long)
-    spectrum_stop_bins = np.array([], dtype=np.long)
+    spectrum_start_bins = np.array([], dtype=int)
+    spectrum_stop_bins = np.array([], dtype=int)
     for g in gtis:
         good = (time - dt / 2 >= g[0]) & (time + dt / 2 <= g[1])
         t_good = time[good]
