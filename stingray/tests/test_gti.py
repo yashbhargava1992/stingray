@@ -278,6 +278,12 @@ class TestGTI(object):
         with pytest.raises(TypeError):
             check_gtis([[0, 1], [0]])
 
+        with pytest.raises(TypeError):
+            check_gtis([[0, 1], [[0], [3]]])
+
+        with pytest.raises(TypeError):
+            check_gtis([[0, 1, 4], [0, 3, 4]])
+
     def test_check_gtis_values(self):
         with pytest.raises(ValueError):
             check_gtis([[0, 2], [1, 3]])

@@ -218,15 +218,16 @@ def check_gtis(gti):
     ValueError
         If GTIs have overlapping or displaced values
     """
-    gti = np.asarray(gti)
     if len(gti) < 1:
         raise ValueError("Empty GTIs")
 
-    if len(gti) != gti.shape[0] or len(gti.shape) != 2 or \
-            len(gti) != gti.shape[0]:
-        raise TypeError("Please check formatting of GTIs. They need to be"
-                        " provided as [[gti00, gti01], [gti10, gti11], ...]")
+    for g in gti:
+        if np.size(g) != 2 or np.ndim(g) != 1:
+            raise TypeError(
+                "Please check the formatting of GTIs. They need to be"
+                " provided as [[gti00, gti01], [gti10, gti11], ...]")
 
+    gti = np.array(gti)
     gti_start = gti[:, 0]
     gti_end = gti[:, 1]
 
