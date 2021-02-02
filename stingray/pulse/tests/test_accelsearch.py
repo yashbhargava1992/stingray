@@ -38,7 +38,7 @@ class TestAccelsearch(object):
 
         cls.noisy = np.random.uniform(cls.signal, 0.1)
         cls.noisy_neg = np.random.uniform(cls.signal_neg, 0.1)
-        cls.rescale_fdot = 10**(-np.int(np.log10(cls.fdot)) +1)
+        cls.rescale_fdot = 10**(-int(np.log10(cls.fdot)) +1)
 
     def test_prepare(self):
         pass

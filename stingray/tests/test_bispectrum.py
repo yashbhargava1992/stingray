@@ -50,7 +50,7 @@ class TestBispectrum(object):
 
     def test_maxlag_none(self):
         bs = Bispectrum(self.lc)
-        assert bs.maxlag == np.int(self.lc.n / 2)
+        assert bs.maxlag == int(self.lc.n / 2)
 
     def test_neg_maxlag(self):
         bs = Bispectrum(self.lc, maxlag=-2)

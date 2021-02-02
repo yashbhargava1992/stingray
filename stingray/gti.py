@@ -1074,7 +1074,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         dt = np.median(np.diff(time))
 
     epsilon_times_dt = epsilon * dt
-    nbin = np.long(chunk_length / dt)
+    nbin = int(chunk_length / dt)
 
     if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
         raise ValueError("Invalid time interval for the given GTIs")

@@ -152,7 +152,7 @@ class Bispectrum(object):
 
         if maxlag is None:
             # if maxlag is not specified, it is set to half of length of lightcurve
-            self.maxlag = np.int(self.lc.n / 2)
+            self.maxlag = int(self.lc.n / 2)
         else:
             if not (isinstance(maxlag, int)):
                 raise ValueError('maxlag must be an integer')

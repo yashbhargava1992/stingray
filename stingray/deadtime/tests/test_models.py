@@ -16,7 +16,7 @@ def test_heaviside():
 
 
 def simulate_events(rate, length, deadtime=2.5e-3, **filter_kwargs):
-    events = np.random.uniform(0, length, np.int(rate * length))
+    events = np.random.uniform(0, length, int(rate * length))
     events = np.sort(events)
     events_dt = filter_for_deadtime(events, deadtime, **filter_kwargs)
     return events, events_dt

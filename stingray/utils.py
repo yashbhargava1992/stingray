@@ -852,15 +852,15 @@ def create_window(N, window_type='uniform'):
 
     # Constants
     N_minus_1 = N - 1
-    N_by_2 = np.int((np.floor((N_minus_1) / 2)))
+    N_by_2 = int((np.floor((N_minus_1) / 2)))
 
     # Create Windows
     if window_type == 'uniform':
         window = np.ones(N)
 
     if window_type == 'parzen':
-        N_parzen = np.int(np.ceil((N + 1) / 2))
-        N2_plus_1 = np.int(np.floor((N_parzen / 2))) + 1
+        N_parzen = int(np.ceil((N + 1) / 2))
+        N2_plus_1 = int(np.floor((N_parzen / 2))) + 1
 
         window = np.zeros(N_parzen)
         windlag0 = np.arange(0, N2_plus_1) / (N_parzen - 1)
