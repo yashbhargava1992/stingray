@@ -67,7 +67,7 @@ def flip_all(array):
     --------
     >>> array = np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]]])
     >>> flipped_array = np.array([[[7, 6], [5, 4]], [[3, 2], [1, 0]]])
-    >>> np.all(flipped_array == flip_all(array))
+    >>> np.allclose(flipped_array, flip_all(array))
     True
     """
     for dim in range(len(array.shape)):

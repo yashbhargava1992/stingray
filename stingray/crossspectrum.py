@@ -1219,7 +1219,7 @@ class AveragedCrossspectrum(Crossspectrum):
         if self.gti is None:
             self.gti = current_gtis
         else:
-            if not np.all(self.gti == current_gtis):
+            if not np.allclose(self.gti, current_gtis):
                 self.gti = np.vstack([self.gti, current_gtis])
 
         check_gtis(current_gtis)

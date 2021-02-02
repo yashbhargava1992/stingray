@@ -24,7 +24,7 @@ class TestGTI(object):
         gti2 = np.array([[2, 5]])
         newgti = cross_gtis([gti1, gti2])
 
-        assert np.all(newgti == [[2, 4]]), 'GTIs do not coincide!'
+        assert np.allclose(newgti, [[2, 4]]), 'GTIs do not coincide!'
 
     def test_crossgti2(self):
         """A more complicated example of intersection of GTIs."""
@@ -32,7 +32,7 @@ class TestGTI(object):
         gti2 = np.array([[2, 5], [6, 9], [11.4, 14]])
         newgti = cross_gtis([gti1, gti2])
 
-        assert np.all(newgti == [[4.0, 5.0], [7.0, 9.0], [12.2, 13.2]]), \
+        assert np.allclose(newgti, [[4.0, 5.0], [7.0, 9.0], [12.2, 13.2]]), \
             'GTIs do not coincide!'
 
     def test_crossgti3(self):
@@ -40,7 +40,7 @@ class TestGTI(object):
         gti1 = np.array([[1, 2], [4, 5], [7, 10]])
         newgti = cross_gtis([gti1])
 
-        assert np.all(newgti == gti1), \
+        assert np.allclose(newgti, gti1), \
             'GTIs do not coincide!'
 
     def test_bti(self):
@@ -48,7 +48,7 @@ class TestGTI(object):
         gti = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
         bti = get_btis(gti)
 
-        assert np.all(bti == [[2, 4], [5, 7], [10, 11], [11.2, 12.2]]), \
+        assert np.allclose(bti, [[2, 4], [5, 7], [10, 11], [11.2, 12.2]]), \
             'BTI is wrong!, %s' % repr(bti)
 
     def test_bti_start_and_stop(self):
@@ -63,7 +63,7 @@ class TestGTI(object):
         gti = np.array([])
 
         bti = get_btis(gti, start_time=0, stop_time=1)
-        assert np.all(bti == np.asarray([[0, 1]]))
+        assert np.allclose(bti, np.asarray([[0, 1]]))
 
     def test_bti_fail(self):
         gti = np.array([])
@@ -78,7 +78,7 @@ class TestGTI(object):
         mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True)
         # NOTE: the time bin has to be fully inside the GTI. That is why the
         # bin at times 0, 2, 4 and 5 are not in.
-        assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
+        assert np.allclose(mask, np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
 
     def test_gti_mask_minlen(self):
         arr = np.array([0, 1, 2, 3, 4, 5, 6])
@@ -87,8 +87,8 @@ class TestGTI(object):
                                          min_length=2)
         # NOTE: the time bin has to be fully inside the GTI. That is why the
         # bin at times 0, 2, 4 and 5 are not in.
-        assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
-        assert np.all(new_gtis == np.array([[0, 2.1]]))
+        assert np.allclose(mask, np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
+        assert np.allclose(new_gtis, np.array([[0, 2.1]]))
 
     def test_gti_mask_none_longer_than_minlen(self):
         arr = np.array([0, 1, 2, 3, 4, 5, 6])
@@ -120,7 +120,7 @@ class TestGTI(object):
                                                   return_new_gtis=True)
         # NOTE: the time bin has to be fully inside the GTI. That is why the
         # bin at times 0, 2, 4 and 5 are not in.
-        assert np.all(mask == np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
+        assert np.allclose(mask, np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
 
     def test_gti_mask_compare(self):
         arr = np.array([ 0.5, 1.5, 2.5, 3.5])
@@ -130,8 +130,8 @@ class TestGTI(object):
                                      safe_interval=1)
         mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True,
                                          safe_interval=1)
-        assert np.all(mask == mask_c)
-        assert np.all(new_gtis == new_gtis_c)
+        assert np.allclose(mask, mask_c)
+        assert np.allclose(new_gtis, new_gtis_c)
 
     def test_gti_mask_compare2(self):
         arr = np.array([ 0.5, 1.5, 2.5, 3.5])
@@ -141,20 +141,20 @@ class TestGTI(object):
                                      safe_interval=[1, 1])
         mask, new_gtis = create_gti_mask(arr, gti, return_new_gtis=True,
                                          safe_interval=[1, 1])
-        assert np.all(mask == mask_c)
-        assert np.all(new_gtis == new_gtis_c)
+        assert np.allclose(mask, mask_c)
+        assert np.allclose(new_gtis, new_gtis_c)
 
     def test_gti_from_condition1(self):
         t = np.array([0, 1, 2, 3, 4, 5, 6])
         condition = np.array([1, 1, 0, 0, 1, 0, 0], dtype=bool)
         gti = create_gti_from_condition(t, condition)
-        assert np.all(gti == np.array([[-0.5, 1.5], [3.5, 4.5]]))
+        assert np.allclose(gti, np.array([[-0.5, 1.5], [3.5, 4.5]]))
 
     def test_gti_from_condition2(self):
         t = np.array([0, 1, 2, 3, 4, 5, 6])
         condition = np.array([1, 1, 1, 1, 0, 1, 0], dtype=bool)
         gti = create_gti_from_condition(t, condition, safe_interval=1)
-        assert np.all(gti == np.array([[0.5, 2.5]]))
+        assert np.allclose(gti, np.array([[0.5, 2.5]]))
 
     def test_gti_from_condition_fail(self):
         t = np.array([0, 1, 2, 3])
@@ -190,7 +190,7 @@ class TestGTI(object):
         """Test if two non-overlapping GTIs can be appended. """
         gti1 = np.array([[1, 2], [4, 5]])
         gti2 = np.array([[6, 7], [8, 9]])
-        assert np.all(append_gtis(gti1, gti2) == [[1,2],[4,5],[6,7],[8,9]])
+        assert np.allclose(append_gtis(gti1, gti2), [[1,2],[4,5],[6,7],[8,9]])
 
     def test_append_overlapping_gtis(self):
         """Test if exception is raised in event of overlapping gtis."""
@@ -218,16 +218,16 @@ class TestGTI(object):
         start_times, stop_times = \
             time_intervals_from_gtis([[0, 400], [1022, 1200],
                                       [1210, 1220]], 128)
-        assert np.all(start_times == np.array([0, 128, 256, 1022]))
-        assert np.all(stop_times == np.array([0, 128, 256, 1022]) + 128)
+        assert np.allclose(start_times, np.array([0, 128, 256, 1022]))
+        assert np.allclose(stop_times, np.array([0, 128, 256, 1022]) + 128)
 
     def test_time_intervals_from_gtis_frac(self):
         """Test the division of start and end times to calculate spectra."""
         start_times, stop_times = \
             time_intervals_from_gtis([[0, 400], [1022, 1200],
                                       [1210, 1220]], 128, fraction_step=0.5)
-        assert np.all(start_times == np.array([0, 64, 128, 192, 256, 1022]))
-        assert np.all(stop_times == start_times + 128)
+        assert np.allclose(start_times, np.array([0, 64, 128, 192, 256, 1022]))
+        assert np.allclose(stop_times, start_times + 128)
 
     def test_bin_intervals_from_gtis(self):
         """Test the division of start and end times to calculate spectra."""
@@ -235,8 +235,8 @@ class TestGTI(object):
         start_bins, stop_bins = \
             bin_intervals_from_gtis([[0, 5], [6, 8]], 2, times)
 
-        assert np.all(start_bins == np.array([0, 2, 6]))
-        assert np.all(stop_bins == np.array([2, 4, 8]))
+        assert np.allclose(start_bins, np.array([0, 2, 6]))
+        assert np.allclose(stop_bins, np.array([2, 4, 8]))
 
     def test_bin_intervals_from_gtis_frac(self):
         """Test the division of start and end times to calculate spectra."""
@@ -245,8 +245,8 @@ class TestGTI(object):
             bin_intervals_from_gtis([[0, 5], [6, 8]], 2, times,
                                     fraction_step=0.5)
 
-        assert np.all(start_bins == np.array([0, 1, 2, 3, 6]))
-        assert np.all(stop_bins == np.array([2, 3, 4, 5, 8]))
+        assert np.allclose(start_bins, np.array([0, 1, 2, 3, 6]))
+        assert np.allclose(stop_bins, np.array([2, 3, 4, 5, 8]))
 
     def test_gti_border_bins(self):
         times = np.arange(0.5, 2.5)

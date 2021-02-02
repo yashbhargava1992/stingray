@@ -159,7 +159,7 @@ def _get_detector_id(lctable):
     >>> a = fits.Column(name='pcuid', array=np.array([1, 2]), format='K')
     >>> t = fits.TableHDU.from_columns([a])
     >>> det_id2 = _get_detector_id(t.data)
-    >>> np.all(det_id1 == det_id2)
+    >>> np.allclose(det_id1, det_id2)
     True
     >>> a = fits.Column(name='asdfasdf', array=np.array([1, 2]), format='K')
     >>> t = fits.TableHDU.from_columns([a])

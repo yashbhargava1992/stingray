@@ -133,7 +133,7 @@ class TestCovariancewithLightcurves(object):
         band_interest = np.vstack([np.arange(len(self.lcs)),
                         np.arange(1, len(self.lcs) + 1, 1)]).T
 
-        assert np.all(c.band_interest == band_interest)
+        assert np.allclose(c.band_interest, band_interest)
 
     def test_failure_without_valid_band_interest(self):
         with pytest.raises(ValueError):
@@ -166,7 +166,7 @@ class TestAveragedCovariancespectrum(object):
         c = Covariancespectrum(self.event_list, 1)
         avg_c = AveragedCovariancespectrum(self.event_list, segment_size=10,
                                            dt=1)
-        assert np.all(avg_c.unnorm_covar == c.unnorm_covar)
+        assert np.allclose(avg_c.unnorm_covar, c.unnorm_covar)
 
     def test_with_two_segments(self):
         avg_c = AveragedCovariancespectrum(self.event_list, segment_size=5, dt=1)

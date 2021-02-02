@@ -96,7 +96,7 @@ class TestProperties(object):
         counts = np.array([2, 2])
         lc = Lightcurve(time, counts)
         assert lc.dt == 86400
-        assert np.all(lc.counts == counts)
+        assert np.allclose(lc.counts, counts)
 
     def test_time_is_quantity_or_astropy_time(self):
         counts = [34, 21.425]
@@ -334,7 +334,7 @@ class TestLightcurve(object):
             return lc.time[0]
         start, stop, res = lc.analyze_lc_chunks(2, func)
         assert start[0] == 0.5
-        assert np.all(start + lc.dt / 2 == res)
+        assert np.allclose(start + lc.dt / 2, res)
 
     def test_bin_edges(self):
         bin_lo = [0.5,  1.5,  2.5,  3.5]
@@ -349,7 +349,7 @@ class TestLightcurve(object):
         lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
                                         tstart=0.5)
         assert np.allclose(lc.time, lc2.time)
-        assert np.all(lc.counts == lc2.counts)
+        assert np.allclose(lc.counts, lc2.counts)
 
     def test_lightcurve_from_toa_quantity(self):
         lc = Lightcurve.make_lightcurve(self.times * u.s, self.dt,
@@ -357,7 +357,7 @@ class TestLightcurve(object):
         lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
                                          tstart=0.5)
         assert np.allclose(lc.time, lc2.time)
-        assert np.all(lc.counts == lc2.counts)
+        assert np.allclose(lc.counts, lc2.counts)
 
     def test_lightcurve_from_toa_Time(self):
         mjdref = 56789
@@ -368,7 +368,7 @@ class TestLightcurve(object):
         lc2 = Lightcurve.make_lightcurve(self.times, self.dt, use_hist=False,
                                          tstart=0.5, mjdref=mjdref)
         assert np.allclose(lc.time, lc2.time)
-        assert np.all(lc.counts == lc2.counts)
+        assert np.allclose(lc.counts, lc2.counts)
 
     def test_lightcurve_from_toa_halfbin(self):
         lc = Lightcurve.make_lightcurve(self.times + 0.5, self.dt,
@@ -378,7 +378,7 @@ class TestLightcurve(object):
                                          use_hist=False,
                                          tstart=0.5)
         assert np.allclose(lc.time, lc2.time)
-        assert np.all(lc.counts == lc2.counts)
+        assert np.allclose(lc.counts, lc2.counts)
 
     def test_lightcurve_from_toa_random_nums(self):
         times = np.random.uniform(0, 10, 1000)
@@ -387,7 +387,7 @@ class TestLightcurve(object):
         lc2 = Lightcurve.make_lightcurve(times, self.dt, use_hist=False,
                                         tstart=0.5)
         assert np.allclose(lc.time, lc2.time)
-        assert np.all(lc.counts == lc2.counts)
+        assert np.allclose(lc.counts, lc2.counts)
 
     def test_tstart(self):
         tstart = 0.0
@@ -553,8 +553,8 @@ class TestLightcurve(object):
 
         lc = lc1 + lc2
 
-        assert np.all(lc.counts == lc1.counts + lc2.counts)
-        assert np.all(lc.countrate == lc1.countrate + lc2.countrate)
+        assert np.allclose(lc.counts, lc1.counts + lc2.counts)
+        assert np.allclose(lc.countrate, lc1.countrate + lc2.countrate)
         assert lc1.mjdref == lc.mjdref
 
     def test_sub_with_diff_time_arrays(self):
@@ -588,7 +588,7 @@ class TestLightcurve(object):
         lc = lc2 - lc1
 
         expected_counts = np.array([1, 2, 3, 4])
-        assert np.all(lc.counts == expected_counts)
+        assert np.allclose(lc.counts, expected_counts)
         assert lc1.mjdref == lc.mjdref
 
     def test_negation(self):
@@ -618,14 +618,14 @@ class TestLightcurve(object):
     def test_slicing(self):
         lc = Lightcurve(self.times, self.counts, gti=self.gti)
 
-        assert np.all(lc[1:3].counts == np.array([2, 2]))
-        assert np.all(lc[:2].counts == np.array([2, 2]))
-        assert np.all(lc[:2].gti == [[0.5, 2.5]])
-        assert np.all(lc[2:].counts == np.array([2, 2]))
-        assert np.all(lc[2:].gti == [[2.5, 4.5]])
-        assert np.all(lc[:].counts == np.array([2, 2, 2, 2]))
-        assert np.all(lc[::2].gti == [[0.5, 1.5], [2.5, 3.5]])
-        assert np.all(lc[:].gti == lc.gti)
+        assert np.allclose(lc[1:3].counts, np.array([2, 2]))
+        assert np.allclose(lc[:2].counts, np.array([2, 2]))
+        assert np.allclose(lc[:2].gti, [[0.5, 2.5]])
+        assert np.allclose(lc[2:].counts, np.array([2, 2]))
+        assert np.allclose(lc[2:].gti, [[2.5, 4.5]])
+        assert np.allclose(lc[:].counts, np.array([2, 2, 2, 2]))
+        assert np.allclose(lc[::2].gti, [[0.5, 1.5], [2.5, 3.5]])
+        assert np.allclose(lc[:].gti, lc.gti)
         assert lc[:].mjdref == lc.mjdref
         assert lc[::2].n == 2
 
@@ -703,7 +703,7 @@ class TestLightcurve(object):
         lc = lc1.join(lc2)
 
         assert len(lc.counts) == len(lc.time) == 8
-        assert np.all(lc.counts == 2)
+        assert np.allclose(lc.counts, 2)
         assert lc.mjdref == lc1.mjdref
 
     def test_join_overlapping_time_arrays(self):
@@ -719,10 +719,10 @@ class TestLightcurve(object):
                            for wi in w])
 
         assert len(lc.counts) == len(lc.time) == 6
-        assert np.all(lc.counts == np.array([2, 2, 3, 3, 4, 4]))
+        assert np.allclose(lc.counts, np.array([2, 2, 3, 3, 4, 4]))
 
     def test_join_different_err_dist_disjoint_times(self):
-        _times = [5 , 6, 7, 8]
+        _times = [5, 6, 7, 8]
         _counts =[2, 2, 2, 2]
 
         lc1 = Lightcurve(self.times, self.counts, err_dist = "poisson")
@@ -732,8 +732,8 @@ class TestLightcurve(object):
 
         lc3 = lc1.join(lc2)
 
-        assert np.all(lc3.counts_err[:len(self.times)] == lc1.counts_err)
-        assert np.all(lc3.counts_err[len(self.times):] == np.zeros_like(lc2.counts))
+        assert np.allclose(lc3.counts_err[:len(self.times)], lc1.counts_err)
+        assert np.allclose(lc3.counts_err[len(self.times):], np.zeros_like(lc2.counts))
 
     def test_join_different_err_dist_overlapping_times(self):
         _times = [3, 4, 5, 6]
@@ -747,20 +747,20 @@ class TestLightcurve(object):
         with warnings.catch_warnings(record=True) as w:
             lc3 = lc1.join(lc2)
             assert "We are setting the errors to zero." in str(w[1].message)
-            assert np.all(lc3.counts_err == np.zeros_like(lc3.time))
+            assert np.allclose(lc3.counts_err, np.zeros_like(lc3.time))
 
     def test_truncate_by_index(self):
         lc = Lightcurve(self.times, self.counts, gti=self.gti)
 
         lc1 = lc.truncate(start=1)
-        assert np.all(lc1.time == np.array([2, 3, 4]))
-        assert np.all(lc1.counts == np.array([2, 2, 2]))
+        assert np.allclose(lc1.time, np.array([2, 3, 4]))
+        assert np.allclose(lc1.counts, np.array([2, 2, 2]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
         assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=2)
-        assert np.all(lc2.time == np.array([1, 2]))
-        assert np.all(lc2.counts == np.array([2, 2]))
+        assert np.allclose(lc2.time, np.array([1, 2]))
+        assert np.allclose(lc2.counts, np.array([2, 2]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
         assert lc2.mjdref == lc.mjdref
 
@@ -779,14 +779,14 @@ class TestLightcurve(object):
         lc = Lightcurve(self.times, self.counts, gti=self.gti)
 
         lc1 = lc.truncate(start=1, method='time')
-        assert np.all(lc1.time == np.array([1, 2, 3, 4]))
-        assert np.all(lc1.counts == np.array([2, 2, 2, 2]))
+        assert np.allclose(lc1.time, np.array([1, 2, 3, 4]))
+        assert np.allclose(lc1.counts, np.array([2, 2, 2, 2]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 0.5)
         assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=3, method='time')
-        assert np.all(lc2.time == np.array([1, 2]))
-        assert np.all(lc2.counts == np.array([2, 2]))
+        assert np.allclose(lc2.time, np.array([1, 2]))
+        assert np.allclose(lc2.counts, np.array([2, 2]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
         assert lc2.mjdref == lc.mjdref
 
@@ -808,10 +808,10 @@ class TestLightcurve(object):
             lc_test = Lightcurve(test_time, test_counts)
         slc = lc_test.split(1.5)
 
-        assert np.all((slc[0].time == [1, 2, 3]))
-        assert np.all((slc[1].time == [6, 7 ,8]))
-        assert np.all((slc[0].counts == test_counts[:3]))
-        assert np.all((slc[1].counts == test_counts[3:]))
+        assert np.allclose(slc[0].time, [1, 2, 3])
+        assert np.allclose(slc[1].time, [6, 7,8])
+        assert np.allclose(slc[0].counts, test_counts[:3])
+        assert np.allclose(slc[1].counts, test_counts[3:])
 
     def test_split_with_three_segments(self):
         test_time = np.array([1, 2, 3, 6, 7, 8, 10, 11, 12])
@@ -831,12 +831,12 @@ class TestLightcurve(object):
             lc_test = Lightcurve(test_time, test_counts)
         slc = lc_test.split(1.5)
 
-        assert np.all((slc[0].time == [1, 2, 3]))
-        assert np.all((slc[1].time == [6, 7 ,8]))
-        assert np.all((slc[2].time == [10, 11 ,12]))
-        assert np.all((slc[0].counts == test_counts[:3]))
-        assert np.all((slc[1].counts == test_counts[3:6]))
-        assert np.all((slc[2].counts == test_counts[6:]))
+        assert np.allclose(slc[0].time, [1, 2, 3])
+        assert np.allclose(slc[1].time, [6, 7,8])
+        assert np.allclose(slc[2].time, [10, 11,12])
+        assert np.allclose(slc[0].counts, test_counts[:3])
+        assert np.allclose(slc[1].counts, test_counts[3:6])
+        assert np.allclose(slc[2].counts, test_counts[6:])
 
     def test_split_with_gtis(self):
         test_time = np.array([1, 2, 3, 6, 7, 8, 10, 11, 12])
@@ -845,10 +845,10 @@ class TestLightcurve(object):
         lc_test = Lightcurve(test_time, test_counts, gti=gti)
         slc = lc_test.split(1.5)
 
-        assert np.all((slc[0].time == [1, 2, 3]))
-        assert np.all((slc[1].time == [10, 11 ,12]))
-        assert np.all((slc[0].counts == test_counts[:3]))
-        assert np.all((slc[1].counts == test_counts[6:]))
+        assert np.allclose(slc[0].time, [1, 2, 3])
+        assert np.allclose(slc[1].time, [10, 11,12])
+        assert np.allclose(slc[0].counts, test_counts[:3])
+        assert np.allclose(slc[1].counts, test_counts[6:])
 
     def test_consecutive_gaps(self):
         test_time = np.array([1, 2, 3, 6, 9, 10, 11])
@@ -858,10 +858,10 @@ class TestLightcurve(object):
             lc_test = Lightcurve(test_time, test_counts)
         slc = lc_test.split(1.5)
 
-        assert np.all((slc[0].time == [1, 2, 3]))
-        assert np.all((slc[1].time == [9, 10, 11]))
-        assert np.all((slc[0].counts == test_counts[:3]))
-        assert np.all((slc[1].counts == test_counts[4:]))
+        assert np.allclose(slc[0].time, [1, 2, 3])
+        assert np.allclose(slc[1].time, [9, 10, 11])
+        assert np.allclose(slc[0].counts, test_counts[:3])
+        assert np.allclose(slc[1].counts, test_counts[4:])
 
     def test_sort(self):
         _times = [2, 1, 3, 4]
@@ -873,15 +873,15 @@ class TestLightcurve(object):
 
         lc_new = lc.sort()
 
-        assert np.all(lc_new.counts_err == np.array([1, 4, 2, 0.5]))
-        assert np.all(lc_new.counts == np.array([10, 40, 20, 5]))
-        assert np.all(lc_new.time == np.array([1, 2, 3, 4]))
+        assert np.allclose(lc_new.counts_err, np.array([1, 4, 2, 0.5]))
+        assert np.allclose(lc_new.counts, np.array([10, 40, 20, 5]))
+        assert np.allclose(lc_new.time, np.array([1, 2, 3, 4]))
         assert lc_new.mjdref == mjdref
 
         lc_new = lc.sort(reverse=True)
 
-        assert np.all(lc_new.counts == np.array([5, 20, 40,  10]))
-        assert np.all(lc_new.time == np.array([4, 3, 2, 1]))
+        assert np.allclose(lc_new.counts, np.array([5, 20, 40,  10]))
+        assert np.allclose(lc_new.time, np.array([4, 3, 2, 1]))
         assert lc_new.mjdref == mjdref
 
     def test_sort_counts(self):
@@ -892,14 +892,14 @@ class TestLightcurve(object):
 
         lc_new = lc.sort_counts()
 
-        assert np.all(lc_new.counts == np.array([5, 10, 20, 40]))
-        assert np.all(lc_new.time == np.array([4, 2, 3, 1]))
+        assert np.allclose(lc_new.counts, np.array([5, 10, 20, 40]))
+        assert np.allclose(lc_new.time, np.array([4, 2, 3, 1]))
         assert lc_new.mjdref == mjdref
 
         lc_new = lc.sort_counts(reverse=True)
 
-        assert np.all(lc_new.counts == np.array([40, 20, 10,  5]))
-        assert np.all(lc_new.time == np.array([1, 3, 2, 4]))
+        assert np.allclose(lc_new.counts, np.array([40, 20, 10,  5]))
+        assert np.allclose(lc_new.time, np.array([1, 3, 2, 4]))
         assert lc_new.mjdref == mjdref
 
     def test_sort_reverse(self):
@@ -1016,17 +1016,17 @@ class TestLightcurve(object):
         lc = Lightcurve(self.times, self.counts)
         lc.write('ascii_lc.ecsv', format_='ascii')
         lc = lc.read('ascii_lc.ecsv', format_='ascii')
-        assert np.all(lc.time == self.times)
-        assert np.all(lc.counts == self.counts)
+        assert np.allclose(lc.time, self.times)
+        assert np.allclose(lc.counts, self.counts)
         os.remove('ascii_lc.ecsv')
 
     def test_io_with_pickle(self):
         lc = Lightcurve(self.times, self.counts)
         lc.write('lc.pickle', format_='pickle')
         lc.read('lc.pickle', format_='pickle')
-        assert np.all(lc.time == self.times)
-        assert np.all(lc.counts == self.counts)
-        assert np.all(lc.gti == self.gti)
+        assert np.allclose(lc.time, self.times)
+        assert np.allclose(lc.counts, self.counts)
+        assert np.allclose(lc.gti, self.gti)
         os.remove('lc.pickle')
 
     @pytest.mark.skipif('not _H5PY_INSTALLED')
@@ -1035,9 +1035,9 @@ class TestLightcurve(object):
         lc.write('lc.hdf5', format_='hdf5')
 
         data = lc.read('lc.hdf5', format_='hdf5')
-        assert np.all(data.time == self.times)
-        assert np.all(data.counts == self.counts)
-        assert np.all(data.gti == self.gti)
+        assert np.allclose(data.time, self.times)
+        assert np.allclose(data.counts, self.counts)
+        assert np.allclose(data.gti, self.gti)
         os.remove('lc.hdf5')
 
     def test_split_lc_by_gtis(self):
@@ -1049,12 +1049,12 @@ class TestLightcurve(object):
         list_of_lcs = lc.split_by_gti()
         lc0 = list_of_lcs[0]
         lc1 = list_of_lcs[1]
-        assert np.all(lc0.time == [1, 2, 3, 4])
-        assert np.all(lc1.time == [6, 7])
-        assert np.all(lc0.counts == [1, 1, 1, 1])
-        assert np.all(lc1.counts == [3, 3])
-        assert np.all(lc0.gti == [[0.5, 4.5]])
-        assert np.all(lc1.gti == [[5.5, 7.5]])
+        assert np.allclose(lc0.time, [1, 2, 3, 4])
+        assert np.allclose(lc1.time, [6, 7])
+        assert np.allclose(lc0.counts, [1, 1, 1, 1])
+        assert np.allclose(lc1.counts, [3, 3])
+        assert np.allclose(lc0.gti, [[0.5, 4.5]])
+        assert np.allclose(lc1.gti, [[5.5, 7.5]])
 
     def test_split_lc_by_gtis_minpoints(self):
         times = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -1066,25 +1066,25 @@ class TestLightcurve(object):
         list_of_lcs = lc.split_by_gti(min_points=min_points)
         lc0 = list_of_lcs[0]
         lc1 = list_of_lcs[1]
-        assert np.all(lc0.time == [1, 2, 3])
-        assert np.all(lc1.time == [6, 7, 8])
-        assert np.all(lc0.counts == [1, 1, 1])
-        assert np.all(lc1.counts == [3, 3, 2])
+        assert np.allclose(lc0.time, [1, 2, 3])
+        assert np.allclose(lc1.time, [6, 7, 8])
+        assert np.allclose(lc0.counts, [1, 1, 1])
+        assert np.allclose(lc1.counts, [3, 3, 2])
 
     def test_shift(self):
         times = [1, 2, 3, 4, 5, 6, 7, 8]
         counts = [1, 1, 1, 1, 2, 3, 3, 2]
         lc = Lightcurve(times, counts, input_counts=True)
         lc2 = lc.shift(1)
-        assert np.all(lc2.time - 1 == times)
+        assert np.allclose(lc2.time - 1, times)
         lc2 = lc.shift(-1)
-        assert np.all(lc2.time + 1 == times)
-        assert np.all(lc2.counts == lc.counts)
-        assert np.all(lc2.countrate == lc.countrate)
+        assert np.allclose(lc2.time + 1, times)
+        assert np.allclose(lc2.counts, lc.counts)
+        assert np.allclose(lc2.countrate, lc.countrate)
         lc = Lightcurve(times, counts, input_counts=False)
         lc2 = lc.shift(1)
-        assert np.all(lc2.counts == lc.counts)
-        assert np.all(lc2.countrate == lc.countrate)
+        assert np.allclose(lc2.counts, lc.counts)
+        assert np.allclose(lc2.countrate, lc.countrate)
 
     def test_table_roundtrip(self):
         """Test that io methods raise Key Error when
@@ -1098,7 +1098,7 @@ class TestLightcurve(object):
         ts = lc.to_astropy_table()
         new_lc = lc.from_astropy_table(ts)
         for attr in ['time', 'gti', 'counts']:
-            assert np.all(getattr(lc, attr) == getattr(new_lc, attr))
+            assert np.allclose(getattr(lc, attr), getattr(new_lc, attr))
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
@@ -1137,7 +1137,7 @@ class TestLightcurve(object):
         ts = lc.to_astropy_timeseries()
         new_lc = lc.from_astropy_timeseries(ts)
         for attr in ['time', 'gti', 'counts']:
-            assert np.all(getattr(lc, attr) == getattr(new_lc, attr))
+            assert np.allclose(getattr(lc, attr), getattr(new_lc, attr))
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
@@ -1291,10 +1291,10 @@ class TestLightcurveRebin(object):
         lc.gti = [[-0.5, 2.5], [12.5, 14.5]]
         lc.apply_gtis()
         assert lc.n == 5
-        assert np.all(lc.time == np.array([0, 1, 2, 13, 14]))
+        assert np.allclose(lc.time, np.array([0, 1, 2, 13, 14]))
         lc.gti = [[-0.5, 10.5]]
         lc.apply_gtis()
-        assert np.all(lc.time == np.array([0, 1, 2]))
+        assert np.allclose(lc.time, np.array([0, 1, 2]))
 
     def test_eq_operator(self):
         time = [1, 2, 3]

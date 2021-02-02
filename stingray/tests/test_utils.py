@@ -21,7 +21,7 @@ class TestRebinData(object):
         dx_new = 2.0
         xbin, ybin, yerr, step_size = utils.rebin_data(self.x, self.y, dx_new,
                                                        self.yerr)
-        assert np.all(step_size == dx_new / self.dx)
+        assert np.allclose(step_size, dx_new / self.dx)
 
     def test_arrays(self):
         dx_new = 2.0
@@ -77,7 +77,7 @@ class TestRebinData(object):
         dx_new = 1.5
         xbin, ybin, yerr_bin, step_size = utils.rebin_data(x, y, dx_new, yerr)
 
-        assert np.all(ybin == counts * step_size)
+        assert np.allclose(ybin, counts * step_size)
         assert len(xbin) == 20
 
     def test_rebin_variable_input_mean(self):
@@ -94,7 +94,7 @@ class TestRebinData(object):
         dx_new = 1.5
         xbin, ybin, yerr_bin, step_size = utils.rebin_data(x, y, dx_new, yerr, method="average")
         assert len(xbin) == 20
-        assert np.all(ybin == counts)
+        assert np.allclose(ybin, counts)
 
 
 
@@ -220,13 +220,12 @@ class TestUtils(object):
         alist = [np.array([1, 0]), np.array([2, 3])]
 
         order = np.argsort(alist[0])
-        assert np.all(np.array([np.array([0, 1]), np.array([3, 2])]) ==
-                      np.array(utils.order_list_of_arrays(alist, order)))
+        assert np.allclose(np.array([np.array([0, 1]), np.array([3, 2])]), np.array(utils.order_list_of_arrays(alist, order)))
 
         alist = {"a": np.array([1, 0]), "b": np.array([2, 3])}
         alist_new = utils.order_list_of_arrays(alist, order)
-        assert np.all(np.array([0, 1]) == alist_new["a"])
-        assert np.all(np.array([3, 2]) == alist_new["b"])
+        assert np.allclose(np.array([0, 1]), alist_new["a"])
+        assert np.allclose(np.array([3, 2]), alist_new["b"])
 
         alist = 0
         assert utils.order_list_of_arrays(alist, order) is None
@@ -248,7 +247,7 @@ class TestUtils(object):
         """A more complicated example of intersection of GTIs."""
         array = np.array([0, 1, 1, 0, 1, 1, 1], dtype=bool)
         cont = utils.contiguous_regions(array)
-        assert np.all(cont == np.array([[1, 3], [4, 7]])), \
+        assert np.allclose(cont, np.array([[1, 3], [4, 7]])), \
             'Contiguous region wrong'
 
     def test_get_random_state(self):

@@ -369,7 +369,7 @@ class TestSimulator(object):
         """
         t1, t3 = 3, 10
         ir = self.simulator.relativistic_ir(t1=t1, t3=t3)
-        assert np.all(ir[:int(t1 / self.simulator.dt)] == 0)
+        assert np.allclose(ir[:int(t1 / self.simulator.dt)], 0)
         assert ir[int(t1 / self.simulator.dt)] == 1
 
     def test_construct_relativistic_ir_odd(self):
@@ -378,7 +378,7 @@ class TestSimulator(object):
         """
         t1, t3 = 3, 10
         ir = self.simulator_odd.relativistic_ir(t1=t1, t3=t3)
-        assert np.all(ir[:int(t1 / self.simulator_odd.dt)] == 0)
+        assert np.allclose(ir[:int(t1 / self.simulator_odd.dt)], 0)
         assert ir[int(t1 / self.simulator_odd.dt)] == 1
 
     def test_simulate_simple_impulse(self):

@@ -271,8 +271,7 @@ class TestOptimizationResults(object):
         assert res.result == self.opt.fun
 
         mean_model = np.ones_like(self.lpost.x) * self.opt.x[0]
-        assert np.all(
-            res.mfit == mean_model), "res.model should be exactly " \
+        assert np.allclose(res.mfit, mean_model), "res.model should be exactly " \
                                      "the model for the data."
 
     def test_compute_criteria_works_correctly(self):
@@ -312,7 +311,7 @@ class TestOptimizationResults(object):
         _fitter_to_model_params(self.model, self.opt.x)
         mfit_test = self.model(self.lpost.x)
 
-        assert np.all(self.optres.mfit == mfit_test)
+        assert np.allclose(self.optres.mfit, mfit_test)
 
     def test_compute_statistics_computes_all_statistics(self):
 
@@ -357,8 +356,8 @@ class TestOptimizationResults(object):
     def test_compute_covariance_with_hess_inverse(self):
         self.optres._compute_covariance(self.lpost, self.opt)
 
-        assert np.all(self.optres.cov == np.asarray(self.opt.hess_inv))
-        assert np.all(self.optres.err == np.sqrt(np.diag(self.opt.hess_inv)))
+        assert np.allclose(self.optres.cov, np.asarray(self.opt.hess_inv))
+        assert np.allclose(self.optres.err, np.sqrt(np.diag(self.opt.hess_inv)))
 
     @pytest.mark.skipif("comp_hessian")
     def test_compute_covariance_without_comp_hessian(self):
@@ -378,8 +377,8 @@ class TestOptimizationResults(object):
             phess = approx_hess(self.opt.x, self.lpost)
             hess_inv = np.linalg.inv(phess)
 
-            assert np.all(optres.cov == hess_inv)
-            assert np.all(optres.err == np.sqrt(np.diag(np.abs(hess_inv))))
+            assert np.allclose(optres.cov, hess_inv)
+            assert np.allclose(optres.err, np.sqrt(np.diag(np.abs(hess_inv))))
 
     def test_print_summary_works(self, logger, caplog):
         self.optres._compute_covariance(self.lpost, None)

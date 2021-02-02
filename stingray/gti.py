@@ -554,12 +554,12 @@ def cross_two_gtis(gti0, gti1):
     >>> gti1 = np.array([[1, 2]])
     >>> gti2 = np.array([[1, 2]])
     >>> newgti = cross_gtis([gti1, gti2])
-    >>> np.all(newgti == [[1, 2]])
+    >>> np.allclose(newgti, [[1, 2]])
     True
     >>> gti1 = np.array([[1, 4]])
     >>> gti2 = np.array([[1, 2], [2, 4]])
     >>> newgti = cross_gtis([gti1, gti2])
-    >>> np.all(newgti == [[1, 4]])
+    >>> np.allclose(newgti, [[1, 4]])
     True
     """
     gti0 = join_equal_gti_boundaries(np.asarray(gti0))
@@ -859,12 +859,12 @@ def append_gtis(gti0, gti1):
 
     Examples
     --------
-    >>> np.all(append_gtis([[0, 1]], [[2, 3]]) == [[0, 1], [2, 3]])
+    >>> np.allclose(append_gtis([[0, 1]], [[2, 3]]), [[0, 1], [2, 3]])
     True
     >>> np.allclose(append_gtis([[0, 1], [4, 5]], [[2, 3]]),
     ...             [[0, 1], [2, 3], [4, 5]])
     True
-    >>> np.all(append_gtis([[0, 1]], [[1, 3]]) == [[0, 3]])
+    >>> np.allclose(append_gtis([[0, 1]], [[1, 3]]), [[0, 3]])
     True
     """
 
@@ -1061,13 +1061,13 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
 
     >>> start_bins, stop_bins = bin_intervals_from_gtis(gtis,chunk_length,time)
 
-    >>> np.all(start_bins == [0, 2, 6])
+    >>> np.allclose(start_bins, [0, 2, 6])
     True
-    >>> np.all(stop_bins == [2, 4, 8])
+    >>> np.allclose(stop_bins, [2, 4, 8])
     True
-    >>> np.all(time[start_bins[0]:stop_bins[0]] == [0.5, 1.5])
+    >>> np.allclose(time[start_bins[0]:stop_bins[0]], [0.5, 1.5])
     True
-    >>> np.all(time[start_bins[1]:stop_bins[1]] == [2.5, 3.5])
+    >>> np.allclose(time[start_bins[1]:stop_bins[1]], [2.5, 3.5])
     True
     """
     if dt is None:
@@ -1142,13 +1142,13 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     >>> start_bins, stop_bins = gti_border_bins(
     ...    [[0, 5], [6, 8]], times)
 
-    >>> np.all(start_bins == [0, 6])
+    >>> np.allclose(start_bins, [0, 6])
     True
-    >>> np.all(stop_bins == [5, 8])
+    >>> np.allclose(stop_bins, [5, 8])
     True
-    >>> np.all(times[start_bins[0]:stop_bins[0]] == [ 0.5, 1.5, 2.5, 3.5, 4.5])
+    >>> np.allclose(times[start_bins[0]:stop_bins[0]], [ 0.5, 1.5, 2.5, 3.5, 4.5])
     True
-    >>> np.all(times[start_bins[1]:stop_bins[1]] == [6.5, 7.5])
+    >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5])
     True
     """
     if dt is None:

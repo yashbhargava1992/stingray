@@ -80,7 +80,7 @@ class TestEvents(object):
         """Create a light curve from event list."""
         ev = EventList(self.time, gti=self.gti)
         lc = ev.to_lc(1)
-        assert np.all((lc.time == [0.5, 1.5, 2.5, 3.5]))
+        assert np.allclose(lc.time, [0.5, 1.5, 2.5, 3.5])
         assert (lc.gti == self.gti).all()
 
     def test_from_lc(self):
@@ -175,13 +175,13 @@ class TestEvents(object):
         ev_other = EventList()
         with warnings.catch_warnings(record=True):
             ev_new = ev.join(ev_other)
-        assert np.all(ev_new.time == [1, 2, 3])
+        assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList(time=[1, 2, 3])
         with warnings.catch_warnings(record=True):
             ev_new = ev.join(ev_other)
-        assert np.all(ev_new.time == [1, 2, 3])
+        assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList()
@@ -196,12 +196,12 @@ class TestEvents(object):
         ev_other = EventList([])
         with warnings.catch_warnings(record=True):
             ev_new = ev.join(ev_other)
-        assert np.all(ev_new.time == [1, 2, 3])
+        assert np.allclose(ev_new.time, [1, 2, 3])
         ev = EventList([])
         ev_other = EventList(time=[1, 2, 3])
         with warnings.catch_warnings(record=True):
             ev_new = ev.join(ev_other)
-        assert np.all(ev_new.time == [1, 2, 3])
+        assert np.allclose(ev_new.time, [1, 2, 3])
 
     def test_join_different_dt(self):
         ev = EventList(time=[10, 20, 30], dt = 1)
@@ -216,14 +216,14 @@ class TestEvents(object):
         ev_other = EventList(time=[4, 5])
         ev_new = ev.join(ev_other)
 
-        assert np.all(ev_new.energy == [3, 3, 3, 0, 0])
+        assert np.allclose(ev_new.energy, [3, 3, 3, 0, 0])
 
     def test_join_without_pi(self):
         ev = EventList(time=[1, 2, 3], pi=[3, 3, 3])
         ev_other = EventList(time=[4, 5])
         ev_new = ev.join(ev_other)
 
-        assert np.all(ev_new.pi == [3, 3, 3, 0, 0])
+        assert np.allclose(ev_new.pi, [3, 3, 3, 0, 0])
 
     def test_join_with_gti_none(self):
         ev = EventList(time=[1, 2, 3])
@@ -231,14 +231,14 @@ class TestEvents(object):
         with warnings.catch_warnings(record=True):
             ev_new = ev.join(ev_other)
 
-        assert np.all(ev_new.gti == [[1, 3], [3.5, 5.5]])
+        assert np.allclose(ev_new.gti, [[1, 3], [3.5, 5.5]])
 
         ev = EventList(time=[1, 2, 3], gti=[[0.5, 3.5]])
         ev_other = EventList(time=[4, 5])
         with warnings.catch_warnings(record=True):
             ev_new = ev.join(ev_other)
 
-        assert np.all(ev_new.gti == [[0.5, 3.5], [4, 5]])
+        assert np.allclose(ev_new.gti, [[0.5, 3.5], [4, 5]])
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5])
@@ -313,7 +313,7 @@ class TestEvents(object):
         ev = EventList(self.time, mjdref=54000)
         ev.write('ev.pickle', format_='pickle')
         ev = ev.read('ev.pickle', format_='pickle')
-        assert np.all(ev.time == self.time)
+        assert np.allclose(ev.time, self.time)
         os.remove('ev.pickle')
 
     @pytest.mark.skipif("not _H5PY_INSTALLED")

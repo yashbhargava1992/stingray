@@ -8,7 +8,7 @@ from stingray.pulse import HAS_PINT
 from astropy.tests.helper import remote_data
 import pytest
 import os
-import warnings 
+import warnings
 
 try:
     import matplotlib.pyplot as plt
@@ -41,13 +41,13 @@ class TestAll(object):
             import astropy.units as u
             parfile = os.path.join(self.datadir, 'example_pint.par')
             timfile = os.path.join(self.datadir, 'example_pint.tim')
-    
+
             toas = toa.get_TOAs(timfile, ephem="DE405",
                                 planets=False, include_bipm=False)
             model = mb.get_model(parfile)
-    
+
             pint_resids_us = Residuals(toas, model).time_resids.to(u.s)
-    
+
         # Due to the gps2utc clock correction. We are at 3e-8 seconds level.
         assert np.all(np.abs(pint_resids_us.value) < 3e-6)
 
@@ -354,7 +354,7 @@ class TestZandH(object):
     def test_zn_poisson_zeros(self):
         prof512 = np.zeros(512)
         ksp, zp = z_n_binned_events_all(prof512, nmax=10)
-        assert np.all(zp == 0)
+        assert np.allclose(zp, 0)
 
     def test_deprecated_norm_use(self):
         prof512, bins = self.prof512, self.bins

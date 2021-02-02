@@ -455,7 +455,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if self.gti is None:
             self.gti = lc.gti
         else:
-            if not np.all(lc.gti == self.gti):
+            if not np.allclose(lc.gti, self.gti):
                 self.gti = np.vstack([self.gti, lc.gti])
 
         check_gtis(self.gti)

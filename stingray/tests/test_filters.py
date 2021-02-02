@@ -30,14 +30,14 @@ class TestFilters(object):
         filter_w = [1. if np.abs(x_i - self.x_0_0) <= self.fwhm_0 / 2 else 0.
                     for x_i in self.x]
         y_w = self.y * filter_w
-        assert np.all(filtered_y == y_w)
+        assert np.allclose(filtered_y, y_w)
 
     def test_optimal(self):
         optimal_filter = Optimal1D(self.model)
         filtered_y = self.y * optimal_filter(self.x)
         filter_o = (self.lorentz / self.model)(self.x)
         y_o = self.y * filter_o
-        assert np.all(filtered_y == y_o)
+        assert np.allclose(filtered_y, y_o)
 
 
 def test_filter_for_deadtime_nonpar():
@@ -45,9 +45,9 @@ def test_filter_for_deadtime_nonpar():
     events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
     filt_events, info = filter_for_deadtime(events, 0.11, return_all=True)
     expected = np.array([1, 2, 2.2, 3, 3.2])
-    assert np.all(filt_events == expected), \
+    assert np.allclose(filt_events, expected), \
         "Wrong: {} vs {}".format(filt_events, expected)
-    assert np.all(filt_events == info.uf_events[info.is_event])
+    assert np.allclose(filt_events, info.uf_events[info.is_event])
 
 
 def test_filter_for_deadtime_evlist():
@@ -60,11 +60,11 @@ def test_filter_for_deadtime_evlist():
     filt_events = filter_for_deadtime(events, 0.11)
 
     expected = np.array([1, 2, 2.2, 3, 3.2])
-    assert np.all(filt_events.time == expected), \
+    assert np.allclose(filt_events.time, expected), \
         "Wrong: {} vs {}".format(filt_events, expected)
 
-    assert np.all(filt_events.pi == 1)
-    assert np.all(filt_events.energy == 1)
+    assert np.allclose(filt_events.pi, 1)
+    assert np.allclose(filt_events.energy, 1)
 
 
 def test_filter_for_deadtime_lt0():
@@ -79,8 +79,8 @@ def test_filter_for_deadtime_0():
     """Test dead time filter, non-paralyzable case."""
     events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
     filt_events, info = filter_for_deadtime(events, 0, return_all=True)
-    assert np.all(events == filt_events)
-    assert np.all(filt_events == info.uf_events[info.is_event])
+    assert np.allclose(events, filt_events)
+    assert np.allclose(filt_events, info.uf_events[info.is_event])
 
 
 def test_filter_for_deadtime_nonpar_sigma():
@@ -88,7 +88,7 @@ def test_filter_for_deadtime_nonpar_sigma():
     events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
     filt_events = filter_for_deadtime(events, 0.11, dt_sigma=0.001)
     expected = np.array([1, 2, 2.2, 3, 3.2])
-    assert np.all(filt_events == expected), \
+    assert np.allclose(filt_events, expected), \
         "Wrong: {} vs {}".format(filt_events, expected)
 
 
@@ -101,11 +101,11 @@ def test_filter_for_deadtime_nonpar_bkg():
                             return_all=True)
     expected_ev = np.array([2, 2.2, 3, 3.2])
     expected_bk = np.array([1])
-    assert np.all(filt_events == expected_ev), \
+    assert np.allclose(filt_events, expected_ev), \
         "Wrong: {} vs {}".format(filt_events, expected_ev)
-    assert np.all(info.bkg == expected_bk), \
+    assert np.allclose(info.bkg, expected_bk), \
         "Wrong: {} vs {}".format(info.bkg, expected_bk)
-    assert np.all(filt_events == info.uf_events[info.is_event])
+    assert np.allclose(filt_events, info.uf_events[info.is_event])
 
 
 def test_filter_for_deadtime_par():
@@ -124,8 +124,8 @@ def test_filter_for_deadtime_par_bkg():
                             paralyzable=True, return_all=True)
     expected_ev = np.array([2, 2.2, 3])
     expected_bk = np.array([1])
-    assert np.all(filt_events == expected_ev), \
+    assert np.allclose(filt_events, expected_ev), \
         "Wrong: {} vs {}".format(filt_events, expected_ev)
-    assert np.all(info.bkg == expected_bk), \
+    assert np.allclose(info.bkg, expected_bk), \
         "Wrong: {} vs {}".format(info.bkg, expected_bk)
-    assert np.all(filt_events == info.uf_events[info.is_event])
+    assert np.allclose(filt_events, info.uf_events[info.is_event])

@@ -536,13 +536,13 @@ class EventList(object):
         >>> filt_events is events
         False
         >>> expected = np.array([1, 2, 2.2, 3, 3.2])
-        >>> np.all(filt_events.time == expected)
+        >>> np.allclose(filt_events.time, expected)
         True
-        >>> np.all(filt_events.pi == 1)
+        >>> np.allclose(filt_events.pi, 1)
         True
-        >>> np.all(filt_events.energy == 1)
+        >>> np.allclose(filt_events.energy, 1)
         True
-        >>> np.all(events.pi == 1)
+        >>> np.allclose(events.pi, 1)
         False
         >>> filt_events = events.apply_deadtime(0.11, inplace=True,
         ...                                     verbose=False)

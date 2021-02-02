@@ -173,13 +173,13 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
 
     results_cs = get_periodograms_from_FAD_results(results_out, kind='cs')
     assert isinstance(results_cs, AveragedCrossspectrum)
-    assert np.all(results_cs.power == cs_f)
+    assert np.allclose(results_cs.power, cs_f)
     results_ps = get_periodograms_from_FAD_results(results_out, kind='pds1')
     assert isinstance(results_ps, AveragedPowerspectrum)
-    assert np.all(results_ps.power == pds1_f)
+    assert np.allclose(results_ps.power, pds1_f)
     results_ps = get_periodograms_from_FAD_results(results_out, kind='pds2')
     assert isinstance(results_ps, AveragedPowerspectrum)
-    assert np.all(results_ps.power == pds2_f)
+    assert np.allclose(results_ps.power, pds2_f)
     with pytest.raises(ValueError) as excinfo:
         _ = get_periodograms_from_FAD_results(results_out, kind='a')
     assert "Unknown periodogram type" in str(excinfo.value)

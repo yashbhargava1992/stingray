@@ -42,15 +42,15 @@ def p_to_f(*period_derivatives):
     --------
     >>> p_to_f() == []
     True
-    >>> np.all(p_to_f(1) == [1])
+    >>> np.allclose(p_to_f(1), [1])
     True
-    >>> np.all(p_to_f(1, 2) == [1, -2])
+    >>> np.allclose(p_to_f(1, 2), [1, -2])
     True
-    >>> np.all(p_to_f(1, 2, 3) == [1, -2, 5])
+    >>> np.allclose(p_to_f(1, 2, 3), [1, -2, 5])
     True
-    >>> np.all(p_to_f(1, 2, 3, 4) == [1, -2, 5, -16])
+    >>> np.allclose(p_to_f(1, 2, 3, 4), [1, -2, 5, -16])
     True
-    >>> np.all(p_to_f(1, 2, 3, 4, 32, 22) == [1, -2, 5, -16, 0, 0])
+    >>> np.allclose(p_to_f(1, 2, 3, 4, 32, 22), [1, -2, 5, -16, 0, 0])
     True
     """
     nder = len(period_derivatives)

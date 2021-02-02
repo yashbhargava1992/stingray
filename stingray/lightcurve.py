@@ -1359,7 +1359,7 @@ class Lightcurve(object):
             if mincounts >= min_total_counts:
                 keep_searching = False
             else:
-                chunk_length += self.dt 
+                chunk_length += self.dt
 
         return chunk_length
 
@@ -1407,7 +1407,7 @@ class Lightcurve(object):
         >>> start, stop, res = lc.analyze_lc_chunks(5, mean_func)
         >>> len(res) == 2
         True
-        >>> np.all(res == 10)
+        >>> np.allclose(res, 10)
         True
         """
         start, stop = bin_intervals_from_gtis(self.gti, chunk_length,

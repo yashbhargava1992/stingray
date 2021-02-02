@@ -125,7 +125,7 @@ class TestAll(object):
     def test_profile_fast(self):
         test_phase = np.arange(0, 1, 1/16)
         prof = _profile_fast(test_phase, nbin=16)
-        assert np.all(prof == np.ones(16))
+        assert np.allclose(prof, np.ones(16))
 
     def test_epoch_folding_search(self):
         """Test pulse phase calculation, frequency only."""
