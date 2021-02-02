@@ -650,7 +650,6 @@ def cross_gtis(gti_list):
     --------
     cross_two_gtis : Extract the common intervals from two GTI lists *EXACTLY*
     """
-    gti_list = np.asarray(gti_list)
     for g in gti_list:
         check_gtis(g)
 
