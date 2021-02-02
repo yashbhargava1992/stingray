@@ -190,7 +190,8 @@ class TestGTI(object):
         """Test if two non-overlapping GTIs can be appended. """
         gti1 = np.array([[1, 2], [4, 5]])
         gti2 = np.array([[6, 7], [8, 9]])
-        assert np.allclose(append_gtis(gti1, gti2), [[1,2],[4,5],[6,7],[8,9]])
+        assert np.allclose(append_gtis(gti1, gti2),
+                           [[1, 2], [4, 5], [6, 7], [8, 9]])
 
     def test_append_overlapping_gtis(self):
         """Test if exception is raised in event of overlapping gtis."""

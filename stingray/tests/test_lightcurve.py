@@ -809,7 +809,7 @@ class TestLightcurve(object):
         slc = lc_test.split(1.5)
 
         assert np.allclose(slc[0].time, [1, 2, 3])
-        assert np.allclose(slc[1].time, [6, 7,8])
+        assert np.allclose(slc[1].time, [6, 7, 8])
         assert np.allclose(slc[0].counts, test_counts[:3])
         assert np.allclose(slc[1].counts, test_counts[3:])
 
@@ -832,8 +832,8 @@ class TestLightcurve(object):
         slc = lc_test.split(1.5)
 
         assert np.allclose(slc[0].time, [1, 2, 3])
-        assert np.allclose(slc[1].time, [6, 7,8])
-        assert np.allclose(slc[2].time, [10, 11,12])
+        assert np.allclose(slc[1].time, [6, 7, 8])
+        assert np.allclose(slc[2].time, [10, 11, 12])
         assert np.allclose(slc[0].counts, test_counts[:3])
         assert np.allclose(slc[1].counts, test_counts[3:6])
         assert np.allclose(slc[2].counts, test_counts[6:])
@@ -846,7 +846,7 @@ class TestLightcurve(object):
         slc = lc_test.split(1.5)
 
         assert np.allclose(slc[0].time, [1, 2, 3])
-        assert np.allclose(slc[1].time, [10, 11,12])
+        assert np.allclose(slc[1].time, [10, 11, 12])
         assert np.allclose(slc[0].counts, test_counts[:3])
         assert np.allclose(slc[1].counts, test_counts[6:])
 
