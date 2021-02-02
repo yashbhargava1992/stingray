@@ -105,7 +105,7 @@ def _create_responses(range_z):
              responses.append(0)
              continue
 
-        m = np.max([np.abs(int( 2 * z)), 40])
+        m = np.max([np.abs(int(2 * z)), 40])
         sign = z / np.abs(z)
         absz = np.abs(z)
         factor = sign * 1 / np.sqrt( 2 * absz)
