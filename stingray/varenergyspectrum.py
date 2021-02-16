@@ -37,10 +37,10 @@ def _decode_energy_specification(energy_spec):
      ...
     ValueError: Energy specification must be a tuple
     >>> a = _decode_energy_specification((0, 2, 2, 'lin'))
-    >>> np.all(a == [0, 1, 2])
+    >>> np.allclose(a, [0, 1, 2])
     True
     >>> a = _decode_energy_specification((1, 4, 2, 'log'))
-    >>> np.all(a == [1, 2, 4])
+    >>> np.allclose(a, [1, 2, 4])
     True
     """
     if not isinstance(energy_spec, tuple):

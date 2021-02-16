@@ -840,7 +840,7 @@ class TestAveragedCrossspectrum(object):
                             power_type="real")
         cs4 = Crossspectrum(self.lc1, self.lc2, norm="leahy",
                             power_type="absolute")
-        assert np.all(cs1.power.real == cs3.power)
+        assert np.allclose(cs1.power.real, cs3.power)
         assert np.all(np.isclose(np.abs(cs2.power), cs4.power, atol=0.0001))
 
     def test_rebin(self):

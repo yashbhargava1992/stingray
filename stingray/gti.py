@@ -218,15 +218,16 @@ def check_gtis(gti):
     ValueError
         If GTIs have overlapping or displaced values
     """
-    gti = np.asarray(gti)
     if len(gti) < 1:
         raise ValueError("Empty GTIs")
 
-    if len(gti) != gti.shape[0] or len(gti.shape) != 2 or \
-            len(gti) != gti.shape[0]:
-        raise TypeError("Please check formatting of GTIs. They need to be"
-                        " provided as [[gti00, gti01], [gti10, gti11], ...]")
+    for g in gti:
+        if np.size(g) != 2 or np.ndim(g) != 1:
+            raise TypeError(
+                "Please check the formatting of GTIs. They need to be"
+                " provided as [[gti00, gti01], [gti10, gti11], ...]")
 
+    gti = np.array(gti)
     gti_start = gti[:, 0]
     gti_end = gti[:, 1]
 
@@ -457,7 +458,7 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
 
     newgtis = np.zeros_like(gtis)
     # Whose GTIs, including safe intervals, are longer than min_length
-    newgtimask = np.zeros(len(newgtis), dtype=np.bool)
+    newgtimask = np.zeros(len(newgtis), dtype=bool)
 
     for ig, gti in enumerate(gtis):
         limmin, limmax = gti
@@ -553,13 +554,13 @@ def cross_two_gtis(gti0, gti1):
     --------
     >>> gti1 = np.array([[1, 2]])
     >>> gti2 = np.array([[1, 2]])
-    >>> newgti = cross_gtis([gti1, gti2])
-    >>> np.all(newgti == [[1, 2]])
+    >>> newgti = cross_two_gtis(gti1, gti2)
+    >>> np.allclose(newgti, [[1, 2]])
     True
     >>> gti1 = np.array([[1, 4]])
     >>> gti2 = np.array([[1, 2], [2, 4]])
-    >>> newgti = cross_gtis([gti1, gti2])
-    >>> np.all(newgti == [[1, 4]])
+    >>> newgti = cross_two_gtis(gti1, gti2)
+    >>> np.allclose(newgti, [[1, 4]])
     True
     """
     gti0 = join_equal_gti_boundaries(np.asarray(gti0))
@@ -649,8 +650,20 @@ def cross_gtis(gti_list):
     See Also
     --------
     cross_two_gtis : Extract the common intervals from two GTI lists *EXACTLY*
+
+    Examples
+    --------
+    >>> gti1 = np.array([[1, 2]])
+    >>> gti2 = np.array([[1, 2]])
+    >>> newgti = cross_gtis([gti1, gti2])
+    >>> np.allclose(newgti, [[1, 2]])
+    True
+    >>> gti1 = np.array([[1, 4]])
+    >>> gti2 = np.array([[1, 2], [2, 4]])
+    >>> newgti = cross_gtis([gti1, gti2])
+    >>> np.allclose(newgti, [[1, 4]])
+    True
     """
-    gti_list = np.asarray(gti_list)
     for g in gti_list:
         check_gtis(g)
 
@@ -859,12 +872,12 @@ def append_gtis(gti0, gti1):
 
     Examples
     --------
-    >>> np.all(append_gtis([[0, 1]], [[2, 3]]) == [[0, 1], [2, 3]])
+    >>> np.allclose(append_gtis([[0, 1]], [[2, 3]]), [[0, 1], [2, 3]])
     True
     >>> np.allclose(append_gtis([[0, 1], [4, 5]], [[2, 3]]),
     ...             [[0, 1], [2, 3], [4, 5]])
     True
-    >>> np.all(append_gtis([[0, 1]], [[1, 3]]) == [[0, 3]])
+    >>> np.allclose(append_gtis([[0, 1]], [[1, 3]]), [[0, 3]])
     True
     """
 
@@ -1061,25 +1074,25 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
 
     >>> start_bins, stop_bins = bin_intervals_from_gtis(gtis,chunk_length,time)
 
-    >>> np.all(start_bins == [0, 2, 6])
+    >>> np.allclose(start_bins, [0, 2, 6])
     True
-    >>> np.all(stop_bins == [2, 4, 8])
+    >>> np.allclose(stop_bins, [2, 4, 8])
     True
-    >>> np.all(time[start_bins[0]:stop_bins[0]] == [0.5, 1.5])
+    >>> np.allclose(time[start_bins[0]:stop_bins[0]], [0.5, 1.5])
     True
-    >>> np.all(time[start_bins[1]:stop_bins[1]] == [2.5, 3.5])
+    >>> np.allclose(time[start_bins[1]:stop_bins[1]], [2.5, 3.5])
     True
     """
     if dt is None:
         dt = np.median(np.diff(time))
 
     epsilon_times_dt = epsilon * dt
-    nbin = np.long(chunk_length / dt)
+    nbin = int(chunk_length / dt)
 
     if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
         raise ValueError("Invalid time interval for the given GTIs")
 
-    spectrum_start_bins = np.array([], dtype=np.long)
+    spectrum_start_bins = np.array([], dtype=int)
     time_low = time - dt / 2
     time_high = time + dt / 2
     for g in gtis:
@@ -1104,7 +1117,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
             stopbin -= 1
 
         newbins = np.arange(startbin, stopbin - nbin + 1,
-                            int(nbin * fraction_step), dtype=np.long)
+                            int(nbin * fraction_step), dtype=int)
         spectrum_start_bins = \
             np.append(spectrum_start_bins,
                       newbins)
@@ -1142,21 +1155,21 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     >>> start_bins, stop_bins = gti_border_bins(
     ...    [[0, 5], [6, 8]], times)
 
-    >>> np.all(start_bins == [0, 6])
+    >>> np.allclose(start_bins, [0, 6])
     True
-    >>> np.all(stop_bins == [5, 8])
+    >>> np.allclose(stop_bins, [5, 8])
     True
-    >>> np.all(times[start_bins[0]:stop_bins[0]] == [ 0.5, 1.5, 2.5, 3.5, 4.5])
+    >>> np.allclose(times[start_bins[0]:stop_bins[0]], [ 0.5, 1.5, 2.5, 3.5, 4.5])
     True
-    >>> np.all(times[start_bins[1]:stop_bins[1]] == [6.5, 7.5])
+    >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5])
     True
     """
     if dt is None:
         dt = np.median(np.diff(time))
 
     epsilon_times_dt = epsilon * dt
-    spectrum_start_bins = np.array([], dtype=np.long)
-    spectrum_stop_bins = np.array([], dtype=np.long)
+    spectrum_start_bins = np.array([], dtype=int)
+    spectrum_stop_bins = np.array([], dtype=int)
     for g in gtis:
         good = (time - dt / 2 >= g[0]) & (time + dt / 2 <= g[1])
         t_good = time[good]

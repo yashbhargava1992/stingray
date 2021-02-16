@@ -159,7 +159,7 @@ def _get_detector_id(lctable):
     >>> a = fits.Column(name='pcuid', array=np.array([1, 2]), format='K')
     >>> t = fits.TableHDU.from_columns([a])
     >>> det_id2 = _get_detector_id(t.data)
-    >>> np.all(det_id1 == det_id2)
+    >>> np.allclose(det_id1, det_id2)
     True
     >>> a = fits.Column(name='asdfasdf', array=np.array([1, 2]), format='K')
     >>> t = fits.TableHDU.from_columns([a])
@@ -169,7 +169,7 @@ def _get_detector_id(lctable):
     for column in ["CCDNR", "ccd_id", "PCUID"]:  # XMM  # Chandra  # XTE
         for name in lctable.columns.names:
             if column.lower() == name.lower():
-                return np.array(lctable.field(name), dtype=np.int)
+                return np.array(lctable.field(name), dtype=int)
 
     return None
 
@@ -322,7 +322,7 @@ def lcurve_from_fits(
             raise ValueError(
                 "None of the accepted rate columns were found in the file")
 
-    rate = np.array(lctable.field(ratecolumn), dtype=np.float)
+    rate = np.array(lctable.field(ratecolumn), dtype=float)
 
     errorcolumn = "ERROR"
     if ratecolumn == "RATE1":

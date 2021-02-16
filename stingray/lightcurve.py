@@ -459,6 +459,7 @@ class Lightcurve(object):
             local_diff = np.diff(self.time[istart:istop])
             if np.any(~np.isclose(local_diff, self.dt)):
                 uneven = True
+
                 break
         if uneven:
             simon("Bin sizes in input time array aren't equal throughout! "
@@ -619,9 +620,9 @@ class Lightcurve(object):
         >>> count1 = [600, 1200, 800]
         >>> count2 = [300, 100, 400]
         >>> gti1 = [[0, 35]]
-        >>> gti2 = [[0, 40]]
-        >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=5)
-        >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=5)
+        >>> gti2 = [[5, 40]]
+        >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=10)
+        >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=10)
         >>> lc = lc1 - lc2
         >>> lc.counts
         array([ 300, 1100,  400])
@@ -1191,7 +1192,7 @@ class Lightcurve(object):
         --------
         >>> time = np.array([1, 2, 3, 6, 7, 8, 11, 12, 13])
         >>> counts = np.random.rand(time.shape[0])
-        >>> lc = Lightcurve(time, counts, dt=1)
+        >>> lc = Lightcurve(time, counts, dt=1, skip_checks=True)
         >>> split_lc = lc.split(1.5)
 
         """
@@ -1359,7 +1360,7 @@ class Lightcurve(object):
             if mincounts >= min_total_counts:
                 keep_searching = False
             else:
-                chunk_length += self.dt 
+                chunk_length += self.dt
 
         return chunk_length
 
@@ -1407,7 +1408,7 @@ class Lightcurve(object):
         >>> start, stop, res = lc.analyze_lc_chunks(5, mean_func)
         >>> len(res) == 2
         True
-        >>> np.all(res == 10)
+        >>> np.allclose(res, 10)
         True
         """
         start, stop = bin_intervals_from_gtis(self.gti, chunk_length,

@@ -30,7 +30,7 @@ def _find_delay_with_ccf(amp, pha):
     """
     nh = 32
     nprof = nh * 2
-    ccf_inv = np.zeros(64, dtype=np.complex)
+    ccf_inv = np.zeros(64, dtype=complex)
     ccf_inv[:nh] = \
         amp[:nh] * np.cos(pha[:nh]) + 1.0j * amp[:nh] * np.sin(pha[:nh])
     ccf_inv[nprof: nprof - nh: -1] = np.conj(ccf_inv[nprof: nprof - nh: -1])

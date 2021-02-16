@@ -852,15 +852,15 @@ def create_window(N, window_type='uniform'):
 
     # Constants
     N_minus_1 = N - 1
-    N_by_2 = np.int((np.floor((N_minus_1) / 2)))
+    N_by_2 = int((np.floor((N_minus_1) / 2)))
 
     # Create Windows
     if window_type == 'uniform':
         window = np.ones(N)
 
     if window_type == 'parzen':
-        N_parzen = np.int(np.ceil((N + 1) / 2))
-        N2_plus_1 = np.int(np.floor((N_parzen / 2))) + 1
+        N_parzen = int(np.ceil((N + 1) / 2))
+        N2_plus_1 = int(np.floor((N_parzen / 2))) + 1
 
         window = np.zeros(N_parzen)
         windlag0 = np.arange(0, N2_plus_1) / (N_parzen - 1)
@@ -934,7 +934,7 @@ def poisson_symmetrical_errors(counts):
     >>> # Do it with this function
     >>> err_thisfun = poisson_symmetrical_errors(counts)
     >>> # Test that results are always the same
-    >>> assert np.all(err_thisfun == err)
+    >>> assert np.allclose(err_thisfun, err)
     """
     from astropy.stats import poisson_conf_interval
     counts_int = np.asarray(counts, dtype=np.int64)
@@ -1076,7 +1076,7 @@ def interpret_times(time, mjdref=0):
     True
     >>> time = Time([57483], format='mjd')
     >>> newt, mjdref = interpret_times(time)
-    >>> np.all(newt == 0)
+    >>> np.allclose(newt, 0)
     True
     >>> mjdref == 57483
     True

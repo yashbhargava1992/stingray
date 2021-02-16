@@ -69,7 +69,7 @@ class TestVarEnergySpectrum(object):
         vespec = DummyVarEnergy(events, [0., 10000],
                                 (0, 1, 2, "lin"),
                                 bin_time=0.1)
-        assert np.all(vespec.ref_band == np.array([[0, np.inf]]))
+        assert np.allclose(vespec.ref_band, np.array([[0, np.inf]]))
 
     def test_energy_spec_wrong_list_not_tuple(self):
         events = EventList([0.09, 0.21, 0.23, 0.32, 0.4, 0.54],

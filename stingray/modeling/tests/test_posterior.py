@@ -641,7 +641,7 @@ class TestPerPosteriorAveragedPeriodogram(object):
         cls.m = 10
         nfreq = 1000000
         freq = np.arange(nfreq)
-        noise = scipy.stats.chi2(2.*cls.m).rvs(size=nfreq)/np.float(cls.m)
+        noise = scipy.stats.chi2(2.*cls.m).rvs(size=nfreq)/float(cls.m)
         power = noise
 
         ps = Powerspectrum()

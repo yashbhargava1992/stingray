@@ -193,7 +193,7 @@ class TestPowerspectrum(object):
         """
         ps = Powerspectrum(self.lc)
         nn = ps.n
-        pp = ps.unnorm_power / np.float(nn) ** 2
+        pp = ps.unnorm_power / float(nn) ** 2
         p_int = np.sum(pp[:-1] * ps.df) + (pp[-1] * ps.df) / 2
         var_lc = np.var(self.lc.counts) / (2. * self.lc.tseg)
         assert np.isclose(p_int, var_lc, atol=0.01, rtol=0.01)
@@ -764,7 +764,7 @@ class TestDynamicalPowerspectrum(object):
         segment_size = 3
         dt_new = 4.0
         rebin_time = np.array([ 2.,  6., 10.])
-        rebin_dps = np.array([[0.7962963 , 1.16402116, 0.28571429]])
+        rebin_dps = np.array([[0.7962963, 1.16402116, 0.28571429]])
         dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
         new_dps = dps.rebin_time(dt_new=dt_new)
         assert np.allclose(new_dps.time, rebin_time)

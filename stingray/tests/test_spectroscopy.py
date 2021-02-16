@@ -233,8 +233,8 @@ def test_load_lc_fits():
     ref, ci, meta = spec.load_lc_fits(output_file, counts_type=False)
     remove(output_file)
 
-    assert np.all(ref_lc == ref)
-    assert np.all(ci_lc == ci)
+    assert np.allclose(ref_lc, ref)
+    assert np.allclose(ci_lc, ci)
     assert meta['N_BINS'] == n_bins
     assert meta['DT'] == dt
     assert meta['N_SEG'] == n_seg
@@ -244,7 +244,7 @@ def test_load_lc_fits():
 def test_psi_distance():
     a = np.arange(-10, 11)
     dist = spec.psi_distance(0, a)
-    assert np.all(np.abs(a) == dist)
+    assert np.allclose(np.abs(a), dist)
 
 
 def test_get_new_df():
@@ -296,14 +296,14 @@ def test_waveform():
     y2 = mu * (1 + np.sqrt(2) * (avg_sigma_1 * np.cos(x - cap_phi_1) +
                                  avg_sigma_2 * np.cos(2 * x - cap_phi_2)))
 
-    assert np.all(y1 == y2)
+    assert np.allclose(y1, y2)
 
 
 def test_x_2_function():
     a = [-2, -1, 0, 1, 2]
     y1 = spec.x_2_function(0, a)
     y2 = np.sum(np.array(a) ** 2)
-    assert np.all(y1 == y2)
+    assert np.allclose(y1, y2)
 
 
 def test_compute_rms():

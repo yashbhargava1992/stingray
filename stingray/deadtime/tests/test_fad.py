@@ -38,7 +38,7 @@ def test_fad_power_spectrum_compliant(ctrate):
     deadtime = 2.5e-3
     length = 25600
     segment_size = 256.
-    ncounts = np.int(ctrate * length)
+    ncounts = int(ctrate * length)
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
@@ -86,7 +86,7 @@ def test_fad_power_spectrum_compliant_objects(ctrate):
     deadtime = 2.5e-3
     length = 25600
     segment_size = 256.
-    ncounts = np.int(ctrate * length)
+    ncounts = int(ctrate * length)
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
@@ -135,7 +135,7 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
     deadtime = 2.5e-3
     length = 25600
     segment_size = 256.
-    ncounts = np.int(ctrate * length)
+    ncounts = int(ctrate * length)
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
@@ -173,13 +173,13 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
 
     results_cs = get_periodograms_from_FAD_results(results_out, kind='cs')
     assert isinstance(results_cs, AveragedCrossspectrum)
-    assert np.all(results_cs.power == cs_f)
+    assert np.allclose(results_cs.power, cs_f)
     results_ps = get_periodograms_from_FAD_results(results_out, kind='pds1')
     assert isinstance(results_ps, AveragedPowerspectrum)
-    assert np.all(results_ps.power == pds1_f)
+    assert np.allclose(results_ps.power, pds1_f)
     results_ps = get_periodograms_from_FAD_results(results_out, kind='pds2')
     assert isinstance(results_ps, AveragedPowerspectrum)
-    assert np.all(results_ps.power == pds2_f)
+    assert np.allclose(results_ps.power, pds2_f)
     with pytest.raises(ValueError) as excinfo:
         _ = get_periodograms_from_FAD_results(results_out, kind='a')
     assert "Unknown periodogram type" in str(excinfo.value)
@@ -192,7 +192,7 @@ def test_fad_power_spectrum_compliant_leahy_objects(ctrate):
     deadtime = 2.5e-3
     length = 25600
     segment_size = 256.
-    ncounts = np.int(ctrate * length)
+    ncounts = int(ctrate * length)
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
@@ -235,7 +235,7 @@ def test_fad_power_spectrum_unknown_alg(ctrate):
     deadtime = 2.5e-3
     length = 25600
     segment_size = 256.
-    ncounts = np.int(ctrate * length)
+    ncounts = int(ctrate * length)
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 
@@ -258,7 +258,7 @@ def test_fad_power_spectrum_non_compliant(ctrate):
     deadtime = 2.5e-3
     length = 25600
     segment_size = 256.
-    ncounts = np.int(ctrate * length)
+    ncounts = int(ctrate * length)
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, int(ncounts * 0.6))
 
@@ -287,7 +287,7 @@ def test_fad_power_spectrum_non_compliant_raise(ctrate):
     deadtime = 2.5e-3
     length = 25600
     segment_size = 256.
-    ncounts = np.int(ctrate * length)
+    ncounts = int(ctrate * length)
     ev1 = generate_events(length, ncounts)
     ev2 = generate_events(length, ncounts)
 

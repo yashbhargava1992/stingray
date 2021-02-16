@@ -88,7 +88,7 @@ def sinc_square_deriv(x, amplitude=1., mean=0., width=1.):
 
     Examples
     --------
-    >>> np.all(sinc_square_deriv(0, amplitude=2.) == [1., 0., 0.])
+    >>> np.allclose(sinc_square_deriv(0, amplitude=2.), [1., 0., 0.])
     True
     """
     x_is_zero = x == mean
