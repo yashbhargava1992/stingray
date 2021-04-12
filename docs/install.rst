@@ -79,10 +79,14 @@ Test Suite
 Please be sure to run the test suite before you use the package, and please report anything
 you think might be bugs on our GitHub `Issues page <https://github.com/StingraySoftware/stingray/issues>`_.
 
-Stingray uses `py.test <https://doc.pytest.org/en/latest/>`_ for testing. To run the tests, go into
-the ``stingray`` root directory and execute ::
+Stingray uses `py.test <https://pytest.org>`_ and `tox
+<https://tox.readthedocs.io>`_ for testing. To run the tests, try::
 
-    $ python setup.py test
+   $ tox -e test
+
+You may need to install tox first::
+
+   $ pip install tox
 
 If you have installed Stingray via pip or conda, the source directory might
 not be easily accessible. Once installed, you can also run the tests using::
