@@ -26,8 +26,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   scope
-   basics
+   intro
    install
    core
    modeling
