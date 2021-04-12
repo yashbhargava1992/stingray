@@ -8,8 +8,10 @@ Stingray is designed to be easy to extend, and easy to incorporate into data ana
 
 For a brief overview of the history and state-of-the-art in spectral timing, and for more information about the design and capabilities of Stingray, please refer to `Huppenkothen et al. (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...881...39H/abstract>`_.
 
+Features
+========
 Current Capabilities
-====================
+--------------------
 
 Currently implemented functionality in this library comprises:
 
@@ -32,8 +34,8 @@ Currently implemented functionality in this library comprises:
 * simulating an event list from a given light curve _and_ with a given energy spectrum
 * pulsar searches with Epoch Folding, :math:`Z^2_n` test
 
-Future Additions
-================
+Future Plans
+------------
 
 We welcome feature requests: if you need a particular tool that's currently not available or have a new method you think might be usefully implemented in Stingray, please :doc:`get in touch <help>`!
 
@@ -46,3 +48,14 @@ Other future additions we are currently implementing are:
 * full HEASARC-compatible mission support
 * pulsar searches with :math:`H`-test
 * binary pulsar searches
+
+Presentations
+=============
+
+Members of the Stingray team have given a number of presentations which introduce Stingray.
+These include:
+
+- `European Week of Astronomy and Space Science (2018) <http://ascl.net/wordpress/2018/05/24/software-in-astronomy-symposium-presentations-part-3/>`_
+- `AAS 16th High-Energy Astrophysics Division meeting (2017) <https://speakerdeck.com/abigailstev/stingray-open-source-spectral-timing-software>`_
+- `European Week of Astronomy and Space Science 2017 <http://ascl.net/wordpress/2017/07/23/special-session-on-and-about-software-at-ewass-2017/>`
+- `Python in Astronomy (2016) <https://speakerdeck.com/abigailstev/stingray-pyastro16>`_
