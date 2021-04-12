@@ -49,28 +49,29 @@ Citing Stingray
 ---------------
 
 Please cite `Huppenkothen et al. (2019)
-<https://arxiv.org/abs/1901.07681>`_ if you find this package useful in your
+<https://ui.adsabs.harvard.edu/abs/2019ApJ...881...39H/abstract>`_ if you find this package useful in your
 research.
 
 The BibTeX entry for the paper is::
 
-    @ARTICLE{2019arXiv190107681H,
-           author = {{Huppenkothen}, D. and {Bachetti}, M. and {Stevens}, A.~L. and
-             {Migliari}, S. and {Balm}, P. and {Hammad}, O. and {Khan}, U.~M. and
-             {Mishra}, H. and {Rashid}, H. and {Sharma}, S.},
-            title = "{Stingray: A Modern Python Library For Spectral Timing}",
-          journal = {arXiv e-prints},
-         keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - High Energy Astrophysical Phenomena},
-             year = "2019",
-            month = "Jan",
-              eid = {arXiv:1901.07681},
-            pages = {arXiv:1901.07681},
-    archivePrefix = {arXiv},
-           eprint = {1901.07681},
-     primaryClass = {astro-ph.IM},
-           adsurl = {https://ui.adsabs.harvard.edu/abs/2019arXiv190107681H},
-          adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-    }
+    @ARTICLE{2019ApJ...881...39H,
+       author = {{Huppenkothen}, Daniela and {Bachetti}, Matteo and {Stevens}, Abigail L. and {Migliari}, Simone and {Balm}, Paul and {Hammad}, Omar and {Khan}, Usman Mahmood and {Mishra}, Himanshu and {Rashid}, Haroon and {Sharma}, Swapnil and {Martinez Ribeiro}, Evandro and {Valles Blanco}, Ricardo},
+        title = "{Stingray: A Modern Python Library for Spectral Timing}",
+      journal = {\apj},
+     keywords = {methods: data analysis, methods: statistical, X-rays: binaries, X-rays: general, Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - High Energy Astrophysical Phenomena},
+         year = 2019,
+        month = aug,
+       volume = {881},
+       number = {1},
+          eid = {39},
+        pages = {39},
+          doi = {10.3847/1538-4357/ab258d},
+archivePrefix = {arXiv},
+       eprint = {1901.07681},
+ primaryClass = {astro-ph.IM},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJ...881...39H},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
 
 
 Contents
