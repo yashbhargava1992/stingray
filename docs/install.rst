@@ -93,7 +93,9 @@ not be easily accessible. Once installed, you can also run the tests using::
 
    $ python -c 'import stingray; stingray.test()'
 
-or from within a python interpreter::
+or from within a python interpreter:
+
+.. doctest-skip::
 
    >>> import stingray
    >>> stingray.test()
