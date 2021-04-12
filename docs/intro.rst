@@ -23,9 +23,9 @@ Currently implemented functionality in this library comprises:
 * (averaged) cross spectra
 * coherence, time lags
 * cross correlation functions
-* RMS spectra and lags (time vs energy, time vs frequency); *under development*
-* covariance spectra; *under development*
-* bispectra; *under development*
+* RMS spectra and lags (time vs energy, time vs frequency); *needs testing*
+* covariance spectra; *needs testing*
+* bispectra; *needs testing*
 * (Bayesian) quasi-periodic oscillation searches
 * simulating a light curve with a given power spectrum
 * simulating a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
