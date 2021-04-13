@@ -20,6 +20,10 @@ Stingray's ultimate goal is to provide the community with a package that eases t
 Further spectral-timing functionality, in particularly command line scripts based on the API defined within Stingray, is available in the package `HENDRICS <https://github.com/StingraySoftware/HENDRICS>`_.
 A Graphical User Interface is under development as part of the project `DAVE <https://github.com/StingraySoftware/dave>`_.
 
+.. important::
+
+   If you use Stingray for work presented in a publication or talk, please help the project by providing a proper :doc:`citation <citing>`.
+
 Contents
 ========
 
