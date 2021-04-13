@@ -38,7 +38,6 @@ Contents
    pulsar
    api
    history
-   help
    contributing
    citing
    acknowledgements
