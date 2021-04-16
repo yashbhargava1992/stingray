@@ -35,7 +35,7 @@ Currently implemented functionality in this library comprises:
 Future Additions
 ================
 
-We welcome feature requests: if you need a particular tool that's currently not available or have a new method you think might be usefully implemented in Stingray, please :doc:`get in touch <help>`!
+We welcome feature requests: if you need a particular tool that's currently not available or have a new method you think might be usefully implemented in Stingray, please :doc:`get in touch <contributing>`!
 
 Other future additions we are currently implementing are:
 
