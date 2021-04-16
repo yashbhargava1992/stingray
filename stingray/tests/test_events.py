@@ -344,6 +344,15 @@ class TestEvents(object):
         ev = ev.read(fname, format_='hea')
         assert np.isclose(ev.mjdref, 55197.00076601852)
 
+    def test_fits_with_additional(self):
+        """Test that fits works with a standard event list
+        file.
+        """
+        fname = os.path.join(datadir, 'xmm_test.fits')
+        ev = EventList()
+        ev = ev.read(fname, format_='hea', additional_columns=['PRIOR'])
+        assert hasattr(ev, 'prior')
+
     @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
