@@ -396,6 +396,12 @@ class EventList(object):
             else:
                 ev_new.gti = cross_gtis([self.gti, other.gti])
 
+        for attr in ['mission', 'instr']:
+            if getattr(self, attr) != getattr(other, attr):
+                setattr(ev_new, attr, getattr(self, attr) + ',' + getattr(other, attr))
+            else:
+                setattr(ev_new, attr, getattr(self, attr))
+
         ev_new.mjdref = self.mjdref
 
         return ev_new
@@ -441,15 +447,21 @@ class EventList(object):
 
         if format_ in ('hea'):
             evtdata = load_events_and_gtis(filename, **kwargs)
-            return EventList(time=evtdata.ev_list,
-                             gti=evtdata.gti_list,
-                             pi=evtdata.pi_list,
-                             energy=evtdata.energy_list,
-                             mjdref=evtdata.mjdref,
-                             instr=evtdata.instr,
-                             mission=evtdata.mission,
-                             header=evtdata.header,
-                             detector_id=evtdata.detector_id)
+
+            evt = EventList(time=evtdata.ev_list,
+                            gti=evtdata.gti_list,
+                            pi=evtdata.pi_list,
+                            energy=evtdata.energy_list,
+                            mjdref=evtdata.mjdref,
+                            instr=evtdata.instr,
+                            mission=evtdata.mission,
+                            header=evtdata.header,
+                            detector_id=evtdata.detector_id)
+            if 'additional_columns' in kwargs:
+                for key in evtdata.additional_data:
+                    if not hasattr(evt, key.lower()):
+                        setattr(evt, key.lower(), evtdata.additional_data[key])
+            return evt
 
         if format_ == 'ascii':
             format_ = 'ascii.ecsv'
@@ -492,12 +504,26 @@ class EventList(object):
             ts.write(filename, format=format_, overwrite=True)
 
     def apply_mask(self, mask, inplace=False):
+        """Apply mask to all same-length list-like event attributes.
+
+        Examples
+        --------
+        >>> evt = EventList(time=[0, 1, 2])
+        >>> newev0 = evt.apply_mask([True, True, False], inplace=False);
+        >>> newev1 = evt.apply_mask([True, True, False], inplace=True);
+        >>> np.allclose(newev0.time, [0, 1])
+        True
+        >>> np.allclose(newev1.time, [0, 1])
+        True
+        >>> evt is newev1
+        True
+        """
         if inplace:
             new_ev = self
         else:
             new_ev = copy.deepcopy(self)
-        for attr in 'time', 'energy', 'pi':
-            if hasattr(new_ev, attr):
+        for attr in 'time', 'energy', 'pi', 'cal_pi':
+            if hasattr(new_ev, attr) and getattr(new_ev, attr) is not None:
                 setattr(new_ev, attr, getattr(new_ev, attr)[mask])
         return new_ev
 
