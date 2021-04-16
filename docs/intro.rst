@@ -58,5 +58,5 @@ These include:
 - `European Week of Astronomy and Space Science (2018) <http://ascl.net/wordpress/2018/05/24/software-in-astronomy-symposium-presentations-part-3/>`_
 - `ADASS (Astronomical Data Analysis Software and Systems; meeting 2017, proceedings 2020) <https://ui.adsabs.harvard.edu/abs/2020ASPC..522..521M/abstract>`_
 - `AAS 16th High-Energy Astrophysics Division meeting (2017) <https://speakerdeck.com/abigailstev/stingray-open-source-spectral-timing-software>`_
-- `European Week of Astronomy and Space Science 2017 <http://ascl.net/wordpress/2017/07/23/special-session-on-and-about-software-at-ewass-2017/>`
+- `European Week of Astronomy and Space Science 2017 <http://ascl.net/wordpress/2017/07/23/special-session-on-and-about-software-at-ewass-2017/>`_
 - `Python in Astronomy (2016) <https://speakerdeck.com/abigailstev/stingray-pyastro16>`_
