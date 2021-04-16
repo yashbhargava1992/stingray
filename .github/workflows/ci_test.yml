@@ -50,6 +50,8 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: true
+    - name: Check out that no sensitive environment variable is shared
+      run: env
     - name: Set up Python ${{ matrix.python }}
       uses: actions/setup-python@v2
       with:
