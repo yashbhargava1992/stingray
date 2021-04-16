@@ -1173,6 +1173,8 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     spectrum_stop_bins = []
 
     for g in gtis:
+        # Epsilons here resolve a numerical problem when time edges end up
+        # outside GTIs.
         good = ((time - dt / 2 >= g[0] - epsilon_times_dt) &
                 (time + dt / 2 <= g[1] + epsilon_times_dt))
         t_good = time[good]

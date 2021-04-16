@@ -23,6 +23,11 @@ def simulate_times(lc, use_spline=False):
     Parameters
     ----------
     lc: `Lightcurve` object
+        The `counts` array of the light curve should be give the expected
+        number of photons in that bin. For this reason, please note that the
+        light curve should not contain any negative values, or this method will
+        raise an exception.
+
 
     Other Parameters
     ----------------
