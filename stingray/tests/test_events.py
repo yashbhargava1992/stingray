@@ -90,13 +90,16 @@ class TestEvents(object):
 
         assert (ev.time == np.array([0.5, 0.5, 1.5, 2.5, 2.5])).all()
 
-    def test_simulate_times(self):
+    def test_simulate_times_warns_bin_time(self):
         """Simulate photon arrival times for an event list
         from light curve.
         """
         lc = Lightcurve(self.time, self.counts_flat, gti=self.gti)
         ev = EventList()
-        ev.simulate_times(lc)
+        with pytest.warns(DeprecationWarning) as record:
+            ev.simulate_times(lc, bin_time=lc.dt)
+        assert np.any(["Bin time will be ignored"
+                       in r.message.args[0] for r in record])
         lc_sim = ev.to_lc(dt=lc.dt, tstart=lc.tstart, tseg=lc.tseg)
         assert np.all((lc - lc_sim).counts < 3 * np.sqrt(lc.counts))
 
