@@ -229,9 +229,10 @@ class EventList(object):
         return EventList(time=times, gti=lc.gti)
 
     def simulate_times(self, lc, use_spline=False, bin_time=None):
-        """
-        Randomly assign (simulate) photon arrival times to an :class:`EventList` from a
-        :class:`stingray.Lightcurve` object, using the acceptance-rejection method.
+        """Simulate times from an input light curve.
+
+        Randomly simulate photon arrival times to an :class:`EventList` from a
+        :class:`stingray.Lightcurve` object, using the inverse CDF method.
 
         Parameters
         ----------
@@ -242,9 +243,8 @@ class EventList(object):
         use_spline : bool
             Approximate the light curve with a spline to avoid binning effects
 
-        bin_time : float
-            The bin time of the light curve, if it needs to be specified for
-            improved precision
+        bin_time : float default None
+            Ignored and deprecated, maintained for backwards compatibility.
 
         Returns
         -------
@@ -252,9 +252,11 @@ class EventList(object):
             Simulated photon arrival times
         """
         from stingray.simulator.base import simulate_times
+        if bin_time is not None:
+            warnings.warn("Bin time will be ignored in simulate_times",
+                          DeprecationWarning)
 
-        self.time = simulate_times(lc, use_spline=use_spline,
-                                   bin_time=bin_time)
+        self.time = simulate_times(lc, use_spline=use_spline)
         self.gti = lc.gti
         self.ncounts = len(self.time)
 
@@ -408,8 +410,7 @@ class EventList(object):
 
     @staticmethod
     def read(filename, format_="pickle", **kwargs):
-        """
-        Read a :class:`Lightcurve` object from file.
+        r"""Read a :class:`Lightcurve` object from file.
 
         Currently supported formats are
 
