@@ -123,11 +123,11 @@ or from within a python interpreter:
    >>> import stingray
    >>> stingray.test()
 
+Copyright & Licensing
+---------------------
 
-Copyright
----------
-
-All content © 2019 the authors. The code is distributed under the MIT license.
+All content © 2015 The Authors.
+The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ for details.
 
 Pull requests are welcome! If you are interested in the further development of
 this project, please `get in touch via the issues
