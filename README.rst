@@ -2,7 +2,7 @@
 Stingray
 ========
 
-|Build Status Master| |Readthedocs| |Slack| |joss| |Coverage Status Master| |GitHub release|
+|Build Status Master| |Docs| |Slack| |joss| |Coverage Status Master| |GitHub release|
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
@@ -135,8 +135,8 @@ this project, please `get in touch via the issues
 
 .. |Build Status Master| image:: https://github.com/StingraySoftware/stingray/workflows/CI%20Tests/badge.svg
     :target: https://github.com/StingraySoftware/stingray/actions/
-.. |Readthedocs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
-    :target: https://stingray.readthedocs.io/
+.. |Docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
+    :target: https://stingray.science/stingray
 .. |Slack| image:: http://slack-invite.timelabtechnologies.com/badge.svg
     :target: http://slack-invite.timelabtechnologies.com
 .. |Coverage Status Master| image:: https://codecov.io/gh/StingraySoftware/stingray/branch/master/graph/badge.svg?token=FjWeFfhU9F
