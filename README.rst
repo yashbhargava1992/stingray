@@ -140,7 +140,7 @@ this project, please `get in touch via the issues
 .. |Slack| image:: http://slack-invite.timelabtechnologies.com/badge.svg
     :target: http://slack-invite.timelabtechnologies.com
 .. |Coverage Status Master| image:: https://codecov.io/gh/StingraySoftware/stingray/branch/master/graph/badge.svg?token=FjWeFfhU9F
-:target: https://codecov.io/gh/StingraySoftware/stingray
+   :target: https://codecov.io/gh/StingraySoftware/stingray
 .. |GitHub release| image:: https://img.shields.io/github/release/StingraySoftware/stingray.svg
     :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
 .. |joss| image:: http://joss.theoj.org/papers/10.21105/joss.01393/status.svg
