@@ -302,42 +302,71 @@ class TestNormalization(object):
 
     def setup_class(self):
         tstart = 0.0
-        self.tseg = 10.0
-        dt = 0.0001
+        self.tseg = 100000.0
+        dt = 1
 
         time = np.arange(tstart + 0.5 * dt, self.tseg + 0.5 * dt, dt)
 
         np.random.seed(100)
-        counts1 = np.random.poisson(0.01, size=time.shape[0])
+        counts1 = np.random.poisson(10000, size=time.shape[0])
+        counts1_norm = counts1 / 13.4
+        counts1_norm_err = np.std(counts1) / 13.4
+        self.lc1_norm = \
+            Lightcurve(time, counts1_norm, gti=[[tstart, self.tseg]], dt=dt,
+                       err_dist='gauss', err=np.zeros_like(counts1_norm) + counts1_norm_err)
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, self.tseg]], dt=dt)
-        self.rate1 = 100.  # mean count rate (counts/sec) of light curve 1
+        self.rate1 = np.mean(counts1) / dt  # mean count rate (counts/sec) of light curve 1
 
         with pytest.warns(UserWarning) as record:
             self.cs = Crossspectrum(self.lc1, self.lc1, norm="none")
 
-    def test_norm_abs(self):
+        with pytest.warns(UserWarning) as record:
+            self.cs_norm = Crossspectrum(self.lc1_norm, self.lc1_norm, norm="none")
+
+    @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
+    def test_norm_abs(self, power_type):
         # Testing for a power spectrum of lc1
-        power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
-                                        self.cs.nphots1, self.cs.nphots2,
-                                        norm="abs")
+        self.cs.norm = 'abs'
+        # New lc with the same absolute variance, but mean-subtracted
+        norm_lc_sub = copy.deepcopy(self.lc1)
+        norm_lc_sub.counts = norm_lc_sub.counts - np.mean(norm_lc_sub.counts)
+        norm_lc_sub.err_dist = 'gauss'
+        cs = Crossspectrum(norm_lc_sub, norm_lc_sub, norm="none")
+        cs.norm = 'abs'
+        cs.power_type = power_type
+        self.cs.power_type = power_type
 
+        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
+        power_norm = cs._normalize_crossspectrum(cs.unnorm_power, self.tseg)
         abs_noise = 2. * self.rate1  # expected Poisson noise level
-        assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.001)
+        assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
+        assert np.allclose(power[1:], power_norm[1:], atol=0.5)
 
-    def test_norm_leahy(self):
+    @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
+    def test_norm_leahy(self, power_type):
 
-        power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
-                                        self.cs.nphots1, self.cs.nphots2,
-                                        norm="leahy")
+        self.cs.norm = 'leahy'
+        self.cs_norm.norm = 'leahy'
+        self.cs.power_type = power_type
+        self.cs_norm.power_type = power_type
 
+        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
+        power_norm = self.cs_norm._normalize_crossspectrum(self.cs_norm.unnorm_power, self.tseg)
+
+        assert np.allclose(power[1:], power_norm[1:], atol=0.5)
         leahy_noise = 2.0  # expected Poisson noise level
         assert np.isclose(np.mean(power[1:]), leahy_noise, rtol=0.02)
 
-    def test_norm_frac(self):
-        power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
-                                        self.cs.nphots1, self.cs.nphots2,
-                                        norm="frac")
+    @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
+    def test_norm_frac(self, power_type):
+        self.cs.norm = 'frac'
+        self.cs_norm.norm = 'frac'
+        self.cs.power_type = power_type
+        self.cs_norm.power_type = power_type
+        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
+        power_norm = self.cs_norm._normalize_crossspectrum(self.cs_norm.unnorm_power, self.tseg)
 
+        assert np.allclose(power[1:], power_norm[1:])
         norm = 2. / self.rate1
         assert np.isclose(np.mean(power[1:]), norm, rtol=0.1)
 
@@ -346,6 +375,27 @@ class TestNormalization(object):
             power = normalize_crossspectrum(self.cs.power, self.lc1.tseg, self.lc1.n,
                                             self.cs.nphots1, self.cs.nphots2,
                                             norm="wrong")
+        self.cs.norm = 'asdgfasdfa'
+        self.cs_norm.norm = 'adfafaf'
+        with pytest.raises(ValueError):
+            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power,
+                                                     self.tseg)
+        with pytest.raises(ValueError):
+            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power,
+                                                          self.tseg)
+
+    def test_failure_wrong_power_type(self):
+        self.cs.power_type = 'asdgfasdfa'
+        self.cs_norm.power_type = 'adfafaf'
+        self.cs.norm = 'leahy'
+        self.cs_norm.norm = 'leahy'
+
+        with pytest.raises(ValueError):
+            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power,
+                                                     self.tseg)
+        with pytest.raises(ValueError):
+            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power,
+                                                          self.tseg)
 
 
 class TestCrossspectrum(object):
@@ -477,9 +527,9 @@ class TestCrossspectrum(object):
         assert np.isclose(np.mean(cs.power[1:]), abs_noise)
 
     def test_norm_leahy(self):
-        with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(self.lc1, self.lc1,
-                               norm='leahy')
+        # with pytest.warns(UserWarning) as record:
+        cs = Crossspectrum(self.lc1, self.lc1,
+                           norm='leahy')
         assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
         leahy_noise = 2.0  # expected Poisson noise level

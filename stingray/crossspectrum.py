@@ -47,6 +47,25 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
     tseg: int
         The length of the Fourier segment, in seconds.
 
+    nbins : int
+        Number of bins in the light curve
+
+    nphots1 : int
+        Number of photons in the light curve no. 1
+
+    nphots2 : int
+        Number of photons in the light curve no. 2
+
+    Other parameters
+    ----------------
+    norm : str
+        One of `'leahy'` (Leahy+83), `'frac'` (fractional rms), `'abs'`
+        (absolute rms)
+
+    power_type : str
+        One of `'real'` (real part), `'all'` (all complex powers), `'abs'`
+        (absolute value)
+
     Returns
     -------
     power: numpy.nd.array
@@ -98,6 +117,104 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
         raise ValueError("Value for `norm` not recognized.")
 
     return power
+
+
+def normalize_crossspectrum_gauss(
+        unnorm_power, mean_flux, var, dt, N, norm="none", power_type="real"):
+    """
+    Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
+    fractional rms^2 normalization, or not at all.
+
+    Parameters
+    ----------
+    unnorm_power: numpy.ndarray
+        The unnormalized cross spectrum.
+
+    mean_flux: float
+        The mean flux of the light curve (if a cross spectrum, the geometrical
+        mean of the flux in the two channels)
+
+    var: float
+        The variance of the light curve (if a cross spectrum, the geometrical
+        mean of the variance in the two channels)
+
+    dt: float
+        The sampling time of the light curve
+
+    N: int
+        The number of bins in the light curve
+
+    Other parameters
+    ----------------
+    norm : str
+        One of `'leahy'` (Leahy+83), `'frac'` (fractional rms), `'abs'`
+        (absolute rms)
+
+    power_type : str
+        One of `'real'` (real part), `'all'` (all complex powers), `'abs'`
+        (absolute value)
+
+    Returns
+    -------
+    power: numpy.nd.array
+        The normalized co-spectrum (real part of the cross spectrum). For
+        'none' normalization, imaginary part is returned as well.
+
+    Examples
+    --------
+    >>> lc_c = np.random.poisson(10000, 10000)
+    >>> lc_c_var = 10000
+    >>> lc = lc_c / 17.3453
+    >>> lc_var = (100 / 17.3453)**2
+    >>> pds_c = np.absolute(np.fft.fft(lc_c))**2
+    >>> pds = np.absolute(np.fft.fft(lc))**2
+    >>> norm_c = normalize_crossspectrum_gauss(pds_c, np.mean(lc_c), lc_c_var, 0.1, len(lc_c), norm='leahy')
+    >>> norm = normalize_crossspectrum_gauss(pds, np.mean(lc), lc_var, 0.1, len(lc), norm='leahy')
+    >>> np.allclose(norm, norm_c)
+    True
+    >>> np.isclose(np.mean(norm[1:]), 2, atol=0.1)
+    True
+    >>> norm_c = normalize_crossspectrum_gauss(pds_c, np.mean(lc_c), np.mean(lc_c), 0.1, len(lc_c), norm='frac')
+    >>> norm = normalize_crossspectrum_gauss(pds, np.mean(lc), lc_var, 0.1, len(lc), norm='frac')
+    >>> np.allclose(norm, norm_c)
+    True
+    >>> norm_c = normalize_crossspectrum_gauss(pds_c, np.mean(lc_c), np.mean(lc_c), 0.1, len(lc_c), norm='abs')
+    >>> norm = normalize_crossspectrum_gauss(pds, np.mean(lc), lc_var, 0.1, len(lc), norm='abs')
+    >>> np.allclose(norm / np.mean(lc)**2, norm_c / np.mean(lc_c)**2)
+    True
+    >>> np.isclose(np.mean(norm_c[2:]), 2 * np.mean(lc_c * 0.1), rtol=0.1)
+    True
+    """
+
+    # The "effective" counts/bin is the geometrical mean of the counts/bin
+    # of the two light curves. Same goes for counts/second in meanrate.
+    if power_type == "all":
+        c_num = unnorm_power
+    elif power_type == "real":
+        c_num = unnorm_power.real
+    elif power_type == "absolute":
+        c_num = np.absolute(unnorm_power)
+    else:
+        raise ValueError("`power_type` not recognized!")
+
+    common_factor = 2 * dt / N
+    rate_mean = mean_flux * dt
+    if norm.lower() == 'leahy':
+        norm = 2 / var / N
+
+    elif norm.lower() == 'frac':
+        norm = common_factor / rate_mean**2
+
+    elif norm.lower() == 'abs':
+        norm = common_factor
+
+    elif norm.lower() == 'none':
+        norm = 1
+
+    else:
+        raise ValueError("Value for `norm` not recognized.")
+
+    return norm * c_num
 
 
 def _averaged_cospectra_cdf(xcoord, n):
@@ -500,13 +617,23 @@ class Crossspectrum(object):
 
         # total number of photons is the sum of the
         # counts in the light curve
+        self.meancounts1 = lc1.meancounts
+        self.meancounts2 = lc2.meancounts
         self.nphots1 = np.float64(np.sum(lc1.counts))
         self.nphots2 = np.float64(np.sum(lc2.counts))
 
-        self.meancounts1 = lc1.meancounts
-        self.meancounts2 = lc2.meancounts
+        self.err_dist = 'poisson'
+        if lc1.err_dist == 'poisson':
+            self.var1 = lc1.meancounts
+        else:
+            self.var1 = np.mean(lc1.counts_err) ** 2
+            self.err_dist = 'gauss'
 
-        # the number of data points in the light curve
+        if lc2.err_dist == 'poisson':
+            self.var2 = lc2.meancounts
+        else:
+            self.var2 = np.mean(lc2.counts_err) ** 2
+            self.err_dist = 'gauss'
 
         if lc1.n != lc2.n:
             raise StingrayError("Light curves do not have same number "
@@ -521,6 +648,7 @@ class Crossspectrum(object):
         # In case a small difference exists, ignore it
         lc1.dt = lc2.dt
 
+        self.dt = lc1.dt
         self.n = lc1.n
 
         # the frequency resolution
@@ -695,9 +823,18 @@ class Crossspectrum(object):
             'none' normalization, imaginary part is returned as well.
         """
 
-        return normalize_crossspectrum(
-            unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm,
-            self.power_type)
+        if self.err_dist == 'poisson':
+            return normalize_crossspectrum(
+                unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm,
+                self.power_type)
+
+        return normalize_crossspectrum_gauss(
+            unnorm_power, np.sqrt(self.meancounts1 * self.meancounts2),
+            np.sqrt(self.var1 * self.var2),
+            dt=self.dt,
+            N=self.n,
+            norm=self.norm,
+            power_type=self.power_type)
 
     def rebin_log(self, f=0.01):
         """
