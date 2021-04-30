@@ -77,8 +77,8 @@ The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ 
    :target: http://slack.stingray.science
 .. |Coverage Status Master| image:: https://codecov.io/gh/StingraySoftware/stingray/branch/master/graph/badge.svg?token=FjWeFfhU9F
    :target: https://codecov.io/gh/StingraySoftware/stingray
-.. |GitHub release| image:: https://img.shields.io/github/release/StingraySoftware/stingray.svg
-   :target: https://coveralls.io/github/StingraySoftware/stingray?branch=master
+.. |GitHub release| image:: https://img.shields.io/github/v/release/StingraySoftware/stingray
+   :target: https://github.com/StingraySoftware/stingray/releases/latest
 .. |joss| image:: http://joss.theoj.org/papers/10.21105/joss.01393/status.svg
    :target: https://doi.org/10.21105/joss.01393
 .. _Astropy: https://www.github.com/astropy/astropy
