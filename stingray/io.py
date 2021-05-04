@@ -171,25 +171,24 @@ def read_mission_info(mission=None):
     return _patch_mission_info(db, mission)
 
 
-def _get_additional_data(lctable, additional_columns, tolerate=True):
+def _case_insensitive_search_in_list(string, list_of_strings):
+    for s in list_of_strings:
+        if string.lower() == s.lower():
+            return s
+    return None
+
+
+def _get_additional_data(lctable, additional_columns):
     additional_data = {}
     if additional_columns is not None:
         for a in additional_columns:
-            col_to_read = a
-            try:
-                if a == 'PI' and a not in lctable._coldefs.names:
-                    if 'PHA' in lctable._coldefs.names:
-                        col_to_read = 'PHA'
-                        logging.warning('Column PI not found. Trying with PHA')
-                    else:
-                        col_to_read = None
-                if col_to_read is not None:
-                    additional_data[a] = np.array(lctable.field(col_to_read))
-                else:
-                    additional_data[a] = np.zeros(len(lctable))
-            except KeyError:  # pragma: no cover
-                if not tolerate:
-                    raise Exception('Column' + a + 'not found')
+            key = _case_insensitive_search_in_list(a, lctable._coldefs.names)
+            if key is not None:
+                additional_data[a] = np.array(lctable.field(key))
+            else:
+                warnings.warn('Column ' + a + ' not found')
+                additional_data[a] = np.zeros(len(lctable))
+
     return additional_data
 
 
@@ -217,40 +216,10 @@ def get_key_from_mission_info(info, key, default, inst=None, mode=None):
     if mode is not None and mode in filt_info:
         filt_info.update(info[inst][mode])
         filt_info.pop(mode)
-    if key in info:
+
+    if key in filt_info:
         return filt_info[key]
     return default
-
-
-# def _get_detector_id(lctable):
-#     """Multi-mission detector id finder.
-#
-#     Given a FITS table, look for known columns containing detector ID numbers.
-#     This is relevant to a few missions, like XMM, Chandra, XTE.
-#
-#     Examples
-#     --------
-#     >>> from astropy.io import fits
-#     >>> import numpy as np
-#     >>> a = fits.Column(name='CCDNR', array=np.array([1, 2]), format='K')
-#     >>> t = fits.TableHDU.from_columns([a])
-#     >>> det_id1 = _get_detector_id(t.data)
-#     >>> a = fits.Column(name='pcuid', array=np.array([1, 2]), format='K')
-#     >>> t = fits.TableHDU.from_columns([a])
-#     >>> det_id2 = _get_detector_id(t.data)
-#     >>> np.allclose(det_id1, det_id2)
-#     True
-#     >>> a = fits.Column(name='asdfasdf', array=np.array([1, 2]), format='K')
-#     >>> t = fits.TableHDU.from_columns([a])
-#     >>> _get_detector_id(t.data) is None
-#     True
-#     """
-#     for column in ["CCDNR", "ccd_id", "PCUID"]:  # XMM  # Chandra  # XTE
-#         for name in lctable.columns.names:
-#             if column.lower() == name.lower():
-#                 return np.array(lctable.field(name), dtype=int)
-#
-#     return None
 
 
 def lcurve_from_fits(
@@ -526,97 +495,95 @@ def load_events_and_gtis(
     """
     from astropy.io import fits as pf
 
-    with pf.open(fits_file) as hdulist:
-        mission_key = "MISSION"
-        if mission_key not in hdulist[0].header:
-            mission_key = "TELESCOP"
-        mission = hdulist[0].header[mission_key].lower()
-        db = read_mission_info(mission)
-        instkey = get_key_from_mission_info(db, "instkey", "INSTRUME")
-        modekey = get_key_from_mission_info(db, "dmodekey", None)
+    hdulist = pf.open(fits_file)
+    mission_key = "MISSION"
+    if mission_key not in hdulist[0].header:
+        mission_key = "TELESCOP"
+    mission = hdulist[0].header[mission_key].lower()
+    db = read_mission_info(mission)
+    instkey = get_key_from_mission_info(db, "instkey", "INSTRUME")
+    instr = mode = None
+    if instkey in hdulist[0].header:
+        instr = hdulist[0].header[instkey].strip()
 
-        instr = mode = None
-        if instkey in hdulist[0].header:
-            instr = hdulist[0].header[instkey].strip().lower()
+    modekey = get_key_from_mission_info(db, "dmodekey", None, instr)
+    if modekey is not None and modekey in hdulist[0].header:
+        mode = hdulist[0].header[modekey].strip()
 
-        if modekey is not None and modekey in hdulist[0].header:
-            mode = hdulist[0].header[instkey].strip().lower()
+    gtistring = get_key_from_mission_info(db, "gti", "GTI,STDGTI", instr, mode)
+    if hduname is None:
+        hduname = get_key_from_mission_info(db, "events", "EVENTS", instr, mode)
 
-        gtistring = get_key_from_mission_info(db, "gti", "GTI,STDGTI", instr, mode)
+    if hduname not in hdulist:
+        warnings.warn(f'HDU {hduname} not found. Trying first extension')
+        hduname = 1
 
-        if hduname is None:
-            hduname = get_key_from_mission_info(db, "events", "EVENTS", instr, mode)
+    datatable = hdulist[hduname].data
+    header = hdulist[hduname].header
 
-        if hduname not in hdulist:
-            warnings.warn(f'HDU {hduname} not found. Trying first extension')
-            hduname = 1
+    ephem = timeref = timesys = None
 
-        datatable = hdulist[hduname].data
-        header = hdulist[hduname].header
+    if "PLEPHEM" in header:
+        ephem = header["PLEPHEM"].strip().lstrip('JPL-').lower()
+    if "TIMEREF" in header:
+        timeref = header["TIMEREF"].strip().lower()
+    if "TIMESYS" in header:
+        timesys = header["TIMESYS"].strip().lower()
 
-        ephem = timeref = timesys = None
+    if column is None:
+        column = get_key_from_mission_info(db, "time", "TIME", instr, mode)
+    ev_list = np.array(datatable.field(column), dtype=np.longdouble)
 
-        if "PLEPHEM" in header:
-            ephem = header["PLEPHEM"].strip().lstrip('JPL-').lower()
-        if "TIMEREF" in header:
-            timeref = header["TIMEREF"].strip().lower()
-        if "TIMESYS" in header:
-            timesys = header["TIMESYS"].strip().lower()
+    detector_id = None
+    ckey = get_key_from_mission_info(db, "ccol", "NONE", instr, mode)
+    if ckey != "NONE":
+        detector_id = datatable.field(ckey)
+    det_number = None if detector_id is None else list(set(detector_id))
 
-        if column is None:
-            column = get_key_from_mission_info(db, "time", "TIME", instr, mode)
-        ev_list = np.array(datatable.field(column), dtype=np.longdouble)
+    timezero = np.longdouble(0.)
+    if "TIMEZERO" in header:
+        timezero = np.longdouble(header["TIMEZERO"])
 
-        detector_id = None
-        ckey = get_key_from_mission_info(db, "ccol", "NONE", instr, mode)
-        if ckey != "NONE":
-            detector_id = datatable.field(ckey)
-        det_number = None if detector_id is None else list(set(detector_id))
+    ev_list += timezero
 
-        timezero = np.longdouble(0.)
-        if "TIMEZERO" in header:
-            timezero = np.longdouble(header["TIMEZERO"])
+    t_start = ev_list[0]
+    t_stop = ev_list[-1]
+    if "TSTART" in header:
+        t_start = np.longdouble(header["TSTART"])
+    if "TSTOP" in header:
+        t_stop = np.longdouble(header["TSTOP"])
 
-        ev_list += timezero
+    mjdref = np.longdouble(high_precision_keyword_read(header, "MJDREF"))
 
-        t_start = ev_list[0]
-        t_stop = ev_list[-1]
-        if "TSTART" in header:
-            t_start = np.longdouble(header["TSTART"])
-        if "TSTOP" in header:
-            t_stop = np.longdouble(header["TSTOP"])
+    # Read and handle GTI extension
+    accepted_gtistrings = gtistring.split(",")
 
-        mjdref = np.longdouble(high_precision_keyword_read(header, "MJDREF"))
+    if gti_file is None:
+        # Select first GTI with accepted name
+        try:
+            gti_list = get_gti_from_all_extensions(
+                hdulist,
+                accepted_gtistrings=accepted_gtistrings,
+                det_numbers=det_number,
+            )
+        except Exception:  # pragma: no cover
+            warnings.warn(
+                "No extensions found with a valid name. "
+                "Please check the `accepted_gtistrings` values.",
+                AstropyUserWarning,
+            )
+            gti_list = np.array([[t_start, t_stop]], dtype=np.longdouble)
+    else:
+        gti_list = load_gtis(gti_file, gtistring)
 
-        # Read and handle GTI extension
-        accepted_gtistrings = gtistring.split(",")
+    pi_col = get_key_from_mission_info(db, "ecol", "PI", instr, mode)
+    if additional_columns is None:
+        additional_columns = [pi_col]
+    if pi_col not in additional_columns:
+        additional_columns.append(pi_col)
 
-        if gti_file is None:
-            # Select first GTI with accepted name
-            try:
-                gti_list = get_gti_from_all_extensions(
-                    hdulist,
-                    accepted_gtistrings=accepted_gtistrings,
-                    det_numbers=det_number,
-                )
-            except Exception:  # pragma: no cover
-                warnings.warn(
-                    "No extensions found with a valid name. "
-                    "Please check the `accepted_gtistrings` values.",
-                    AstropyUserWarning,
-                )
-                gti_list = np.array([[t_start, t_stop]], dtype=np.longdouble)
-        else:
-            gti_list = load_gtis(gti_file, gtistring)
-
-        pi_col = get_key_from_mission_info(db, "ecol", "PI", instr, mode)
-        if additional_columns is None:
-            additional_columns = [pi_col]
-        if pi_col not in additional_columns:
-            additional_columns.append(pi_col)
-
-        additional_data = _get_additional_data(datatable, additional_columns)
-
+    additional_data = _get_additional_data(datatable, additional_columns)
+    hdulist.close()
     # Sort event list
     order = np.argsort(ev_list)
     ev_list = ev_list[order]
@@ -637,12 +604,15 @@ def load_events_and_gtis(
     returns.gti_list = gti_list
     returns.pi_list = pi
     returns.cal_pi_list = cal_pi
-    try:
-        returns.energy_list = rough_calibration(cal_pi, mission)
-    except ValueError:
-        returns.energy_list = None
-    returns.instr = instr
-    returns.mission = mission
+    if "energy" in additional_data:
+        returns.energy_list = additional_data["energy"]
+    else:
+        try:
+            returns.energy_list = rough_calibration(cal_pi, mission)
+        except ValueError:
+            returns.energy_list = None
+    returns.instr = instr.lower()
+    returns.mission = mission.lower()
     returns.mjdref = mjdref
     returns.header = header.tostring()
     returns.additional_data = additional_data

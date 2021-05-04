@@ -116,6 +116,7 @@ class EventList(object):
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
                  notes="", gti=None, pi=None, high_precision=False,
                  mission=None, instr=None, header=None, detector_id=None,
+                 ephem=None, timeref=None, timesys=None,
                  **other_kw):
 
         self.energy = None if energy is None else np.asarray(energy)
@@ -129,6 +130,9 @@ class EventList(object):
         self.instr = instr
         self.detector_id = detector_id
         self.header = header
+        self.ephem = ephem
+        self.timeref = timeref
+        self.timesys = timesys
 
         if other_kw != {}:
             warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
@@ -457,7 +461,10 @@ class EventList(object):
                             instr=evtdata.instr,
                             mission=evtdata.mission,
                             header=evtdata.header,
-                            detector_id=evtdata.detector_id)
+                            detector_id=evtdata.detector_id,
+                            ephem=evtdata.ephem,
+                            timeref=evtdata.timeref,
+                            timesys=evtdata.timesys)
             if 'additional_columns' in kwargs:
                 for key in evtdata.additional_data:
                     if not hasattr(evt, key.lower()):
