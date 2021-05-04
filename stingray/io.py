@@ -1,5 +1,6 @@
 import logging
 import math
+import copy
 import os
 import pickle
 import warnings
@@ -127,51 +128,129 @@ def high_precision_keyword_read(hdr, keyword):
         return None
 
 
-def _get_additional_data(lctable, additional_columns):
+def _patch_mission_info(info, mission):
+    if mission is None:
+        return info
+    if mission.lower() == "xmm":
+        info["gti"] += ",GTI0"
+    return info
+
+
+def read_mission_info(mission=None):
+    curdir = os.path.abspath(os.path.dirname(__file__))
+    fname = os.path.join(curdir, "datasets", "xselect.mdb")
+
+    if os.getenv("HEADAS"):
+        hea_fname = os.path.join(os.getenv("HEADAS"), "bin", "xselect.mdb")
+        if os.path.exists(hea_fname):
+            fname = hea_fname
+    if mission is not None:
+        mission = mission.lower()
+
+    db = {}
+    with open(fname) as fobj:
+        for line in fobj.readlines():
+            line = line.strip()
+            if mission is not None and not line.lower().startswith(mission):
+                continue
+            if line.startswith("!") or line == "":
+                continue
+            allvals = line.split()
+            string = allvals[0]
+            value = allvals[1:]
+            if len(value) == 1:
+                value = value[0]
+
+            data = string.split(":")[1:]
+            previous_db_step = db
+            for key in data[:-1]:
+                if not key in previous_db_step:
+                    previous_db_step[key] = {}
+                previous_db_step = previous_db_step[key]
+            previous_db_step[data[-1]] = value
+    return _patch_mission_info(db, mission)
+
+
+def _get_additional_data(lctable, additional_columns, tolerate=True):
     additional_data = {}
     if additional_columns is not None:
         for a in additional_columns:
+            col_to_read = a
             try:
-                additional_data[a] = np.array(lctable.field(a))
-            except KeyError:  # pragma: no cover
-                if a == 'PI':
-                    logging.warning('Column PI not found. Trying with PHA')
-                    additional_data[a] = np.array(lctable.field('PHA'))
+                if a == 'PI' and a not in lctable._coldefs.names:
+                    if 'PHA' in lctable._coldefs.names:
+                        col_to_read = 'PHA'
+                        logging.warning('Column PI not found. Trying with PHA')
+                    else:
+                        col_to_read = None
+                if col_to_read is not None:
+                    additional_data[a] = np.array(lctable.field(col_to_read))
                 else:
+                    additional_data[a] = np.zeros(len(lctable))
+            except KeyError:  # pragma: no cover
+                if not tolerate:
                     raise Exception('Column' + a + 'not found')
-
     return additional_data
 
 
-def _get_detector_id(lctable):
-    """Multi-mission detector id finder.
-
-    Given a FITS table, look for known columns containing detector ID numbers.
-    This is relevant to a few missions, like XMM, Chandra, XTE.
+def get_key_from_mission_info(info, key, default, inst=None, mode=None):
+    """
 
     Examples
     --------
-    >>> from astropy.io import fits
-    >>> import numpy as np
-    >>> a = fits.Column(name='CCDNR', array=np.array([1, 2]), format='K')
-    >>> t = fits.TableHDU.from_columns([a])
-    >>> det_id1 = _get_detector_id(t.data)
-    >>> a = fits.Column(name='pcuid', array=np.array([1, 2]), format='K')
-    >>> t = fits.TableHDU.from_columns([a])
-    >>> det_id2 = _get_detector_id(t.data)
-    >>> np.allclose(det_id1, det_id2)
-    True
-    >>> a = fits.Column(name='asdfasdf', array=np.array([1, 2]), format='K')
-    >>> t = fits.TableHDU.from_columns([a])
-    >>> _get_detector_id(t.data) is None
-    True
+    >>> info = {'ecol': 'PI', "A": {"ecol": "BLA"}, "C": {"M1": {"ecol": "X"}}}
+    >>> get_key_from_mission_info(info, "ecol", "BU", inst="A", mode=None)
+    'BLA'
+    >>> get_key_from_mission_info(info, "ecol", "BU", inst="B", mode=None)
+    'PI'
+    >>> get_key_from_mission_info(info, "ecol", "BU", inst="A", mode="M1")
+    'BLA'
+    >>> get_key_from_mission_info(info, "ecol", "BU", inst="C", mode="M1")
+    'X'
+    >>> get_key_from_mission_info(info, "ghghg", "BU", inst="C", mode="M1")
+    'BU'
     """
-    for column in ["CCDNR", "ccd_id", "PCUID"]:  # XMM  # Chandra  # XTE
-        for name in lctable.columns.names:
-            if column.lower() == name.lower():
-                return np.array(lctable.field(name), dtype=int)
+    filt_info = copy.deepcopy(info)
+    if inst is not None and inst in filt_info:
+        filt_info.update(info[inst])
+        filt_info.pop(inst)
+    if mode is not None and mode in filt_info:
+        filt_info.update(info[inst][mode])
+        filt_info.pop(mode)
+    if key in info:
+        return filt_info[key]
+    return default
 
-    return None
+
+# def _get_detector_id(lctable):
+#     """Multi-mission detector id finder.
+#
+#     Given a FITS table, look for known columns containing detector ID numbers.
+#     This is relevant to a few missions, like XMM, Chandra, XTE.
+#
+#     Examples
+#     --------
+#     >>> from astropy.io import fits
+#     >>> import numpy as np
+#     >>> a = fits.Column(name='CCDNR', array=np.array([1, 2]), format='K')
+#     >>> t = fits.TableHDU.from_columns([a])
+#     >>> det_id1 = _get_detector_id(t.data)
+#     >>> a = fits.Column(name='pcuid', array=np.array([1, 2]), format='K')
+#     >>> t = fits.TableHDU.from_columns([a])
+#     >>> det_id2 = _get_detector_id(t.data)
+#     >>> np.allclose(det_id1, det_id2)
+#     True
+#     >>> a = fits.Column(name='asdfasdf', array=np.array([1, 2]), format='K')
+#     >>> t = fits.TableHDU.from_columns([a])
+#     >>> _get_detector_id(t.data) is None
+#     True
+#     """
+#     for column in ["CCDNR", "ccd_id", "PCUID"]:  # XMM  # Chandra  # XTE
+#         for name in lctable.columns.names:
+#             if column.lower() == name.lower():
+#                 return np.array(lctable.field(name), dtype=int)
+#
+#     return None
 
 
 def lcurve_from_fits(
@@ -381,10 +460,10 @@ def lcurve_from_fits(
 def load_events_and_gtis(
     fits_file,
     additional_columns=None,
-    gtistring="GTI,GTI0,STDGTI",
+    gtistring=None,
     gti_file=None,
-    hduname="EVENTS",
-    column="TIME",
+    hduname=None,
+    column=None,
 ):
     """Load event lists and GTIs from one or more files.
 
@@ -447,80 +526,96 @@ def load_events_and_gtis(
     """
     from astropy.io import fits as pf
 
-    gtistring = assign_value_if_none(gtistring, "GTI,GTI0,STDGTI")
-    lchdulist = pf.open(fits_file)
+    with pf.open(fits_file) as hdulist:
+        mission_key = "MISSION"
+        if mission_key not in hdulist[0].header:
+            mission_key = "TELESCOP"
+        mission = hdulist[0].header[mission_key].lower()
+        db = read_mission_info(mission)
+        instkey = get_key_from_mission_info(db, "instkey", "INSTRUME")
+        modekey = get_key_from_mission_info(db, "dmodekey", None)
 
-    # Load data table
-    try:
-        lctable = lchdulist[hduname].data
-    except KeyError:  # pragma: no cover
-        logging.warning('HDU %s not found. Trying first extension' % hduname)
-        lctable = lchdulist[1].data
-        hduname = 1
+        instr = mode = None
+        if instkey in hdulist[0].header:
+            instr = hdulist[0].header[instkey].strip().lower()
 
-    # Read event list
-    ev_list = np.array(lctable.field(column), dtype=np.longdouble)
-    detector_id = _get_detector_id(lctable)
-    det_number = None if detector_id is None else list(set(detector_id))
-    header = lchdulist[1].header
-    # Read TIMEZERO keyword and apply it to events
-    try:
-        timezero = np.longdouble(header["TIMEZERO"])
-    except KeyError:  # pragma: no cover
-        timezero = np.longdouble(0.0)
+        if modekey is not None and modekey in hdulist[0].header:
+            mode = hdulist[0].header[instkey].strip().lower()
 
-    instr = mission = 'unknown'
-    if "INSTRUME" in header:
-        instr = header["INSTRUME"].lower()
-    if "TELESCOP" in header:
-        mission = header["TELESCOP"].strip().lower()
+        gtistring = get_key_from_mission_info(db, "gti", "GTI,STDGTI", instr, mode)
 
-    ev_list += timezero
+        if hduname is None:
+            hduname = get_key_from_mission_info(db, "events", "EVENTS", instr, mode)
 
-    # Read TSTART, TSTOP from header
-    try:
-        t_start = np.longdouble(header["TSTART"])
-        t_stop = np.longdouble(header["TSTOP"])
-    except KeyError:  # pragma: no cover
-        warnings.warn(
-            "Tstart and Tstop error. using defaults", AstropyUserWarning
-        )
+        if hduname not in hdulist:
+            warnings.warn(f'HDU {hduname} not found. Trying first extension')
+            hduname = 1
+
+        datatable = hdulist[hduname].data
+        header = hdulist[hduname].header
+
+        ephem = timeref = timesys = None
+
+        if "PLEPHEM" in header:
+            ephem = header["PLEPHEM"].strip().lstrip('JPL-').lower()
+        if "TIMEREF" in header:
+            timeref = header["TIMEREF"].strip().lower()
+        if "TIMESYS" in header:
+            timesys = header["TIMESYS"].strip().lower()
+
+        if column is None:
+            column = get_key_from_mission_info(db, "time", "TIME", instr, mode)
+        ev_list = np.array(datatable.field(column), dtype=np.longdouble)
+
+        detector_id = None
+        ckey = get_key_from_mission_info(db, "ccol", "NONE", instr, mode)
+        if ckey != "NONE":
+            detector_id = datatable.field(ckey)
+        det_number = None if detector_id is None else list(set(detector_id))
+
+        timezero = np.longdouble(0.)
+        if "TIMEZERO" in header:
+            timezero = np.longdouble(header["TIMEZERO"])
+
+        ev_list += timezero
+
         t_start = ev_list[0]
         t_stop = ev_list[-1]
+        if "TSTART" in header:
+            t_start = np.longdouble(header["TSTART"])
+        if "TSTOP" in header:
+            t_stop = np.longdouble(header["TSTOP"])
 
-    mjdref = np.longdouble(high_precision_keyword_read(header, "MJDREF"))
+        mjdref = np.longdouble(high_precision_keyword_read(header, "MJDREF"))
 
-    # Read and handle GTI extension
-    accepted_gtistrings = gtistring.split(",")
+        # Read and handle GTI extension
+        accepted_gtistrings = gtistring.split(",")
 
-    if gti_file is None:
-        # Select first GTI with accepted name
-        try:
-            gti_list = get_gti_from_all_extensions(
-                lchdulist,
-                accepted_gtistrings=accepted_gtistrings,
-                det_numbers=det_number,
-            )
-        except Exception:  # pragma: no cover
-            warnings.warn(
-                "No extensions found with a valid name. "
-                "Please check the `accepted_gtistrings` values.",
-                AstropyUserWarning,
-            )
-            gti_list = np.array([[t_start, t_stop]], dtype=np.longdouble)
-    else:
-        gti_list = load_gtis(gti_file, gtistring)
+        if gti_file is None:
+            # Select first GTI with accepted name
+            try:
+                gti_list = get_gti_from_all_extensions(
+                    hdulist,
+                    accepted_gtistrings=accepted_gtistrings,
+                    det_numbers=det_number,
+                )
+            except Exception:  # pragma: no cover
+                warnings.warn(
+                    "No extensions found with a valid name. "
+                    "Please check the `accepted_gtistrings` values.",
+                    AstropyUserWarning,
+                )
+                gti_list = np.array([[t_start, t_stop]], dtype=np.longdouble)
+        else:
+            gti_list = load_gtis(gti_file, gtistring)
 
-    if additional_columns is None:
-        additional_columns = ["PI"]
-    if "PI" not in additional_columns:
-        additional_columns.append("PI")
-    if "PHA" not in additional_columns and mission.lower() in ["swift", "xmm"]:
-        additional_columns.append("PHA")
+        pi_col = get_key_from_mission_info(db, "ecol", "PI", instr, mode)
+        if additional_columns is None:
+            additional_columns = [pi_col]
+        if pi_col not in additional_columns:
+            additional_columns.append(pi_col)
 
-    additional_data = _get_additional_data(lctable, additional_columns)
-
-    lchdulist.close()
+        additional_data = _get_additional_data(datatable, additional_columns)
 
     # Sort event list
     order = np.argsort(ev_list)
@@ -530,15 +625,9 @@ def load_events_and_gtis(
 
     additional_data = order_list_of_arrays(additional_data, order)
 
-    pi = additional_data["PI"].astype(np.float32)
+    pi = additional_data[pi_col].astype(np.float32)
     cal_pi = pi
 
-    if mission.lower() in ["xmm", "swift"]:
-        pi = additional_data["PHA"].astype(np.float32)
-        cal_pi = additional_data["PI"]
-        # additional_data.pop("PHA")
-
-    # additional_data.pop("PI")
     # EventReadOutput() is an empty class. We will assign a number of attributes to
     # it, like the arrival times of photons, the energies, and some information
     # from the header.
@@ -560,6 +649,10 @@ def load_events_and_gtis(
     returns.t_start = t_start
     returns.t_stop = t_stop
     returns.detector_id = detector_id
+    returns.ephem = ephem
+    returns.timeref = timeref
+    returns.timesys = timesys
+    print(returns.ephem)
 
     return returns
 
