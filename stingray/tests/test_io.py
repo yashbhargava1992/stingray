@@ -7,7 +7,7 @@ from astropy.tests.helper import pytest
 from ..io import read, write, split_numbers
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
-from ..io import load_events_and_gtis
+from ..io import load_events_and_gtis, read_mission_info
 from ..io import read_header_key, _retrieve_ascii_object
 
 import warnings
@@ -53,15 +53,45 @@ class TestIO(object):
         assert high_precision_keyword_read(hdr, "BU") is None, \
             "Inexistent key read incorrectly"
 
+    def test_xselect_mdb_is_found_headas(self, monkeypatch, tmp_path):
+        """Test event file reading."""
+        path = tmp_path / 'bin'
+        path.mkdir()
+        f = path / 'xselect.mdb'
+        f.write_text("MAXI:submkey       NONE\nMAXI:instkey       INSTRUME")
+
+        monkeypatch.setenv("HEADAS", tmp_path)
+
+        info = read_mission_info()
+        assert "NUSTAR" not in info
+
+    def test_read_whole_mission_info(self):
+        """Test event file reading."""
+        info = read_mission_info()
+        assert "NUSTAR" in info
+        assert "XMM" in info
+        assert "NICER" in info
+
     def test_event_file_read(self):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_events_and_gtis(fname, additional_columns=["PI"])
 
+    def test_event_file_read_additional_warns(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'monol_testA.evt')
+        with pytest.warns(UserWarning) as record:
+            load_events_and_gtis(fname, additional_columns=["energy"])
+        assert np.any(["Column energy not found"
+                       in r.message.args[0] for r in record])
+
     def test_event_file_read_xmm(self):
         """Test event file reading."""
         fname = os.path.join(datadir, 'xmm_test.fits')
-        load_events_and_gtis(fname, additional_columns=['PRIOR'])
+        with pytest.warns(UserWarning) as record:
+            load_events_and_gtis(fname, additional_columns=['PRIOR'])
+        assert np.any(["Trying first extension"
+                in r.message.args[0] for r in record])
 
     def test_event_file_read_no_mission(self):
         """Test event file reading."""

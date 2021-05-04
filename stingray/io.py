@@ -128,18 +128,33 @@ def high_precision_keyword_read(hdr, keyword):
         return None
 
 
-def _patch_mission_info(info, mission):
+def _patch_mission_info(info, mission=None):
+    """Add some information that is surely missing in xselect.mdb.
+
+    Examples
+    --------
+    >>> info = {'gti': 'STDGTI'}
+    >>> new_info = _patch_mission_info(info, mission=None)
+    >>> new_info['gti'] == info['gti']
+    True
+    >>> new_info = _patch_mission_info(info, mission="xmm")
+    >>> new_info['gti']
+    'STDGTI,GTI0'
+    """
     if mission is None:
         return info
-    if mission.lower() == "xmm":
+    if mission.lower() == "xmm" and "gti" in info:
         info["gti"] += ",GTI0"
     return info
 
 
 def read_mission_info(mission=None):
+    """Search the relevant information about a mission in xselect.mdb."""
     curdir = os.path.abspath(os.path.dirname(__file__))
     fname = os.path.join(curdir, "datasets", "xselect.mdb")
 
+    # If HEADAS is defined, search for the most up-to-date version of the
+    # mission database
     if os.getenv("HEADAS"):
         hea_fname = os.path.join(os.getenv("HEADAS"), "bin", "xselect.mdb")
         if os.path.exists(hea_fname):
@@ -161,10 +176,16 @@ def read_mission_info(mission=None):
             if len(value) == 1:
                 value = value[0]
 
-            data = string.split(":")[1:]
-            previous_db_step = db
+            data = string.split(":")[:]
+            if mission is None:
+                if data[0] not in db:
+                    db[data[0]] = {}
+                previous_db_step = db[data[0]]
+            else:
+                previous_db_step = db
+            data = data[1:]
             for key in data[:-1]:
-                if not key in previous_db_step:
+                if key not in previous_db_step:
                     previous_db_step[key] = {}
                 previous_db_step = previous_db_step[key]
             previous_db_step[data[-1]] = value
@@ -172,6 +193,15 @@ def read_mission_info(mission=None):
 
 
 def _case_insensitive_search_in_list(string, list_of_strings):
+    """Search for a string in a list of strings, in a case-insensitive way.
+
+    Example
+    -------
+    >>> _case_insensitive_search_in_list("a", ["A", "b"])
+    'A'
+    >>> _case_insensitive_search_in_list("a", ["c", "b"]) is None
+    True
+    """
     for s in list_of_strings:
         if string.lower() == s.lower():
             return s
@@ -179,6 +209,21 @@ def _case_insensitive_search_in_list(string, list_of_strings):
 
 
 def _get_additional_data(lctable, additional_columns):
+    """Get additional data from a FITS data table.
+
+    Parameters
+    ----------
+    lctable: `astropy.io.fits.fitsrec.FITS_rec`
+        Data table
+    additional_columns: list of str
+        List of column names to retrieve from the table
+
+    Returns
+    -------
+    additional_data: dict
+        Dictionary associating to each additional column the content of the
+        table.
+    """
     additional_data = {}
     if additional_columns is not None:
         for a in additional_columns:
@@ -193,7 +238,12 @@ def _get_additional_data(lctable, additional_columns):
 
 
 def get_key_from_mission_info(info, key, default, inst=None, mode=None):
-    """
+    """Get the name of a header key or table column from the mission database.
+
+    Many entries in the mission database have default values that can be
+    altered for specific instruments or observing modes. Here, we seek for the
+    innermost value for the given key (so, if there is a definition for a given
+    instrument or mode, we take that, otherwise we use the default).
 
     Examples
     --------
@@ -622,7 +672,6 @@ def load_events_and_gtis(
     returns.ephem = ephem
     returns.timeref = timeref
     returns.timesys = timesys
-    print(returns.ephem)
 
     return returns
 
