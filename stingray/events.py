@@ -69,6 +69,19 @@ class EventList(object):
     header : str
         The full header of the original FITS file, if relevant
 
+    detector_id : iterable
+        The detector that recorded each photon (if the instrument has more than
+        one, e.g. XMM/EPIC-pn)
+
+    timeref : str
+        The time reference, as recorded in the FITS file (e.g. SOLARSYSTEM)
+
+    timesys : str
+        The time system, as recorded in the FITS file (e.g. TDB)
+
+    ephem : str
+        The JPL ephemeris used to barycenter the data, if any (e.g. DE430)
+
     **other_kw :
         Used internally. Any other keyword arguments will be ignored
 
