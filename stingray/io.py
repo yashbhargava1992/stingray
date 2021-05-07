@@ -241,9 +241,33 @@ def get_key_from_mission_info(info, key, default, inst=None, mode=None):
     """Get the name of a header key or table column from the mission database.
 
     Many entries in the mission database have default values that can be
-    altered for specific instruments or observing modes. Here, we seek for the
-    innermost value for the given key (so, if there is a definition for a given
-    instrument or mode, we take that, otherwise we use the default).
+    altered for specific instruments or observing modes. Here, if there is a
+    definition for a given instrument and mode, we take that, otherwise we use
+    the default).
+
+    Parameters
+    ----------
+    info : dict
+        Nested dictionary containing all the information for a given mission.
+        It can be nested, e.g. contain some info for a given instrument, and
+        for each observing mode of that instrument.
+    key : str
+        The key to read from the info dictionary
+    default : object
+        The default value. It can be of any type, depending on the expected
+        type for the entry.
+
+    Other parameters
+    ----------------
+    inst : str
+        Instrument
+    mode : str
+        Observing mode
+
+    Returns
+    -------
+    retval : object
+        The wanted entry from the info dictionary
 
     Examples
     --------
@@ -504,8 +528,12 @@ def load_events_and_gtis(
         with or without appended integer number denoting the detector
     gti_file : str, default None
         External GTI file
-    hduname : str, default 'EVENTS'
+    hduname : str or int, default 1
         Name of the HDU containing the event list
+    column : str, default None
+        The column containing the time values. If None, we use the name
+        specified in the mission database, and if there is nothing there,
+        "TIME"
     return_limits: bool, optional
         Return the TSTART and TSTOP keyword values
 
