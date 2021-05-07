@@ -9,7 +9,7 @@ Unreleased (2021-01-18)
 - Averaged Power spectra and Cross spectra now handle Gaussian light curves correctly
 - Fixes in rebin functions
 - New statistical functions for signal detection in power spectra and pulsar search periodograms
-- Improved event and light curve data loading from X-ray satellites (XMM, NICER, NuSTAR, XTE)
+- Much improved FTOOL-compatible mission support
 - New implementation of the FFTFIT method to calculate pulsar times of arrival
 - H-test for pulsar searches
 - Z^2_n search adapted to binned and normally distribute pulse profiles

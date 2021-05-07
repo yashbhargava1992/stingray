@@ -1,5 +1,6 @@
 import logging
 import math
+import copy
 import os
 import pickle
 import warnings
@@ -127,51 +128,172 @@ def high_precision_keyword_read(hdr, keyword):
         return None
 
 
+def _patch_mission_info(info, mission=None):
+    """Add some information that is surely missing in xselect.mdb.
+
+    Examples
+    --------
+    >>> info = {'gti': 'STDGTI'}
+    >>> new_info = _patch_mission_info(info, mission=None)
+    >>> new_info['gti'] == info['gti']
+    True
+    >>> new_info = _patch_mission_info(info, mission="xmm")
+    >>> new_info['gti']
+    'STDGTI,GTI0'
+    """
+    if mission is None:
+        return info
+    if mission.lower() == "xmm" and "gti" in info:
+        info["gti"] += ",GTI0"
+    return info
+
+
+def read_mission_info(mission=None):
+    """Search the relevant information about a mission in xselect.mdb."""
+    curdir = os.path.abspath(os.path.dirname(__file__))
+    fname = os.path.join(curdir, "datasets", "xselect.mdb")
+
+    # If HEADAS is defined, search for the most up-to-date version of the
+    # mission database
+    if os.getenv("HEADAS"):
+        hea_fname = os.path.join(os.getenv("HEADAS"), "bin", "xselect.mdb")
+        if os.path.exists(hea_fname):
+            fname = hea_fname
+    if mission is not None:
+        mission = mission.lower()
+
+    db = {}
+    with open(fname) as fobj:
+        for line in fobj.readlines():
+            line = line.strip()
+            if mission is not None and not line.lower().startswith(mission):
+                continue
+            if line.startswith("!") or line == "":
+                continue
+            allvals = line.split()
+            string = allvals[0]
+            value = allvals[1:]
+            if len(value) == 1:
+                value = value[0]
+
+            data = string.split(":")[:]
+            if mission is None:
+                if data[0] not in db:
+                    db[data[0]] = {}
+                previous_db_step = db[data[0]]
+            else:
+                previous_db_step = db
+            data = data[1:]
+            for key in data[:-1]:
+                if key not in previous_db_step:
+                    previous_db_step[key] = {}
+                previous_db_step = previous_db_step[key]
+            previous_db_step[data[-1]] = value
+    return _patch_mission_info(db, mission)
+
+
+def _case_insensitive_search_in_list(string, list_of_strings):
+    """Search for a string in a list of strings, in a case-insensitive way.
+
+    Example
+    -------
+    >>> _case_insensitive_search_in_list("a", ["A", "b"])
+    'A'
+    >>> _case_insensitive_search_in_list("a", ["c", "b"]) is None
+    True
+    """
+    for s in list_of_strings:
+        if string.lower() == s.lower():
+            return s
+    return None
+
+
 def _get_additional_data(lctable, additional_columns):
+    """Get additional data from a FITS data table.
+
+    Parameters
+    ----------
+    lctable: `astropy.io.fits.fitsrec.FITS_rec`
+        Data table
+    additional_columns: list of str
+        List of column names to retrieve from the table
+
+    Returns
+    -------
+    additional_data: dict
+        Dictionary associating to each additional column the content of the
+        table.
+    """
     additional_data = {}
     if additional_columns is not None:
         for a in additional_columns:
-            try:
-                additional_data[a] = np.array(lctable.field(a))
-            except KeyError:  # pragma: no cover
-                if a == 'PI':
-                    logging.warning('Column PI not found. Trying with PHA')
-                    additional_data[a] = np.array(lctable.field('PHA'))
-                else:
-                    raise Exception('Column' + a + 'not found')
+            key = _case_insensitive_search_in_list(a, lctable._coldefs.names)
+            if key is not None:
+                additional_data[a] = np.array(lctable.field(key))
+            else:
+                warnings.warn('Column ' + a + ' not found')
+                additional_data[a] = np.zeros(len(lctable))
 
     return additional_data
 
 
-def _get_detector_id(lctable):
-    """Multi-mission detector id finder.
+def get_key_from_mission_info(info, key, default, inst=None, mode=None):
+    """Get the name of a header key or table column from the mission database.
 
-    Given a FITS table, look for known columns containing detector ID numbers.
-    This is relevant to a few missions, like XMM, Chandra, XTE.
+    Many entries in the mission database have default values that can be
+    altered for specific instruments or observing modes. Here, if there is a
+    definition for a given instrument and mode, we take that, otherwise we use
+    the default).
+
+    Parameters
+    ----------
+    info : dict
+        Nested dictionary containing all the information for a given mission.
+        It can be nested, e.g. contain some info for a given instrument, and
+        for each observing mode of that instrument.
+    key : str
+        The key to read from the info dictionary
+    default : object
+        The default value. It can be of any type, depending on the expected
+        type for the entry.
+
+    Other parameters
+    ----------------
+    inst : str
+        Instrument
+    mode : str
+        Observing mode
+
+    Returns
+    -------
+    retval : object
+        The wanted entry from the info dictionary
 
     Examples
     --------
-    >>> from astropy.io import fits
-    >>> import numpy as np
-    >>> a = fits.Column(name='CCDNR', array=np.array([1, 2]), format='K')
-    >>> t = fits.TableHDU.from_columns([a])
-    >>> det_id1 = _get_detector_id(t.data)
-    >>> a = fits.Column(name='pcuid', array=np.array([1, 2]), format='K')
-    >>> t = fits.TableHDU.from_columns([a])
-    >>> det_id2 = _get_detector_id(t.data)
-    >>> np.allclose(det_id1, det_id2)
-    True
-    >>> a = fits.Column(name='asdfasdf', array=np.array([1, 2]), format='K')
-    >>> t = fits.TableHDU.from_columns([a])
-    >>> _get_detector_id(t.data) is None
-    True
+    >>> info = {'ecol': 'PI', "A": {"ecol": "BLA"}, "C": {"M1": {"ecol": "X"}}}
+    >>> get_key_from_mission_info(info, "ecol", "BU", inst="A", mode=None)
+    'BLA'
+    >>> get_key_from_mission_info(info, "ecol", "BU", inst="B", mode=None)
+    'PI'
+    >>> get_key_from_mission_info(info, "ecol", "BU", inst="A", mode="M1")
+    'BLA'
+    >>> get_key_from_mission_info(info, "ecol", "BU", inst="C", mode="M1")
+    'X'
+    >>> get_key_from_mission_info(info, "ghghg", "BU", inst="C", mode="M1")
+    'BU'
     """
-    for column in ["CCDNR", "ccd_id", "PCUID"]:  # XMM  # Chandra  # XTE
-        for name in lctable.columns.names:
-            if column.lower() == name.lower():
-                return np.array(lctable.field(name), dtype=int)
+    filt_info = copy.deepcopy(info)
+    if inst is not None and inst in filt_info:
+        filt_info.update(info[inst])
+        filt_info.pop(inst)
+    if mode is not None and mode in filt_info:
+        filt_info.update(info[inst][mode])
+        filt_info.pop(mode)
 
-    return None
+    if key in filt_info:
+        return filt_info[key]
+    return default
 
 
 def lcurve_from_fits(
@@ -381,10 +503,10 @@ def lcurve_from_fits(
 def load_events_and_gtis(
     fits_file,
     additional_columns=None,
-    gtistring="GTI,GTI0,STDGTI",
+    gtistring=None,
     gti_file=None,
-    hduname="EVENTS",
-    column="TIME",
+    hduname=None,
+    column=None,
 ):
     """Load event lists and GTIs from one or more files.
 
@@ -406,8 +528,12 @@ def load_events_and_gtis(
         with or without appended integer number denoting the detector
     gti_file : str, default None
         External GTI file
-    hduname : str, default 'EVENTS'
+    hduname : str or int, default 1
         Name of the HDU containing the event list
+    column : str, default None
+        The column containing the time values. If None, we use the name
+        specified in the mission database, and if there is nothing there,
+        "TIME"
     return_limits: bool, optional
         Return the TSTART and TSTOP keyword values
 
@@ -447,46 +573,63 @@ def load_events_and_gtis(
     """
     from astropy.io import fits as pf
 
-    gtistring = assign_value_if_none(gtistring, "GTI,GTI0,STDGTI")
-    lchdulist = pf.open(fits_file)
+    hdulist = pf.open(fits_file)
+    mission_key = "MISSION"
+    if mission_key not in hdulist[0].header:
+        mission_key = "TELESCOP"
+    mission = hdulist[0].header[mission_key].lower()
+    db = read_mission_info(mission)
+    instkey = get_key_from_mission_info(db, "instkey", "INSTRUME")
+    instr = mode = None
+    if instkey in hdulist[0].header:
+        instr = hdulist[0].header[instkey].strip()
 
-    # Load data table
-    try:
-        lctable = lchdulist[hduname].data
-    except KeyError:  # pragma: no cover
-        logging.warning('HDU %s not found. Trying first extension' % hduname)
-        lctable = lchdulist[1].data
+    modekey = get_key_from_mission_info(db, "dmodekey", None, instr)
+    if modekey is not None and modekey in hdulist[0].header:
+        mode = hdulist[0].header[modekey].strip()
+
+    gtistring = get_key_from_mission_info(db, "gti", "GTI,STDGTI", instr, mode)
+    if hduname is None:
+        hduname = get_key_from_mission_info(db, "events", "EVENTS", instr, mode)
+
+    if hduname not in hdulist:
+        warnings.warn(f'HDU {hduname} not found. Trying first extension')
         hduname = 1
 
-    # Read event list
-    ev_list = np.array(lctable.field(column), dtype=np.longdouble)
-    detector_id = _get_detector_id(lctable)
-    det_number = None if detector_id is None else list(set(detector_id))
-    header = lchdulist[1].header
-    # Read TIMEZERO keyword and apply it to events
-    try:
-        timezero = np.longdouble(header["TIMEZERO"])
-    except KeyError:  # pragma: no cover
-        timezero = np.longdouble(0.0)
+    datatable = hdulist[hduname].data
+    header = hdulist[hduname].header
 
-    instr = mission = 'unknown'
-    if "INSTRUME" in header:
-        instr = header["INSTRUME"].lower()
-    if "TELESCOP" in header:
-        mission = header["TELESCOP"].strip().lower()
+    ephem = timeref = timesys = None
+
+    if "PLEPHEM" in header:
+        ephem = header["PLEPHEM"].strip().lstrip('JPL-').lower()
+    if "TIMEREF" in header:
+        timeref = header["TIMEREF"].strip().lower()
+    if "TIMESYS" in header:
+        timesys = header["TIMESYS"].strip().lower()
+
+    if column is None:
+        column = get_key_from_mission_info(db, "time", "TIME", instr, mode)
+    ev_list = np.array(datatable.field(column), dtype=np.longdouble)
+
+    detector_id = None
+    ckey = get_key_from_mission_info(db, "ccol", "NONE", instr, mode)
+    if ckey != "NONE":
+        detector_id = datatable.field(ckey)
+    det_number = None if detector_id is None else list(set(detector_id))
+
+    timezero = np.longdouble(0.)
+    if "TIMEZERO" in header:
+        timezero = np.longdouble(header["TIMEZERO"])
 
     ev_list += timezero
 
-    # Read TSTART, TSTOP from header
-    try:
+    t_start = ev_list[0]
+    t_stop = ev_list[-1]
+    if "TSTART" in header:
         t_start = np.longdouble(header["TSTART"])
+    if "TSTOP" in header:
         t_stop = np.longdouble(header["TSTOP"])
-    except KeyError:  # pragma: no cover
-        warnings.warn(
-            "Tstart and Tstop error. using defaults", AstropyUserWarning
-        )
-        t_start = ev_list[0]
-        t_stop = ev_list[-1]
 
     mjdref = np.longdouble(high_precision_keyword_read(header, "MJDREF"))
 
@@ -497,7 +640,7 @@ def load_events_and_gtis(
         # Select first GTI with accepted name
         try:
             gti_list = get_gti_from_all_extensions(
-                lchdulist,
+                hdulist,
                 accepted_gtistrings=accepted_gtistrings,
                 det_numbers=det_number,
             )
@@ -511,17 +654,14 @@ def load_events_and_gtis(
     else:
         gti_list = load_gtis(gti_file, gtistring)
 
+    pi_col = get_key_from_mission_info(db, "ecol", "PI", instr, mode)
     if additional_columns is None:
-        additional_columns = ["PI"]
-    if "PI" not in additional_columns:
-        additional_columns.append("PI")
-    if "PHA" not in additional_columns and mission.lower() in ["swift", "xmm"]:
-        additional_columns.append("PHA")
+        additional_columns = [pi_col]
+    if pi_col not in additional_columns:
+        additional_columns.append(pi_col)
 
-    additional_data = _get_additional_data(lctable, additional_columns)
-
-    lchdulist.close()
-
+    additional_data = _get_additional_data(datatable, additional_columns)
+    hdulist.close()
     # Sort event list
     order = np.argsort(ev_list)
     ev_list = ev_list[order]
@@ -530,15 +670,9 @@ def load_events_and_gtis(
 
     additional_data = order_list_of_arrays(additional_data, order)
 
-    pi = additional_data["PI"].astype(np.float32)
+    pi = additional_data[pi_col].astype(np.float32)
     cal_pi = pi
 
-    if mission.lower() in ["xmm", "swift"]:
-        pi = additional_data["PHA"].astype(np.float32)
-        cal_pi = additional_data["PI"]
-        # additional_data.pop("PHA")
-
-    # additional_data.pop("PI")
     # EventReadOutput() is an empty class. We will assign a number of attributes to
     # it, like the arrival times of photons, the energies, and some information
     # from the header.
@@ -548,18 +682,24 @@ def load_events_and_gtis(
     returns.gti_list = gti_list
     returns.pi_list = pi
     returns.cal_pi_list = cal_pi
-    try:
-        returns.energy_list = rough_calibration(cal_pi, mission)
-    except ValueError:
-        returns.energy_list = None
-    returns.instr = instr
-    returns.mission = mission
+    if "energy" in additional_data:
+        returns.energy_list = additional_data["energy"]
+    else:
+        try:
+            returns.energy_list = rough_calibration(cal_pi, mission)
+        except ValueError:
+            returns.energy_list = None
+    returns.instr = instr.lower()
+    returns.mission = mission.lower()
     returns.mjdref = mjdref
     returns.header = header.tostring()
     returns.additional_data = additional_data
     returns.t_start = t_start
     returns.t_stop = t_stop
     returns.detector_id = detector_id
+    returns.ephem = ephem
+    returns.timeref = timeref
+    returns.timesys = timesys
 
     return returns
 

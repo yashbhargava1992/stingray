@@ -763,7 +763,7 @@ def _load_and_prepare_TOAs(mjds, ephem="DE405"):
 
     toalist = toa.TOAs(toalist=toalist)
     if 'tdb' not in toalist.table.colnames:
-        toalist.compute_TDBs()
+        toalist.compute_TDBs(ephem=ephem)
     if 'ssb_obs_pos' not in toalist.table.colnames:
         toalist.compute_posvels(ephem, False)
     return toalist
