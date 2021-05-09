@@ -2,9 +2,22 @@
 Citing Stingray
 ***************
 
-Citations are still the main currency of the academic world, and pointing to citations is *the* best way to help us ensure that Stingray continues to be supported and we can continue working on it.
+Citations are still the main currency of the academic world, and *the* best way to ensure that Stingray continues to be supported and we can continue to work on it.
+If you use Stingray in data analysis leading to a publication, we ask that you cite *both* a `DOI <https://www.doi.org>`_ which points to the software itself *and* our papers describing the Stingray project.
 
-If you use Stingray in data analysis leading to a publication, please cite both of the following papers:
+DOI
+===
+
+If possible, we ask that you cite a DOI corresponding to the specific version of Stingray that you used to carry out your analysis.
+
+.. include:: _zenodo.rst
+
+If this isn't possible — for example, because you worked with an unreleased version of the code — you can cite Stingray's `concept DOI <https://help.zenodo.org/#versioning>`__, `10.5281/zenodo.1490116 <https://zenodo.org/record/1490116>`__ (`BibTeX <https://zenodo.org/record/1490116/export/hx>`__), which will always resolve to the latest release.
+
+Papers
+======
+
+Please cite both of the following papers:
 
 .. raw:: html
 
@@ -96,5 +109,10 @@ If you use Stingray in data analysis leading to a publication, please cite both 
          [<a onclick="copyJossBib()">Copy BibTeX to clipboard</a>]</li>
    </ul>
 
-   Stingray is also listed in the <a href="https://ascl.net/1608.001">Astrophysics Source Code Library</a>.
+Other Useful References
+=======================
+
+.. raw:: html
+
+   Stingray is listed in the <a href="https://ascl.net/1608.001">Astrophysics Source Code Library</a>.
    <a onclick="copyAsclBib()">Copy the corresponding BibTeX to clipboard</a>.

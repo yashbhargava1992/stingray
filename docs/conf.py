@@ -228,7 +228,7 @@ with open("_zenodo.rst", "w") as f:
     if releases:
         f.write(".. list-table::\n")
         f.write("   :header-rows: 1\n\n")
-        f.write("   * - Release\n")
+        f.write("   * - Stingray Release\n")
         f.write("     - DOI\n")
         f.write("     - Citation\n")
         for r in sorted(releases, key=lambda r: r.version, reverse=True):
@@ -236,4 +236,6 @@ with open("_zenodo.rst", "w") as f:
             f.write(f"     - `{r.doi} <{r.zenodo_url}>`__\n")
             f.write(f"     - `[Link to BibTeX] <{r.bibtex_url}>`__\n")
     else:
-        f.write("No additional release details are available.\n")
+        # The file needs to exist, but the text degrades gracefully if it is
+        # empty.
+        pass
