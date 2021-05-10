@@ -33,7 +33,6 @@ Contents
    intro
    install
    core
-   quicklook
    modeling
    simulator
    pulsar
@@ -43,6 +42,7 @@ Contents
    contributing
    citing
    acknowledgements
+   quicklook
 
 Indices and tables
 ==================
