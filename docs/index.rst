@@ -33,9 +33,11 @@ Contents
    intro
    install
    core
+   quicklook
    modeling
    simulator
    pulsar
+   deadtime
    api
    history
    contributing
