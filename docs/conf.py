@@ -171,3 +171,71 @@ github_issues_url = 'https://github.com/{0}/issues/'.format(
 # -- Configuration for nbsphinx -----------------------------------------------
 # disable notebook execution
 nbsphinx_execute = 'never'
+
+# -- Generate DOI listing from Zenodo -----------------------------------------
+import json
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass
+
+ZENODO_API_ENDPOINT = "https://zenodo.org/api/records/"
+
+# The “concept DOI” refers to all versions of Stingray.
+# We'll use it to locate each of the specific versions in turn.
+# See https://help.zenodo.org/#versioning for details.
+CONCEPT_DOI = "10.5281/zenodo.1490116"
+
+
+@dataclass
+class Release(object):
+    version: str
+    doi: str
+
+    @property
+    def zenodo_url(self):
+        return f"https://zenodo.org/record/{self.doi.split('.')[-1]}"
+
+    @property
+    def github_url(self):
+        return (
+            f"https://github.com/StingraySoftware/stingray/releases/tag/{self.version}"
+        )
+
+    @property
+    def bibtex_url(self):
+        return self.zenodo_url + "/export/hx"
+
+
+params = urllib.parse.urlencode(
+    {"q": f'conceptdoi: "{CONCEPT_DOI}"', "all_versions": 1}
+)
+try:
+    with urllib.request.urlopen(ZENODO_API_ENDPOINT + "?" + params) as url:
+        data = json.loads(url.read().decode("utf-8"))
+except urllib.error.URLError:
+    data = {"hits": {"hits": []}}
+
+releases = []
+for rec in data["hits"]["hits"]:
+    version = rec["metadata"]["version"]
+    if version[0] != "v":
+        continue
+    doi = rec["metadata"]["doi"]
+    releases.append(Release(version, doi))
+
+with open("_zenodo.rst", "w") as f:
+    if releases:
+        f.write(".. list-table::\n")
+        f.write("   :header-rows: 1\n\n")
+        f.write("   * - Stingray Release\n")
+        f.write("     - DOI\n")
+        f.write("     - Citation\n")
+        for r in sorted(releases, key=lambda r: r.version, reverse=True):
+            f.write(f"   * - `{r.version} <{r.github_url}>`__\n")
+            f.write(f"     - `{r.doi} <{r.zenodo_url}>`__\n")
+            f.write(f"     - `[Link to BibTeX] <{r.bibtex_url}>`__\n")
+    else:
+        # The file needs to exist, but the text degrades gracefully if it is
+        # empty.
+        pass

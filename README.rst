@@ -2,7 +2,7 @@
 Stingray
 ========
 
-|Build Status Master| |Docs| |Slack| |joss| |Coverage Status Master| |GitHub release|
+|Build Status Master| |Docs| |Slack| |joss| |doi| |Coverage Status Master| |GitHub release|
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
@@ -81,6 +81,8 @@ The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ 
    :target: https://github.com/StingraySoftware/stingray/releases/latest
 .. |joss| image:: http://joss.theoj.org/papers/10.21105/joss.01393/status.svg
    :target: https://doi.org/10.21105/joss.01393
+.. |doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1490116.svg
+   :target: https://doi.org/10.5281/zenodo.1490116
 .. _Astropy: https://www.github.com/astropy/astropy
 .. _Issues: https://www.github.com/stingraysoftware/stingray/issues
 .. _Issue: https://www.github.com/stingraysoftware/stingray/issues
