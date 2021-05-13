@@ -31,6 +31,7 @@ jobs:
         with:
           target_branch: gh-pages
           build_dir: docs/_build/html
+          fqdn: docs.stingray.science
           jekyll: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
