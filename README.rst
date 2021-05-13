@@ -22,21 +22,21 @@ However, an equivalent widely-used package does not exist for X-ray timing: to d
 Stingray aims not only to fill that gap, but also to provide implementations of the most advanced spectral timing techniques available in the literature.
 The ultimate goal of this project is to provide the community with a package that eases the learning curve for the advanced spectral timing techniques with a correct statistical framework.
 
-More details of current and planned capabilities are available in the `Stingray documentation <https://stingray.science/stingray/intro.html#features>`_.
+More details of current and planned capabilities are available in the `Stingray documentation <https://docs.stingray.science/intro.html#features>`_.
 
 Installation and Testing
 ------------------------
 
 Stingray can be installed via `conda`, `pip`, or directly from the source repository itself.
-Our documentation provides `comprehensive installation instructions <https://stingray.science/stingray/install.html>`_.
+Our documentation provides `comprehensive installation instructions <https://docs.stingray.science/install.html>`_.
 
 After installation, it's a good idea to run the test suite.
-We use `py.test <https://pytest.org>`_ and `tox <https://tox.readthedocs.io>`_ for testing, and, again, our documentation provides `step-by-step instructions <https://stingray.science/stingray/install.html#test-suite>`_.
+We use `py.test <https://pytest.org>`_ and `tox <https://tox.readthedocs.io>`_ for testing, and, again, our documentation provides `step-by-step instructions <https://docs.stingray.science/install.html#test-suite>`_.
 
 Documentation
 -------------
 
-Stingray's documentation can be found at https://stingray.science.
+Stingray's documentation can be found at https://docs.stingray.science/.
 
 Getting In Touch, and Getting Involved
 --------------------------------------
@@ -54,14 +54,14 @@ Even better: if you have code you'd be willing to contribute, please send a `pul
 Related Packages
 ----------------
 
-- `HENDRICS <https://hendrics.readthedocs.io/>`_ provides a set of command-line scripts which use Stingray to perform quick-look spectral timing analysis of X-ray data.
+- `HENDRICS <https://hendrics.stingray.science/>`_ provides a set of command-line scripts which use Stingray to perform quick-look spectral timing analysis of X-ray data.
 - `DAVE <https://github.com/StingraySoftware/dave>`_ is a graphical user interface built on top of Stingray.
 
 Citing Stingray
 ---------------
 
 If you find this package useful in your research, please provide appropriate acknowledgement and citation.
-`Our documentation <https://stingray.science/stingray/citing.html>`_ gives further guidance, including links to appropriate papers and convenient BibTeX entries.
+`Our documentation <https://docs.stingray.science/citing.html>`_ gives further guidance, including links to appropriate papers and convenient BibTeX entries.
 
 Copyright & Licensing
 ---------------------
@@ -72,7 +72,7 @@ The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ 
 .. |Build Status Master| image:: https://github.com/StingraySoftware/stingray/workflows/CI%20Tests/badge.svg
    :target: https://github.com/StingraySoftware/stingray/actions/
 .. |Docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
-   :target: https://stingray.science/stingray
+   :target: https://docs.stingray.science/
 .. |Slack| image:: https://slack.stingray.science/badge.svg
    :target: http://slack.stingray.science
 .. |Coverage Status Master| image:: https://codecov.io/gh/StingraySoftware/stingray/branch/master/graph/badge.svg?token=FjWeFfhU9F
