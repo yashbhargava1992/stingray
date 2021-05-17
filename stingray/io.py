@@ -575,6 +575,9 @@ def load_events_and_gtis(
 
     hdulist = pf.open(fits_file)
     probe_header = hdulist[0].header
+    # Let's look for TELESCOP here. This is the most common keyword to be
+    # found in well-behaved headers. If it is not in header 0, I take this key
+    # and the remaining information from header 1.
     if "TELESCOP" not in probe_header:
         probe_header = hdulist[1].header
     mission_key = "MISSION"
