@@ -574,19 +574,25 @@ def load_events_and_gtis(
     from astropy.io import fits as pf
 
     hdulist = pf.open(fits_file)
+    probe_header = hdulist[0].header
+    # Let's look for TELESCOP here. This is the most common keyword to be
+    # found in well-behaved headers. If it is not in header 0, I take this key
+    # and the remaining information from header 1.
+    if "TELESCOP" not in probe_header:
+        probe_header = hdulist[1].header
     mission_key = "MISSION"
-    if mission_key not in hdulist[0].header:
+    if mission_key not in probe_header:
         mission_key = "TELESCOP"
-    mission = hdulist[0].header[mission_key].lower()
+    mission = probe_header[mission_key].lower()
     db = read_mission_info(mission)
     instkey = get_key_from_mission_info(db, "instkey", "INSTRUME")
     instr = mode = None
-    if instkey in hdulist[0].header:
-        instr = hdulist[0].header[instkey].strip()
+    if instkey in probe_header:
+        instr = probe_header[instkey].strip()
 
     modekey = get_key_from_mission_info(db, "dmodekey", None, instr)
-    if modekey is not None and modekey in hdulist[0].header:
-        mode = hdulist[0].header[modekey].strip()
+    if modekey is not None and modekey in probe_header:
+        mode = probe_header[modekey].strip()
 
     gtistring = get_key_from_mission_info(db, "gti", "GTI,STDGTI", instr, mode)
     if hduname is None:
