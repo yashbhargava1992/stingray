@@ -1,21 +1,23 @@
 import copy
+
 from stingray.gti import check_gtis, cross_two_gtis
 from stingray.crossspectrum import Crossspectrum
 from stingray.powerspectrum import Powerspectrum
 import warnings
-from collections.abc import Iterable, Iterator
 
 import numpy as np
 import scipy
 import scipy.optimize
 import scipy.stats
 from scipy import signal
-from scipy import fft
-from scipy.signal import windows
 
 from .events import EventList
 from .lightcurve import Lightcurve
-from .utils import show_progress, simon
+from .utils import simon
+
+__all__ = [
+    "Multitaper"
+]
 
 
 class Multitaper(Powerspectrum):
@@ -109,7 +111,7 @@ class Multitaper(Powerspectrum):
     """
 
     def __init__(self, data=None, norm="frac", gti=None, dt=None, lc=None,
-                 NW=None, adaptive=False, jackknife=True, low_bias=True):
+                 NW=4, adaptive=False, jackknife=True, low_bias=True):
 
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
@@ -150,10 +152,11 @@ class Multitaper(Powerspectrum):
         self.power_type = 'real'
         self.fullspec = False
 
+        self._make_multitaper_periodogram(lc, NW=NW, adaptive=adaptive,
+                                          jackknife=jackknife, low_bias=low_bias)
+
     def _make_multitaper_periodogram(self, lc, NW=4, adaptive=False,
                                      jackknife=True, low_bias=True):
-
-        Kmax = int(2 * NW)
 
         if not isinstance(lc, Lightcurve):
             raise TypeError("lc must be a lightcurve.Lightcurve object")
@@ -179,6 +182,9 @@ class Multitaper(Powerspectrum):
             self.var = np.mean(lc.counts_err) ** 2
             self.err_dist = 'gauss'
 
+        self.dt = lc.dt
+        self.n = lc.n
+
         # the frequency resolution
         self.df = 1.0 / lc.tseg
 
@@ -186,11 +192,11 @@ class Multitaper(Powerspectrum):
         # This should *always* be 1 here
         self.m = 1
 
-        self.freq, self.unnorm_power = \
+        self.freq, self.power = \
             self._fourier_multitaper(lc, NW=NW, adaptive=adaptive,
                                      jackknife=jackknife, low_bias=low_bias)
 
-        self.power = self._normalize_multitaper(self.unnorm_power, lc.tseg)
+        self.unnorm_power = self.power  # Same for the timebeing until normalization discrepancy is resolved
 
         if lc.err_dist.lower() != "poisson":
             simon("Looks like your lightcurve statistic is not poisson."
@@ -198,9 +204,108 @@ class Multitaper(Powerspectrum):
 
         self.power_err = self.power / np.sqrt(self.m)
 
-    def _fourier_nultitaper(self, lc, NW=4, adaptive=False,
-                            jackknife=True, low_bias=True):
-        pass
+        self.jk_var_deg_freedom = None
 
-    def _normalize_multitaper(self, unnorm_power, tseg):
-        pass
+    def _fourier_multitaper(self, lc, NW=4, adaptive=False,
+                            jackknife=True, low_bias=True):
+
+        if NW < 0.5:
+            raise ValueError("The value of normalized half-bandwidth "
+                             "should be greater than 0.5")
+
+        Kmax = int(2 * NW)
+
+        dpss_tapers, eigvals = \
+            signal.windows.dpss(M=lc.n, NW=NW, Kmax=Kmax,
+                                sym=False, return_ratios=True)
+
+        if low_bias:
+            selected_tapers = (eigvals > 0.9)
+            if not selected_tapers.any():
+                simon("Could not properly use low_bias, "
+                      "keeping the lowest-bias taper")
+                selected_tapers = [np.argmax(eigvals)]
+
+            eigvals = eigvals[selected_tapers]
+            dpss_tapers = dpss_tapers[selected_tapers, :]
+
+        print(f"Using {len(eigvals)} DPSS windows for "
+              "multitaper spectrum estimator")
+
+        data_multitaper = lc.counts - np.mean(lc.counts)  # De-mean
+        data_multitaper = np.tile(data_multitaper, (len(eigvals), 1))
+        data_multitaper = np.multiply(data_multitaper, dpss_tapers)
+
+        freq_response = scipy.fft.rfft(data_multitaper, n=lc.n)
+
+        # Adjust DC and maybe Nyquist, depending on one-sided transform
+        freq_response[..., 0] /= np.sqrt(2.)
+        if lc.n % 2 == 0:
+            freq_response[..., -1] /= np.sqrt(2.)
+
+        freq_multitaper = scipy.fft.rfftfreq(lc.n, d=lc.dt)
+
+        if adaptive:
+            psd_multitaper, weights_multitaper = \
+                self._get_adaptive_psd(freq_response, eigvals)
+        else:
+            weights_multitaper = np.sqrt(eigvals)[:, np.newaxis]
+            psd_multitaper = \
+                self.psd_from_freq_response(freq_response, weights_multitaper)
+
+        psd_multitaper *= lc.dt  # /= sampling_freq
+
+        return freq_multitaper, psd_multitaper
+
+    def psd_from_freq_response(self, freq_response, weights):
+
+        psd = freq_response * weights
+        psd *= psd.conj()
+        psd = psd.real.sum(axis=-2)  # Sum all rows
+        psd *= 2 / (weights * weights.conj()).real.sum(axis=-2)
+        return psd
+
+    def _get_adaptive_psd(self, freq_response, eigvals, max_iter=150):
+
+        n_tapers = len(eigvals)
+        n_freqs = freq_response.shape[-1]
+
+        sqrt_eigvals = np.sqrt(eigvals)
+
+        if n_tapers < 3:
+            simon("Not adaptively combining, number of tapers < 3")
+            weights = sqrt_eigvals[:, np.newaxis]
+            return self.psd_from_freq_response(freq_response, weights), weights
+
+        psd_est = \
+            self.psd_from_freq_response(freq_response, sqrt_eigvals[:, np.newaxis])
+
+        var = np.trapz(psd_est, dx=np.pi / n_freqs) / (2 * np.pi)
+        del psd_est
+
+        psd = np.empty(n_freqs)  # (501,)
+
+        weights = np.empty((n_tapers, n_freqs))
+
+        psd_iter = \
+            self.psd_from_freq_response(freq_response[:2],
+                                        sqrt_eigvals[:2, np.newaxis])
+
+        err = np.zeros_like(freq_response)
+
+        for ite in range(max_iter):
+            d_k = (psd_iter / (eigvals[:, np.newaxis] *
+                   psd_iter + (1 - eigvals[:, np.newaxis]) * var))
+            d_k *= sqrt_eigvals[:, np.newaxis]
+
+            err -= d_k
+            if np.max(np.mean(err ** 2, axis=0)) < 1e-10:
+                break
+
+            # update the iterative estimate with this d_k
+            psd_iter = self.psd_from_freq_response(freq_response, d_k)
+            err = d_k
+        if ite == max_iter - 1:
+            simon('Iterative multi-taper PSD computation did not converge.')
+
+        return psd_iter, d_k
