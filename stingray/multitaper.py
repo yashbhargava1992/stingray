@@ -1,7 +1,7 @@
 import copy
 
 from stingray.gti import check_gtis, cross_two_gtis
-from stingray.crossspectrum import Crossspectrum
+from stingray.crossspectrum import Crossspectrum, normalize_crossspectrum, normalize_crossspectrum_gauss
 from stingray.powerspectrum import Powerspectrum
 import warnings
 
@@ -192,11 +192,15 @@ class Multitaper(Powerspectrum):
         # This should *always* be 1 here
         self.m = 1
 
-        self.freq, self.power = \
+        self.freq, self.multitaper_norm_power = \
             self._fourier_multitaper(lc, NW=NW, adaptive=adaptive,
                                      jackknife=jackknife, low_bias=low_bias)
 
-        self.unnorm_power = self.power  # Same for the timebeing until normalization discrepancy is resolved
+        # Same for the timebeing until normalization discrepancy is resolved
+        self.unnorm_power = self.multitaper_norm_power * lc.n / lc.dt
+
+        self.power = \
+            self._normalize_multitaper(self.unnorm_power, lc.tseg)
 
         if lc.err_dist.lower() != "poisson":
             simon("Looks like your lightcurve statistic is not poisson."
@@ -309,3 +313,36 @@ class Multitaper(Powerspectrum):
             simon('Iterative multi-taper PSD computation did not converge.')
 
         return psd_iter, d_k
+
+    def _normalize_multitaper(self, unnorm_power, tseg):
+        """
+        Normalize the real part of the mulitaper spectrum estimate to Leahy, 
+        absolute rms^2, fractional rms^2 normalization, or not at all.
+
+        Parameters
+        ----------
+        unnorm_power: numpy.ndarray
+            The unnormalized spectrum estimate.
+
+        tseg: int
+            The length of the Fourier segment, in seconds.
+
+        Returns
+        -------
+        power: numpy.nd.array
+            The normalized spectrum estimate (real part of the spectrum).
+            For 'none' normalization, imaginary part is returned as well.
+        """
+
+        if self.err_dist == 'poisson':
+            return normalize_crossspectrum(
+                unnorm_power, tseg, self.n, self.nphots, self.nphots, self.norm,
+                self.power_type)
+
+        return normalize_crossspectrum_gauss(
+            unnorm_power, np.sqrt(self.meancounts * self.meancounts),
+            np.sqrt(self.var * self.var),
+            dt=self.dt,
+            N=self.n,
+            norm=self.norm,
+            power_type=self.power_type)
