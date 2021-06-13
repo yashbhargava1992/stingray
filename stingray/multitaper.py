@@ -135,6 +135,8 @@ class Multitaper(Powerspectrum):
         if data is None:
             self.freq = None
             self.power = None
+            self.multitaper_norm_power = None
+            self.eigvals = None
             self.power_err = None
             self.df = None
             self.m = 1
