@@ -208,8 +208,6 @@ class Multitaper(Powerspectrum):
 
         self.power_err = self.power / np.sqrt(self.m)
 
-        self.jk_var_deg_freedom = None
-
     def _fourier_multitaper(self, lc, NW=4, adaptive=False,
                             jackknife=True, low_bias=True):
 
@@ -258,6 +256,17 @@ class Multitaper(Powerspectrum):
                 self.psd_from_freq_response(freq_response, weights_multitaper)
 
         psd_multitaper *= lc.dt  # /= sampling_freq
+        self.eigvals = eigvals
+
+        if jackknife:
+            self.jk_var_deg_freedom = \
+                self.jackknifed_sdf_variance(freq_response, eigvals, adaptive)
+        else:
+            if adaptive:
+                self.jk_var_deg_freedom = \
+                    2 * (weights_multitaper ** 2).sum(axis=-2)
+            else:
+                self.jk_var_deg_freedom = np.full((len(freq_multitaper)), 2 * len(eigvals))
 
         return freq_multitaper, psd_multitaper
 
@@ -346,3 +355,66 @@ class Multitaper(Powerspectrum):
             N=self.n,
             norm=self.norm,
             power_type=self.power_type)
+
+    def jackknifed_sdf_variance(self, freq_response, eigvals, adaptive):
+        r"""
+        Returns the variance of the log-sdf estimated through jack-knifing
+        a group of independent sdf estimates.
+        Parameters
+        ----------
+        yk : ndarray (K, L)
+        The K DFTs of the tapered sequences
+        eigvals : ndarray (K,)
+        The eigenvalues corresponding to the K DPSS tapers
+        sides : str, optional
+        Compute the jackknife pseudovalues over as one-sided or
+        two-sided spectra
+        adpative : bool, optional
+        Compute the adaptive weighting for each jackknife pseudovalue
+        Returns
+        -------
+        var : The estimate for log-sdf variance
+        Notes
+        -----
+        The jackknifed mean estimate is distributed about the true mean as
+        a Student's t-distribution with (K-1) degrees of freedom, and
+        standard error equal to sqrt(var). However, Thompson and Chave [1]
+        point out that this variance better describes the sample mean.
+        [1] Thomson D J, Chave A D (1991) Advances in Spectrum Analysis and Array
+        Processing (Prentice-Hall, Englewood Cliffs, NJ), 1, pp 58-113.
+        """
+
+        K = len(eigvals)
+
+        all_indices = set(range(K))
+        jk_sdk = []
+
+        for i in range(K):
+            selected_indices = list(all_indices.difference([i]))
+            selected_data = np.take(freq_response, selected_indices, axis=0)
+            selected_eigvals = np.take(eigvals, selected_indices)
+
+            if adaptive:
+                selected_psd, selected_weights = \
+                    self._get_adaptive_psd(selected_data, selected_eigvals)
+
+            else:
+                selected_weights = np.sqrt(selected_eigvals)[:, np.newaxis]
+                selected_psd = \
+                    self.psd_from_freq_response(selected_data, selected_weights)
+
+            jk_sdk.append(selected_psd)
+
+        jk_sdk = np.log(jk_sdk)
+        jk_var = jk_sdk - jk_sdk.mean(axis=0)
+
+        np.power(jk_var, 2, jk_var)
+        jk_var = jk_var.sum(axis=0)
+
+        # Thompson's recommended factor, eq 18
+        # Jackknifing Multitaper Spectrum Estimates
+        # IEEE SIGNAL PROCESSING MAGAZINE [20] JULY 2007
+        K = float(K)
+        f = (K - 1)**2 / K / (K - 0.5)
+        jk_var *= f
+        return jk_var
