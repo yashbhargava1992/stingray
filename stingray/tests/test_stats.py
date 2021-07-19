@@ -212,3 +212,7 @@ class TestClassicalSignificances(object):
         logp = z2_n_logprobability(stat, n=n)
         p = z2_n_probability(stat, n=n)
         assert np.allclose(logp, np.log(p))
+
+    def test_power_upper_limit(self):
+        # Use example from Vaughan+94
+        assert np.isclose(power_upper_limit(40, 1, 0.99), 75, rtol=0.1)
