@@ -1,6 +1,7 @@
 
 import numpy as np
 import numbers
+import warnings
 from scipy import signal
 import astropy.modeling.models
 from stingray.io import write, read
@@ -34,11 +35,20 @@ class Simulator(object):
         seed value for random processes
     """
 
-    def __init__(self, dt=1, N=1024, mean=0, rms=1, red_noise=1,
+    def __init__(self, dt, N, mean, rms, red_noise=1,
                  random_state=None, tstart=0.0):
         self.dt = dt
+ 
+        if not isinstance(N, (int, np.integer)):
+            raise ValueError("N must be integer!") 
+ 
         self.N = N
+
+        if mean == 0:
+            warnings.warn("Careful! A mean of zero is unphysical!" + \
+                          "This may have unintended consequences!")
         self.mean = mean
+        self.nphot = self.mean * self.N
         self.rms = rms
         self.red_noise = red_noise
         self.tstart = tstart
@@ -338,15 +348,23 @@ class Simulator(object):
         a1 = self.random_state.normal(size=len(w))
         a2 = self.random_state.normal(size=len(w))
 
+        psd = np.power((1/w),B)
+
+        if self.nphot == 0:
+            nphot = 1.0
+        else:
+            nphot = self.nphot
+        self.std = np.sqrt((nphot / (self.N**2.)) * (np.sum(psd[:-1]) + 0.5*psd[-1]))
+
         # Multiply by (1/w)^B to get real and imaginary parts
-        real = a1 * np.power((1/w),B/2)
-        imaginary = a2 * np.power((1/w),B/2)
+        real = a1 * np.sqrt(psd*nphot/4)
+        imaginary = a2 * np.sqrt(psd*nphot/4)
 
         # Obtain time series
         long_lc = self._find_inverse(real, imaginary)
         lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
                         err=np.zeros_like(self.time) + np.sqrt(self.mean),
-                        err_dist='gauss', dt=self.dt)
+                        err_dist='gauss', dt=self.dt, skip_checks=True)
 
         return lc
 
@@ -366,19 +384,26 @@ class Simulator(object):
         # Cast spectrum as numpy array
         s = np.array(s)
 
+
+        if self.nphot == 0:
+            nphot = 1.0
+        else:
+            nphot = self.nphot
+        self.std = np.sqrt((nphot / (self.N**2.)) * (np.sum(s[:-1]) + 0.5*s[-1]))
+
         self.red_noise = 1
 
         # Draw two set of 'N' guassian distributed numbers
         a1 = self.random_state.normal(size=len(s))
         a2 = self.random_state.normal(size=len(s))
 
-        real = a1 * np.sqrt(s)
-        imaginary = a2 * np.sqrt(s)
+        real = a1 * nphot * np.sqrt(s) / 4.0
+        imaginary = a2 * nphot * np.sqrt(s) / 4.0
 
         lc = self._find_inverse(real, imaginary)
         lc = Lightcurve(self.time, self._extract_and_scale(lc),
                         err=np.zeros_like(self.time) + np.sqrt(self.mean),
-                        err_dist='gauss', dt=self.dt)
+                        err_dist='gauss', dt=self.dt, skip_checks=True)
 
         return lc
 
@@ -406,7 +431,13 @@ class Simulator(object):
         # Compute PSD from model
         simpsd = model(simfreq)
 
-        fac = np.sqrt(simpsd)
+        if self.nphot == 0:
+            nphot = 1.0
+        else:
+            nphot = self.nphot
+        self.std = np.sqrt((nphot / (self.N**2.)) * (np.sum(simpsd[:-1]) + 0.5*simpsd[-1]))
+
+        fac = np.sqrt(simpsd) * nphot / 4.0
         pos_real   = self.random_state.normal(size=nbins//2)*fac
         pos_imag   = self.random_state.normal(size=nbins//2)*fac
 
@@ -414,7 +445,7 @@ class Simulator(object):
 
         lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
                         err=np.zeros_like(self.time) + np.sqrt(self.mean),
-                        err_dist='gauss', dt=self.dt)
+                        err_dist='gauss', dt=self.dt, skip_checks=True)
         return lc
 
 
@@ -449,7 +480,13 @@ class Simulator(object):
             else:
                 raise ValueError('Params should be list or dictionary!')
 
-            fac = np.sqrt(simpsd)
+            if self.nphot == 0:
+                nphot = 1.0
+            else:
+                nphot = self.nphot
+            self.std = np.sqrt((nphot / (self.N**2.)) * (np.sum(simpsd[:-1]) + 0.5*simpsd[-1]))
+
+            fac = np.sqrt(simpsd) * nphot / 4.0
             pos_real   = self.random_state.normal(size=nbins//2)*fac
             pos_imag   = self.random_state.normal(size=nbins//2)*fac
 
@@ -457,7 +494,7 @@ class Simulator(object):
 
             lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
                             err=np.zeros_like(self.time) + np.sqrt(self.mean),
-                            err_dist='gauss', dt=self.dt)
+                            err_dist='gauss', dt=self.dt, skip_checks=True)
             return lc
         else:
             raise ValueError('Model is not defined!')
@@ -497,7 +534,8 @@ class Simulator(object):
 
         time = self.dt * np.arange(len(lc)) + self.tstart
         return Lightcurve(time, lc, err_dist='gauss', dt=self.dt,
-                          err=np.zeros_like(self.time) + np.sqrt(self.mean))
+                          err=np.zeros_like(self.time) + np.sqrt(self.mean),
+                          skip_checks=True)
 
     def _find_inverse(self, real, imaginary):
         """
@@ -557,10 +595,12 @@ class Simulator(object):
                                           self.red_noise*self.N - self.N+1)
             lc = np.take(long_lc, range(extract, extract + self.N))
 
-        avg = np.mean(lc)
-        std = np.std(lc)
+        mean_lc = np.mean(lc)
 
-        return (lc-avg)/std * self.mean * self.rms + self.mean
+        if self.mean == 0:
+            return (lc-mean_lc)/self.std * self.rms
+        else:
+            return (lc-mean_lc)/self.std * self.mean * self.rms + self.mean
 
     def powerspectrum(self, lc, seg_size=None):
         """
