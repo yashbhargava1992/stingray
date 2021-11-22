@@ -116,6 +116,8 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
     True
     >>> np.any((times > 4.) & (times < 5.))  # No times outside GTIs
     False
+    >>> # test that it works with integer times (former bug)
+    >>> times = simulate_times_from_count_array([0, 1, 2, 3, 5], c, gti, 1, use_spline=True)
     >>> c[0] = -3.
     >>> simulate_times_from_count_array(t, c, gti, 1)  # Test with one negative value in the lc
     Traceback (most recent call last):
