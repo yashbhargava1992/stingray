@@ -157,9 +157,7 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
     tmin = gti[0, 0]
     tmax = gti[-1, 1]
     duration = (tmax - tmin)
-    phase_bins = np.copy(time)
-    phase_bins -= tmin
-    phase_bins /= duration
+    phase_bins = (time - tmin) / duration
     dph = dt / duration
 
     counts = np.concatenate(([0], counts))
