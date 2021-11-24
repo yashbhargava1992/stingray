@@ -1079,6 +1079,51 @@ def time_intervals_from_gtis(gtis, chunk_length, fraction_step=1,
     return spectrum_start_times, spectrum_start_times + chunk_length
 
 
+def get_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
+    """Get start of intervals of equal length, given bin number range
+
+    Parameters
+    ----------
+    startbin : int
+        Starting bin of the interval
+
+    stopbin : int
+        Last bin of the interval
+
+    nbin : int
+        number of bins in each interval
+
+    Other Parameters
+    ----------------
+    fraction_step : float
+        If the step is not a full ``chunk_length`` but less (e.g. a moving window),
+        this indicates the ratio between step step and ``chunk_length`` (e.g.
+        ``0.5`` means that the window shifts of half ``chunk_length``)
+
+    Returns
+    -------
+    spectrum_start_bins : array-like
+        List of starting bins in the original time array to use in spectral
+        calculations.
+
+    Examples
+    --------
+    >>> st = get_segment_bin_start(0, 10000, 10000)
+    >>> st[-1]
+    0
+    >>> st = get_segment_bin_start(0, 5, 2)
+    >>> st[-1]
+    2
+    >>> st = get_segment_bin_start(0, 6, 2)
+    >>> st[-1]
+    4
+    """
+    st = np.arange(startbin, stopbin, int(nbin * fraction_step), dtype=int)
+    if st[-1] + nbin > stopbin:
+        return st[:-1]
+    return st
+
+
 def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
                             epsilon=0.001):
     """Compute start/stop times of equal time intervals, compatible with GTIs, and map them
@@ -1173,8 +1218,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         if time[stopbin - 1] > g1:
             stopbin -= 1
 
-        newbins = np.arange(startbin, stopbin - nbin + 1,
-                            int(nbin * fraction_step), dtype=int)
+        newbins = get_segment_bin_start(startbin, stopbin, nbin, fraction_step=fraction_step)
         spectrum_start_bins = \
             np.append(spectrum_start_bins,
                       newbins)
@@ -1277,7 +1321,10 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
 
 
 def get_gti_events_idx(times, gti, dt=0):
-    """Get the indices of events from different segments of the observation.
+    """Get the indices of events from different GTIs of the observation.
+
+    This is a generator, yielding the boundaries of each GTI and the
+    corresponding indices in the time array
 
     Parameters
     ----------
@@ -1290,7 +1337,33 @@ def get_gti_events_idx(times, gti, dt=0):
     ----------------
     dt : float
         If times are uniformly binned, this is the binning time.
+
+    Yields
+    -------
+    g0: float
+        Start time of current GTI
+    g1: float
+        End time of current GTI
+    startidx: int
+        Start index of the current GTI in the time array
+    stopidx: int
+        End index of the current GTI in the time array. Note that this is
+        larger by one, so that `time[startidx:stopidx]` returns the correct
+        time interval.
+
+    Examples
+    --------
+    >>> times = [0.1, 0.2, 0.5, 0.8, 1.1]
+    >>> gtis = [[0, 0.55], [0.6, 2.1]]
+    >>> vals = get_gti_events_idx(times, gtis)
+    >>> v0 = next(vals)
+    >>> np.allclose(v0[:2], gtis[0])
+    True
+    >>> np.allclose(v0[2:], [0, 3])
+    True
     """
+    gti = np.asarray(gti)
+    times = np.asarray(times)
     startidx, stopidx = gti_border_bins(gti, times, dt=dt)
 
     for s, e, idx0, idx1 in zip(gti[:, 0], gti[:, 1], startidx, stopidx):
@@ -1300,6 +1373,9 @@ def get_gti_events_idx(times, gti, dt=0):
 def get_segment_events_idx(times, gti, segment_size):
     """Get the indices of events from different segments of the observation.
 
+    This is a generator, yielding the boundaries of each segment and the
+    corresponding indices in the time array
+
     Parameters
     ----------
     times : float `np.array`
@@ -1308,7 +1384,41 @@ def get_segment_events_idx(times, gti, segment_size):
         good time intervals
     segment_size : float
         length of segments
+
+    Yields
+    -------
+    t0: float
+        Start time of current segment
+    t1: float
+        End time of current segment
+    startidx: int
+        Start index of the current segment in the time array
+    stopidx: int
+        End index of the current segment in the time array. Note that this is
+        larger by one, so that `time[startidx:stopidx]` returns the correct
+        time interval.
+
+    Examples
+    --------
+    >>> times = [0.1, 0.2, 0.5, 0.8, 1.1]
+    >>> gtis = [[0, 0.55], [0.6, 2.1]]
+    >>> vals = get_segment_events_idx(times, gtis, 0.5)
+    >>> v0 = next(vals)
+    >>> np.allclose(v0[:2], [0, 0.5])
+    True
+    >>> # Note: 0.5 is not included in the interval
+    >>> np.allclose(v0[2:], [0, 2])
+    True
+    >>> v1 = next(vals)
+    >>> np.allclose(v1[:2], [0.6, 1.1])
+    True
+    >>> # Again: 1.1 is not included in the interval
+    >>> np.allclose(v1[2:], [3, 4])
+    True
     """
+    gti = np.asarray(gti)
+    times = np.asarray(times)
+
     start, stop = time_intervals_from_gtis(gti, segment_size)
 
     startidx = np.asarray(np.searchsorted(times, start))
@@ -1318,8 +1428,11 @@ def get_segment_events_idx(times, gti, segment_size):
         yield s, e, idx0, idx1
 
 
-def get_segment_binned_array_idx(times, gti, segment_size):
-    """Get the indices of events from different segments of the observation.
+def get_segment_binned_array_idx(times, gti, segment_size, dt=None):
+    """Get the indices of binned times from different segments of the observation.
+
+    This is a generator, yielding the boundaries of each segment and the
+    corresponding indices in the time array
 
     Parameters
     ----------
@@ -1329,8 +1442,34 @@ def get_segment_binned_array_idx(times, gti, segment_size):
         good time intervals
     segment_size : float
         length of segments
+
+    Yields
+    -------
+    t0: float
+        First time value, from the time array, in the current segment
+    t1: float
+        Last time value, from the time array, in the current segment
+    startidx: int
+        Start index of the current segment in the time array
+    stopidx: int
+        End index of the current segment in the time array. Note that this is
+        larger by one, so that `time[startidx:stopidx]` returns the correct
+        time interval.
+
+    Examples
+    --------
+    >>> times = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+    >>> gtis = [[0.05, 0.55]]
+    >>> vals = get_segment_binned_array_idx(times, gtis, 0.5, dt=0.1)
+    >>> v0 = next(vals)
+    >>> np.allclose(v0[:2], [0.1, 0.6])
+    True
+    >>> np.allclose(v0[2:], [0, 5])
+    True
     """
-    startidx, stopidx = bin_intervals_from_gtis(gti, segment_size, times)
+    gti = np.asarray(gti)
+    times = np.asarray(times)
+    startidx, stopidx = bin_intervals_from_gtis(gti, segment_size, times, dt=dt)
 
     for idx0, idx1 in zip(startidx, stopidx):
         yield times[idx0], times[min(idx1, times.size - 1)], idx0, idx1

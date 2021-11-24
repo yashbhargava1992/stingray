@@ -30,6 +30,7 @@ try:
 except ImportError:
     _HAS_YAML = False
 
+
 class TestEvents(object):
 
     @classmethod
@@ -207,8 +208,8 @@ class TestEvents(object):
         assert np.allclose(ev_new.time, [1, 2, 3])
 
     def test_join_different_dt(self):
-        ev = EventList(time=[10, 20, 30], dt = 1)
-        ev_other = EventList(time=[40, 50, 60], dt = 3)
+        ev = EventList(time=[10, 20, 30], dt=1)
+        ev_other = EventList(time=[40, 50, 60], dt=3)
         with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
 
@@ -254,9 +255,9 @@ class TestEvents(object):
         """Join two overlapping event lists.
         """
         ev = EventList(time=[1, 1, 2, 3, 4],
-                        energy=[3, 4, 7, 4, 3], gti=[[1, 2],[3, 4]])
+                       energy=[3, 4, 7, 4, 3], gti=[[1, 2], [3, 4]])
         ev_other = EventList(time=[5, 6, 6, 7, 10],
-                            energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
+                             energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
         with pytest.warns(UserWarning) as record:
             ev_new = ev.join(ev_other)
 
@@ -268,15 +269,15 @@ class TestEvents(object):
         assert (ev_new.energy ==
                 np.array([3, 4, 7, 4, 3, 4, 3, 8, 1, 2])).all()
         assert (ev_new.gti ==
-                np.array([[1, 2],[3, 4],[6, 7]])).all()
+                np.array([[1, 2], [3, 4], [6, 7]])).all()
 
     def test_overlapping_join(self):
         """Join two non-overlapping event lists.
         """
         ev = EventList(time=[1, 1, 10, 6, 5],
-                        energy=[10, 6, 3, 11, 2], gti=[[1, 3],[5, 6]])
+                       energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]])
         ev_other = EventList(time=[5, 7, 6, 6, 10],
-                            energy=[2, 3, 8, 1, 2], gti=[[5, 7],[8, 10]])
+                             energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]])
         ev_new = ev.join(ev_other)
 
         assert (ev_new.time ==
@@ -383,4 +384,3 @@ class TestEvents(object):
             assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(ev, attr) == getattr(new_ev, attr)
-
