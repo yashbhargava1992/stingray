@@ -849,7 +849,11 @@ class Lightcurve(object):
 
         logging.info("make_lightcurve: tseg: " + str(tseg))
 
-        timebin = np.int64(tseg / dt)
+        timebin = int(tseg / dt)
+        # If we are missing the next bin by just 1%, let's round up:
+        if tseg / dt - timebin >= 0.99:
+            timebin += 1
+
         logging.info("make_lightcurve: timebin:  " + str(timebin))
 
         tend = tstart + timebin * dt
