@@ -7,6 +7,7 @@ Definition of :class:`EventList`.
 import copy
 import pickle
 import warnings
+from collections.abc import Iterable
 
 import numpy as np
 import numpy.random as ra
@@ -137,7 +138,7 @@ class EventList(object):
         self.dt = dt
         self.mjdref = mjdref
         self.gti = np.asarray(gti) if gti is not None else None
-        self.pi = pi
+        self.pi = None if pi is None else np.asarray(pi)
         self.ncounts = ncounts
         self.mission = mission
         self.instr = instr
@@ -163,6 +164,15 @@ class EventList(object):
         if (self.time is not None) and (self.energy is not None):
             if self.time.size != self.energy.size:
                 raise ValueError('Lengths of time and energy must be equal.')
+
+    def array_attrs(self):
+        return [
+            attr for attr in dir(self)
+            if (
+                isinstance(getattr(self, attr), Iterable)
+                and np.shape(getattr(self, attr)) == self.time.shape
+            )
+        ]
 
     def to_lc(self, dt, tstart=None, tseg=None):
         """
@@ -524,28 +534,77 @@ class EventList(object):
         except TypeError:
             ts.write(filename, format=format_, overwrite=True)
 
-    def apply_mask(self, mask, inplace=False):
-        """Apply mask to all same-length list-like event attributes.
+    def filter_energy_range(self, energy_range, inplace=False, use_pi=False):
+        """Filter the event list from a given energy range.
+
+        Parameters
+        ----------
+        energy_range: [float, float]
+            Energy range in keV, or in PI channel (if ``use_pi`` is True)
+
+        Other Parameters
+        ----------------
+        inplace : bool, default False
+            Do the change in place (modify current event list). Otherwise, copy
+            to a new event list.
+        use_pi : bool, default False
+            Use PI channel instead of energy in keV
 
         Examples
         --------
-        >>> evt = EventList(time=[0, 1, 2])
+        >>> events = EventList(time=[0, 1, 2], energy=[0.3, 0.5, 2], pi=[3, 5, 20])
+        >>> e1 = events.filter_energy_range([0, 1])
+        >>> np.allclose(e1.time, [0, 1])
+        True
+        >>> np.allclose(events.time, [0, 1, 2])
+        True
+        >>> e2 = events.filter_energy_range([0, 10], use_pi=True, inplace=True)
+        >>> np.allclose(e2.time, [0, 1])
+        True
+        >>> np.allclose(events.time, [0, 1])
+        True
+
+        """
+        if use_pi:
+            energies = self.pi
+        else:
+            energies = self.energy
+        mask = (energies >= energy_range[0]) & (energies < energy_range[1])
+
+        return self.apply_mask(mask, inplace=inplace)
+
+    def apply_mask(self, mask, inplace=False):
+        """For compatibility with old stingray version.
+        Examples
+        --------
+        >>> evt = EventList(time=[0, 1, 2], mission="nustar")
+        >>> evt.bubuattr = [222, 111, 333]
         >>> newev0 = evt.apply_mask([True, True, False], inplace=False);
         >>> newev1 = evt.apply_mask([True, True, False], inplace=True);
+        >>> newev0.mission == "nustar"
+        True
         >>> np.allclose(newev0.time, [0, 1])
+        True
+        >>> np.allclose(newev0.bubuattr, [222, 111])
         True
         >>> np.allclose(newev1.time, [0, 1])
         True
         >>> evt is newev1
         True
         """
+        array_attrs = self.array_attrs()
+
         if inplace:
             new_ev = self
         else:
-            new_ev = copy.deepcopy(self)
-        for attr in 'time', 'energy', 'pi', 'cal_pi':
-            if hasattr(new_ev, attr) and getattr(new_ev, attr) is not None:
-                setattr(new_ev, attr, getattr(new_ev, attr)[mask])
+            new_ev = EventList()
+            for attr in dir(self):
+                if not attr.startswith("_") and attr not in array_attrs:
+                    setattr(new_ev, attr, getattr(self, attr))
+
+        for attr in array_attrs:
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                setattr(new_ev, attr, np.asarray(getattr(self, attr))[mask])
         return new_ev
 
     def apply_deadtime(self, deadtime, inplace=False, **kwargs):
@@ -657,9 +716,12 @@ class EventList(object):
         from astropy.time import TimeDelta
         from astropy import units as u
         data = {}
-        for attr in ['energy', 'pi']:
-            if hasattr(self, attr) and getattr(self, attr) is not None:
-                data[attr] = np.asarray(getattr(self, attr))
+        array_attrs = self.array_attrs()
+
+        for attr in array_attrs:
+            if attr == "time":
+                continue
+            data[attr] = np.asarray(getattr(self, attr))
 
         if data == {}:
             data = None
@@ -680,22 +742,24 @@ class EventList(object):
     def from_astropy_timeseries(ts):
         from astropy.timeseries import TimeSeries
         from astropy import units as u
-        energy = pi = gti = instr = mission = mjdref = None
-        if 'energy' in ts.colnames:
-            energy = ts['energy']
-        if 'pi' in ts.colnames:
-            pi = ts['pi']
 
-        kwargs = ts.meta
-        ev = EventList(time=ts.time, energy=energy, pi=pi, **kwargs)
+        kwargs = dict([(key.lower(), val) for (key, val) in ts.meta.items()])
+        ev = EventList(time=ts.time, **kwargs)
+        array_attrs = ts.colnames
+
+        for attr in array_attrs:
+            if attr == "time":
+                continue
+            setattr(ev, attr, ts[attr])
 
         return ev
 
     def to_astropy_table(self):
         data = {}
-        for attr in ['time', 'energy', 'pi']:
-            if hasattr(self, attr) and getattr(self, attr) is not None:
-                data[attr] = np.asarray(getattr(self, attr))
+        array_attrs = self.array_attrs()
+
+        for attr in array_attrs:
+            data[attr] = np.asarray(getattr(self, attr))
 
         ts = Table(data)
 
@@ -709,10 +773,12 @@ class EventList(object):
     @staticmethod
     def from_astropy_table(ts):
         kwargs = dict([(key.lower(), val) for (key, val) in ts.meta.items()])
-        for attr in ['time', 'energy', 'pi']:
-            if attr in ts.colnames:
-                kwargs[attr] = ts[attr]
+        ev = EventList(time=ts["time"], **kwargs)
+        array_attrs = ts.colnames
 
-        ev = EventList(**kwargs)
+        for attr in array_attrs:
+            if attr == "time":
+                continue
+            setattr(ev, attr, ts[attr])
 
         return ev
