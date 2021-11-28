@@ -65,6 +65,7 @@ jobs:
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'py310-test-alldeps-cov'
+            use_remote_data: true
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'py310-test-astropy3'
