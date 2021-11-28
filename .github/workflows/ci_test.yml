@@ -31,11 +31,16 @@ jobs:
         #
         #   py310-test on windows-latest and macos-latest
         #   py310-test-cov on ubuntu-latest
-        #   py310-test-alldeps-cov on ubuntu-latest
-        #   py310-test-astropy30 on ubuntu-latest
         #   py310-test-astropy40 on ubuntu-latest
         #   py310-test-astropy50 on ubuntu-latest
         #   build_docs on Python 3.10 on ubuntu-latest
+        #
+        # The following are tested on Python 3.9, as 3.10 is known not to work
+        # at time of writing:
+        #
+        #   py39-test-alldeps-cov on ubuntu-latest
+        #   py39-test-astropy30 on ubuntu-latest
+
 
         include:
           - os: ubuntu-latest
@@ -63,12 +68,12 @@ jobs:
             python: '3.10'
             tox_env: 'py310-test-cov'
           - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-alldeps-cov'
+            python: '3.9'
+            tox_env: 'py39-test-alldeps-cov'
             use_remote_data: true
           - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-astropy3'
+            python: '3.9'
+            tox_env: 'py39-test-astropy3'
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'py310-test-astropy4'
