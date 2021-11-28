@@ -33,6 +33,7 @@ jobs:
         #   py310-test-astropy30 on ubuntu-latest
         #   py310-test-astropy40 on ubuntu-latest
         #   py310-test-astropy50 on ubuntu-latest
+        #   build_docs on Python 3.10 on ubuntu-latest
 
         include:
           - os: ubuntu-latest
@@ -71,6 +72,9 @@ jobs:
 #          - os: ubuntu-latest
 #            python: '3.10'
 #            tox_env: 'py310-test-astropy50'
+          - os: ubuntu-latest
+            python: '3.10'
+            tox_env: 'build_docs'
 
     steps:
     - name: Check out repository
