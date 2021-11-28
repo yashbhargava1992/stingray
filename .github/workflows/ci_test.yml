@@ -38,9 +38,8 @@ jobs:
         # The following are tested on Python 3.9, as 3.10 is known not to work
         # at time of writing:
         #
-        #   py39-test-alldeps-cov on ubuntu-latest
+        #   py38-test-alldeps-cov on ubuntu-latest
         #   py39-test-astropy30 on ubuntu-latest
-
 
         include:
           - os: ubuntu-latest
@@ -68,8 +67,8 @@ jobs:
             python: '3.10'
             tox_env: 'py310-test-cov'
           - os: ubuntu-latest
-            python: '3.9'
-            tox_env: 'py39-test-alldeps-cov'
+            python: '3.8'
+            tox_env: 'py38-test-alldeps-cov'
             use_remote_data: true
           - os: ubuntu-latest
             python: '3.9'
