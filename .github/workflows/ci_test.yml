@@ -21,29 +21,56 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # We're going to run:
+        #
+        #   pyNNN-test on ubuntu-latest for all supported versions of Python (3.6+)
+        #
+        # The following all refer to py310 as the current latest release of Python; increment for future versions
+        #
+        #   py310-test on windows-latest and macos-latest
+        #   py310-test-cov on ubuntu-latest
+        #   py310-test-alldeps-cov on ubuntu-latest
+        #   py310-test-astropy30 on ubuntu-latest
+        #   py310-test-astropy40 on ubuntu-latest
+        #   py310-test-astropy50 on ubuntu-latest
+
         include:
           - os: ubuntu-latest
-            python: '3.8'
-            tox_env: 'py38-test-cov'
+            python: '3.6'
+            tox_env: 'py36-test'
           - os: ubuntu-latest
-            python: '3.8'
-            tox_env: 'build_docs'
-          - os: ubuntu-latest
-            python: '3.8'
-            tox_env: 'py38-test-alldeps-cov'
-            use_remote_data: true
-          - os: macos-latest
             python: '3.7'
             tox_env: 'py37-test'
-          - os: windows-latest
+          - os: ubuntu-latest
             python: '3.8'
             tox_env: 'py38-test'
           - os: ubuntu-latest
-            python: '3.7'
-            tox_env: 'py37-test-astropy30-numpy117'
+            python: '3.9'
+            tox_env: 'py39-test'
+          - os: ubuntu-latest
+            python: '3.10'
+            tox_env: 'py310-test'
+          - os: macos-latest
+            python: '3.10'
+            tox_env: 'py310-test'
+          - os: windows-latest
+            python: '3.10'
+            tox_env: 'py310-test'
+          - os: ubuntu-latest
+            python: '3.10'
+            tox_env: 'py310-test-cov'
+          - os: ubuntu-latest
+            python: '3.10'
+            tox_env: 'py310-test-alldeps-cov'
+          - os: ubuntu-latest
+            python: '3.10'
+            tox_env: 'py310-test-astropy30'
+          - os: ubuntu-latest
+            python: '3.10'
+            tox_env: 'py310-test-astropy40'
 #          - os: ubuntu-latest
-#            python: '3.8'
-#            tox_env: 'codestyle'
+#            python: '3.10'
+#            tox_env: 'py310-test-astropy50'
 
     steps:
     - name: Check out repository
