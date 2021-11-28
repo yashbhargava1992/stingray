@@ -21,11 +21,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # We're going to run:
+        # We're going to run the folowing to test basic functionality on all
+        # supported versions of Python:
         #
         #   pyNNN-test on ubuntu-latest for all supported versions of Python (3.6+)
         #
-        # The following all refer to py310 as the current latest release of Python; increment for future versions
+        # Then we run specific tests only on the latest version (3.10 at time
+        # of writing):
         #
         #   py310-test on windows-latest and macos-latest
         #   py310-test-cov on ubuntu-latest
