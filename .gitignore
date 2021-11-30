@@ -17,6 +17,15 @@ htmlcov
 MANIFEST
 .ipynb_checkpoints
 .tmp
+*.png
+*.jpg
+*.p
+*.npy
+*.pdf
+*.csv
+.hypothesis
+cov.xml
+*coverage*
 
 # Sphinx
 docs/api
