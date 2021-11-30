@@ -782,3 +782,67 @@ class EventList(object):
             setattr(ev, attr, ts[attr])
 
         return ev
+
+    def to_xarray(self):
+        from xarray import Dataset
+        data = {}
+        array_attrs = self.array_attrs()
+
+        for attr in array_attrs:
+            data[attr] = np.asarray(getattr(self, attr))
+
+        ts = Dataset(data)
+
+        ts.attrs['gti'] = self.gti
+        ts.attrs['mjdref'] = self.mjdref
+        ts.attrs['instr'] = self.instr
+        ts.attrs['mission'] = self.mission
+        ts.attrs['header'] = self.header
+        return ts
+
+    @staticmethod
+    def from_xarray(ts):
+        array_attrs = ts.coords
+
+        kwargs = dict([(key.lower(), val)
+                      for (key, val) in ts.attrs.items() if key not in array_attrs])
+        ev = EventList(time=ts["time"].values, **kwargs)
+
+        for attr in array_attrs:
+            if attr == "time":
+                continue
+            setattr(ev, attr, ts[attr].values)
+
+        return ev
+
+    def to_pandas(self):
+        from pandas import DataFrame
+        data = {}
+        array_attrs = self.array_attrs()
+
+        for attr in array_attrs:
+            data[attr] = np.asarray(getattr(self, attr))
+
+        ts = DataFrame(data)
+
+        ts.attrs['gti'] = self.gti
+        ts.attrs['mjdref'] = self.mjdref
+        ts.attrs['instr'] = self.instr
+        ts.attrs['mission'] = self.mission
+        ts.attrs['header'] = self.header
+        return ts
+
+    @staticmethod
+    def from_pandas(ts):
+        array_attrs = ts.columns
+
+        kwargs = dict([(key.lower(), val)
+                      for (key, val) in ts.attrs.items() if key not in array_attrs])
+        ev = EventList(time=ts["time"].to_numpy(), **kwargs)
+
+        for attr in array_attrs:
+            if attr == "time":
+                continue
+            setattr(ev, attr, ts[attr].to_numpy())
+
+        return ev
