@@ -26,8 +26,7 @@ def gti_len(gti):
     """Deprecated. Use get_total_gti_length."""
     warnings.warn("This function is deprecated. Use get_total_gti_length instead",
                   DeprecationWarning)
-    gti = np.array(gti)
-    return np.sum(gti[:, 1] - gti[:, 0])
+    return get_total_gti_length(gti, minlen=0)
 
 
 def get_gti_lengths(gti):
