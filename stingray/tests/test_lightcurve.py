@@ -27,7 +27,7 @@ except ImportError:
     _H5PY_INSTALLED = False
 
 try:
-    import Lightkurve
+    import lightkurve
 except ImportError:
     _HAS_LIGHTKURVE = False
 
@@ -931,13 +931,13 @@ class TestLightcurve(object):
         assert_allclose(lk.flux, counts)
         assert_allclose(lk.flux_err, counts_err)
 
-    @pytest.mark.skipif(not _HAS_LIGHTKURVE,
+    @pytest.mark.skipif('not _HAS_LIGHTKURVE',
                         reason='Lightkurve not installed')
     def test_from_lightkurve(self):
-        from Lightkurve import LightCurve
+        from lightkurve import LightCurve
         time, flux, flux_err = range(3), np.ones(3), np.zeros(3)
-        lk = LightCurve(time, flux, flux_err)
-        sr = Lightcurve.from_lightkurve(lk)
+        lc = LightCurve(time, flux, flux_err)
+        sr = Lightcurve.from_lightkurve(lc)
         assert_allclose(sr.time, lc.time)
         assert_allclose(sr.counts, lc.flux)
         assert_allclose(sr.counts_err, lc.flux_err)
