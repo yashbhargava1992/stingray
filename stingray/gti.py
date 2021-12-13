@@ -1079,7 +1079,14 @@ def time_intervals_from_gtis(gtis, chunk_length, fraction_step=1,
 
 
 def get_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
-    """Get start of intervals of equal length, given bin number range
+    """Get the starting indices of intervals of equal length.
+
+    A bit like `np.arange`, but checks that the last number is
+    at least ``nbin`` less than ``stopbin``. Useful when getting
+    starting intervals of equal chunks of a binned light curve.
+
+    It is possible to make these intervals sliding, through the
+    ``fraction_step`` parameter.
 
     Parameters
     ----------
@@ -1095,9 +1102,9 @@ def get_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
     Other Parameters
     ----------------
     fraction_step : float
-        If the step is not a full ``chunk_length`` but less (e.g. a moving window),
-        this indicates the ratio between step step and ``chunk_length`` (e.g.
-        ``0.5`` means that the window shifts of half ``chunk_length``)
+        If the step is not a full ``nbin`` but less (e.g. a moving window),
+        this indicates the ratio between the step and ``nbin`` (e.g.
+        ``0.5`` means that the window shifts of half ``nbin``)
 
     Returns
     -------
