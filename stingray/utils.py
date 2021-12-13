@@ -457,7 +457,7 @@ def look_for_array_in_array(array1, array2):
     return next((i for i in array1 if i in array2), None)
 
 
-def is_string(s):  # pragma : no cover
+def is_string(s):
     """
     Portable function to answer whether a variable is a string.
 
@@ -471,12 +471,7 @@ def is_string(s):  # pragma : no cover
     isstring : bool
         A boolean decision on whether ``s`` is a string or not
     """
-
-    PY2 = sys.version_info[0] == 2
-    if PY2:
-        return isinstance(s, basestring)  # NOQA
-    else:
-        return isinstance(s, str)  # NOQA
+    return isinstance(s, str)
 
 
 def is_iterable(var):
