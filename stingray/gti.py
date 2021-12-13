@@ -17,9 +17,9 @@ __all__ = ['load_gtis', 'check_gtis',
            'cross_two_gtis', 'cross_gtis', 'get_btis',
            'get_gti_extensions_from_pattern', 'get_gti_from_all_extensions',
            'get_gti_from_hdu', 'get_gti_lengths', 'get_total_gti_length',
-           'check_separate', 'append_gtis', 'join_gtis', 'get_gti_events_idx',
+           'check_separate', 'append_gtis', 'join_gtis', 'generate_indices_of_gti_boundaries',
            'time_intervals_from_gtis', 'bin_intervals_from_gtis',
-           'gti_border_bins', 'get_segment_events_idx', 'get_segment_binned_array_idx']
+           'gti_border_bins', 'generate_indices_of_segment_boundaries_unbinned', 'generate_indices_of_segment_boundaries_binned']
 
 
 def gti_len(gti):
@@ -1320,7 +1320,7 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     return np.array(spectrum_start_bins), np.array(spectrum_stop_bins)
 
 
-def get_gti_events_idx(times, gti, dt=0):
+def generate_indices_of_gti_boundaries(times, gti, dt=0):
     """Get the indices of events from different GTIs of the observation.
 
     This is a generator, yielding the boundaries of each GTI and the
@@ -1355,7 +1355,7 @@ def get_gti_events_idx(times, gti, dt=0):
     --------
     >>> times = [0.1, 0.2, 0.5, 0.8, 1.1]
     >>> gtis = [[0, 0.55], [0.6, 2.1]]
-    >>> vals = get_gti_events_idx(times, gtis)
+    >>> vals = generate_indices_of_gti_boundaries(times, gtis)
     >>> v0 = next(vals)
     >>> np.allclose(v0[:2], gtis[0])
     True
@@ -1370,7 +1370,7 @@ def get_gti_events_idx(times, gti, dt=0):
         yield s, e, idx0, idx1
 
 
-def get_segment_events_idx(times, gti, segment_size):
+def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size):
     """Get the indices of events from different segments of the observation.
 
     This is a generator, yielding the boundaries of each segment and the
@@ -1402,7 +1402,7 @@ def get_segment_events_idx(times, gti, segment_size):
     --------
     >>> times = [0.1, 0.2, 0.5, 0.8, 1.1]
     >>> gtis = [[0, 0.55], [0.6, 2.1]]
-    >>> vals = get_segment_events_idx(times, gtis, 0.5)
+    >>> vals = generate_indices_of_segment_boundaries_unbinned(times, gtis, 0.5)
     >>> v0 = next(vals)
     >>> np.allclose(v0[:2], [0, 0.5])
     True
@@ -1428,7 +1428,7 @@ def get_segment_events_idx(times, gti, segment_size):
         yield s, e, idx0, idx1
 
 
-def get_segment_binned_array_idx(times, gti, segment_size, dt=None):
+def generate_indices_of_segment_boundaries_binned(times, gti, segment_size, dt=None):
     """Get the indices of binned times from different segments of the observation.
 
     This is a generator, yielding the boundaries of each segment and the
@@ -1460,7 +1460,7 @@ def get_segment_binned_array_idx(times, gti, segment_size, dt=None):
     --------
     >>> times = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
     >>> gtis = [[0.05, 0.55]]
-    >>> vals = get_segment_binned_array_idx(times, gtis, 0.5, dt=0.1)
+    >>> vals = generate_indices_of_segment_boundaries_binned(times, gtis, 0.5, dt=0.1)
     >>> v0 = next(vals)
     >>> np.allclose(v0[:2], [0.1, 0.6])
     True
