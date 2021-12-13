@@ -13,7 +13,7 @@ import numpy.random as ra
 from astropy.table import Table
 
 from .filters import get_deadtime_mask
-from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_segment_boundaries_unbinned, generate_indices_of_gti_boundaries
+from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_boundaries
 from .io import load_events_and_gtis
 from .lightcurve import Lightcurve
 from .utils import assign_value_if_none, simon, interpret_times
@@ -213,11 +213,8 @@ class EventList(object):
             Generates one :class:`stingray.Lightcurve` object for each GTI or segment
         """
 
-        if segment_size is not None:
-            segment_iter = generate_indices_of_segment_boundaries_unbinned(
-                self.time, self.gti, segment_size)
-        else:
-            segment_iter = generate_indices_of_gti_boundaries(self.time, self.gti, dt=0)
+        segment_iter = generate_indices_of_boundaries(
+            self.time, self.gti, segment_size=segment_size, dt=0)
 
         for st, end, idx_st, idx_end in segment_iter:
             tseg = end - st
