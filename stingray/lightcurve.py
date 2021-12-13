@@ -176,7 +176,7 @@ class Lightcurve(object):
 
         time = np.asarray(time)
         counts = np.asarray(counts)
-        if os.name == 'nt':
+        if os.name == 'nt':  # pragma: no cover
             warnings.warn(
                 "On Windows, the size of an integer is 32 bits. "
                 "To avoid integer overflow, I'm converting the input array to float")

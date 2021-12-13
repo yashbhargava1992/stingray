@@ -1,3 +1,4 @@
+import os
 import copy
 import numpy as np
 from astropy.tests.helper import pytest
@@ -18,6 +19,7 @@ _H5PY_INSTALLED = True
 _HAS_LIGHTKURVE = True
 _HAS_TIMESERIES = True
 _HAS_YAML = True
+_IS_WINDOWS = os.name == "nt"
 
 try:
     import h5py
@@ -70,6 +72,14 @@ class TestProperties(object):
 
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
+
+    @pytest.mark.skipif("not _IS_WINDOWS")
+    def test_warn_on_windows(self):
+        with pytest.warns(UserWarning) as record:
+            _ = Lightcurve(self.lc.time, self.lc.counts, gti=self.lc.gti)
+        assert np.any(["On Windows, the size of an integer" in r.message.args[0]
+                       for r in record])
+
 
     def test_warn_wrong_keywords(self):
         lc = copy.deepcopy(self.lc)
