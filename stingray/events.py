@@ -233,6 +233,9 @@ class EventList(object):
         ----------
         dt: float
             Binning time of the light curves
+
+        Other parameters
+        ----------------
         segment_size : float, default None
             Optional segment size. If None, use the GTI boundaries
 
