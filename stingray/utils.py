@@ -1149,6 +1149,20 @@ def check_iterables_close(iter0, iter1, **kwargs):
     ----------
     iter0 : iterable
     iter1 : iterable
+
+    Examples
+    --------
+    >>> iter0 = [0, 1]
+    >>> iter1 = [0, 2]
+    >>> check_iterables_close(iter0, iter1)
+    False
+    >>> iter0 = [(0, 0), (0, 1)]
+    >>> iter1 = [(0, 0.), (0, 1.)]
+    >>> check_iterables_close(iter0, iter1)
+    True
+    >>> iter1 = [(0, 0.), (0, 3.)]
+    >>> check_iterables_close(iter0, iter1)
+    False
     """
     for i0, i1 in zip(iter0, iter1):
         if isinstance(i0, Iterable):
