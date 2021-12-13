@@ -9,7 +9,9 @@ import copy
 from astropy.io import fits
 from .utils import contiguous_regions, jit, HAS_NUMBA
 from .utils import assign_value_if_none, apply_function_if_none
+from .utils import check_iterables_close
 from stingray.exceptions import StingrayError
+
 
 __all__ = ['load_gtis', 'check_gtis',
            'create_gti_mask_jit', 'create_gti_mask',
@@ -1324,6 +1326,47 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     assert len(spectrum_start_bins) > 0, \
         ("No GTIs are equal to or longer than chunk_length.")
     return np.array(spectrum_start_bins), np.array(spectrum_stop_bins)
+
+
+def generate_indices_of_boundaries(times, gti, segment_size=None, dt=0):
+    """Get index boundaries and times from different parts of the observation.
+
+    It wraps around `generate_indices_of_gti_boundaries`,
+    `generate_indices_of_segment_boundaries_binned`, and
+    `generate_indices_of_segment_boundaries_unbinned` depending on:
+
+    + ``segment_size`` being ``None`` (give GTI boundaries, segment boundaries otherwise)
+    + ``dt`` being 0 or nonzero (unevenly sampled, evenly sampled otherwise)
+
+    Examples
+    --------
+    >>> times = [0.1, 0.2, 0.5, 0.8, 1.1]
+    >>> gtis = [[0, 0.55], [0.6, 2.1]]
+    >>> vals0 = generate_indices_of_boundaries(times, gtis, segment_size=None)
+    >>> vals1 = generate_indices_of_gti_boundaries(times, gtis)
+    >>> check_iterables_close(vals0, vals1)
+    True
+    >>> vals0 = generate_indices_of_boundaries(times, gtis, segment_size=0.5)
+    >>> vals1 = generate_indices_of_segment_boundaries_unbinned(times, gtis, segment_size=0.5)
+    >>> check_iterables_close(vals0, vals1)
+    True
+    >>> times = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+    >>> gtis = [[0.05, 0.55]]
+    >>> vals0 = generate_indices_of_boundaries(times, gtis, segment_size=0.5, dt=0.1)
+    >>> vals1 = generate_indices_of_segment_boundaries_binned(times, gtis, 0.5, dt=0.1)
+    >>> check_iterables_close(vals0, vals1)
+    True
+    """
+    if segment_size is not None:
+        if dt is None or dt == 0:
+            segment_iter = generate_indices_of_segment_boundaries_unbinned(
+                times, gti, segment_size)
+        else:
+            segment_iter = generate_indices_of_segment_boundaries_binned(
+                times, gti, segment_size, dt=dt)
+    else:
+        segment_iter = generate_indices_of_gti_boundaries(times, gti, dt=0)
+    return segment_iter
 
 
 def generate_indices_of_gti_boundaries(times, gti, dt=0):

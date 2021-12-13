@@ -1139,3 +1139,27 @@ def interpret_times(time, mjdref=0):
             pass
 
     raise ValueError(f"Unknown time format: {type(time)}")
+
+
+def check_iterables_close(iter0, iter1, **kwargs):
+    """Check that the values produced by iterables are equal.
+
+    Uses `np.isclose` if the iterables produce single values per iteration,
+    `np.allclose` otherwise.
+
+    Additional keyword arguments are passed to `np.allclose`
+    and `np.isclose`.
+
+    Parameters
+    ----------
+    iter0 : iterable
+    iter1 : iterable
+    """
+    for i0, i1 in zip(iter0, iter1):
+        if isinstance(i0, Iterable):
+            if not np.allclose(i0, i1):
+                return False
+            continue
+        if not np.isclose(i0, i1):
+            return False
+    return True
