@@ -4,6 +4,7 @@ Definition of :class::class:`Lightcurve`.
 :class::class:`Lightcurve` is used to create light curves out of photon counting data
 or to save existing light curves in a class that's easy to use.
 """
+import os
 import logging
 import warnings
 import pickle
@@ -175,6 +176,12 @@ class Lightcurve(object):
 
         time = np.asarray(time)
         counts = np.asarray(counts)
+        if os.name == 'nt':
+            warnings.warn(
+                "On Windows, the size of an integer is 32 bits. "
+                "To avoid integer overflow, I'm converting the input array to float")
+            counts = counts.astype(float)
+
         if err is not None:
             err = np.asarray(err)
 
