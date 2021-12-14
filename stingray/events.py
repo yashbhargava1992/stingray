@@ -192,6 +192,30 @@ class EventList(object):
             )
         ]
 
+    def meta_attrs(self):
+        """List the names of the meta attributes of the event list.
+
+        By meta attributes, we mean the ones with a different size and shape
+        than ``self.time``
+
+        Examples
+        --------
+        >>> ev = EventList(time=np.arange(5), pi=np.zeros(5), gti=[[45, 4]])
+        >>> attrs = ev.meta_attrs()
+        >>> "pi" in attrs or "time" in attrs
+        False
+        >>> "gti" in attrs #  The shape of self.gti is not equal to time! Not an array attr
+        True
+        """
+        array_attrs = self.array_attrs()
+        return [
+            attr for attr in dir(self)
+            if (
+                attr not in array_attrs and not attr.startswith("_") and
+                not callable(getattr(self, attr))
+            )
+        ]
+
     def to_lc(self, dt, tstart=None, tseg=None):
         """
         Convert event list to a :class:`stingray.Lightcurve` object.
@@ -729,6 +753,16 @@ class EventList(object):
 
         return new_ev
 
+    def get_meta_dict(self):
+        """Give a dictionary with all non-None meta attributes."""
+        meta_attrs = self.meta_attrs()
+        meta_dict = {}
+        for key in meta_attrs:
+            val = getattr(self, key)
+            if val is not None:
+                meta_dict[key] = val
+        return meta_dict
+
     def to_astropy_timeseries(self):
         from astropy.timeseries import TimeSeries
         from astropy.time import TimeDelta
@@ -749,11 +783,9 @@ class EventList(object):
             ts = TimeSeries(data=data, time=times)
         else:
             ts = TimeSeries()
-        ts.meta['gti'] = self.gti
-        ts.meta['mjdref'] = self.mjdref
-        ts.meta['instr'] = self.instr
-        ts.meta['mission'] = self.mission
-        ts.meta['header'] = self.header
+
+        ts.meta.update(self.get_meta_dict())
+
         return ts
 
     @staticmethod
@@ -781,11 +813,8 @@ class EventList(object):
 
         ts = Table(data)
 
-        ts.meta['gti'] = self.gti
-        ts.meta['mjdref'] = self.mjdref
-        ts.meta['instr'] = self.instr
-        ts.meta['mission'] = self.mission
-        ts.meta['header'] = self.header
+        ts.meta.update(self.get_meta_dict())
+
         return ts
 
     @staticmethod
@@ -811,11 +840,8 @@ class EventList(object):
 
         ts = Dataset(data)
 
-        ts.attrs['gti'] = self.gti
-        ts.attrs['mjdref'] = self.mjdref
-        ts.attrs['instr'] = self.instr
-        ts.attrs['mission'] = self.mission
-        ts.attrs['header'] = self.header
+        ts.attrs.update(self.get_meta_dict())
+
         return ts
 
     @staticmethod
@@ -843,11 +869,8 @@ class EventList(object):
 
         ts = DataFrame(data)
 
-        ts.attrs['gti'] = self.gti
-        ts.attrs['mjdref'] = self.mjdref
-        ts.attrs['instr'] = self.instr
-        ts.attrs['mission'] = self.mission
-        ts.attrs['header'] = self.header
+        ts.attrs.update(self.get_meta_dict())
+
         return ts
 
     @staticmethod
