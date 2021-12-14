@@ -616,7 +616,18 @@ class EventList(object):
         return self.apply_mask(mask, inplace=inplace)
 
     def apply_mask(self, mask, inplace=False):
-        """For compatibility with old stingray version.
+        """Apply a mask to all array attributes of the event list
+
+        Parameters
+        ----------
+        mask : array of ``bool``
+            The mask. Has to be of the same length as ``self.time``
+
+        Other parameters
+        ----------------
+        inplace : bool
+            If True, overwrite the current event list. Otherwise, return a new one.
+
         Examples
         --------
         >>> evt = EventList(time=[0, 1, 2], mission="nustar")
