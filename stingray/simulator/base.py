@@ -153,7 +153,7 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
         dt = dt
         t0 = time[0] - dt / 2
         t1 = time[0] + dt / 2
-        N = counts[0]
+        N = int(np.rint(counts[0]))
         return np.sort(np.random.uniform(t0, t1, N))
 
     tmin = gti[0, 0]
