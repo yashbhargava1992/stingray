@@ -177,11 +177,6 @@ class Lightcurve(object):
 
         time = np.asarray(time)
         counts = np.asarray(counts)
-        if os.name == 'nt':  # pragma: no cover
-            warnings.warn(
-                "On Windows, the size of an integer is 32 bits. "
-                "To avoid integer overflow, I'm converting the input array to float")
-            counts = counts.astype(float)
 
         if err is not None:
             err = np.asarray(err)
@@ -258,6 +253,11 @@ class Lightcurve(object):
 
         if not skip_checks:
             self.check_lightcurve()
+        if os.name == 'nt':
+            warnings.warn(
+                "On Windows, the size of an integer is 32 bits. "
+                "To avoid integer overflow, I'm converting the input array to float")
+            counts = counts.astype(float)
 
     @property
     def time(self):
@@ -603,8 +603,8 @@ class Lightcurve(object):
         >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=5)
         >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=5)
         >>> lc = lc1 + lc2
-        >>> lc.counts
-        array([ 900, 1300, 1200])
+        >>> np.allclose(lc.counts, [ 900, 1300, 1200])
+        True
         """
 
         return self._operation_with_other_lc(other, np.add)
@@ -632,8 +632,8 @@ class Lightcurve(object):
         >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=10)
         >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=10)
         >>> lc = lc1 - lc2
-        >>> lc.counts
-        array([ 300, 1100,  400])
+        >>> np.allclose(lc.counts, [ 300, 1100,  400])
+        True
         """
 
         return self._operation_with_other_lc(other, np.subtract)
@@ -653,8 +653,8 @@ class Lightcurve(object):
         >>> lc1 = Lightcurve(time, count1)
         >>> lc2 = Lightcurve(time, count2)
         >>> lc_new = -lc1 + lc2
-        >>> lc_new.counts
-        array([100, 100, 100])
+        >>> np.allclose(lc_new.counts, [100, 100, 100])
+        True
         """
         lc_new = Lightcurve(self.time, -1 * self.counts,
                             err=self.counts_err, gti=self.gti,
@@ -704,10 +704,10 @@ class Lightcurve(object):
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> lc[2]
-        33
-        >>> lc[:2].counts
-        array([11, 22])
+        >>> np.isclose(lc[2], 33)
+        True
+        >>> np.allclose(lc[:2].counts, [11, 22])
+        True
         """
         if isinstance(index, (int, np.integer)):
             return self.counts[index]
@@ -985,8 +985,8 @@ class Lightcurve(object):
         >>> lc = lc1.join(lc2)
         >>> lc.time
         array([ 5, 10, 15, 20, 25, 30])
-        >>> lc.counts
-        array([ 300,  100,  400,  600, 1200,  800])
+        >>> np.allclose(lc.counts, [ 300,  100,  400,  600, 1200,  800])
+        True
         """
         if self.mjdref != other.mjdref:
             warnings.warn("MJDref is different in the two light curves")
@@ -1107,17 +1107,16 @@ class Lightcurve(object):
         >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
         >>> lc = Lightcurve(time, count, dt=1)
         >>> lc_new = lc.truncate(start=2, stop=8)
-        >>> lc_new.counts
-        array([30, 40, 50, 60, 70, 80])
+        >>> np.allclose(lc_new.counts, [30, 40, 50, 60, 70, 80])
+        True
         >>> lc_new.time
         array([3, 4, 5, 6, 7, 8])
         >>> # Truncation can also be done by time values
         >>> lc_new = lc.truncate(start=6, method='time')
         >>> lc_new.time
         array([6, 7, 8, 9])
-        >>> lc_new.counts
-        array([60, 70, 80, 90])
-
+        >>> np.allclose(lc_new.counts, [60, 70, 80, 90])
+        True
         """
 
         if not isinstance(method, str):
@@ -1249,8 +1248,8 @@ class Lightcurve(object):
         >>> lc_new = lc.sort()
         >>> lc_new.time
         array([1, 2, 3])
-        >>> lc_new.counts
-        array([100, 200, 300])
+        >>> np.allclose(lc_new.counts, [100, 200, 300])
+        True
 
         Returns
         -------
@@ -1298,8 +1297,8 @@ class Lightcurve(object):
         >>> lc_new = lc.sort_counts()
         >>> lc_new.time
         array([2, 1, 3])
-        >>> lc_new.counts
-        array([100, 200, 300])
+        >>> np.allclose(lc_new.counts, [100, 200, 300])
+        True
         """
 
         new_counts, new_time, new_counts_err = \
