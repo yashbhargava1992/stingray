@@ -166,6 +166,24 @@ class EventList(object):
                 raise ValueError('Lengths of time and energy must be equal.')
 
     def array_attrs(self):
+        """List the names of the array attributes of the event list.
+
+        By array attributes, we mean the ones with the same size and shape as
+        ``self.time``
+
+        Examples
+        --------
+        >>> ev = EventList(time=np.arange(5), pi=np.zeros(5), gti=[[45, 4]])
+        >>> attrs = ev.array_attrs()
+        >>> len(attrs)
+        2
+        >>> "pi" in attrs and "time" in attrs
+        True
+        >>> hasattr(ev, "gti") #  The gti attribute is set, however...
+        True
+        >>> "gti" in attrs #  The shape of self.gti is not equal to time! Not an array attr
+        False
+        """
         return [
             attr for attr in dir(self)
             if (
