@@ -764,6 +764,12 @@ class EventList(object):
         return meta_dict
 
     def to_astropy_timeseries(self):
+        """Save the event list to an Astropy timeseries.
+
+        Array attributes (time, pi, energy, etc.) are converted
+        into columns, while meta attributes (mjdref, gti, etc.)
+        are saved into the ``meta`` dictionary.
+        """
         from astropy.timeseries import TimeSeries
         from astropy.time import TimeDelta
         from astropy import units as u
@@ -790,9 +796,17 @@ class EventList(object):
 
     @staticmethod
     def from_astropy_timeseries(ts):
-        from astropy.timeseries import TimeSeries
-        from astropy import units as u
+        """Read the event list from an Astropy TimeSeries.
 
+        The timeseries has to define at least a column called time,
+        the rest of columns will form the array attributes of the
+        new event list, while the attributes in table.meta will
+        form the new meta attributes of the event list.
+
+        It is strongly advisable to define such attributes and columns
+        using the standard attributes of EventList: time, pi, energy, gti etc.
+
+        """
         kwargs = dict([(key.lower(), val) for (key, val) in ts.meta.items()])
         ev = EventList(time=ts.time, **kwargs)
         array_attrs = ts.colnames
@@ -805,6 +819,12 @@ class EventList(object):
         return ev
 
     def to_astropy_table(self):
+        """Save the event list to an Astropy Table.
+
+        Array attributes (time, pi, energy, etc.) are converted
+        into columns, while meta attributes (mjdref, gti, etc.)
+        are saved into the ``meta`` dictionary.
+        """
         data = {}
         array_attrs = self.array_attrs()
 
@@ -819,6 +839,17 @@ class EventList(object):
 
     @staticmethod
     def from_astropy_table(ts):
+        """Read the event list from an Astropy Table.
+
+        The table has to define at least a column called time,
+        the rest of columns will form the array attributes of the
+        new event list, while the attributes in table.meta will
+        form the new meta attributes of the event list.
+
+        It is strongly advisable to define such attributes and columns
+        using the standard attributes of EventList: time, pi, energy, gti etc.
+
+        """
         kwargs = dict([(key.lower(), val) for (key, val) in ts.meta.items()])
         ev = EventList(time=ts["time"], **kwargs)
         array_attrs = ts.colnames
@@ -831,6 +862,12 @@ class EventList(object):
         return ev
 
     def to_xarray(self):
+        """Save the event list to an xarray Dataset.
+
+        Array attributes (time, pi, energy, etc.) are converted
+        into columns, while meta attributes (mjdref, gti, etc.)
+        are saved into the ``ds.attrs`` dictionary.
+        """
         from xarray import Dataset
         data = {}
         array_attrs = self.array_attrs()
@@ -846,6 +883,17 @@ class EventList(object):
 
     @staticmethod
     def from_xarray(ts):
+        """Read the event list from a xarray Dataset.
+
+        The dataset has to define at least a column called time,
+        the rest of columns will form the array attributes of the
+        new event list, while the attributes in ds.attrs will
+        form the new meta attributes of the event list.
+
+        It is strongly advisable to define such attributes and columns
+        using the standard attributes of EventList: time, pi, energy, gti etc.
+
+        """
         array_attrs = ts.coords
 
         kwargs = dict([(key.lower(), val)
@@ -860,6 +908,12 @@ class EventList(object):
         return ev
 
     def to_pandas(self):
+        """Save the event list to a pandas DataFrame.
+
+        Array attributes (time, pi, energy, etc.) are converted
+        into columns, while meta attributes (mjdref, gti, etc.)
+        are saved into the ``ds.attrs`` dictionary.
+        """
         from pandas import DataFrame
         data = {}
         array_attrs = self.array_attrs()
@@ -875,6 +929,17 @@ class EventList(object):
 
     @staticmethod
     def from_pandas(ts):
+        """Read the event list from a pandas DataFrame.
+
+        The dataframe has to define at least a column called time,
+        the rest of columns will form the array attributes of the
+        new event list, while the attributes in ds.attrs will
+        form the new meta attributes of the event list.
+
+        It is strongly advisable to define such attributes and columns
+        using the standard attributes of EventList: time, pi, energy, gti etc.
+
+        """
         array_attrs = ts.columns
 
         kwargs = dict([(key.lower(), val)
