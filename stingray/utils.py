@@ -1181,8 +1181,7 @@ def compute_bin(x, bin_edges):
 
     if bin < 0 or bin >= n:
         return None
-    else:
-        return bin
+    return bin
 
 
 @njit(nogil=True, parallel=False)
@@ -1656,7 +1655,6 @@ if HAS_NUMBA:
             kwargs["ranges"] = kwargs.pop("range")
         return hist1d_numba_seq(*args, **kwargs)
 
-
 else:
 
     def histogram2d(*args, **kwargs):
@@ -1668,6 +1666,26 @@ else:
 
 def equal_count_energy_ranges(energies, n_ranges, emin=None, emax=None):
     """Find energy ranges containing an approximately equal number of events.
+
+    Parameters
+    ----------
+    energies : array-like
+        List of event energies
+    n_ranges : int
+        Number of output ranges
+
+    Other parameters
+    ----------------
+    emin : float, default None
+        Minimum energy. Defaults to the minimum of ``energies``
+    emax : float, default None
+        Maximum energy. Defaults to the maximum of ``energies``
+
+    Returns
+    -------
+    bin_edges : array-like
+        Edges of the energy ranges, in a single array of length
+        ``n_ranges+1``
 
     Examples
     --------
@@ -1683,12 +1701,15 @@ def equal_count_energy_ranges(energies, n_ranges, emin=None, emax=None):
     True
     """
     need_filtering = False
+    if emin is not None or emax is not None:
+        need_filtering = True
+
     if emin is None:
         emin = energies.min()
-        need_filtering = True
+
     if emax is None:
         emax = energies.max()
-        need_filtering = True
+
     if need_filtering:
         good = (energies >= emin) & (energies <= emax)
         energies = energies[good]
@@ -1698,4 +1719,5 @@ def equal_count_energy_ranges(energies, n_ranges, emin=None, emax=None):
         percentiles = np.concatenate([[emin], percentiles, [emax]])
     else:
         percentiles = [emin, emax]
+
     return percentiles
