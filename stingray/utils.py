@@ -4,6 +4,7 @@ import random
 import string
 import sys
 import warnings
+import tempfile
 from collections.abc import Iterable
 
 import numpy as np
@@ -11,6 +12,9 @@ import scipy
 from astropy.time import Time, TimeDelta
 import astropy.units as u
 from astropy.units import Quantity
+from numpy import histogram as histogram_np
+from numpy import histogram2d as histogram2d_np
+
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
@@ -227,7 +231,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
         filtered_yerr = yerr[min_ind:max_ind-1]
         output[i] = np.sum(filtered_y)
         outputerr[i] = np.sum(filtered_yerr)
-        step_size[i] = max_ind -1 - min_ind
+        step_size[i] = max_ind - 1 - min_ind
 
         prev_dx = xedges[min_ind] - xedges[min_ind-1]
         prev_frac = (xedges[min_ind] - xmin)/prev_dx
@@ -270,7 +274,6 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     xbin = np.arange(ybin.shape[0]) * dx_new + new_x0
 
     return xbin, ybin, ybinerr, step_size
-
 
 
 def rebin_data_log(x, y, f, y_err=None, dx=None):
@@ -893,9 +896,9 @@ def create_window(N, window_type='uniform'):
         a3 = 0.388
         a4 = 0.028
         window = a0 - a1 * np.cos((2 * np.pi * n) / N_minus_1) + \
-                a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
-                a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
-                a4 * np.cos((8 * np.pi * n) / N_minus_1)
+            a2 * np.cos((4 * np.pi * n) / N_minus_1) - \
+            a3 * np.cos((6 * np.pi * n) / N_minus_1) + \
+            a4 * np.cos((8 * np.pi * n) / N_minus_1)
 
     return window
 
@@ -1172,3 +1175,588 @@ def check_iterables_close(iter0, iter1, **kwargs):
         if not np.isclose(i0, i1):
             return False
     return True
+
+
+@njit(nogil=True, parallel=False)
+def compute_bin(x, bin_edges):
+    """Given a list of bin edges, get what bin will a number end up to
+
+    Parameters
+    ----------
+    x : float
+        The value to insert
+    bin_edges: array
+        The list of bin edges
+
+    Returns
+    -------
+    bin : int
+        The bin number. None if outside bin edges.
+
+    Examples
+    --------
+    >>> bin_edges = np.array([0, 5, 10])
+    >>> compute_bin(1, bin_edges)
+    0
+    >>> compute_bin(5, bin_edges)
+    1
+    >>> compute_bin(10, bin_edges)
+    1
+    >>> compute_bin(11, bin_edges) is None
+    True
+    """
+
+    # assuming uniform bins for now
+    n = bin_edges.shape[0] - 1
+    a_min = bin_edges[0]
+    a_max = bin_edges[-1]
+
+    # special case to mirror NumPy behavior for last bin
+    if x == a_max:
+        return n - 1  # a_max always in last bin
+
+    bin = int(n * (x - a_min) / (a_max - a_min))
+
+    if bin < 0 or bin >= n:
+        return None
+    return bin
+
+
+@njit(nogil=True, parallel=False)
+def _hist1d_numba_seq(H, tracks, bins, ranges):
+    delta = 1 / ((ranges[1] - ranges[0]) / bins)
+
+    for t in range(tracks.size):
+        i = (tracks[t] - ranges[0]) * delta
+        if 0 <= i < bins:
+            H[int(i)] += 1
+
+    return H
+
+
+def _allocate_array_or_memmap(shape, dtype, use_memmap=False, tmp=None):
+    """Allocate an array. If very big and user asks for it, allocate a memory map.
+
+    Parameters
+    ----------
+    shape : tuple
+        Shape of the output array
+    dtype : str or anything compatible with `np.dtype`
+        Type of the output array
+    use_memmap : bool
+        If ``True`` and the number of bins is above 10 million,
+        the histogram is created into a memory-mapped Numpy array
+    tmp : str, default None
+        Temporary file name for the memory map (only relevant if
+        ``use_memmap`` is ``True``). A temporary file with random
+        name is allocated if this is not specified.
+
+    Returns
+    -------
+    H : array
+        The output array
+    """
+    if use_memmap and np.prod(shape) > 10 ** 7:
+        if tmp is None:
+            tmp = tempfile.NamedTemporaryFile("w+", suffix=".npy").name
+        H = np.lib.format.open_memmap(
+            tmp, mode="w+", dtype=dtype, shape=shape
+        )
+    else:
+        H = np.zeros(shape, dtype=dtype)
+    return H
+
+
+def hist1d_numba_seq(a, bins, ranges, use_memmap=False, tmp=None):
+    """Numba-compiled 1-d histogram.
+
+    Parameters
+    ----------
+    a : array-like
+        Input array, to be histogrammed
+    bins : integer
+        number of bins in the final histogram
+    ranges : [min, max]
+        Minimum and maximum value of the histogram
+
+    Other parameters
+    ----------------
+    use_memmap : bool
+        If ``True`` and the number of bins is above 10 million,
+        the histogram is created into a memory-mapped Numpy array
+    tmp : str
+        Temporary file name for the memory map (only relevant if
+        ``use_memmap`` is ``True``)
+
+    Returns
+    -------
+    histogram: array-like
+        Histogrammed values of a, in ``bins`` bins.
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Examples
+    --------
+    >>> if os.path.exists('out.npy'): os.unlink('out.npy')
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> H, xedges = np.histogram(x, bins=5, range=[0., 1.])
+    >>> Hn = hist1d_numba_seq(x, bins=5, ranges=[0., 1.], tmp='out.npy',
+    ...                       use_memmap=True)
+    >>> assert np.all(H == Hn)
+    >>> # The number of bins is small, memory map was not used!
+    >>> assert not os.path.exists('out.npy')
+    >>> H, xedges = np.histogram(x, bins=10**8, range=[0., 1.])
+    >>> Hn = hist1d_numba_seq(x, bins=10**8, ranges=[0., 1.],
+    ...                       use_memmap=True, tmp='out.npy')
+    >>> assert np.all(H == Hn)
+    >>> assert os.path.exists('out.npy')  # Created!
+    >>> # Here, instead, it will create a temporary file for the memory map
+    >>> Hn = hist1d_numba_seq(x, bins=10**8, ranges=[0., 1.],
+    ...                       use_memmap=True)
+    >>> assert np.all(H == Hn)
+    """
+    hist_arr = _allocate_array_or_memmap((bins, ), a.dtype, use_memmap=use_memmap, tmp=tmp)
+
+    return _hist1d_numba_seq(hist_arr, a, bins, np.asarray(ranges))
+
+
+@njit(nogil=True, parallel=False)
+def _hist2d_numba_seq(H, tracks, bins, ranges):
+    delta = 1 / ((ranges[:, 1] - ranges[:, 0]) / bins)
+
+    for t in range(tracks.shape[1]):
+        i = (tracks[0, t] - ranges[0, 0]) * delta[0]
+        j = (tracks[1, t] - ranges[1, 0]) * delta[1]
+        if 0 <= i < bins[0] and 0 <= j < bins[1]:
+            H[int(i), int(j)] += 1
+
+    return H
+
+
+def hist2d_numba_seq(x, y, bins, ranges, use_memmap=False, tmp=None):
+    """Numba-compiled 2-d histogram.
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Parameters
+    ----------
+    x : array-like
+        Input array, to be histogrammed
+    y : array-like
+        Input array (equal length to x), to be histogrammed
+    shape : (int, int)
+        shape of the final histogram
+    ranges : [min, max]
+        Minimum and maximum value of the histogram
+
+    Other parameters
+    ----------------
+    use_memmap : bool
+        If ``True`` and the number of bins is above 10 million,
+        the histogram is created into a memory-mapped Numpy array
+    tmp : str
+        Temporary file name for the memory map (only relevant if
+        ``use_memmap`` is ``True``)
+
+    Returns
+    -------
+    histogram: array-like
+        Output Histogram
+
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> y = np.random.uniform(2., 3., 100)
+    >>> H, xedges, yedges = np.histogram2d(x, y, bins=(5, 5),
+    ...                                    range=[(0., 1.), (2., 3.)])
+    >>> Hn = hist2d_numba_seq(x, y, bins=(5, 5),
+    ...                       ranges=[[0., 1.], [2., 3.]])
+    >>> assert np.all(H == Hn)
+    >>> H, xedges, yedges = np.histogram2d(x, y, bins=(5000, 5000),
+    ...                                    range=[(0., 1.), (2., 3.)])
+    >>> Hn = hist2d_numba_seq(x, y, bins=(5000, 5000),
+    ...                       ranges=[[0., 1.], [2., 3.]],
+    ...                       use_memmap=True)
+    >>> assert np.all(H == Hn)
+    """
+
+    H = _allocate_array_or_memmap(bins, np.uint64, use_memmap=use_memmap, tmp=tmp)
+    return _hist2d_numba_seq(
+        H, np.array([x, y]), np.asarray(list(bins)), np.asarray(ranges)
+    )
+
+
+@njit(nogil=True, parallel=False)
+def _hist3d_numba_seq(H, tracks, bins, ranges):
+    delta = 1 / ((ranges[:, 1] - ranges[:, 0]) / bins)
+
+    for t in range(tracks.shape[1]):
+        i = (tracks[0, t] - ranges[0, 0]) * delta[0]
+        j = (tracks[1, t] - ranges[1, 0]) * delta[1]
+        k = (tracks[2, t] - ranges[2, 0]) * delta[2]
+        if 0 <= i < bins[0] and 0 <= j < bins[1]:
+            H[int(i), int(j), int(k)] += 1
+
+    return H
+
+
+def hist3d_numba_seq(tracks, bins, ranges, use_memmap=False, tmp=None):
+    """Numba-compiled 3d histogram
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Parameters
+    ----------
+    tracks : (array-like, array-like, array-like)
+        List of input arrays of identical length, to be histogrammed
+    bins : (int, int, int)
+        shape of the final histogram
+    ranges : [min, max]
+        Minimum and maximum value of the histogram
+
+    Other parameters
+    ----------------
+    use_memmap : bool
+        If ``True`` and the number of bins is above 10 million,
+        the histogram is created into a memory-mapped Numpy array
+    tmp : str
+        Temporary file name for the memory map (only relevant if
+        ``use_memmap`` is ``True``)
+
+    Returns
+    -------
+    histogram: array-like
+        Output Histogram
+
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> y = np.random.uniform(2., 3., 100)
+    >>> z = np.random.uniform(4., 5., 100)
+    >>> H, _ = np.histogramdd((x, y, z), bins=(5, 6, 7),
+    ...                       range=[(0., 1.), (2., 3.), (4., 5)])
+    >>> Hn = hist3d_numba_seq((x, y, z), bins=(5, 6, 7),
+    ...                       ranges=[[0., 1.], [2., 3.], [4., 5.]])
+    >>> assert np.all(H == Hn)
+    >>> H, _ = np.histogramdd((x, y, z), bins=(300, 300, 300),
+    ...                       range=[(0., 1.), (2., 3.), (4., 5)])
+    >>> Hn = hist3d_numba_seq((x, y, z), bins=(300, 300, 300),
+    ...                       ranges=[[0., 1.], [2., 3.], [4., 5.]])
+    >>> assert np.all(H == Hn)
+    """
+    H = _allocate_array_or_memmap(bins, np.uint64, use_memmap=use_memmap, tmp=tmp)
+
+    return _hist3d_numba_seq(
+        H, np.asarray(tracks), np.asarray(list(bins)), np.asarray(ranges)
+    )
+
+
+@njit(nogil=True, parallel=False)
+def _hist2d_numba_seq_weight(H, tracks, weights, bins, ranges):
+    delta = 1 / ((ranges[:, 1] - ranges[:, 0]) / bins)
+
+    for t in range(tracks.shape[1]):
+        i = (tracks[0, t] - ranges[0, 0]) * delta[0]
+        j = (tracks[1, t] - ranges[1, 0]) * delta[1]
+        if 0 <= i < bins[0] and 0 <= j < bins[1]:
+            H[int(i), int(j)] += weights[t]
+
+    return H
+
+
+def hist2d_numba_seq_weight(x, y, weights, bins, ranges, use_memmap=False, tmp=None):
+    """Numba-compiled 3d histogram
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Parameters
+    ----------
+    tracks : (array-like, array-like, array-like)
+        List of input arrays of identical length, to be histogrammed
+    bins : (int, int, int)
+        shape of the final histogram
+    ranges : [min, max]
+        Minimum and maximum value of the histogram
+
+    Other parameters
+    ----------------
+    use_memmap : bool
+        If ``True`` and the number of bins is above 10 million,
+        the histogram is created into a memory-mapped Numpy array
+    tmp : str
+        Temporary file name for the memory map (only relevant if
+        ``use_memmap`` is ``True``)
+
+    Returns
+    -------
+    histogram: array-like
+        Output Histogram
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> y = np.random.uniform(2., 3., 100)
+    >>> weight = np.random.uniform(0, 1, 100)
+    >>> H, xedges, yedges = np.histogram2d(x, y, bins=(5, 5),
+    ...                                    range=[(0., 1.), (2., 3.)],
+    ...                                    weights=weight)
+    >>> Hn = hist2d_numba_seq_weight(x, y, bins=(5, 5),
+    ...                              ranges=[[0., 1.], [2., 3.]],
+    ...                              weights=weight)
+    >>> assert np.all(H == Hn)
+    """
+    H = _allocate_array_or_memmap(bins, np.double, use_memmap=use_memmap, tmp=tmp)
+
+    return _hist2d_numba_seq_weight(
+        H,
+        np.array([x, y]),
+        weights,
+        np.asarray(list(bins)),
+        np.asarray(ranges),
+    )
+
+
+@njit(nogil=True, parallel=False)
+def _hist3d_numba_seq_weight(H, tracks, weights, bins, ranges):
+    delta = 1 / ((ranges[:, 1] - ranges[:, 0]) / bins)
+
+    for t in range(tracks.shape[1]):
+        i = (tracks[0, t] - ranges[0, 0]) * delta[0]
+        j = (tracks[1, t] - ranges[1, 0]) * delta[1]
+        k = (tracks[2, t] - ranges[2, 0]) * delta[2]
+        if 0 <= i < bins[0] and 0 <= j < bins[1]:
+            H[int(i), int(j), int(k)] += weights[t]
+
+    return H
+
+
+def hist3d_numba_seq_weight(tracks, weights, bins, ranges, use_memmap=False, tmp=None):
+    """Numba-compiled weighted 3d histogram
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Parameters
+    ----------
+    tracks : (x, y, z)
+        List of input arrays of identical length, to be histogrammed
+    weights : array-like
+        List of weights for each point of the input arrays
+    bins : (int, int, int)
+        shape of the final histogram
+    ranges : [[xmin, xmax], [ymin, ymax], [zmin, zmax]]]
+        Minimum and maximum value of the histogram, in each dimension
+
+    Other parameters
+    ----------------
+    use_memmap : bool
+        If ``True`` and the number of bins is above 10 million,
+        the histogram is created into a memory-mapped Numpy array
+    tmp : str
+        Temporary file name for the memory map (only relevant if
+        ``use_memmap`` is ``True``)
+
+    Returns
+    -------
+    histogram: array-like
+        Output Histogram
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> y = np.random.uniform(2., 3., 100)
+    >>> z = np.random.uniform(4., 5., 100)
+    >>> weights = np.random.uniform(0, 1., 100)
+    >>> H, _ = np.histogramdd((x, y, z), bins=(5, 6, 7),
+    ...                       range=[(0., 1.), (2., 3.), (4., 5)],
+    ...                       weights=weights)
+    >>> Hn = hist3d_numba_seq_weight(
+    ...    (x, y, z), weights, bins=(5, 6, 7),
+    ...    ranges=[[0., 1.], [2., 3.], [4., 5.]])
+    >>> assert np.all(H == Hn)
+    """
+
+    H = _allocate_array_or_memmap(bins, np.double, use_memmap=use_memmap, tmp=tmp)
+    return _hist3d_numba_seq_weight(
+        H,
+        np.asarray(tracks),
+        weights,
+        np.asarray(list(bins)),
+        np.asarray(ranges),
+    )
+
+
+@njit(nogil=True, parallel=False)
+def _index_arr(a, ix_arr):
+    strides = np.array(a.strides) / a.itemsize
+    ix = int((ix_arr * strides).sum())
+    return a.ravel()[ix]
+
+
+@njit(nogil=True, parallel=False)
+def _index_set_arr(a, ix_arr, val):
+    strides = np.array(a.strides) / a.itemsize
+    ix = int((ix_arr * strides).sum())
+    a.ravel()[ix] = val
+
+
+@njit(nogil=True, parallel=False)
+def _histnd_numba_seq(H, tracks, bins, ranges, slice_int):
+    delta = 1 / ((ranges[:, 1] - ranges[:, 0]) / bins)
+
+    for t in range(tracks.shape[1]):
+        slicearr = np.array(
+            [
+                (tracks[dim, t] - ranges[dim, 0]) * delta[dim]
+                for dim in range(tracks.shape[0])
+            ]
+        )
+
+        good = np.all((slicearr < bins) & (slicearr >= 0))
+        slice_int[:] = slicearr
+
+        if good:
+            curr = _index_arr(H, slice_int)
+            _index_set_arr(H, slice_int, curr + 1)
+
+    return H
+
+
+def histnd_numba_seq(tracks, bins, ranges, use_memmap=False, tmp=None):
+    """Numba-compiled n-d histogram
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Parameters
+    ----------
+    tracks : (array-like, array-like, array-like)
+        List of input arrays, to be histogrammed
+    bins : (int, int, ...)
+        shape of the final histogram
+    ranges : [[min, max], ...]
+        Minimum and maximum value of the histogram, in each dimension
+
+    Other parameters
+    ----------------
+    use_memmap : bool
+        If ``True`` and the number of bins is above 10 million,
+        the histogram is created into a memory-mapped Numpy array
+    tmp : str
+        Temporary file name for the memory map (only relevant if
+        ``use_memmap`` is ``True``)
+
+    Returns
+    -------
+    histogram: array-like
+        Output Histogram
+
+    From https://iscinumpy.dev/post/histogram-speeds-in-python/
+
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> y = np.random.uniform(2., 3., 100)
+    >>> z = np.random.uniform(4., 5., 100)
+    >>> # 2d example
+    >>> H, _, _ = np.histogram2d(x, y, bins=np.array((5, 5)),
+    ...                          range=[(0., 1.), (2., 3.)])
+    >>> alldata = np.array([x, y])
+    >>> Hn = histnd_numba_seq(alldata, bins=np.array([5, 5]),
+    ...                       ranges=np.array([[0., 1.], [2., 3.]]))
+    >>> assert np.all(H == Hn)
+    >>> # 3d example
+    >>> H, _ = np.histogramdd((x, y, z), bins=np.array((5, 6, 7)),
+    ...                       range=[(0., 1.), (2., 3.), (4., 5)])
+    >>> alldata = np.array([x, y, z])
+    >>> Hn = hist3d_numba_seq(alldata, bins=np.array((5, 6, 7)),
+    ...                       ranges=np.array([[0., 1.], [2., 3.], [4., 5.]]))
+    >>> assert np.all(H == Hn)
+    """
+    H = _allocate_array_or_memmap(bins, np.uint64, use_memmap=use_memmap, tmp=tmp)
+    slice_int = np.zeros(len(bins), dtype=np.uint64)
+
+    return _histnd_numba_seq(H, tracks, bins, ranges, slice_int)
+
+
+if HAS_NUMBA:
+
+    def histogram2d(*args, **kwargs):
+        if "range" in kwargs:
+            kwargs["ranges"] = kwargs.pop("range")
+        return hist2d_numba_seq(*args, **kwargs)
+
+    def histogram(*args, **kwargs):
+        if "range" in kwargs:
+            kwargs["ranges"] = kwargs.pop("range")
+        return hist1d_numba_seq(*args, **kwargs)
+
+else:
+
+    def histogram2d(*args, **kwargs):
+        return histogram2d_np(*args, **kwargs)[0]
+
+    def histogram(*args, **kwargs):
+        return histogram_np(*args, **kwargs)[0]
+
+
+def equal_count_energy_ranges(energies, n_ranges, emin=None, emax=None):
+    """Find energy ranges containing an approximately equal number of events.
+
+    Parameters
+    ----------
+    energies : array-like
+        List of event energies
+    n_ranges : int
+        Number of output ranges
+
+    Other parameters
+    ----------------
+    emin : float, default None
+        Minimum energy. Defaults to the minimum of ``energies``
+    emax : float, default None
+        Maximum energy. Defaults to the maximum of ``energies``
+
+    Returns
+    -------
+    bin_edges : array-like
+        Edges of the energy ranges, in a single array of length
+        ``n_ranges+1``
+
+    Examples
+    --------
+    >>> energies = np.random.uniform(0, 10, 1000000)
+    >>> edges = equal_count_energy_ranges(energies, 5, emin=0, emax=10)
+    >>> np.allclose(edges, [0, 2, 4, 6, 8, 10], atol=0.05)
+    True
+    >>> edges = equal_count_energy_ranges(energies, 5)
+    >>> np.allclose(edges, [0, 2, 4, 6, 8, 10], atol=0.05)
+    True
+    >>> edges = equal_count_energy_ranges(energies, 0)
+    >>> np.allclose(edges, [0, 10], atol=0.05)
+    True
+    """
+    need_filtering = False
+    if emin is not None or emax is not None:
+        need_filtering = True
+
+    if emin is None:
+        emin = energies.min()
+
+    if emax is None:
+        emax = energies.max()
+
+    if need_filtering:
+        good = (energies >= emin) & (energies <= emax)
+        energies = energies[good]
+
+    if n_ranges > 1:
+        percentiles = np.percentile(energies, np.linspace(0, 100, n_ranges + 1)[1:-1])
+        percentiles = np.concatenate([[emin], percentiles, [emax]])
+    else:
+        percentiles = [emin, emax]
+
+    return percentiles
+ 
