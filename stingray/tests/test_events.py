@@ -12,7 +12,7 @@ datadir = os.path.join(curdir, 'data')
 
 _H5PY_INSTALLED = True
 _HAS_YAML = True
-_HAS_TIMESERIES = True
+_HAS_TIMESERIES = _HAS_XARRAY = _HAS_PANDAS = True
 
 try:
     import h5py
@@ -24,6 +24,18 @@ try:
     from astropy.timeseries import TimeSeries
 except ImportError:
     _HAS_TIMESERIES = False
+
+try:
+    import xarray
+    from xarray import Dataset
+except ImportError:
+    _HAS_XARRAY = False
+
+try:
+    import pandas
+    from pandas import DataFrame
+except ImportError:
+    _HAS_PANDAS = False
 
 try:
     import yaml
@@ -355,9 +367,6 @@ class TestEvents(object):
 
     @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
-        """Test that io methods raise Key Error when
-        wrong format is provided.
-        """
         N = len(self.time)
         ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),
                        pi=np.ones(N), mission="BUBU", instr="BABA",
@@ -370,9 +379,6 @@ class TestEvents(object):
             assert getattr(ev, attr) == getattr(new_ev, attr)
 
     def test_table_roundtrip(self):
-        """Test that io methods raise Key Error when
-        wrong format is provided.
-        """
         N = len(self.time)
         ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),
                        pi=np.ones(N), mission="BUBU", instr="BABA",
@@ -384,3 +390,28 @@ class TestEvents(object):
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(ev, attr) == getattr(new_ev, attr)
 
+    @pytest.mark.skipif('not _HAS_XARRAY')
+    def test_xarray_roundtrip(self):
+        N = len(self.time)
+        ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),
+                       pi=np.ones(N), mission="BUBU", instr="BABA",
+                       mjdref=53467.)
+        ts = ev.to_xarray()
+        new_ev = ev.from_xarray(ts)
+        for attr in ['time', 'energy', 'pi', 'gti']:
+            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
+
+    @pytest.mark.skipif('not _HAS_PANDAS')
+    def test_pandas_roundtrip(self):
+        N = len(self.time)
+        ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),
+                       pi=np.ones(N), mission="BUBU", instr="BABA",
+                       mjdref=53467.)
+        ts = ev.to_pandas()
+        new_ev = ev.from_pandas(ts)
+        for attr in ['time', 'energy', 'pi', 'gti']:
+            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
+        for attr in ['mission', 'instr', 'mjdref']:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
