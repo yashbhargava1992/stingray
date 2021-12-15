@@ -1,9 +1,10 @@
-
+import os
 import numpy as np
 import pytest
 import warnings
 import matplotlib.pyplot as plt
 import scipy.special
+from astropy.io import fits
 from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
 from stingray.crossspectrum import  cospectra_pvalue, normalize_crossspectrum
@@ -14,6 +15,8 @@ from stingray.events import EventList
 import copy
 
 np.random.seed(20160528)
+curdir = os.path.abspath(os.path.dirname(__file__))
+datadir = os.path.join(curdir, "data")
 
 
 def avg_cdf_two_spectra(x):
@@ -126,9 +129,14 @@ class TestAveragedCrossspectrumEvents(object):
         tstart = 0.0
         tend = 1.0
         self.dt = np.longdouble(0.0001)
+        segment_size = 1
+        self.segment_size = segment_size
+        N = np.rint(segment_size / self.dt).astype(int)
+        # adjust dt
+        self.dt = segment_size / N
 
-        times1 = np.sort(np.random.uniform(tstart, tend, 1000))
-        times2 = np.sort(np.random.uniform(tstart, tend, 1000))
+        times1 = np.sort(np.random.uniform(tstart, tend, 1000000))
+        times2 = np.sort(np.random.uniform(tstart, tend, 1000000))
         gti = np.array([[tstart, tend]])
 
         self.events1 = EventList(times1, gti=gti)
@@ -136,9 +144,85 @@ class TestAveragedCrossspectrumEvents(object):
 
         self.cs = Crossspectrum(self.events1, self.events2, dt=self.dt)
 
-        self.acs = AveragedCrossspectrum(self.events1, self.events2,
-                                         segment_size=1, dt=self.dt)
+        self.acs = AveragedCrossspectrum(self.events1.to_lc(self.dt),
+                                         self.events2.to_lc(self.dt), silent=True,
+                                         segment_size=segment_size, dt=self.dt, norm='none')
         self.lc1, self.lc2 = self.events1, self.events2
+
+    def test_from_events_works(self):
+        lccs = AveragedCrossspectrum.from_events(self.events1, self.events2,
+                                                 segment_size=1, dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+        lag1, lag1_e = lccs.time_lag()
+        lag2, lag2_e = self.acs.time_lag()
+        assert np.allclose(lag1, lag2)
+        assert np.allclose(lag1_e, lag2_e, equal_nan=True)
+        assert lccs.power_err is not None
+
+    def test_from_lc_iter_works(self):
+        lccs = AveragedCrossspectrum.from_lc_iterable(
+            self.events1.to_lc_iter(self.dt, self.segment_size),
+            self.events2.to_lc_iter(self.dt, self.segment_size),
+            segment_size=self.segment_size, dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_lc_iter_with_err_works(self):
+        def iter_lc_with_errs(iter_lc):
+            for lc in iter_lc:
+                lc._counts_err = np.zeros_like(lc.counts) + lc.counts.mean()**0.5
+                yield lc
+
+        lccs = AveragedCrossspectrum.from_lc_iterable(
+            iter_lc_with_errs(self.events1.to_lc_iter(self.dt, self.segment_size)),
+            iter_lc_with_errs(self.events2.to_lc_iter(self.dt, self.segment_size)),
+            segment_size=self.segment_size, dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_lc_iter_counts_only_works(self):
+        def iter_lc_counts_only(iter_lc):
+            for lc in iter_lc:
+                yield lc.counts
+
+        lccs = AveragedCrossspectrum.from_lc_iterable(
+            iter_lc_counts_only(self.events1.to_lc_iter(self.dt, self.segment_size)),
+            iter_lc_counts_only(self.events2.to_lc_iter(self.dt, self.segment_size)),
+            segment_size=self.segment_size, dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_time_array_works_with_memmap(self):
+        with fits.open(os.path.join(datadir, "monol_testA.evt"), memmap=True) as hdul:
+            times1 = hdul[1].data["TIME"]
+
+            gti = np.array([[hdul[2].data["START"][0], hdul[2].data["STOP"][0]]])
+
+            times2 = np.random.uniform(gti[0, 0], gti[0, 1], 1000)
+
+            _ = AveragedCrossspectrum.from_time_array(
+                times1, times2, segment_size=128, dt=self.dt, gti=gti, norm='none',
+                use_common_mean=False)
+
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
+    def test_from_lc_with_err_works(self, norm):
+        lc1 = self.events1.to_lc(self.dt)
+        lc2 = self.events2.to_lc(self.dt)
+        lc1._counts_err = np.sqrt(lc1.counts.mean()) + np.zeros_like(lc1.counts)
+        lc2._counts_err = np.sqrt(lc2.counts.mean()) + np.zeros_like(lc2.counts)
+        pds = AveragedCrossspectrum.from_lightcurve(
+            lc1, lc2,
+            segment_size=self.segment_size, norm=norm)
+        pds_ev = AveragedCrossspectrum.from_events(
+            self.events1, self.events2,
+            segment_size=self.segment_size, dt=self.dt, norm=norm)
+        for attr in ["power", "freq", "m", "n", "nphots1", "nphots2", "segment_size"]:
+            assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
 
     def test_it_works_with_events(self):
         lc1 = self.events1.to_lc(self.dt)

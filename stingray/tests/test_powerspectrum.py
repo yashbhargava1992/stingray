@@ -1,15 +1,18 @@
+import os
 import numpy as np
 import copy
 import warnings
 
 from astropy.tests.helper import pytest
-
+from astropy.io import fits
 from stingray import Lightcurve
 from stingray.events import EventList
 from stingray import Powerspectrum, AveragedPowerspectrum, \
     DynamicalPowerspectrum
 
 np.random.seed(20150907)
+curdir = os.path.abspath(os.path.dirname(__file__))
+datadir = os.path.join(curdir, "data")
 
 
 class TestAveragedPowerspectrumEvents(object):
@@ -26,9 +29,65 @@ class TestAveragedPowerspectrumEvents(object):
         cls.events = EventList(times, gti=gti)
 
         cls.lc = cls.events
+        cls.leahy_pds = AveragedPowerspectrum(
+            cls.lc, segment_size=cls.segment_size, dt=cls.dt, norm="leahy", silent=True)
 
-    def test_init(self):
-        AveragedPowerspectrum(self.lc, self.segment_size, dt=self.dt)
+    def test_from_events_works(self):
+        pds_ev = AveragedPowerspectrum.from_events(
+            self.events, segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True)
+        assert np.allclose(self.leahy_pds.power, pds_ev.power)
+
+    def test_from_lc_iter_works(self):
+        pds_ev = AveragedPowerspectrum.from_lc_iterable(
+            self.events.to_lc_iter(self.dt, self.segment_size),
+            segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True)
+        assert np.allclose(self.leahy_pds.power, pds_ev.power)
+
+    def test_from_lc_iter_with_err_works(self):
+        def iter_lc_with_errs(iter_lc):
+            for lc in iter_lc:
+                lc._counts_err = np.zeros_like(lc.counts) + lc.counts.mean()**0.5
+                yield lc
+
+        lccs = AveragedPowerspectrum.from_lc_iterable(
+            iter_lc_with_errs(self.events.to_lc_iter(self.dt, self.segment_size)),
+            segment_size=self.segment_size, dt=self.dt, norm='leahy', silent=True)
+        power1 = lccs.power.real
+        power2 = self.leahy_pds.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_lc_iter_counts_only_works(self):
+        def iter_lc_counts_only(iter_lc):
+            for lc in iter_lc:
+                yield lc.counts
+
+        lccs = AveragedPowerspectrum.from_lc_iterable(
+            iter_lc_counts_only(self.events.to_lc_iter(self.dt, self.segment_size)),
+            segment_size=self.segment_size, dt=self.dt, norm='leahy', silent=True)
+        power1 = lccs.power.real
+        power2 = self.leahy_pds.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_time_array_works_with_memmap(self):
+        with fits.open(os.path.join(datadir, "monol_testA.evt"), memmap=True) as hdul:
+            times = hdul[1].data["TIME"]
+
+            gti = np.array([[hdul[2].data["START"][0], hdul[2].data["STOP"][0]]])
+
+            _ = AveragedPowerspectrum.from_time_array(
+                times,  segment_size=128, dt=self.dt, gti=gti, norm='none',
+                use_common_mean=False)
+
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
+    def test_from_lc_with_err_works(self, norm):
+        lc = self.events.to_lc(self.dt)
+        lc._counts_err = np.sqrt(lc.counts.mean()) + np.zeros_like(lc.counts)
+        pds = AveragedPowerspectrum.from_lightcurve(
+            lc, segment_size=self.segment_size, norm=norm, silent=True)
+        pds_ev = AveragedPowerspectrum.from_events(
+            self.events, segment_size=self.segment_size, dt=self.dt, norm=norm, silent=True)
+        for attr in ["power", "freq", "m", "n", "nphots", "segment_size"]:
+            assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
 
     def test_init_without_segment(self):
         with pytest.raises(ValueError):
@@ -230,10 +289,10 @@ class TestPowerspectrum(object):
                                            size=time.shape[0])
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1,
-                            gti=[[0, 100]])
+                        gti=[[0, 100]])
         ps = Powerspectrum(lc, norm="leahy")
         rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
-                                         max_freq=ps.freq[-1], white_noise_offset=0)
+                                             max_freq=ps.freq[-1], white_noise_offset=0)
 
         ps = Powerspectrum(lc, norm="frac")
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
@@ -248,11 +307,11 @@ class TestPowerspectrum(object):
                                            size=time.shape[0])
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1,
-                            gti=[[0, 400]])
+                        gti=[[0, 400]])
         ps = AveragedPowerspectrum(lc, norm="leahy", segment_size=100,
                                    silent=True)
         rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
-                                         max_freq=ps.freq[-1], white_noise_offset=0)
+                                             max_freq=ps.freq[-1], white_noise_offset=0)
 
         ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
@@ -267,7 +326,7 @@ class TestPowerspectrum(object):
                                            size=time.shape[0])
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1,
-                            gti=[[0, 400]])
+                        gti=[[0, 400]])
         ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
                                          max_freq=ps.freq[-1],
@@ -333,7 +392,7 @@ class TestPowerspectrum(object):
         lc = Lightcurve(time, counts)
         ps = Powerspectrum(lc, norm="abs")
         abs_noise = 2. * 100  # expected Poisson noise level;
-                              # hardcoded value from above
+        # hardcoded value from above
         assert np.isclose(np.mean(ps.power[1:]), abs_noise, atol=50)
 
     def test_fractional_rms_error(self):
@@ -392,7 +451,6 @@ class TestPowerspectrum(object):
         assert np.allclose(cs1.power, cs2.power)
         assert np.allclose(cs1.freq, cs2.freq)
 
-
     def test_classical_significances_runs(self):
         ps = Powerspectrum(self.lc, norm="Leahy")
         ps.classical_significances()
@@ -428,7 +486,6 @@ class TestPowerspectrum(object):
         pval = ps.classical_significances(threshold=threshold,
                                           trial_correction=True)
         assert np.size(pval) == 0
-
 
     def test_classical_significances_with_logbinned_psd(self):
         ps = Powerspectrum(self.lc, norm="leahy")
