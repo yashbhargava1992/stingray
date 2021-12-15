@@ -100,21 +100,21 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
 
     Examples
     --------
-    >>> t = [0.5, 1.5, 2.5, 3.5, 5.5]
+    >>> t = [0., 1., 2., 3., 5.]
     >>> c = [100] * 5
-    >>> gti = [[0, 4], [5, 6]]
+    >>> gti = [[-0.5, 3.5], [4.5, 5.5]]
     >>> times = simulate_times_from_count_array(t, c, gti, 1, use_spline=True)
     >>> np.all(np.diff(times) > 0)  # Output array is sorted
     True
-    >>> np.all(times >= 0.)  # All times inside GTIs
+    >>> np.all(times >= -0.5)  # All times inside GTIs
     True
-    >>> np.all(times <= 6.)
+    >>> np.all(times <= 5.5)
     True
-    >>> np.any(times > 5.)
+    >>> np.any(times > 4.5)
     True
-    >>> np.any(times < 4.)
+    >>> np.any(times < 3.5)
     True
-    >>> np.any((times > 4.) & (times < 5.))  # No times outside GTIs
+    >>> np.any((times > 3.5) & (times < 4.5))  # No times outside GTIs
     False
     >>> # test that it works with integer times (former bug)
     >>> times = simulate_times_from_count_array([0, 1, 2, 3, 5], c, gti, 1, use_spline=True)
@@ -153,7 +153,7 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
         dt = dt
         t0 = time[0] - dt / 2
         t1 = time[0] + dt / 2
-        N = counts[0]
+        N = int(np.rint(counts[0]))
         return np.sort(np.random.uniform(t0, t1, N))
 
     tmin = gti[0, 0]

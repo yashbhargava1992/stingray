@@ -14,7 +14,7 @@ import numpy.random as ra
 from astropy.table import Table
 
 from .filters import get_deadtime_mask
-from .gti import append_gtis, check_separate, cross_gtis
+from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_boundaries
 from .io import load_events_and_gtis
 from .lightcurve import Lightcurve
 from .utils import assign_value_if_none, simon, interpret_times
@@ -246,7 +246,7 @@ class EventList(object):
                                           gti=self.gti, tseg=tseg,
                                           mjdref=self.mjdref)
 
-    def to_lc_list(self, dt):
+    def to_lc_iter(self, dt, segment_size=None):
         """Convert event list to a generator of Lightcurves.
 
         Parameters
@@ -254,24 +254,49 @@ class EventList(object):
         dt: float
             Binning time of the light curves
 
+        Other parameters
+        ----------------
+        segment_size : float, default None
+            Optional segment size. If None, use the GTI boundaries
+
         Returns
         -------
-        lc_gen: generator
-            Generates one :class:`stingray.Lightcurve` object for each GTI
+        lc_gen: `generator`
+            Generates one :class:`stingray.Lightcurve` object for each GTI or segment
         """
-        start_times = self.gti[:, 0]
-        end_times = self.gti[:, 1]
-        tsegs = end_times - start_times
 
-        for st, end, tseg in zip(start_times, end_times, tsegs):
-            idx_st = np.searchsorted(self.time, st, side='right')
-            idx_end = np.searchsorted(self.time, end, side='left')
-            lc = Lightcurve.make_lightcurve(self.time[idx_st:idx_end], dt,
+        segment_iter = generate_indices_of_boundaries(
+            self.time, self.gti, segment_size=segment_size, dt=0)
+
+        for st, end, idx_st, idx_end in segment_iter:
+            tseg = end - st
+
+            lc = Lightcurve.make_lightcurve(self.time[idx_st:idx_end + 1], dt,
                                             tstart=st,
                                             gti=np.asarray([[st, end]]),
                                             tseg=tseg,
-                                            mjdref=self.mjdref)
+                                            mjdref=self.mjdref, use_hist=True)
             yield lc
+
+    def to_lc_list(self, dt, segment_size=None):
+        """Convert event list to a list of Lightcurves.
+
+        Parameters
+        ----------
+        dt: float
+            Binning time of the light curves
+
+        Other parameters
+        ----------------
+        segment_size : float, default None
+            Optional segment size. If None, use the GTI boundaries
+
+        Returns
+        -------
+        lc_list: `List`
+            List containig one :class:`stingray.Lightcurve` object for each GTI or segment
+        """
+        return list(self.to_lc_iter(dt, segment_size))
 
     @staticmethod
     def from_lc(lc):

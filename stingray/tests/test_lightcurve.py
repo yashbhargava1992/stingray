@@ -1,3 +1,4 @@
+import os
 import copy
 import numpy as np
 from astropy.tests.helper import pytest
@@ -18,6 +19,7 @@ _H5PY_INSTALLED = True
 _HAS_LIGHTKURVE = True
 _HAS_TIMESERIES = True
 _HAS_YAML = True
+_IS_WINDOWS = os.name == "nt"
 
 try:
     import h5py
@@ -25,7 +27,7 @@ except ImportError:
     _H5PY_INSTALLED = False
 
 try:
-    import Lightkurve
+    import lightkurve
 except ImportError:
     _HAS_LIGHTKURVE = False
 
@@ -71,11 +73,36 @@ class TestProperties(object):
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
 
+    @pytest.mark.skipif("not _IS_WINDOWS")
+    def test_warn_on_windows(self):
+        with pytest.warns(UserWarning) as record:
+            _ = Lightcurve(self.lc.time, self.lc.counts, gti=self.lc.gti)
+        assert np.any(["On Windows, the size of an integer" in r.message.args[0]
+                       for r in record])
+
+    @pytest.mark.skipif("_IS_WINDOWS")
+    def test_warn_on_windows(self, monkeypatch):
+        monkeypatch.setattr(os, "name", "nt")
+        with pytest.warns(UserWarning) as record:
+            _ = Lightcurve(self.lc.time, self.lc.counts, gti=self.lc.gti)
+
+        assert np.any(["On Windows, the size of an integer" in r.message.args[0]
+                       for r in record])
+
     def test_warn_wrong_keywords(self):
         lc = copy.deepcopy(self.lc)
         with pytest.warns(UserWarning) as record:
             _ = Lightcurve(lc.time, lc.counts, gti=lc.gti, bubu='settete')
         assert np.any(["Unrecognized keywords:" in r.message.args[0]
+                       for r in record])
+
+    def test_warn_estimate_chunk_length(self):
+        times = np.arange(0, 1000, 1)
+        lc = Lightcurve(times, counts=np.ones(times.size) + 200, dt=1, skip_checks=True)
+        with pytest.warns(DeprecationWarning) as record:
+            lc.estimate_chunk_length()
+
+        assert np.any(["This function was renamed to estimate_segment_size" in r.message.args[0]
                        for r in record])
 
     def test_time(self):
@@ -914,21 +941,29 @@ class TestLightcurve(object):
 
     @pytest.mark.skipif('not _HAS_LIGHTKURVE')
     def test_to_lightkurve(self):
-        time, counts, counts_err = range(3), np.ones(3), np.zeros(3)
+        time, counts, counts_err = np.arange(3), np.ones(3), np.zeros(3)
         lc = Lightcurve(time, counts, counts_err)
         lk = lc.to_lightkurve()
-        assert_allclose(lk.time, time)
+        out_time = Time(lc.time / 86400 + lc.mjdref, format="mjd", scale="utc")
+        assert_allclose(lk.time.value, out_time.value)
         assert_allclose(lk.flux, counts)
         assert_allclose(lk.flux_err, counts_err)
 
-    @pytest.mark.skipif(not _HAS_LIGHTKURVE,
+    @pytest.mark.skipif('not _HAS_LIGHTKURVE',
                         reason='Lightkurve not installed')
     def test_from_lightkurve(self):
-        from Lightkurve import LightCurve
-        time, flux, flux_err = range(3), np.ones(3), np.zeros(3)
-        lk = LightCurve(time, flux, flux_err)
-        sr = Lightcurve.from_lightkurve(lk)
-        assert_allclose(sr.time, lc.time)
+        from lightkurve import LightCurve
+        time, flux, flux_err = np.arange(3), np.ones(3), np.zeros(3)
+        mjdref = 56000
+        time = Time(time / 86400 + mjdref, format="mjd", scale="utc")
+
+        # LightCurve wants a time object
+        lc = LightCurve(time=time, flux=flux, flux_err=flux_err)
+        sr = Lightcurve.from_lightkurve(lc)
+
+        out_time = Time(sr.time / 86400 + sr.mjdref, format="mjd", scale="utc")
+
+        assert_allclose(out_time.value, lc.time.value)
         assert_allclose(sr.counts, lc.flux)
         assert_allclose(sr.counts_err, lc.flux_err)
 

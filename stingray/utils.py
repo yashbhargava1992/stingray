@@ -460,7 +460,7 @@ def look_for_array_in_array(array1, array2):
     return next((i for i in array1 if i in array2), None)
 
 
-def is_string(s):  # pragma : no cover
+def is_string(s):
     """
     Portable function to answer whether a variable is a string.
 
@@ -474,7 +474,7 @@ def is_string(s):  # pragma : no cover
     isstring : bool
         A boolean decision on whether ``s`` is a string or not
     """
-    return isinstance(s, str)  # NOQA
+    return isinstance(s, str)
 
 
 def is_iterable(var):
@@ -1139,6 +1139,44 @@ def interpret_times(time, mjdref=0):
     raise ValueError(f"Unknown time format: {type(time)}")
 
 
+def check_iterables_close(iter0, iter1, **kwargs):
+    """Check that the values produced by iterables are equal.
+
+    Uses `np.isclose` if the iterables produce single values per iteration,
+    `np.allclose` otherwise.
+
+    Additional keyword arguments are passed to `np.allclose`
+    and `np.isclose`.
+
+    Parameters
+    ----------
+    iter0 : iterable
+    iter1 : iterable
+
+    Examples
+    --------
+    >>> iter0 = [0, 1]
+    >>> iter1 = [0, 2]
+    >>> check_iterables_close(iter0, iter1)
+    False
+    >>> iter0 = [(0, 0), (0, 1)]
+    >>> iter1 = [(0, 0.), (0, 1.)]
+    >>> check_iterables_close(iter0, iter1)
+    True
+    >>> iter1 = [(0, 0.), (0, 3.)]
+    >>> check_iterables_close(iter0, iter1)
+    False
+    """
+    for i0, i1 in zip(iter0, iter1):
+        if isinstance(i0, Iterable):
+            if not np.allclose(i0, i1):
+                return False
+            continue
+        if not np.isclose(i0, i1):
+            return False
+    return True
+
+
 @njit(nogil=True, parallel=False)
 def compute_bin(x, bin_edges):
     """Given a list of bin edges, get what bin will a number end up to
@@ -1721,3 +1759,4 @@ def equal_count_energy_ranges(energies, n_ranges, emin=None, emax=None):
         percentiles = [emin, emax]
 
     return percentiles
+ 

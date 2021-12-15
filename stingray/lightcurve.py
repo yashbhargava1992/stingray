@@ -4,6 +4,7 @@ Definition of :class::class:`Lightcurve`.
 :class::class:`Lightcurve` is used to create light curves out of photon counting data
 or to save existing light curves in a class that's easy to use.
 """
+import os
 import logging
 import warnings
 import pickle
@@ -11,7 +12,7 @@ import pickle
 import numpy as np
 
 from astropy.table import Table
-from astropy.time import TimeDelta
+from astropy.time import TimeDelta, Time
 from astropy import units as u
 
 import stingray.utils as utils
@@ -163,6 +164,7 @@ class Lightcurve(object):
         The full header of the original FITS file, if relevant
 
     """
+
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
                  skip_checks=False, low_memory=False, mission=None,
@@ -175,6 +177,7 @@ class Lightcurve(object):
 
         time = np.asarray(time)
         counts = np.asarray(counts)
+
         if err is not None:
             err = np.asarray(err)
 
@@ -250,6 +253,11 @@ class Lightcurve(object):
 
         if not skip_checks:
             self.check_lightcurve()
+        if os.name == 'nt':
+            warnings.warn(
+                "On Windows, the size of an integer is 32 bits. "
+                "To avoid integer overflow, I'm converting the input array to float")
+            counts = counts.astype(float)
 
     @property
     def time(self):
@@ -595,8 +603,8 @@ class Lightcurve(object):
         >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=5)
         >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=5)
         >>> lc = lc1 + lc2
-        >>> lc.counts
-        array([ 900, 1300, 1200])
+        >>> np.allclose(lc.counts, [ 900, 1300, 1200])
+        True
         """
 
         return self._operation_with_other_lc(other, np.add)
@@ -624,8 +632,8 @@ class Lightcurve(object):
         >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=10)
         >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=10)
         >>> lc = lc1 - lc2
-        >>> lc.counts
-        array([ 300, 1100,  400])
+        >>> np.allclose(lc.counts, [ 300, 1100,  400])
+        True
         """
 
         return self._operation_with_other_lc(other, np.subtract)
@@ -645,8 +653,8 @@ class Lightcurve(object):
         >>> lc1 = Lightcurve(time, count1)
         >>> lc2 = Lightcurve(time, count2)
         >>> lc_new = -lc1 + lc2
-        >>> lc_new.counts
-        array([100, 100, 100])
+        >>> np.allclose(lc_new.counts, [100, 100, 100])
+        True
         """
         lc_new = Lightcurve(self.time, -1 * self.counts,
                             err=self.counts_err, gti=self.gti,
@@ -696,10 +704,10 @@ class Lightcurve(object):
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> lc[2]
-        33
-        >>> lc[:2].counts
-        array([11, 22])
+        >>> np.isclose(lc[2], 33)
+        True
+        >>> np.allclose(lc[:2].counts, [11, 22])
+        True
         """
         if isinstance(index, (int, np.integer)):
             return self.counts[index]
@@ -788,7 +796,6 @@ class Lightcurve(object):
     @staticmethod
     def make_lightcurve(toa, dt, tseg=None, tstart=None, gti=None, mjdref=0,
                         use_hist=False):
-
         """
         Make a light curve out of photon arrival times, with a given time resolution ``dt``.
         Note that ``dt`` should be larger than the native time resolution of the instrument
@@ -849,7 +856,11 @@ class Lightcurve(object):
 
         logging.info("make_lightcurve: tseg: " + str(tseg))
 
-        timebin = np.int64(tseg / dt)
+        timebin = int(tseg / dt)
+        # If we are missing the next bin by just 1%, let's round up:
+        if tseg / dt - timebin >= 0.99:
+            timebin += 1
+
         logging.info("make_lightcurve: timebin:  " + str(timebin))
 
         tend = tstart + timebin * dt
@@ -974,8 +985,8 @@ class Lightcurve(object):
         >>> lc = lc1.join(lc2)
         >>> lc.time
         array([ 5, 10, 15, 20, 25, 30])
-        >>> lc.counts
-        array([ 300,  100,  400,  600, 1200,  800])
+        >>> np.allclose(lc.counts, [ 300,  100,  400,  600, 1200,  800])
+        True
         """
         if self.mjdref != other.mjdref:
             warnings.warn("MJDref is different in the two light curves")
@@ -1096,17 +1107,16 @@ class Lightcurve(object):
         >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
         >>> lc = Lightcurve(time, count, dt=1)
         >>> lc_new = lc.truncate(start=2, stop=8)
-        >>> lc_new.counts
-        array([30, 40, 50, 60, 70, 80])
+        >>> np.allclose(lc_new.counts, [30, 40, 50, 60, 70, 80])
+        True
         >>> lc_new.time
         array([3, 4, 5, 6, 7, 8])
         >>> # Truncation can also be done by time values
         >>> lc_new = lc.truncate(start=6, method='time')
         >>> lc_new.time
         array([6, 7, 8, 9])
-        >>> lc_new.counts
-        array([60, 70, 80, 90])
-
+        >>> np.allclose(lc_new.counts, [60, 70, 80, 90])
+        True
         """
 
         if not isinstance(method, str):
@@ -1238,8 +1248,8 @@ class Lightcurve(object):
         >>> lc_new = lc.sort()
         >>> lc_new.time
         array([1, 2, 3])
-        >>> lc_new.counts
-        array([100, 200, 300])
+        >>> np.allclose(lc_new.counts, [100, 200, 300])
+        True
 
         Returns
         -------
@@ -1287,8 +1297,8 @@ class Lightcurve(object):
         >>> lc_new = lc.sort_counts()
         >>> lc_new.time
         array([2, 1, 3])
-        >>> lc_new.counts
-        array([100, 200, 300])
+        >>> np.allclose(lc_new.counts, [100, 200, 300])
+        True
         """
 
         new_counts, new_time, new_counts_err = \
@@ -1301,7 +1311,13 @@ class Lightcurve(object):
 
         return new_lc
 
-    def estimate_chunk_length(self, min_total_counts=100, min_time_bins=100):
+    def estimate_chunk_length(self, *args, **kwargs):
+        """Deprecated alias of estimate_segment_size.
+        """
+        warnings.warn("This function was renamed to estimate_segment_size", DeprecationWarning)
+        return self.estimate_segment_size(*args, **kwargs)
+
+    def estimate_segment_size(self, min_total_counts=100, min_time_bins=100):
         """Estimate a reasonable segment length for chunk-by-chunk analysis.
 
         Choose a reasonable length for time segments, given a minimum number of total
@@ -1319,7 +1335,7 @@ class Lightcurve(object):
 
         Returns
         -------
-        chunk_length : float
+        segment_size : float
             The length of the light curve chunks that satisfies the conditions
 
         Examples
@@ -1328,48 +1344,48 @@ class Lightcurve(object):
         >>> time = np.arange(150)
         >>> count = np.zeros_like(time) + 3
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> lc.estimate_chunk_length(min_total_counts=10, min_time_bins=3)
+        >>> lc.estimate_segment_size(min_total_counts=10, min_time_bins=3)
         4.0
-        >>> lc.estimate_chunk_length(min_total_counts=10, min_time_bins=5)
+        >>> lc.estimate_segment_size(min_total_counts=10, min_time_bins=5)
         5.0
         >>> count[2:4] = 1
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> lc.estimate_chunk_length(min_total_counts=3, min_time_bins=1)
+        >>> lc.estimate_segment_size(min_total_counts=3, min_time_bins=1)
         3.0
         >>> # A slightly more complex example
         >>> dt=0.2
         >>> time = np.arange(0, 1000, dt)
         >>> counts = np.random.poisson(100, size=len(time))
         >>> lc = Lightcurve(time, counts, dt=dt)
-        >>> lc.estimate_chunk_length(100, 2)
+        >>> lc.estimate_segment_size(100, 2)
         0.4
         >>> min_total_bins = 40
-        >>> lc.estimate_chunk_length(100, 40)
+        >>> lc.estimate_segment_size(100, 40)
         8.0
         """
 
         rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt
 
-        chunk_length = np.max([rough_estimate, min_time_bins * self.dt])
+        segment_size = np.max([rough_estimate, min_time_bins * self.dt])
 
         keep_searching = True
         while keep_searching:
             start_times, stop_times, results = \
-                self.analyze_lc_chunks(chunk_length, np.sum)
+                self.analyze_lc_chunks(segment_size, np.sum)
             mincounts = np.min(results)
             if mincounts >= min_total_counts:
                 keep_searching = False
             else:
-                chunk_length += self.dt
+                segment_size += self.dt
 
-        return chunk_length
+        return segment_size
 
-    def analyze_lc_chunks(self, chunk_length, func, fraction_step=1, **kwargs):
+    def analyze_lc_chunks(self, segment_size, func, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
 
         Parameters
         ----------
-        chunk_length : float
+        segment_size : float
             Length in seconds of the light curve segments
         func : function
             Function accepting a :class:`Lightcurve` object as single argument, plus
@@ -1380,9 +1396,9 @@ class Lightcurve(object):
         Other parameters
         ----------------
         fraction_step : float
-            If the step is not a full ``chunk_length`` but less (e.g. a moving window),
-            this indicates the ratio between step step and ``chunk_length`` (e.g.
-            0.5 means that the window shifts of half ``chunk_length``)
+            If the step is not a full ``segment_size`` but less (e.g. a moving window),
+            this indicates the ratio between step step and ``segment_size`` (e.g.
+            0.5 means that the window shifts of half ``segment_size``)
         kwargs : keyword arguments
             These additional keyword arguments, if present, they will be passed
             to ``func``
@@ -1411,7 +1427,7 @@ class Lightcurve(object):
         >>> np.allclose(res, 10)
         True
         """
-        start, stop = bin_intervals_from_gtis(self.gti, chunk_length,
+        start, stop = bin_intervals_from_gtis(self.gti, segment_size,
                                               self.time,
                                               fraction_step=fraction_step,
                                               dt=self.dt)
@@ -1451,7 +1467,8 @@ class Lightcurve(object):
         except ImportError:
             raise ImportError("You need to install Lightkurve to use "
                               "the Lightcurve.to_lightkurve() method.")
-        return lk(time=self.time, flux=self.counts, flux_err=self.counts_err)
+        time = Time(self.time / 86400 + self.mjdref, format="mjd", scale="utc")
+        return lk(time=time, flux=self.counts, flux_err=self.counts_err)
 
     @staticmethod
     def from_lightkurve(lk, skip_checks=True):
@@ -1466,6 +1483,7 @@ class Lightcurve(object):
             If True, the user specifies that data are already sorted and contain no
             infinite or nan points. Use at your own risk.
         """
+
         return Lightcurve(time=lk.time, counts=lk.flux,
                           err=lk.flux_err, input_counts=False,
                           skip_checks=skip_checks)
@@ -1712,7 +1730,6 @@ class Lightcurve(object):
         ts = Table.read(filename, format=format_)
         return Lightcurve.from_astropy_table(
             ts, err_dist=err_dist, skip_checks=skip_checks)
-
 
     def split_by_gti(self, gti=None, min_points=2):
         """

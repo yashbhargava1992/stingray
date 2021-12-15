@@ -14,6 +14,7 @@ from stingray import StingrayError
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
 
+
 class TestGTI(object):
 
     """Real unit tests."""
@@ -123,7 +124,7 @@ class TestGTI(object):
         assert np.allclose(mask, np.array([0, 1, 0, 0, 0, 0, 0], dtype=bool))
 
     def test_gti_mask_compare(self):
-        arr = np.array([ 0.5, 1.5, 2.5, 3.5])
+        arr = np.array([0.5, 1.5, 2.5, 3.5])
         gti = np.array([[0, 4]])
         mask_c, new_gtis_c = \
             create_gti_mask_complete(arr, gti, return_new_gtis=True,
@@ -134,7 +135,7 @@ class TestGTI(object):
         assert np.allclose(new_gtis, new_gtis_c)
 
     def test_gti_mask_compare2(self):
-        arr = np.array([ 0.5, 1.5, 2.5, 3.5])
+        arr = np.array([0.5, 1.5, 2.5, 3.5])
         gti = np.array([[0, 4]])
         mask_c, new_gtis_c = \
             create_gti_mask_complete(arr, gti, return_new_gtis=True,
@@ -213,7 +214,6 @@ class TestGTI(object):
         assert np.all(join_gtis(gti0, gti1) == np.array([[0, 1], [2, 3], [4, 8],
                                                          [10, 11], [12, 13]]))
 
-
     def test_time_intervals_from_gtis(self):
         """Test the division of start and end times to calculate spectra."""
         start_times, stop_times = \
@@ -238,6 +238,19 @@ class TestGTI(object):
 
         assert np.allclose(start_bins, np.array([0, 2, 6]))
         assert np.allclose(stop_bins, np.array([2, 4, 8]))
+
+    def test_bin_intervals_from_gtis_2(self):
+        dt = 0.1
+        tstart = 0
+        tstop = 100
+        times = np.arange(tstart, tstop, dt)
+        gti = np.array([[tstart - dt/2, tstop - dt/2]])
+        # Simulate something *clearly* non-constant
+        counts = np.random.poisson(
+            10000 + 2000 * np.sin(2 * np.pi * times))
+
+        start_bins, stop_bins = bin_intervals_from_gtis(gti, 20, times)
+        assert np.allclose(start_bins, [0, 200, 400, 600, 800])
 
     def test_bin_intervals_from_gtis_frac(self):
         """Test the division of start and end times to calculate spectra."""
@@ -305,4 +318,3 @@ class TestGTI(object):
                         [1.16703482e+08, 1.16703514e+08]])
         newg = join_equal_gti_boundaries(gti)
         assert np.allclose(newg, np.array([[1.16703354e+08, 1.16703514e+08]]))
-
