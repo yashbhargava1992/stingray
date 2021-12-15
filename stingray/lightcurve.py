@@ -1312,8 +1312,10 @@ class Lightcurve(object):
         return new_lc
 
     def estimate_chunk_length(self, *args, **kwargs):
+        """Deprecated alias of estimate_segment_size.
+        """
         warnings.warn("This function was renamed to estimate_segment_size", DeprecationWarning)
-        self.estimate_segment_size(*args, **kwargs)
+        return self.estimate_segment_size(*args, **kwargs)
 
     def estimate_segment_size(self, min_total_counts=100, min_time_bins=100):
         """Estimate a reasonable segment length for chunk-by-chunk analysis.

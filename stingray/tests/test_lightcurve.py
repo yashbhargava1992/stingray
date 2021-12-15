@@ -96,6 +96,15 @@ class TestProperties(object):
         assert np.any(["Unrecognized keywords:" in r.message.args[0]
                        for r in record])
 
+    def test_warn_estimate_chunk_length(self):
+        times = np.arange(0, 1000, 1)
+        lc = Lightcurve(times, counts=np.ones(times.size) + 200, dt=1, skip_checks=True)
+        with pytest.warns(DeprecationWarning) as record:
+            lc.estimate_chunk_length()
+
+        assert np.any(["This function was renamed to estimate_segment_size" in r.message.args[0]
+                       for r in record])
+
     def test_time(self):
         lc = copy.deepcopy(self.lc)
         assert lc._bin_lo is None
