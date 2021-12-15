@@ -479,7 +479,7 @@ class EventList(object):
 
     @staticmethod
     def read(filename, format_="pickle", **kwargs):
-        r"""Read a :class:`Lightcurve` object from file.
+        r"""Read a :class:`EventList` object from file.
 
         Currently supported formats are
 
@@ -807,7 +807,7 @@ class EventList(object):
 
     @staticmethod
     def from_astropy_timeseries(ts):
-        """Read the event list from an Astropy TimeSeries.
+        """Create an `EventList` object from data in an Astropy TimeSeries
 
         The timeseries has to define at least a column called time,
         the rest of columns will form the array attributes of the
@@ -850,7 +850,7 @@ class EventList(object):
 
     @staticmethod
     def from_astropy_table(ts):
-        """Read the event list from an Astropy Table.
+        """Create an `EventList` object from data in an Astropy Table.
 
         The table has to define at least a column called time,
         the rest of columns will form the array attributes of the
@@ -894,7 +894,7 @@ class EventList(object):
 
     @staticmethod
     def from_xarray(ts):
-        """Read the event list from a xarray Dataset.
+        """Create an `EventList` object from data in an xarray Dataset.
 
         The dataset has to define at least a column called time,
         the rest of columns will form the array attributes of the
@@ -940,7 +940,7 @@ class EventList(object):
 
     @staticmethod
     def from_pandas(ts):
-        """Read the event list from a pandas DataFrame.
+        """Create an `EventList` object from data in a pandas DataFrame.
 
         The dataframe has to define at least a column called time,
         the rest of columns will form the array attributes of the
