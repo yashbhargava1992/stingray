@@ -1034,7 +1034,7 @@ def join_gtis(gti0, gti1):
     return np.sort(final_gti, axis=0)
 
 
-def time_intervals_from_gtis(gtis, chunk_length, fraction_step=1,
+def time_intervals_from_gtis(gtis, segment_size, fraction_step=1,
                              epsilon=1e-5):
     """Compute start/stop times of equal time intervals, compatible with GTIs.
 
@@ -1046,13 +1046,13 @@ def time_intervals_from_gtis(gtis, chunk_length, fraction_step=1,
     gtis : 2-d float array
         List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
-    chunk_length : float
+    segment_size : float
         Length of the time segments
 
     fraction_step : float
-        If the step is not a full ``chunk_length`` but less (e.g. a moving window),
-        this indicates the ratio between step step and ``chunk_length`` (e.g.
-        0.5 means that the window shifts of half ``chunk_length``)
+        If the step is not a full ``segment_size`` but less (e.g. a moving window),
+        this indicates the ratio between step step and ``segment_size`` (e.g.
+        0.5 means that the window shifts of half ``segment_size``)
 
     Returns
     -------
@@ -1065,19 +1065,19 @@ def time_intervals_from_gtis(gtis, chunk_length, fraction_step=1,
     """
     spectrum_start_times = np.array([], dtype=np.longdouble)
     for g in gtis:
-        if g[1] - g[0] + epsilon < chunk_length:
+        if g[1] - g[0] + epsilon < segment_size:
             continue
 
-        newtimes = np.arange(g[0], g[1] - chunk_length + epsilon,
-                             np.longdouble(chunk_length) * fraction_step,
+        newtimes = np.arange(g[0], g[1] - segment_size + epsilon,
+                             np.longdouble(segment_size) * fraction_step,
                              dtype=np.longdouble)
         spectrum_start_times = \
             np.append(spectrum_start_times,
                       newtimes)
 
     assert len(spectrum_start_times) > 0, \
-        ("No GTIs are equal to or longer than chunk_length.")
-    return spectrum_start_times, spectrum_start_times + chunk_length
+        ("No GTIs are equal to or longer than segment_size.")
+    return spectrum_start_times, spectrum_start_times + segment_size
 
 
 def calculate_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
@@ -1132,7 +1132,7 @@ def calculate_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
     return st
 
 
-def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
+def bin_intervals_from_gtis(gtis, segment_size, time, dt=None, fraction_step=1,
                             epsilon=0.001):
     """Compute start/stop times of equal time intervals, compatible with GTIs, and map them
     to the indices of an array of time stamps.
@@ -1148,7 +1148,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
     gtis : 2-d float array
         List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
 
-    chunk_length : float
+    segment_size : float
         Length of each time segment
 
     time : array-like
@@ -1163,9 +1163,9 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         The tolerance, in fraction of ``dt``, for the comparisons at the borders
 
     fraction_step : float
-        If the step is not a full ``chunk_length`` but less (e.g. a moving window),
-        this indicates the ratio between step step and ``chunk_length`` (e.g.
-        ``0.5`` means that the window shifts of half ``chunk_length``)
+        If the step is not a full ``segment_size`` but less (e.g. a moving window),
+        this indicates the ratio between step step and ``segment_size`` (e.g.
+        ``0.5`` means that the window shifts of half ``segment_size``)
 
     Returns
     -------
@@ -1182,9 +1182,9 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
 
     >>> gtis = [[0, 5], [6, 8], [9, 10]]
 
-    >>> chunk_length = 2
+    >>> segment_size = 2
 
-    >>> start_bins, stop_bins = bin_intervals_from_gtis(gtis,chunk_length,time)
+    >>> start_bins, stop_bins = bin_intervals_from_gtis(gtis,segment_size,time)
 
     >>> np.allclose(start_bins, [0, 2, 6])
     True
@@ -1201,7 +1201,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         dt = np.median(np.diff(time))
 
     epsilon_times_dt = epsilon * dt
-    nbin = np.rint(chunk_length / dt).astype(int)
+    nbin = np.rint(segment_size / dt).astype(int)
 
     if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
         raise ValueError("Invalid time interval for the given GTIs")
@@ -1212,7 +1212,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
     gti_up = gtis[:, 1] - dt / 2 + epsilon_times_dt
 
     for g0, g1 in zip(gti_low, gti_up):
-        if (g1 - g0 + dt + epsilon_times_dt) < chunk_length:
+        if (g1 - g0 + dt + epsilon_times_dt) < segment_size:
             continue
         startbin, stopbin = np.searchsorted(time, [g0, g1], "left")
         stopbin += 1
@@ -1232,7 +1232,7 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
             np.append(spectrum_start_bins,
                       newbins)
     assert len(spectrum_start_bins) > 0, \
-        ("No GTIs are equal to or longer than chunk_length.")
+        ("No GTIs are equal to or longer than segment_size.")
     return spectrum_start_bins, spectrum_start_bins + nbin
 
 
@@ -1258,9 +1258,9 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
         The tolerance, in fraction of ``dt``, for the comparisons at the borders
 
     fraction_step : float
-        If the step is not a full ``chunk_length`` but less (e.g. a moving window),
-        this indicates the ratio between step step and ``chunk_length`` (e.g.
-        ``0.5`` means that the window shifts of half ``chunk_length``)
+        If the step is not a full ``segment_size`` but less (e.g. a moving window),
+        this indicates the ratio between step step and ``segment_size`` (e.g.
+        ``0.5`` means that the window shifts of half ``segment_size``)
 
     Returns
     -------

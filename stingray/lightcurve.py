@@ -1311,7 +1311,11 @@ class Lightcurve(object):
 
         return new_lc
 
-    def estimate_chunk_length(self, min_total_counts=100, min_time_bins=100):
+    def estimate_chunk_length(self, *args, **kwargs):
+        warnings.warn("This function was renamed to estimate_segment_size", DeprecationWarning)
+        self.estimate_segment_size(*args, **kwargs)
+
+    def estimate_segment_size(self, min_total_counts=100, min_time_bins=100):
         """Estimate a reasonable segment length for chunk-by-chunk analysis.
 
         Choose a reasonable length for time segments, given a minimum number of total
@@ -1329,7 +1333,7 @@ class Lightcurve(object):
 
         Returns
         -------
-        chunk_length : float
+        segment_size : float
             The length of the light curve chunks that satisfies the conditions
 
         Examples
@@ -1338,48 +1342,48 @@ class Lightcurve(object):
         >>> time = np.arange(150)
         >>> count = np.zeros_like(time) + 3
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> lc.estimate_chunk_length(min_total_counts=10, min_time_bins=3)
+        >>> lc.estimate_segment_size(min_total_counts=10, min_time_bins=3)
         4.0
-        >>> lc.estimate_chunk_length(min_total_counts=10, min_time_bins=5)
+        >>> lc.estimate_segment_size(min_total_counts=10, min_time_bins=5)
         5.0
         >>> count[2:4] = 1
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> lc.estimate_chunk_length(min_total_counts=3, min_time_bins=1)
+        >>> lc.estimate_segment_size(min_total_counts=3, min_time_bins=1)
         3.0
         >>> # A slightly more complex example
         >>> dt=0.2
         >>> time = np.arange(0, 1000, dt)
         >>> counts = np.random.poisson(100, size=len(time))
         >>> lc = Lightcurve(time, counts, dt=dt)
-        >>> lc.estimate_chunk_length(100, 2)
+        >>> lc.estimate_segment_size(100, 2)
         0.4
         >>> min_total_bins = 40
-        >>> lc.estimate_chunk_length(100, 40)
+        >>> lc.estimate_segment_size(100, 40)
         8.0
         """
 
         rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt
 
-        chunk_length = np.max([rough_estimate, min_time_bins * self.dt])
+        segment_size = np.max([rough_estimate, min_time_bins * self.dt])
 
         keep_searching = True
         while keep_searching:
             start_times, stop_times, results = \
-                self.analyze_lc_chunks(chunk_length, np.sum)
+                self.analyze_lc_chunks(segment_size, np.sum)
             mincounts = np.min(results)
             if mincounts >= min_total_counts:
                 keep_searching = False
             else:
-                chunk_length += self.dt
+                segment_size += self.dt
 
-        return chunk_length
+        return segment_size
 
-    def analyze_lc_chunks(self, chunk_length, func, fraction_step=1, **kwargs):
+    def analyze_lc_chunks(self, segment_size, func, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
 
         Parameters
         ----------
-        chunk_length : float
+        segment_size : float
             Length in seconds of the light curve segments
         func : function
             Function accepting a :class:`Lightcurve` object as single argument, plus
@@ -1390,9 +1394,9 @@ class Lightcurve(object):
         Other parameters
         ----------------
         fraction_step : float
-            If the step is not a full ``chunk_length`` but less (e.g. a moving window),
-            this indicates the ratio between step step and ``chunk_length`` (e.g.
-            0.5 means that the window shifts of half ``chunk_length``)
+            If the step is not a full ``segment_size`` but less (e.g. a moving window),
+            this indicates the ratio between step step and ``segment_size`` (e.g.
+            0.5 means that the window shifts of half ``segment_size``)
         kwargs : keyword arguments
             These additional keyword arguments, if present, they will be passed
             to ``func``
@@ -1421,7 +1425,7 @@ class Lightcurve(object):
         >>> np.allclose(res, 10)
         True
         """
-        start, stop = bin_intervals_from_gtis(self.gti, chunk_length,
+        start, stop = bin_intervals_from_gtis(self.gti, segment_size,
                                               self.time,
                                               fraction_step=fraction_step,
                                               dt=self.dt)
