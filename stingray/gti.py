@@ -1080,7 +1080,7 @@ def time_intervals_from_gtis(gtis, chunk_length, fraction_step=1,
     return spectrum_start_times, spectrum_start_times + chunk_length
 
 
-def get_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
+def calculate_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
     """Get the starting indices of intervals of equal length.
 
     A bit like `np.arange`, but checks that the last number is
@@ -1116,13 +1116,13 @@ def get_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
 
     Examples
     --------
-    >>> st = get_segment_bin_start(0, 10000, 10000)
+    >>> st = calculate_segment_bin_start(0, 10000, 10000)
     >>> st[-1]
     0
-    >>> st = get_segment_bin_start(0, 5, 2)
+    >>> st = calculate_segment_bin_start(0, 5, 2)
     >>> st[-1]
     2
-    >>> st = get_segment_bin_start(0, 6, 2)
+    >>> st = calculate_segment_bin_start(0, 6, 2)
     >>> st[-1]
     4
     """
@@ -1226,7 +1226,8 @@ def bin_intervals_from_gtis(gtis, chunk_length, time, dt=None, fraction_step=1,
         if time[stopbin - 1] > g1:
             stopbin -= 1
 
-        newbins = get_segment_bin_start(startbin, stopbin, nbin, fraction_step=fraction_step)
+        newbins = calculate_segment_bin_start(
+            startbin, stopbin, nbin, fraction_step=fraction_step)
         spectrum_start_bins = \
             np.append(spectrum_start_bins,
                       newbins)
@@ -1323,8 +1324,6 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
         spectrum_start_bins.append(startbin)
         spectrum_stop_bins.append(stopbin)
 
-    assert len(spectrum_start_bins) > 0, \
-        ("No GTIs are equal to or longer than chunk_length.")
     return np.array(spectrum_start_bins), np.array(spectrum_stop_bins)
 
 
