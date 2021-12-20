@@ -525,6 +525,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
         def local_show_progress(a):
             return a
 
+    # Initialize stuff
     cross = None
     M = 0
 
@@ -534,41 +535,51 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
         if flux is None:
             continue
 
+        # If the iterable returns the uncertainty, use it to calculate the variance.
         variance = None
         if isinstance(flux, tuple):
             flux, err = flux
             variance = np.mean(err) ** 2
 
+        # Calculate the FFT
         N = flux.size
         ft = fft(flux)
 
         nph = flux.sum()
         unnorm_power = (ft * ft.conj()).real
+
+        # Accumulate the sum of means and variances, to get the final mean and
+        # variance the end
         common_mean += nph
 
         if variance is not None:
             common_variance = \
                 sum_if_not_none_or_initialize(common_variance, variance)
 
+        # In the first loop, define the frequency and the freq. interval > 0
         if cross is None:
             fgt0 = positive_fft_bins(N)
             freq = fftfreq(N, dt)[fgt0]
 
+        # No need for the negative frequencies
         unnorm_power = unnorm_power[fgt0]
 
+        # If the user wants to normalize using the mean of the total lightcurve,
+        # normalize it here
+        cs_seg = unnorm_power
         if use_common_mean:
-            cs_seg = unnorm_power
-        else:
             mean = nph / N
 
             cs_seg = normalize_crossspectrum(
                 unnorm_power, dt, N, mean, norm=norm, variance=variance,
             )
 
+        # Accumulate the total sum cross spectrum
         cross = sum_if_not_none_or_initialize(cross, cs_seg)
 
         M += 1
 
+    # If there were no good intervals, return None
     if cross is None:
         return None, None, None, None, None
 
@@ -577,8 +588,10 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
         # Note: the variances we summed were means, not sums. Hence M, not M*N
         common_variance /= M
 
+    # Transform a sum into the average
     cross /= M
 
+    # Final normalization (If not done already!)
     if use_common_mean:
         cross = normalize_crossspectrum(
             cross, dt, N, common_mean, norm=norm, variance=common_variance
@@ -658,10 +671,10 @@ def avg_cs_from_iterables(
 
     local_show_progress = show_progress
     if silent:
-
         def local_show_progress(a):
             return a
 
+    # Initialize stuff
     cross = unnorm_cross = unnorm_pds1 = unnorm_pds2 = None
     M = 0
 
