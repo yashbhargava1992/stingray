@@ -154,7 +154,7 @@ class TestRmsAndCovSpectrum(object):
 
         data = np.load(os.path.join(datadir, "sample_variable_lc.npy"))
         # No need for huge count rates
-        flux = data / 50
+        flux = data / 40
         times = np.arange(data.size) * cls.bin_time
         gti = np.asarray([[0, data.size * cls.bin_time]])
         test_lc = Lightcurve(times, flux, err_dist="gauss", gti=gti,
@@ -168,7 +168,7 @@ class TestRmsAndCovSpectrum(object):
         cls.test_ev1.energy = np.random.uniform(0.3, 12, N1)
         cls.test_ev2.energy = np.random.uniform(0.3, 12, N2)
 
-        mask = np.sort(np.random.randint(0, min(N1, N2) - 1, 2000))
+        mask = np.sort(np.random.randint(0, min(N1, N2) - 1, 200000))
         cls.test_ev1_small = cls.test_ev1.apply_mask(mask)
         cls.test_ev2_small = cls.test_ev2.apply_mask(mask)
 
@@ -266,10 +266,12 @@ class TestRmsAndCovSpectrum(object):
         )
 
         cov = covar.spectrum
-        rms = covar_cross.spectrum
-        coverr = covar_cross.spectrum_error
+        cross = covar_cross.spectrum
+        coverr = covar.spectrum_error
+        crosserr = covar_cross.spectrum_error
 
-        assert np.allclose(cov, rms, atol=3 * coverr)
+        print(cov, coverr, cross, crosserr)
+        assert np.allclose(cov, cross, atol=3 * coverr)
 
     @pytest.mark.parametrize("norm", ["frac", "abs"])
     def test_correct_rms_values_vs_cov(self, norm):
@@ -297,6 +299,8 @@ class TestRmsAndCovSpectrum(object):
         cov = covar.spectrum
         rms = rmsspec.spectrum
         coverr = covar.spectrum_error
+        rmserr = covar.spectrum_error
+        print(cov, coverr, rms, rmserr)
 
         assert np.allclose(cov, rms, atol=3 * coverr)
 
