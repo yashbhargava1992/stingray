@@ -1,5 +1,6 @@
 import numbers
 import os
+import copy
 import random
 import string
 import sys
@@ -1759,4 +1760,25 @@ def equal_count_energy_ranges(energies, n_ranges, emin=None, emax=None):
         percentiles = [emin, emax]
 
     return percentiles
- 
+
+
+def sum_if_not_none_or_initialize(A, B):
+    """If A is None, define A as a copy of B. Otherwise, sum A + B.
+
+    Parameters
+    ----------
+    A : object
+        The initial value
+    B : object
+        The value to be summed
+
+    Examples
+    --------
+    >>> sum_if_not_none_or_initialize(None, 2)
+    2
+    >>> sum_if_not_none_or_initialize(1, 2)
+    3
+    """
+    if A is None:
+        return copy.deepcopy(B)
+    return A + B
