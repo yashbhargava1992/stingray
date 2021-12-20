@@ -10,6 +10,7 @@ from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
 from stingray.crossspectrum import  cospectra_pvalue, normalize_crossspectrum
 from stingray import StingrayError
 from ..simulator import Simulator
+from ..fourier import raw_coherence
 
 from stingray.events import EventList
 import copy
@@ -146,7 +147,8 @@ class TestAveragedCrossspectrumEvents(object):
 
         self.acs = AveragedCrossspectrum(self.events1.to_lc(self.dt),
                                          self.events2.to_lc(self.dt), silent=True,
-                                         segment_size=segment_size, dt=self.dt, norm='none')
+                                         segment_size=segment_size, dt=self.dt, norm='none',
+                                         power_type="all")
         self.lc1, self.lc2 = self.events1, self.events2
 
     def test_from_events_works(self):
@@ -375,7 +377,7 @@ class TestCoherence(object):
         lc2 = Lightcurve(t, copy.copy(a))
 
         with pytest.warns(UserWarning) as record:
-            c = AveragedCrossspectrum(lc, lc2, 128)
+            c = AveragedCrossspectrum(lc, lc2, 128, use_common_mean=True)
             coh, _ = c.coherence()
 
         np.testing.assert_almost_equal(np.mean(coh).real, 1.0)
@@ -761,11 +763,11 @@ class TestAveragedCrossspectrum(object):
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
 
         with pytest.warns(UserWarning) as record:
-            self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
+            self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, old_style=True)
 
     def test_save_all(self):
         cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
-                                   save_all=True)
+                                   save_all=True, old_style=True)
         assert hasattr(cs, 'cs_all')
 
     def test_lc_keyword_deprecation(self):

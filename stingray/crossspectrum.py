@@ -494,45 +494,28 @@ class Crossspectrum(object):
     def __init__(self, data1=None, data2=None, norm='none', gti=None,
                  lc1=None, lc2=None, power_type="real", dt=None, fullspec=False):
 
-        if isinstance(norm, str) is False:
-            raise TypeError("norm must be a string")
-
-        if norm.lower() not in ["frac", "abs", "leahy", "none"]:
-            raise ValueError("norm must be 'frac', 'abs', 'leahy', or 'none'!")
-
-        self.norm = norm.lower()
-
-        # check if input data is a Lightcurve object, if not make one or
-        # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
-
-        if lc1 is not None or lc2 is not None:
-            warnings.warn("The lcN keywords are now deprecated. Use dataN "
-                          "instead", DeprecationWarning)
         # for backwards compatibility
         if data1 is None:
             data1 = lc1
         if data2 is None:
             data2 = lc2
 
-        if data1 is None or data2 is None:
-            if data1 is not None or data2 is not None:
-                raise TypeError("You can't do a cross spectrum with just one "
-                                "light curve!")
-            else:
-                self.freq = None
-                self.power = None
-                self.power_err = None
-                self.df = None
-                self.nphots1 = None
-                self.nphots2 = None
-                self.m = 1
-                self.n = None
-                return
+        good_input = self.initial_checks(data1=data1, data2=data2, norm=norm, gti=gti,
+                                         lc1=lc1, lc2=lc2, power_type=power_type, dt=dt, fullspec=fullspec)
 
-        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and \
-                dt is None:
-            raise ValueError("If using event lists, please specify the bin "
-                             "time to generate lightcurves.")
+        if not good_input:
+            self.freq = None
+            self.power = None
+            self.power_err = None
+            self.df = None
+            self.nphots1 = None
+            self.nphots2 = None
+            self.m = 1
+            self.n = None
+            self.norm = norm
+            return
+
+        self.norm = norm.lower()
 
         if not isinstance(data1, EventList):
             lc1 = data1
@@ -556,6 +539,43 @@ class Crossspectrum(object):
 
         # These are needed to calculate coherence
         self._make_auxil_pds(lc1, lc2)
+
+    def initial_checks(self, data1=None, data2=None, norm='none', gti=None,
+                       lc1=None, lc2=None, power_type="real", dt=None, fullspec=False):
+        """Run initial checks on the input.
+
+        Returns True if checks are passed, False if they are not.
+
+        Raises various errors for different bad inputs
+        """
+        if isinstance(norm, str) is False:
+            raise TypeError("norm must be a string")
+
+        if norm.lower() not in ["frac", "abs", "leahy", "none"]:
+            raise ValueError("norm must be 'frac', 'abs', 'leahy', or 'none'!")
+
+        # check if input data is a Lightcurve object, if not make one or
+        # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
+
+        if lc1 is not None or lc2 is not None:
+            warnings.warn("The lcN keywords are now deprecated. Use dataN "
+                          "instead", DeprecationWarning)
+        if data1 is None or data2 is None:
+            if data1 is not None or data2 is not None:
+                raise TypeError("You can't do a cross spectrum with just one "
+                                "light curve!")
+            else:
+                return False
+
+        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and \
+                dt is None:
+            raise ValueError("If using event lists, please specify the bin "
+                             "time to generate lightcurves.")
+
+        if power_type not in ["all", "absolute", "real"]:
+            raise ValueError("`power_type` not recognized!")
+
+        return True
 
     def _make_auxil_pds(self, lc1, lc2):
         """
@@ -862,7 +882,6 @@ class Crossspectrum(object):
         binfreq, binpower, binpower_err, nsamples = \
             rebin_data_log(self.freq, self.power, f,
                            y_err=self.power_err, dx=self.df)
-
         # the frequency resolution
         df = np.diff(binfreq)
 
@@ -1194,21 +1213,41 @@ class AveragedCrossspectrum(Crossspectrum):
     def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
                  gti=None, power_type="real", silent=False, lc1=None, lc2=None,
                  dt=None, fullspec=False, large_data=False, save_all=False,
-                 use_common_mean=True):
+                 use_common_mean=True, old_style=False):
 
-        if lc1 is not None or lc2 is not None:
-            warnings.warn("The lcN keywords are now deprecated. Use dataN "
-                          "instead", DeprecationWarning)
         # for backwards compatibility
         if data1 is None:
             data1 = lc1
         if data2 is None:
             data2 = lc2
 
-        if segment_size is None and data1 is not None:
-            raise ValueError("segment_size must be specified")
-        if segment_size is not None and not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite!")
+        good_input = self.initial_checks(data1=data1, data2=data2, norm=norm, gti=gti,
+                                         lc1=lc1, lc2=lc2, power_type=power_type, dt=dt, fullspec=fullspec)
+
+        good_input = good_input and \
+            self.averagecs_initial_checks(data1=data1, segment_size=segment_size)
+
+        if not good_input:
+            self.freq = None
+            self.power = None
+            self.power_err = None
+            self.df = None
+            self.nphots1 = None
+            self.nphots2 = None
+            self.m = 1
+            self.n = None
+            return
+
+        if not old_style and data1 is not None and data2 is not None:
+            if isinstance(data1, EventList):
+                spec = averagedcrossspectrum_from_events(
+                    data1, data2, dt, segment_size, norm=norm, power_type=power_type, silent=silent, fullspec=fullspec, use_common_mean=use_common_mean)
+            elif isinstance(data1, Lightcurve):
+                spec = averagedcrossspectrum_from_lightcurve(
+                    data1, data2, segment_size, norm=norm, power_type=power_type, silent=silent, fullspec=fullspec, use_common_mean=use_common_mean)
+            for key, val in spec.__dict__.items():
+                setattr(self, key, val)
+            return
 
         if large_data and data1 is not None and data2 is not None:
             if isinstance(data1, EventList):
@@ -1270,6 +1309,13 @@ class AveragedCrossspectrum(Crossspectrum):
                                power_type=power_type, dt=dt, fullspec=fullspec)
 
         return
+
+    def averagecs_initial_checks(self, segment_size=None, data1=None):
+        if isinstance(self, AveragedCrossspectrum) and segment_size is None and data1 is not None:
+            raise ValueError("segment_size must be specified")
+        if isinstance(self, AveragedCrossspectrum) and segment_size is not None and not np.isfinite(segment_size):
+            raise ValueError("segment_size must be finite!")
+        return True
 
     @staticmethod
     def from_time_array(*args, **kwargs):
@@ -1790,7 +1836,10 @@ def averagedcrossspectrum_from_time_array(times1, times2, dt, segment_size, gti,
     cs.pds1 = pds1
     cs.pds2 = pds2
     # To be fixed
-    cs.power_err = np.abs(cs.power) / np.sqrt(M)
+    cs.power_err = cs.power / np.sqrt(M)
+
+    cs.norm = norm
+    pds1.norm = pds2.norm = "none"
 
     for obj in [cs, pds1, pds2]:
         obj.freq = freq
@@ -1801,7 +1850,6 @@ def averagedcrossspectrum_from_time_array(times1, times2, dt, segment_size, gti,
         obj.nphots2 = mean2 * N
         obj.fullspec = fullspec
         obj.segment_size = segment_size
-        obj.norm = norm
 
     return cs
 
@@ -1909,7 +1957,10 @@ def averagedcrossspectrum_from_lightcurve(lc1, lc2, segment_size, norm='none',
     pds1.type = pds2.type = "powerspectrum"
     cs.pds1 = pds1
     cs.pds2 = pds2
-    cs.power_err = np.abs(cs.power) / np.sqrt(M)
+    cs.power_err = cs.power / np.sqrt(M)
+
+    cs.norm = norm
+    pds1.norm = pds2.norm = "none"
 
     for obj in [cs, pds1, pds2]:
         obj.freq = freq
@@ -1920,7 +1971,6 @@ def averagedcrossspectrum_from_lightcurve(lc1, lc2, segment_size, norm='none',
         obj.nphots2 = mean2 * N
         obj.fullspec = fullspec
         obj.segment_size = segment_size
-        obj.norm = norm
 
     return cs
 
@@ -1973,9 +2023,6 @@ def averagedcrossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size,
             else:
                 yield lc
 
-    iter_lc1 = list(iter_lc1)
-    iter_lc2 = list(iter_lc2)
-
     freq, power, N, M, _, power1, mean1, power2, mean2, unnorm_power = avg_cs_from_iterables(
         iterate_lc_counts(iter_lc1),
         iterate_lc_counts(iter_lc2),
@@ -1998,7 +2045,10 @@ def averagedcrossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size,
     pds1.type = pds2.type = "powerspectrum"
     cs.pds1 = pds1
     cs.pds2 = pds2
-    cs.power_err = np.abs(cs.power) / np.sqrt(M)
+    cs.power_err = cs.power / np.sqrt(M)
+
+    cs.norm = norm
+    pds1.norm = pds2.norm = "none"
 
     for obj in [cs, pds1, pds2]:
         obj.freq = freq
@@ -2009,6 +2059,6 @@ def averagedcrossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size,
         obj.nphots2 = mean2 * N
         obj.fullspec = fullspec
         obj.segment_size = segment_size
-        obj.norm = norm
+
 
     return cs
