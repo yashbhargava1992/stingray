@@ -1,7 +1,8 @@
-from .utils import histogram, show_progress
+import copy
 import warnings
 from collections.abc import Iterable
 import numpy as np
+from .utils import histogram, show_progress, sum_if_not_none_or_initialize
 from .gti import generate_indices_of_segment_boundaries_unbinned, generate_indices_of_segment_boundaries_binned
 
 
@@ -193,6 +194,8 @@ def normalize_crossspectrum(unnorm_power, dt, N, mean, variance=None, norm="abs"
 def bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1.0):
     """Bias term from Ingram 2019.
 
+    As recommended in the paper, returns 0 if N > 500
+
     Parameters
     ----------
     C : complex `np.array`
@@ -213,6 +216,8 @@ def bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1.0):
     intrinsic_coherence : float, default 1
         If known, the intrinsic coherence.
     """
+    if N > 500:
+        return 0.
     bsq = P1 * P2 - intrinsic_coherence * (P1 - P1noise) * (P2 - P2noise)
     return bsq / N
 
@@ -334,6 +339,7 @@ def error_on_averaged_cross_spectrum(C, Ps, Pr, N, Psnoise, Prnoise, common_ref=
         dRe = dIm = dG = np.sqrt(PoN * (Ps - frac))
         # Eq. 19
         dphi = np.sqrt(PoN * (Ps / (Gsq - bsq) - 1 / (Pr - Prnoise)))
+
     else:
         PrPs = Pr * Ps
         dRe = np.sqrt((PrPs + C.real ** 2 - C.imag ** 2) / twoN)
@@ -541,10 +547,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
         common_mean += nph
 
         if variance is not None:
-            if common_variance is None:
-                common_variance = variance
-            else:
-                common_variance += variance
+            common_variance = \
+                sum_if_not_none_or_initialize(common_variance, variance)
 
         if cross is None:
             fgt0 = positive_fft_bins(N)
@@ -561,22 +565,23 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
                 unnorm_power, dt, N, mean, norm=norm, variance=variance,
             )
 
-        if cross is None:
-            cross = cs_seg
-        else:
-            cross += cs_seg
+        cross = sum_if_not_none_or_initialize(cross, cs_seg)
+
         M += 1
 
     if cross is None:
         return None, None, None, None, None
+
     common_mean /= M * N
     if common_variance is not None:
         # Note: the variances we summed were means, not sums. Hence M, not M*N
         common_variance /= M
+
     cross /= M
+
     if use_common_mean:
         cross = normalize_crossspectrum(
-            unnorm_power, dt, N, common_mean, norm=norm, variance=common_variance
+            cross, dt, N, common_mean, norm=norm, variance=common_variance
         )
 
     return freq, cross, N, M, common_mean
@@ -625,7 +630,7 @@ def avg_cs_from_iterables(
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
     return_auxil : bool, default False
-        Return the auxiliary PDSs from the two separate channels
+        Return the auxiliary unnormalized PDSs from the two separate channels
 
     Returns
     -------
@@ -639,12 +644,12 @@ def avg_cs_from_iterables(
         the number of averaged periodograms
     mean : float
         the mean flux (geometrical average of the mean fluxes in the two channels)
-    pds1 : `np.array`
-        The auxiliary PDS from channel 1. Only returned if ``return_auxil`` is ``True``
+    unnorm_pds1 : `np.array`
+        The unnormalized auxiliary PDS from channel 1. Only returned if ``return_auxil`` is ``True``
     mean1 : float
         The mean flux in channel 1. Only returned if ``return_auxil`` is ``True``
-    pds2 : `np.array`
-        The auxiliary PDS from channel 2. Only returned if ``return_auxil`` is ``True``
+    unnorm_pds2 : `np.array`
+        The unnormalized auxiliary PDS from channel 2. Only returned if ``return_auxil`` is ``True``
     mean2 : float
         The mean flux in channel 2. Only returned if ``return_auxil`` is ``True``
     unnorm_power : `np.array`
@@ -657,7 +662,7 @@ def avg_cs_from_iterables(
         def local_show_progress(a):
             return a
 
-    cross = pds1 = pds2 = None
+    cross = unnorm_cross = unnorm_pds1 = unnorm_pds2 = None
     M = 0
 
     common_mean1 = common_mean2 = 0
@@ -667,6 +672,8 @@ def avg_cs_from_iterables(
         if flux1 is None or flux2 is None:
             continue
 
+        # Does the flux iterable return the uncertainty?
+        # If so, define the variances
         variance1 = variance2 = None
         if isinstance(flux1, tuple):
             flux1, err1 = flux1
@@ -675,38 +682,45 @@ def avg_cs_from_iterables(
             flux2, err2 = flux2
             variance2 = np.mean(err2) ** 2
 
+        # Only use the variance if both flux iterables define it.
         if variance1 is None or variance2 is None:
             variance1 = variance2 = None
         else:
-            if common_variance1 is None:
-                common_variance1 = variance1
-                common_variance2 = variance2
-            else:
-                common_variance1 += variance1
-                common_variance2 += variance2
+            common_variance1 = sum_if_not_none_or_initialize(common_variance1, variance1)
+            common_variance2 = sum_if_not_none_or_initialize(common_variance2, variance2)
 
         N = flux1.size
-        ft1 = fft(flux1)
-        ft2 = fft(flux2)
 
+        # At the first loop, we define the frequency array and the range of positive
+        # frequency bins (after the first loop, cross will not be None nymore)
         if cross is None:
             freq = fftfreq(N, dt)
             fgt0 = positive_fft_bins(N)
 
+        # Calculate the FFTs
+        ft1 = fft(flux1)
+        ft2 = fft(flux2)
+
+        # Calculate the sum of each light curve, to calculate the mean
+        # This will
         nph1 = flux1.sum()
         nph2 = flux2.sum()
         nph = np.sqrt(nph1 * nph2)
+
+        # Calculate the unnormalized cross spectrum
         unnorm_power = ft1 * ft2.conj()
         unnorm_pd1 = unnorm_pd2 = 0
+
+        # If requested, calculate the auxiliary PDSs
         if return_auxil:
             unnorm_pd1 = (ft1 * ft1.conj()).real
             unnorm_pd2 = (ft2 * ft2.conj()).real
 
+        # Accumulate the sum to calculate the total mean of the lc
         common_mean1 += nph1
         common_mean2 += nph2
 
-        unnorm_power = ft1 * ft2.conj()
-
+        # Take only positive frequencies unless the user wants the full spectrum
         if not fullspec:
             unnorm_power = unnorm_power[fgt0]
             if return_auxil:
@@ -714,9 +728,8 @@ def avg_cs_from_iterables(
                 unnorm_pd2 = unnorm_pd2[fgt0]
 
         cs_seg = unnorm_power
-        pd1_seg = unnorm_pd1
-        pd2_seg = unnorm_pd2
 
+        # If normalization has to be done interval by interval, do it here.
         if not use_common_mean:
             mean = nph / N
             variance = None
@@ -728,23 +741,21 @@ def avg_cs_from_iterables(
                 unnorm_power, dt, N, mean, norm=norm, power_type=power_type, variance=variance
             )
 
-        if cross is None:
-            cross = cs_seg
-            pds1 = pd1_seg
-            pds2 = pd2_seg
-            unnorm_cross = unnorm_power
-        else:
-            cross += cs_seg
-            pds1 += pd1_seg
-            pds2 += pd2_seg
-            unnorm_cross += unnorm_power
+        # Initialize or accumulate final averaged spectra
+        cross = sum_if_not_none_or_initialize(cross, cs_seg)
+        unnorm_pds1 = sum_if_not_none_or_initialize(unnorm_pds1, unnorm_pd1)
+        unnorm_pds2 = sum_if_not_none_or_initialize(unnorm_pds2, unnorm_pd2)
+        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross, unnorm_power)
+
         M += 1
 
+    # If no valid intervals were found, return only `None`s
     if cross is None:
         if return_auxil:
             return [None] * 10
         return [None] * 5
 
+    # Calculate the common mean
     common_mean1 /= M * N
     common_mean2 /= M * N
     common_mean = np.sqrt(common_mean1 * common_mean2)
@@ -755,11 +766,14 @@ def avg_cs_from_iterables(
         common_variance2 /= M
         common_variance = np.sqrt(common_variance1 * common_variance2)
 
+    # Transform the sums into averages
     cross /= M
-    pds1 /= M
-    pds2 /= M
-    unnorm_power /= M
+    unnorm_pds1 /= M
+    unnorm_pds2 /= M
+    unnorm_cross /= M
 
+    # Finally, normalize the cross spectrum (only if not already done on an
+    # interval-to-interval basis)
     if use_common_mean:
         cross = normalize_crossspectrum(
             cross,
@@ -771,11 +785,12 @@ def avg_cs_from_iterables(
             power_type=power_type,
         )
 
+    # If the user does not want negative frequencies, don't give them
     if not fullspec:
         freq = freq[fgt0]
 
     if return_auxil:
-        return freq, cross, N, M, common_mean, pds1, common_mean1, pds2, common_mean2, unnorm_power
+        return freq, cross, N, M, common_mean, unnorm_pds1, common_mean1, unnorm_pds2, common_mean2, unnorm_cross
 
     return freq, cross, N, M, common_mean
 
