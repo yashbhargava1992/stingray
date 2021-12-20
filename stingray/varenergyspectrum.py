@@ -25,35 +25,35 @@ __all__ = [
 
 def get_non_overlapping_ref_band(channel_band, ref_band):
     """
-        Ensures that the ``channel_band`` (i.e. the band of interest) is
-        not contained within the ``ref_band`` (i.e. the reference band)
+    Ensures that the ``channel_band`` (i.e. the band of interest) is
+    not contained within the ``ref_band`` (i.e. the reference band)
 
-        Parameters
-        ----------
-        channel_band : iterable of type ``[elow, ehigh]``
-            The lower/upper limits of the energies to be contained in the band
-            of interest
+    Parameters
+    ----------
+    channel_band : iterable of type ``[elow, ehigh]``
+        The lower/upper limits of the energies to be contained in the band
+        of interest
 
-        ref_band : iterable
-            The lower/upper limits of the energies in the reference band
+    ref_band : iterable
+        The lower/upper limits of the energies in the reference band
 
-        Returns
-        -------
-        ref_intervals : iterable
-            The channels that are both in the reference band in not in the
-            bands of interest
+    Returns
+    -------
+    ref_intervals : iterable
+        The channels that are both in the reference band in not in the
+        bands of interest
 
-        Examples
-        --------
-        >>> channel_band = [2, 3]
-        >>> ref_band = [[0, 10]]
-        >>> new_ref = get_non_overlapping_ref_band(channel_band, ref_band)
-        >>> np.allclose(new_ref, [[0, 2], [3, 10]])
-        True
-        >>> new_ref = get_non_overlapping_ref_band([0, 1], [[2, 3]])
-        >>> np.allclose(new_ref, [[2, 3]])
-        True
-        """
+    Examples
+    --------
+    >>> channel_band = [2, 3]
+    >>> ref_band = [[0, 10]]
+    >>> new_ref = get_non_overlapping_ref_band(channel_band, ref_band)
+    >>> np.allclose(new_ref, [[0, 2], [3, 10]])
+    True
+    >>> new_ref = get_non_overlapping_ref_band([0, 1], [[2, 3]])
+    >>> np.allclose(new_ref, [[2, 3]])
+    True
+    """
     channel_band = np.asarray(channel_band)
     ref_band = np.asarray(ref_band)
     if len(ref_band.shape) <= 1:
@@ -584,19 +584,14 @@ class ExcessVarianceSpectrum(VarEnergySpectrum):
 
 
 class CountSpectrum(VarEnergySpectrum):
-    """Calculate the covariance spectrum.
+    """Calculate the Count spectrum.
 
-    For each energy interval, calculate the covariance between two bands.
-    If ``events2`` is specified, the energy bands are chosen from this second
-    event list, while the reference band from ``events``.
+    For each energy interval, compute the counts.
 
     Parameters
     ----------
     events : :class:`stingray.events.EventList` object
         event list
-
-    freq_interval : ``[f0, f1]``, list of float
-        the frequency range over which calculating the variability quantity
 
     energy_spec : list or tuple ``(emin, emax, N, type)``
         if a ``list`` is specified, this is interpreted as a list of bin edges;
@@ -605,27 +600,13 @@ class CountSpectrum(VarEnergySpectrum):
 
     Other Parameters
     ----------------
-    ref_band : ``[emin, emax]``, float; default ``None``
-        minimum and maximum energy of the reference band. If ``None``, the
-        full band is used.
-
     use_pi : bool, default ``False``
         Use channel instead of energy
-
-    events2 : :class:`stingray.events.EventList` object
-        event list for the second channel, if not the same. Useful if the
-        reference band has to be taken from another detector.
 
     Attributes
     ----------
     events1 : array-like
         list of events used to produce the spectrum
-
-    events2 : array-like
-        if the spectrum requires it, second list of events
-
-    freq_interval : array-like
-        interval of frequencies used to calculate the spectrum
 
     energy_intervals : ``[[e00, e01], [e10, e11], ...]``
         energy intervals used for the spectrum
@@ -914,19 +895,19 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
                 continue
 
             common_ref = self.same_events and len(cross_two_gtis([eint], self.ref_band)) > 0
-            if common_ref:
-                cross -= Psnoise
-
             Cmean = np.mean(cross[good])
+            if common_ref:
+                # Equation 6
+                Cmean -= Psnoise
             Cmean_real = np.abs(Cmean)
 
+            Psmean = np.mean(Ps[good])
+
+            _, _, _, Ce = error_on_averaged_cross_spectrum(
+                Cmean, Psmean, Prmean, Mtot, Psnoise, Prnoise, common_ref=common_ref
+            )
             if not self.return_complex:
                 Cmean = Cmean_real
-
-            Psmean = np.mean(Ps[good])
-            _, _, _, Ce = error_on_averaged_cross_spectrum(
-                Cmean_real, Psmean, Prmean, Mtot, Psnoise, Prnoise, common_ref=common_ref
-            )
 
             cov, cov_e = cross_to_covariance(np.asarray([Cmean, Ce]), Prmean, Prnoise, delta_nu)
 
