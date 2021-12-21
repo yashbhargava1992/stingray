@@ -1238,6 +1238,8 @@ class AveragedCrossspectrum(Crossspectrum):
             self.n = None
             return
 
+        accepted_new_style = (EventList, Lightcurve)
+        old_style = old_style or not isinstance(data1, accepted_new_style)
         if not old_style and data1 is not None and data2 is not None:
             if isinstance(data1, EventList):
                 spec = averagedcrossspectrum_from_events(
@@ -1245,10 +1247,12 @@ class AveragedCrossspectrum(Crossspectrum):
             elif isinstance(data1, Lightcurve):
                 spec = averagedcrossspectrum_from_lightcurve(
                     data1, data2, segment_size, norm=norm, power_type=power_type, silent=silent, fullspec=fullspec, use_common_mean=use_common_mean)
+
             for key, val in spec.__dict__.items():
                 setattr(self, key, val)
             return
 
+        print("Using old style")
         if large_data and data1 is not None and data2 is not None:
             if isinstance(data1, EventList):
                 input_data = 'EventList'
@@ -2059,6 +2063,5 @@ def averagedcrossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size,
         obj.nphots2 = mean2 * N
         obj.fullspec = fullspec
         obj.segment_size = segment_size
-
 
     return cs
