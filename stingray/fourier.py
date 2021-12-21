@@ -567,7 +567,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
         # If the user wants to normalize using the mean of the total lightcurve,
         # normalize it here
         cs_seg = unnorm_power
-        if use_common_mean:
+        if not use_common_mean:
             mean = nph / N
 
             cs_seg = normalize_crossspectrum(
