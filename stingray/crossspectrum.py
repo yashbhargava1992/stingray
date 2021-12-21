@@ -1854,6 +1854,7 @@ def averagedcrossspectrum_from_time_array(times1, times2, dt, segment_size, gti,
         obj.nphots2 = mean2 * N
         obj.fullspec = fullspec
         obj.segment_size = segment_size
+        obj.gti = gti
 
     return cs
 
@@ -1975,6 +1976,7 @@ def averagedcrossspectrum_from_lightcurve(lc1, lc2, segment_size, norm='none',
         obj.nphots2 = mean2 * N
         obj.fullspec = fullspec
         obj.segment_size = segment_size
+        obj.gti = gti
 
     return cs
 

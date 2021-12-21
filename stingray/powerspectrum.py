@@ -1002,6 +1002,7 @@ def powerspectrum_from_time_array(times, dt, segment_size, gti, norm='none',
     cs.fullspec = fullspec
     cs.segment_size = segment_size
     cs.norm = norm
+    cs.gti = gti
 
     return cs
 
@@ -1101,6 +1102,7 @@ def powerspectrum_from_lightcurve(lc, segment_size, norm='none',
     cs.fullspec = fullspec
     cs.segment_size = segment_size
     cs.norm = norm
+    cs.gti = lc.gti
     return cs
 
 
