@@ -7,7 +7,7 @@ import scipy.special
 from astropy.io import fits
 from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
-from stingray.crossspectrum import  cospectra_pvalue, normalize_crossspectrum
+from stingray.crossspectrum import cospectra_pvalue, normalize_crossspectrum
 from stingray import StingrayError
 from ..simulator import Simulator
 from ..fourier import raw_coherence
@@ -32,6 +32,7 @@ def avg_cdf_two_spectra(x):
         fac2 = scipy.special.gammaincc(1, -2 * x)
 
     return prefac * (fac1 + fac2)
+
 
 class TestClassicalPvalue(object):
 
@@ -383,7 +384,6 @@ class TestCoherence(object):
         np.testing.assert_almost_equal(np.mean(coh).real, 1.0)
 
 
-
 class TestNormalization(object):
 
     def setup_class(self):
@@ -540,12 +540,12 @@ class TestCrossspectrum(object):
             cs = Crossspectrum(norm='frabs')
 
     def test_init_with_wrong_lc1_instance(self):
-        lc_ = {"a":1, "b":2}
+        lc_ = {"a": 1, "b": 2}
         with pytest.raises(TypeError):
             cs = Crossspectrum(lc_, self.lc2)
 
     def test_init_with_wrong_lc2_instance(self):
-        lc_ =  {"a":1, "b":2}
+        lc_ = {"a": 1, "b": 2}
         with pytest.raises(TypeError):
             cs = Crossspectrum(self.lc1, lc_)
 
@@ -710,7 +710,6 @@ class TestCrossspectrum(object):
                                           trial_correction=True)
         assert np.size(pval) == 0
 
-
     def test_classical_significances_with_logbinned_psd(self):
         with pytest.warns(UserWarning) as record:
             cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
@@ -746,6 +745,7 @@ class TestCrossspectrum(object):
         assert len(csT.power) >= len(self.cs.power)
         assert len(csT.power) == len(self.lc1)
         assert csT.freq[csT.n//2] <= 0.
+
 
 class TestAveragedCrossspectrum(object):
 
@@ -797,7 +797,7 @@ class TestAveragedCrossspectrum(object):
         newlc.counts[:newlc.counts.size // 2] = \
             0 * newlc.counts[:newlc.counts.size // 2]
         with pytest.warns(UserWarning) as record:
-            ps = AveragedCrossspectrum(newlc, self.lc2, segment_size=0.2)
+            ps = AveragedCrossspectrum(newlc, self.lc2, segment_size=0.2, old_style=True)
 
         assert np.any(["No counts in "
                        in r.message.args[0] for r in record])
@@ -808,7 +808,7 @@ class TestAveragedCrossspectrum(object):
 
     def test_invalid_type_attribute(self):
         with pytest.raises(ValueError):
-            cs_test = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
+            cs_test = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, old_style=True)
             cs_test.type = 'invalid_type'
             assert AveragedCrossspectrum._make_crossspectrum(cs_test,
                                                              self.lc1,
@@ -825,7 +825,7 @@ class TestAveragedCrossspectrum(object):
                                                              [self.lc1,
                                                               self.lc2],
                                                              [self.lc2,
-                                                                  self.lc1])
+                                                              self.lc1])
         assert "Type of spectrum not recognized" in str(excinfo.value)
 
     def test_different_dt(self):
@@ -858,7 +858,7 @@ class TestAveragedCrossspectrum(object):
         assert test_lc2.tseg != test_lc1.tseg
 
         with pytest.warns(UserWarning) as record:
-            AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5)
+            AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5, old_style=True)
             assert np.any(["same tseg" in r.message.args[0]
                            for r in record])
 
@@ -877,18 +877,18 @@ class TestAveragedCrossspectrum(object):
 
         with pytest.warns(UserWarning) as record:
             acs = AveragedCrossspectrum(
-                lc1, lc2, segment_size=5.0, norm="leahy")
+                lc1, lc2, segment_size=5.0, norm="leahy", old_style=True)
         assert acs.m == 1
         assert np.any(["No counts in interval" in r.message.args[0]
                        for r in record])
-
 
     def test_rebin_with_invalid_type_attribute(self):
         new_df = 2
 
         with pytest.warns(UserWarning) as record:
             aps = AveragedCrossspectrum(lc1=self.lc1, lc2=self.lc2,
-                                        segment_size=1, norm='leahy')
+                                        segment_size=1, norm='leahy',
+                                        old_style=True)
         aps.type = 'invalid_type'
         with pytest.raises(ValueError) as excinfo:
             assert aps.rebin(df=new_df, method=aps.type)
@@ -898,7 +898,9 @@ class TestAveragedCrossspectrum(object):
         new_df = 2
         with pytest.warns(UserWarning) as record:
             aps = AveragedCrossspectrum(self.lc1, self.lc2,
-                                        segment_size=1, norm='leahy')
+                                        segment_size=1, norm='leahy', old_style=True)
+
+        print(record)
         assert aps.rebin(df=new_df)
 
     def test_init_with_norm_not_str(self):
@@ -931,8 +933,7 @@ class TestAveragedCrossspectrum(object):
 
         with pytest.warns(UserWarning) as record:
             cs = AveragedCrossspectrum(iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),
-                                   segment_size=1)
-
+                                       segment_size=1)
 
     def test_with_multiple_lightcurves_variable_length(self):
         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]
@@ -946,7 +947,6 @@ class TestAveragedCrossspectrum(object):
 
         cs = AveragedCrossspectrum(lc1_split, lc2_split, segment_size=0.05,
                                    norm="leahy", silent=True)
-
 
     def test_coherence(self):
         with warnings.catch_warnings(record=True) as w:
@@ -1041,7 +1041,7 @@ class TestAveragedCrossspectrum(object):
 
         with warnings.catch_warnings(record=True) as w:
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
-                                       norm="leahy")
+                                       norm="leahy", old_style=True)
 
         assert np.allclose(cs.power_err, np.sqrt(2 / cs.m))
 
@@ -1055,4 +1055,4 @@ class TestAveragedCrossspectrum(object):
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
                                        norm="leahy")
         maxpower = np.max(cs.power)
-        assert np.all(np.isfinite(cs.classical_significances(threshold = maxpower/2.)))
+        assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower/2.)))
