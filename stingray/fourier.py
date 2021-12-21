@@ -600,6 +600,127 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
     return freq, cross, N, M, common_mean
 
 
+def avg_cs_from_iterables_quick(
+    flux_iterable1,
+    flux_iterable2,
+    dt,
+    norm="abs"
+):
+    """Like `avg_cs_from_iterables`, with default options that make it quick.
+
+    Assumes that:
+
+    * the flux iterables return counts, no other units
+    * the mean is calculated over the whole light curve, and normalization
+      is done at the end
+    * no auxiliary PDSs are returned
+    * only positive frequencies are returned
+    * the spectrum is complex, no real parts or absolutes
+    * no progress bars
+
+    Parameters
+    ----------
+    flux_iterable1 : `iterable` of `np.array`s or of tuples (`np.array`, `np.array`)
+        Iterable providing either equal segments of light curve, or of light curve
+        and errors. They must all be of the same length.
+    flux_iterable2 : `iterable` of `np.array`s or of tuples (`np.array`, `np.array`)
+        Same as ``flux_iterable1``, for the reference channel
+    dt : float
+        Time resolution of the light curves used to produce periodograms
+
+    Other Parameters
+    ----------------
+    norm : str, default "abs"
+        The normalization of the periodogram. "abs" is absolute rms, "frac" is
+        fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+        unnormalized periodogram
+
+    Returns
+    -------
+    freq : `np.array`
+        The periodogram frequencies
+    power : `np.array`
+        The normalized cross spectral powers
+    N : int
+        the number of bins in the light curves used in each segment
+    M : int
+        the number of averaged periodograms
+    mean : float
+        the mean flux (geometrical average of the mean fluxes in the two channels)
+
+    """
+    # Initialize stuff
+    unnorm_cross = unnorm_pds1 = unnorm_pds2 = None
+    M = 0
+
+    common_mean1 = common_mean2 = 0
+
+    for flux1, flux2 in zip(flux_iterable1, flux_iterable2):
+        if flux1 is None or flux2 is None:
+            continue
+
+        N = flux1.size
+
+        # Calculate the sum of each light curve, to calculate the mean
+        # This will
+        nph1 = flux1.sum()
+        nph2 = flux2.sum()
+
+        # At the first loop, we define the frequency array and the range of positive
+        # frequency bins (after the first loop, cross will not be None nymore)
+        if unnorm_cross is None:
+            freq = fftfreq(N, dt)
+            fgt0 = positive_fft_bins(N)
+
+        # Calculate the FFTs
+        ft1 = fft(flux1)
+        ft2 = fft(flux2)
+
+        # Calculate the unnormalized cross spectrum
+        unnorm_power = ft1 * ft2.conj()
+
+        # Accumulate the sum to calculate the total mean of the lc
+        common_mean1 += nph1
+        common_mean2 += nph2
+
+        # Take only positive frequencies
+        unnorm_power = unnorm_power[fgt0]
+
+        # Initialize or accumulate final averaged spectrum
+        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross, unnorm_power)
+
+        M += 1
+
+    # If no valid intervals were found, return only `None`s
+    if unnorm_cross is None:
+        return [None] * 5
+
+    # Calculate the common mean
+    common_mean1 /= M * N
+    common_mean2 /= M * N
+    common_mean = np.sqrt(common_mean1 * common_mean2)
+
+    # Transform the sums into averages
+    unnorm_cross /= M
+
+    # Finally, normalize the cross spectrum (only if not already done on an
+    # interval-to-interval basis)
+    cross = normalize_crossspectrum(
+        unnorm_cross,
+        dt,
+        N,
+        common_mean,
+        norm=norm,
+        variance=None,
+        power_type="all",
+    )
+
+    # No negative frequencies
+    freq = freq[fgt0]
+
+    return freq, cross, N, M, common_mean
+
+
 def avg_cs_from_iterables(
     flux_iterable1,
     flux_iterable2,
@@ -966,6 +1087,22 @@ def avg_cs_from_events(
     flux_iterable2 = get_flux_iterable_from_segments(
         times2, gti, segment_size, N, counts=counts2, errors=errors2
     )
+
+    is_events = np.all([val is None for val in (counts1, counts2, errors1, errors2)])
+
+    if (is_events
+            and silent
+            and use_common_mean
+            and power_type == "all"
+            and not fullspec
+            and not return_auxil):
+        return avg_cs_from_iterables_quick(
+            flux_iterable1,
+            flux_iterable2,
+            dt,
+            norm=norm
+        )
+
     return avg_cs_from_iterables(
         flux_iterable1,
         flux_iterable2,
