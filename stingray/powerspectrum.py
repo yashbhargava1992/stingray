@@ -1001,6 +1001,7 @@ def powerspectrum_from_time_array(times, dt, segment_size, gti, norm='none',
     cs.nphots = mean * N
     cs.fullspec = fullspec
     cs.segment_size = segment_size
+    cs.norm = norm
 
     return cs
 
@@ -1099,6 +1100,7 @@ def powerspectrum_from_lightcurve(lc, segment_size, norm='none',
     cs.nphots = mean * N
     cs.fullspec = fullspec
     cs.segment_size = segment_size
+    cs.norm = norm
     return cs
 
 
@@ -1165,5 +1167,6 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size, norm='none',
     cs.df = 1 / segment_size
     cs.nphots = mean * N
     cs.segment_size = segment_size
+    cs.norm = norm
 
     return cs
