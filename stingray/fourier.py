@@ -217,7 +217,7 @@ def bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1.0):
         If known, the intrinsic coherence.
     """
     if N > 500:
-        return 0.
+        return 0. * P1
     bsq = P1 * P2 - intrinsic_coherence * (P1 - P1noise) * (P2 - P2noise)
     return bsq / N
 
@@ -246,7 +246,7 @@ def raw_coherence(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1):
         If known, the intrinsic coherence.
     """
     bsq = bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=intrinsic_coherence)
-    num = (C * C.conj()).real - bsq
+    num = (C * np.conj(C)).real - bsq
     if isinstance(num, Iterable):
         num[num < 0] = (C * C.conj()).real[num < 0]
     elif num < 0:

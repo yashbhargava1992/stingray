@@ -67,8 +67,12 @@ class TestCoherence(object):
         low_coh_cross = np.random.normal(bsq**0.5 / 10, bsq**0.5 / 100) + 0.j
         coh = raw_coherence(low_coh_cross, P1, P2, self.p1noise, self.p2noise, self.N)
         assert np.allclose(coh, 0)
-        # Do it with a single number as well
-        coh = raw_coherence(low_coh_cross[0], P1[0], P2[0], self.p1noise, self.p2noise, self.N)
+        # Do it with a single number
+        coh = raw_coherence(low_coh_cross[0], P1[0],
+                            P2[0], self.p1noise, self.p2noise, self.N)
+        # Do it with a single complex object
+        coh = raw_coherence(complex(low_coh_cross[0]), P1[0],
+                            P2[0], self.p1noise, self.p2noise, self.N)
 
 
 class TestFourier(object):
