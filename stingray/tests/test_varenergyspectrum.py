@@ -270,13 +270,16 @@ class TestRmsAndCovSpectrum(object):
         coverr = covar.spectrum_error
         crosserr = covar_cross.spectrum_error
 
-        print(cov, coverr, cross, crosserr)
         assert np.allclose(cov, cross, atol=3 * coverr)
 
+    @pytest.mark.parametrize("cross", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs"])
-    def test_correct_rms_values_vs_cov(self, norm):
+    def test_correct_rms_values_vs_cov(self, cross, norm):
         """The rms calculated with independent event lists (from the cospectrum)
         is equivalent to the one calculated with one event list (from the PDS)"""
+        ev2 = None
+        if cross:
+            ev2 = self.test_ev2
         covar = CovarianceSpectrum(
             self.test_ev1,
             freq_interval=[0.00001, 0.1],
@@ -284,7 +287,7 @@ class TestRmsAndCovSpectrum(object):
             bin_time=self.bin_time / 2,
             segment_size=100,
             norm=norm,
-            events2=self.test_ev2
+            events2=ev2
         )
         rmsspec = RmsSpectrum(
             self.test_ev1,
@@ -293,14 +296,13 @@ class TestRmsAndCovSpectrum(object):
             bin_time=self.bin_time / 2,
             segment_size=100,
             norm=norm,
-            events2=self.test_ev2
+            events2=ev2
         )
 
         cov = covar.spectrum
         rms = rmsspec.spectrum
         coverr = covar.spectrum_error
         rmserr = covar.spectrum_error
-        print(cov, coverr, rms, rmserr)
 
         assert np.allclose(cov, rms, atol=3 * coverr)
 
