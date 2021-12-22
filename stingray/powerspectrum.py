@@ -950,8 +950,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
 
 def powerspectrum_from_time_array(times, dt, segment_size, gti, norm='none',
-                                  power_type="real", silent=False,
-                                  fullspec=False, use_common_mean=True):
+                                  silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from an array of event times.
 
     Parameters
@@ -987,29 +986,16 @@ def powerspectrum_from_time_array(times, dt, segment_size, gti, norm='none',
         the real part
     """
 
-    freq, power, N, M, mean = avg_pds_from_events(
+    table = avg_pds_from_events(
         times, gti, segment_size, dt,
         norm=norm, use_common_mean=use_common_mean,
         silent=silent)
 
-    cs = AveragedPowerspectrum()
-    cs.freq = freq
-    cs.power = power
-    cs.m = M
-    cs.n = N
-    cs.df = 1 / segment_size
-    cs.nphots = mean * N
-    cs.fullspec = fullspec
-    cs.segment_size = segment_size
-    cs.norm = norm
-    cs.gti = gti
-
-    return cs
+    return _powerspectrum_from_astropy_table(table)
 
 
 def powerspectrum_from_events(events, dt, segment_size, norm='none',
-                              power_type="real", silent=False,
-                              fullspec=False, use_common_mean=True):
+                              silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from an event list
 
     Parameters
@@ -1045,14 +1031,12 @@ def powerspectrum_from_events(events, dt, segment_size, norm='none',
 
     return powerspectrum_from_time_array(
         events.time, dt, segment_size, events.gti, norm=norm,
-        power_type=power_type, silent=silent,
-        fullspec=fullspec, use_common_mean=use_common_mean
+        silent=silent, use_common_mean=use_common_mean
     )
 
 
 def powerspectrum_from_lightcurve(lc, segment_size, norm='none',
-                                  power_type="real", silent=False,
-                                  fullspec=False, use_common_mean=True):
+                                  silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from a light curve
 
     Parameters
@@ -1086,24 +1070,13 @@ def powerspectrum_from_lightcurve(lc, segment_size, norm='none',
         the real part
     """
 
-    freq, power, N, M, mean = avg_pds_from_events(
+    table = avg_pds_from_events(
         lc.time, lc.gti, segment_size, lc.dt,
         norm=norm, use_common_mean=use_common_mean,
         silent=silent,
         counts=lc.counts)
 
-    cs = AveragedPowerspectrum()
-    cs.freq = freq
-    cs.power = power
-    cs.m = M
-    cs.n = N
-    cs.df = 1 / segment_size
-    cs.nphots = mean * N
-    cs.fullspec = fullspec
-    cs.segment_size = segment_size
-    cs.norm = norm
-    cs.gti = lc.gti
-    return cs
+    return _powerspectrum_from_astropy_table(table)
 
 
 def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size, norm='none',
@@ -1119,11 +1092,12 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size, norm='none',
     dt : float
         The time resolution of the light curves
         (sets the Nyquist frequency)
-    segment_size : float
-        The length, in seconds, of the light curve segments that will be averaged
 
     Other parameters
     ----------------
+    segment_size : float, default None
+        The length, in seconds, of the light curve segments that will be averaged.
+        If not ``None``, it will be used to check the segment size of the output.
     norm : str, default "abs"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -1153,22 +1127,36 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size, norm='none',
             else:
                 yield lc
 
-    freq, power, N, M, mean = avg_pds_from_iterable(
+    table = avg_pds_from_iterable(
         iterate_lc_counts(iter_lc),
         dt,
         norm=norm,
         use_common_mean=use_common_mean,
         silent=silent
     )
+    assert np.isclose(table.meta["segment_size"], segment_size)
+    return _powerspectrum_from_astropy_table(table)
 
+
+def _powerspectrum_from_astropy_table(table):
     cs = AveragedPowerspectrum()
-    cs.freq = freq
-    cs.power = power
-    cs.m = M
-    cs.n = N
-    cs.df = 1 / segment_size
-    cs.nphots = mean * N
-    cs.segment_size = segment_size
-    cs.norm = norm
+
+    cs.freq = table["freq"]
+    cs.norm = table.meta["norm"]
+
+    cs.power = table["power"]
+    cs.unnorm_power = table["unnorm_power"]
+
+    for attr, val in table.meta.items():
+        setattr(cs, attr, val)
+
+    # Transform nphods1 in nphots for pds1, etc.
+    for attr, val in table.meta.items():
+        if attr.endswith("1"):
+            setattr(cs.pds1, attr[:-1], val)
+        if attr.endswith("2"):
+            setattr(cs.pds2, attr[:-1], val)
+
+    cs.power_err = cs.power / np.sqrt(cs.m)
 
     return cs
