@@ -1510,7 +1510,7 @@ def generate_indices_of_segment_boundaries_binned(times, gti, segment_size, dt=N
     >>> gtis = [[0.05, 0.55]]
     >>> vals = generate_indices_of_segment_boundaries_binned(times, gtis, 0.5, dt=0.1)
     >>> v0 = next(vals)
-    >>> np.allclose(v0[:2], [0.1, 0.6])
+    >>> np.allclose(v0[:2], [0.05, 0.55])
     True
     >>> np.allclose(v0[2:], [0, 5])
     True
@@ -1519,5 +1519,7 @@ def generate_indices_of_segment_boundaries_binned(times, gti, segment_size, dt=N
     times = np.asarray(times)
     startidx, stopidx = bin_intervals_from_gtis(gti, segment_size, times, dt=dt)
 
+    if dt is None:
+        dt = 0
     for idx0, idx1 in zip(startidx, stopidx):
-        yield times[idx0], times[min(idx1, times.size - 1)], idx0, idx1
+        yield times[idx0] - dt / 2, times[min(idx1, times.size - 1)] - dt / 2, idx0, idx1
