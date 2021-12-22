@@ -614,6 +614,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
 
     Nph = common_mean
     common_mean = common_mean / (M * N)
+
     if common_variance is not None:
         # Note: the variances we summed were means, not sums. Hence M, not M*N
         common_variance /= M
@@ -958,6 +959,7 @@ def avg_cs_from_iterables(
     # Calculate the common mean
     Nph1 = common_mean1
     Nph2 = common_mean2
+
     common_mean1 = common_mean1 / (M * N)
     common_mean2 = common_mean2 / (M * N)
     common_mean = np.sqrt(common_mean1 * common_mean2)
