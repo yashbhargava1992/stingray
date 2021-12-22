@@ -734,7 +734,7 @@ def avg_cs_from_iterables_quick(
 
     # If no valid intervals were found, return only `None`s
     if unnorm_cross is None:
-        return [None] * 5
+        return None
 
     # Calculate the common mean
     Nph1 = common_mean1
