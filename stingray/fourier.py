@@ -2,6 +2,7 @@ import copy
 import warnings
 from collections.abc import Iterable
 import numpy as np
+from astropy.table import Table
 from .utils import histogram, show_progress, sum_if_not_none_or_initialize
 from .gti import generate_indices_of_segment_boundaries_unbinned, generate_indices_of_segment_boundaries_binned
 
@@ -52,13 +53,15 @@ def positive_fft_bins(N, include_zero=False):
         return slice(minbin, (N + 1) // 2)
 
 
-def poisson_level(meanrate=0, norm="abs"):
+def poisson_level(meanrate=None, Nph=None, norm="abs"):
     """Poisson (white)-noise level in a periodogram of pure counting noise.
 
     Other Parameters
     ----------
-    meanrate : float, default 0
+    meanrate : float, default None
         Mean count rate in counts/s
+    Nph : float, default None
+        Total number of counts in the light curve
     norm : str, default "abs"
         Normalization of the periodogram. One of ["abs", "frac", "leahy"]
 
@@ -70,17 +73,35 @@ def poisson_level(meanrate=0, norm="abs"):
     20.0
     >>> poisson_level(meanrate=10., norm="frac")
     0.2
+    >>> poisson_level(Nph=10, norm="none")
+    10.0
     >>> poisson_level(meanrate=10., norm="asdfwrqfasdh3r")
     Traceback (most recent call last):
     ...
     ValueError: Unknown value for norm: asdfwrqfasdh3r...
+    >>> poisson_level(meanrate=10, norm="none")
+    Traceback (most recent call last):
+    ...
+    ValueError: Bad input parameters for norm none...
+    >>> poisson_level(Nph=10, norm="abs")
+    Traceback (most recent call last):
+    ...
+    ValueError: Bad input parameters for norm abs...
     """
+    bad_input = norm.lower() in ["abs", "frac"] and meanrate is None
+    bad_input = bad_input or (norm.lower() == "none" and Nph is None)
+
+    if bad_input:
+        raise ValueError(f"Bad input parameters for norm {norm}: Nph={Nph}, meanrate={meanrate}")
+
     if norm == "abs":
         return 2. * meanrate
     if norm == "frac":
         return 2. / meanrate
     if norm == "leahy":
         return 2.0
+    if norm == "none":
+        return float(Nph)
     raise ValueError(f"Unknown value for norm: {norm}")
 
 
@@ -369,11 +390,14 @@ def cross_to_covariance(C, Pr, Prnoise, delta_nu):
     return C * np.sqrt(delta_nu / (Pr - Prnoise))
 
 
-def _which_segment_idx_fun(counts=None):
+def _which_segment_idx_fun(counts=None, dt=None):
     # Make function interface equal (counts gets ignored)
     if counts is None:
         return generate_indices_of_segment_boundaries_unbinned
-    return generate_indices_of_segment_boundaries_binned
+
+    def fun(*args, **kwargs):
+        return generate_indices_of_segment_boundaries_binned(*args, dt=dt, **kwargs)
+    return fun
 
 
 def get_total_ctrate(times, gti, segment_size, counts=None):
@@ -460,7 +484,11 @@ def get_flux_iterable_from_segments(times, gti, segment_size, N=None, counts=Non
             "At least one between counts (if light curve) and N (if events) has to be set"
         )
 
-    fun = _which_segment_idx_fun(counts)
+    dt = None
+    if counts is not None:
+        dt = np.median(np.diff(times[:100]))
+
+    fun = _which_segment_idx_fun(counts, dt)
 
     for s, e, idx0, idx1 in fun(times, gti, segment_size):
         if idx1 - idx0 < 2:
@@ -473,10 +501,12 @@ def get_flux_iterable_from_segments(times, gti, segment_size, N=None, counts=Non
             # where long is a 32-bit integer.
             cts = histogram((event_times - s).astype(float), bins=N,
                             range=[0, segment_size]).astype(float)
+            cts = np.array(cts)
         else:
             cts = counts[idx0:idx1].astype(float)
             if errors is not None:
                 cts = cts, errors[idx0:idx1]
+
         yield cts
 
 
@@ -576,28 +606,39 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
 
         # Accumulate the total sum cross spectrum
         cross = sum_if_not_none_or_initialize(cross, cs_seg)
-
         M += 1
 
     # If there were no good intervals, return None
     if cross is None:
-        return None, None, None, None, None
+        return None
 
-    common_mean /= M * N
+    Nph = common_mean
+    common_mean = common_mean / (M * N)
     if common_variance is not None:
         # Note: the variances we summed were means, not sums. Hence M, not M*N
         common_variance /= M
 
     # Transform a sum into the average
-    cross /= M
+    unnorm_cross = cross / M
 
     # Final normalization (If not done already!)
     if use_common_mean:
         cross = normalize_crossspectrum(
-            cross, dt, N, common_mean, norm=norm, variance=common_variance
+            unnorm_cross, dt, N, common_mean, norm=norm, variance=common_variance
         )
 
-    return freq, cross, N, M, common_mean
+    results = Table()
+    results["freq"] = freq
+    results["power"] = cross
+    results["unnorm_power"] = unnorm_cross
+    results.meta.update({"n": N, "m": M, "dt": dt,
+                         "norm": norm,
+                         "df": 1 / (dt * N),
+                         "nphots": Nph,
+                         "mean": common_mean,
+                         "segment_size": dt * N})
+
+    return results
 
 
 def avg_cs_from_iterables_quick(
@@ -696,8 +737,10 @@ def avg_cs_from_iterables_quick(
         return [None] * 5
 
     # Calculate the common mean
-    common_mean1 /= M * N
-    common_mean2 /= M * N
+    Nph1 = common_mean1
+    Nph2 = common_mean2
+    common_mean1 = common_mean1 / (M * N)
+    common_mean2 = common_mean2 / (M * N)
     common_mean = np.sqrt(common_mean1 * common_mean2)
 
     # Transform the sums into averages
@@ -718,7 +761,20 @@ def avg_cs_from_iterables_quick(
     # No negative frequencies
     freq = freq[fgt0]
 
-    return freq, cross, N, M, common_mean
+    results = Table()
+    results["freq"] = freq
+    results["power"] = cross
+    results["unnorm_power"] = unnorm_cross
+    results.meta.update({"n": N, "m": M, "dt": dt,
+                         "norm": norm,
+                         "df": 1 / (dt * N),
+                         "nphots1": Nph1, "nphots2": Nph2,
+                         "mean": common_mean,
+                         "mean1": common_mean1,
+                         "mean2": common_mean2,
+                         "segment_size": dt * N})
+
+    return results
 
 
 def avg_cs_from_iterables(
@@ -796,7 +852,7 @@ def avg_cs_from_iterables(
             return a
 
     # Initialize stuff
-    cross = unnorm_cross = unnorm_pds1 = unnorm_pds2 = None
+    cross = unnorm_cross = unnorm_pds1 = unnorm_pds2 = pds1 = pds2 = None
     M = 0
 
     common_mean1 = common_mean2 = 0
@@ -862,6 +918,8 @@ def avg_cs_from_iterables(
                 unnorm_pd2 = unnorm_pd2[fgt0]
 
         cs_seg = unnorm_power
+        p1_seg = unnorm_pd1
+        p2_seg = unnorm_pd2
 
         # If normalization has to be done interval by interval, do it here.
         if not use_common_mean:
@@ -874,24 +932,34 @@ def avg_cs_from_iterables(
             cs_seg = normalize_crossspectrum(
                 unnorm_power, dt, N, mean, norm=norm, power_type=power_type, variance=variance
             )
+            p1_seg = normalize_crossspectrum(
+                unnorm_pd1, dt, N, mean, norm=norm, power_type=power_type, variance=variance
+            )
+            p2_seg = normalize_crossspectrum(
+                unnorm_pd2, dt, N, mean, norm=norm, power_type=power_type, variance=variance
+            )
 
         # Initialize or accumulate final averaged spectra
         cross = sum_if_not_none_or_initialize(cross, cs_seg)
-        unnorm_pds1 = sum_if_not_none_or_initialize(unnorm_pds1, unnorm_pd1)
-        unnorm_pds2 = sum_if_not_none_or_initialize(unnorm_pds2, unnorm_pd2)
         unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross, unnorm_power)
+
+        if return_auxil:
+            unnorm_pds1 = sum_if_not_none_or_initialize(unnorm_pds1, unnorm_pd1)
+            unnorm_pds2 = sum_if_not_none_or_initialize(unnorm_pds2, unnorm_pd2)
+            pds1 = sum_if_not_none_or_initialize(pds1, p1_seg)
+            pds2 = sum_if_not_none_or_initialize(pds2, p2_seg)
 
         M += 1
 
     # If no valid intervals were found, return only `None`s
     if cross is None:
-        if return_auxil:
-            return [None] * 10
-        return [None] * 5
+        return None
 
     # Calculate the common mean
-    common_mean1 /= M * N
-    common_mean2 /= M * N
+    Nph1 = common_mean1
+    Nph2 = common_mean2
+    common_mean1 = common_mean1 / (M * N)
+    common_mean2 = common_mean2 / (M * N)
     common_mean = np.sqrt(common_mean1 * common_mean2)
 
     if common_variance1 is not None:
@@ -902,15 +970,16 @@ def avg_cs_from_iterables(
 
     # Transform the sums into averages
     cross /= M
-    unnorm_pds1 /= M
-    unnorm_pds2 /= M
     unnorm_cross /= M
+    if return_auxil:
+        unnorm_pds1 /= M
+        unnorm_pds2 /= M
 
     # Finally, normalize the cross spectrum (only if not already done on an
     # interval-to-interval basis)
     if use_common_mean:
         cross = normalize_crossspectrum(
-            cross,
+            unnorm_cross,
             dt,
             N,
             common_mean,
@@ -918,15 +987,54 @@ def avg_cs_from_iterables(
             variance=common_variance,
             power_type=power_type,
         )
-
+        if return_auxil:
+            pds1 = normalize_crossspectrum(
+                unnorm_pds1,
+                dt,
+                N,
+                common_mean1,
+                norm=norm,
+                variance=common_variance1,
+                power_type=power_type,
+            )
+            pds2 = normalize_crossspectrum(
+                unnorm_pds2,
+                dt,
+                N,
+                common_mean2,
+                norm=norm,
+                variance=common_variance2,
+                power_type=power_type,
+            )
     # If the user does not want negative frequencies, don't give them
     if not fullspec:
         freq = freq[fgt0]
 
-    if return_auxil:
-        return freq, cross, N, M, common_mean, unnorm_pds1, common_mean1, unnorm_pds2, common_mean2, unnorm_cross
+    results = Table()
+    results["freq"] = freq
+    results["power"] = cross
+    results["unnorm_power"] = unnorm_cross
+    results.meta.update({"n": N, "m": M, "dt": dt,
+                         "norm": norm,
+                         "df": 1 / (dt * N),
+                         "segment_size": dt * N,
+                         "nphots1": Nph1, "nphots2": Nph2,
+                         "countrate1": common_mean1 / dt,
+                         "countrate2": common_mean2 / dt,
+                         "mean": common_mean,
+                         "mean1": common_mean1,
+                         "mean2": common_mean2,
+                         "variance": common_variance,
+                         "variance1": common_variance1,
+                         "variance2": common_variance2})
 
-    return freq, cross, N, M, common_mean
+    if return_auxil:
+        results["pds1"] = pds1
+        results["pds2"] = pds2
+        results["unnorm_pds1"] = unnorm_pds1
+        results["unnorm_pds2"] = unnorm_pds2
+
+    return results
 
 
 def avg_pds_from_events(
@@ -996,9 +1104,12 @@ def avg_pds_from_events(
     flux_iterable = get_flux_iterable_from_segments(
         times, gti, segment_size, N, counts=counts, errors=errors
     )
-    return avg_pds_from_iterable(
+    cross = avg_pds_from_iterable(
         flux_iterable, dt, norm=norm, use_common_mean=use_common_mean, silent=silent
     )
+    if cross is not None:
+        cross.meta["gti"] = gti
+    return cross
 
 
 def avg_cs_from_events(
@@ -1096,21 +1207,25 @@ def avg_cs_from_events(
             and power_type == "all"
             and not fullspec
             and not return_auxil):
-        return avg_cs_from_iterables_quick(
+        results = avg_cs_from_iterables_quick(
             flux_iterable1,
             flux_iterable2,
             dt,
             norm=norm
         )
 
-    return avg_cs_from_iterables(
-        flux_iterable1,
-        flux_iterable2,
-        dt,
-        norm=norm,
-        use_common_mean=use_common_mean,
-        silent=silent,
-        fullspec=fullspec,
-        power_type=power_type,
-        return_auxil=return_auxil,
-    )
+    else:
+        results = avg_cs_from_iterables(
+            flux_iterable1,
+            flux_iterable2,
+            dt,
+            norm=norm,
+            use_common_mean=use_common_mean,
+            silent=silent,
+            fullspec=fullspec,
+            power_type=power_type,
+            return_auxil=return_auxil,
+        )
+    if results is not None:
+        results.meta["gti"] = gti
+    return results

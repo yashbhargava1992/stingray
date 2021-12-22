@@ -6,6 +6,28 @@ curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
 
 
+def compare_tables(table1, table2, rtol=0.001, discard=[]):
+    for key in table1.meta.keys():
+        if key in discard:
+            continue
+        oe, oc = table1.meta[key], table2.meta[key]
+
+        if isinstance(oe, (int, str)):
+            assert oe == oc
+        elif oe is None:
+            assert oc is None
+        elif isinstance(oe, Iterable):
+            assert np.allclose(oe, oc, rtol=rtol)
+        else:
+            assert np.isclose(oe, oc, rtol=rtol)
+    for col in table1.colnames:
+        if col in discard:
+            continue
+        oe, oc = table1[col], table2[col]
+        assert np.allclose(oe, oc, rtol=rtol)
+
+
+
 def test_norm():
     mean = var = 100000
     N = 1000000
@@ -82,15 +104,16 @@ class TestFourier(object):
         cls.length = 100
         cls.ctrate = 10000
         cls.N = np.rint(cls.length / cls.dt).astype(int)
+        cls.dt = cls.length / cls.N
         cls.times = np.sort(np.random.uniform(0, cls.length, int(cls.length * cls.ctrate)))
         cls.gti = np.asarray([[0, cls.length]])
         cls.counts, bins = np.histogram(cls.times, bins=np.linspace(0, cls.length, cls.N + 1))
-        cls.errs = np.ones_like(cls.counts) + np.sqrt(cls.ctrate)
+        cls.errs = np.ones_like(cls.counts) * np.sqrt(cls.ctrate)
         cls.bin_times = (bins[:-1] + bins[1:]) / 2
         cls.segment_size = 5.0
         cls.times2 = np.sort(np.random.uniform(0, cls.length, int(cls.length * cls.ctrate)))
         cls.counts2, _ = np.histogram(cls.times2, bins=np.linspace(0, cls.length, cls.N + 1))
-        cls.errs2 = np.ones_like(cls.counts2) + np.sqrt(cls.ctrate)
+        cls.errs2 = np.ones_like(cls.counts2) * np.sqrt(cls.ctrate)
 
     def test_ctrate_events(self):
         assert get_total_ctrate(self.times, self.gti, self.segment_size) == self.ctrate
@@ -123,8 +146,7 @@ class TestFourier(object):
     def test_avg_pds_bad_input(self):
         times = np.sort(np.random.uniform(0, 1000, 1))
         out_ev = avg_pds_from_events(times, self.gti, self.segment_size, self.dt)
-        for oe in out_ev:
-            assert oe is None
+        assert out_ev is None
 
     @pytest.mark.parametrize("return_auxil", [True, False])
     def test_avg_cs_bad_input(self, return_auxil):
@@ -132,8 +154,7 @@ class TestFourier(object):
         times2 = np.sort(np.random.uniform(0, 1000, 1))
         out_ev = avg_cs_from_events(times1, times2, self.gti,
                                     self.segment_size, self.dt, return_auxil=return_auxil)
-        for oe in out_ev:
-            assert oe is None
+        assert out_ev is None
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -158,11 +179,7 @@ class TestFourier(object):
             silent=True,
             counts=self.counts,
         )
-        for oe, oc in zip(out_ev, out_ct):
-            if isinstance(oe, Iterable):
-                assert np.allclose(oe, oc)
-            else:
-                assert np.isclose(oe, oc)
+        compare_tables(out_ev, out_ct)
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -188,11 +205,10 @@ class TestFourier(object):
             counts=self.counts,
             errors=self.errs,
         )
-        for oe, oc in zip(out_ev, out_ct):
-            if isinstance(oe, Iterable):
-                assert np.allclose(oe, oc, rtol=0.05)
-            else:
-                assert np.isclose(oe, oc)
+        if use_common_mean:
+            compare_tables(out_ev, out_ct, rtol=0.01)
+        else:
+            compare_tables(out_ev, out_ct, rtol=0.1)
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -219,11 +235,10 @@ class TestFourier(object):
             counts1=self.counts,
             counts2=self.counts2,
         )
-        for oe, oc in zip(out_ev, out_ct):
-            if isinstance(oe, Iterable):
-                assert np.allclose(oe, oc)
-            else:
-                assert np.isclose(oe, oc)
+        if use_common_mean:
+            compare_tables(out_ev, out_ct, rtol=0.01)
+        else:
+            compare_tables(out_ev, out_ct, rtol=0.1)
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -252,11 +267,11 @@ class TestFourier(object):
             errors1=self.errs,
             errors2=self.errs2,
         )
-        for oe, oc in zip(out_ev, out_ct):
-            if isinstance(oe, Iterable):
-                assert np.allclose(oe.real, oc.real, rtol=0.1)
-            else:
-                assert np.isclose(oe, oc)
+        discard = [m for m in out_ev.meta.keys() if "variance" in m]
+        if use_common_mean:
+            compare_tables(out_ev, out_ct, rtol=0.01, discard=discard)
+        else:
+            compare_tables(out_ev, out_ct, rtol=0.1, discard=discard)
 
 
 class TestNorms(object):
