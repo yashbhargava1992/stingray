@@ -454,7 +454,7 @@ class RmsSpectrum(VarEnergySpectrum):
                 countrate_ref = self._get_ctrate(ref_events)
                 Prnoise = poisson_level(countrate_ref, norm="abs")
 
-                _, cross, N, M, mean = avg_cs_from_events(
+                results = avg_cs_from_events(
                     sub_events,
                     ref_events,
                     self.gti,
@@ -463,17 +463,23 @@ class RmsSpectrum(VarEnergySpectrum):
                     silent=True,
                     norm="abs",
                 )
-                if cross is None:
+                if results is None:
                     continue
+                cross = results["power"]
+
+                M, mean = [results.meta[key] for key in ["m", "mean"]]
                 Pmean = np.mean(cross[good])
                 Pnoise = 0
                 rmsnoise = np.sqrt(delta_nu_after_mean * np.sqrt(Psnoise * Prnoise))
             else:
-                _, Ps, N, M, mean = avg_pds_from_events(
+                results = avg_pds_from_events(
                     sub_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
                 )
-                if Ps is None:
+                if results is None:
                     continue
+                Ps = results["power"]
+                M, mean = [results.meta[key] for key in ["m", "mean"]]
+
                 Pmean = np.mean(Ps[good])
                 Pnoise = Psnoise
                 rmsnoise = np.sqrt(delta_nu_after_mean * Pnoise)
@@ -727,9 +733,12 @@ class LagSpectrum(VarEnergySpectrum):
         ref_events = self._get_times_from_energy_range(self.events2, self.ref_band[0])
         countrate_ref = self._get_ctrate(ref_events)
         Prnoise = poisson_level(countrate_ref, norm="abs")
-        freq, Pr, N, M, mean = avg_pds_from_events(
+        results = avg_pds_from_events(
             ref_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
         )
+        freq = results["freq"]
+        Pr = results["power"]
+        M = results.meta["m"]
 
         good = self._get_good_frequency_bins(freq)
         Prmean = np.mean(Pr[good])
@@ -743,7 +752,7 @@ class LagSpectrum(VarEnergySpectrum):
             countrate_sub = self._get_ctrate(sub_events)
             Psnoise = poisson_level(countrate_sub, norm="abs")
 
-            _, cross, _, _, _ = avg_cs_from_events(
+            results_cross = avg_cs_from_events(
                 sub_events,
                 ref_events,
                 self.gti,
@@ -752,11 +761,16 @@ class LagSpectrum(VarEnergySpectrum):
                 silent=True,
                 norm="abs",
             )
-            _, Ps, _, _, _ = avg_pds_from_events(
+
+            results_ps = avg_pds_from_events(
                 sub_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
             )
-            if cross is None or Ps is None:
+
+            if results_cross is None or results_ps is None:
                 continue
+
+            cross = results_cross["power"]
+            Ps = results_ps["power"]
 
             Cmean = np.mean(cross[good])
             Psmean = np.mean(Ps[good])
@@ -863,9 +877,12 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         countrate_ref = self._get_ctrate(ref_events)
         Prnoise = poisson_level(countrate_ref, norm="abs")
 
-        freq, Pr, N, M, _ = avg_pds_from_events(
+        results = avg_pds_from_events(
             ref_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
         )
+        freq = results["freq"]
+        Pr = results["power"]
+        M = results.meta["m"]
 
         good = (freq >= self.freq_interval[0]) & (freq < self.freq_interval[1])
         Mave = np.count_nonzero(good)
@@ -879,7 +896,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
             countrate_sub = self._get_ctrate(sub_events)
             Psnoise = poisson_level(countrate_sub, norm="abs")
 
-            _, cross, _, _, _ = avg_cs_from_events(
+            results_cross = avg_cs_from_events(
                 sub_events,
                 ref_events,
                 self.gti,
@@ -888,11 +905,17 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
                 silent=True,
                 norm="abs",
             )
-            _, Ps, _, _, mean = avg_pds_from_events(
+
+            results_ps = avg_pds_from_events(
                 sub_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
             )
-            if cross is None or Ps is None:
+
+            if results_cross is None or results_ps is None:
                 continue
+
+            cross = results_cross["power"]
+            Ps = results_ps["power"]
+            mean = results_ps.meta["mean"]
 
             common_ref = self.same_events and len(cross_two_gtis([eint], self.ref_band)) > 0
             Cmean = np.mean(cross[good])
@@ -911,8 +934,9 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
 
             cov, cov_e = cross_to_covariance(np.asarray([Cmean, Ce]), Prmean, Prnoise, delta_nu)
 
+            meanrate = mean / self.bin_time
+
             if self.norm == "frac":
-                meanrate = mean / self.bin_time
                 cov, cov_e = cov / meanrate, cov_e / meanrate
 
             self.spectrum[i] = cov
