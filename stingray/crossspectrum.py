@@ -15,8 +15,8 @@ from stingray.utils import genDataPath, rebin_data, rebin_data_log, simon
 from .events import EventList
 from .lightcurve import Lightcurve
 from .utils import show_progress
-from .fourier import avg_cs_from_iterables, avg_pds_from_iterable
-from .fourier import avg_cs_from_events, avg_pds_from_events
+from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
+from .fourier import avg_cs_from_events, poisson_level
 from .fourier import fftfreq, fft
 
 # location of factorial moved between scipy versions
@@ -1823,40 +1823,13 @@ def averagedcrossspectrum_from_time_array(times1, times2, dt, segment_size, gti,
         the real part
     """
 
-    freq, power, N, M, _, power1, mean1, power2, mean2, unnorm_power = avg_cs_from_events(
+    results = avg_cs_from_events(
         times1, times2, gti, segment_size, dt,
         norm=norm, use_common_mean=use_common_mean,
         fullspec=fullspec, silent=silent, power_type=power_type,
         return_auxil=True)
 
-    cs = AveragedCrossspectrum()
-    pds1 = AveragedCrossspectrum()
-    pds2 = AveragedCrossspectrum()
-    cs.power = power
-    pds1.power = power1
-    pds2.power = power2
-    cs.unnorm_power = unnorm_power
-    pds1.type = pds2.type = "powerspectrum"
-    cs.pds1 = pds1
-    cs.pds2 = pds2
-    # To be fixed
-    cs.power_err = cs.power / np.sqrt(M)
-
-    cs.norm = norm
-    pds1.norm = pds2.norm = "none"
-
-    for obj in [cs, pds1, pds2]:
-        obj.freq = freq
-        obj.m = M
-        obj.n = N
-        obj.df = 1 / segment_size
-        obj.nphots1 = mean1 * N
-        obj.nphots2 = mean2 * N
-        obj.fullspec = fullspec
-        obj.segment_size = segment_size
-        obj.gti = gti
-
-    return cs
+    return _crossspectrum_from_astropy_table(results)
 
 
 def averagedcrossspectrum_from_events(events1, events2, dt, segment_size, norm='none',
@@ -1945,40 +1918,14 @@ def averagedcrossspectrum_from_lightcurve(lc1, lc2, segment_size, norm='none',
     err1 = lc1._counts_err
     err2 = lc2._counts_err
 
-    freq, power, N, M, _, power1, mean1, power2, mean2, unnorm_power = avg_cs_from_events(
+    results = avg_cs_from_events(
         lc1.time, lc2.time, gti, segment_size, lc1.dt,
         norm=norm, use_common_mean=use_common_mean,
         fullspec=fullspec, silent=silent, power_type=power_type,
         counts1=lc1.counts, counts2=lc2.counts, errors1=err1, errors2=err2,
         return_auxil=True)
 
-    cs = AveragedCrossspectrum()
-    pds1 = AveragedCrossspectrum()
-    pds2 = AveragedCrossspectrum()
-    cs.power = power
-    pds1.power = power1
-    pds2.power = power2
-    cs.unnorm_power = unnorm_power
-    pds1.type = pds2.type = "powerspectrum"
-    cs.pds1 = pds1
-    cs.pds2 = pds2
-    cs.power_err = cs.power / np.sqrt(M)
-
-    cs.norm = norm
-    pds1.norm = pds2.norm = "none"
-
-    for obj in [cs, pds1, pds2]:
-        obj.freq = freq
-        obj.m = M
-        obj.n = N
-        obj.df = 1 / segment_size
-        obj.nphots1 = mean1 * N
-        obj.nphots2 = mean2 * N
-        obj.fullspec = fullspec
-        obj.segment_size = segment_size
-        obj.gti = gti
-
-    return cs
+    return _crossspectrum_from_astropy_table(results)
 
 
 def averagedcrossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size, norm='none',
@@ -2029,7 +1976,7 @@ def averagedcrossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size,
             else:
                 yield lc
 
-    freq, power, N, M, _, power1, mean1, power2, mean2, unnorm_power = avg_cs_from_iterables(
+    results = avg_cs_from_iterables(
         iterate_lc_counts(iter_lc1),
         iterate_lc_counts(iter_lc2),
         dt,
@@ -2040,30 +1987,45 @@ def averagedcrossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size,
         power_type=power_type,
         return_auxil=True
     )
+    return _crossspectrum_from_astropy_table(results)
 
+
+def _crossspectrum_from_astropy_table(table):
     cs = AveragedCrossspectrum()
-    pds1 = AveragedCrossspectrum()
-    pds2 = AveragedCrossspectrum()
-    cs.power = power
-    pds1.power = power1
-    pds2.power = power2
-    cs.unnorm_power = unnorm_power
-    pds1.type = pds2.type = "powerspectrum"
-    cs.pds1 = pds1
-    cs.pds2 = pds2
-    cs.power_err = cs.power / np.sqrt(M)
 
-    cs.norm = norm
-    pds1.norm = pds2.norm = "none"
+    cs.pds1 = AveragedCrossspectrum()
+    cs.pds2 = AveragedCrossspectrum()
 
-    for obj in [cs, pds1, pds2]:
-        obj.freq = freq
-        obj.m = M
-        obj.n = N
-        obj.df = 1 / segment_size
-        obj.nphots1 = mean1 * N
-        obj.nphots2 = mean2 * N
-        obj.fullspec = fullspec
-        obj.segment_size = segment_size
+    cs.freq = cs.pds1.freq = cs.pds2.freq = table["freq"]
+    cs.norm = cs.pds1.norm = cs.pds2.norm = table.meta["norm"]
 
+    cs.power = table["power"]
+    cs.pds1.power = table["pds1"]
+    cs.pds2.power = table["pds2"]
+    cs.unnorm_power = table["unnorm_power"]
+    cs.pds1.unnorm_power = table["unnorm_pds1"]
+    cs.pds2.unnorm_power = table["unnorm_pds2"]
+
+    cs.pds1.type = cs.pds2.type = "powerspectrum"
+
+    for attr, val in table.meta.items():
+        setattr(cs, attr, val)
+        setattr(cs.pds1, attr, val)
+        setattr(cs.pds2, attr, val)
+
+    # Transform nphods1 in nphots for pds1, etc.
+    for attr, val in table.meta.items():
+        if attr.endswith("1"):
+            setattr(cs.pds1, attr[:-1], val)
+        if attr.endswith("2"):
+            setattr(cs.pds2, attr[:-1], val)
+
+    P1noise = poisson_level(cs.countrate1, Nph=cs.nphots1, norm=cs.norm)
+    P2noise = poisson_level(cs.countrate2, Nph=cs.nphots2, norm=cs.norm)
+
+    dRe, dIm, _, _ = error_on_averaged_cross_spectrum(
+        cs.power, cs.pds1.power, cs.pds2.power, cs.m, P1noise, P2noise, common_ref="False")
+    cs.power_err = dRe + 1.j * dIm
+
+    assert hasattr(cs, "df")
     return cs

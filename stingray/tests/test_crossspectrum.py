@@ -1034,7 +1034,7 @@ class TestAveragedCrossspectrum(object):
 
         assert np.all(np.abs(time_lag[:6] - 0.1) < 3 * time_lag_err[:6])
 
-    def test_errorbars(self):
+    def test_errorbars_old_style(self):
         time = np.arange(10000) * 0.1
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
