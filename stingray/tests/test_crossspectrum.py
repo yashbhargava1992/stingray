@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import scipy.special
 from astropy.io import fits
 from stingray import Lightcurve
-from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
+from stingray import Crossspectrum, AveragedCrossspectrum
 from stingray.crossspectrum import cospectra_pvalue, normalize_crossspectrum
 from stingray import StingrayError
 from ..simulator import Simulator
@@ -364,6 +364,27 @@ class TestNormalization(object):
 
         power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
         power_norm = cs._normalize_crossspectrum(cs.unnorm_power, self.tseg)
+        abs_noise = 2. * self.rate1  # expected Poisson noise level
+        assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
+        assert np.allclose(power[1:], power_norm[1:], atol=0.5)
+
+    @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
+    def test_method_norm_abs(self, power_type):
+        # Testing for a power spectrum of lc1
+        self.cs.norm = 'abs'
+        # New lc with the same absolute variance, but mean-subtracted
+        norm_lc_sub = copy.deepcopy(self.lc1)
+        norm_lc_sub.counts = norm_lc_sub.counts - np.mean(norm_lc_sub.counts)
+        norm_lc_sub.err_dist = 'gauss'
+        cs = Crossspectrum(norm_lc_sub, norm_lc_sub, norm="none")
+        cs.norm = 'abs'
+        cs.power_type = power_type
+        self.cs.power_type = power_type
+
+        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
+        new_cs = cs.to_norm("abs")
+
+        power_norm = new_cs.power
         abs_noise = 2. * self.rate1  # expected Poisson noise level
         assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
         assert np.allclose(power[1:], power_norm[1:], atol=0.5)
@@ -922,12 +943,14 @@ class TestAveragedCrossspectrum(object):
     def test_rebin(self):
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin(df=1.5)
+        assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert new_cs.df == 1.5
         new_cs.time_lag()
 
     def test_rebin_factor(self):
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin(f=1.5)
+        assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert new_cs.df == self.cs.df * 1.5
         new_cs.time_lag()
 
@@ -935,6 +958,7 @@ class TestAveragedCrossspectrum(object):
         # For now, just verify that it doesn't crash
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin_log(f=0.1)
+        assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert type(new_cs) == type(self.cs)
         new_cs.time_lag()
 

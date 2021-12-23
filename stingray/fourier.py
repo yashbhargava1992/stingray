@@ -246,12 +246,13 @@ def normalize_periodograms(unnorm_power, dt, N, mean, variance=None, norm="abs",
     else:
         raise ValueError("Unknown value for the norm")
 
+    if power_type == "all":
+        return pds
     if power_type == "real":
-        pds = pds.real
-    elif power_type == "abs":
-        pds = np.abs(pds)
-
-    return pds
+        return pds.real
+    if power_type in ["abs", "absolute"]:
+        return np.abs(pds)
+    raise ValueError("Unrecognized power type")
 
 
 def bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1.0):

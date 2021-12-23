@@ -27,7 +27,7 @@ except ImportError:
 
 
 __all__ = [
-    "Crossspectrum", "AveragedCrossspectrum", "coherence", "time_lag",
+    "Crossspectrum", "AveragedCrossspectrum",
     "cospectra_pvalue", "normalize_crossspectrum"
 ]
 
@@ -370,6 +370,7 @@ class Crossspectrum(object):
             self.power = None
             self.power_err = None
             self.df = None
+            self.dt = None
             self.nphots1 = None
             self.nphots2 = None
             self.m = 1
@@ -648,6 +649,7 @@ class Crossspectrum(object):
         bin_cs.freq = binfreq
         bin_cs.power = bincs
         bin_cs.df = df
+        bin_cs.dt = self.dt
         bin_cs.n = self.n
         bin_cs.norm = self.norm
         bin_cs.nphots1 = self.nphots1
@@ -786,6 +788,7 @@ class Crossspectrum(object):
         new_spec.power = binpower
         new_spec.power_err = binpower_err
         new_spec.m = nsamples * self.m
+        new_spec.dt = self.dt
 
         if hasattr(self, 'unnorm_power'):
             _, binpower_unnorm, _, _ = \
@@ -1124,6 +1127,7 @@ class AveragedCrossspectrum(Crossspectrum):
             self.power = None
             self.power_err = None
             self.df = None
+            self.dt = None
             self.nphots1 = None
             self.nphots2 = None
             self.m = 1
@@ -1541,6 +1545,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
             else:
                 raise ValueError("Type of spectrum not recognized!")
+            self.dt = lc1.dt
 
         else:
             cs_all, nphots1_all, nphots2_all = [], [], []
@@ -1556,11 +1561,11 @@ class AveragedCrossspectrum(Crossspectrum):
                     cs_sep, nphots1_sep = \
                         self._make_segment_spectrum(lc1_seg, self.segment_size,
                                                     silent=True)
-
                 else:
                     raise ValueError("Type of spectrum not recognized!")
                 cs_all.append(cs_sep)
                 nphots1_all.append(nphots1_sep)
+            self.dt = lc1_seg.dt
 
             cs_all = np.hstack(cs_all)
             nphots1_all = np.hstack(nphots1_all)
@@ -1632,8 +1637,9 @@ class AveragedCrossspectrum(Crossspectrum):
         c = self.unnorm_power
         p1 = self.pds1.unnorm_power
         p2 = self.pds2.unnorm_power
-        meanrate1 = self.meancounts1 / self.dt
-        meanrate2 = self.meancounts2 / self.dt
+        print(self.nphots1, self.n, self.dt)
+        meanrate1 = self.nphots1 / self.n / self.dt
+        meanrate2 = self.nphots2 / self.n / self.dt
 
         P1noise = poisson_level(meanrate=meanrate1, Nph=self.nphots1, norm="none")
         P2noise = poisson_level(meanrate=meanrate2, Nph=self.nphots2, norm="none")
@@ -1917,4 +1923,5 @@ def _crossspectrum_from_astropy_table(table):
     cs.power_err = dRe + 1.j * dIm
 
     assert hasattr(cs, "df")
+    assert hasattr(cs, "dt")
     return cs
