@@ -269,9 +269,9 @@ def raw_coherence(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1):
     bsq = bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=intrinsic_coherence)
     num = (C * np.conj(C)).real - bsq
     if isinstance(num, Iterable):
-        num[num < 0] = (C * C.conj()).real[num < 0]
+        num[num < 0] = (C * np.conj(C)).real[num < 0]
     elif num < 0:
-        num = (C * C.conj()).real
+        num = (C * np.conj(C)).real
     den = P1 * P2
     return num / den
 
