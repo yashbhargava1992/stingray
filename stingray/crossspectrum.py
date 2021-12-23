@@ -450,8 +450,8 @@ class Crossspectrum(object):
             Two light curves used for computing the cross spectrum.
         """
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
-            self.pds1 = Crossspectrum(lc1, lc1, norm='none')
-            self.pds2 = Crossspectrum(lc2, lc2, norm='none')
+            self.pds1 = Crossspectrum(lc1, lc1, norm=self.norm)
+            self.pds2 = Crossspectrum(lc2, lc2, norm=self.norm)
 
     def _make_crossspectrum(self, lc1, lc2, fullspec=False):
         """
@@ -682,6 +682,39 @@ class Crossspectrum(object):
         bin_cs.m = np.rint(step_size * self.m)
 
         return bin_cs
+
+    def to_norm(self, norm):
+        """Convert Cross spectrum to new norm."""
+        if norm == self.norm:
+            return copy.deepcopy(self)
+        mean1 = self.nphots1 / self.n
+        mean2 = self.nphots2 / self.n
+        mean = np.sqrt(mean1 * mean2) / self.n
+
+        variance1 = variance2 = variance = None
+        if self.err_dist != 'poisson':
+            variance1 = self.var1
+            variance2 = self.var2
+            variance = np.sqrt(self.var1 * self.var2)
+        power = normalize_periodograms(
+            self.unnorm_power, self.dt, self.n, mean, variance=variance, norm=norm,
+            power_type=self.power_type)
+        if hasattr(self, "pds1"):
+            p1 = normalize_periodograms(
+                self.pds1.unnorm_power, self.dt, self.n, mean1, variance=variance1, norm=norm,
+                power_type=self.power_type)
+            p2 = normalize_periodograms(
+                self.pds2.unnorm_power, self.dt, self.n, mean2, variance=variance2, norm=norm,
+                power_type=self.power_type)
+
+        new_spec = copy.deepcopy(self)
+        new_spec.power = power
+        new_spec.norm = norm
+        if hasattr(self.pds1):
+            new_spec.pds1.power = p1
+            new_spec.pds2.power = p2
+            new_spec.pds1.norm = new_spec.pds2.norm = norm
+        return new_spec
 
     def _normalize_crossspectrum(self, unnorm_power, tseg=None):
         """
@@ -1353,7 +1386,7 @@ class AveragedCrossspectrum(Crossspectrum):
                 (lc1 is not lc2) and (is_event or is_lc or is_lc_list):
             self.pds1 = AveragedCrossspectrum(lc1, lc1,
                                               segment_size=self.segment_size,
-                                              norm='none', gti=self.gti,
+                                              norm=self.norm, gti=self.gti,
                                               power_type=self.power_type,
                                               dt=self.dt, fullspec=self.fullspec,
                                               save_all=self.save_all,
@@ -1361,7 +1394,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
             self.pds2 = AveragedCrossspectrum(lc2, lc2,
                                               segment_size=self.segment_size,
-                                              norm='none', gti=self.gti,
+                                              norm=self.norm, gti=self.gti,
                                               power_type=self.power_type,
                                               dt=self.dt, fullspec=self.fullspec,
                                               save_all=self.save_all,
