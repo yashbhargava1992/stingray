@@ -298,66 +298,6 @@ class TestAveragedCrossspectrumEvents(object):
         assert np.iscomplexobj(new_cs.power_err[0])
 
 
-class TestCoherenceFunction(object):
-
-    def setup_class(self):
-        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
-        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
-
-    def test_coherence_runs(self):
-        with pytest.warns(UserWarning) as record:
-            coh = coherence(self.lc1, self.lc2)
-
-    def test_coherence_fails_if_data1_not_lc(self):
-        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
-
-        with pytest.raises(TypeError):
-            coh = coherence(self.lc1, data)
-
-    def test_coherence_fails_if_data2_not_lc(self):
-        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
-
-        with pytest.raises(TypeError):
-            coh = coherence(data, self.lc2)
-
-    def test_coherence_computes_correctly(self):
-        with pytest.warns(UserWarning) as record:
-            coh = coherence(self.lc1, self.lc2)
-
-        assert len(coh) == 2
-        assert np.abs(np.mean(coh)) < 1
-
-
-class TestTimelagFunction(object):
-
-    def setup_class(self):
-        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
-        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
-
-    def test_time_lag_runs(self):
-        with pytest.warns(UserWarning) as record:
-            lag = time_lag(self.lc1, self.lc2)
-
-    def test_time_lag_fails_if_data1_not_lc(self):
-        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
-
-        with pytest.raises(TypeError):
-            lag = time_lag(self.lc1, data)
-
-    def test_time_lag_fails_if_data2_not_lc(self):
-        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
-
-        with pytest.raises(TypeError):
-            lag = time_lag(data, self.lc2)
-
-    def test_time_lag_computes_correctly(self):
-        with pytest.warns(UserWarning) as record:
-            lag = time_lag(self.lc1, self.lc2)
-
-        assert np.max(lag) <= np.pi
-        assert np.min(lag) >= -np.pi
-
-
 class TestCoherence(object):
 
     def test_coherence(self):
