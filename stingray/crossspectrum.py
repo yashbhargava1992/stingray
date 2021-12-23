@@ -17,7 +17,7 @@ from .lightcurve import Lightcurve
 from .utils import show_progress
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
 from .fourier import avg_cs_from_events, poisson_level
-from .fourier import fftfreq, fft, normalize_periodograms
+from .fourier import fftfreq, fft, normalize_periodograms, raw_coherence
 
 # location of factorial moved between scipy versions
 try:
@@ -792,8 +792,8 @@ class Crossspectrum(object):
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
 
-        return self.unnorm_power.real / (self.pds1.power.real *
-                                         self.pds2.power.real)
+        return raw_coherence(
+            self.unnorm_power, self.pds1.unnorm_power, self.pds2.unnorm_power, 0, 0, self.n)
 
     def _phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
@@ -1596,19 +1596,16 @@ class AveragedCrossspectrum(Crossspectrum):
             simon("Number of segments used in averaging is "
                   "significantly low. The result might not follow the "
                   "expected statistical distributions.")
+        c = self.unnorm_power
+        p1 = self.pds1.unnorm_power
+        p2 = self.pds2.unnorm_power
+        meanrate1 = self.meancounts1 / self.dt
+        meanrate2 = self.meancounts2 / self.dt
 
-        # Calculate average coherence
-        unnorm_power_avg = self.unnorm_power
+        P1noise = poisson_level(meanrate=meanrate1, Nph=self.nphots1, norm="none")
+        P2noise = poisson_level(meanrate=meanrate2, Nph=self.nphots2, norm="none")
 
-        num = np.absolute(unnorm_power_avg) ** 2
-
-        # The normalization was 'none'!
-        unnorm_powers_avg_1 = self.pds1.power.real
-        unnorm_powers_avg_2 = self.pds2.power.real
-
-        coh = num / (unnorm_powers_avg_1 * unnorm_powers_avg_2)
-        coh[~np.isfinite(coh)] = 0.0
-
+        coh = raw_coherence(c, p1, p2, P1noise, P2noise, self.n)
         # Calculate uncertainty
         uncertainty = \
             (2 ** 0.5 * coh * (1 - coh)) / (np.sqrt(coh) * self.m ** 0.5)
