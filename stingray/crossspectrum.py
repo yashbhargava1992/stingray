@@ -683,7 +683,7 @@ class Crossspectrum(object):
 
         return bin_cs
 
-    def _normalize_crossspectrum(self, unnorm_power, tseg):
+    def _normalize_crossspectrum(self, unnorm_power, tseg=None):
         """
         Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
         fractional rms^2 normalization, or not at all.
@@ -693,8 +693,10 @@ class Crossspectrum(object):
         unnorm_power: numpy.ndarray
             The unnormalized cross spectrum.
 
+        Other parameters
+        ----------------
         tseg: int
-            The length of the Fourier segment, in seconds.
+            Only for compatibility purposes. Ignored.
 
         Returns
         -------
@@ -703,17 +705,12 @@ class Crossspectrum(object):
             'none' normalization, imaginary part is returned as well.
         """
 
-        if self.err_dist == 'poisson':
-            return normalize_crossspectrum(
-                unnorm_power, tseg, self.n, self.nphots1, self.nphots2, self.norm,
-                self.power_type)
-
-        return normalize_crossspectrum_gauss(
-            unnorm_power, np.sqrt(self.meancounts1 * self.meancounts2),
-            np.sqrt(self.var1 * self.var2),
-            dt=self.dt,
-            N=self.n,
-            norm=self.norm,
+        mean = np.sqrt(self.nphots1 * self.nphots2) / self.n
+        variance = None
+        if self.err_dist != 'poisson':
+            variance = np.sqrt(self.var1 * self.var2)
+        return normalize_periodograms(
+            unnorm_power, self.dt, self.n, mean, variance=variance, norm=self.norm,
             power_type=self.power_type)
 
     def rebin_log(self, f=0.01):
