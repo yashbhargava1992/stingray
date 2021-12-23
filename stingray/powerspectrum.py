@@ -87,6 +87,7 @@ class Powerspectrum(Crossspectrum):
         The total number of photons in the light curve
 
     """
+
     def __init__(self, data=None, norm="frac", gti=None,
                  dt=None, lc=None):
         if lc is not None:
@@ -439,6 +440,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The total number of photons in the light curve
 
     """
+
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
                  silent=False, dt=None, lc=None, large_data=False,
                  save_all=False):
@@ -652,7 +654,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         return powerspectrum_from_lc_iterable(*args, **kwargs)
 
-
     def _make_segment_spectrum(self, lc, segment_size, silent=False):
         """
         Split the light curves into segments of size ``segment_size``, and
@@ -700,7 +701,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         local_show_progress = show_progress
         if not self.show_progress or silent:
-            local_show_progress = lambda a: a
+            def local_show_progress(a): return a
 
         for start_ind, end_ind in \
                 local_show_progress(zip(start_inds, end_inds)):
@@ -903,7 +904,6 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         return np.array(max_positions)
 
     def rebin_time(self, dt_new, method='sum'):
-
         """
         Rebin the Dynamic Power Spectrum to a new time resolution.
         While the new resolution need not be an integer multiple of the
@@ -1149,13 +1149,6 @@ def _powerspectrum_from_astropy_table(table):
 
     for attr, val in table.meta.items():
         setattr(cs, attr, val)
-
-    # Transform nphods1 in nphots for pds1, etc.
-    for attr, val in table.meta.items():
-        if attr.endswith("1"):
-            setattr(cs.pds1, attr[:-1], val)
-        if attr.endswith("2"):
-            setattr(cs.pds2, attr[:-1], val)
 
     cs.power_err = cs.power / np.sqrt(cs.m)
 
