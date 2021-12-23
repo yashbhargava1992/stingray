@@ -62,11 +62,11 @@ class TestCoherence(object):
         freq = np.fft.fftfreq(data.size, dt)
         good = (freq > 0) & (freq < 0.1)
         ft1, ft2 = ft1[good], ft2[good]
-        cls.cross = normalize_crossspectrum(
+        cls.cross = normalize_periodograms(
             ft1 * ft2.conj(), dt, cls.N, mean, norm="abs", power_type="all")
-        cls.pds1 = normalize_crossspectrum(
+        cls.pds1 = normalize_periodograms(
             ft1 * ft1.conj(), dt, cls.N, mean, norm="abs", power_type="real")
-        cls.pds2 = normalize_crossspectrum(
+        cls.pds2 = normalize_periodograms(
             ft2 * ft2.conj(), dt, cls.N, mean, norm="abs", power_type="real")
 
         cls.p1noise = poisson_level(meanrate=meanrate, norm="abs")
@@ -350,7 +350,7 @@ class TestNorms(object):
 
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
     def test_poisson_level(self, norm):
-        pdsnorm = normalize_crossspectrum(self.pds, self.dt, self.N, self.mean, norm=norm)
+        pdsnorm = normalize_periodograms(self.pds, self.dt, self.N, self.mean, norm=norm)
 
         assert np.isclose(
             pdsnorm.mean(), poisson_level(meanrate=self.meanrate, norm=norm), rtol=0.01
@@ -358,7 +358,7 @@ class TestNorms(object):
 
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
     def test_poisson_level_real(self, norm):
-        pdsnorm = normalize_crossspectrum(
+        pdsnorm = normalize_periodograms(
             self.pds, self.dt, self.N, self.mean, norm=norm, power_type="real"
         )
 
@@ -368,7 +368,7 @@ class TestNorms(object):
 
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
     def test_poisson_level_absolute(self, norm):
-        pdsnorm = normalize_crossspectrum(
+        pdsnorm = normalize_periodograms(
             self.pds, self.dt, self.N, self.mean, norm=norm, power_type="abs"
         )
 
@@ -377,17 +377,17 @@ class TestNorms(object):
         )
 
     def test_normalize_with_variance(self):
-        pdsnorm = normalize_crossspectrum(
+        pdsnorm = normalize_periodograms(
             self.pds, self.dt, self.N, self.mean, variance=self.var, norm="leahy"
         )
         assert np.isclose(pdsnorm.mean(), 2, rtol=0.01)
 
     def test_normalize_none(self):
-        pdsnorm = normalize_crossspectrum(self.pds, self.dt, self.N, self.mean, norm="none")
+        pdsnorm = normalize_periodograms(self.pds, self.dt, self.N, self.mean, norm="none")
         assert np.isclose(pdsnorm.mean(), self.pds.mean(), rtol=0.01)
 
     def test_normalize_badnorm(self):
         with pytest.raises(ValueError):
-            pdsnorm = normalize_crossspectrum(
+            pdsnorm = normalize_periodograms(
                 self.pds, self.var, self.N, self.mean, norm="asdfjlasdjf"
             )
