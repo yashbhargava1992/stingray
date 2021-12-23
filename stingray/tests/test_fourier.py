@@ -96,6 +96,20 @@ class TestCoherence(object):
         coh = raw_coherence(complex(low_coh_cross[0]), P1[0],
                             P2[0], self.p1noise, self.p2noise, self.N)
 
+    def test_raw_high_bias(self):
+        """Test when squared bias higher than squared norm of cross spec"""
+        # Values chosen to have a high bias term, larger than |C|^2
+        C = np.array([12986. + 8694.j])
+        P1 = np.array([476156.])
+        P2 = np.array([482751.])
+        P1noise = 495955
+        P2noise = 494967
+
+        coh = raw_coherence(C, P1, P2, P1noise, P2noise, 499, 1)
+        coh_sngl = raw_coherence(C[0], P1[0], P2[0], P1noise, P2noise, 499, 1)
+        assert np.allclose(coh, (C * np.conj(C)).real / (P1 * P2))
+        assert np.isclose(coh_sngl, (C * np.conj(C)).real[0] / (P1[0] * P2[0]))
+
 
 class TestFourier(object):
     @classmethod
