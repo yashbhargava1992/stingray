@@ -17,7 +17,7 @@ from .lightcurve import Lightcurve
 from .utils import show_progress
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
 from .fourier import avg_cs_from_events, poisson_level
-from .fourier import fftfreq, fft
+from .fourier import fftfreq, fft, normalize_periodograms
 
 # location of factorial moved between scipy versions
 try:
@@ -70,51 +70,9 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
         The normalized co-spectrum (real part of the cross spectrum). For
         'none' normalization, imaginary part is returned as well.
     """
-
-    # The "effective" counts/bin is the geometrical mean of the counts/bin
-    # of the two light curves. Same goes for counts/second in meanrate.
-
-    log_nphots1 = np.log(nphots1)
-    log_nphots2 = np.log(nphots2)
-
-    actual_nphots = np.float64(np.sqrt(np.exp(log_nphots1 + log_nphots2)))
-
-    if power_type == "all":
-        c_num = unnorm_power
-    elif power_type == "real":
-        c_num = unnorm_power.real
-    elif power_type == "absolute":
-        c_num = np.absolute(unnorm_power)
-    else:
-        raise ValueError("`power_type` not recognized!")
-
-    if norm.lower() == 'leahy':
-        power = c_num * 2. / actual_nphots
-
-    elif norm.lower() == 'frac':
-        meancounts1 = nphots1 / nbins
-        meancounts2 = nphots2 / nbins
-
-        actual_mean = np.sqrt(meancounts1 * meancounts2)
-
-        assert actual_mean > 0.0, \
-            "Mean count rate is <= 0. Something went wrong."
-
-        c = c_num / float(nbins ** 2.)
-        power = c * 2. * tseg / (actual_mean ** 2.0)
-
-    elif norm.lower() == 'abs':
-        meanrate = np.sqrt(nphots1 * nphots2) / tseg
-
-        power = c_num * 2. * meanrate / actual_nphots
-
-    elif norm.lower() == 'none':
-        power = unnorm_power
-
-    else:
-        raise ValueError("Value for `norm` not recognized.")
-
-    return power
+    dt = tseg / nbins
+    mean = np.sqrt(nphots1 * nphots2) / tseg
+    return normalize_periodograms(unnorm_power, dt, nbins, mean, norm=norm, power_type=power_type)
 
 
 def normalize_crossspectrum_gauss(
@@ -183,36 +141,9 @@ def normalize_crossspectrum_gauss(
     >>> np.isclose(np.mean(norm_c[2:]), 2 * np.mean(lc_c * 0.1), rtol=0.1)
     True
     """
-
-    # The "effective" counts/bin is the geometrical mean of the counts/bin
-    # of the two light curves. Same goes for counts/second in meanrate.
-    if power_type == "all":
-        c_num = unnorm_power
-    elif power_type == "real":
-        c_num = unnorm_power.real
-    elif power_type == "absolute":
-        c_num = np.absolute(unnorm_power)
-    else:
-        raise ValueError("`power_type` not recognized!")
-
-    common_factor = 2 * dt / N
-    rate_mean = mean_flux * dt
-    if norm.lower() == 'leahy':
-        norm = 2 / var / N
-
-    elif norm.lower() == 'frac':
-        norm = common_factor / rate_mean**2
-
-    elif norm.lower() == 'abs':
-        norm = common_factor
-
-    elif norm.lower() == 'none':
-        norm = 1
-
-    else:
-        raise ValueError("Value for `norm` not recognized.")
-
-    return norm * c_num
+    mean = mean_flux * dt
+    normalize_periodograms(unnorm_power, dt, N, mean, variance=var,
+                           norm=norm, power_type=power_type)
 
 
 def _averaged_cospectra_cdf(xcoord, n):

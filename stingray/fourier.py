@@ -188,8 +188,50 @@ def normalize_leahy_poisson(power, Nph):
     return power * 2. / Nph
 
 
-def normalize_crossspectrum(unnorm_power, dt, N, mean, variance=None, norm="abs", power_type="all"):
-    """Wrapper around all the normalize_NORM methods."""
+def normalize_periodograms(unnorm_power, dt, N, mean, variance=None, norm="abs", power_type="all"):
+    """Wrapper around all the normalize_NORM methods.
+
+    Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
+    fractional rms^2 normalization, or not at all.
+
+    Parameters
+    ----------
+    unnorm_power: numpy.ndarray
+        The unnormalized cross spectrum.
+
+    dt: float
+        The sampling time of the light curve
+
+    mean: float
+        The mean counts per bin of the light curve (if a cross spectrum, the geometrical
+        mean of the counts per bin in the two channels)
+
+    N: int
+        The number of bins in the light curve
+
+    Other parameters
+    ----------------
+    variance: float
+        The average variance of the measurements in light curve (if a cross spectrum,
+        the geometrical mean of the variances in the two channels). **NOT** the
+        variance of the light curve, but of each flux measurement (square of
+        light curve error bar)! Only relevant for the Leahy normalization of
+        non-Poissonian data.
+
+    norm : str
+        One of `'leahy'` (Leahy+83), `'frac'` (fractional rms), `'abs'`
+        (absolute rms)
+
+    power_type : str
+        One of `'real'` (real part), `'all'` (all complex powers), `'abs'`
+        (absolute value)
+
+    Returns
+    -------
+    power: numpy.nd.array
+        The normalized co-spectrum (real part of the cross spectrum). For
+        'none' normalization, imaginary part is returned as well.
+    """
 
     if norm == "leahy" and variance is not None:
         pds = normalize_leahy_from_variance(unnorm_power, variance, N)
@@ -600,7 +642,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
         if not use_common_mean:
             mean = nph / N
 
-            cs_seg = normalize_crossspectrum(
+            cs_seg = normalize_periodograms(
                 unnorm_power, dt, N, mean, norm=norm, variance=variance,
             )
 
@@ -624,7 +666,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
 
     # Final normalization (If not done already!)
     if use_common_mean:
-        cross = normalize_crossspectrum(
+        cross = normalize_periodograms(
             unnorm_cross, dt, N, common_mean, norm=norm, variance=common_variance
         )
 
@@ -749,7 +791,7 @@ def avg_cs_from_iterables_quick(
 
     # Finally, normalize the cross spectrum (only if not already done on an
     # interval-to-interval basis)
-    cross = normalize_crossspectrum(
+    cross = normalize_periodograms(
         unnorm_cross,
         dt,
         N,
@@ -930,13 +972,13 @@ def avg_cs_from_iterables(
             if variance1 is not None:
                 variance = np.sqrt(variance1 * variance2)
 
-            cs_seg = normalize_crossspectrum(
+            cs_seg = normalize_periodograms(
                 unnorm_power, dt, N, mean, norm=norm, power_type=power_type, variance=variance
             )
-            p1_seg = normalize_crossspectrum(
+            p1_seg = normalize_periodograms(
                 unnorm_pd1, dt, N, mean, norm=norm, power_type=power_type, variance=variance
             )
-            p2_seg = normalize_crossspectrum(
+            p2_seg = normalize_periodograms(
                 unnorm_pd2, dt, N, mean, norm=norm, power_type=power_type, variance=variance
             )
 
@@ -980,7 +1022,7 @@ def avg_cs_from_iterables(
     # Finally, normalize the cross spectrum (only if not already done on an
     # interval-to-interval basis)
     if use_common_mean:
-        cross = normalize_crossspectrum(
+        cross = normalize_periodograms(
             unnorm_cross,
             dt,
             N,
@@ -990,7 +1032,7 @@ def avg_cs_from_iterables(
             power_type=power_type,
         )
         if return_auxil:
-            pds1 = normalize_crossspectrum(
+            pds1 = normalize_periodograms(
                 unnorm_pds1,
                 dt,
                 N,
@@ -999,7 +1041,7 @@ def avg_cs_from_iterables(
                 variance=common_variance1,
                 power_type=power_type,
             )
-            pds2 = normalize_crossspectrum(
+            pds2 = normalize_periodograms(
                 unnorm_pds2,
                 dt,
                 N,
