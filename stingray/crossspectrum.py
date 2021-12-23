@@ -712,7 +712,7 @@ class Crossspectrum(object):
         new_spec = copy.deepcopy(self)
         new_spec.power = power
         new_spec.norm = norm
-        if hasattr(self.pds1):
+        if hasattr(self, "pds1"):
             new_spec.pds1.power = p1
             new_spec.pds2.power = p2
             new_spec.pds1.norm = new_spec.pds2.norm = norm
