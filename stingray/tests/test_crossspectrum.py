@@ -368,25 +368,20 @@ class TestNormalization(object):
         assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
         assert np.allclose(power[1:], power_norm[1:], atol=0.5)
 
-    @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
-    def test_method_norm_abs(self, power_type):
+    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
+    @pytest.mark.parametrize("power_type", ["all", "real", "absolute"])
+    def test_method_norm(self, norm, power_type):
         # Testing for a power spectrum of lc1
-        self.cs.norm = 'abs'
-        # New lc with the same absolute variance, but mean-subtracted
-        norm_lc_sub = copy.deepcopy(self.lc1)
-        norm_lc_sub.counts = norm_lc_sub.counts - np.mean(norm_lc_sub.counts)
-        norm_lc_sub.err_dist = 'gauss'
-        cs = Crossspectrum(norm_lc_sub, norm_lc_sub, norm="none")
-        cs.norm = 'abs'
-        cs.power_type = power_type
-        self.cs.power_type = power_type
-
-        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
-        new_cs = cs.to_norm("abs")
-
+        cs1 = copy.deepcopy(self.cs)
+        cs2 = copy.deepcopy(self.cs)
+        cs1.norm = norm
+        power = cs1._normalize_crossspectrum(cs1.unnorm_power, self.tseg)
+        new_cs = cs2.to_norm(norm)
+        assert norm == new_cs.norm
         power_norm = new_cs.power
-        abs_noise = 2. * self.rate1  # expected Poisson noise level
-        assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
+        assert np.allclose(cs1.unnorm_power[1:], cs2.unnorm_power[1:], atol=0.5)
+        # abs_noise = 2. * self.rate1  # expected Poisson noise level
+        # assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
         assert np.allclose(power[1:], power_norm[1:], atol=0.5)
 
     @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
