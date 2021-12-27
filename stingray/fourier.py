@@ -255,7 +255,7 @@ def normalize_periodograms(unnorm_power, dt, N, mean, variance=None, norm="abs",
     raise ValueError("Unrecognized power type")
 
 
-def bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1.0):
+def bias_term(C, P1, P2, P1noise, P2noise, Nave, intrinsic_coherence=1.0):
     """Bias term from Ingram 2019.
 
     As recommended in the paper, returns 0 if N > 500
@@ -272,7 +272,7 @@ def bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1.0):
         Poisson noise level of the sub-band periodogram
     P2noise : float
         Poisson noise level of the reference-band periodogram
-    N : int
+    Nave : int
         number of intervals that have been averaged to obtain the input spectra
 
     Other Parameters
@@ -280,13 +280,13 @@ def bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1.0):
     intrinsic_coherence : float, default 1
         If known, the intrinsic coherence.
     """
-    if N > 500:
+    if Nave > 500:
         return 0. * P1
     bsq = P1 * P2 - intrinsic_coherence * (P1 - P1noise) * (P2 - P2noise)
-    return bsq / N
+    return bsq / Nave
 
 
-def raw_coherence(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1):
+def raw_coherence(C, P1, P2, P1noise, P2noise, Nave, intrinsic_coherence=1):
     """Raw coherence from Ingram 2019.
 
     Parameters
@@ -301,7 +301,7 @@ def raw_coherence(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1):
         Poisson noise level of the sub-band periodogram
     P2noise : float
         Poisson noise level of the reference-band periodogram
-    N : int
+    Nave : int
         number of intervals that have been averaged to obtain the input spectra
 
     Other Parameters
@@ -309,7 +309,7 @@ def raw_coherence(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1):
     intrinsic_coherence : float, default 1
         If known, the intrinsic coherence.
     """
-    bsq = bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=intrinsic_coherence)
+    bsq = bias_term(C, P1, P2, P1noise, P2noise, Nave, intrinsic_coherence=intrinsic_coherence)
     num = (C * np.conj(C)).real - bsq
     if isinstance(num, Iterable):
         num[num < 0] = (C * np.conj(C)).real[num < 0]
@@ -319,7 +319,7 @@ def raw_coherence(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=1):
     return num / den
 
 
-def estimate_intrinsic_coherence(C, P1, P2, P1noise, P2noise, N):
+def estimate_intrinsic_coherence(C, P1, P2, P1noise, P2noise, Nave):
     """Estimate intrinsic coherence
 
     Use the iterative procedure from sec. 5 of Ingram 2019
@@ -336,7 +336,7 @@ def estimate_intrinsic_coherence(C, P1, P2, P1noise, P2noise, N):
         Poisson noise level of the sub-band periodogram
     P2noise : float
         Poisson noise level of the reference-band periodogram
-    N : int
+    Nave : int
         number of intervals that have been averaged to obtain the input spectra
 
     """
@@ -346,8 +346,8 @@ def estimate_intrinsic_coherence(C, P1, P2, P1noise, P2noise, N):
     while not np.allclose(new_coherence, old_coherence, atol=0.01) and count < 40:
         # TODO: make it only iterate over the places at low coherence
         old_coherence = new_coherence
-        bsq = bias_term(C, P1, P2, P1noise, P2noise, N, intrinsic_coherence=new_coherence)
-        #         old_coherence = new_coherence
+        bsq = bias_term(C, P1, P2, P1noise, P2noise, Nave, intrinsic_coherence=new_coherence)
+        # old_coherence = new_coherence
         den = (P1 - P1noise) * (P2 - P2noise)
         num = (C * C.conj()).real - bsq
         num[num < 0] = (C * C.conj()).real[num < 0]
@@ -357,7 +357,7 @@ def estimate_intrinsic_coherence(C, P1, P2, P1noise, P2noise, N):
     return new_coherence
 
 
-def error_on_averaged_cross_spectrum(C, Ps, Pr, N, Psnoise, Prnoise, common_ref="False"):
+def error_on_averaged_cross_spectrum(C, Ps, Pr, Nave, Psnoise, Prnoise, common_ref="False"):
     """Error on cross spectral quantities, From Ingram 2019.
 
     Parameters
@@ -372,7 +372,7 @@ def error_on_averaged_cross_spectrum(C, Ps, Pr, N, Psnoise, Prnoise, common_ref=
         Poisson noise level of the sub-band periodogram
     Prnoise : float
         Poisson noise level of the reference-band periodogram
-    N : int
+    Nave : int
         number of intervals that have been averaged to obtain the input spectra
 
     Other Parameters
@@ -392,10 +392,10 @@ def error_on_averaged_cross_spectrum(C, Ps, Pr, N, Psnoise, Prnoise, common_ref=
         Error on the modulus of the cross spectrum
 
     """
-    twoN = 2 * N
+    twoN = 2 * Nave
     if common_ref:
         Gsq = (C * C.conj()).real
-        bsq = bias_term(C, Ps, Pr, Psnoise, Prnoise, N)
+        bsq = bias_term(C, Ps, Pr, Psnoise, Prnoise, Nave)
         frac = (Gsq - bsq) / (Pr - Prnoise)
         PoN = Pr / twoN
 
@@ -408,9 +408,9 @@ def error_on_averaged_cross_spectrum(C, Ps, Pr, N, Psnoise, Prnoise, common_ref=
         PrPs = Pr * Ps
         dRe = np.sqrt((PrPs + C.real ** 2 - C.imag ** 2) / twoN)
         dIm = np.sqrt((PrPs - C.real ** 2 + C.imag ** 2) / twoN)
-        gsq = raw_coherence(C, Ps, Pr, Psnoise, Prnoise, N)
-        dphi = np.sqrt((1 - gsq) / (2 * gsq ** 2 * N))
-        dG = np.sqrt(PrPs / N)
+        gsq = raw_coherence(C, Ps, Pr, Psnoise, Prnoise, Nave)
+        dphi = np.sqrt((1 - gsq) / (2 * gsq ** 2 * Nave))
+        dG = np.sqrt(PrPs / Nave)
 
     return dRe, dIm, dphi, dG
 
@@ -602,7 +602,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
     cross = None
     M = 0
 
-    common_mean = 0
+    sum_of_photons = 0
     common_variance = None
     for flux in local_show_progress(flux_iterable):
         if flux is None:
@@ -623,7 +623,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
 
         # Accumulate the sum of means and variances, to get the final mean and
         # variance the end
-        common_mean += nph
+        sum_of_photons += nph
 
         if variance is not None:
             common_variance = \
@@ -655,8 +655,10 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
     if cross is None:
         return None
 
-    Nph = common_mean
-    common_mean = common_mean / (M * N)
+    # Calculate the mean number of photons per chunk
+    Nph = sum_of_photons / M
+    # Calculate the mean number of photons per bin
+    common_mean = Nph / N
 
     if common_variance is not None:
         # Note: the variances we summed were means, not sums. Hence M, not M*N
@@ -738,7 +740,7 @@ def avg_cs_from_iterables_quick(
     unnorm_cross = unnorm_pds1 = unnorm_pds2 = None
     M = 0
 
-    common_mean1 = common_mean2 = 0
+    sum_of_photons1 = sum_of_photons2 = 0
 
     for flux1, flux2 in zip(flux_iterable1, flux_iterable2):
         if flux1 is None or flux2 is None:
@@ -765,8 +767,8 @@ def avg_cs_from_iterables_quick(
         unnorm_power = ft1 * ft2.conj()
 
         # Accumulate the sum to calculate the total mean of the lc
-        common_mean1 += nph1
-        common_mean2 += nph2
+        sum_of_photons1 += nph1
+        sum_of_photons2 += nph2
 
         # Take only positive frequencies
         unnorm_power = unnorm_power[fgt0]
@@ -780,11 +782,12 @@ def avg_cs_from_iterables_quick(
     if unnorm_cross is None:
         return None
 
-    # Calculate the common mean
-    Nph1 = common_mean1
-    Nph2 = common_mean2
-    common_mean1 = common_mean1 / (M * N)
-    common_mean2 = common_mean2 / (M * N)
+    # Calculate the mean number of photons per chunk
+    Nph1 = sum_of_photons1 / M
+    Nph2 = sum_of_photons2 / M
+    # Calculate the mean number of photons per bin
+    common_mean1 = Nph1 / N
+    common_mean2 = Nph2 / N
     common_mean = np.sqrt(common_mean1 * common_mean2)
 
     # Transform the sums into averages
@@ -899,7 +902,7 @@ def avg_cs_from_iterables(
     cross = unnorm_cross = unnorm_pds1 = unnorm_pds2 = pds1 = pds2 = None
     M = 0
 
-    common_mean1 = common_mean2 = 0
+    sum_of_photons1 = sum_of_photons2 = 0
     common_variance1 = common_variance2 = common_variance = None
 
     for flux1, flux2 in local_show_progress(zip(flux_iterable1, flux_iterable2)):
@@ -951,8 +954,8 @@ def avg_cs_from_iterables(
             unnorm_pd2 = (ft2 * ft2.conj()).real
 
         # Accumulate the sum to calculate the total mean of the lc
-        common_mean1 += nph1
-        common_mean2 += nph2
+        sum_of_photons1 += nph1
+        sum_of_photons2 += nph2
 
         # Take only positive frequencies unless the user wants the full spectrum
         if not fullspec:
@@ -999,12 +1002,13 @@ def avg_cs_from_iterables(
     if cross is None:
         return None
 
-    # Calculate the common mean
-    Nph1 = common_mean1
-    Nph2 = common_mean2
+    # Calculate the mean number of photons per chunk
+    Nph1 = sum_of_photons1 / M
+    Nph2 = sum_of_photons2 / M
 
-    common_mean1 = common_mean1 / (M * N)
-    common_mean2 = common_mean2 / (M * N)
+    # Calculate the common mean number of photons per bin
+    common_mean1 = Nph1 / N
+    common_mean2 = Nph2 / N
     common_mean = np.sqrt(common_mean1 * common_mean2)
 
     if common_variance1 is not None:
