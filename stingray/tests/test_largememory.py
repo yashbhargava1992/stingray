@@ -571,7 +571,6 @@ class TestChunkPS(object):
                     np.max(getattr(cs_normal, attr) - getattr(cs_large, attr))
                     * 100
                 ) / np.max(getattr(cs_normal, attr))
-                print(getattr(cs_normal, attr) - getattr(cs_large, attr))
                 print(f"Max Deviation: {maxdev}, as %: {maxdev_percent}")
                 print("\n")
                 allgood = False
