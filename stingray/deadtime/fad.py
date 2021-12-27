@@ -7,8 +7,9 @@ from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import UnivariateSpline
 from astropy import log
 from astropy.table import Table
-from ..crossspectrum import AveragedCrossspectrum, normalize_crossspectrum
+from ..crossspectrum import AveragedCrossspectrum
 from ..powerspectrum import AveragedPowerspectrum
+from ..fourier import normalize_periodograms
 
 from ..gti import cross_two_gtis, bin_intervals_from_gtis
 
@@ -154,10 +155,15 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         gti = cross_two_gtis(lc1.gti, lc2.gti)
 
     if all_leahy:
-        warnings.warn("`all_leahy` is deprecated. Use `norm` instead! "  +
+        warnings.warn("`all_leahy` is deprecated. Use `norm` instead! " +
                       " Setting `norm`=`leahy`.", DeprecationWarning)
-        norm="leahy"
+        norm = "leahy"
 
+    if not np.isclose(lc1.dt, lc2.dt, rtol=0.01 * lc1.dt / lc1.tseg):
+        raise ValueError("Light curves do not have same time binning dt.")
+
+    # if some difference exists, eliminate it
+    dt = lc2.dt = lc1.dt
     lc1.gti = gti
     lc2.gti = gti
     lc1.apply_gtis()
@@ -183,14 +189,13 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
 
     for start_ind, end_ind in zip(start_inds, end_inds):
         freq, f1, nph1, nbins1 = _get_fourier_intv(lc1, start_ind,
-                                                        end_ind)
+                                                   end_ind)
         f1_leahy = f1 * np.sqrt(2 / nph1)
         freq, f2, nph2, nbins2 = _get_fourier_intv(lc2, start_ind,
-                                                        end_ind)
+                                                   end_ind)
         f2_leahy = f2 * np.sqrt(2 / nph2)
         freq, ftot, nphtot, nbinstot = \
             _get_fourier_intv(summed_lc, start_ind, end_ind)
-        ftot_leahy = ftot * np.sqrt(2 / nphtot)
 
         nph1_tot += nph1
         nph2_tot += nph2
@@ -218,15 +223,10 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
         c = (f2 * f1.conj()).real
         c = c / smooth_real * 2
 
-
-        power1 = normalize_crossspectrum(p1, segment_size, nbins1, nph1,
-                                         nph1, norm=norm)
-        power2 = normalize_crossspectrum(p2, segment_size, nbins2, nph2,
-                                         nph2, norm=norm)
-        power_tot = normalize_crossspectrum(pt, segment_size, nbinstot, nphtot,
-                                            nphtot, norm=norm)
-        cs_power = normalize_crossspectrum(c, segment_size, nbins1, nph1,
-                                           nph2, norm=norm)
+        power1 = normalize_periodograms(p1, dt, nbins1, nph1 / nbins1, norm=norm)
+        power2 = normalize_periodograms(p2, dt, nbins2, nph2 / nbins2, norm=norm)
+        power_tot = normalize_periodograms(pt, dt, nbins1, nphtot / nbins1, norm=norm)
+        cs_power = normalize_periodograms(c, dt, nbins1, np.sqrt(nph1 * nph2) / nbins1, norm=norm)
 
         if n == 0 and plot:
             ax.plot(freq, smooth_real, zorder=10, lw=3)
@@ -246,27 +246,27 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
     stduncorr = (average_diff_uncorr / n).std()
     is_compliant = np.abs((std - stdtheor) / stdtheor) < tolerance
     verbose_string = \
-    '''
-    -------- FAD correction ----------
-    I smoothed over {smoothing_length} power spectral bins
-    {n} intervals averaged.
-    The uncorrected standard deviation of the Fourier
-    differences is {stduncorr} (dead-time affected!)
-    The final standard deviation of the FAD-corrected
-    Fourier differences is {std}. For the results to be
-    acceptable, this should be close to {stdtheor}
-    to within {tolerance} %.
-    In this case, the results ARE {compl}complying.
-    {additional}
-    ----------------------------------
-    '''.format(smoothing_length=smoothing_length,
-               n=n,
-               stduncorr=stduncorr,
-               std=std,
-               stdtheor=stdtheor,
-               tolerance=tolerance * 100,
-               compl='NOT ' if not is_compliant else '',
-               additional='Maybe something is not right.' if not is_compliant else '')
+        '''
+        -------- FAD correction ----------
+        I smoothed over {smoothing_length} power spectral bins
+        {n} intervals averaged.
+        The uncorrected standard deviation of the Fourier
+        differences is {stduncorr} (dead-time affected!)
+        The final standard deviation of the FAD-corrected
+        Fourier differences is {std}. For the results to be
+        acceptable, this should be close to {stdtheor}
+        to within {tolerance} %.
+        In this case, the results ARE {compl}complying.
+        {additional}
+        ----------------------------------
+        '''.format(smoothing_length=smoothing_length,
+                   n=n,
+                   stduncorr=stduncorr,
+                   std=std,
+                   stdtheor=stdtheor,
+                   tolerance=tolerance * 100,
+                   compl='NOT ' if not is_compliant else '',
+                   additional='Maybe something is not right.' if not is_compliant else '')
 
     if verbose and is_compliant:
         log.info(verbose_string)
@@ -290,9 +290,10 @@ def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
     results.meta['fad_delta'] = (std - stdtheor) / stdtheor
     results.meta['is_compliant'] = is_compliant
     results.meta['n'] = n
-    results.meta['nph1'] = nph1_tot
-    results.meta['nph2'] = nph2_tot
-    results.meta['nph'] = nph_tot
+    results.meta['dt'] = dt
+    results.meta['nph1'] = nph1_tot / n
+    results.meta['nph2'] = nph2_tot / n
+    results.meta['nph'] = nph_tot / n
     results.meta['norm'] = 'leahy' if all_leahy else 'none'
     results.meta['smoothing_length'] = smoothing_length
     results.meta['df'] = np.mean(np.diff(freq))
@@ -344,7 +345,7 @@ def get_periodograms_from_FAD_results(FAD_results, kind='ptot'):
         elif '2' in kind:
             powersp.nphots = FAD_results.meta['nph2']
     elif kind == 'cs':
-        powersp = AveragedCrossspectrum(power_type='real')
+        powersp = AveragedCrossspectrum(power_type='all')
         powersp.nphots1 = FAD_results.meta['nph1']
         powersp.nphots2 = FAD_results.meta['nph2']
     else:
@@ -355,7 +356,8 @@ def get_periodograms_from_FAD_results(FAD_results, kind='ptot'):
     powersp.power_err = np.zeros_like(powersp.power)
     powersp.m = FAD_results.meta['n']
     powersp.df = FAD_results.meta['df']
-    powersp.n = len(powersp.freq)
+    powersp.dt = FAD_results.meta['dt']
+    powersp.n = len(powersp.freq) * 2
     powersp.norm = FAD_results.meta['norm']
 
     return powersp
