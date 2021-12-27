@@ -1,6 +1,7 @@
 import copy
 
 from stingray.gti import check_gtis, cross_two_gtis
+from stingray.fourier import normalize_periodograms
 from stingray.crossspectrum import Crossspectrum, normalize_crossspectrum
 from stingray.crossspectrum import normalize_crossspectrum_gauss
 from stingray.powerspectrum import Powerspectrum
@@ -510,37 +511,34 @@ class Multitaper(Powerspectrum):
 
         return psd_iter, d_k
 
-    def _normalize_multitaper(self, unnorm_power, tseg):
-        """Apply one of the allowed normalizations to the periodogram.
-
-        Normalize the real part of the multitaper spectrum estimate to Leahy,
-        absolute rms^2, fractional rms^2 normalization, or not at all.
+    def _normalize_multitaper(self, unnorm_power, tseg=None):
+        """
+        Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
+        fractional rms^2 normalization, or not at all.
 
         Parameters
         ----------
         unnorm_power: numpy.ndarray
-            The unnormalized spectrum estimate.
+            The unnormalized cross spectrum.
 
+        Other parameters
+        ----------------
         tseg: int
-            The length of the Fourier segment, in seconds.
+            Only for compatibility purposes. Ignored.
 
         Returns
         -------
         power: numpy.nd.array
-            The normalized spectrum estimate (real part of the spectrum).
+            The normalized co-spectrum (real part of the cross spectrum). For
+            'none' normalization, imaginary part is returned as well.
         """
 
-        if self.err_dist == 'poisson':
-            return normalize_crossspectrum(
-                unnorm_power, tseg, self.n, self.nphots, self.nphots, self.norm,
-                self.power_type)
-
-        return normalize_crossspectrum_gauss(
-            unnorm_power, np.sqrt(self.meancounts * self.meancounts),
-            np.sqrt(self.var * self.var),
-            dt=self.dt,
-            N=self.n,
-            norm=self.norm,
+        mean = self.nphots / self.n
+        variance = None
+        if self.err_dist != 'poisson':
+            variance = self.var
+        return normalize_periodograms(
+            unnorm_power, self.dt, self.n, mean, variance=variance, norm=self.norm,
             power_type=self.power_type)
 
     def jackknifed_sdf_variance(self, freq_response, eigvals, adaptive):
