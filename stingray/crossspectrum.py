@@ -146,8 +146,8 @@ def normalize_crossspectrum_gauss(
     True
     """
     mean = mean_flux * dt
-    normalize_periodograms(unnorm_power, dt, N, mean, variance=var,
-                           norm=norm, power_type=power_type)
+    return normalize_periodograms(unnorm_power, dt, N, mean, variance=var,
+                                  norm=norm, power_type=power_type)
 
 
 def _averaged_cospectra_cdf(xcoord, n):
