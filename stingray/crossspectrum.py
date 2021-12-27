@@ -37,6 +37,8 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
 
+    Here for API compatibility purposes. Will be removed.
+
     Parameters
     ----------
     unnorm_power: numpy.ndarray
@@ -80,6 +82,8 @@ def normalize_crossspectrum_gauss(
     """
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
+
+    Here for API compatibility purposes. Will be removed.
 
     Parameters
     ----------
@@ -691,7 +695,7 @@ class Crossspectrum(object):
             return copy.deepcopy(self)
         mean1 = self.nphots1 / self.n
         mean2 = self.nphots2 / self.n
-        mean = np.sqrt(mean1 * mean2) / self.n
+        mean = np.sqrt(mean1 * mean2)
 
         variance1 = variance2 = variance = None
         if self.err_dist != 'poisson':
@@ -712,6 +716,7 @@ class Crossspectrum(object):
         new_spec = copy.deepcopy(self)
         new_spec.power = power
         new_spec.norm = norm
+
         if hasattr(self, "pds1"):
             new_spec.pds1.power = p1
             new_spec.pds2.power = p2
@@ -1041,7 +1046,7 @@ class AveragedCrossspectrum(Crossspectrum):
         The time resolution of the light curve. Only needed when constructing
         light curves in the case where data1 or data2 are of :class:EventList
 
-    power_type: string, optional, default ``real``
+    power_type: string, optional, default ``all``
          Parameter to choose among complete, real part and magnitude of
          the cross spectrum.
 
@@ -1106,7 +1111,7 @@ class AveragedCrossspectrum(Crossspectrum):
     """
 
     def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
-                 gti=None, power_type="real", silent=False, lc1=None, lc2=None,
+                 gti=None, power_type="all", silent=False, lc1=None, lc2=None,
                  dt=None, fullspec=False, large_data=False, save_all=False,
                  use_common_mean=True, old_style=False):
 
@@ -1637,7 +1642,7 @@ class AveragedCrossspectrum(Crossspectrum):
         c = self.unnorm_power
         p1 = self.pds1.unnorm_power
         p2 = self.pds2.unnorm_power
-        print(self.nphots1, self.n, self.dt)
+
         meanrate1 = self.nphots1 / self.n / self.dt
         meanrate2 = self.nphots2 / self.n / self.dt
 
@@ -1645,6 +1650,7 @@ class AveragedCrossspectrum(Crossspectrum):
         P2noise = poisson_level(meanrate=meanrate2, Nph=self.nphots2, norm="none")
 
         coh = raw_coherence(c, p1, p2, P1noise, P2noise, self.n)
+
         # Calculate uncertainty
         uncertainty = \
             (2 ** 0.5 * coh * (1 - coh)) / (np.sqrt(coh) * self.m ** 0.5)
