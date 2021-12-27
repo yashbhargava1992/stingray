@@ -1,6 +1,7 @@
 import numpy as np
 import os
 
+from scipy.interpolate import interp1d
 from astropy.tests.helper import pytest
 import astropy.modeling.models
 from stingray import Lightcurve, Crossspectrum, sampledata
@@ -24,7 +25,7 @@ class TestSimulator(object):
         self.dt = 0.125
         self.rms = 1.0
         self.simulator = Simulator(N=self.N, mean=self.mean, dt=self.dt, rms=self.rms)
-        self.simulator_odd = Simulator(N=2039, mean=self.mean, dt=self.dt, rms=self.rms)
+        self.simulator_odd = Simulator(N=self.N + 1, mean=self.mean, dt=self.dt, rms=self.rms)
 
     def calculate_lag(self, lc, h, delay):
         """
@@ -34,6 +35,7 @@ class TestSimulator(object):
         output = self.simulator.simulate(s, h, 'same')[delay:]
         s = s[delay:]
         time = lc.time[delay:]
+        output = output.counts
 
         lc1 = Lightcurve(time, s)
         lc2 = Lightcurve(time, output)
@@ -46,7 +48,7 @@ class TestSimulator(object):
         """
         Simulate with a random seed value.
         """
-        self.simulator = Simulator(N=self.N, mean=self.mean, dt=self.dt, rms=self.rms, 
+        self.simulator = Simulator(N=self.N, mean=self.mean, dt=self.dt, rms=self.rms,
                                    random_state=12)
         assert len(self.simulator.simulate(2).counts), self.N
 
@@ -55,7 +57,7 @@ class TestSimulator(object):
         Simulate with a random seed value.
         """
         tstart = 10.0
-        self.simulator = Simulator(N=self.N, mean=self.mean, dt=self.dt, rms=self.rms, 
+        self.simulator = Simulator(N=self.N, mean=self.mean, dt=self.dt, rms=self.rms,
                                    tstart=tstart)
         assert self.simulator.time[0] == tstart
 
@@ -146,7 +148,7 @@ class TestSimulator(object):
 
     def test_init_failure_with_noninteger_N(self):
         with pytest.raises(ValueError):
-            simulator = Simulator(N=1024.5, mean=self.mean, rms=self.rms, 
+            simulator = Simulator(N=1024.5, mean=self.mean, rms=self.rms,
                                   dt=self.dt)
 
     def test_init_fails_if_arguments_missing(self):
@@ -493,8 +495,11 @@ class TestSimulator(object):
         delay = int(15/lc.dt)
 
         lag = self.calculate_lag(lc, h, delay)
+        bins = np.arange(lag.size)
         v_cutoff = 1.0/(2*15.0)
-        h_cutoff = lag[int((v_cutoff-0.0075)*1/0.0075)]
+        dist = (v_cutoff-0.0075)/0.0075
+        spec_fun = interp1d(bins, lag)
+        h_cutoff = spec_fun(dist)
 
         assert np.abs(15-h_cutoff) < np.sqrt(15)
 
