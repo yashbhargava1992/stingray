@@ -28,8 +28,71 @@ except ImportError:
 
 __all__ = [
     "Crossspectrum", "AveragedCrossspectrum",
-    "cospectra_pvalue", "normalize_crossspectrum"
+    "cospectra_pvalue", "normalize_crossspectrum",
+    "time_lag", "coherence"
 ]
+
+
+def coherence(lc1, lc2):
+    """
+    Estimate coherence function of two light curves.
+    For details on the definition of the coherence, see Vaughan and Nowak,
+    1996 [#]_.
+    Parameters
+    ----------
+    lc1: :class:`stingray.Lightcurve` object
+        The first light curve data for the channel of interest.
+    lc2: :class:`stingray.Lightcurve` object
+        The light curve data for reference band
+    Returns
+    -------
+    coh : ``np.ndarray``
+        The array of coherence versus frequency
+    References
+    ----------
+    .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
+    """
+
+    warnings.warn("The coherence function, as implemented, does not work as expected. "
+                  "Please use the coherence function of AveragedCrossspectrum, with the "
+                  "correct parameters.")
+    if not isinstance(lc1, Lightcurve):
+        raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+    if not isinstance(lc2, Lightcurve):
+        raise TypeError("lc2 must be a lightcurve.Lightcurve object")
+
+    cs = Crossspectrum(lc1, lc2, norm='none')
+
+    return cs.coherence()
+
+
+def time_lag(lc1, lc2):
+    """
+    Estimate the time lag of two light curves.
+    Calculate time lag and uncertainty.
+        Equation from Bendat & Piersol, 2011 [bendat-2011]_.
+        Returns
+        -------
+        lag : np.ndarray
+            The time lag
+        lag_err : np.ndarray
+            The uncertainty in the time lag
+        References
+        ----------
+        .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
+    """
+
+    if not isinstance(lc1, Lightcurve):
+        raise TypeError("lc1 must be a lightcurve.Lightcurve object")
+
+    if not isinstance(lc2, Lightcurve):
+        raise TypeError("lc2 must be a lightcurve.Lightcurve object")
+
+    cs = Crossspectrum(lc1, lc2, norm='none')
+    lag = cs.time_lag()
+
+    return lag
 
 
 def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="none", power_type="real"):
