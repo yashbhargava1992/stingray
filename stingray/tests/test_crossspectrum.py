@@ -612,7 +612,7 @@ class TestCrossspectrum(object):
     def test_coherence_one_on_single_interval(self):
         coh = self.cs.coherence()
         assert len(coh) == 4999
-        assert np.abs(coh[0]) == 1
+        assert np.isclose(coh[0], 1)
 
     def test_timelag(self):
         time_lag = self.cs.time_lag()
