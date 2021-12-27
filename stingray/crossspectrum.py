@@ -1990,7 +1990,15 @@ def _crossspectrum_from_astropy_table(table):
 
     dRe, dIm, _, _ = error_on_averaged_cross_spectrum(
         cs.power, cs.pds1.power, cs.pds2.power, cs.m, P1noise, P2noise, common_ref="False")
+
+    bad = np.isnan(dRe) | np.isnan(dIm)
+
+    if np.any(bad):
+        warnings.warn(
+            "Some error bars in the Averaged Crossspectrum are invalid."
+            "Defaulting to sqrt(2 / N)")
     cs.power_err = dRe + 1.j * dIm
+    cs.power_err[bad] = np.sqrt(2 / cs.m)
 
     assert hasattr(cs, "df")
     assert hasattr(cs, "dt")
