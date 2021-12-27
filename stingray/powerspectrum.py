@@ -317,7 +317,7 @@ class Powerspectrum(Crossspectrum):
         c: float
             The confidence value for the upper limit (e.g. 0.95 = 95%)
 
-        Results
+        Returns
         -------
         a: float
             The modulation amplitude that could produce P>pmeas with 1 - c probability
