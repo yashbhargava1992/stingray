@@ -10,7 +10,7 @@ from stingray import Crossspectrum, AveragedCrossspectrum
 from stingray.crossspectrum import cospectra_pvalue, normalize_crossspectrum
 from stingray import StingrayError
 from ..simulator import Simulator
-from ..fourier import raw_coherence
+from ..fourier import poisson_level, raw_coherence
 
 from stingray.events import EventList
 import copy
@@ -300,7 +300,7 @@ class TestAveragedCrossspectrumEvents(object):
 
 class TestCoherence(object):
 
-    def test_coherence(self):
+    def test_coherence_is_one_on_single_interval(self):
         lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
         lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
 
@@ -309,7 +309,8 @@ class TestCoherence(object):
             coh = cs.coherence()
 
         assert len(coh) == 2
-        assert np.abs(np.mean(coh)) < 1
+        # The raw coherence of a single interval is 1 by definition
+        assert np.abs(np.mean(coh)) == 1
 
     def test_high_coherence(self):
         t = np.arange(1280)
@@ -321,7 +322,7 @@ class TestCoherence(object):
             c = AveragedCrossspectrum(lc, lc2, 128, use_common_mean=True)
             coh, _ = c.coherence()
 
-        np.testing.assert_almost_equal(np.mean(coh).real, 1.0)
+        assert np.isclose(np.mean(coh).real, 1.0, atol=0.01)
 
 
 class TestNormalization(object):
@@ -349,6 +350,35 @@ class TestNormalization(object):
         with pytest.warns(UserWarning) as record:
             self.cs_norm = Crossspectrum(self.lc1_norm, self.lc1_norm, norm="none")
 
+    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
+    def test_method_norm(self, norm):
+
+        # Testing for a power spectrum of lc1
+        cs1 = copy.deepcopy(self.cs)
+        unnorm = copy.deepcopy(cs1.unnorm_power)
+        new_cs = cs1.to_norm(norm)
+        assert norm == new_cs.norm
+        assert np.allclose(cs1.unnorm_power[1:], unnorm[1:], atol=0.5)
+        power_norm = new_cs.power
+        Nph = np.sqrt(cs1.nphots1 * cs1.nphots2)
+        mean1 = cs1.nphots1 / cs1.n
+        mean2 = cs1.nphots2 / cs1.n
+        mean = np.sqrt(mean1 * mean2)
+        noise = poisson_level(mean * cs1.dt, Nph=Nph, norm=norm)
+        assert np.isclose(np.mean(power_norm[1:]), noise, rtol=0.01)
+
+    @pytest.mark.parametrize("power_type", ["abs", "real", "all"])
+    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
+    def test_method_norm_equivalent_old_method(self, norm, power_type):
+
+        # Testing for a power spectrum of lc1
+        cs1 = copy.deepcopy(self.cs)
+        cs2 = copy.deepcopy(self.cs)
+        cs1.norm = norm
+        cs1.power = cs1._normalize_crossspectrum(cs1.unnorm_power)
+        cs2 = cs2.to_norm(norm)
+        assert np.allclose(cs1.power, cs2.power)
+
     @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
     def test_norm_abs(self, power_type):
         # Testing for a power spectrum of lc1
@@ -366,22 +396,6 @@ class TestNormalization(object):
         power_norm = cs._normalize_crossspectrum(cs.unnorm_power, self.tseg)
         abs_noise = 2. * self.rate1  # expected Poisson noise level
         assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
-        assert np.allclose(power[1:], power_norm[1:], atol=0.5)
-
-    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
-    @pytest.mark.parametrize("power_type", ["all", "real", "absolute"])
-    def test_method_norm(self, norm, power_type):
-        # Testing for a power spectrum of lc1
-        cs1 = copy.deepcopy(self.cs)
-        cs2 = copy.deepcopy(self.cs)
-        cs1.norm = norm
-        power = cs1._normalize_crossspectrum(cs1.unnorm_power, self.tseg)
-        new_cs = cs2.to_norm(norm)
-        assert norm == new_cs.norm
-        power_norm = new_cs.power
-        assert np.allclose(cs1.unnorm_power[1:], cs2.unnorm_power[1:], atol=0.5)
-        # abs_noise = 2. * self.rate1  # expected Poisson noise level
-        # assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
         assert np.allclose(power[1:], power_norm[1:], atol=0.5)
 
     @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
@@ -595,10 +609,10 @@ class TestCrossspectrum(object):
         with pytest.raises(ValueError):
             cs = Crossspectrum(self.lc1, self.lc2, norm='wrong')
 
-    def test_coherence(self):
+    def test_coherence_one_on_single_interval(self):
         coh = self.cs.coherence()
         assert len(coh) == 4999
-        assert np.abs(coh[0]) < 1
+        assert np.abs(coh[0]) == 1
 
     def test_timelag(self):
         time_lag = self.cs.time_lag()
@@ -718,8 +732,7 @@ class TestAveragedCrossspectrum(object):
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, tend]], dt=dt)
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
 
-        with pytest.warns(UserWarning) as record:
-            self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, old_style=True)
+        self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
 
     def test_save_all(self):
         cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
@@ -957,16 +970,11 @@ class TestAveragedCrossspectrum(object):
         assert type(new_cs) == type(self.cs)
         new_cs.time_lag()
 
-    def test_rebin_log_returns_complex_values(self):
+    def test_rebin_log_returns_complex_values_and_errors(self):
         # For now, just verify that it doesn't crash
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin_log(f=0.1)
         assert np.iscomplexobj(new_cs.power[0])
-
-    def test_rebin_log_returns_complex_errors(self):
-        # For now, just verify that it doesn't crash
-        with warnings.catch_warnings(record=True) as w:
-            new_cs = self.cs.rebin_log(f=0.1)
         assert np.iscomplexobj(new_cs.power_err[0])
 
     def test_timelag(self):
