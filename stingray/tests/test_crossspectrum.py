@@ -356,6 +356,24 @@ class TestNormalization(object):
 
         # Testing for a power spectrum of lc1
         cs1 = copy.deepcopy(self.cs)
+
+        unnorm = copy.deepcopy(cs1.unnorm_power)
+        new_cs = cs1.to_norm(norm)
+        assert norm == new_cs.norm
+        assert np.allclose(cs1.unnorm_power[1:], unnorm[1:], atol=0.5)
+        power_norm = new_cs.power
+        Nph = np.sqrt(cs1.nphots1 * cs1.nphots2)
+        mean1 = cs1.nphots1 / cs1.n
+        mean2 = cs1.nphots2 / cs1.n
+        mean = np.sqrt(mean1 * mean2)
+        noise = poisson_level(mean * cs1.dt, Nph=Nph, norm=norm)
+        assert np.isclose(np.mean(power_norm[1:]), noise, rtol=0.01)
+
+    def test_method_norm_gauss(self):
+        norm = "leahy"
+        # Testing for a power spectrum of lc1
+        cs1 = copy.deepcopy(self.cs_norm)
+
         unnorm = copy.deepcopy(cs1.unnorm_power)
         new_cs = cs1.to_norm(norm)
         assert norm == new_cs.norm
@@ -948,6 +966,20 @@ class TestAveragedCrossspectrum(object):
                             power_type="absolute")
         assert np.allclose(cs1.power.real, cs3.power)
         assert np.all(np.isclose(np.abs(cs2.power), cs4.power, atol=0.0001))
+
+    @pytest.mark.parametrize("norm1", ["leahy", "abs", "frac", "none"])
+    @pytest.mark.parametrize("norm2", ["leahy", "abs", "frac", "none"])
+    def test_normalize_crossspectrum_with_method(self, norm1, norm2):
+        cs1 = AveragedCrossspectrum.from_lightcurve(self.lc1, self.lc2, segment_size=1,
+                                                    norm=norm1)
+        cs2 = AveragedCrossspectrum.from_lightcurve(self.lc1, self.lc2, segment_size=1,
+                                                    norm=norm2)
+        cs3 = cs2.to_norm(norm1)
+        for attr in ["power", "power_err", "unnorm_power", "unnorm_power_err"]:
+            print(attr)
+            assert np.allclose(getattr(cs1, attr), getattr(cs3, attr))
+            assert np.allclose(getattr(cs1.pds1, attr), getattr(cs3.pds1, attr))
+            assert np.allclose(getattr(cs1.pds2, attr), getattr(cs3.pds2, attr))
 
     def test_rebin(self):
         with warnings.catch_warnings(record=True) as w:

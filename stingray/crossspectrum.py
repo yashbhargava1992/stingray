@@ -577,15 +577,15 @@ class Crossspectrum(object):
 
         self.err_dist = 'poisson'
         if lc1.err_dist == 'poisson':
-            self.var1 = lc1.meancounts
+            self.variance1 = lc1.meancounts
         else:
-            self.var1 = np.mean(lc1.counts_err) ** 2
+            self.variance1 = np.mean(lc1.counts_err) ** 2
             self.err_dist = 'gauss'
 
         if lc2.err_dist == 'poisson':
-            self.var2 = lc2.meancounts
+            self.variance2 = lc2.meancounts
         else:
-            self.var2 = np.mean(lc2.counts_err) ** 2
+            self.variance2 = np.mean(lc2.counts_err) ** 2
             self.err_dist = 'gauss'
 
         if lc1.n != lc2.n:
@@ -758,7 +758,7 @@ class Crossspectrum(object):
         return bin_cs
 
     def to_norm(self, norm):
-        """Convert Cross spectrum to new norm."""
+        """Convert Cross spectrum to new normalization."""
         if norm == self.norm:
             return copy.deepcopy(self)
         mean1 = self.nphots1 / self.n
@@ -767,28 +767,32 @@ class Crossspectrum(object):
 
         variance1 = variance2 = variance = None
         if self.err_dist != 'poisson':
-            variance1 = self.var1
-            variance2 = self.var2
-            variance = np.sqrt(self.var1 * self.var2)
-        power = normalize_periodograms(
-            self.unnorm_power, self.dt, self.n, mean, variance=variance, norm=norm,
-            power_type=self.power_type)
-        if hasattr(self, "pds1"):
-            p1 = normalize_periodograms(
-                self.pds1.unnorm_power, self.dt, self.n, mean1, variance=variance1, norm=norm,
-                power_type=self.power_type)
-            p2 = normalize_periodograms(
-                self.pds2.unnorm_power, self.dt, self.n, mean2, variance=variance2, norm=norm,
-                power_type=self.power_type)
+            variance1 = self.variance1
+            variance2 = self.variance2
+            variance = np.sqrt(self.variance1 * self.variance2)
 
         new_spec = copy.deepcopy(self)
-        new_spec.power = power
-        new_spec.norm = norm
 
-        if hasattr(self, "pds1"):
-            new_spec.pds1.power = p1
-            new_spec.pds2.power = p2
-            new_spec.pds1.norm = new_spec.pds2.norm = norm
+        for attr in ["power", "power_err"]:
+            unnorm_attr = "unnorm_" + attr
+            if not hasattr(self, unnorm_attr):
+                continue
+            power = normalize_periodograms(
+                getattr(self, unnorm_attr), self.dt, self.n, mean, variance=variance, norm=norm,
+                power_type=self.power_type)
+            setattr(new_spec, attr, power)
+            new_spec.norm = norm
+            if hasattr(self, "pds1"):
+                p1 = normalize_periodograms(
+                    getattr(self.pds1, unnorm_attr), self.dt, self.n, mean1, variance=variance1, norm=norm,
+                    power_type=self.power_type)
+                setattr(new_spec.pds1, attr, p1)
+                p2 = normalize_periodograms(
+                    getattr(self.pds2, unnorm_attr), self.dt, self.n, mean2, variance=variance2, norm=norm,
+                    power_type=self.power_type)
+                setattr(new_spec.pds2, attr, p2)
+                new_spec.pds1.norm = new_spec.pds2.norm = norm
+
         return new_spec
 
     def _normalize_crossspectrum(self, unnorm_power, tseg=None):
@@ -816,7 +820,7 @@ class Crossspectrum(object):
         mean = np.sqrt(self.nphots1 * self.nphots2) / self.n
         variance = None
         if self.err_dist != 'poisson':
-            variance = np.sqrt(self.var1 * self.var2)
+            variance = np.sqrt(self.variance1 * self.variance2)
         return normalize_periodograms(
             unnorm_power, self.dt, self.n, mean, variance=variance, norm=self.norm,
             power_type=self.power_type)
@@ -1977,15 +1981,15 @@ def _crossspectrum_from_astropy_table(table):
     cs.pds1 = AveragedCrossspectrum()
     cs.pds2 = AveragedCrossspectrum()
 
-    cs.freq = cs.pds1.freq = cs.pds2.freq = table["freq"]
+    cs.freq = cs.pds1.freq = cs.pds2.freq = np.array(table["freq"])
     cs.norm = cs.pds1.norm = cs.pds2.norm = table.meta["norm"]
 
-    cs.power = table["power"]
-    cs.pds1.power = table["pds1"]
-    cs.pds2.power = table["pds2"]
-    cs.unnorm_power = table["unnorm_power"]
-    cs.pds1.unnorm_power = table["unnorm_pds1"]
-    cs.pds2.unnorm_power = table["unnorm_pds2"]
+    cs.power = np.array(table["power"])
+    cs.pds1.power = np.array(table["pds1"])
+    cs.pds2.power = np.array(table["pds2"])
+    cs.unnorm_power = np.array(table["unnorm_power"])
+    cs.pds1.unnorm_power = np.array(table["unnorm_pds1"])
+    cs.pds2.unnorm_power = np.array(table["unnorm_pds2"])
 
     cs.pds1.type = cs.pds2.type = "powerspectrum"
 
@@ -1993,6 +1997,10 @@ def _crossspectrum_from_astropy_table(table):
         setattr(cs, attr, val)
         setattr(cs.pds1, attr, val)
         setattr(cs.pds2, attr, val)
+
+    cs.err_dist = "poisson"
+    if cs.variance is not None:
+        cs.err_dist = cs.pds1.err_dist = cs.pds2.err_dist = "gauss"
 
     # Transform nphods1 in nphots for pds1, etc.
     for attr, val in table.meta.items():
@@ -2023,9 +2031,15 @@ def _crossspectrum_from_astropy_table(table):
 
     power_err = dRe + 1.j * dIm
 
-    cs.power_err = normalize_periodograms(power_err, cs.dt, cs.n, table.meta["mean"], norm=cs.norm)
+    cs.unnorm_power_err = power_err
 
-    # cs.power_err[bad] = np.sqrt(2 / cs.m)
+    cs.power_err = normalize_periodograms(
+        power_err, cs.dt, cs.n, table.meta["mean"], variance=cs.variance, norm=cs.norm)
+
+    cs.pds1.power_err = cs.pds1.power / np.sqrt(cs.pds1.m)
+    cs.pds2.power_err = cs.pds2.power / np.sqrt(cs.pds2.m)
+    cs.pds1.unnorm_power_err = cs.pds1.unnorm_power / np.sqrt(cs.pds1.m)
+    cs.pds2.unnorm_power_err = cs.pds2.unnorm_power / np.sqrt(cs.pds2.m)
 
     assert hasattr(cs, "df")
     assert hasattr(cs, "dt")
