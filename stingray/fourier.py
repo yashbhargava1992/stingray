@@ -819,6 +819,7 @@ def avg_cs_from_iterables_quick(
                          "mean": common_mean,
                          "mean1": common_mean1,
                          "mean2": common_mean2,
+                         "power_type": "all",
                          "segment_size": dt * N})
 
     return results
@@ -1073,6 +1074,7 @@ def avg_cs_from_iterables(
                          "mean": common_mean,
                          "mean1": common_mean1,
                          "mean2": common_mean2,
+                         "power_type": power_type,
                          "variance": common_variance,
                          "variance1": common_variance1,
                          "variance2": common_variance2})
