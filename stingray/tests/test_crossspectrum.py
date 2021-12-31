@@ -981,6 +981,19 @@ class TestAveragedCrossspectrum(object):
             assert np.allclose(getattr(cs1.pds1, attr), getattr(cs3.pds1, attr))
             assert np.allclose(getattr(cs1.pds2, attr), getattr(cs3.pds2, attr))
 
+    @pytest.mark.parametrize("f", [None, 1.5])
+    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
+    def test_rebin_factor_rebins_all_attrs(self, f, norm):
+        cs1 = AveragedCrossspectrum.from_lightcurve(self.lc1, self.lc2, segment_size=1,
+                                                    norm=norm)
+        # N.B.: if f is not None, df gets ignored.
+        new_cs = cs1.rebin(df=1.5, f=f)
+        N = new_cs.freq.size
+        for attr in ["power", "power_err", "unnorm_power", "unnorm_power_err"]:
+            assert hasattr(new_cs, attr) and getattr(new_cs, attr).size == N
+            assert hasattr(new_cs.pds1, attr) and getattr(new_cs.pds1, attr).size == N
+            assert hasattr(new_cs.pds2, attr) and getattr(new_cs.pds2, attr).size == N
+
     def test_rebin(self):
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin(df=1.5)

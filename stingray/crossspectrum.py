@@ -728,9 +728,15 @@ class Crossspectrum(object):
         bin_cs.power_err = binerr
 
         if hasattr(self, 'unnorm_power'):
-            _, binpower_unnorm, _, _ = \
-                rebin_data(self.freq, self.unnorm_power, df,
-                           method=method, dx=self.df)
+            unnorm_power_err = None
+            if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
+                unnorm_power_err = self.unnorm_power_err
+            _, binpower_unnorm, binpower_err_unnorm, _ = \
+                rebin_data(self.freq, self.unnorm_power, df, dx=self.df,
+                           yerr=unnorm_power_err, method=method)
+
+            if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
+                bin_cs.unnorm_power_err = binpower_err_unnorm
 
             bin_cs.unnorm_power = binpower_unnorm
 
@@ -868,10 +874,16 @@ class Crossspectrum(object):
         new_spec.dt = self.dt
 
         if hasattr(self, 'unnorm_power'):
-            _, binpower_unnorm, _, _ = \
-                rebin_data_log(self.freq, self.unnorm_power, f, dx=self.df)
+            unnorm_power_err = None
+            if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
+                unnorm_power_err = self.unnorm_power_err
+            _, binpower_unnorm, binpower_err_unnorm, _ = \
+                rebin_data_log(self.freq, self.unnorm_power, f, dx=self.df,
+                               y_err=unnorm_power_err)
 
             new_spec.unnorm_power = binpower_unnorm
+            if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
+                new_spec.unnorm_power_err = binpower_err_unnorm
 
         if hasattr(self, 'pds1'):
             new_spec.pds1 = self.pds1.rebin_log(f)
