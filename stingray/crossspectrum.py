@@ -904,9 +904,13 @@ class Crossspectrum(object):
         return raw_coherence(
             self.unnorm_power, self.pds1.unnorm_power, self.pds2.unnorm_power, 0, 0, self.n)
 
-    def _phase_lag(self):
+    def phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
         return np.angle(self.unnorm_power)
+
+    def _phase_lag(self):  # pragma: no cover
+        """Equivalent to phase_lag. For API compatibility wih previous version."""
+        return self.phase_lag()
 
     def time_lag(self):
         """
@@ -914,7 +918,7 @@ class Crossspectrum(object):
         calculate using the center of the frequency bins.
         """
         if self.__class__ in [Crossspectrum, AveragedCrossspectrum]:
-            ph_lag = self._phase_lag()
+            ph_lag = self.phase_lag()
 
             return ph_lag / (2 * np.pi * self.freq)
         else:
@@ -1989,20 +1993,31 @@ def _crossspectrum_from_astropy_table(table):
         if attr.endswith("2"):
             setattr(cs.pds2, attr[:-1], val)
 
-    P1noise = poisson_level(cs.countrate1, Nph=cs.nphots1, norm=cs.norm)
-    P2noise = poisson_level(cs.countrate2, Nph=cs.nphots2, norm=cs.norm)
+    # I start from unnormalized, and I normalize after correcting for bad error values
+    P1noise = poisson_level(cs.countrate1, Nph=cs.nphots1, norm="none")
+    P2noise = poisson_level(cs.countrate2, Nph=cs.nphots2, norm="none")
 
     dRe, dIm, _, _ = error_on_averaged_cross_spectrum(
-        cs.power, cs.pds1.power, cs.pds2.power, cs.m, P1noise, P2noise, common_ref="False")
+        cs.unnorm_power, cs.pds1.unnorm_power, cs.pds2.unnorm_power, cs.m, P1noise, P2noise, common_ref="False")
 
     bad = np.isnan(dRe) | np.isnan(dIm)
 
     if np.any(bad):
         warnings.warn(
             "Some error bars in the Averaged Crossspectrum are invalid."
-            "Defaulting to sqrt(2 / N)")
-    cs.power_err = dRe + 1.j * dIm
-    cs.power_err[bad] = np.sqrt(2 / cs.m)
+            "Defaulting to sqrt(2 / M) in Leahy norm, rescaled to the appropriate norm.")
+
+    Nph = np.sqrt(cs.nphots1 * cs.nphots1)
+    default_err = np.sqrt(2 / cs.m) * Nph / 2
+
+    dRe[bad] = default_err
+    dIm[bad] = default_err
+
+    power_err = dRe + 1.j * dIm
+
+    cs.power_err = normalize_periodograms(power_err, cs.dt, cs.n, table.meta["mean"], norm=cs.norm)
+
+    # cs.power_err[bad] = np.sqrt(2 / cs.m)
 
     assert hasattr(cs, "df")
     assert hasattr(cs, "dt")
