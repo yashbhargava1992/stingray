@@ -55,7 +55,7 @@ def coherence(lc1, lc2):
 
     warnings.warn("The coherence function, as implemented, does not work as expected. "
                   "Please use the coherence function of AveragedCrossspectrum, with the "
-                  "correct parameters.")
+                  "correct parameters.", DeprecationWarning)
     if not isinstance(lc1, Lightcurve):
         raise TypeError("lc1 must be a lightcurve.Lightcurve object")
 
@@ -82,6 +82,10 @@ def time_lag(lc1, lc2):
         ----------
         .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
     """
+
+    warnings.warn("This standalone time_lag function is deprecated. "
+                  "Please use the time_lag method of AveragedCrossspectrum, with the "
+                  "correct parameters.", DeprecationWarning)
 
     if not isinstance(lc1, Lightcurve):
         raise TypeError("lc1 must be a lightcurve.Lightcurve object")

@@ -8,9 +8,10 @@ from astropy.io import fits
 from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum
 from stingray.crossspectrum import cospectra_pvalue, normalize_crossspectrum
+from stingray.crossspectrum import coherence, time_lag
 from stingray import StingrayError
-from ..simulator import Simulator
-from ..fourier import poisson_level, raw_coherence
+from stingray.simulator import Simulator
+from stingray.fourier import poisson_level, raw_coherence
 
 from stingray.events import EventList
 import copy
@@ -1023,3 +1024,67 @@ class TestAveragedCrossspectrum(object):
                                        norm="leahy")
         maxpower = np.max(cs.power)
         assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower/2.)))
+
+
+class TestCoherenceFunction(object):
+
+    def setup_class(self):
+        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+
+    def test_coherence_runs(self):
+        with pytest.warns(DeprecationWarning):
+            coherence(self.lc1, self.lc2)
+
+    def test_coherence_fails_if_data1_not_lc(self):
+        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
+
+        with pytest.warns(DeprecationWarning):
+            with pytest.raises(TypeError):
+                coherence(self.lc1, data)
+
+    def test_coherence_fails_if_data2_not_lc(self):
+        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
+
+        with pytest.warns(DeprecationWarning):
+            with pytest.raises(TypeError):
+                coherence(data, self.lc2)
+
+    def test_coherence_computes_correctly(self):
+        with pytest.warns(DeprecationWarning):
+            coh = coherence(self.lc1, self.lc2)
+
+        assert len(coh) == 2
+        assert np.abs(np.mean(coh)) == 1
+
+
+class TestTimelagFunction(object):
+
+    def setup_class(self):
+        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+
+    def test_time_lag_runs(self):
+        with pytest.warns(DeprecationWarning):
+            time_lag(self.lc1, self.lc2)
+
+    def test_time_lag_fails_if_data1_not_lc(self):
+        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
+
+        with pytest.warns(DeprecationWarning):
+            with pytest.raises(TypeError):
+                time_lag(self.lc1, data)
+
+    def test_time_lag_fails_if_data2_not_lc(self):
+        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
+
+        with pytest.warns(DeprecationWarning):
+            with pytest.raises(TypeError):
+                time_lag(data, self.lc2)
+
+    def test_time_lag_computes_correctly(self):
+        with pytest.warns(DeprecationWarning):
+            lag = time_lag(self.lc1, self.lc2)
+
+        assert np.max(lag) <= np.pi
+        assert np.min(lag) >= -np.pi
