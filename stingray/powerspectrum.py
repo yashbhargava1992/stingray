@@ -364,144 +364,6 @@ class Powerspectrum(Crossspectrum):
         return amplitude_upper_limit(
             power[maximum_val] * self.m, self.nphots, n=self.m, c=c, nyq_ratio=nyq_ratio, fft_corr=True)
 
-
-class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
-    """
-    Make an averaged periodogram from a light curve by segmenting the light
-    curve, Fourier-transforming each segment and then averaging the
-    resulting periodograms.
-
-    Parameters
-    ----------
-    data: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
-        The light curve data to be Fourier-transformed.
-
-    segment_size: float
-        The size of each segment to average. Note that if the total
-        duration of each :class:`Lightcurve` object in lc is not an integer multiple
-        of the ``segment_size``, then any fraction left-over at the end of the
-        time series will be lost.
-
-    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
-        The normaliation of the periodogram to be used.
-
-    Other Parameters
-    ----------------
-    gti: 2-d float array
-        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
-        This choice overrides the GTIs in the single light curves. Use with
-        care!
-
-    silent : bool, default False
-         Do not show a progress bar when generating an averaged cross spectrum.
-         Useful for the batch execution of many spectra
-
-    dt: float
-        The time resolution of the light curve. Only needed when constructing
-        light curves in the case where data is of :class:EventList
-
-    large_data : bool, default False
-        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
-
-    save_all : bool, default False
-        Save all intermediate PDSs used for the final average. Use with care.
-        This is likely to fill up your RAM on medium-sized datasets, and to
-        slow down the computation when rebinning.
-
-    Attributes
-    ----------
-    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
-        the normalization of the periodogram
-
-    freq: numpy.ndarray
-        The array of mid-bin frequencies that the Fourier transform samples
-
-    power: numpy.ndarray
-        The array of normalized squared absolute values of Fourier
-        amplitudes
-
-    power_err: numpy.ndarray
-        The uncertainties of ``power``.
-        An approximation for each bin given by ``power_err= power/sqrt(m)``.
-        Where ``m`` is the number of power averaged in each bin (by frequency
-        binning, or averaging powerspectrum). Note that for a single
-        realization (``m=1``) the error is equal to the power.
-
-    df: float
-        The frequency resolution
-
-    m: int
-        The number of averaged periodograms
-
-    n: int
-        The number of data points in the light curve
-
-    nphots: float
-        The total number of photons in the light curve
-
-    """
-
-    def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
-                 silent=False, dt=None, lc=None, large_data=False,
-                 save_all=False):
-
-        if lc is not None:
-            warnings.warn("The lc keyword is now deprecated. Use data "
-                          "instead", DeprecationWarning)
-        # Backwards compatibility: user might have supplied lc instead
-        if data is None:
-            data = lc
-
-        if segment_size is None and data is not None:
-            raise ValueError("segment_size must be specified")
-        if segment_size is not None and not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite!")
-
-        if large_data and data is not None:
-            chunks = None
-
-            if isinstance(data, EventList):
-                input_data = 'EventList'
-            elif isinstance(data, Lightcurve):
-                input_data = 'Lightcurve'
-                chunks = int(np.rint(segment_size // data.dt))
-                segment_size = chunks * data.dt
-            else:
-                raise ValueError(
-                    f'Invalid input data type: {type(data).__name__}')
-
-            dir_path = saveData(data, persist=False, chunks=chunks)
-
-            data_path = genDataPath(dir_path)
-            spec = createChunkedSpectra(input_data,
-                                        'AveragedPowerspectrum',
-                                        data_path=data_path,
-                                        segment_size=segment_size,
-                                        norm=norm,
-                                        gti=gti,
-                                        power_type=None,
-                                        silent=silent,
-                                        dt=dt)
-            for key, val in spec.__dict__.items():
-                setattr(self, key, val)
-
-            return
-
-        self.type = "powerspectrum"
-        self.dt = dt
-        self.save_all = save_all
-
-        if isinstance(data, EventList):
-            lengths = data.gti[:, 1] - data.gti[:, 0]
-            good = lengths >= segment_size
-            data.gti = data.gti[good]
-
-        self.segment_size = segment_size
-        self.show_progress = not silent
-        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt)
-
-        return
-
     @staticmethod
     def from_time_array(*args, **kwargs):
         """Calculate AveragedPowerspectrum from an array of event times.
@@ -653,6 +515,144 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         """
 
         return powerspectrum_from_lc_iterable(*args, **kwargs)
+
+
+class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
+    """
+    Make an averaged periodogram from a light curve by segmenting the light
+    curve, Fourier-transforming each segment and then averaging the
+    resulting periodograms.
+
+    Parameters
+    ----------
+    data: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
+        The light curve data to be Fourier-transformed.
+
+    segment_size: float
+        The size of each segment to average. Note that if the total
+        duration of each :class:`Lightcurve` object in lc is not an integer multiple
+        of the ``segment_size``, then any fraction left-over at the end of the
+        time series will be lost.
+
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
+        The normaliation of the periodogram to be used.
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care!
+
+    silent : bool, default False
+         Do not show a progress bar when generating an averaged cross spectrum.
+         Useful for the batch execution of many spectra
+
+    dt: float
+        The time resolution of the light curve. Only needed when constructing
+        light curves in the case where data is of :class:EventList
+
+    large_data : bool, default False
+        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
+
+    save_all : bool, default False
+        Save all intermediate PDSs used for the final average. Use with care.
+        This is likely to fill up your RAM on medium-sized datasets, and to
+        slow down the computation when rebinning.
+
+    Attributes
+    ----------
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
+        the normalization of the periodogram
+
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples
+
+    power: numpy.ndarray
+        The array of normalized squared absolute values of Fourier
+        amplitudes
+
+    power_err: numpy.ndarray
+        The uncertainties of ``power``.
+        An approximation for each bin given by ``power_err= power/sqrt(m)``.
+        Where ``m`` is the number of power averaged in each bin (by frequency
+        binning, or averaging powerspectrum). Note that for a single
+        realization (``m=1``) the error is equal to the power.
+
+    df: float
+        The frequency resolution
+
+    m: int
+        The number of averaged periodograms
+
+    n: int
+        The number of data points in the light curve
+
+    nphots: float
+        The total number of photons in the light curve
+
+    """
+
+    def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
+                 silent=False, dt=None, lc=None, large_data=False,
+                 save_all=False):
+
+        if lc is not None:
+            warnings.warn("The lc keyword is now deprecated. Use data "
+                          "instead", DeprecationWarning)
+        # Backwards compatibility: user might have supplied lc instead
+        if data is None:
+            data = lc
+
+        if segment_size is None and data is not None:
+            raise ValueError("segment_size must be specified")
+        if segment_size is not None and not np.isfinite(segment_size):
+            raise ValueError("segment_size must be finite!")
+
+        if large_data and data is not None:
+            chunks = None
+
+            if isinstance(data, EventList):
+                input_data = 'EventList'
+            elif isinstance(data, Lightcurve):
+                input_data = 'Lightcurve'
+                chunks = int(np.rint(segment_size // data.dt))
+                segment_size = chunks * data.dt
+            else:
+                raise ValueError(
+                    f'Invalid input data type: {type(data).__name__}')
+
+            dir_path = saveData(data, persist=False, chunks=chunks)
+
+            data_path = genDataPath(dir_path)
+            spec = createChunkedSpectra(input_data,
+                                        'AveragedPowerspectrum',
+                                        data_path=data_path,
+                                        segment_size=segment_size,
+                                        norm=norm,
+                                        gti=gti,
+                                        power_type=None,
+                                        silent=silent,
+                                        dt=dt)
+            for key, val in spec.__dict__.items():
+                setattr(self, key, val)
+
+            return
+
+        self.type = "powerspectrum"
+        self.dt = dt
+        self.save_all = save_all
+
+        if isinstance(data, EventList):
+            lengths = data.gti[:, 1] - data.gti[:, 0]
+            good = lengths >= segment_size
+            data.gti = data.gti[good]
+
+        self.segment_size = segment_size
+        self.show_progress = not silent
+        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt)
+
+        return
 
     def _make_segment_spectrum(self, lc, segment_size, silent=False):
         """
@@ -949,7 +949,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         return new_dynspec_object
 
 
-def powerspectrum_from_time_array(times, dt, segment_size, gti, norm='none',
+def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm='none',
                                   silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from an array of event times.
 
@@ -960,13 +960,13 @@ def powerspectrum_from_time_array(times, dt, segment_size, gti, norm='none',
     dt : float
         The time resolution of the intermediate light curves
         (sets the Nyquist frequency)
+
+    Other parameters
+    ----------------
     segment_size : float
         The length, in seconds, of the light curve segments that will be averaged
     gti : [[gti0, gti1], ...]
         Good Time intervals
-
-    Other parameters
-    ----------------
     norm : str, default "abs"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -994,7 +994,7 @@ def powerspectrum_from_time_array(times, dt, segment_size, gti, norm='none',
     return _powerspectrum_from_astropy_table(table)
 
 
-def powerspectrum_from_events(events, dt, segment_size, norm='none',
+def powerspectrum_from_events(events, dt, segment_size=None, norm='none',
                               silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from an event list
 
@@ -1005,11 +1005,11 @@ def powerspectrum_from_events(events, dt, segment_size, norm='none',
     dt : float
         The time resolution of the intermediate light curves
         (sets the Nyquist frequency)
-    segment_size : float
-        The length, in seconds, of the light curve segments that will be averaged
 
     Other parameters
     ----------------
+    segment_size : float
+        The length, in seconds, of the light curve segments that will be averaged
     norm : str, default "abs"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -1035,7 +1035,7 @@ def powerspectrum_from_events(events, dt, segment_size, norm='none',
     )
 
 
-def powerspectrum_from_lightcurve(lc, segment_size, norm='none',
+def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
                                   silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from a light curve
 
@@ -1046,11 +1046,11 @@ def powerspectrum_from_lightcurve(lc, segment_size, norm='none',
     dt : float
         The time resolution of the intermediate light curves
         (sets the Nyquist frequency)
-    segment_size : float
-        The length, in seconds, of the light curve segments that will be averaged
 
     Other parameters
     ----------------
+    segment_size : float
+        The length, in seconds, of the light curve segments that will be averaged
     norm : str, default "abs"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -1079,7 +1079,7 @@ def powerspectrum_from_lightcurve(lc, segment_size, norm='none',
     return _powerspectrum_from_astropy_table(table)
 
 
-def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size, norm='none',
+def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
                                    silent=False, use_common_mean=True):
     """Calculate AveragedCrossspectrum from two light curves
 
@@ -1138,8 +1138,11 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size, norm='none',
     return _powerspectrum_from_astropy_table(table)
 
 
-def _powerspectrum_from_astropy_table(table):
-    cs = AveragedPowerspectrum()
+def _powerspectrum_from_astropy_table(table, force_averaged=False):
+    if table.meta["m"] > 1 or force_averaged:
+        cs = AveragedPowerspectrum()
+    else:
+        cs = Powerspectrum()
 
     cs.freq = table["freq"]
     cs.norm = table.meta["norm"]

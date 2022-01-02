@@ -32,7 +32,15 @@ class TestAveragedPowerspectrumEvents(object):
         cls.leahy_pds = AveragedPowerspectrum(
             cls.lc, segment_size=cls.segment_size, dt=cls.dt, norm="leahy", silent=True)
 
-    def test_from_events_works(self):
+        cls.leahy_pds_sng = Powerspectrum(
+            cls.lc, dt=cls.dt, norm="leahy")
+
+    def test_from_events_works_ps(self):
+        pds_ev = Powerspectrum.from_events(
+            self.events, dt=self.dt, norm="leahy")
+        assert np.allclose(self.leahy_pds_sng.power, pds_ev.power)
+
+    def test_from_events_works_aps(self):
         pds_ev = AveragedPowerspectrum.from_events(
             self.events, segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True)
         assert np.allclose(self.leahy_pds.power, pds_ev.power)
