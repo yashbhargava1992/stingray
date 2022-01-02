@@ -986,6 +986,8 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm='
         the real part
     """
     force_averaged = segment_size is not None
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
     table = avg_pds_from_events(
         times, gti, segment_size, dt,
         norm=norm, use_common_mean=use_common_mean,
@@ -1070,7 +1072,8 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
         the real part
     """
     force_averaged = segment_size is not None
-
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
     table = avg_pds_from_events(
         lc.time, lc.gti, segment_size, lc.dt,
         norm=norm, use_common_mean=use_common_mean,
@@ -1118,7 +1121,8 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
         the real part
     """
     force_averaged = segment_size is not None
-
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):

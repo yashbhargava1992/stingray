@@ -1824,6 +1824,8 @@ def crossspectrum_from_time_array(times1, times2, dt, segment_size=None, gti=Non
         the real part
     """
     force_averaged = segment_size is not None
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
     results = avg_cs_from_events(
         times1, times2, gti, segment_size, dt,
         norm=norm, use_common_mean=use_common_mean,
@@ -1915,6 +1917,8 @@ def crossspectrum_from_lightcurve(lc1, lc2, segment_size=None, norm='none',
         the real part
     """
     force_averaged = segment_size is not None
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
     gti = cross_two_gtis(lc1.gti, lc2.gti)
 
     err1 = lc1._counts_err
@@ -1969,6 +1973,8 @@ def crossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size, norm='n
     """
 
     force_averaged = segment_size is not None
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):
