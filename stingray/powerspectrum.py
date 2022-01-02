@@ -1149,15 +1149,13 @@ def _powerspectrum_from_astropy_table(table, force_averaged=False):
     else:
         cs = Powerspectrum()
 
-    cs.freq = table["freq"]
-    cs.norm = table.meta["norm"]
-
-    cs.power = table["power"]
-    cs.unnorm_power = table["unnorm_power"]
+    cs.freq = np.array(table["freq"])
+    cs.power = np.array(table["power"])
+    cs.unnorm_power = np.array(table["unnorm_power"])
 
     for attr, val in table.meta.items():
         setattr(cs, attr, val)
 
     cs.power_err = cs.power / np.sqrt(cs.m)
-
+    cs.nphots1 = cs.nphots
     return cs
