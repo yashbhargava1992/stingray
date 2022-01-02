@@ -985,13 +985,13 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm='
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
     """
-
+    force_averaged = segment_size is not None
     table = avg_pds_from_events(
         times, gti, segment_size, dt,
         norm=norm, use_common_mean=use_common_mean,
         silent=silent)
 
-    return _powerspectrum_from_astropy_table(table)
+    return _powerspectrum_from_astropy_table(table, force_averaged=force_averaged)
 
 
 def powerspectrum_from_events(events, dt, segment_size=None, norm='none',
@@ -1069,6 +1069,7 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
     """
+    force_averaged = segment_size is not None
 
     table = avg_pds_from_events(
         lc.time, lc.gti, segment_size, lc.dt,
@@ -1076,7 +1077,7 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
         silent=silent,
         counts=lc.counts)
 
-    return _powerspectrum_from_astropy_table(table)
+    return _powerspectrum_from_astropy_table(table, force_averaged=force_averaged)
 
 
 def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
@@ -1116,6 +1117,7 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
     """
+    force_averaged = segment_size is not None
 
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
@@ -1134,8 +1136,7 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
         use_common_mean=use_common_mean,
         silent=silent
     )
-    assert np.isclose(table.meta["segment_size"], segment_size)
-    return _powerspectrum_from_astropy_table(table)
+    return _powerspectrum_from_astropy_table(table, force_averaged=force_averaged)
 
 
 def _powerspectrum_from_astropy_table(table, force_averaged=False):

@@ -1823,14 +1823,14 @@ def crossspectrum_from_time_array(times1, times2, dt, segment_size=None, gti=Non
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
     """
-
+    force_averaged = segment_size is not None
     results = avg_cs_from_events(
         times1, times2, gti, segment_size, dt,
         norm=norm, use_common_mean=use_common_mean,
         fullspec=fullspec, silent=silent, power_type=power_type,
         return_auxil=True)
 
-    return _crossspectrum_from_astropy_table(results, force_averaged=segment_size is not None)
+    return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
 
 
 def crossspectrum_from_events(events1, events2, dt, segment_size=None, norm='none',
@@ -1914,6 +1914,7 @@ def crossspectrum_from_lightcurve(lc1, lc2, segment_size=None, norm='none',
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
     """
+    force_averaged = segment_size is not None
     gti = cross_two_gtis(lc1.gti, lc2.gti)
 
     err1 = lc1._counts_err
@@ -1926,7 +1927,7 @@ def crossspectrum_from_lightcurve(lc1, lc2, segment_size=None, norm='none',
         counts1=lc1.counts, counts2=lc2.counts, errors1=err1, errors2=err2,
         return_auxil=True)
 
-    return _crossspectrum_from_astropy_table(results, force_averaged=segment_size is not None)
+    return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
 
 
 def crossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size, norm='none',
@@ -1967,6 +1968,7 @@ def crossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size, norm='n
         the real part
     """
 
+    force_averaged = segment_size is not None
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):
@@ -1988,7 +1990,7 @@ def crossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size, norm='n
         power_type=power_type,
         return_auxil=True
     )
-    return _crossspectrum_from_astropy_table(results, force_averaged=segment_size is not None)
+    return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
 
 
 def _crossspectrum_from_astropy_table(table, force_averaged=False):
