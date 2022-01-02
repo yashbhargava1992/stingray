@@ -396,7 +396,7 @@ class EventList(object):
             np.asarray([
                 energy[np.argwhere(
                     cum_prob == np.min(cum_prob[(cum_prob - r) > 0]))]
-                      for r in R])
+                for r in R]).flatten()
 
     def join(self, other):
         """
@@ -509,7 +509,7 @@ class EventList(object):
         Currently supported formats are
 
         * pickle (not recommended for long-term storage)
-        * hea : FITS Event files from (well, some) HEASARC-supported missions.
+        * hea or ogip : FITS Event files from (well, some) HEASARC-supported missions.
         * any other formats compatible with the writers in
           :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
 
@@ -536,11 +536,11 @@ class EventList(object):
         ev: :class:`EventList` object
             The :class:`EventList` object reconstructed from file
         """
-        if format_ == 'pickle':
+        if format_.lower() == 'pickle':
             with open(filename, 'rb') as fobj:
                 return pickle.load(fobj)
 
-        if format_ in ('hea'):
+        if format_.lower() in ('hea', 'ogip'):
             evtdata = load_events_and_gtis(filename, **kwargs)
 
             evt = EventList(time=evtdata.ev_list,
@@ -561,7 +561,7 @@ class EventList(object):
                         setattr(evt, key.lower(), evtdata.additional_data[key])
             return evt
 
-        if format_ == 'ascii':
+        if format_.lower() == 'ascii':
             format_ = 'ascii.ecsv'
 
         ts = Table.read(filename, format=format_)
