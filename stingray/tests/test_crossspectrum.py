@@ -153,7 +153,18 @@ class TestAveragedCrossspectrumEvents(object):
                                          power_type="all")
         self.lc1, self.lc2 = self.events1, self.events2
 
-    def test_from_events_works(self):
+    def test_from_events_works_cs(self):
+        lccs = Crossspectrum.from_events(self.events1, self.events2,
+                                         dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.cs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+        lag1 = lccs.time_lag()
+        lag2 = self.cs.time_lag()
+        assert np.allclose(lag1, lag2)
+        assert lccs.power_err is not None
+
+    def test_from_events_works_acs(self):
         lccs = AveragedCrossspectrum.from_events(self.events1, self.events2,
                                                  segment_size=1, dt=self.dt, norm='none', silent=True)
         power1 = lccs.power.real

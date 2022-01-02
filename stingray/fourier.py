@@ -1149,6 +1149,8 @@ def avg_pds_from_events(
     mean : float
         the mean counts per bin
     """
+    if segment_size is None:
+        segment_size = gti.max() - gti.min()
     N = np.rint(segment_size / dt).astype(int)
     dt = segment_size / N
 
@@ -1239,6 +1241,8 @@ def avg_cs_from_events(
     M : int
         the number of averaged periodograms
     """
+    if segment_size is None:
+        segment_size = gti.max() - gti.min()
     N = np.rint(segment_size / dt).astype(int)
     # adjust dt
     dt = segment_size / N
