@@ -237,7 +237,6 @@ class EventList(object):
         -------
         lc: :class:`stingray.Lightcurve` object
         """
-
         if tstart is None and self.gti is not None:
             tstart = self.gti[0][0]
             tseg = self.gti[-1][1] - tstart
@@ -676,13 +675,12 @@ class EventList(object):
             new_ev = self
         else:
             new_ev = EventList()
-            for attr in dir(self):
-                if not attr.startswith("_") and attr not in array_attrs:
-                    setattr(new_ev, attr, getattr(self, attr))
+            for attr in self.meta_attrs():
+                setattr(new_ev, attr, copy.deepcopy(getattr(self, attr)))
 
         for attr in array_attrs:
             if hasattr(self, attr) and getattr(self, attr) is not None:
-                setattr(new_ev, attr, np.asarray(getattr(self, attr))[mask])
+                setattr(new_ev, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
         return new_ev
 
     def apply_deadtime(self, deadtime, inplace=False, **kwargs):
