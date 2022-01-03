@@ -18,6 +18,7 @@ from .utils import show_progress
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
 from .fourier import avg_cs_from_events, poisson_level
 from .fourier import fftfreq, fft, normalize_periodograms, raw_coherence
+from .fourier import get_flux_iterable_from_segments
 
 # location of factorial moved between scipy versions
 try:
@@ -29,8 +30,57 @@ except ImportError:
 __all__ = [
     "Crossspectrum", "AveragedCrossspectrum",
     "cospectra_pvalue", "normalize_crossspectrum",
-    "time_lag", "coherence"
+    "time_lag", "coherence", "get_flux_generator"
 ]
+
+
+def get_flux_generator(data, segment_size, dt=None):
+    """Get a flux generator from different segments of a data object
+
+    It is just a wrapper around
+    ``stingray.fourier.get_flux_iterable_from_segments``, providing
+    this method with the information it needs to create the iterables,
+    starting from an event list or a light curve.
+
+    Only accepts `Lightcurve`s and `EventList`s.
+
+    Parameters
+    ----------
+    data : `Lightcurve` or `EventList`
+        Input data
+    segment_size : float
+        Segment size in seconds
+
+    Other parameters
+    ----------------
+    dt : float, default None
+        Sampling time of the output flux iterables. Required if input data
+        is an event list, otherwise the light curve sampling time is selected.
+
+    Returns
+    -------
+    flux_iterable : ``generator``
+        Generator of flux arrays.
+    """
+    times = data.time
+    gti = data.gti
+
+    counts = err = None
+    if isinstance(data, Lightcurve):
+        counts = data.counts
+        N = counts.size
+        if data.err_dist.lower() != "poisson":
+            err = data.counts_err
+    elif isinstance(data, EventList):
+        if dt is None:
+            raise ValueError(
+                "If data is an EventList, you need to specify the bin time dt")
+        N = int(np.rint(segment_size / dt))
+
+    flux_iterable = get_flux_iterable_from_segments(
+        times, gti, segment_size, N, counts=counts, errors=err
+    )
+    return flux_iterable
 
 
 def coherence(lc1, lc2):
