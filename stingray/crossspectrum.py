@@ -28,9 +28,13 @@ except ImportError:
 
 
 __all__ = [
-    "Crossspectrum", "AveragedCrossspectrum",
-    "cospectra_pvalue", "normalize_crossspectrum",
-    "time_lag", "coherence", "get_flux_generator"
+    "Crossspectrum",
+    "AveragedCrossspectrum",
+    "cospectra_pvalue",
+    "normalize_crossspectrum",
+    "time_lag",
+    "coherence",
+    "get_flux_generator",
 ]
 
 
@@ -73,8 +77,7 @@ def get_flux_generator(data, segment_size, dt=None):
             err = data.counts_err
     elif isinstance(data, EventList):
         if dt is None:
-            raise ValueError(
-                "If data is an EventList, you need to specify the bin time dt")
+            raise ValueError("If data is an EventList, you need to specify the bin time dt")
         N = int(np.rint(segment_size / dt))
 
     flux_iterable = get_flux_iterable_from_segments(
@@ -103,16 +106,19 @@ def coherence(lc1, lc2):
     .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
     """
 
-    warnings.warn("The coherence function, as implemented, does not work as expected. "
-                  "Please use the coherence function of AveragedCrossspectrum, with the "
-                  "correct parameters.", DeprecationWarning)
+    warnings.warn(
+        "The coherence function, as implemented, does not work as expected. "
+        "Please use the coherence function of AveragedCrossspectrum, with the "
+        "correct parameters.",
+        DeprecationWarning,
+    )
     if not isinstance(lc1, Lightcurve):
         raise TypeError("lc1 must be a lightcurve.Lightcurve object")
 
     if not isinstance(lc2, Lightcurve):
         raise TypeError("lc2 must be a lightcurve.Lightcurve object")
 
-    cs = Crossspectrum(lc1, lc2, norm='none')
+    cs = Crossspectrum(lc1, lc2, norm="none")
 
     return cs.coherence()
 
@@ -133,9 +139,12 @@ def time_lag(lc1, lc2):
         .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
     """
 
-    warnings.warn("This standalone time_lag function is deprecated. "
-                  "Please use the time_lag method of AveragedCrossspectrum, with the "
-                  "correct parameters.", DeprecationWarning)
+    warnings.warn(
+        "This standalone time_lag function is deprecated. "
+        "Please use the time_lag method of AveragedCrossspectrum, with the "
+        "correct parameters.",
+        DeprecationWarning,
+    )
 
     if not isinstance(lc1, Lightcurve):
         raise TypeError("lc1 must be a lightcurve.Lightcurve object")
@@ -143,13 +152,15 @@ def time_lag(lc1, lc2):
     if not isinstance(lc2, Lightcurve):
         raise TypeError("lc2 must be a lightcurve.Lightcurve object")
 
-    cs = Crossspectrum(lc1, lc2, norm='none')
+    cs = Crossspectrum(lc1, lc2, norm="none")
     lag = cs.time_lag()
 
     return lag
 
 
-def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="none", power_type="real"):
+def normalize_crossspectrum(
+    unnorm_power, tseg, nbins, nphots1, nphots2, norm="none", power_type="real"
+):
     """
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
@@ -195,7 +206,8 @@ def normalize_crossspectrum(unnorm_power, tseg, nbins, nphots1, nphots2, norm="n
 
 
 def normalize_crossspectrum_gauss(
-        unnorm_power, mean_flux, var, dt, N, norm="none", power_type="real"):
+    unnorm_power, mean_flux, var, dt, N, norm="none", power_type="real"
+):
     """
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
@@ -264,8 +276,9 @@ def normalize_crossspectrum_gauss(
     True
     """
     mean = mean_flux * dt
-    return normalize_periodograms(unnorm_power, dt, N, mean, variance=var,
-                                  norm=norm, power_type=power_type)
+    return normalize_periodograms(
+        unnorm_power, dt, N, mean, variance=var, norm=norm, power_type=power_type
+    )
 
 
 def _averaged_cospectra_cdf(xcoord, n):
@@ -295,12 +308,10 @@ def _averaged_cospectra_cdf(xcoord, n):
         prefac_bottom1 = factorial(n - 1)
         for j in range(n):
             prefac_top = factorial(n - 1 + j)
-            prefac_bottom2 = factorial(
-                n - 1 - j) * factorial(j)
+            prefac_bottom2 = factorial(n - 1 - j) * factorial(j)
             prefac_bottom3 = 2.0 ** (n + j)
 
-            prefac = prefac_top / (prefac_bottom1 * prefac_bottom2 *
-                                   prefac_bottom3)
+            prefac = prefac_top / (prefac_bottom1 * prefac_bottom2 * prefac_bottom3)
 
             gf = -j + n
 
@@ -311,7 +322,7 @@ def _averaged_cospectra_cdf(xcoord, n):
             else:
                 fac = scipy.special.gammaincc(gf, -n * x) * first_fac
 
-            cdf[i] += (prefac * fac)
+            cdf[i] += prefac * fac
         if np.size(xcoord) == 1:
             return cdf[i]
         else:
@@ -392,7 +403,7 @@ def cospectra_pvalue(power, nspec):
         pval = gauss.sf(power)
 
     else:
-        pval = 1. - _averaged_cospectra_cdf(power, nspec)
+        pval = 1.0 - _averaged_cospectra_cdf(power, nspec)
 
     return pval
 
@@ -475,8 +486,18 @@ class Crossspectrum(object):
         The total number of photons in light curve 2
     """
 
-    def __init__(self, data1=None, data2=None, norm='none', gti=None,
-                 lc1=None, lc2=None, power_type="real", dt=None, fullspec=False):
+    def __init__(
+        self,
+        data1=None,
+        data2=None,
+        norm="none",
+        gti=None,
+        lc1=None,
+        lc2=None,
+        power_type="real",
+        dt=None,
+        fullspec=False,
+    ):
 
         # for backwards compatibility
         if data1 is None:
@@ -484,8 +505,17 @@ class Crossspectrum(object):
         if data2 is None:
             data2 = lc2
 
-        good_input = self.initial_checks(data1=data1, data2=data2, norm=norm, gti=gti,
-                                         lc1=lc1, lc2=lc2, power_type=power_type, dt=dt, fullspec=fullspec)
+        good_input = self.initial_checks(
+            data1=data1,
+            data2=data2,
+            norm=norm,
+            gti=gti,
+            lc1=lc1,
+            lc2=lc2,
+            power_type=power_type,
+            dt=dt,
+            fullspec=fullspec,
+        )
 
         if not good_input:
             self.freq = None
@@ -525,8 +555,18 @@ class Crossspectrum(object):
         # These are needed to calculate coherence
         self._make_auxil_pds(lc1, lc2)
 
-    def initial_checks(self, data1=None, data2=None, norm='none', gti=None,
-                       lc1=None, lc2=None, power_type="real", dt=None, fullspec=False):
+    def initial_checks(
+        self,
+        data1=None,
+        data2=None,
+        norm="none",
+        gti=None,
+        lc1=None,
+        lc2=None,
+        power_type="real",
+        dt=None,
+        fullspec=False,
+    ):
         """Run initial checks on the input.
 
         Returns True if checks are passed, False if they are not.
@@ -543,19 +583,19 @@ class Crossspectrum(object):
         # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
 
         if lc1 is not None or lc2 is not None:
-            warnings.warn("The lcN keywords are now deprecated. Use dataN "
-                          "instead", DeprecationWarning)
+            warnings.warn(
+                "The lcN keywords are now deprecated. Use dataN " "instead", DeprecationWarning
+            )
         if data1 is None or data2 is None:
             if data1 is not None or data2 is not None:
-                raise TypeError("You can't do a cross spectrum with just one "
-                                "light curve!")
+                raise TypeError("You can't do a cross spectrum with just one " "light curve!")
             else:
                 return False
 
-        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and \
-                dt is None:
-            raise ValueError("If using event lists, please specify the bin "
-                             "time to generate lightcurves.")
+        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and dt is None:
+            raise ValueError(
+                "If using event lists, please specify the bin " "time to generate lightcurves."
+            )
 
         if power_type not in ["all", "absolute", "real"]:
             raise ValueError("`power_type` not recognized!")
@@ -612,8 +652,7 @@ class Crossspectrum(object):
         check_gtis(self.gti)
 
         if self.gti.shape[0] != 1:
-            raise TypeError("Non-averaged Cross Spectra need "
-                            "a single Good Time Interval")
+            raise TypeError("Non-averaged Cross Spectra need " "a single Good Time Interval")
 
         lc1 = lc1.split_by_gti()[0]
         lc2 = lc2.split_by_gti()[0]
@@ -625,28 +664,26 @@ class Crossspectrum(object):
         self.nphots1 = np.float64(np.sum(lc1.counts))
         self.nphots2 = np.float64(np.sum(lc2.counts))
 
-        self.err_dist = 'poisson'
-        if lc1.err_dist == 'poisson':
+        self.err_dist = "poisson"
+        if lc1.err_dist == "poisson":
             self.variance1 = lc1.meancounts
         else:
             self.variance1 = np.mean(lc1.counts_err) ** 2
-            self.err_dist = 'gauss'
+            self.err_dist = "gauss"
 
-        if lc2.err_dist == 'poisson':
+        if lc2.err_dist == "poisson":
             self.variance2 = lc2.meancounts
         else:
             self.variance2 = np.mean(lc2.counts_err) ** 2
-            self.err_dist = 'gauss'
+            self.err_dist = "gauss"
 
         if lc1.n != lc2.n:
-            raise StingrayError("Light curves do not have same number "
-                                "of time bins per segment.")
+            raise StingrayError("Light curves do not have same number " "of time bins per segment.")
 
         # If dt differs slightly, its propagated error must not be more than
         # 1/100th of the bin
         if not np.isclose(lc1.dt, lc2.dt, rtol=0.01 * lc1.dt / lc1.tseg):
-            raise StingrayError("Light curves do not have same time binning "
-                                "dt.")
+            raise StingrayError("Light curves do not have same time binning " "dt.")
 
         # In case a small difference exists, ignore it
         lc1.dt = lc2.dt
@@ -669,26 +706,29 @@ class Crossspectrum(object):
         self.power = self._normalize_crossspectrum(self.unnorm_power, lc1.tseg)
 
         if lc1.err_dist.lower() != lc2.err_dist.lower():
-            simon("Your lightcurves have different statistics."
-                  "The errors in the Crossspectrum will be incorrect.")
+            simon(
+                "Your lightcurves have different statistics."
+                "The errors in the Crossspectrum will be incorrect."
+            )
         elif lc1.err_dist.lower() != "poisson":
-            simon("Looks like your lightcurve statistic is not poisson."
-                  "The errors in the Powerspectrum will be incorrect.")
+            simon(
+                "Looks like your lightcurve statistic is not poisson."
+                "The errors in the Powerspectrum will be incorrect."
+            )
 
-        if self.__class__.__name__ in ['Powerspectrum',
-                                       'AveragedPowerspectrum']:
+        if self.__class__.__name__ in ["Powerspectrum", "AveragedPowerspectrum"]:
             self.power_err = self.power / np.sqrt(self.m)
-        elif self.__class__.__name__ in ['Crossspectrum',
-                                         'AveragedCrossspectrum']:
+        elif self.__class__.__name__ in ["Crossspectrum", "AveragedCrossspectrum"]:
             # This is clearly a wild approximation.
-            simon("Errorbars on cross spectra are not thoroughly tested. "
-                  "Please report any inconsistencies.")
+            simon(
+                "Errorbars on cross spectra are not thoroughly tested. "
+                "Please report any inconsistencies."
+            )
             unnorm_power_err = np.sqrt(2) / np.sqrt(self.m)  # Leahy-like
-            unnorm_power_err /= (2 / np.sqrt(self.nphots1 * self.nphots2))
+            unnorm_power_err /= 2 / np.sqrt(self.nphots1 * self.nphots2)
             unnorm_power_err += np.zeros_like(self.power)
 
-            self.power_err = \
-                self._normalize_crossspectrum(unnorm_power_err, lc1.tseg)
+            self.power_err = self._normalize_crossspectrum(unnorm_power_err, lc1.tseg)
         else:
             self.power_err = np.zeros(len(self.power))
 
@@ -754,15 +794,14 @@ class Crossspectrum(object):
         """
 
         if f is None and df is None:
-            raise ValueError('You need to specify at least one between f and '
-                             'df')
+            raise ValueError("You need to specify at least one between f and " "df")
         elif f is not None:
             df = f * self.df
 
         # rebin cross spectrum to new resolution
-        binfreq, bincs, binerr, step_size = \
-            rebin_data(self.freq, self.power, df, self.power_err,
-                       method=method, dx=self.df)
+        binfreq, bincs, binerr, step_size = rebin_data(
+            self.freq, self.power, df, self.power_err, method=method, dx=self.df
+        )
         # make an empty cross spectrum object
         # note: syntax deliberate to work with subclass Powerspectrum
         bin_cs = copy.copy(self)
@@ -777,37 +816,36 @@ class Crossspectrum(object):
         bin_cs.nphots1 = self.nphots1
         bin_cs.power_err = binerr
 
-        if hasattr(self, 'unnorm_power'):
+        if hasattr(self, "unnorm_power"):
             unnorm_power_err = None
             if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
                 unnorm_power_err = self.unnorm_power_err
-            _, binpower_unnorm, binpower_err_unnorm, _ = \
-                rebin_data(self.freq, self.unnorm_power, df, dx=self.df,
-                           yerr=unnorm_power_err, method=method)
+            _, binpower_unnorm, binpower_err_unnorm, _ = rebin_data(
+                self.freq, self.unnorm_power, df, dx=self.df, yerr=unnorm_power_err, method=method
+            )
 
             if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
                 bin_cs.unnorm_power_err = binpower_err_unnorm
 
             bin_cs.unnorm_power = binpower_unnorm
 
-        if hasattr(self, 'cs_all'):
+        if hasattr(self, "cs_all"):
             cs_all = []
             for c in self.cs_all:
                 cs_all.append(c.rebin(df=df, f=f, method=method))
             bin_cs.cs_all = cs_all
-        if hasattr(self, 'pds1'):
+        if hasattr(self, "pds1"):
             bin_cs.pds1 = self.pds1.rebin(df=df, f=f, method=method)
-        if hasattr(self, 'pds2'):
+        if hasattr(self, "pds2"):
             bin_cs.pds2 = self.pds2.rebin(df=df, f=f, method=method)
 
         try:
             bin_cs.nphots2 = self.nphots2
         except AttributeError:
-            if self.type == 'powerspectrum':
+            if self.type == "powerspectrum":
                 pass
             else:
-                raise AttributeError(
-                    'Spectrum has no attribute named nphots2.')
+                raise AttributeError("Spectrum has no attribute named nphots2.")
 
         bin_cs.m = np.rint(step_size * self.m)
 
@@ -822,7 +860,7 @@ class Crossspectrum(object):
         mean = np.sqrt(mean1 * mean2)
 
         variance1 = variance2 = variance = None
-        if self.err_dist != 'poisson':
+        if self.err_dist != "poisson":
             variance1 = self.variance1
             variance2 = self.variance2
             variance = np.sqrt(self.variance1 * self.variance2)
@@ -834,18 +872,36 @@ class Crossspectrum(object):
             if not hasattr(self, unnorm_attr):
                 continue
             power = normalize_periodograms(
-                getattr(self, unnorm_attr), self.dt, self.n, mean, variance=variance, norm=norm,
-                power_type=self.power_type)
+                getattr(self, unnorm_attr),
+                self.dt,
+                self.n,
+                mean,
+                variance=variance,
+                norm=norm,
+                power_type=self.power_type,
+            )
             setattr(new_spec, attr, power)
             new_spec.norm = norm
             if hasattr(self, "pds1"):
                 p1 = normalize_periodograms(
-                    getattr(self.pds1, unnorm_attr), self.dt, self.n, mean1, variance=variance1, norm=norm,
-                    power_type=self.power_type)
+                    getattr(self.pds1, unnorm_attr),
+                    self.dt,
+                    self.n,
+                    mean1,
+                    variance=variance1,
+                    norm=norm,
+                    power_type=self.power_type,
+                )
                 setattr(new_spec.pds1, attr, p1)
                 p2 = normalize_periodograms(
-                    getattr(self.pds2, unnorm_attr), self.dt, self.n, mean2, variance=variance2, norm=norm,
-                    power_type=self.power_type)
+                    getattr(self.pds2, unnorm_attr),
+                    self.dt,
+                    self.n,
+                    mean2,
+                    variance=variance2,
+                    norm=norm,
+                    power_type=self.power_type,
+                )
                 setattr(new_spec.pds2, attr, p2)
                 new_spec.pds1.norm = new_spec.pds2.norm = norm
 
@@ -875,11 +931,17 @@ class Crossspectrum(object):
 
         mean = np.sqrt(self.nphots1 * self.nphots2) / self.n
         variance = None
-        if self.err_dist != 'poisson':
+        if self.err_dist != "poisson":
             variance = np.sqrt(self.variance1 * self.variance2)
         return normalize_periodograms(
-            unnorm_power, self.dt, self.n, mean, variance=variance, norm=self.norm,
-            power_type=self.power_type)
+            unnorm_power,
+            self.dt,
+            self.n,
+            mean,
+            variance=variance,
+            norm=self.norm,
+            power_type=self.power_type,
+        )
 
     def rebin_log(self, f=0.01):
         """
@@ -906,9 +968,9 @@ class Crossspectrum(object):
             from :class:`AveragedPowerspectrum`, it will return an object of class
         """
 
-        binfreq, binpower, binpower_err, nsamples = \
-            rebin_data_log(self.freq, self.power, f,
-                           y_err=self.power_err, dx=self.df)
+        binfreq, binpower, binpower_err, nsamples = rebin_data_log(
+            self.freq, self.power, f, y_err=self.power_err, dx=self.df
+        )
         # the frequency resolution
         df = np.diff(binfreq)
 
@@ -923,24 +985,24 @@ class Crossspectrum(object):
         new_spec.m = nsamples * self.m
         new_spec.dt = self.dt
 
-        if hasattr(self, 'unnorm_power'):
+        if hasattr(self, "unnorm_power"):
             unnorm_power_err = None
             if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
                 unnorm_power_err = self.unnorm_power_err
-            _, binpower_unnorm, binpower_err_unnorm, _ = \
-                rebin_data_log(self.freq, self.unnorm_power, f, dx=self.df,
-                               y_err=unnorm_power_err)
+            _, binpower_unnorm, binpower_err_unnorm, _ = rebin_data_log(
+                self.freq, self.unnorm_power, f, dx=self.df, y_err=unnorm_power_err
+            )
 
             new_spec.unnorm_power = binpower_unnorm
             if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
                 new_spec.unnorm_power_err = binpower_err_unnorm
 
-        if hasattr(self, 'pds1'):
+        if hasattr(self, "pds1"):
             new_spec.pds1 = self.pds1.rebin_log(f)
-        if hasattr(self, 'pds2'):
+        if hasattr(self, "pds2"):
             new_spec.pds2 = self.pds2.rebin_log(f)
 
-        if hasattr(self, 'cs_all'):
+        if hasattr(self, "cs_all"):
             cs_all = []
             for c in self.cs_all:
                 cs_all.append(c.rebin_log(f))
@@ -968,7 +1030,8 @@ class Crossspectrum(object):
         # cross spectrum code to avoid circular imports
 
         return raw_coherence(
-            self.unnorm_power, self.pds1.unnorm_power, self.pds2.unnorm_power, 0, 0, self.n)
+            self.unnorm_power, self.pds1.unnorm_power, self.pds2.unnorm_power, 0, 0, self.n
+        )
 
     def phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
@@ -990,8 +1053,7 @@ class Crossspectrum(object):
         else:
             raise AttributeError("Object has no attribute named 'time_lag' !")
 
-    def plot(self, labels=None, axis=None, title=None, marker='-', save=False,
-             filename=None):
+    def plot(self, labels=None, axis=None, title=None, marker="-", save=False, filename=None):
         """
         Plot the amplitude of the cross spectrum vs. the frequency using ``matplotlib``.
 
@@ -1024,39 +1086,27 @@ class Crossspectrum(object):
         except ImportError:
             raise ImportError("Matplotlib required for plot()")
 
-        plt.figure('crossspectrum')
-        plt.plot(self.freq,
-                 np.abs(self.power),
-                 marker,
-                 color='b',
-                 label='Amplitude')
-        plt.plot(self.freq,
-                 np.abs(self.power.real),
-                 marker,
-                 color='r',
-                 alpha=0.5,
-                 label='Real Part')
-        plt.plot(self.freq,
-                 np.abs(self.power.imag),
-                 marker,
-                 color='g',
-                 alpha=0.5,
-                 label='Imaginary Part')
+        plt.figure("crossspectrum")
+        plt.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")
+        plt.plot(
+            self.freq, np.abs(self.power.real), marker, color="r", alpha=0.5, label="Real Part"
+        )
+        plt.plot(
+            self.freq, np.abs(self.power.imag), marker, color="g", alpha=0.5, label="Imaginary Part"
+        )
 
         if labels is not None:
             try:
                 plt.xlabel(labels[0])
                 plt.ylabel(labels[1])
             except TypeError:
-                simon("``labels`` must be either a list or tuple with "
-                      "x and y labels.")
+                simon("``labels`` must be either a list or tuple with " "x and y labels.")
                 raise
             except IndexError:
-                simon("``labels`` must have two labels for x and y "
-                      "axes.")
+                simon("``labels`` must have two labels for x and y " "axes.")
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
-        plt.legend(loc='best')
+        plt.legend(loc="best")
         if axis is not None:
             plt.axis(axis)
 
@@ -1065,7 +1115,7 @@ class Crossspectrum(object):
 
         if save:
             if filename is None:
-                plt.savefig('spec.png')
+                plt.savefig("spec.png")
             else:
                 plt.savefig(filename)
         else:
@@ -1121,17 +1171,14 @@ class Crossspectrum(object):
 
         """
         if not self.norm == "leahy":
-            raise ValueError("This method only works on "
-                             "Leahy-normalized power spectra!")
+            raise ValueError("This method only works on " "Leahy-normalized power spectra!")
 
         if np.size(self.m) == 1:
             # calculate p-values for all powers
             # leave out zeroth power since it just encodes the number of photons!
-            pv = np.array([cospectra_pvalue(power, self.m)
-                           for power in self.power])
+            pv = np.array([cospectra_pvalue(power, self.m) for power in self.power])
         else:
-            pv = np.array([cospectra_pvalue(power, m)
-                           for power, m in zip(self.power, self.m)])
+            pv = np.array([cospectra_pvalue(power, m) for power, m in zip(self.power, self.m)])
 
         # if trial correction is used, then correct the threshold for
         # the number of powers in the power spectrum
@@ -1406,10 +1453,24 @@ class AveragedCrossspectrum(Crossspectrum):
         two light curves
     """
 
-    def __init__(self, data1=None, data2=None, segment_size=None, norm='none',
-                 gti=None, power_type="all", silent=False, lc1=None, lc2=None,
-                 dt=None, fullspec=False, large_data=False, save_all=False,
-                 use_common_mean=True, old_style=False):
+    def __init__(
+        self,
+        data1=None,
+        data2=None,
+        segment_size=None,
+        norm="none",
+        gti=None,
+        power_type="all",
+        silent=False,
+        lc1=None,
+        lc2=None,
+        dt=None,
+        fullspec=False,
+        large_data=False,
+        save_all=False,
+        use_common_mean=True,
+        old_style=False,
+    ):
 
         # for backwards compatibility
         if data1 is None:
@@ -1417,11 +1478,21 @@ class AveragedCrossspectrum(Crossspectrum):
         if data2 is None:
             data2 = lc2
 
-        good_input = self.initial_checks(data1=data1, data2=data2, norm=norm, gti=gti,
-                                         lc1=lc1, lc2=lc2, power_type=power_type, dt=dt, fullspec=fullspec)
+        good_input = self.initial_checks(
+            data1=data1,
+            data2=data2,
+            norm=norm,
+            gti=gti,
+            lc1=lc1,
+            lc2=lc2,
+            power_type=power_type,
+            dt=dt,
+            fullspec=fullspec,
+        )
 
-        good_input = good_input and \
-            self.averagecs_initial_checks(data1=data1, segment_size=segment_size)
+        good_input = good_input and self.averagecs_initial_checks(
+            data1=data1, segment_size=segment_size
+        )
 
         if not good_input:
             self.freq = None
@@ -1440,10 +1511,27 @@ class AveragedCrossspectrum(Crossspectrum):
         if not old_style and data1 is not None and data2 is not None:
             if isinstance(data1, EventList):
                 spec = crossspectrum_from_events(
-                    data1, data2, dt, segment_size, norm=norm, power_type=power_type, silent=silent, fullspec=fullspec, use_common_mean=use_common_mean)
+                    data1,
+                    data2,
+                    dt,
+                    segment_size,
+                    norm=norm,
+                    power_type=power_type,
+                    silent=silent,
+                    fullspec=fullspec,
+                    use_common_mean=use_common_mean,
+                )
             elif isinstance(data1, Lightcurve):
                 spec = crossspectrum_from_lightcurve(
-                    data1, data2, segment_size, norm=norm, power_type=power_type, silent=silent, fullspec=fullspec, use_common_mean=use_common_mean)
+                    data1,
+                    data2,
+                    segment_size,
+                    norm=norm,
+                    power_type=power_type,
+                    silent=silent,
+                    fullspec=fullspec,
+                    use_common_mean=use_common_mean,
+                )
 
             for key, val in spec.__dict__.items():
                 setattr(self, key, val)
@@ -1454,14 +1542,13 @@ class AveragedCrossspectrum(Crossspectrum):
             if not HAS_ZARR:
                 raise ImportError("The large_data option requires zarr.")
             if isinstance(data1, EventList):
-                input_data = 'EventList'
+                input_data = "EventList"
             elif isinstance(data1, Lightcurve):
-                input_data = 'Lightcurve'
+                input_data = "Lightcurve"
                 chunks = int(np.rint(segment_size // data1.dt))
                 segment_size = chunks * data1.dt
             else:
-                raise ValueError(
-                    f'Invalid input data type: {type(data1).__name__}')
+                raise ValueError(f"Invalid input data type: {type(data1).__name__}")
 
             dir_path1 = saveData(data1, persist=False, chunks=chunks)
             dir_path2 = saveData(data2, persist=False, chunks=chunks)
@@ -1469,16 +1556,17 @@ class AveragedCrossspectrum(Crossspectrum):
             data_path1 = genDataPath(dir_path1)
             data_path2 = genDataPath(dir_path2)
 
-            spec = createChunkedSpectra(input_data,
-                                        'AveragedCrossspectrum',
-                                        data_path=list(data_path1 +
-                                                       data_path2),
-                                        segment_size=segment_size,
-                                        norm=norm,
-                                        gti=gti,
-                                        power_type=power_type,
-                                        silent=silent,
-                                        dt=dt)
+            spec = createChunkedSpectra(
+                input_data,
+                "AveragedCrossspectrum",
+                data_path=list(data_path1 + data_path2),
+                segment_size=segment_size,
+                norm=norm,
+                gti=gti,
+                power_type=power_type,
+                silent=silent,
+                dt=dt,
+            )
 
             for key, val in spec.__dict__.items():
                 setattr(self, key, val)
@@ -1508,15 +1596,20 @@ class AveragedCrossspectrum(Crossspectrum):
             data2.gti = data2.gti[good]
             data2 = list(data2.to_lc_list(dt))
 
-        Crossspectrum.__init__(self, data1, data2, norm, gti=gti,
-                               power_type=power_type, dt=dt, fullspec=fullspec)
+        Crossspectrum.__init__(
+            self, data1, data2, norm, gti=gti, power_type=power_type, dt=dt, fullspec=fullspec
+        )
 
         return
 
     def averagecs_initial_checks(self, segment_size=None, data1=None):
         if isinstance(self, AveragedCrossspectrum) and segment_size is None and data1 is not None:
             raise ValueError("segment_size must be specified")
-        if isinstance(self, AveragedCrossspectrum) and segment_size is not None and not np.isfinite(segment_size):
+        if (
+            isinstance(self, AveragedCrossspectrum)
+            and segment_size is not None
+            and not np.isfinite(segment_size)
+        ):
             raise ValueError("segment_size must be finite!")
         return True
 
@@ -1535,23 +1628,32 @@ class AveragedCrossspectrum(Crossspectrum):
         is_lc_iter = isinstance(lc1, Iterator)
         is_lc_list = isinstance(lc1, Iterable) and not is_lc_iter
         # A way to say that this is actually not a power spectrum
-        if self.type != "powerspectrum" and \
-                (lc1 is not lc2) and (is_event or is_lc or is_lc_list):
-            self.pds1 = AveragedCrossspectrum(lc1, lc1,
-                                              segment_size=self.segment_size,
-                                              norm=self.norm, gti=self.gti,
-                                              power_type=self.power_type,
-                                              dt=self.dt, fullspec=self.fullspec,
-                                              save_all=self.save_all,
-                                              silent=not self.show_progress)
+        if self.type != "powerspectrum" and (lc1 is not lc2) and (is_event or is_lc or is_lc_list):
+            self.pds1 = AveragedCrossspectrum(
+                lc1,
+                lc1,
+                segment_size=self.segment_size,
+                norm=self.norm,
+                gti=self.gti,
+                power_type=self.power_type,
+                dt=self.dt,
+                fullspec=self.fullspec,
+                save_all=self.save_all,
+                silent=not self.show_progress,
+            )
 
-            self.pds2 = AveragedCrossspectrum(lc2, lc2,
-                                              segment_size=self.segment_size,
-                                              norm=self.norm, gti=self.gti,
-                                              power_type=self.power_type,
-                                              dt=self.dt, fullspec=self.fullspec,
-                                              save_all=self.save_all,
-                                              silent=not self.show_progress)
+            self.pds2 = AveragedCrossspectrum(
+                lc2,
+                lc2,
+                segment_size=self.segment_size,
+                norm=self.norm,
+                gti=self.gti,
+                power_type=self.power_type,
+                dt=self.dt,
+                fullspec=self.fullspec,
+                save_all=self.save_all,
+                silent=not self.show_progress,
+            )
 
     def _make_segment_spectrum(self, lc1, lc2, segment_size, silent=False):
         """
@@ -1585,9 +1687,11 @@ class AveragedCrossspectrum(Crossspectrum):
         assert isinstance(lc2, Lightcurve)
 
         if lc1.tseg != lc2.tseg:
-            simon("Lightcurves do not have same tseg. This means that the data"
-                  "from the two channels are not completely in sync. This "
-                  "might or might not be an issue. Keep an eye on it.")
+            simon(
+                "Lightcurves do not have same tseg. This means that the data"
+                "from the two channels are not completely in sync. This "
+                "might or might not be an issue. Keep an eye on it."
+            )
 
         # If dt differs slightly, its propagated error must not be more than
         # 1/100th of the bin
@@ -1614,18 +1718,21 @@ class AveragedCrossspectrum(Crossspectrum):
         nphots1_all = []
         nphots2_all = []
 
-        start_inds, end_inds = \
-            bin_intervals_from_gtis(current_gtis, segment_size, lc1.time,
-                                    dt=lc1.dt)
-        simon("Errorbars on cross spectra are not thoroughly tested. "
-              "Please report any inconsistencies.")
+        start_inds, end_inds = bin_intervals_from_gtis(
+            current_gtis, segment_size, lc1.time, dt=lc1.dt
+        )
+        simon(
+            "Errorbars on cross spectra are not thoroughly tested. "
+            "Please report any inconsistencies."
+        )
 
         local_show_progress = show_progress
         if not self.show_progress or silent:
-            def local_show_progress(a): return a
 
-        for start_ind, end_ind in \
-                local_show_progress(zip(start_inds, end_inds)):
+            def local_show_progress(a):
+                return a
+
+        for start_ind, end_ind in local_show_progress(zip(start_inds, end_inds)):
             time_1 = copy.deepcopy(lc1.time[start_ind:end_ind])
             counts_1 = copy.deepcopy(lc1.counts[start_ind:end_ind])
             counts_1_err = copy.deepcopy(lc1.counts_err[start_ind:end_ind])
@@ -1633,26 +1740,37 @@ class AveragedCrossspectrum(Crossspectrum):
             counts_2 = copy.deepcopy(lc2.counts[start_ind:end_ind])
             counts_2_err = copy.deepcopy(lc2.counts_err[start_ind:end_ind])
             if np.sum(counts_1) == 0 or np.sum(counts_2) == 0:
-                warnings.warn(
-                    "No counts in interval {}--{}s".format(time_1[0],
-                                                           time_1[-1]))
+                warnings.warn("No counts in interval {}--{}s".format(time_1[0], time_1[-1]))
                 continue
 
-            gti1 = np.array([[time_1[0] - lc1.dt / 2,
-                              time_1[-1] + lc1.dt / 2]])
-            gti2 = np.array([[time_2[0] - lc2.dt / 2,
-                              time_2[-1] + lc2.dt / 2]])
-            lc1_seg = Lightcurve(time_1, counts_1, err=counts_1_err,
-                                 err_dist=lc1.err_dist,
-                                 gti=gti1,
-                                 dt=lc1.dt, skip_checks=True)
-            lc2_seg = Lightcurve(time_2, counts_2, err=counts_2_err,
-                                 err_dist=lc2.err_dist,
-                                 gti=gti2,
-                                 dt=lc2.dt, skip_checks=True)
+            gti1 = np.array([[time_1[0] - lc1.dt / 2, time_1[-1] + lc1.dt / 2]])
+            gti2 = np.array([[time_2[0] - lc2.dt / 2, time_2[-1] + lc2.dt / 2]])
+            lc1_seg = Lightcurve(
+                time_1,
+                counts_1,
+                err=counts_1_err,
+                err_dist=lc1.err_dist,
+                gti=gti1,
+                dt=lc1.dt,
+                skip_checks=True,
+            )
+            lc2_seg = Lightcurve(
+                time_2,
+                counts_2,
+                err=counts_2_err,
+                err_dist=lc2.err_dist,
+                gti=gti2,
+                dt=lc2.dt,
+                skip_checks=True,
+            )
             with warnings.catch_warnings(record=True) as w:
-                cs_seg = Crossspectrum(lc1_seg, lc2_seg, norm=self.norm,
-                                       power_type=self.power_type, fullspec=self.fullspec)
+                cs_seg = Crossspectrum(
+                    lc1_seg,
+                    lc2_seg,
+                    norm=self.norm,
+                    power_type=self.power_type,
+                    fullspec=self.fullspec,
+                )
 
             cs_all.append(cs_seg)
             nphots1_all.append(np.sum(lc1_seg.counts))
@@ -1678,19 +1796,20 @@ class AveragedCrossspectrum(Crossspectrum):
         """
         local_show_progress = show_progress
         if not self.show_progress:
-            def local_show_progress(a): return a
+
+            def local_show_progress(a):
+                return a
 
         # chop light curves into segments
-        if isinstance(lc1, Lightcurve) and \
-                isinstance(lc2, Lightcurve):
+        if isinstance(lc1, Lightcurve) and isinstance(lc2, Lightcurve):
 
             if self.type == "crossspectrum":
-                cs_all, nphots1_all, nphots2_all = \
-                    self._make_segment_spectrum(lc1, lc2, self.segment_size)
+                cs_all, nphots1_all, nphots2_all = self._make_segment_spectrum(
+                    lc1, lc2, self.segment_size
+                )
 
             elif self.type == "powerspectrum":
-                cs_all, nphots1_all = \
-                    self._make_segment_spectrum(lc1, self.segment_size)
+                cs_all, nphots1_all = self._make_segment_spectrum(lc1, self.segment_size)
 
             else:
                 raise ValueError("Type of spectrum not recognized!")
@@ -1701,15 +1820,14 @@ class AveragedCrossspectrum(Crossspectrum):
 
             for lc1_seg, lc2_seg in local_show_progress(zip(lc1, lc2)):
                 if self.type == "crossspectrum":
-                    cs_sep, nphots1_sep, nphots2_sep = \
-                        self._make_segment_spectrum(lc1_seg, lc2_seg,
-                                                    self.segment_size,
-                                                    silent=True)
+                    cs_sep, nphots1_sep, nphots2_sep = self._make_segment_spectrum(
+                        lc1_seg, lc2_seg, self.segment_size, silent=True
+                    )
                     nphots2_all.append(nphots2_sep)
                 elif self.type == "powerspectrum":
-                    cs_sep, nphots1_sep = \
-                        self._make_segment_spectrum(lc1_seg, self.segment_size,
-                                                    silent=True)
+                    cs_sep, nphots1_sep = self._make_segment_spectrum(
+                        lc1_seg, self.segment_size, silent=True
+                    )
                 else:
                     raise ValueError("Type of spectrum not recognized!")
                 cs_all.append(cs_sep)
@@ -1780,9 +1898,11 @@ class AveragedCrossspectrum(Crossspectrum):
         .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
         """
         if np.any(self.m < 50):
-            simon("Number of segments used in averaging is "
-                  "significantly low. The result might not follow the "
-                  "expected statistical distributions.")
+            simon(
+                "Number of segments used in averaging is "
+                "significantly low. The result might not follow the "
+                "expected statistical distributions."
+            )
         c = self.unnorm_power
         p1 = self.pds1.unnorm_power
         p2 = self.pds2.unnorm_power
@@ -1796,8 +1916,7 @@ class AveragedCrossspectrum(Crossspectrum):
         coh = raw_coherence(c, p1, p2, P1noise, P2noise, self.n)
 
         # Calculate uncertainty
-        uncertainty = \
-            (2 ** 0.5 * coh * (1 - coh)) / (np.sqrt(coh) * self.m ** 0.5)
+        uncertainty = (2 ** 0.5 * coh * (1 - coh)) / (np.sqrt(coh) * self.m ** 0.5)
 
         uncertainty[coh == 0] = 0.0
 
@@ -1808,7 +1927,7 @@ class AveragedCrossspectrum(Crossspectrum):
         lag = np.angle(self.unnorm_power)
         coh, uncert = self.coherence()
 
-        dum = (1. - coh) / (2. * coh)
+        dum = (1.0 - coh) / (2.0 * coh)
 
         dum[coh == 0] = 0.0
 
@@ -1836,9 +1955,18 @@ class AveragedCrossspectrum(Crossspectrum):
         return lag, lag_err
 
 
-def crossspectrum_from_time_array(times1, times2, dt, segment_size=None, gti=None, norm='none',
-                                  power_type="all", silent=False,
-                                  fullspec=False, use_common_mean=True):
+def crossspectrum_from_time_array(
+    times1,
+    times2,
+    dt,
+    segment_size=None,
+    gti=None,
+    norm="none",
+    power_type="all",
+    silent=False,
+    fullspec=False,
+    use_common_mean=True,
+):
     """Calculate AveragedCrossspectrum from two arrays of event times.
 
     Parameters
@@ -1879,17 +2007,33 @@ def crossspectrum_from_time_array(times1, times2, dt, segment_size=None, gti=Non
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
     results = avg_cs_from_events(
-        times1, times2, gti, segment_size, dt,
-        norm=norm, use_common_mean=use_common_mean,
-        fullspec=fullspec, silent=silent, power_type=power_type,
-        return_auxil=True)
+        times1,
+        times2,
+        gti,
+        segment_size,
+        dt,
+        norm=norm,
+        use_common_mean=use_common_mean,
+        fullspec=fullspec,
+        silent=silent,
+        power_type=power_type,
+        return_auxil=True,
+    )
 
     return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
 
 
-def crossspectrum_from_events(events1, events2, dt, segment_size=None, norm='none',
-                              power_type="all", silent=False,
-                              fullspec=False, use_common_mean=True):
+def crossspectrum_from_events(
+    events1,
+    events2,
+    dt,
+    segment_size=None,
+    norm="none",
+    power_type="all",
+    silent=False,
+    fullspec=False,
+    use_common_mean=True,
+):
     """Calculate AveragedCrossspectrum from two event lists
 
     Parameters
@@ -1928,15 +2072,29 @@ def crossspectrum_from_events(events1, events2, dt, segment_size=None, norm='non
     gti = cross_two_gtis(events1.gti, events2.gti)
 
     return crossspectrum_from_time_array(
-        events1.time, events2.time, dt, segment_size, gti, norm=norm,
-        power_type=power_type, silent=silent,
-        fullspec=fullspec, use_common_mean=use_common_mean,
+        events1.time,
+        events2.time,
+        dt,
+        segment_size,
+        gti,
+        norm=norm,
+        power_type=power_type,
+        silent=silent,
+        fullspec=fullspec,
+        use_common_mean=use_common_mean,
     )
 
 
-def crossspectrum_from_lightcurve(lc1, lc2, segment_size=None, norm='none',
-                                  power_type="all", silent=False,
-                                  fullspec=False, use_common_mean=True):
+def crossspectrum_from_lightcurve(
+    lc1,
+    lc2,
+    segment_size=None,
+    norm="none",
+    power_type="all",
+    silent=False,
+    fullspec=False,
+    use_common_mean=True,
+):
     """Calculate AveragedCrossspectrum from two light curves
 
     Parameters
@@ -1977,18 +2135,37 @@ def crossspectrum_from_lightcurve(lc1, lc2, segment_size=None, norm='none',
     err2 = lc2._counts_err
 
     results = avg_cs_from_events(
-        lc1.time, lc2.time, gti, segment_size, lc1.dt,
-        norm=norm, use_common_mean=use_common_mean,
-        fullspec=fullspec, silent=silent, power_type=power_type,
-        counts1=lc1.counts, counts2=lc2.counts, errors1=err1, errors2=err2,
-        return_auxil=True)
+        lc1.time,
+        lc2.time,
+        gti,
+        segment_size,
+        lc1.dt,
+        norm=norm,
+        use_common_mean=use_common_mean,
+        fullspec=fullspec,
+        silent=silent,
+        power_type=power_type,
+        counts1=lc1.counts,
+        counts2=lc2.counts,
+        errors1=err1,
+        errors2=err2,
+        return_auxil=True,
+    )
 
     return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
 
 
-def crossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size, norm='none',
-                                   power_type="all", silent=False,
-                                   fullspec=False, use_common_mean=True):
+def crossspectrum_from_lc_iterable(
+    iter_lc1,
+    iter_lc2,
+    dt,
+    segment_size,
+    norm="none",
+    power_type="all",
+    silent=False,
+    fullspec=False,
+    use_common_mean=True,
+):
     """Calculate AveragedCrossspectrum from two light curves
 
     Parameters
@@ -2027,6 +2204,7 @@ def crossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size, norm='n
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
+
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):
@@ -2046,7 +2224,7 @@ def crossspectrum_from_lc_iterable(iter_lc1, iter_lc2, dt, segment_size, norm='n
         silent=silent,
         fullspec=fullspec,
         power_type=power_type,
-        return_auxil=True
+        return_auxil=True,
     )
     return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
 
@@ -2094,14 +2272,22 @@ def _crossspectrum_from_astropy_table(table, force_averaged=False):
     P2noise = poisson_level(cs.countrate2, Nph=cs.nphots2, norm="none")
 
     dRe, dIm, _, _ = error_on_averaged_cross_spectrum(
-        cs.unnorm_power, cs.pds1.unnorm_power, cs.pds2.unnorm_power, cs.m, P1noise, P2noise, common_ref="False")
+        cs.unnorm_power,
+        cs.pds1.unnorm_power,
+        cs.pds2.unnorm_power,
+        cs.m,
+        P1noise,
+        P2noise,
+        common_ref="False",
+    )
 
     bad = np.isnan(dRe) | np.isnan(dIm)
 
     if np.any(bad):
         warnings.warn(
             "Some error bars in the Averaged Crossspectrum are invalid."
-            "Defaulting to sqrt(2 / M) in Leahy norm, rescaled to the appropriate norm.")
+            "Defaulting to sqrt(2 / M) in Leahy norm, rescaled to the appropriate norm."
+        )
 
     Nph = np.sqrt(cs.nphots1 * cs.nphots1)
     default_err = np.sqrt(2 / cs.m) * Nph / 2
@@ -2109,12 +2295,13 @@ def _crossspectrum_from_astropy_table(table, force_averaged=False):
     dRe[bad] = default_err
     dIm[bad] = default_err
 
-    power_err = dRe + 1.j * dIm
+    power_err = dRe + 1.0j * dIm
 
     cs.unnorm_power_err = power_err
 
     cs.power_err = normalize_periodograms(
-        power_err, cs.dt, cs.n, table.meta["mean"], variance=cs.variance, norm=cs.norm)
+        power_err, cs.dt, cs.n, table.meta["mean"], variance=cs.variance, norm=cs.norm
+    )
 
     cs.pds1.power_err = cs.pds1.power / np.sqrt(cs.pds1.m)
     cs.pds2.power_err = cs.pds2.power / np.sqrt(cs.pds2.m)
