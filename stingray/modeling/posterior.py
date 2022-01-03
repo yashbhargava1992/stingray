@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 import six
+from collections.abc import Iterable
 
 np.seterr('warn')
 
@@ -465,7 +466,7 @@ class PSDLogLikelihood(LogLikelihood):
 
         with warnings.catch_warnings(record=True) as out:
 
-            if self.m == 1:
+            if not isinstance(self.m, Iterable) and self.m == 1:
                 loglike = -np.sum(np.log(mean_model)) - \
                           np.sum(self.y/mean_model)
 
