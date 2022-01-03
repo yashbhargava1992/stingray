@@ -213,9 +213,9 @@ class Lightcurve(object):
         self._time = time
 
         if dt is None:
-            logging.warning("Computing the bin time ``dt``. This can take "
-                            "time. If you know the bin time, please specify it"
-                            " at light curve creation")
+            logging.info("Computing the bin time ``dt``. This can take "
+                         "time. If you know the bin time, please specify it"
+                         " at light curve creation")
             dt = np.median(np.diff(self._time))
 
         self.dt = dt
@@ -422,10 +422,10 @@ class Lightcurve(object):
         return self._bin_hi
 
     def initial_optional_checks(self, time, counts, err):
-        logging.warning("Checking if light curve is well behaved. This "
-                        "can take time, so if you are sure it is already "
-                        "sorted, specify skip_checks=True at light curve "
-                        "creation.")
+        logging.info("Checking if light curve is well behaved. This "
+                     "can take time, so if you are sure it is already "
+                     "sorted, specify skip_checks=True at light curve "
+                     "creation.")
 
         if not np.all(np.isfinite(time)):
             raise ValueError("There are inf or NaN values in "
@@ -435,7 +435,7 @@ class Lightcurve(object):
             raise ValueError("There are inf or NaN values in "
                              "your counts array!")
 
-        logging.warning("Checking if light curve is sorted.")
+        logging.info("Checking if light curve is sorted.")
         dt_array = np.diff(time)
         unsorted = np.any(dt_array < 0)
 
