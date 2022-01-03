@@ -9,7 +9,7 @@ import scipy.stats
 
 from stingray.exceptions import StingrayError
 from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
-from stingray.largememory import createChunkedSpectra, saveData
+from stingray.largememory import createChunkedSpectra, saveData, HAS_ZARR
 from stingray.utils import genDataPath, rebin_data, rebin_data_log, simon
 
 from .events import EventList
@@ -1401,6 +1401,8 @@ class AveragedCrossspectrum(Crossspectrum):
 
         print("Using old style")
         if large_data and data1 is not None and data2 is not None:
+            if not HAS_ZARR:
+                raise ImportError("The large_data option requires zarr.")
             if isinstance(data1, EventList):
                 input_data = 'EventList'
             elif isinstance(data1, Lightcurve):

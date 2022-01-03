@@ -9,7 +9,7 @@ import scipy.stats
 import stingray.utils as utils
 from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
-from stingray.largememory import createChunkedSpectra, saveData
+from stingray.largememory import createChunkedSpectra, saveData, HAS_ZARR
 from stingray.stats import pds_probability, amplitude_upper_limit
 from stingray.utils import genDataPath
 
@@ -610,6 +610,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             raise ValueError("segment_size must be finite!")
 
         if large_data and data is not None:
+            if not HAS_ZARR:
+                raise ImportError("The large_data option requires zarr.")
             chunks = None
 
             if isinstance(data, EventList):

@@ -22,10 +22,7 @@ try:
     HAS_ZARR = True
     from numcodecs import Blosc
 except ImportError:
-    warnings.warn(
-        "Large Datasets may not be processed efficiently due to "
-        "computational constraints"
-    )
+    pass
 
 __all__ = ["createChunkedSpectra", "saveData", "retrieveData"]
 
