@@ -35,6 +35,7 @@ Contents
    core
    quicklook
    modeling
+   spectime
    simulator
    pulsar
    deadtime
