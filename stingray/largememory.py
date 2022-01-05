@@ -22,6 +22,7 @@ try:
     HAS_ZARR = True
     from numcodecs import Blosc
 except ImportError:
+    zarr = None
     pass
 
 __all__ = ["createChunkedSpectra", "saveData", "retrieveData"]

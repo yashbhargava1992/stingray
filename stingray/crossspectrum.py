@@ -65,6 +65,46 @@ def get_flux_generator(data, segment_size, dt=None):
     -------
     flux_iterable : ``generator``
         Generator of flux arrays.
+
+    Examples
+    --------
+    >>> mean = 256
+    >>> length = 128
+    >>> times = np.sort(np.random.uniform(0, length, int(mean * length)))
+    >>> events = EventList(time=times, gti=[[0, length]])
+    >>> dt = 0.125
+    >>> segment_size = 4
+
+    Create a light curve
+    >>> lc = events.to_lc(dt=dt)
+
+    Create a light curve with a different error distribution
+    >>> lc_renorm = copy.deepcopy(lc)
+    >>> lc_renorm.counts = lc.counts / mean
+    >>> lc_renorm.counts_err = lc.counts_err / mean
+    >>> lc_renorm.err_dist = "gauss"
+
+    Create an iterable from events, forgetting ``dt``. Should fail
+    >>> get_flux_generator(events, segment_size, dt=None)
+    Traceback (most recent call last):
+    ...
+    ValueError: If data is an EventList, you need to specify...
+
+    Create an iterable from events
+    >>> iter_ev = get_flux_generator(events, segment_size, dt=dt)
+
+    Create an iterable from the light curve
+    >>> iter_lc = get_flux_generator(lc, segment_size, dt=dt)
+
+    Create an iterable from the non-poisson light curve
+    >>> iter_lc_nonpois = get_flux_generator(lc, segment_size, dt=dt)
+
+    Verify that they are equivalent
+    >>> for l1, l2 in zip(iter_ev, iter_lc): assert np.allclose(l1, l2)
+
+    Note that the iterable for non-Poissonian light curves also returns the uncertainty
+    >>> for l1, (l2, l2e) in zip(iter_lc, iter_lc_nonpois): assert np.allclose(l1, l2 * mean)
+
     """
     times = data.time
     gti = data.gti
@@ -453,6 +493,10 @@ class Crossspectrum(object):
         light curves in the case where ``data1``, ``data2`` are
         :class:`EventList` objects
 
+    skip_checks: bool
+        Skip initial checks, for speed or other reasons (you need to trust your
+        inputs!)
+
 
     Attributes
     ----------
@@ -497,6 +541,7 @@ class Crossspectrum(object):
         power_type="real",
         dt=None,
         fullspec=False,
+        skip_checks=False
     ):
 
         # for backwards compatibility
@@ -505,17 +550,19 @@ class Crossspectrum(object):
         if data2 is None:
             data2 = lc2
 
-        good_input = self.initial_checks(
-            data1=data1,
-            data2=data2,
-            norm=norm,
-            gti=gti,
-            lc1=lc1,
-            lc2=lc2,
-            power_type=power_type,
-            dt=dt,
-            fullspec=fullspec,
-        )
+        good_input = True
+        if not skip_checks:
+            good_input = self.initial_checks(
+                data1=data1,
+                data2=data2,
+                norm=norm,
+                gti=gti,
+                lc1=lc1,
+                lc2=lc2,
+                power_type=power_type,
+                dt=dt,
+                fullspec=fullspec,
+            )
 
         if not good_input:
             self.freq = None
@@ -572,12 +619,58 @@ class Crossspectrum(object):
         Returns True if checks are passed, False if they are not.
 
         Raises various errors for different bad inputs
+
+        Examples
+        --------
+        >>> times = np.arange(0, 10)
+        >>> counts = np.random.poisson(100, 10)
+        >>> lc1 = Lightcurve(times, counts, skip_checks=True)
+        >>> lc2 = Lightcurve(times, counts, skip_checks=True)
+        >>> ev1 = EventList(times)
+        >>> ev2 = EventList(times)
+        >>> c = Crossspectrum()
+        >>> ac = AveragedCrossspectrum()
+
+        If norm is not a string, raise a TypeError
+        >>> Crossspectrum.initial_checks(c, norm=1)
+        Traceback (most recent call last):
+        ...
+        TypeError: norm must be a string...
+
+        If ``norm`` is not one of the valid norms, raise a ValueError
+        >>> Crossspectrum.initial_checks(c, norm="blabla")
+        Traceback (most recent call last):
+        ...
+        ValueError: norm must be 'frac'...
+
+        If ``power_type`` is not one of the valid norms, raise a ValueError
+        >>> Crossspectrum.initial_checks(c, power_type="blabla")
+        Traceback (most recent call last):
+        ...
+        ValueError: `power_type` not recognized!
+
+        If the user passes only one light curve, raise a ValueError
+
+        >>> Crossspectrum.initial_checks(c, data1=lc1, data2=None)
+        Traceback (most recent call last):
+        ...
+        ValueError: You can't do a cross spectrum...
+
+        If the user passes an event list without dt, raise a ValueError
+
+        >>> Crossspectrum.initial_checks(c, data1=ev1, data2=ev2, dt=None)
+        Traceback (most recent call last):
+        ...
+        ValueError: If using event lists, please specify...
         """
         if isinstance(norm, str) is False:
             raise TypeError("norm must be a string")
 
         if norm.lower() not in ["frac", "abs", "leahy", "none"]:
             raise ValueError("norm must be 'frac', 'abs', 'leahy', or 'none'!")
+
+        if power_type not in ["all", "absolute", "real"]:
+            raise ValueError("`power_type` not recognized!")
 
         # check if input data is a Lightcurve object, if not make one or
         # make an empty Crossspectrum object if lc1 == ``None`` or lc2 == ``None``
@@ -586,19 +679,19 @@ class Crossspectrum(object):
             warnings.warn(
                 "The lcN keywords are now deprecated. Use dataN " "instead", DeprecationWarning
             )
+
         if data1 is None or data2 is None:
             if data1 is not None or data2 is not None:
-                raise TypeError("You can't do a cross spectrum with just one " "light curve!")
+                raise ValueError("You can't do a cross spectrum with just one light curve!")
             else:
                 return False
 
-        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and dt is None:
-            raise ValueError(
-                "If using event lists, please specify the bin " "time to generate lightcurves."
-            )
+        dt_is_invalid = (dt is None) or (dt <= np.finfo(float).resolution)
 
-        if power_type not in ["all", "absolute", "real"]:
-            raise ValueError("`power_type` not recognized!")
+        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and dt_is_invalid:
+            raise ValueError(
+                "If using event lists, please specify the bin time to generate lightcurves."
+            )
 
         return True
 
@@ -1417,6 +1510,10 @@ class AveragedCrossspectrum(Crossspectrum):
         This is likely to fill up your RAM on medium-sized datasets, and to
         slow down the computation when rebinning.
 
+    skip_checks: bool
+        Skip initial checks, for speed or other reasons (you need to trust your
+        inputs!)
+
     Attributes
     ----------
     freq: numpy.ndarray
@@ -1470,6 +1567,7 @@ class AveragedCrossspectrum(Crossspectrum):
         save_all=False,
         use_common_mean=True,
         old_style=False,
+        skip_checks = False
     ):
 
         # for backwards compatibility
@@ -1478,21 +1576,20 @@ class AveragedCrossspectrum(Crossspectrum):
         if data2 is None:
             data2 = lc2
 
-        good_input = self.initial_checks(
-            data1=data1,
-            data2=data2,
-            norm=norm,
-            gti=gti,
-            lc1=lc1,
-            lc2=lc2,
-            power_type=power_type,
-            dt=dt,
-            fullspec=fullspec,
-        )
-
-        good_input = good_input and self.averagecs_initial_checks(
-            data1=data1, segment_size=segment_size
-        )
+        good_input = True
+        if not skip_checks:
+            good_input = self.initial_checks(
+                data1=data1,
+                data2=data2,
+                norm=norm,
+                gti=gti,
+                lc1=lc1,
+                lc2=lc2,
+                power_type=power_type,
+                dt=dt,
+                fullspec=fullspec,
+                segment_size=segment_size
+            )
 
         if not good_input:
             self.freq = None
@@ -1602,9 +1699,34 @@ class AveragedCrossspectrum(Crossspectrum):
 
         return
 
-    def averagecs_initial_checks(self, segment_size=None, data1=None):
+    def initial_checks(self, data1, segment_size=None, **kwargs):
+        """
+
+        Examples
+        --------
+        >>> times = np.arange(0, 10)
+        >>> ev1 = EventList(times)
+        >>> ev2 = EventList(times)
+        >>> ac = AveragedCrossspectrum()
+
+        If AveragedCrossspectrum, you need ``segment_size``
+        >>> AveragedCrossspectrum.initial_checks(ac, data1=ev1, data2=ev2, dt=1)
+        Traceback (most recent call last):
+        ...
+        ValueError: segment_size must be specified...
+
+        And it needs to be finite!
+        >>> AveragedCrossspectrum.initial_checks(ac, data1=ev1, data2=ev2, dt=1., segment_size=np.nan)
+        Traceback (most recent call last):
+        ...
+        ValueError: segment_size must be finite!
+        """
+        good = Crossspectrum.initial_checks(self, data1, **kwargs)
+        if not good:
+            return False
         if isinstance(self, AveragedCrossspectrum) and segment_size is None and data1 is not None:
             raise ValueError("segment_size must be specified")
+
         if (
             isinstance(self, AveragedCrossspectrum)
             and segment_size is not None

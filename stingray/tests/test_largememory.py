@@ -11,19 +11,11 @@ from astropy.io import fits
 from stingray.crossspectrum import AveragedCrossspectrum
 from stingray.events import EventList
 from stingray.io import load_events_and_gtis, ref_mjd
-from stingray.largememory import retrieveData, saveData, genDataPath
-from stingray.largememory import _retrieveDataEV, _retrieveDataLC
+from stingray.largememory import retrieveData, saveData, genDataPath, HAS_ZARR
+from stingray.largememory import _retrieveDataEV, _retrieveDataLC, zarr
 from stingray.lightcurve import Lightcurve
 from stingray.powerspectrum import AveragedPowerspectrum
 
-HAS_ZARR = False
-try:
-    import zarr
-
-    HAS_ZARR = True
-    from numcodecs import Blosc
-except ImportError:
-    pass
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
@@ -31,6 +23,7 @@ datadir = os.path.join(curdir, "data")
 IS_LINUX = True
 if not (platform == "linux" or platform == "linux2"):
     IS_LINUX = False
+
 
 class TestSaveSpec(object):
     @classmethod
@@ -442,6 +435,7 @@ class TestRetrieveSpec(object):
         assert energy is None
         assert gti is None
         assert notes == ""
+
 
 class TestChunkPS(object):
     @classmethod

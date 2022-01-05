@@ -55,6 +55,10 @@ class Powerspectrum(Crossspectrum):
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
+    skip_checks: bool
+        Skip initial checks, for speed or other reasons (you need to trust your
+        inputs!)
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
@@ -89,15 +93,39 @@ class Powerspectrum(Crossspectrum):
     """
 
     def __init__(self, data=None, norm="frac", gti=None,
-                 dt=None, lc=None):
+                 dt=None, lc=None, skip_checks=False):
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
                           "instead", DeprecationWarning)
         if data is None:
             data = lc
 
+        good_input = True
+        if not skip_checks:
+            good_input = self.initial_checks(
+                data1=data,
+                data2=data,
+                norm=norm,
+                gti=gti,
+                lc1=lc,
+                lc2=lc,
+                dt=dt
+            )
+
+        if not good_input:
+            self.freq = None
+            self.power = None
+            self.power_err = None
+            self.df = None
+            self.dt = None
+            self.nphots1 = None
+            self.nphots2 = None
+            self.m = 1
+            self.n = None
+            return
+
         Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
-                               dt=dt)
+                               dt=dt, skip_checks=True)
         self.nphots = self.nphots1
         self.dt = dt
 
@@ -560,6 +588,10 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         This is likely to fill up your RAM on medium-sized datasets, and to
         slow down the computation when rebinning.
 
+    skip_checks: bool
+        Skip initial checks, for speed or other reasons (you need to trust your
+        inputs!)
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
@@ -595,7 +627,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
                  silent=False, dt=None, lc=None, large_data=False,
-                 save_all=False):
+                 save_all=False, skip_checks=False):
 
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
@@ -604,10 +636,29 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if data is None:
             data = lc
 
-        if segment_size is None and data is not None:
-            raise ValueError("segment_size must be specified")
-        if segment_size is not None and not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite!")
+        good_input = True
+        if not skip_checks:
+            good_input = self.initial_checks(
+                data1=data,
+                data2=data,
+                norm=norm,
+                gti=gti,
+                lc1=lc,
+                lc2=lc,
+                dt=dt,
+                segment_size=segment_size
+            )
+        if not good_input:
+            self.freq = None
+            self.power = None
+            self.power_err = None
+            self.df = None
+            self.dt = None
+            self.nphots1 = None
+            self.nphots2 = None
+            self.m = 1
+            self.n = None
+            return
 
         if large_data and data is not None:
             if not HAS_ZARR:
@@ -652,9 +703,12 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         self.segment_size = segment_size
         self.show_progress = not silent
-        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt)
+        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt, skip_checks=True)
 
         return
+
+    def initial_checks(self, *args, **kwargs):
+        return AveragedCrossspectrum.initial_checks(self, *args, **kwargs)
 
     def _make_segment_spectrum(self, lc, segment_size, silent=False):
         """
