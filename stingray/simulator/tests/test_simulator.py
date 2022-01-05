@@ -61,7 +61,6 @@ class TestSimulator(object):
                                    tstart=tstart)
         assert self.simulator.time[0] == tstart
 
-
     def test_simulate_with_random_state(self):
         self.simulator = Simulator(N=self.N, mean=self.mean, dt=self.dt, rms=self.rms,
                                    random_state=np.random.RandomState(12))
@@ -178,7 +177,6 @@ class TestSimulator(object):
         assert np.isclose(mean_all, mean, rtol=0.1)
         assert np.isclose(std_all, self.rms, rtol=0.1)
 
-
     def test_simulate_powerlaw(self):
         """
         Simulate light curve from power law spectrum.
@@ -210,7 +208,7 @@ class TestSimulator(object):
 
         assert np.all(
             np.abs(actual_prob - simulated_prob) < 3*np.sqrt(actual_prob)
-               )
+        )
 
     def test_simulate_powerspectrum(self):
         """
@@ -290,8 +288,8 @@ class TestSimulator(object):
         called as a string
         """
         assert len(self.simulator.simulate('GeneralizedLorentz1D',
-                                           {'x_0':10, 'fwhm':1., 'value':10.,
-                                            'power_coeff':2})), 1024
+                                           {'x_0': 10, 'fwhm': 1., 'value': 10.,
+                                            'power_coeff': 2})), 1024
 
     def test_simulate_GeneralizedLorentz1D_odd_str(self):
         """
@@ -299,8 +297,8 @@ class TestSimulator(object):
         called as a string
         """
         assert len(self.simulator_odd.simulate('GeneralizedLorentz1D',
-                                               {'x_0':10, 'fwhm':1.,
-                                                'value':10., 'power_coeff':2}
+                                               {'x_0': 10, 'fwhm': 1.,
+                                                'value': 10., 'power_coeff': 2}
                                                )), 2039
 
     def test_simulate_GeneralizedLorentz1D(self):
@@ -319,8 +317,8 @@ class TestSimulator(object):
         """
         assert len(
             self.simulator.simulate('SmoothBrokenPowerLaw',
-                                    {'norm':1., 'gamma_low':1.,
-                                     'gamma_high':2., 'break_freq':1.})), 1024
+                                    {'norm': 1., 'gamma_low': 1.,
+                                     'gamma_high': 2., 'break_freq': 1.})), 1024
 
     def test_simulate_SmoothBrokenPowerLaw(self):
         """
@@ -330,7 +328,6 @@ class TestSimulator(object):
         mod = models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2.,
                                           break_freq=1.)
         assert len(self.simulator.simulate(mod)), 1024
-
 
     def test_simulate_generic_model(self):
         """
@@ -350,7 +347,8 @@ class TestSimulator(object):
                                                  stddev=2.)
         assert len(self.simulator_odd.simulate(mod)), 2039
 
-    def test_compare_composite(self):
+    @pytest.mark.parametrize("poisson", [True, False])
+    def test_compare_composite(self, poisson):
         """
         Compare the PSD of a light curve simulated using a composite model
         (using SmoothBrokenPowerLaw plus GeneralizedLorentz1D)
@@ -360,7 +358,7 @@ class TestSimulator(object):
         dt = 0.01
         m = 30000.
 
-        self.simulator = Simulator(N=N, mean=m, dt=dt, rms=self.rms)
+        self.simulator = Simulator(N=N, mean=m, dt=dt, rms=self.rms, poisson=poisson)
         smoothbknpo = \
             models.SmoothBrokenPowerLaw(norm=1., gamma_low=1., gamma_high=2.,
                                         break_freq=1.)
@@ -381,7 +379,6 @@ class TestSimulator(object):
         assert np.all(np.abs(actual_prob - simulated_prob) <
                       3*np.sqrt(actual_prob))
 
-
     def test_simulate_wrong_model(self):
         """
         Simulate with a model that does not exist.
@@ -395,7 +392,7 @@ class TestSimulator(object):
         """
         t0, w = 100, 500
         assert len(self.simulator.simple_ir(t0, w)) == \
-               (t0+w)/self.simulator.dt
+            (t0+w)/self.simulator.dt
 
     def test_construct_simple_ir_odd(self):
         """
@@ -403,7 +400,7 @@ class TestSimulator(object):
         """
         t0, w = 100, 500
         assert len(self.simulator_odd.simple_ir(t0, w)) == \
-               (t0+w)/self.simulator.dt
+            (t0+w)/self.simulator.dt
 
     def test_construct_relativistic_ir(self):
         """
