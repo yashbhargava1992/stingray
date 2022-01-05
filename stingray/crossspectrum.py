@@ -1694,7 +1694,7 @@ class AveragedCrossspectrum(Crossspectrum):
             data2 = list(data2.to_lc_list(dt))
 
         Crossspectrum.__init__(
-            self, data1, data2, norm, gti=gti, power_type=power_type, dt=dt, fullspec=fullspec
+            self, data1, data2, norm, gti=gti, power_type=power_type, dt=dt, fullspec=fullspec, skip_checks=True
         )
 
         return

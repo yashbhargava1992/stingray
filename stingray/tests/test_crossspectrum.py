@@ -523,7 +523,7 @@ class TestCrossspectrum(object):
         assert cs.power_err is None
 
     def test_init_with_one_lc_none(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             cs = Crossspectrum(self.lc1)
 
     def test_init_with_multiple_gti(self):

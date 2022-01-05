@@ -122,6 +122,7 @@ class Powerspectrum(Crossspectrum):
             self.nphots2 = None
             self.m = 1
             self.n = None
+            self.norm = norm
             return
 
         Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
@@ -658,6 +659,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             self.nphots2 = None
             self.m = 1
             self.n = None
+            self.norm = norm
             return
 
         if large_data and data is not None:
