@@ -1605,6 +1605,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         accepted_new_style = (EventList, Lightcurve)
         old_style = old_style or not isinstance(data1, accepted_new_style)
+        old_style = old_style or large_data
         if not old_style and data1 is not None and data2 is not None:
             if isinstance(data1, EventList):
                 spec = crossspectrum_from_events(
