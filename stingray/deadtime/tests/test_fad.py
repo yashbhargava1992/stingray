@@ -32,6 +32,15 @@ def generate_deadtime_lc(ev, dt, tstart=0, tseg=None, deadtime=2.5e-3):
                                       gti=np.array([[tstart, tseg]]))
 
 
+def test_fad_only_one_good_interval():
+    ev1 = EventList([1.1, 3], gti=[[0, 11.]])
+    ev2 = EventList([2.4, 3.6], gti=[[0, 11.]])
+    results_out_ev = \
+        FAD(ev1, ev2, 5., dt=0.1)
+
+    assert results_out_ev.meta["M"] == 1
+
+
 @pytest.mark.parametrize('ctrate', [0.5, 5, 50, 200])
 def test_fad_power_spectrum_compliant(ctrate):
     dt = 0.1
