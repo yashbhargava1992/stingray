@@ -227,6 +227,13 @@ class TestEvents(object):
 
         assert ev_new.dt == 3
 
+    def test_join_different_instr(self):
+        ev = EventList(time=[10, 20, 30], instr="fpma")
+        ev_other = EventList(time=[40, 50, 60], instr="fpmb")
+        ev_new = ev.join(ev_other)
+
+        assert ev_new.instr == "fpma,fpmb"
+
     def test_join_without_energy(self):
         ev = EventList(time=[1, 2, 3], energy=[3, 3, 3])
         ev_other = EventList(time=[4, 5])
