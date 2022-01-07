@@ -97,7 +97,7 @@ def get_flux_generator(data, segment_size, dt=None):
     >>> iter_lc = get_flux_generator(lc, segment_size, dt=dt)
 
     Create an iterable from the non-poisson light curve
-    >>> iter_lc_nonpois = get_flux_generator(lc, segment_size, dt=dt)
+    >>> iter_lc_nonpois = get_flux_generator(lc_renorm, segment_size, dt=dt)
 
     Verify that they are equivalent
     >>> for l1, l2 in zip(iter_ev, iter_lc): assert np.allclose(l1, l2)
