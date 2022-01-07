@@ -374,6 +374,13 @@ class TestEvents(object):
         assert hasattr(ev, 'prior')
 
     @pytest.mark.skipif('not _HAS_TIMESERIES')
+    def test_timeseries_empty_evts(self):
+        N = len(self.time)
+        ev = EventList()
+        ts = ev.to_astropy_timeseries()
+        assert len(ts.columns) == 0
+
+    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
         N = len(self.time)
         ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),
