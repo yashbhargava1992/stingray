@@ -50,6 +50,14 @@ class TestClassicalPvalue(object):
         assert isinstance(pval, np.ndarray)
         assert len(pval) == len(power)
 
+    def test_pval_returns_iterable_when_iterable_input_nspec2(self):
+        power = [0, 1, 2]
+        nspec = 2
+        # It will use the formulation by Huppenkothen & Bachetti
+        pval = cospectra_pvalue(power, nspec)
+        assert isinstance(pval, np.ndarray)
+        assert len(pval) == len(power)
+
     def test_pval_fails_if_single_power_infinite(self):
         power = np.inf
         nspec = 1

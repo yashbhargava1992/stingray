@@ -365,8 +365,7 @@ def _averaged_cospectra_cdf(xcoord, n):
             cdf[i] += prefac * fac
         if np.size(xcoord) == 1:
             return cdf[i]
-        else:
-            continue
+
     return cdf
 
 
@@ -1564,7 +1563,7 @@ class AveragedCrossspectrum(Crossspectrum):
         save_all=False,
         use_common_mean=True,
         old_style=False,
-        skip_checks = False
+        skip_checks=False
     ):
 
         # for backwards compatibility
