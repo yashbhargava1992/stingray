@@ -809,7 +809,8 @@ class TestAveragedCrossspectrum(object):
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, tend]], dt=dt)
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
 
-        self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
+        self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                        save_all=True)
 
     def test_save_all(self):
         cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
@@ -940,13 +941,14 @@ class TestAveragedCrossspectrum(object):
             assert aps.rebin(df=new_df, method=aps.type)
         assert "Method for summing or averaging not recognized. " in str(excinfo.value)
 
-    def test_rebin_with_valid_type_attribute(self):
+    @pytest.mark.parametrize("old_style", [True, False])
+    def test_rebin_with_valid_type_attribute(self, old_style):
         new_df = 2
-        with pytest.warns(UserWarning) as record:
-            aps = AveragedCrossspectrum(self.lc1, self.lc2,
-                                        segment_size=1, norm='leahy', old_style=True)
+        aps = AveragedCrossspectrum(self.lc1, self.lc2,
+                                    segment_size=1, norm='leahy',
+                                    old_style=old_style,
+                                    save_all=True)
 
-        print(record)
         assert aps.rebin(df=new_df)
 
     def test_init_with_norm_not_str(self):
