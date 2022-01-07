@@ -164,6 +164,20 @@ class TestAveragedCrossspectrumEvents(object):
         assert np.allclose(lag1, lag2)
         assert lccs.power_err is not None
 
+    @pytest.mark.parametrize("old_style", [True, False])
+    def test_internal_from_events_works_acs(self, old_style):
+        lccs = AveragedCrossspectrum(self.events1, self.events2,
+                                     segment_size=1, dt=self.dt, norm='none', silent=True, old_style=old_style)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+        lag1, lag1_e = lccs.time_lag()
+        lag2, lag2_e = self.acs.time_lag()
+        assert np.allclose(lag1, lag2)
+        good = ~np.isnan(lag2_e)
+        assert np.allclose(lag1_e[good], lag2_e[good])
+        assert lccs.power_err is not None
+
     def test_from_events_works_acs(self):
         lccs = AveragedCrossspectrum.from_events(self.events1, self.events2,
                                                  segment_size=1, dt=self.dt, norm='none', silent=True)
