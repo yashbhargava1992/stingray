@@ -16,50 +16,7 @@ from ..fourier import normalize_periodograms, fft, fftfreq, positive_fft_bins
 from ..gti import cross_two_gtis, bin_intervals_from_gtis
 
 
-__all__ = ["calculate_FAD_correction", "get_periodograms_from_FAD_results"]
-
-
-def _get_fourier_intv(lc, start_ind, end_ind):
-    """Calculate the Fourier transform of a light curve chunk.
-
-    Parameters
-    ----------
-    lc : a :class:`Lightcurve` object
-        Input light curve
-
-    start_ind : int
-        Start index of the light curve chunk
-
-    end_ind : int
-        End index of the light curve chunk
-
-    Returns
-    -------
-    freq : array of floats
-        Frequencies of the Fourier transform
-
-    fft : array of complex numbers
-        The Fourier transform
-
-    nph : int
-        Number of photons in the interval of the light curve
-
-    nbins : int
-        Number of bins in the light curve segment
-
-    meancounts : float
-        The mean counts/bin in the light curve
-    """
-    time = lc.time[start_ind:end_ind]
-    counts = lc.counts[start_ind:end_ind]
-
-    fourier = scipy.fft.fft(counts)
-
-    freq = scipy.fft.fftfreq(len(time), lc.dt)
-    good = freq > 0
-
-    nbins = time.size
-    return freq[good], fourier[good], np.sum(counts), nbins
+__all__ = ["calculate_FAD_correction", "get_periodograms_from_FAD_results", "FAD"]
 
 
 def FAD(
@@ -75,7 +32,6 @@ def FAD(
     verbose=False,
     tolerance=0.05,
     strict=False,
-    all_leahy=False,
     output_file=None,
     return_objects=False
 ):
@@ -135,8 +91,6 @@ def FAD(
     strict : bool, default False
         Decide what to do if the condition on tolerance is not met. If True,
         raise a ``RuntimeError``. If False, just throw a warning.
-    all_leahy : **deprecated** bool, default False
-        Save all spectra in Leahy normalization. Otherwise, leave unnormalized.
     output_file : str, default None
         Name of an output file (any extension automatically recognized by
         Astropy is fine)
@@ -305,7 +259,7 @@ def FAD(
     results.meta['nph1'] = nph1_tot / M
     results.meta['nph2'] = nph2_tot / M
     results.meta['nph'] = nph_tot / M
-    results.meta['norm'] = 'leahy' if all_leahy else 'none'
+    results.meta['norm'] = norm
     results.meta['smoothing_length'] = smoothing_length
     results.meta['df'] = np.mean(np.diff(freq))
 
@@ -331,7 +285,7 @@ def FAD(
 def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
                              plot=False, ax=None, smoothing_alg='gauss',
                              smoothing_length=None, verbose=False,
-                             tolerance=0.05, strict=False, all_leahy=False,
+                             tolerance=0.05, strict=False,
                              output_file=None, return_objects=False):
     """Calculate Frequency Amplitude Difference-corrected (cross)power spectra.
 
