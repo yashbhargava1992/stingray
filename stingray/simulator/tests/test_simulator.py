@@ -217,6 +217,15 @@ class TestSimulator(object):
         s = np.random.rand(1024)
         assert len(self.simulator.simulate(s)), self.N
 
+    def test_simulate_model_pars_not_list_or_dict(self):
+        """
+        Simulate light curve using lorentzian model.
+        """
+        with pytest.raises(ValueError) as excinfo:
+            self.simulator.simulate('generalized_lorentzian',
+                                    12345)
+        assert "Params should be list or dictionary!" in str(excinfo.value)
+
     def test_simulate_lorentzian(self):
         """
         Simulate light curve using lorentzian model.
