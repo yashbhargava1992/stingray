@@ -173,6 +173,13 @@ class EventList(object):
 
         Examples
         --------
+        For an empty eventlist, this will be an empty list.
+        >>> ev = EventList()
+        >>> attrs = ev.array_attrs()
+        >>> len(attrs)
+        0
+
+        Otherwise, it will contain all attrs with the same shape as ``time``.
         >>> ev = EventList(time=np.arange(5), pi=np.zeros(5), gti=[[45, 4]])
         >>> attrs = ev.array_attrs()
         >>> len(attrs)
@@ -184,6 +191,8 @@ class EventList(object):
         >>> "gti" in attrs #  The shape of self.gti is not equal to time! Not an array attr
         False
         """
+        if self.time is None:
+            return []
         return [
             attr for attr in dir(self)
             if (
