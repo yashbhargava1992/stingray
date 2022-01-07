@@ -286,7 +286,7 @@ class Powerspectrum(Crossspectrum):
         Returns
         -------
         pvals : iterable
-            A list of ``(index, p-value)`` tuples for all powers that have p-values
+            A list of ``(p-value, index)`` tuples for all powers that have p-values
             lower than the threshold specified in ``threshold``.
 
         """
