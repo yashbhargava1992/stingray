@@ -1638,6 +1638,8 @@ class AveragedCrossspectrum(Crossspectrum):
                 raise ImportError("The large_data option requires zarr.")
             if isinstance(data1, EventList):
                 input_data = "EventList"
+                chunks = int(np.rint(segment_size // dt))
+                segment_size = chunks * dt
             elif isinstance(data1, Lightcurve):
                 input_data = "Lightcurve"
                 chunks = int(np.rint(segment_size // data1.dt))

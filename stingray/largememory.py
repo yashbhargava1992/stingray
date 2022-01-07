@@ -1122,6 +1122,6 @@ def createChunkedSpectra(
         )
 
     else:
-        raise RuntimeError("Only input light curves are allowed")
+        raise NotImplementedError("Only input light curves are allowed")
 
     return _combineSpectra(fin_spec)

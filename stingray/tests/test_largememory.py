@@ -461,6 +461,20 @@ class TestChunkPS(object):
         assert "Invalid input data type: str" in str(excinfo.value)
 
     @pytest.mark.skipif("not HAS_ZARR")
+    def test_events_to_cpds_unimplemented(self):
+        """Large memory option not implemented for events (and maybe never will)"""
+        with pytest.raises(NotImplementedError) as excinfo:
+            ev1 = EventList(np.random.uniform(0, 10, 10))
+            AveragedCrossspectrum(
+                ev1,
+                ev1,
+                dt=0.01,
+                segment_size=5,
+                large_data=True,
+                silent=True,
+            )
+
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_invalid_data_to_cpds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedCrossspectrum(
@@ -521,6 +535,15 @@ class TestChunkPS(object):
                 print(f"Max Deviation: {maxdev}, as %: {maxdev_percent}")
                 print("\n")
         assert allgood
+
+    @pytest.mark.skipif("HAS_ZARR")
+    def test_calc_cpds_zarr_not_installed(self):
+        with pytest.raises(ImportError) as excinfo:
+            cs_large = AveragedCrossspectrum(
+                self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
+            )
+        assert "The large_data option requires zarr" in str(excinfo.value)
+
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_cpds(self):
