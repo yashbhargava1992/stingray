@@ -539,11 +539,18 @@ class TestChunkPS(object):
     @pytest.mark.skipif("HAS_ZARR")
     def test_calc_cpds_zarr_not_installed(self):
         with pytest.raises(ImportError) as excinfo:
-            cs_large = AveragedCrossspectrum(
+            AveragedCrossspectrum(
                 self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
             )
         assert "The large_data option requires zarr" in str(excinfo.value)
 
+    @pytest.mark.skipif("HAS_ZARR")
+    def test_calc_pds_zarr_not_installed(self):
+        with pytest.raises(ImportError) as excinfo:
+            AveragedPowerspectrum(
+                self.lc1, segment_size=8192, large_data=True, silent=True
+            )
+        assert "The large_data option requires zarr" in str(excinfo.value)
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_cpds(self):
