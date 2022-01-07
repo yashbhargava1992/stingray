@@ -664,6 +664,31 @@ class TestCrossspectrum(object):
     def test_plot_simple(self):
         self.cs.plot()
         assert plt.fignum_exists('crossspectrum')
+        plt.close('crossspectrum')
+
+    def test_plot_labels_and_fname(self):
+        outfname = "blabla.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+
+        self.cs.plot(labels=["x", "y"], axis=[0, 10, 0, 10],
+                     filename=outfname, save=True)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_plot_labels_and_fname_default(self):
+        outfname = "spec.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+        self.cs.plot(labels=["x", "y"], save=True)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_plot_single_label(self):
+        with pytest.warns(UserWarning) as record:
+            self.cs.plot(labels=["x"])
+        assert np.any(['must have two labels' in r.message.args[0]
+                       for r in record])
 
     def test_rebin_error(self):
         cs = Crossspectrum()

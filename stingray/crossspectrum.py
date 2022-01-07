@@ -1192,9 +1192,6 @@ class Crossspectrum(object):
             try:
                 plt.xlabel(labels[0])
                 plt.ylabel(labels[1])
-            except TypeError:
-                simon("``labels`` must be either a list or tuple with " "x and y labels.")
-                raise
             except IndexError:
                 simon("``labels`` must have two labels for x and y " "axes.")
                 # Not raising here because in case of len(labels)==1, only
