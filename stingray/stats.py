@@ -607,6 +607,20 @@ def pds_logprobability(level, ntrial=1, n_summed_spectra=1, n_rebin=1):
     -------
     epsilon : float
         The probability value(s)
+
+    Examples
+    --------
+    Let us test that it is always consistent with `pds_probability`.
+    We use relatively small power values, because for large values
+    `pds_probability` underflows.
+    >>> powers = np.random.uniform(2, 40, 10)
+    >>> nrebin = np.random.randint(1, 10, 10)
+    >>> nsummed = np.random.randint(1, 100, 10)
+    >>> ntrial = np.random.randint(1, 10000, 10)
+    >>> logp = pds_logprobability(powers, ntrial, nsummed, nrebin)
+    >>> p = pds_probability(powers, ntrial, nsummed, nrebin)
+    >>> np.allclose(p, np.exp(logp))
+    True
     """
 
     epsilon_1 = chi2_logp(level * n_summed_spectra * n_rebin,
