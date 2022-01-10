@@ -84,7 +84,7 @@ class TestCoherence(object):
     def test_raw_low_coherence(self):
         nbins = 2
         C, P1, P2 = self.cross[:nbins], self.pds1[:nbins], self.pds2[:nbins]
-        bsq = bias_term(C, P1, P2, self.p1noise, self.p2noise, self.N)
+        bsq = bias_term(P1, P2, self.p1noise, self.p2noise, self.N)
         # must be lower than bsq!
         low_coh_cross = np.random.normal(bsq**0.5 / 10, bsq**0.5 / 100) + 0.j
         coh = raw_coherence(low_coh_cross, P1, P2, self.p1noise, self.p2noise, self.N)
@@ -129,24 +129,30 @@ class TestFourier(object):
         cls.counts2, _ = np.histogram(cls.times2, bins=np.linspace(0, cls.length, cls.N + 1))
         cls.errs2 = np.ones_like(cls.counts2) * np.sqrt(cls.ctrate)
 
+    def test_error_on_averaged_cross_spectrum_low_nave(self):
+        with pytest.warns(UserWarning) as record:
+            error_on_averaged_cross_spectrum(4 + 1.j, 2, 4, 29, 2, 2)
+        assert np.any(["n_ave is below 30."
+                       in r.message.args[0] for r in record])
+
     def test_ctrate_events(self):
-        assert get_total_ctrate(self.times, self.gti, self.segment_size) == self.ctrate
+        assert get_average_ctrate(self.times, self.gti, self.segment_size) == self.ctrate
 
     def test_ctrate_counts(self):
-        assert get_total_ctrate(self.bin_times, self.gti, self.segment_size,
+        assert get_average_ctrate(self.bin_times, self.gti, self.segment_size,
                                 self.counts) == self.ctrate
 
     def test_fts_from_segments_invalid(self):
         with pytest.raises(ValueError) as excinfo:
             # N and counts are both None. This should make the function fail immediately
-            for _ in get_flux_iterable_from_segments(1, 2, 3, N=None, counts=None):
+            for _ in get_flux_iterable_from_segments(1, 2, 3, n_bin=None, counts=None):
                 pass
         assert 'At least one between counts' in str(excinfo.value)
 
     def test_fts_from_segments_cts_and_events_are_equal(self):
         N = np.rint(self.segment_size / self.dt).astype(int)
         fts_evts = [
-            f for f in get_flux_iterable_from_segments(self.times, self.gti, self.segment_size, N=N)
+            f for f in get_flux_iterable_from_segments(self.times, self.gti, self.segment_size, n_bin=N)
         ]
         fts_cts = [
             f
