@@ -1042,6 +1042,11 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm='
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
     """
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
@@ -1087,6 +1092,11 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm='none',
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
     """
 
     return powerspectrum_from_time_array(
@@ -1128,6 +1138,11 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
     """
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
@@ -1177,6 +1192,11 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
     """
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
@@ -1202,6 +1222,29 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
 
 
 def _powerspectrum_from_astropy_table(table, force_averaged=False):
+    """Copy the columns and metadata from the results of
+    ``stingray.fourier.avg_pds_from_XX`` functions into
+    `AveragedPowerspectrum` or `Powerspectrum` objects.
+
+    By default, allocates a Powerspectrum object if the number of
+    averaged spectra is 1, otherwise an AveragedPowerspectrum.
+    If the user specifies ``force_averaged=True``, it always allocates
+    an AveragedPowerspectrum.
+
+    Parameters
+    ----------
+    table : `astropy.table.Table`
+        results of `avg_cs_from_iterables` or `avg_cs_from_iterables_quick`
+
+    Other parameters
+    ----------------
+    force_averaged : bool, default False
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
+    """
     if table.meta["m"] > 1 or force_averaged:
         cs = AveragedPowerspectrum()
     else:

@@ -2123,6 +2123,11 @@ def crossspectrum_from_time_array(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+
+    Returns
+    -------
+    spec : `AveragedCrossspectrum` or `Crossspectrum`
+        The output cross spectrum.
     """
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
@@ -2188,6 +2193,11 @@ def crossspectrum_from_events(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+
+    Returns
+    -------
+    spec : `AveragedCrossspectrum` or `Crossspectrum`
+        The output cross spectrum.
     """
 
     gti = cross_two_gtis(events1.gti, events2.gti)
@@ -2246,6 +2256,11 @@ def crossspectrum_from_lightcurve(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+
+    Returns
+    -------
+    spec : `AveragedCrossspectrum` or `Crossspectrum`
+        The output cross spectrum.
     """
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
@@ -2320,6 +2335,11 @@ def crossspectrum_from_lc_iterable(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+
+    Returns
+    -------
+    spec : `AveragedCrossspectrum` or `Crossspectrum`
+        The output cross spectrum.
     """
 
     force_averaged = segment_size is not None
@@ -2351,6 +2371,29 @@ def crossspectrum_from_lc_iterable(
 
 
 def _crossspectrum_from_astropy_table(table, force_averaged=False):
+    """Copy the columns and metadata from the results of
+    ``stingray.fourier.avg_cs_from_XX`` functions into
+    `AveragedCrossspectrum` or `Crossspectrum` objects.
+
+    By default, allocates a Crossspectrum object if the number of
+    averaged spectra is 1, otherwise an AveragedCrossspectrum.
+    If the user specifies ``force_averaged=True``, it always allocates
+    an AveragedCrossspectrum.
+
+    Parameters
+    ----------
+    table : `astropy.table.Table`
+        results of `avg_cs_from_iterables` or `avg_cs_from_iterables_quick`
+
+    Other parameters
+    ----------------
+    force_averaged : bool, default False
+
+    Returns
+    -------
+    spec : `AveragedCrossspectrum` or `Crossspectrum`
+        The output cross spectrum.
+    """
     if table.meta["m"] > 1 or force_averaged:
         cs = AveragedCrossspectrum()
         cs.pds1 = AveragedCrossspectrum()
