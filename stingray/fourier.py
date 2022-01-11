@@ -1,11 +1,13 @@
 import copy
 import warnings
 from collections.abc import Iterable
+
 import numpy as np
 from astropy.table import Table
-from .utils import histogram, show_progress, sum_if_not_none_or_initialize
-from .gti import generate_indices_of_segment_boundaries_unbinned, generate_indices_of_segment_boundaries_binned
 
+from .gti import (generate_indices_of_segment_boundaries_binned,
+                  generate_indices_of_segment_boundaries_unbinned)
+from .utils import histogram, show_progress, sum_if_not_none_or_initialize
 
 try:
     import pyfftw
@@ -90,14 +92,36 @@ def positive_fft_bins(n_bin, include_zero=False):
 def poisson_level(meanrate=None, n_ph=None, norm="abs"):
     """Poisson (white)-noise level in a periodogram of pure counting noise.
 
+    For Leahy normalization, this is:
+    .. math::
+        P = 2
+
+    For the fractional r.m.s. normalization, this is
+    .. math::
+        P = \frac{2}{\mu}
+    where :math:`\mu` is the average count rate
+
+    For the absolute r.m.s. normalization, this is
+    .. math::
+        P = 2 \mu
+
+    Finally, for the unnormalized periodogram, this is
+    .. math::
+        P = N_{ph}
+
     Other Parameters
     ----------
     meanrate : float, default None
-        Mean count rate in counts/s
+        Mean count rate in counts/s. Needed for r.m.s. norms (``abs`` and ``frac``)
     n_ph : float, default None
-        Total number of counts in the light curve
+        Total number of counts in the light curve. Needed if ``norm=="none"``
     norm : str, default "abs"
         Normalization of the periodogram. One of ["abs", "frac", "leahy", "none"]
+
+    Raises
+    ------
+    ValueError
+        If the inputs are incompatible with the required normalization.
 
     Returns
     -------
@@ -128,7 +152,7 @@ def poisson_level(meanrate=None, n_ph=None, norm="abs"):
     ValueError: Bad input parameters for norm abs...
     """
     # Various ways the parameters are wrong.
-    # We want the noise in rms norm, without specifying the mean rate.
+    # We want the noise in rms norm, but don't specify the mean rate.
     bad_input = norm.lower() in ["abs", "frac"] and meanrate is None
     # We want the noise in unnormalized powers, without giving n_ph.
     bad_input = bad_input or (norm.lower() == "none" and n_ph is None)
@@ -150,6 +174,11 @@ def poisson_level(meanrate=None, n_ph=None, norm="abs"):
 
 def normalize_frac(unnorm_power, dt, n_bin, mean_cts_per_bin):
     """Fractional rms normalization.
+
+    .. math::
+        P = \frac{P_{Leahy}}{\mu}
+
+    where :math:`\mu` is the mean count rate
 
     This is also called the Belloni or Miyamoto normalization.
     In this normalization, the periodogram is in units of
@@ -202,6 +231,11 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_cts_per_bin):
 def normalize_abs(unnorm_power, dt, n_bin):
     """Absolute rms normalization.
 
+    .. math::
+        P = P_{frac} * \mu^2
+
+    where :math:`\mu` is the mean count rate
+
     In this normalization, the periodogram is in units of
     :math:`rms^2 Hz^{-1}`, and the squared root of the
     integrated periodogram will give the absolute rms in the
@@ -246,12 +280,15 @@ def normalize_abs(unnorm_power, dt, n_bin):
 def normalize_leahy_from_variance(unnorm_power, variance, n_bin):
     """Leahy+83 normalization, from the variance of the lc.
 
+    .. math::
+        P = \frac{P_{unnorm}}{N <\delta{x}^2>}
+
     In this normalization, the periodogram of a single light curve
     is distributed according to a chi squared distribution with two
     degrees of freedom.
 
     In this version, the normalization is obtained by the variance
-    of the light curve, instead of the more usual version with the
+    of the light curve bins, instead of the more usual version with the
     number of photons. This allows to obtain this normalization also
     in the case of non-Poisson distributed data.
 
@@ -286,6 +323,9 @@ def normalize_leahy_from_variance(unnorm_power, variance, n_bin):
 
 def normalize_leahy_poisson(unnorm_power, n_ph):
     """Leahy+83 normalization.
+
+    .. math::
+        P = \frac{2}{N_{ph}} P_{unnorm}
 
     In this normalization, the periodogram of a single light curve
     is distributed according to a chi squared distribution with two
