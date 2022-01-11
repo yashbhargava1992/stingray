@@ -98,6 +98,14 @@ class TestVarEnergySpectrum(object):
         with pytest.raises(ValueError):
             vespec = DummyVarEnergy(events, [0.0, 10000], (0, 1, 2, "xxx"), bin_time=0.1)
 
+    def test_energy_property(self):
+        events = EventList(
+            [0.09, 0.21, 0.23, 0.8, 1.4, 1.9], energy=[0, 0, 0, 0, 1, 1], gti=[[0, 0.65]]
+        )
+        energy_spec = [0, 1, 2]
+        vespec = DummyVarEnergy(events, [0.0, 10000], energy_spec, [0.5, 1.1], bin_time=0.1)
+        assert np.allclose(vespec.energy, [0.5, 1.5])
+
     def test_construct_lightcurves(self):
         events = EventList(
             [0.09, 0.21, 0.23, 0.32, 0.4, 0.54], energy=[0, 0, 0, 0, 1, 1], gti=[[0, 0.65]]

@@ -171,6 +171,8 @@ class VarEnergySpectrum(metaclass=ABCMeta):
     spectrum_error : array-like
         the error bars corresponding to spectrum
 
+    energy : array-like
+        The centers of energy intervals
     """
 
     def __init__(
@@ -218,6 +220,10 @@ class VarEnergySpectrum(metaclass=ABCMeta):
             simon("There are no events in your event list!" + "Can't make a spectrum!")
         else:
             self._spectrum_function()
+
+    @property
+    def energy(self):
+        return np.sum(self.energy_intervals, axis=1) / 2
 
     def _analyze_inputs(self):
         events1 = self.events1
