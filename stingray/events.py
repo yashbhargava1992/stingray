@@ -11,6 +11,7 @@ from collections.abc import Iterable
 
 import numpy as np
 import numpy.random as ra
+from scipy.interpolate import interp1d
 from astropy.table import Table
 
 from .filters import get_deadtime_mask
@@ -390,21 +391,20 @@ class EventList(object):
             raise TypeError("Spectrum must be a 2-d array or list")
 
         # Create a set of probability values
-        prob = fluxes / float(sum(fluxes))
+        cum_flux = np.cumsum(fluxes)
 
         # Calculate cumulative probability
-        cum_prob = np.cumsum(prob)
+        cum_prob = (cum_flux - cum_flux[0])
+        cum_prob /= cum_prob[-1]
 
+        spec_fun = interp1d(
+            cum_prob, energy, bounds_error=None, fill_value="extrapolate",
+            kind="cubic")
         # Draw N random numbers between 0 and 1, where N is the size of event
         # list
         R = ra.uniform(0, 1, self.ncounts)
 
-        # Assign energies to events corresponding to the random numbers drawn
-        self.energy = \
-            np.asarray([
-                energy[np.argwhere(
-                    cum_prob == np.min(cum_prob[(cum_prob - r) > 0]))]
-                for r in R]).flatten()
+        self.energy = spec_fun(R)
 
     def join(self, other):
         """
