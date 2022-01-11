@@ -506,7 +506,7 @@ def _estimate_intrinsic_coherence_single(cross_power, power1, power2, power1_noi
                         n_ave, intrinsic_coherence=new_coherence)
         den = (power1 - power1_noise) * (power2 - power2_noise)
         num = (cross_power * np.conj(cross_power)).real - bsq
-        if num == 0:
+        if num < 0:
             num = (cross_power * np.conj(cross_power)).real
         new_coherence = num / den
         count += 1
