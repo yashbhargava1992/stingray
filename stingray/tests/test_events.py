@@ -166,7 +166,7 @@ class TestEvents(object):
         lc = np.bincount(energy)
 
         # Remove first entry as it contains occurences of '0' element
-        lc = lc[1:len(lc)]
+        lc = lc[0:len(lc)]
 
         # Calculate probabilities and compare
         lc_prob = (lc/float(sum(lc)))

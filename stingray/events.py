@@ -128,6 +128,7 @@ class EventList(object):
         The full header of the original FITS file, if relevant
 
     """
+
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
                  notes="", gti=None, pi=None, high_precision=False,
                  mission=None, instr=None, header=None, detector_id=None,
@@ -194,6 +195,7 @@ class EventList(object):
         """
         if self.time is None:
             return []
+
         return [
             attr for attr in dir(self)
             if (
