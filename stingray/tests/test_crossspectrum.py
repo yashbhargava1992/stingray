@@ -395,11 +395,11 @@ class TestNormalization(object):
         assert norm == new_cs.norm
         assert np.allclose(cs1.unnorm_power[1:], unnorm[1:], atol=0.5)
         power_norm = new_cs.power
-        Nph = np.sqrt(cs1.nphots1 * cs1.nphots2)
+        n_ph = np.sqrt(cs1.nphots1 * cs1.nphots2)
         mean1 = cs1.nphots1 / cs1.n
         mean2 = cs1.nphots2 / cs1.n
         mean = np.sqrt(mean1 * mean2)
-        noise = poisson_level(mean * cs1.dt, Nph=Nph, norm=norm)
+        noise = poisson_level(mean * cs1.dt, n_ph=n_ph, norm=norm)
         assert np.isclose(np.mean(power_norm[1:]), noise, rtol=0.01)
 
     def test_method_norm_gauss(self):
@@ -412,11 +412,11 @@ class TestNormalization(object):
         assert norm == new_cs.norm
         assert np.allclose(cs1.unnorm_power[1:], unnorm[1:], atol=0.5)
         power_norm = new_cs.power
-        Nph = np.sqrt(cs1.nphots1 * cs1.nphots2)
+        n_ph = np.sqrt(cs1.nphots1 * cs1.nphots2)
         mean1 = cs1.nphots1 / cs1.n
         mean2 = cs1.nphots2 / cs1.n
         mean = np.sqrt(mean1 * mean2)
-        noise = poisson_level(mean * cs1.dt, Nph=Nph, norm=norm)
+        noise = poisson_level(mean * cs1.dt, n_ph=n_ph, norm=norm)
         assert np.isclose(np.mean(power_norm[1:]), noise, rtol=0.01)
 
     @pytest.mark.parametrize("power_type", ["abs", "real", "all"])

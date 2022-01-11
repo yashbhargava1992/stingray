@@ -186,7 +186,7 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_cts_per_bin):
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_frac(pds, dt, lc.size, mean)
-    >>> np.isclose(pdsnorm[1:N//2].mean(), poisson_level(meanrate=meanrate,norm="frac"), rtol=0.01)
+    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(meanrate=meanrate,norm="frac"), rtol=0.01)
     True
     """
     #     (mean * n_bin) / (mean /dt) = n_bin * dt
@@ -232,7 +232,7 @@ def normalize_abs(unnorm_power, dt, n_bin):
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_abs(pds, dt, lc.size)
-    >>> np.isclose(pdsnorm[1:N//2].mean(), poisson_level(meanrate=meanrate, norm="abs"), rtol=0.01)
+    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(meanrate=meanrate, norm="abs"), rtol=0.01)
     True
     """
     #     It's frac * meanrate**2; Leahy / meanrate * meanrate**2
@@ -278,7 +278,7 @@ def normalize_leahy_from_variance(unnorm_power, variance, n_bin):
     >>> pdsnorm = normalize_leahy_from_variance(pds, var, lc.size)
     >>> np.isclose(pdsnorm[0], 2 * np.sum(lc), rtol=0.01)
     True
-    >>> np.isclose(pdsnorm[1:N//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
+    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
     True
     """
     return unnorm_power * 2. / (variance * n_bin)
@@ -316,7 +316,7 @@ def normalize_leahy_poisson(unnorm_power, n_ph):
     >>> pdsnorm = normalize_leahy_poisson(pds, np.sum(lc))
     >>> np.isclose(pdsnorm[0], 2 * np.sum(lc), rtol=0.01)
     True
-    >>> np.isclose(pdsnorm[1:N//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
+    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
     True
     """
     return unnorm_power * 2. / n_ph
@@ -701,9 +701,9 @@ def get_average_ctrate(times, gti, segment_size, counts=None):
     >>> gti = np.asarray([[0, 1000]])
     >>> counts, _ = np.histogram(times, bins=np.linspace(0, 1000, 11))
     >>> bin_times = np.arange(50, 1000, 100)
-    >>> get_total_ctrate(bin_times, gti, 1000, counts=counts)
+    >>> get_average_ctrate(bin_times, gti, 1000, counts=counts)
     1.0
-    >>> get_total_ctrate(times, gti, 1000)
+    >>> get_average_ctrate(times, gti, 1000)
     1.0
     """
     n_ph = 0
