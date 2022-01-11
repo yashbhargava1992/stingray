@@ -649,7 +649,7 @@ def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave, s
         dIm = np.sqrt((PrPs - cross_power.real ** 2 + cross_power.imag ** 2) / two_n_ave)
         gsq = raw_coherence(cross_power, seg_power, ref_power,
                             seg_power_noise, ref_power_noise, n_ave)
-        dphi = np.sqrt((1 - gsq) / (2 * gsq ** 2 * n_ave))
+        dphi = np.sqrt((1 - gsq) / (2 * gsq * n_ave))
         dG = np.sqrt(PrPs / n_ave)
 
     return dRe, dIm, dphi, dG
