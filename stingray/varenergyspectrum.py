@@ -362,8 +362,12 @@ class RmsSpectrum(VarEnergySpectrum):
     """Calculate the rms-Energy spectrum.
 
     For each energy interval, calculate the power density spectrum in
-    fractional r.m.s. normalization. If ``events2`` is specified, the cospectrum
-    is used instead of the PDS.
+    absolute or fractional r.m.s. normalization, and integrate it in the
+    given frequency range to obtain the rms. If ``events2`` is specified,
+    the cospectrum is used instead of the PDS.
+
+    We assume absolute r.m.s. normalization. To get the fractional r.m.s.
+    we just divide by the mean count rate.
 
     Parameters
     ----------
@@ -390,6 +394,9 @@ class RmsSpectrum(VarEnergySpectrum):
     events2 : :class:`stingray.events.EventList` object
         event list for the second channel, if not the same. Useful if the
         reference band has to be taken from another detector.
+
+    norm : str, one of ["abs", "frac"]
+        The normalization of the rms, whether absolute or fractional.
 
     Attributes
     ----------
@@ -440,23 +447,33 @@ class RmsSpectrum(VarEnergySpectrum):
 
     def _spectrum_function(self):
 
+        # Get the frequency bins to be averaged in the final results.
         good = self._get_good_frequency_bins()
         n_ave_bin = np.count_nonzero(good)
+
+        # Get the frequency resolution of the final spectrum.
         delta_nu_after_mean = self.delta_nu * n_ave_bin
 
         for i, eint in enumerate(show_progress(self.energy_intervals)):
+            # Extract events from the subject band and calculate the count rate
+            # and Poisson noise level.
             sub_events = self._get_times_from_energy_range(self.events1, eint)
             countrate_sub = self._get_ctrate(sub_events)
             sub_power_noise = poisson_level(countrate_sub, norm="abs")
 
+            # If we provided the `events2` array, calculate the rms from the
+            # cospectrum, otherwise from the PDS
             if not self.same_events:
-                ref_events = self._get_times_from_energy_range(self.events2, eint)
-                countrate_ref = self._get_ctrate(ref_events)
-                ref_power_noise = poisson_level(countrate_ref, norm="abs")
+                # Extract events from the subject band in the other array, and
+                # calculate the count rate and Poisson noise level.
+                sub_events2 = self._get_times_from_energy_range(self.events2, eint)
+                countrate_sub2 = self._get_ctrate(sub_events2)
+                sub2_power_noise = poisson_level(countrate_sub2, norm="abs")
 
+                # Calculate the cross spectrum
                 results = avg_cs_from_events(
                     sub_events,
-                    ref_events,
+                    sub_events2,
                     self.gti,
                     self.segment_size,
                     self.bin_time,
@@ -470,7 +487,8 @@ class RmsSpectrum(VarEnergySpectrum):
                 m_ave, mean = [results.meta[key] for key in ["m", "mean"]]
                 mean_power = np.mean(cross[good])
                 power_noise = 0
-                rmsnoise = np.sqrt(delta_nu_after_mean * np.sqrt(sub_power_noise * ref_power_noise))
+                rmsnoise = np.sqrt(delta_nu_after_mean *
+                                   np.sqrt(sub_power_noise * sub2_power_noise))
             else:
                 results = avg_pds_from_events(
                     sub_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
@@ -590,7 +608,7 @@ class ExcessVarianceSpectrum(VarEnergySpectrum):
 
 
 class CountSpectrum(VarEnergySpectrum):
-    """Calculate the Count spectrum.
+    """Calculate the energy spectrum.
 
     For each energy interval, compute the counts.
 
@@ -651,9 +669,9 @@ class CountSpectrum(VarEnergySpectrum):
 
 
 class LagSpectrum(VarEnergySpectrum):
-    """Calculate the covariance spectrum.
+    """Calculate the lag-energy spectrum.
 
-    For each energy interval, calculate the covariance between two bands.
+    For each energy interval, calculate the lag between two bands.
     If ``events2`` is specified, the energy bands are chosen from this second
     event list, while the reference band from ``events``.
 
@@ -698,7 +716,7 @@ class LagSpectrum(VarEnergySpectrum):
         energy intervals used for the spectrum
 
     spectrum : array-like
-        the spectral values, corresponding to each energy interval
+        the lag values, corresponding to each energy interval
 
     spectrum_error : array-like
         the errorbars corresponding to spectrum
@@ -730,16 +748,19 @@ class LagSpectrum(VarEnergySpectrum):
         )
 
     def _spectrum_function(self):
+        # Extract the photon arrival times from the reference band
         ref_events = self._get_times_from_energy_range(self.events2, self.ref_band[0])
-        countrate_ref = self._get_ctrate(ref_events)
-        ref_power_noise = poisson_level(countrate_ref, norm="abs")
+        ref_power_noise = poisson_level(n_ph=ref_events.size, norm="none")
+
+        # Calculate the PDS in the reference band. Needed to calculate errors.
         results = avg_pds_from_events(
-            ref_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
+            ref_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="none"
         )
         freq = results["freq"]
         ref_power = results["power"]
         m_ave = results.meta["m"]
 
+        # Get the frequency bins to be averaged in the final results.
         good = self._get_good_frequency_bins(freq)
         mean_ref_power = np.mean(ref_power[good])
         n_ave_bin = np.count_nonzero(good)
@@ -748,9 +769,9 @@ class LagSpectrum(VarEnergySpectrum):
 
         f = (self.freq_interval[0] + self.freq_interval[1]) / 2
         for i, eint in enumerate(show_progress(self.energy_intervals)):
+            # Extract the photon arrival times from the subject band
             sub_events = self._get_times_from_energy_range(self.events1, eint)
-            countrate_sub = self._get_ctrate(sub_events)
-            sub_power_noise = poisson_level(countrate_sub, norm="abs")
+            sub_power_noise = poisson_level(n_ph=sub_events.size, norm="none")
 
             results_cross = avg_cs_from_events(
                 sub_events,
@@ -759,11 +780,11 @@ class LagSpectrum(VarEnergySpectrum):
                 self.segment_size,
                 self.bin_time,
                 silent=True,
-                norm="abs",
+                norm="none",
             )
 
             results_ps = avg_pds_from_events(
-                sub_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
+                sub_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="none"
             )
 
             if results_cross is None or results_ps is None:
@@ -775,6 +796,9 @@ class LagSpectrum(VarEnergySpectrum):
             Cmean = np.mean(cross[good])
             mean_sub_power = np.mean(sub_power[good])
 
+            # Is the subject band overlapping with the reference band?
+            # This will be used to correct the error bars, following
+            # Ingram 2019.
             common_ref = self.same_events and len(cross_two_gtis([eint], self.ref_band)) > 0
 
             _, _, phi_e, _ = error_on_averaged_cross_spectrum(
@@ -791,11 +815,16 @@ LagEnergySpectrum = LagSpectrum
 
 
 class ComplexCovarianceSpectrum(VarEnergySpectrum):
-    """Calculate the covariance spectrum.
+    """Calculate the complex covariance spectrum.
 
     For each energy interval, calculate the covariance between two bands.
     If ``events2`` is specified, the energy bands are chosen from this second
     event list, while the reference band from ``events``.
+
+    Mastroserio et al. 2018, MNRAS, 475, 4027
+
+    We assume absolute r.m.s. normalization. To get the fractional r.m.s.
+    we just divide by the mean count rate.
 
     Parameters
     ----------
@@ -822,6 +851,9 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
     events2 : :class:`stingray.events.EventList` object
         event list for the second channel, if not the same. Useful if the
         reference band has to be taken from another detector.
+
+    norm : str, one of ["abs", "frac"]
+        The normalization of the covariance, whether absolute or fractional.
 
     Attributes
     ----------
@@ -873,6 +905,8 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         )
 
     def _spectrum_function(self):
+        # Extract events from the reference band and calculate the PDS and
+        # the Poisson noise level.
         ref_events = self._get_times_from_energy_range(self.events2, self.ref_band[0])
         countrate_ref = self._get_ctrate(ref_events)
         ref_power_noise = poisson_level(countrate_ref, norm="abs")
@@ -884,14 +918,17 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         ref_power = results["power"]
         m_ave = results.meta["m"]
 
+        # Select the frequency range to be averaged for the measurement.
         good = (freq >= self.freq_interval[0]) & (freq < self.freq_interval[1])
         n_ave_bin = np.count_nonzero(good)
         mean_ref_power = np.mean(ref_power[good])
 
         m_tot = m_ave * n_ave_bin
+        # Frequency resolution
         delta_nu = n_ave_bin * self.delta_nu
 
         for i, eint in enumerate(show_progress(self.energy_intervals)):
+            # Extract events from the subject band
             sub_events = self._get_times_from_energy_range(self.events1, eint)
             countrate_sub = self._get_ctrate(sub_events)
             sub_power_noise = poisson_level(countrate_sub, norm="abs")
@@ -917,11 +954,15 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
             sub_power = results_ps["power"]
             mean = results_ps.meta["mean"]
 
+            # Is the subject band overlapping with the reference band?
+            # This will be used to correct the error bars, following
+            # Ingram 2019.
             common_ref = self.same_events and len(cross_two_gtis([eint], self.ref_band)) > 0
             Cmean = np.mean(cross[good])
             if common_ref:
-                # Equation 6
+                # Equation 6 from Ingram+2019
                 Cmean -= sub_power_noise
+
             Cmean_real = np.abs(Cmean)
 
             mean_sub_power = np.mean(sub_power[good])
@@ -932,6 +973,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
             if not self.return_complex:
                 Cmean = Cmean_real
 
+            # Convert the cross spectrum to a covariance.
             cov, cov_e = cross_to_covariance(np.asarray(
                 [Cmean, Ce]), mean_ref_power, ref_power_noise, delta_nu)
 
@@ -947,9 +989,12 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
 class CovarianceSpectrum(ComplexCovarianceSpectrum):
     """Calculate the covariance spectrum.
 
-    For each energy interval, calculate the covariance between two bands.
-    If ``events2`` is specified, the energy bands are chosen from this second
-    event list, while the reference band from ``events``.
+    This is just the absolute value of the complex covariance
+    spectrum. Refer to that documentation for details.
+
+    For the original formulation of the covariance spectrum,
+    see:
+    Wilkinson & Uttley 2009, MNRAS, 397, 666
 
     Parameters
     ----------
@@ -976,6 +1021,9 @@ class CovarianceSpectrum(ComplexCovarianceSpectrum):
     events2 : :class:`stingray.events.EventList` object
         event list for the second channel, if not the same. Useful if the
         reference band has to be taken from another detector.
+
+    norm : str, one of ["abs", "frac"]
+        The normalization of the covariance, whether absolute or fractional.
 
     Attributes
     ----------
