@@ -395,7 +395,7 @@ class EventList(object):
 
         # Calculate cumulative probability
         cum_prob = (cum_flux - cum_flux[0])
-        cum_prob /= cum_prob[-1]
+        cum_prob = cum_prob / cum_prob[-1]
 
         spec_fun = interp1d(
             cum_prob, energy, bounds_error=None, fill_value="extrapolate",
