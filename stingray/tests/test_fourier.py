@@ -147,7 +147,7 @@ class TestFourier(object):
             # N and counts are both None. This should make the function fail immediately
             for _ in get_flux_iterable_from_segments(1, 2, 3, n_bin=None, fluxes=None):
                 pass
-        assert 'At least one between counts' in str(excinfo.value)
+        assert 'At least one between fluxes' in str(excinfo.value)
 
     def test_fts_from_segments_cts_and_events_are_equal(self):
         N = np.rint(self.segment_size / self.dt).astype(int)

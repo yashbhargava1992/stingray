@@ -271,7 +271,7 @@ def normalize_abs(unnorm_power, dt, n_bin):
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_abs(pds, dt, lc.size)
-    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="abs"), rtol=0.01, meanrate=meanrate)
+    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="abs", meanrate=meanrate), rtol=0.01)
     True
     """
     #     It's frac * meanrate**2; Leahy / meanrate * meanrate**2
