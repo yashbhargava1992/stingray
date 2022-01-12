@@ -1257,6 +1257,11 @@ def _powerspectrum_from_astropy_table(table, force_averaged=False):
     for attr, val in table.meta.items():
         setattr(cs, attr, val)
 
+    cs.err_dist = "poisson"
+    if hasattr(cs, "variance") and cs.variance is not None:
+        cs.err_dist = "gauss"
+
     cs.power_err = cs.power / np.sqrt(cs.m)
+    cs.unnorm_power_err = cs.unnorm_power / np.sqrt(cs.m)
     cs.nphots1 = cs.nphots
     return cs

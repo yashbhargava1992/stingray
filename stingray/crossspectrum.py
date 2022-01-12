@@ -947,22 +947,26 @@ class Crossspectrum(object):
         """Convert Cross spectrum to new normalization."""
         if norm == self.norm:
             return copy.deepcopy(self)
-        mean1 = self.nphots1 / self.n
-        mean2 = self.nphots2 / self.n
-        mean = np.sqrt(mean1 * mean2)
 
         variance1 = variance2 = variance = None
-        if self.err_dist != "poisson":
-            variance1 = self.variance1
-            variance2 = self.variance2
-            variance = np.sqrt(self.variance1 * self.variance2)
+        if self.type == "powerspectrum":
+            # This is the case for Powerspectrum
+            mean = mean1 = mean2 = self.nphots / self.n
+            if hasattr(self, "err_dist") and self.err_dist != "poisson":
+                variance = self.variance
+        else:
+            mean1 = self.nphots1 / self.n
+            mean2 = self.nphots2 / self.n
+            mean = np.sqrt(mean1 * mean2)
+            if hasattr(self, "err_dist") and self.err_dist != "poisson":
+                variance1 = self.variance1
+                variance2 = self.variance2
+                variance = np.sqrt(self.variance1 * self.variance2)
 
         new_spec = copy.deepcopy(self)
 
         for attr in ["power", "power_err"]:
             unnorm_attr = "unnorm_" + attr
-            if not hasattr(self, unnorm_attr):
-                continue
             power = normalize_periodograms(
                 getattr(self, unnorm_attr),
                 self.dt,
@@ -1981,6 +1985,8 @@ class AveragedCrossspectrum(Crossspectrum):
         self.unnorm_power = unnorm_power_avg
         self.m = m
         self.power_err = power_err_avg
+        self.unnorm_power = unnorm_power_avg
+        self.unnorm_power_err = self.power_err / self.power * self.unnorm_power
         self.df = cs_all[0].df
         self.n = cs_all[0].n
         self.nphots1 = nphots1

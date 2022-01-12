@@ -967,6 +967,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
                          "df": 1 / (dt * n_bin),
                          "nphots": n_ph,
                          "mean": common_mean,
+                         "variance": common_variance,
                          "segment_size": dt * n_bin})
 
     return results
@@ -1111,6 +1112,7 @@ def avg_cs_from_iterables_quick(
                          "norm": norm,
                          "df": 1 / (dt * n_bin),
                          "nphots1": n_ph1, "nphots2": n_ph2,
+                         "variance": None,
                          "mean": common_mean,
                          "mean1": common_mean1,
                          "mean2": common_mean2,
