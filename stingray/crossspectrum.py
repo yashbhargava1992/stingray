@@ -2056,8 +2056,8 @@ class AveragedCrossspectrum(Crossspectrum):
         meanrate1 = self.nphots1 / self.n / self.dt
         meanrate2 = self.nphots2 / self.n / self.dt
 
-        P1noise = poisson_level(meanrate=meanrate1, n_ph=self.nphots1, norm="none")
-        P2noise = poisson_level(meanrate=meanrate2, n_ph=self.nphots2, norm="none")
+        P1noise = poisson_level(norm="none", meanrate=meanrate1, n_ph=self.nphots1)
+        P2noise = poisson_level(norm="none", meanrate=meanrate2, n_ph=self.nphots2)
 
         coh = raw_coherence(c, p1, p2, P1noise, P2noise, self.n)
 
@@ -2457,8 +2457,8 @@ def _crossspectrum_from_astropy_table(table, force_averaged=False):
             setattr(cs.pds2, attr[:-1], val)
 
     # I start from unnormalized, and I normalize after correcting for bad error values
-    P1noise = poisson_level(cs.countrate1, n_ph=cs.nphots1, norm="none")
-    P2noise = poisson_level(cs.countrate2, n_ph=cs.nphots2, norm="none")
+    P1noise = poisson_level(norm="none", cs.countrate1, n_ph=cs.nphots1)
+    P2noise = poisson_level(norm="none", cs.countrate2, n_ph=cs.nphots2)
 
     dRe, dIm, _, _ = error_on_averaged_cross_spectrum(
         cs.unnorm_power,

@@ -89,7 +89,7 @@ def positive_fft_bins(n_bin, include_zero=False):
     return slice(minbin, (n_bin + 1) // 2)
 
 
-def poisson_level(meanrate=None, n_ph=None, norm="abs"):
+def poisson_level(norm="abs", meanrate=None, n_ph=None):
     """Poisson (white)-noise level in a periodogram of pure counting noise.
 
     For Leahy normalization, this is:
@@ -109,14 +109,17 @@ def poisson_level(meanrate=None, n_ph=None, norm="abs"):
     .. math::
         P = N_{ph}
 
-    Other Parameters
+    Parameters
     ----------
+    norm : str, default "abs"
+        Normalization of the periodogram. One of ["abs", "frac", "leahy", "none"]
+
+    Other Parameters
+    ----------------
     meanrate : float, default None
         Mean count rate in counts/s. Needed for r.m.s. norms (``abs`` and ``frac``)
     n_ph : float, default None
         Total number of counts in the light curve. Needed if ``norm=="none"``
-    norm : str, default "abs"
-        Normalization of the periodogram. One of ["abs", "frac", "leahy", "none"]
 
     Raises
     ------
@@ -132,21 +135,21 @@ def poisson_level(meanrate=None, n_ph=None, norm="abs"):
     --------
     >>> poisson_level(norm="leahy")
     2.0
-    >>> poisson_level(meanrate=10., norm="abs")
+    >>> poisson_level(norm="abs", meanrate=10.)
     20.0
-    >>> poisson_level(meanrate=10., norm="frac")
+    >>> poisson_level(norm="frac", meanrate=10.)
     0.2
-    >>> poisson_level(n_ph=10, norm="none")
+    >>> poisson_level(norm="none", n_ph=10)
     10.0
-    >>> poisson_level(meanrate=10., norm="asdfwrqfasdh3r")
+    >>> poisson_level(norm="asdfwrqfasdh3r", meanrate=10.)
     Traceback (most recent call last):
     ...
     ValueError: Unknown value for norm: asdfwrqfasdh3r...
-    >>> poisson_level(meanrate=10, norm="none")
+    >>> poisson_level(norm="none", meanrate=10)
     Traceback (most recent call last):
     ...
     ValueError: Bad input parameters for norm none...
-    >>> poisson_level(n_ph=10, norm="abs")
+    >>> poisson_level(norm="abs", n_ph=10)
     Traceback (most recent call last):
     ...
     ValueError: Bad input parameters for norm abs...
@@ -266,7 +269,7 @@ def normalize_abs(unnorm_power, dt, n_bin):
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_abs(pds, dt, lc.size)
-    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(meanrate=meanrate, norm="abs"), rtol=0.01)
+    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="abs"), rtol=0.01, meanrate=meanrate)
     True
     """
     #     It's frac * meanrate**2; Leahy / meanrate * meanrate**2
@@ -553,6 +556,7 @@ def _estimate_intrinsic_coherence_single(cross_power, power1, power2, power1_noi
     return new_coherence
 
 
+# This is the vectorized version of the function above.
 estimate_intrinsic_coherence_vec = np.vectorize(_estimate_intrinsic_coherence_single)
 
 
