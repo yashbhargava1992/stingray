@@ -965,6 +965,9 @@ class Crossspectrum(object):
 
         new_spec = copy.deepcopy(self)
 
+        power_type = "all"
+        if hasattr(self, "power_type"):
+            power_type = self.power_type
         for attr in ["power", "power_err"]:
             unnorm_attr = "unnorm_" + attr
             power = normalize_periodograms(
@@ -974,7 +977,7 @@ class Crossspectrum(object):
                 mean,
                 variance=variance,
                 norm=norm,
-                power_type=self.power_type,
+                power_type=power_type,
             )
             setattr(new_spec, attr, power)
             new_spec.norm = norm
@@ -986,7 +989,7 @@ class Crossspectrum(object):
                     mean1,
                     variance=variance1,
                     norm=norm,
-                    power_type=self.power_type,
+                    power_type=power_type,
                 )
                 setattr(new_spec.pds1, attr, p1)
                 p2 = normalize_periodograms(
@@ -996,7 +999,7 @@ class Crossspectrum(object):
                     mean2,
                     variance=variance2,
                     norm=norm,
-                    power_type=self.power_type,
+                    power_type=power_type,
                 )
                 setattr(new_spec.pds2, attr, p2)
                 new_spec.pds1.norm = new_spec.pds2.norm = norm
