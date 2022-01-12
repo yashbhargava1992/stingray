@@ -542,7 +542,7 @@ class Crossspectrum(object):
         fullspec=False,
         skip_checks=False
     ):
-
+        self._type = None
         # for backwards compatibility
         if data1 is None:
             data1 = lc1
@@ -693,6 +693,20 @@ class Crossspectrum(object):
             )
 
         return True
+
+    @property
+    def type(self):
+        if self._type is not None:
+            pass
+        elif self.__class__.__name__ in ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]:
+            self._type = "powerspectrum"
+        elif self.__class__.__name__ in ["Crossspectrum", "AveragedCrossspectrum"]:
+            self._type = "crossspectrum"
+        return self._type
+
+    @type.setter
+    def type(self, value):
+        self._type = value
 
     def _make_auxil_pds(self, lc1, lc2):
         """
@@ -968,8 +982,11 @@ class Crossspectrum(object):
         power_type = "all"
         if hasattr(self, "power_type"):
             power_type = self.power_type
+
         for attr in ["power", "power_err"]:
             unnorm_attr = "unnorm_" + attr
+            if not hasattr(self, unnorm_attr):
+                continue
             power = normalize_periodograms(
                 getattr(self, unnorm_attr),
                 self.dt,
@@ -1573,6 +1590,7 @@ class AveragedCrossspectrum(Crossspectrum):
         skip_checks=False
     ):
 
+        self._type = None
         # for backwards compatibility
         if data1 is None:
             data1 = lc1
@@ -1675,8 +1693,6 @@ class AveragedCrossspectrum(Crossspectrum):
                 setattr(self, key, val)
 
             return
-
-        self.type = "crossspectrum"
 
         self.segment_size = segment_size
         self.power_type = power_type

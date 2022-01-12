@@ -94,12 +94,13 @@ class Powerspectrum(Crossspectrum):
 
     def __init__(self, data=None, norm="frac", gti=None,
                  dt=None, lc=None, skip_checks=False):
+
+        self._type = None
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
                           "instead", DeprecationWarning)
         if data is None:
             data = lc
-        self.type = "powerspectrum"
 
         good_input = True
         if not skip_checks:
@@ -631,14 +632,13 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                  silent=False, dt=None, lc=None, large_data=False,
                  save_all=False, skip_checks=False):
 
+        self._type = None
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
                           "instead", DeprecationWarning)
         # Backwards compatibility: user might have supplied lc instead
         if data is None:
             data = lc
-
-        self.type = "powerspectrum"
 
         good_input = True
         if not skip_checks:

@@ -35,6 +35,12 @@ class TestAveragedPowerspectrumEvents(object):
         cls.leahy_pds_sng = Powerspectrum(
             cls.lc, dt=cls.dt, norm="leahy")
 
+    def test_type_change(self):
+        pds = copy.deepcopy(self.leahy_pds)
+        assert pds.type == "powerspectrum"
+        pds._type = "astdfawerfsaf"
+        assert pds.type == "astdfawerfsaf"
+
     def test_from_events_works_ps(self):
         pds_ev = Powerspectrum.from_events(
             self.events, dt=self.dt, norm="leahy")
