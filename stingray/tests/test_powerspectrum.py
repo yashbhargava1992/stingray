@@ -226,6 +226,11 @@ class TestPowerspectrum(object):
         cls.lc = Lightcurve(time, counts=poisson_counts, dt=dt,
                             gti=[[tstart, tend]])
 
+    @pytest.mark.parametrize("skip_checks", [True, False])
+    def test_initialize_empty(self, skip_checks):
+        cs = Powerspectrum(skip_checks=skip_checks)
+        assert cs.freq is None
+
     def test_make_empty_periodogram(self):
         ps = Powerspectrum()
         assert ps.norm == "frac"
@@ -562,6 +567,11 @@ class TestAveragedPowerspectrum(object):
 
         cls.lc = Lightcurve(time, counts=poisson_counts, gti=[[tstart, tend]],
                             dt=dt)
+
+    @pytest.mark.parametrize("skip_checks", [True, False])
+    def test_initialize_empty(self, skip_checks):
+        cs = AveragedPowerspectrum(skip_checks=skip_checks)
+        assert cs.freq is None
 
     def test_one_segment(self):
         segment_size = self.lc.tseg

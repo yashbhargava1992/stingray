@@ -526,6 +526,11 @@ class TestCrossspectrum(object):
         with pytest.warns(UserWarning) as record:
             self.cs = Crossspectrum(self.lc1, self.lc2)
 
+    @pytest.mark.parametrize("skip_checks", [True, False])
+    def test_initialize_empty(self, skip_checks):
+        cs = Crossspectrum(skip_checks=skip_checks)
+        assert cs.freq is None
+
     def test_lc_keyword_deprecation(self):
         cs1 = Crossspectrum(self.lc1, self.lc2)
         with pytest.warns(DeprecationWarning) as record:
@@ -813,6 +818,11 @@ class TestAveragedCrossspectrum(object):
 
         self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
                                         save_all=True)
+
+    @pytest.mark.parametrize("skip_checks", [True, False])
+    def test_initialize_empty(self, skip_checks):
+        cs = AveragedCrossspectrum(skip_checks=skip_checks)
+        assert cs.freq is None
 
     def test_save_all(self):
         cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,

@@ -2,8 +2,6 @@ import copy
 
 from stingray.gti import check_gtis, cross_two_gtis
 from stingray.fourier import normalize_periodograms
-from stingray.crossspectrum import Crossspectrum, normalize_crossspectrum
-from stingray.crossspectrum import normalize_crossspectrum_gauss
 from stingray.powerspectrum import Powerspectrum
 import warnings
 

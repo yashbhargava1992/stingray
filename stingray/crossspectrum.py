@@ -471,10 +471,10 @@ class Crossspectrum(object):
     Parameters
     ----------
     data1: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList`, optional, default ``None``
-        The first light curve data for the channel/band of interest.
+        The dataset for the first channel/band of interest.
 
     data2: :class:`stingray.Lightcurve` or :class:`stingray.events.EventList`, optional, default ``None``
-        The light curve data for the reference band.
+        The dataset for the second, or "reference", band.
 
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
         The normalization of the (real part of the) cross spectrum.
@@ -562,7 +562,7 @@ class Crossspectrum(object):
         if data2 is None:
             data2 = lc2
 
-        good_input = True
+        good_input = data1 is not None and data2 is not None
         if not skip_checks:
             good_input = self.initial_checks(
                 data1=data1,
