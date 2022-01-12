@@ -2230,7 +2230,7 @@ def crossspectrum_from_time_array(
         return_auxil=True,
     )
 
-    return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
+    return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
 
 
 def crossspectrum_from_events(
@@ -2372,7 +2372,7 @@ def crossspectrum_from_lightcurve(
         return_auxil=True,
     )
 
-    return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
+    return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
 
 
 def crossspectrum_from_lc_iterable(
@@ -2451,10 +2451,10 @@ def crossspectrum_from_lc_iterable(
         power_type=power_type,
         return_auxil=True,
     )
-    return _crossspectrum_from_astropy_table(results, force_averaged=force_averaged)
+    return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
 
 
-def _crossspectrum_from_astropy_table(table, force_averaged=False):
+def _create_crossspectrum_from_result_table(table, force_averaged=False):
     """Copy the columns and metadata from the results of
     ``stingray.fourier.avg_cs_from_XX`` functions into
     `AveragedCrossspectrum` or `Crossspectrum` objects.

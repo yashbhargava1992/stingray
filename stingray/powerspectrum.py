@@ -1058,7 +1058,7 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm='
         norm=norm, use_common_mean=use_common_mean,
         silent=silent)
 
-    return _powerspectrum_from_astropy_table(table, force_averaged=force_averaged)
+    return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
 
 
 def powerspectrum_from_events(events, dt, segment_size=None, norm='none',
@@ -1153,9 +1153,9 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
         lc.time, lc.gti, segment_size, lc.dt,
         norm=norm, use_common_mean=use_common_mean,
         silent=silent,
-        fluxes=lc.counts)
+        counts=lc.counts)
 
-    return _powerspectrum_from_astropy_table(table, force_averaged=force_averaged)
+    return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
 
 
 def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
@@ -1221,10 +1221,10 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
         use_common_mean=use_common_mean,
         silent=silent
     )
-    return _powerspectrum_from_astropy_table(table, force_averaged=force_averaged)
+    return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
 
 
-def _powerspectrum_from_astropy_table(table, force_averaged=False):
+def _create_powerspectrum_from_result_table(table, force_averaged=False):
     """Copy the columns and metadata from the results of
     ``stingray.fourier.avg_pds_from_XX`` functions into
     `AveragedPowerspectrum` or `Powerspectrum` objects.
