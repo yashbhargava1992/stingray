@@ -51,6 +51,25 @@ class TestAveragedPowerspectrumEvents(object):
             segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True)
         assert np.allclose(self.leahy_pds.power, pds_ev.power)
 
+    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
+    def test_method_norm(self, norm):
+
+        loc_pds = AveragedPowerspectrum(
+            self.lc, segment_size=self.segment_size, dt=self.dt, norm=norm, silent=True)
+
+        renorm_pds = self.leahy_pds.to_norm(norm)
+
+        assert loc_pds.norm == renorm_pds.norm
+        for attr in ["power", "unnorm_power", "power_err"]:
+            print(attr)
+            loc = getattr(loc_pds, attr)
+            renorm = getattr(renorm_pds, attr)
+            assert np.allclose(loc, renorm, atol=0.5)
+        for attr in ["norm", "nphots1", "df", "dt", "n", "m"]:
+            loc = getattr(loc_pds, attr)
+            renorm = getattr(renorm_pds, attr)
+            assert loc == renorm
+
     def test_from_lc_iter_with_err_works(self):
         def iter_lc_with_errs(iter_lc):
             for lc in iter_lc:
