@@ -689,7 +689,7 @@ class Crossspectrum(object):
 
         if lc1 is not None or lc2 is not None:
             warnings.warn(
-                "The lcN keywords are now deprecated. Use dataN " "instead", DeprecationWarning
+                "The lcN keywords are now deprecated. Use dataN instead", DeprecationWarning
             )
 
         if data1 is None or data2 is None:
@@ -771,7 +771,7 @@ class Crossspectrum(object):
         check_gtis(self.gti)
 
         if self.gti.shape[0] != 1:
-            raise TypeError("Non-averaged Cross Spectra need " "a single Good Time Interval")
+            raise TypeError("Non-averaged Cross Spectra need a single Good Time Interval")
 
         lc1 = lc1.split_by_gti()[0]
         lc2 = lc2.split_by_gti()[0]
@@ -797,12 +797,12 @@ class Crossspectrum(object):
             self.err_dist = "gauss"
 
         if lc1.n != lc2.n:
-            raise StingrayError("Light curves do not have same number " "of time bins per segment.")
+            raise StingrayError("Light curves do not have same number of time bins per segment.")
 
         # If dt differs slightly, its propagated error must not be more than
         # 1/100th of the bin
         if not np.isclose(lc1.dt, lc2.dt, rtol=0.01 * lc1.dt / lc1.tseg):
-            raise StingrayError("Light curves do not have same time binning " "dt.")
+            raise StingrayError("Light curves do not have same time binning dt.")
 
         # In case a small difference exists, ignore it
         lc1.dt = lc2.dt
@@ -913,7 +913,7 @@ class Crossspectrum(object):
         """
 
         if f is None and df is None:
-            raise ValueError("You need to specify at least one between f and " "df")
+            raise ValueError("You need to specify at least one between f and df")
         elif f is not None:
             df = f * self.df
 
@@ -1236,7 +1236,7 @@ class Crossspectrum(object):
                 plt.xlabel(labels[0])
                 plt.ylabel(labels[1])
             except IndexError:
-                simon("``labels`` must have two labels for x and y " "axes.")
+                simon("``labels`` must have two labels for x and y axes.")
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
         plt.legend(loc="best")
@@ -1304,7 +1304,7 @@ class Crossspectrum(object):
 
         """
         if not self.norm == "leahy":
-            raise ValueError("This method only works on " "Leahy-normalized power spectra!")
+            raise ValueError("This method only works on Leahy-normalized power spectra!")
 
         if np.size(self.m) == 1:
             # calculate p-values for all powers
