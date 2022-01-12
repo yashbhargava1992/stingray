@@ -175,7 +175,7 @@ def poisson_level(norm="abs", meanrate=None, n_ph=None):
     raise ValueError(f"Unknown value for norm: {norm}")
 
 
-def normalize_frac(unnorm_power, dt, n_bin, mean_cts_per_bin):
+def normalize_frac(unnorm_power, dt, n_bin, mean_flux):
     """Fractional rms normalization.
 
     .. math::
@@ -201,8 +201,10 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_cts_per_bin):
         The sampling time
     n_bin : int
         The number of bins in the light curve
-    mean_cts_per_bin : float
-        The mean counts in each sample
+    mean_flux : float
+        The mean of the light curve used to calculate the periodogram.
+        If the light curve is in counts, it gives the mean counts per
+        bin.
 
     Returns
     -------
@@ -228,7 +230,7 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_cts_per_bin):
     #     norm = 2 / (n_ph * meanrate) = 2 * dt / (mean**2 * n_bin)
 
     # Note: this corresponds to eq. 3 in Uttley+14
-    return unnorm_power * 2. * dt / (mean_cts_per_bin ** 2 * n_bin)
+    return unnorm_power * 2. * dt / (mean_flux ** 2 * n_bin)
 
 
 def normalize_abs(unnorm_power, dt, n_bin):
@@ -365,7 +367,7 @@ def normalize_leahy_poisson(unnorm_power, n_ph):
     return unnorm_power * 2. / n_ph
 
 
-def normalize_periodograms(unnorm_power, dt, n_bin, mean_cts_per_bin, variance=None, norm="abs", power_type="all"):
+def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, variance=None, norm="abs", power_type="all"):
     """Wrapper around all the normalize_NORM methods.
 
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
@@ -379,15 +381,20 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_cts_per_bin, variance=N
     dt: float
         The sampling time of the light curve
 
-    mean_cts_per_bin: float
-        The mean counts per bin of the light curve (if a cross spectrum, the geometrical
-        mean of the counts per bin in the two channels)
-
     n_bin: int
         The number of bins in the light curve
 
     Other parameters
     ----------------
+    mean_flux: float
+        The mean of the light curve used to calculate the powers
+        (If a cross spectrum, the geometrical mean of the light
+        curves in the two channels). Only relevant for "frac" normalization
+
+    n_ph: int or float
+        The number of counts in the light curve used to calculate
+        the unnormalized periodogram. Only relevant for Leahy normalization.
+
     variance: float
         The average variance of the measurements in light curve (if a cross spectrum,
         the geometrical mean of the variances in the two channels). **NOT** the
@@ -396,11 +403,11 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_cts_per_bin, variance=N
         non-Poissonian data.
 
     norm : str
-        One of `'leahy'` (Leahy+83), `'frac'` (fractional rms), `'abs'`
-        (absolute rms)
+        One of ``leahy`` (Leahy+83), ``frac`` (fractional rms), ``abs``
+        (absolute rms),
 
     power_type : str
-        One of `'real'` (real part), `'all'` (all complex powers), `'abs'`
+        One of ``real`` (real part), ``all`` (all complex powers), ``abs``
         (absolute value)
 
     Returns
@@ -413,9 +420,9 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_cts_per_bin, variance=N
     if norm == "leahy" and variance is not None:
         pds = normalize_leahy_from_variance(unnorm_power, variance, n_bin)
     elif norm == "leahy":
-        pds = normalize_leahy_poisson(unnorm_power, n_bin * mean_cts_per_bin)
+        pds = normalize_leahy_poisson(unnorm_power, n_ph)
     elif norm == "frac":
-        pds = normalize_frac(unnorm_power, dt, n_bin, mean_cts_per_bin)
+        pds = normalize_frac(unnorm_power, dt, n_bin, mean_flux)
     elif norm == "abs":
         pds = normalize_abs(unnorm_power, dt, n_bin)
     elif norm == "none":
@@ -933,7 +940,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
             mean = n_ph / n_bin
 
             cs_seg = normalize_periodograms(
-                unnorm_power, dt, n_bin, mean, norm=norm, variance=variance,
+                unnorm_power, dt, n_bin, mean, n_ph=n_ph,
+                norm=norm, variance=variance,
             )
 
         # Accumulate the total sum cross spectrum
@@ -959,7 +967,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
     # Final normalization (If not done already!)
     if use_common_mean:
         cross = normalize_periodograms(
-            unnorm_cross, dt, n_bin, common_mean, norm=norm, variance=common_variance
+            unnorm_cross, dt, n_bin, common_mean, n_ph=n_ph,
+            norm=norm, variance=common_variance
         )
 
     results = Table()
@@ -1085,10 +1094,11 @@ def avg_cs_from_iterables_quick(
     # Calculate the mean number of photons per chunk
     n_ph1 = sum_of_photons1 / n_ave
     n_ph2 = sum_of_photons2 / n_ave
+    n_ph = np.sqrt(n_ph1 * n_ph2)
     # Calculate the mean number of photons per bin
     common_mean1 = n_ph1 / n_bin
     common_mean2 = n_ph2 / n_bin
-    common_mean = np.sqrt(common_mean1 * common_mean2)
+    common_mean = n_ph / n_bin
 
     # Transform the sums into averages
     unnorm_cross /= n_ave
@@ -1100,6 +1110,7 @@ def avg_cs_from_iterables_quick(
         dt,
         n_bin,
         common_mean,
+        n_ph=n_ph,
         norm=norm,
         variance=None,
         power_type="all",
@@ -1115,6 +1126,7 @@ def avg_cs_from_iterables_quick(
     results.meta.update({"n": n_bin, "m": n_ave, "dt": dt,
                          "norm": norm,
                          "df": 1 / (dt * n_bin),
+                         "nphots": n_ph,
                          "nphots1": n_ph1, "nphots2": n_ph2,
                          "variance": None,
                          "mean": common_mean,
@@ -1276,6 +1288,8 @@ def avg_cs_from_iterables(
 
         # If normalization has to be done interval by interval, do it here.
         if not use_common_mean:
+            mean1 = n_ph1 / n_bin
+            mean2 = n_ph2 / n_bin
             mean = n_ph / n_bin
             variance = None
 
@@ -1283,13 +1297,13 @@ def avg_cs_from_iterables(
                 variance = np.sqrt(variance1 * variance2)
 
             cs_seg = normalize_periodograms(
-                unnorm_power, dt, n_bin, mean, norm=norm, power_type=power_type, variance=variance
+                unnorm_power, dt, n_bin, mean, n_ph=n_ph, norm=norm, power_type=power_type, variance=variance
             )
             p1_seg = normalize_periodograms(
-                unnorm_pd1, dt, n_bin, mean, norm=norm, power_type=power_type, variance=variance
+                unnorm_pd1, dt, n_bin, mean1, n_ph=n_ph1, norm=norm, power_type=power_type, variance=variance1
             )
             p2_seg = normalize_periodograms(
-                unnorm_pd2, dt, n_bin, mean, norm=norm, power_type=power_type, variance=variance
+                unnorm_pd2, dt, n_bin, mean2, n_ph=n_ph2, norm=norm, power_type=power_type, variance=variance2
             )
 
         # Initialize or accumulate final averaged spectra
@@ -1311,11 +1325,12 @@ def avg_cs_from_iterables(
     # Calculate the mean number of photons per chunk
     n_ph1 = sum_of_photons1 / n_ave
     n_ph2 = sum_of_photons2 / n_ave
+    n_ph = np.sqrt(n_ph1 * n_ph2)
 
     # Calculate the common mean number of photons per bin
     common_mean1 = n_ph1 / n_bin
     common_mean2 = n_ph2 / n_bin
-    common_mean = np.sqrt(common_mean1 * common_mean2)
+    common_mean = n_ph / n_bin
 
     if common_variance1 is not None:
         # Note: the variances we summed were means, not sums. Hence M, not M*N
@@ -1338,6 +1353,7 @@ def avg_cs_from_iterables(
             dt,
             n_bin,
             common_mean,
+            n_ph=n_ph,
             norm=norm,
             variance=common_variance,
             power_type=power_type,
@@ -1348,6 +1364,7 @@ def avg_cs_from_iterables(
                 dt,
                 n_bin,
                 common_mean1,
+                n_ph=n_ph1,
                 norm=norm,
                 variance=common_variance1,
                 power_type=power_type,
@@ -1357,6 +1374,7 @@ def avg_cs_from_iterables(
                 dt,
                 n_bin,
                 common_mean2,
+                n_ph=n_ph2,
                 norm=norm,
                 variance=common_variance2,
                 power_type=power_type,
@@ -1373,6 +1391,7 @@ def avg_cs_from_iterables(
                          "norm": norm,
                          "df": 1 / (dt * n_bin),
                          "segment_size": dt * n_bin,
+                         "nphots": n_ph,
                          "nphots1": n_ph1, "nphots2": n_ph2,
                          "countrate1": common_mean1 / dt,
                          "countrate2": common_mean2 / dt,

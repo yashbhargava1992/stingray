@@ -241,8 +241,9 @@ def normalize_crossspectrum(
         'none' normalization, imaginary part is returned as well.
     """
     dt = tseg / nbins
-    mean = np.sqrt(nphots1 * nphots2) / tseg
-    return normalize_periodograms(unnorm_power, dt, nbins, mean, norm=norm, power_type=power_type)
+    nph = np.sqrt(nphots1 * nphots2)
+    mean = nph / nbins
+    return normalize_periodograms(unnorm_power, dt, nbins, mean, n_ph=nph, norm=norm, power_type=power_type)
 
 
 def normalize_crossspectrum_gauss(
@@ -968,10 +969,12 @@ class Crossspectrum(object):
             mean = mean1 = mean2 = self.nphots / self.n
             if hasattr(self, "err_dist") and self.err_dist != "poisson":
                 variance = self.variance
+            nph = self.nphots
         else:
+            nph = np.sqrt(self.nphots1 * self.nphots2)
             mean1 = self.nphots1 / self.n
             mean2 = self.nphots2 / self.n
-            mean = np.sqrt(mean1 * mean2)
+            mean = nph / self.n
             if hasattr(self, "err_dist") and self.err_dist != "poisson":
                 variance1 = self.variance1
                 variance2 = self.variance2
@@ -992,6 +995,7 @@ class Crossspectrum(object):
                 self.dt,
                 self.n,
                 mean,
+                n_ph=nph,
                 variance=variance,
                 norm=norm,
                 power_type=power_type,
@@ -1004,6 +1008,7 @@ class Crossspectrum(object):
                     self.dt,
                     self.n,
                     mean1,
+                    n_ph=self.nphots1,
                     variance=variance1,
                     norm=norm,
                     power_type=power_type,
@@ -1014,6 +1019,7 @@ class Crossspectrum(object):
                     self.dt,
                     self.n,
                     mean2,
+                    n_ph=self.nphots2,
                     variance=variance2,
                     norm=norm,
                     power_type=power_type,
@@ -1045,7 +1051,8 @@ class Crossspectrum(object):
             'none' normalization, imaginary part is returned as well.
         """
 
-        mean = np.sqrt(self.nphots1 * self.nphots2) / self.n
+        nph = np.sqrt(self.nphots1 * self.nphots2)
+        mean = nph / self.n
         variance = None
         if self.err_dist != "poisson":
             variance = np.sqrt(self.variance1 * self.variance2)
@@ -1054,6 +1061,7 @@ class Crossspectrum(object):
             self.dt,
             self.n,
             mean,
+            n_ph=nph,
             variance=variance,
             norm=self.norm,
             power_type=self.power_type,
@@ -2488,8 +2496,11 @@ def _crossspectrum_from_astropy_table(table, force_averaged=False):
 
     cs.unnorm_power_err = power_err
 
+    mean = table.meta["mean"]
+    nph = table.meta["nphots"]
     cs.power_err = normalize_periodograms(
-        power_err, cs.dt, cs.n, table.meta["mean"], variance=cs.variance, norm=cs.norm
+        power_err, cs.dt, cs.n, mean, n_ph=nph,
+        variance=cs.variance, norm=cs.norm
     )
 
     cs.pds1.power_err = cs.pds1.power / np.sqrt(cs.pds1.m)

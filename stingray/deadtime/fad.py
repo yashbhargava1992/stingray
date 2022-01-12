@@ -185,10 +185,11 @@ def FAD(
         c = (f2 * f1.conj()).real
         c = c / smooth_real * 2
 
-        power1 = normalize_periodograms(p1, dt, N, nph1 / N, norm=norm)
-        power2 = normalize_periodograms(p2, dt, N, nph2 / N, norm=norm)
-        power_tot = normalize_periodograms(pt, dt, N, nphtot / N, norm=norm)
-        cs_power = normalize_periodograms(c, dt, N, np.sqrt(nph1 * nph2) / N, norm=norm)
+        nphgeom = np.sqrt(nph1 * nph2)
+        power1 = normalize_periodograms(p1, dt, N, nph1 / N, n_ph=nph1, norm=norm)
+        power2 = normalize_periodograms(p2, dt, N, nph2 / N, n_ph=nph2, norm=norm)
+        power_tot = normalize_periodograms(pt, dt, N, nphtot / N, n_ph=nphtot, norm=norm)
+        cs_power = normalize_periodograms(c, dt, N, nphgeom / N, n_ph=nphgeom, norm=norm)
 
         if M == 0 and plot:
             ax.plot(freq, smooth_real, zorder=10, lw=3)

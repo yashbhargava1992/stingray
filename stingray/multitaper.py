@@ -538,7 +538,7 @@ class Multitaper(Powerspectrum):
         if self.err_dist != 'poisson':
             variance = self.var
         return normalize_periodograms(
-            unnorm_power, self.dt, self.n, mean, variance=variance, norm=self.norm,
+            unnorm_power, self.dt, self.n, mean, n_ph=self.nphots, variance=variance, norm=self.norm,
             power_type=self.power_type)
 
     def jackknifed_sdf_variance(self, freq_response, eigvals, adaptive):

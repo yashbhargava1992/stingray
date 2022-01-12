@@ -40,8 +40,8 @@ def test_norm():
 
     pdsabs = normalize_abs(pds, dt, lc.size)
     pdsfrac = normalize_frac(pds, dt, lc.size, mean)
-    pois_abs = poisson_level(norm="abs", meanrate=meanrate)
-    pois_frac = poisson_level(norm="frac", meanrate=meanrate)
+    pois_abs = poisson_level(meanrate=meanrate, norm="abs")
+    pois_frac = poisson_level(meanrate=meanrate, norm="frac")
 
     assert np.isclose(pdsabs[good].mean(), pois_abs, rtol=0.01)
     assert np.isclose(pdsfrac[good].mean(), pois_frac, rtol=0.01)
@@ -69,8 +69,8 @@ class TestCoherence(object):
         cls.pds2 = normalize_periodograms(
             ft2 * ft2.conj(), dt, cls.N, mean, norm="abs", power_type="real")
 
-        cls.p1noise = poisson_level(norm="abs", meanrate=meanrate)
-        cls.p2noise = poisson_level(norm="abs", meanrate=meanrate)
+        cls.p1noise = poisson_level(meanrate=meanrate, norm="abs")
+        cls.p2noise = poisson_level(meanrate=meanrate, norm="abs")
 
     def test_intrinsic_coherence(self):
         coh = estimate_intrinsic_coherence(
@@ -307,6 +307,7 @@ class TestNorms(object):
         cls.good = good
         cls.meanrate = cls.mean / cls.dt
         cls.lc = np.random.poisson(cls.mean, cls.N).astype(float)
+        cls.nph = cls.lc.counts.sum()
         cls.pds = (np.abs(np.fft.fft(cls.lc)) ** 2)[good]
         cls.lc_bksub = cls.lc - cls.mean
         cls.pds_bksub = (np.abs(np.fft.fft(cls.lc_bksub)) ** 2)[good]
@@ -357,30 +358,33 @@ class TestNorms(object):
 
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
     def test_poisson_level(self, norm):
-        pdsnorm = normalize_periodograms(self.pds, self.dt, self.N, self.mean, norm=norm)
+        pdsnorm = normalize_periodograms(self.pds, self.dt, self.N,
+                                         self.mean, n_ph=self.nph, norm=norm)
 
         assert np.isclose(
-            pdsnorm.mean(), poisson_level(norm=norm, meanrate=self.meanrate), rtol=0.01
+            pdsnorm.mean(), poisson_level(meanrate=self.meanrate, norm=norm), rtol=0.01
         )
 
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
     def test_poisson_level_real(self, norm):
         pdsnorm = normalize_periodograms(
-            self.pds, self.dt, self.N, self.mean, norm=norm, power_type="real"
+            self.pds, self.dt, self.N, self.mean, n_ph=self.nph,
+            norm=norm, power_type="real"
         )
 
         assert np.isclose(
-            pdsnorm.mean(), poisson_level(norm=norm, meanrate=self.meanrate), rtol=0.01
+            pdsnorm.mean(), poisson_level(meanrate=self.meanrate, norm=norm), rtol=0.01
         )
 
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
     def test_poisson_level_absolute(self, norm):
         pdsnorm = normalize_periodograms(
-            self.pds, self.dt, self.N, self.mean, norm=norm, power_type="abs"
+            self.pds, self.dt, self.N, self.mean, n_ph=self.nph,
+            norm=norm, power_type="abs"
         )
 
         assert np.isclose(
-            pdsnorm.mean(), poisson_level(norm=norm, meanrate=self.meanrate), rtol=0.01
+            pdsnorm.mean(), poisson_level(meanrate=self.meanrate, norm=norm), rtol=0.01
         )
 
     def test_normalize_with_variance(self):
@@ -390,11 +394,12 @@ class TestNorms(object):
         assert np.isclose(pdsnorm.mean(), 2, rtol=0.01)
 
     def test_normalize_none(self):
-        pdsnorm = normalize_periodograms(self.pds, self.dt, self.N, self.mean, norm="none")
+        pdsnorm = normalize_periodograms(self.pds, self.dt, self.N,
+                                         self.mean, n_ph=self.nph, norm="none")
         assert np.isclose(pdsnorm.mean(), self.pds.mean(), rtol=0.01)
 
     def test_normalize_badnorm(self):
         with pytest.raises(ValueError):
             pdsnorm = normalize_periodograms(
-                self.pds, self.var, self.N, self.mean, norm="asdfjlasdjf"
+                self.pds, self.var, self.N, self.mean, n_ph=self.nph, norm="asdfjlasdjf"
             )
