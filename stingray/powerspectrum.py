@@ -99,6 +99,7 @@ class Powerspectrum(Crossspectrum):
                           "instead", DeprecationWarning)
         if data is None:
             data = lc
+        self.type = "powerspectrum"
 
         good_input = True
         if not skip_checks:
@@ -637,6 +638,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if data is None:
             data = lc
 
+        self.type = "powerspectrum"
+
         good_input = True
         if not skip_checks:
             good_input = self.initial_checks(
@@ -694,7 +697,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
             return
 
-        self.type = "powerspectrum"
         self.dt = dt
         self.save_all = save_all
 
@@ -1201,6 +1203,7 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
+
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):
