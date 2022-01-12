@@ -701,12 +701,12 @@ def _which_segment_idx_fun(binned=False, dt=None):
     """
     # Make function interface equal (counts gets ignored)
     if not binned:
-        return generate_indices_of_segment_boundaries_unbinned
-
-    # Define a new function, so that we can pass the correct dt as an
-    # argument.
-    def fun(*args, **kwargs):
-        return generate_indices_of_segment_boundaries_binned(*args, dt=dt, **kwargs)
+        fun = generate_indices_of_segment_boundaries_unbinned
+    else:
+        # Define a new function, so that we can pass the correct dt as an
+        # argument.
+        def fun(*args, **kwargs):
+            return generate_indices_of_segment_boundaries_binned(*args, dt=dt, **kwargs)
 
     return fun
 
