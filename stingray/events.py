@@ -416,6 +416,12 @@ class EventList(object):
         inplace : bool, default False
             Sort in place. If False, return a new event list.
 
+        Returns
+        -------
+        eventlist : `EventList`
+            The sorted event list. If ``inplace=True``, it will be a shallow copy
+            of ``self``.
+
         Examples
         --------
         >>> events = EventList(time=[0, 2, 1], energy=[0.3, 2, 0.5], pi=[3, 20, 5])
