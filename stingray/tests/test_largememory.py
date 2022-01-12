@@ -555,7 +555,7 @@ class TestChunkPS(object):
     @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_cpds(self):
         cs_normal = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=8192, silent=True, old_style=True
+            self.lc1, self.lc2, segment_size=8192, silent=True, legacy=True
         )
         cs_large = AveragedCrossspectrum(
             self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True

@@ -6,6 +6,7 @@ import numpy as np
 import scipy
 import scipy.optimize
 import scipy.stats
+from astropy import log
 
 from stingray.exceptions import StingrayError
 from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
@@ -1185,13 +1186,22 @@ class Crossspectrum(object):
         )
 
     def phase_lag(self):
-        """Return the fourier phase lag of the cross spectrum."""
+        """Calculate the fourier phase lag of the cross spectrum.
+
+        This is defined as the argument of the complex cross spectrum, and gives
+        the delay at all frequencies, in cycles, of one input light curve with respect
+        to the other.
+        """
         return np.angle(self.unnorm_power)
 
     def time_lag(self):
-        """
-        Calculate the fourier time lag of the cross spectrum. The time lag is
-        calculate using the center of the frequency bins.
+        """Calculate the fourier time lag of the cross spectrum.
+        The time lag is calculated by taking the phase lag :math:`\phi` and
+
+        ..math ::
+            \tau = \frac{\phi}{\two pi \nu}
+
+        where :math:`\nu` is the center of the frequency bins.
         """
         if self.__class__ in [Crossspectrum, AveragedCrossspectrum]:
             ph_lag = self.phase_lag()
@@ -1554,7 +1564,8 @@ class AveragedCrossspectrum(Crossspectrum):
         positive frequencies.
 
     large_data : bool, default False
-        Use only for data larger than 10**7 data points!! Uses zarr and dask for computation.
+        Use only for input *light curves* larger than :math:`10^7` data points.
+        Uses zarr and dask for computation.
 
     save_all : bool, default False
         Save all intermediate PDSs used for the final average. Use with care.
@@ -1564,6 +1575,17 @@ class AveragedCrossspectrum(Crossspectrum):
     skip_checks: bool
         Skip initial checks, for speed or other reasons (you need to trust your
         inputs!)
+
+    use_common_mean: bool
+        Averaged Cross spectra are normalized in two possible ways: one is by normalizing
+        each of the single spectra that get averaged, the other is by normalizing after the
+        averaging. If `use_common_mean` is selected, the spectrum will be normalized
+        after the average.
+
+    legacy: bool
+        Use the legacy machinery of AveragedCrossspectrum. This might be useful to compare
+        with old results, and is also needed to use light curve lists as an input, to
+        conserve the spectra of each segment, or to use the large_data option.
 
     Attributes
     ----------
@@ -1617,7 +1639,7 @@ class AveragedCrossspectrum(Crossspectrum):
         large_data=False,
         save_all=False,
         use_common_mean=True,
-        old_style=False,
+        legacy=False,
         skip_checks=False
     ):
 
@@ -1655,10 +1677,14 @@ class AveragedCrossspectrum(Crossspectrum):
             self.n = None
             return
 
+        # The legacy interface is used when the user asks for it, or for
+        # input objects that are not EventList or Lightcurve (e.g. lists of
+        # light curves.)
         accepted_new_style = (EventList, Lightcurve)
-        old_style = old_style or not isinstance(data1, accepted_new_style)
-        old_style = old_style or large_data
-        if not old_style and data1 is not None and data2 is not None:
+        legacy = legacy or not isinstance(data1, accepted_new_style)
+        # The large_data option requires the legacy interface.
+        legacy = legacy or large_data
+        if not legacy and data1 is not None and data2 is not None:
             if isinstance(data1, EventList):
                 spec = crossspectrum_from_events(
                     data1,
@@ -1687,7 +1713,8 @@ class AveragedCrossspectrum(Crossspectrum):
                 setattr(self, key, val)
             return
 
-        print("Using old style")
+        log.info("Using legacy interface.")
+
         if large_data and data1 is not None and data2 is not None:
             if not HAS_ZARR:
                 raise ImportError("The large_data option requires zarr.")
@@ -1747,7 +1774,8 @@ class AveragedCrossspectrum(Crossspectrum):
             data2 = list(data2.to_lc_list(dt))
 
         Crossspectrum.__init__(
-            self, data1, data2, norm, gti=gti, power_type=power_type, dt=dt, fullspec=fullspec, skip_checks=True
+            self, data1, data2, norm, gti=gti, power_type=power_type, dt=dt,
+            fullspec=fullspec, skip_checks=True
         )
 
         return

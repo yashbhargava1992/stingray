@@ -174,10 +174,10 @@ class TestAveragedCrossspectrumEvents(object):
         assert np.allclose(lag1, lag2)
         assert lccs.power_err is not None
 
-    @pytest.mark.parametrize("old_style", [True, False])
-    def test_internal_from_events_works_acs(self, old_style):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_internal_from_events_works_acs(self, legacy):
         lccs = AveragedCrossspectrum(self.events1, self.events2,
-                                     segment_size=1, dt=self.dt, norm='none', silent=True, old_style=old_style)
+                                     segment_size=1, dt=self.dt, norm='none', silent=True, legacy=legacy)
         power1 = lccs.power.real
         power2 = self.acs.power.real
         assert np.allclose(power1, power2, rtol=0.01)
@@ -822,7 +822,7 @@ class TestAveragedCrossspectrum(object):
 
     def test_save_all(self):
         cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
-                                   save_all=True, old_style=True)
+                                   save_all=True, legacy=True)
         assert hasattr(cs, 'cs_all')
 
     def test_lc_keyword_deprecation(self):
@@ -852,7 +852,7 @@ class TestAveragedCrossspectrum(object):
         newlc.counts[:newlc.counts.size // 2] = \
             0 * newlc.counts[:newlc.counts.size // 2]
         with pytest.warns(UserWarning) as record:
-            ps = AveragedCrossspectrum(newlc, self.lc2, segment_size=0.2, old_style=True)
+            ps = AveragedCrossspectrum(newlc, self.lc2, segment_size=0.2, legacy=True)
 
         assert np.any(["No counts in "
                        in r.message.args[0] for r in record])
@@ -863,7 +863,7 @@ class TestAveragedCrossspectrum(object):
 
     def test_invalid_type_attribute(self):
         with pytest.raises(ValueError):
-            cs_test = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, old_style=True)
+            cs_test = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, legacy=True)
             cs_test.type = 'invalid_type'
             assert AveragedCrossspectrum._make_crossspectrum(cs_test,
                                                              self.lc1,
@@ -913,7 +913,7 @@ class TestAveragedCrossspectrum(object):
         assert test_lc2.tseg != test_lc1.tseg
 
         with pytest.warns(UserWarning) as record:
-            AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5, old_style=True)
+            AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5, legacy=True)
             assert np.any(["same tseg" in r.message.args[0]
                            for r in record])
 
@@ -932,7 +932,7 @@ class TestAveragedCrossspectrum(object):
 
         with pytest.warns(UserWarning) as record:
             acs = AveragedCrossspectrum(
-                lc1, lc2, segment_size=5.0, norm="leahy", old_style=True)
+                lc1, lc2, segment_size=5.0, norm="leahy", legacy=True)
         assert acs.m == 1
         assert np.any(["No counts in interval" in r.message.args[0]
                        for r in record])
@@ -943,18 +943,18 @@ class TestAveragedCrossspectrum(object):
         with pytest.warns(UserWarning) as record:
             aps = AveragedCrossspectrum(lc1=self.lc1, lc2=self.lc2,
                                         segment_size=1, norm='leahy',
-                                        old_style=True)
+                                        legacy=True)
         aps.type = 'invalid_type'
         with pytest.raises(ValueError) as excinfo:
             assert aps.rebin(df=new_df, method=aps.type)
         assert "Method for summing or averaging not recognized. " in str(excinfo.value)
 
-    @pytest.mark.parametrize("old_style", [True, False])
-    def test_rebin_with_valid_type_attribute(self, old_style):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_rebin_with_valid_type_attribute(self, legacy):
         new_df = 2
         aps = AveragedCrossspectrum(self.lc1, self.lc2,
                                     segment_size=1, norm='leahy',
-                                    old_style=old_style,
+                                    legacy=legacy,
                                     save_all=True)
 
         assert aps.rebin(df=new_df)
@@ -1129,14 +1129,14 @@ class TestAveragedCrossspectrum(object):
 
         assert np.all(np.abs(time_lag[:6] - 0.1) < 3 * time_lag_err[:6])
 
-    def test_errorbars_old_style(self):
+    def test_errorbars_legacy(self):
         time = np.arange(10000) * 0.1
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
 
         with warnings.catch_warnings(record=True) as w:
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
-                                       norm="leahy", old_style=True)
+                                       norm="leahy", legacy=True)
 
         assert np.allclose(cs.power_err, np.sqrt(2 / cs.m))
 
