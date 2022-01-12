@@ -939,6 +939,7 @@ class Crossspectrum(object):
             unnorm_power_err = None
             if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
                 unnorm_power_err = self.unnorm_power_err
+
             _, binpower_unnorm, binpower_err_unnorm, _ = rebin_data(
                 self.freq, self.unnorm_power, df, dx=self.df, yerr=unnorm_power_err, method=method
             )
@@ -970,8 +971,24 @@ class Crossspectrum(object):
 
         return bin_cs
 
-    def to_norm(self, norm):
-        """Convert Cross spectrum to new normalization."""
+    def to_norm(self, norm, inplace=False):
+        """Convert Cross spectrum to new normalization.
+
+        Parameters
+        ----------
+        norm : str
+            The new normalization of the spectrum
+
+        Other parameters
+        ----------------
+        inplace: bool, default False
+            If True, change the current instance. Otherwise, return a new one
+
+        Returns
+        -------
+        new_spec : object, same class as input
+            The new, normalized, spectrum.
+        """
         if norm == self.norm:
             return copy.deepcopy(self)
 
@@ -992,7 +1009,10 @@ class Crossspectrum(object):
                 variance2 = self.variance2
                 variance = np.sqrt(self.variance1 * self.variance2)
 
-        new_spec = copy.deepcopy(self)
+        if inplace:
+            new_spec = self
+        else:
+            new_spec = copy.deepcopy(self)
 
         power_type = "all"
         if hasattr(self, "power_type"):

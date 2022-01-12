@@ -1047,6 +1047,13 @@ class TestAveragedCrossspectrum(object):
         assert np.allclose(cs1.power.real, cs3.power)
         assert np.all(np.isclose(np.abs(cs2.power), cs4.power, atol=0.0001))
 
+    def test_normalize_crossspectrum_with_method_inplace(self):
+        cs1 = AveragedCrossspectrum.from_lightcurve(self.lc1, self.lc2,  segment_size=1, norm="abs")
+        cs2 = cs1.to_norm("leahy", inplace=True)
+        cs3 = cs1.to_norm("leahy", inplace=False)
+        assert cs3 is not cs1
+        assert cs2 is cs1
+
     @pytest.mark.parametrize("norm1", ["leahy", "abs", "frac", "none"])
     @pytest.mark.parametrize("norm2", ["leahy", "abs", "frac", "none"])
     def test_normalize_crossspectrum_with_method(self, norm1, norm2):
@@ -1056,7 +1063,6 @@ class TestAveragedCrossspectrum(object):
                                                     norm=norm2)
         cs3 = cs2.to_norm(norm1)
         for attr in ["power", "power_err", "unnorm_power", "unnorm_power_err"]:
-            print(attr)
             assert np.allclose(getattr(cs1, attr), getattr(cs3, attr))
             assert np.allclose(getattr(cs1.pds1, attr), getattr(cs3.pds1, attr))
             assert np.allclose(getattr(cs1.pds2, attr), getattr(cs3.pds2, attr))
