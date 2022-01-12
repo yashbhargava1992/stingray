@@ -7,7 +7,9 @@ import scipy.special
 from astropy.io import fits
 from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum
-from stingray.crossspectrum import cospectra_pvalue, normalize_crossspectrum
+from stingray.crossspectrum import cospectra_pvalue
+from stingray.crossspectrum import (
+    normalize_crossspectrum, normalize_crossspectrum_gauss)
 from stingray.crossspectrum import coherence, time_lag
 from stingray import StingrayError
 from stingray.simulator import Simulator
@@ -1015,6 +1017,14 @@ class TestAveragedCrossspectrum(object):
             self.cs = AveragedCrossspectrum(self.lc1, self.lc2,
                                             segment_size=1,
                                             power_type="wrong")
+
+    def test_old_normalize_crossspectrum_warns(self):
+        with pytest.warns(DeprecationWarning):
+            normalize_crossspectrum(1., 2., 3., 4., 5., norm='abs')
+
+    def test_old_normalize_crossspectrum_gauss_warns(self):
+        with pytest.warns(DeprecationWarning):
+            normalize_crossspectrum_gauss(1., 2., 3., 4., 5., norm='abs')
 
     def test_normalize_crossspectrum(self):
         cs1 = Crossspectrum(self.lc1, self.lc2, norm="leahy")

@@ -205,7 +205,8 @@ def normalize_crossspectrum(
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
 
-    Here for API compatibility purposes. Will be removed.
+    Here for API compatibility purposes. Will be removed in the next
+    major release.
 
     Parameters
     ----------
@@ -240,6 +241,11 @@ def normalize_crossspectrum(
         The normalized co-spectrum (real part of the cross spectrum). For
         'none' normalization, imaginary part is returned as well.
     """
+    warnings.warn(
+        "normalize_crossspectrum is now deprecated and will be removed "
+        "in the next major release. Please use "
+        "stingray.fourier.normalize_periodograms instead.",
+        DeprecationWarning)
     dt = tseg / nbins
     nph = np.sqrt(nphots1 * nphots2)
     mean = nph / nbins
@@ -253,7 +259,8 @@ def normalize_crossspectrum_gauss(
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
 
-    Here for API compatibility purposes. Will be removed.
+    Here for API compatibility purposes. Will be removed in the next
+    major release.
 
     Parameters
     ----------
@@ -316,6 +323,11 @@ def normalize_crossspectrum_gauss(
     >>> np.isclose(np.mean(norm_c[2:]), 2 * np.mean(lc_c) / dt, rtol=0.1)
     True
     """
+    warnings.warn(
+        "normalize_crossspectrum_gauss is now deprecated and will be "
+        "removed in the next major release. Please use "
+        "stingray.fourier.normalize_periodograms instead.",
+        DeprecationWarning)
     mean = mean_flux * dt
     return normalize_periodograms(
         unnorm_power, dt, N, mean, variance=var, norm=norm, power_type=power_type
