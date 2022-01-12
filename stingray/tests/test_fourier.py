@@ -225,10 +225,11 @@ class TestFourier(object):
             counts=self.counts,
             errors=self.errs,
         )
+        # The variance is not _supposed_ to be equal, when we specify errors
         if use_common_mean:
-            compare_tables(out_ev, out_ct, rtol=0.01)
+            compare_tables(out_ev, out_ct, rtol=0.01, discard=["variance"])
         else:
-            compare_tables(out_ev, out_ct, rtol=0.1)
+            compare_tables(out_ev, out_ct, rtol=0.1, discard=["variance"])
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
