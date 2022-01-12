@@ -408,6 +408,43 @@ class EventList(object):
 
         self.energy = spec_fun(R)
 
+    def sort(self, inplace=False):
+        """Sort the event list in time.
+
+        Other parameters
+        ----------------
+        inplace : bool, default False
+            Sort in place. If False, return a new event list.
+
+        Examples
+        --------
+        >>> events = EventList(time=[0, 2, 1], energy=[0.3, 2, 0.5], pi=[3, 20, 5])
+        >>> e1 = events.sort()
+        >>> np.allclose(e1.time, [0, 1, 2])
+        True
+        >>> np.allclose(e1.energy, [0.3, 0.5, 2])
+        True
+        >>> np.allclose(e1.pi, [3, 5, 20])
+        True
+
+        But the original event list has not been altered (``inplace=False`` by
+        default):
+        >>> np.allclose(events.time, [0, 2, 1])
+        True
+
+        Let's do it in place instead
+        >>> e2 = events.sort(inplace=True)
+        >>> np.allclose(e2.time, [0, 1, 2])
+        True
+
+        In this case, the original event list has been altered.
+        >>> np.allclose(events.time, [0, 1, 2])
+        True
+
+        """
+        order = np.argsort(self.time)
+        return self.apply_mask(order, inplace=inplace)
+
     def join(self, other):
         """
         Join two :class:`EventList` objects into one.
