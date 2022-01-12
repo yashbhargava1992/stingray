@@ -399,7 +399,7 @@ class TestNormalization(object):
         mean1 = cs1.nphots1 / cs1.n
         mean2 = cs1.nphots2 / cs1.n
         mean = np.sqrt(mean1 * mean2)
-        noise = poisson_level(norm=norm, mean * cs1.dt, n_ph=n_ph)
+        noise = poisson_level(norm=norm, meanrate=mean / cs1.dt, n_ph=n_ph)
         assert np.isclose(np.mean(power_norm[1:]), noise, rtol=0.01)
 
     def test_method_norm_gauss(self):
@@ -416,7 +416,7 @@ class TestNormalization(object):
         mean1 = cs1.nphots1 / cs1.n
         mean2 = cs1.nphots2 / cs1.n
         mean = np.sqrt(mean1 * mean2)
-        noise = poisson_level(norm=norm, mean * cs1.dt, n_ph=n_ph)
+        noise = poisson_level(norm=norm, meanrate=mean / cs1.dt, n_ph=n_ph)
         assert np.isclose(np.mean(power_norm[1:]), noise, rtol=0.01)
 
     @pytest.mark.parametrize("power_type", ["abs", "real", "all"])

@@ -465,7 +465,7 @@ class RmsSpectrum(VarEnergySpectrum):
             # and Poisson noise level.
             sub_events = self._get_times_from_energy_range(self.events1, eint)
             countrate_sub = self._get_ctrate(sub_events)
-            sub_power_noise = poisson_level(norm="abs", countrate_sub)
+            sub_power_noise = poisson_level(norm="abs", meanrate=countrate_sub)
 
             # If we provided the `events2` array, calculate the rms from the
             # cospectrum, otherwise from the PDS
@@ -474,7 +474,7 @@ class RmsSpectrum(VarEnergySpectrum):
                 # calculate the count rate and Poisson noise level.
                 sub_events2 = self._get_times_from_energy_range(self.events2, eint)
                 countrate_sub2 = self._get_ctrate(sub_events2)
-                sub2_power_noise = poisson_level(norm="abs", countrate_sub2)
+                sub2_power_noise = poisson_level(norm="abs", meanrate=countrate_sub2)
 
                 # Calculate the cross spectrum
                 results = avg_cs_from_events(
@@ -915,7 +915,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         # the Poisson noise level.
         ref_events = self._get_times_from_energy_range(self.events2, self.ref_band[0])
         countrate_ref = self._get_ctrate(ref_events)
-        ref_power_noise = poisson_level(norm="abs", countrate_ref)
+        ref_power_noise = poisson_level(norm="abs", meanrate=countrate_ref)
 
         results = avg_pds_from_events(
             ref_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="abs"
@@ -937,7 +937,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
             # Extract events from the subject band
             sub_events = self._get_times_from_energy_range(self.events1, eint)
             countrate_sub = self._get_ctrate(sub_events)
-            sub_power_noise = poisson_level(norm="abs", countrate_sub)
+            sub_power_noise = poisson_level(norm="abs", meanrate=countrate_sub)
 
             results_cross = avg_cs_from_events(
                 sub_events,
