@@ -446,8 +446,8 @@ class TestNormalization(object):
         cs.power_type = power_type
         self.cs.power_type = power_type
 
-        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
-        power_norm = cs._normalize_crossspectrum(cs.unnorm_power, self.tseg)
+        power = self.cs. _normalize_crossspectrum(self.cs.unnorm_power)
+        power_norm = cs. _normalize_crossspectrum(cs.unnorm_power)
         abs_noise = 2. * self.rate1  # expected Poisson noise level
         assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
         assert np.allclose(power[1:], power_norm[1:], atol=0.5)
@@ -460,8 +460,8 @@ class TestNormalization(object):
         self.cs.power_type = power_type
         self.cs_norm.power_type = power_type
 
-        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
-        power_norm = self.cs_norm._normalize_crossspectrum(self.cs_norm.unnorm_power, self.tseg)
+        power = self.cs. _normalize_crossspectrum(self.cs.unnorm_power)
+        power_norm = self.cs_norm. _normalize_crossspectrum(self.cs_norm.unnorm_power)
 
         assert np.allclose(power[1:], power_norm[1:], atol=0.5)
         leahy_noise = 2.0  # expected Poisson noise level
@@ -473,8 +473,8 @@ class TestNormalization(object):
         self.cs_norm.norm = 'frac'
         self.cs.power_type = power_type
         self.cs_norm.power_type = power_type
-        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
-        power_norm = self.cs_norm._normalize_crossspectrum(self.cs_norm.unnorm_power, self.tseg)
+        power = self.cs. _normalize_crossspectrum(self.cs.unnorm_power)
+        power_norm = self.cs_norm. _normalize_crossspectrum(self.cs_norm.unnorm_power)
 
         assert np.allclose(power[1:], power_norm[1:])
         norm = 2. / self.rate1
@@ -488,11 +488,9 @@ class TestNormalization(object):
         self.cs.norm = 'asdgfasdfa'
         self.cs_norm.norm = 'adfafaf'
         with pytest.raises(ValueError):
-            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power,
-                                                     self.tseg)
+            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power)
         with pytest.raises(ValueError):
-            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power,
-                                                          self.tseg)
+            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power)
 
     def test_failure_wrong_power_type(self):
         self.cs.power_type = 'asdgfasdfa'
@@ -501,11 +499,9 @@ class TestNormalization(object):
         self.cs_norm.norm = 'leahy'
 
         with pytest.raises(ValueError):
-            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power,
-                                                     self.tseg)
+            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power)
         with pytest.raises(ValueError):
-            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power,
-                                                          self.tseg)
+            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power)
 
 
 class TestCrossspectrum(object):

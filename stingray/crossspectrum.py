@@ -822,7 +822,7 @@ class Crossspectrum(object):
 
         # If co-spectrum is desired, normalize here. Otherwise, get raw back
         # with the imaginary part still intact.
-        self.power = self._normalize_crossspectrum(self.unnorm_power, lc1.tseg)
+        self.power = self._normalize_crossspectrum(self.unnorm_power)
 
         if lc1.err_dist.lower() != lc2.err_dist.lower():
             simon(
@@ -847,7 +847,7 @@ class Crossspectrum(object):
             unnorm_power_err /= 2 / np.sqrt(self.nphots1 * self.nphots2)
             unnorm_power_err += np.zeros_like(self.power)
 
-            self.power_err = self._normalize_crossspectrum(unnorm_power_err, lc1.tseg)
+            self.power_err = self._normalize_crossspectrum(unnorm_power_err)
         else:
             self.power_err = np.zeros(len(self.power))
 
@@ -1061,7 +1061,7 @@ class Crossspectrum(object):
 
         return new_spec
 
-    def _normalize_crossspectrum(self, unnorm_power, tseg=None):
+    def _normalize_crossspectrum(self, unnorm_power):
         """
         Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
         fractional rms^2 normalization, or not at all.
@@ -1070,11 +1070,6 @@ class Crossspectrum(object):
         ----------
         unnorm_power: numpy.ndarray
             The unnormalized cross spectrum.
-
-        Other parameters
-        ----------------
-        tseg: int
-            Only for compatibility purposes. Ignored.
 
         Returns
         -------
@@ -1192,10 +1187,6 @@ class Crossspectrum(object):
     def phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
         return np.angle(self.unnorm_power)
-
-    def _phase_lag(self):  # pragma: no cover
-        """Equivalent to phase_lag. For API compatibility wih previous version."""
-        return self.phase_lag()
 
     def time_lag(self):
         """
