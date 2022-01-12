@@ -706,7 +706,7 @@ def _which_segment_idx_fun(binned=False, dt=None):
     Note that in the binned function ``dt`` is an optional parameter.
     We pass it if the user specifies it.
     """
-    # Make function interface equal (counts gets ignored)
+    # Make function interface equal (fluxes gets ignored)
     if not binned:
         fun = generate_indices_of_segment_boundaries_unbinned
     else:
@@ -772,17 +772,17 @@ def get_average_ctrate(times, gti, segment_size, counts=None):
     return n_ph / (n_intvs * segment_size)
 
 
-def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, counts=None, errors=None):
+def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes=None, errors=None):
     """Get fluxes from different segments of the observation.
 
-    If ``counts`` is ``None``, the input times are interpreted as events, and
+    If ``fluxes`` is ``None``, the input times are interpreted as events, and
     they are split into many binned series of length ``segment_size`` with
     ``n_bin`` bins.
 
-    If ``counts`` is an array, the number of events corresponding to each time
-    bin is taken from ``counts``
+    If ``fluxes`` is an array, the number of events corresponding to each time
+    bin is taken from ``fluxes``
 
-    Therefore, at least one of either ``n_bin`` and ``counts`` needs to be
+    Therefore, at least one of either ``n_bin`` and ``fluxes`` needs to be
     specified.
 
     Parameters
@@ -798,24 +798,26 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, counts
     ----------------
     n_bin : int, default None
         Number of bins to divide the ``segment_size`` in
-    counts : float `np.array`, default None
-        Array of counts per bin
+    fluxes : float `np.array`, default None
+        Array of fluxes.
+    errors : float `np.array`, default None
+        Array of error bars corresponding to the flux values above.
 
-    Returns
-    -------
-    cts : `np.array`
-        Array of counts
+    Yields
+    ------
+    flux : `np.array`
+        Array of fluxes
     err : `np.array`
         (optional) if ``errors`` is None, an array of errors in the segment
 
     """
-    if counts is None and n_bin is None:
+    if fluxes is None and n_bin is None:
         raise ValueError(
-            "At least one between counts (if light curve) and n_bin (if events) has to be set"
+            "At least one between fluxes (if light curve) and n_bin (if events) has to be set"
         )
 
     dt = None
-    binned = counts is not None
+    binned = fluxes is not None
     if binned:
         dt = np.median(np.diff(times[:100]))
 
@@ -833,7 +835,7 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, counts
                             range=[0, segment_size]).astype(float)
             cts = np.array(cts)
         else:
-            cts = counts[idx0:idx1].astype(float)
+            cts = fluxes[idx0:idx1].astype(float)
             if errors is not None:
                 cts = cts, errors[idx0:idx1]
 
@@ -886,7 +888,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
         m : int
             the number of averaged periodograms
         mean : float
-            the mean counts per bin
+            the mean flux
     """
     local_show_progress = show_progress
     if silent:
@@ -914,6 +916,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, s
         n_bin = flux.size
         ft = fft(flux)
 
+        # This will only be used by the Leahy normalization, so only if
+        # the input light curve is in units of counts/bin
         n_ph = flux.sum()
         unnorm_power = (ft * ft.conj()).real
 
@@ -996,7 +1000,7 @@ def avg_cs_from_iterables_quick(
 
     Assumes that:
 
-    * the flux iterables return counts, no other units
+    * the flux iterables return counts/bin, no other units
     * the mean is calculated over the whole light curve, and normalization
       is done at the end
     * no auxiliary PDSs are returned
@@ -1058,7 +1062,6 @@ def avg_cs_from_iterables_quick(
         n_bin = flux1.size
 
         # Calculate the sum of each light curve, to calculate the mean
-        # This will
         n_ph1 = flux1.sum()
         n_ph2 = flux2.sum()
 
@@ -1420,14 +1423,14 @@ def avg_pds_from_events(
     norm="abs",
     use_common_mean=True,
     silent=False,
-    counts=None,
+    fluxes=None,
     errors=None,
 ):
     """Calculate the average periodogram from a list of event times or a light curve.
 
     If the input is a light curve, the time array needs to be uniformly sampled
-    inside GTIs (it can have gaps outside), and the counts need to be passed
-    through the ``counts`` array.
+    inside GTIs (it can have gaps outside), and the fluxes need to be passed
+    through the ``fluxes`` array.
     Otherwise, times are interpeted as photon arrival times.
 
     Parameters
@@ -1455,10 +1458,10 @@ def avg_pds_from_events(
         per-segment basis.
     silent : bool, default False
         Silence the progress bars
-    counts : float `np.array`, default None
-        Array of counts per bin or fluxes per bin
+    fluxes : float `np.array`, default None
+        Array of counts per bin or fluxes
     errors : float `np.array`, default None
-        Array of errors on the counts above
+        Array of errors on the fluxes above
 
     Returns
     -------
@@ -1471,7 +1474,7 @@ def avg_pds_from_events(
     n_ave : int
         the number of averaged periodograms
     mean : float
-        the mean counts per bin
+        the mean flux
     """
     if segment_size is None:
         segment_size = gti.max() - gti.min()
@@ -1479,7 +1482,7 @@ def avg_pds_from_events(
     dt = segment_size / n_bin
 
     flux_iterable = get_flux_iterable_from_segments(
-        times, gti, segment_size, n_bin, counts=counts, errors=errors
+        times, gti, segment_size, n_bin, fluxes=fluxes, errors=errors
     )
     cross = avg_pds_from_iterable(
         flux_iterable, dt, norm=norm, use_common_mean=use_common_mean, silent=silent
@@ -1500,8 +1503,8 @@ def avg_cs_from_events(
     fullspec=False,
     silent=False,
     power_type="all",
-    counts1=None,
-    counts2=None,
+    fluxes1=None,
+    fluxes2=None,
     errors1=None,
     errors2=None,
     return_auxil=False,
@@ -1509,8 +1512,8 @@ def avg_cs_from_events(
     """Calculate the average cross spectrum from a list of event times or a light curve.
 
     If the input is a light curve, the time arrays need to be uniformly sampled
-    inside GTIs (they can have gaps outside), and the counts need to be passed
-    through the ``counts1`` and ``counts2`` arrays.
+    inside GTIs (they can have gaps outside), and the fluxes need to be passed
+    through the ``fluxes1`` and ``fluxes2`` arrays.
     Otherwise, times are interpeted as photon arrival times
 
     Parameters
@@ -1545,14 +1548,14 @@ def avg_cs_from_events(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
-    counts1 : float `np.array`, default None
-        Array of counts per bin for channel 1
-    counts2 : float `np.array`, default None
-        Array of counts per bin for channel 2
+    fluxes1 : float `np.array`, default None
+        Array of fluxes or counts per bin for channel 1
+    fluxes2 : float `np.array`, default None
+        Array of fluxes or counts per bin for channel 2
     errors1 : float `np.array`, default None
-        Array of errors on the counts on channel 1
+        Array of errors on the fluxes on channel 1
     errors2 : float `np.array`, default None
-        Array of errors on the counts on channel 2
+        Array of errors on the fluxes on channel 2
 
     Returns
     -------
@@ -1572,13 +1575,13 @@ def avg_cs_from_events(
     dt = segment_size / n_bin
 
     flux_iterable1 = get_flux_iterable_from_segments(
-        times1, gti, segment_size, n_bin, counts=counts1, errors=errors1
+        times1, gti, segment_size, n_bin, fluxes=fluxes1, errors=errors1
     )
     flux_iterable2 = get_flux_iterable_from_segments(
-        times2, gti, segment_size, n_bin, counts=counts2, errors=errors2
+        times2, gti, segment_size, n_bin, fluxes=fluxes2, errors=errors2
     )
 
-    is_events = np.all([val is None for val in (counts1, counts2, errors1, errors2)])
+    is_events = np.all([val is None for val in (fluxes1, fluxes2, errors1, errors2)])
 
     if (is_events
             and silent

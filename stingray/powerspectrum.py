@@ -1153,7 +1153,7 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
         lc.time, lc.gti, segment_size, lc.dt,
         norm=norm, use_common_mean=use_common_mean,
         silent=silent,
-        counts=lc.counts)
+        fluxes=lc.counts)
 
     return _powerspectrum_from_astropy_table(table, force_averaged=force_averaged)
 

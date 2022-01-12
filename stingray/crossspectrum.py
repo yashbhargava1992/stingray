@@ -121,7 +121,7 @@ def get_flux_generator(data, segment_size, dt=None):
         N = int(np.rint(segment_size / dt))
 
     flux_iterable = get_flux_iterable_from_segments(
-        times, gti, segment_size, N, counts=counts, errors=err
+        times, gti, segment_size, N, fluxes=counts, errors=err
     )
     return flux_iterable
 
@@ -2314,8 +2314,8 @@ def crossspectrum_from_lightcurve(
         fullspec=fullspec,
         silent=silent,
         power_type=power_type,
-        counts1=lc1.counts,
-        counts2=lc2.counts,
+        fluxes1=lc1.counts,
+        fluxes2=lc2.counts,
         errors1=err1,
         errors2=err2,
         return_auxil=True,

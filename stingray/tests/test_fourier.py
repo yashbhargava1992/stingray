@@ -145,7 +145,7 @@ class TestFourier(object):
     def test_fts_from_segments_invalid(self):
         with pytest.raises(ValueError) as excinfo:
             # N and counts are both None. This should make the function fail immediately
-            for _ in get_flux_iterable_from_segments(1, 2, 3, n_bin=None, counts=None):
+            for _ in get_flux_iterable_from_segments(1, 2, 3, n_bin=None, fluxes=None):
                 pass
         assert 'At least one between counts' in str(excinfo.value)
 
@@ -157,7 +157,7 @@ class TestFourier(object):
         fts_cts = [
             f
             for f in get_flux_iterable_from_segments(
-                self.bin_times, self.gti, self.segment_size, counts=self.counts
+                self.bin_times, self.gti, self.segment_size, fluxes=self.counts
             )
         ]
         for fe, fc in zip(fts_evts, fts_cts):
@@ -187,7 +187,7 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=use_common_mean,
             silent=True,
-            counts=None,
+            fluxes=None,
         )
         out_ct = avg_pds_from_events(
             self.bin_times,
@@ -197,7 +197,7 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=use_common_mean,
             silent=True,
-            counts=self.counts,
+            fluxes=self.counts,
         )
         compare_tables(out_ev, out_ct)
 
@@ -212,7 +212,7 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=use_common_mean,
             silent=True,
-            counts=None,
+            fluxes=None,
         )
         out_ct = avg_pds_from_events(
             self.bin_times,
@@ -222,7 +222,7 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=use_common_mean,
             silent=True,
-            counts=self.counts,
+            fluxes=self.counts,
             errors=self.errs,
         )
         # The variance is not _supposed_ to be equal, when we specify errors
@@ -253,8 +253,8 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=use_common_mean,
             silent=False,
-            counts1=self.counts,
-            counts2=self.counts2,
+            fluxes1=self.counts,
+            fluxes2=self.counts2,
         )
         if use_common_mean:
             compare_tables(out_ev, out_ct, rtol=0.01)
@@ -283,8 +283,8 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=use_common_mean,
             silent=False,
-            counts1=self.counts,
-            counts2=self.counts2,
+            fluxes1=self.counts,
+            fluxes2=self.counts2,
             errors1=self.errs,
             errors2=self.errs2,
         )
@@ -307,7 +307,7 @@ class TestNorms(object):
         cls.good = good
         cls.meanrate = cls.mean / cls.dt
         cls.lc = np.random.poisson(cls.mean, cls.N).astype(float)
-        cls.nph = cls.lc.counts.sum()
+        cls.nph = np.sum(cls.lc)
         cls.pds = (np.abs(np.fft.fft(cls.lc)) ** 2)[good]
         cls.lc_bksub = cls.lc - cls.mean
         cls.pds_bksub = (np.abs(np.fft.fft(cls.lc_bksub)) ** 2)[good]
