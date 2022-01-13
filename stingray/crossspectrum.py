@@ -132,16 +132,19 @@ def coherence(lc1, lc2):
     Estimate coherence function of two light curves.
     For details on the definition of the coherence, see Vaughan and Nowak,
     1996 [#]_.
+
     Parameters
     ----------
     lc1: :class:`stingray.Lightcurve` object
         The first light curve data for the channel of interest.
     lc2: :class:`stingray.Lightcurve` object
         The light curve data for reference band
+
     Returns
     -------
     coh : ``np.ndarray``
         The array of coherence versus frequency
+
     References
     ----------
     .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
@@ -168,16 +171,25 @@ def time_lag(lc1, lc2):
     """
     Estimate the time lag of two light curves.
     Calculate time lag and uncertainty.
-        Equation from Bendat & Piersol, 2011 [bendat-2011]_.
-        Returns
-        -------
-        lag : np.ndarray
-            The time lag
-        lag_err : np.ndarray
-            The uncertainty in the time lag
-        References
-        ----------
-        .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
+    Equation from Bendat & Piersol, 2011 [bendat-2011]_.
+
+    Parameters
+    ----------
+    lc1: :class:`stingray.Lightcurve` object
+        The first light curve data for the channel of interest.
+    lc2: :class:`stingray.Lightcurve` object
+        The light curve data for reference band
+
+    Returns
+    -------
+    lag : np.ndarray
+        The time lag
+    lag_err : np.ndarray
+        The uncertainty in the time lag
+
+    References
+    ----------
+    .. [bendat-2011] https://www.wiley.com/en-us/Random+Data%3A+Analysis+and+Measurement+Procedures%2C+4th+Edition-p-9780470248775
     """
 
     warnings.warn(
@@ -1198,7 +1210,8 @@ class Crossspectrum(object):
         """Calculate the fourier time lag of the cross spectrum.
         The time lag is calculated by taking the phase lag :math:`\phi` and
 
-        ..math ::
+        ..math::
+
             \tau = \frac{\phi}{\two pi \nu}
 
         where :math:`\nu` is the center of the frequency bins.
