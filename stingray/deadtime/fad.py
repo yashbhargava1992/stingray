@@ -51,7 +51,10 @@ def FAD(
     data1 : `Lightcurve` or `EventList`
         Input data for channel 1
     data2 : `Lightcurve` or `EventList`
-        Input data for channel 2
+        Input data for channel 2. Must be strictly simultaneous to ``data1``
+        and, if a light curve, have the same binning time. Also, it must be
+        strictly independent, e.g. from a different detector. There must be
+        no dead time cross-talk between the two time series.
     segment_size: float
         The final Fourier products are averaged over many segments of the
         input light curves. This is the length of each segment being averaged.
@@ -244,8 +247,6 @@ def FAD(
                            'selected. Exiting.')
 
     results = Table()
-
-    print("M: " + str(M))
 
     results['freq'] = freq
     results['pds1'] = pds1 / M

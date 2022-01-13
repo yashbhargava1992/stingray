@@ -31,7 +31,7 @@ class Simulator(object):
         fractional rms of the simulated light curve,
         actual rms is calculated by mean*rms
     err : float, default 0
-        the errorbars on the final light curve bins
+        the errorbars on the final light curve
     red_noise : int, default 1
         multiple of real length of light curve, by
         which to simulate, to avoid red noise leakage

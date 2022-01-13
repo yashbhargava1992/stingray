@@ -262,7 +262,7 @@ class Multitaper(Powerspectrum):
             self.unnorm_power = self.multitaper_norm_power * lc.n / lc.dt
 
         self.power = \
-            self._normalize_multitaper(self.unnorm_power, lc.tseg)
+            self._normalize_multitaper(self.unnorm_power)
 
         if lc.err_dist.lower() != "poisson":
             simon("Looks like your lightcurve statistic is not poisson."
@@ -509,7 +509,7 @@ class Multitaper(Powerspectrum):
 
         return psd_iter, d_k
 
-    def _normalize_multitaper(self, unnorm_power, tseg=None):
+    def _normalize_multitaper(self, unnorm_power):
         """
         Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
         fractional rms^2 normalization, or not at all.
@@ -517,17 +517,12 @@ class Multitaper(Powerspectrum):
         Parameters
         ----------
         unnorm_power: numpy.ndarray
-            The unnormalized cross spectrum.
-
-        Other parameters
-        ----------------
-        tseg: int
-            Only for compatibility purposes. Ignored.
+            The unnormalized spectrum estimate.
 
         Returns
         -------
         power: numpy.nd.array
-            The normalized co-spectrum (real part of the cross spectrum). For
+            The normalized spectrum estimate (real part of the spectrum). For
             'none' normalization, imaginary part is returned as well.
         """
 
