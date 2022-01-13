@@ -151,6 +151,10 @@ class VarEnergySpectrum(metaclass=ABCMeta):
         event list for the second channel, if not the same. Useful if the
         reference band has to be taken from another detector.
 
+    return_complex: bool, default False
+        In spectra that produce complex values, return the whole spectrum.
+        Otherwise, the absolute value will be returned.
+
     Attributes
     ----------
     events1 : array-like
@@ -223,9 +227,18 @@ class VarEnergySpectrum(metaclass=ABCMeta):
 
     @property
     def energy(self):
+        """Give the centers of the energy intervals."""
         return np.sum(self.energy_intervals, axis=1) / 2
 
     def _analyze_inputs(self):
+        """Make some checks on the inputs and set some internal variable.
+
+        If the object of events1 is the same as events2, set `same_events` to True.
+        This will, for example, tell the methods to use events1 for the subject bands
+        and events2 for the reference band (useful in deadtime-affected data).
+
+        Also, if the event lists are distinct, calculate common GTIs.
+        """
         events1 = self.events1
         events2 = self.events2
         common_gti = events1.gti
@@ -238,7 +251,12 @@ class VarEnergySpectrum(metaclass=ABCMeta):
         self.gti = common_gti
 
     def _create_empty_spectrum(self):
+        """Allocate the arrays of the output spectrum.
 
+        Default value is NaN. This is because most spectral timing products are
+        prone to numerical errors, and it's more informative to have a default invalid
+        value rather than something like, e.g., 0 or 1
+        """
         if self.return_complex:
             dtype = complex
         else:
@@ -248,6 +266,25 @@ class VarEnergySpectrum(metaclass=ABCMeta):
         self.spectrum_error = np.zeros_like(self.spectrum, dtype=dtype) + np.nan
 
     def _get_times_from_energy_range(self, events, erange, use_pi=False):
+        """Get event times from the wanted energy range.
+
+        Parameters
+        ----------
+        events : `EventList`
+            Input event list
+        erange : [e0, e1]
+            Energy range in keV
+
+        Other parameters
+        ----------------
+        use_pi : bool, default False
+            Use the PI channel instead of energies
+
+        Returns
+        -------
+        out_ev : `EventList`
+            The filtered event list.
+        """
         if use_pi:
             energies = events.pi
         else:
@@ -256,6 +293,19 @@ class VarEnergySpectrum(metaclass=ABCMeta):
         return events.time[mask]
 
     def _get_good_frequency_bins(self, freq=None):
+        """Get frequency mask corresponding to the wanted frequency interval
+
+        Parameters
+        ----------
+        freq : `np.array`, default None
+            The frequency array. If None, it will get calculated from the number
+            of spectral bins using `np.fft.fftfreq`
+
+        Returns
+        -------
+        freq_mask : `np.array` of bool
+            The frequency mask.
+        """
         if freq is None:
             n_bin = np.rint(self.segment_size / self.bin_time)
             freq = fftfreq(int(n_bin), self.bin_time)
@@ -264,10 +314,40 @@ class VarEnergySpectrum(metaclass=ABCMeta):
         return good
 
     def _get_ctrate(self, events):
+        """Calculate the average count rate of an event list.
+
+        Parameters
+        ----------
+        events : `EventList`
+            Input event list
+
+        Returns
+        -------
+        ctrate : float
+            The average count rate of the event list, in the intervals that
+            will be used for analysis
+        """
         return get_average_ctrate(events, self.gti, self.segment_size)
 
-    def _decide_ref_intervals(self, *args):
-        return get_non_overlapping_ref_band(*args)
+    def _decide_ref_intervals(self, channel_band):
+        """Calculate non-overlapping reference intervals
+
+        This function eliminates from the reference band the intervals
+        belonging to the subject bands.
+
+        Parameters
+        ----------
+        channel_band : iterable of type ``[elow, ehigh]``
+            The lower/upper limits of the energies to be contained in the band
+            of interest
+
+        Returns
+        -------
+        ref_intervals : iterable
+            The channels that are both in the reference band in not in the
+            bands of interest
+        """
+        return get_non_overlapping_ref_band(channel_band, self.ref_band)
 
     def _construct_lightcurves(
         self, channel_band, tstart=None, tstop=None, exclude=True, only_base=False
@@ -330,7 +410,7 @@ class VarEnergySpectrum(metaclass=ABCMeta):
             return base_lc
 
         if exclude:
-            ref_intervals = self._decide_ref_intervals(channel_band, self.ref_band)
+            ref_intervals = self._decide_ref_intervals(channel_band)
         else:
             ref_intervals = self.ref_band
 

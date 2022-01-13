@@ -66,14 +66,14 @@ class TestVarEnergySpectrum(object):
             ref_int = VarEnergySpectrum(self.events, [0.0, 10000], (0.5, 5, 10, "log"), [0.3, 10])
 
     def test_intervals_overlapping(self):
-        ref_int = self.vespec._decide_ref_intervals([0.5, 6], [0.3, 10])
+        ref_int = self.vespec._decide_ref_intervals([0.5, 6])
         np.testing.assert_allclose(ref_int, [[0.3, 0.5], [6, 10]])
-        ref_int = self.vespec._decide_ref_intervals([0.5, 11], [0.3, 10])
+        ref_int = self.vespec._decide_ref_intervals([0.5, 11])
         np.testing.assert_allclose(ref_int, [[0.3, 0.5]])
 
     def test_intervals_non_overlapping(self):
-        ref_int = self.vespec._decide_ref_intervals([6, 11], [0.3, 5])
-        np.testing.assert_allclose(ref_int, [[0.3, 5]])
+        ref_int = self.vespec._decide_ref_intervals([10.5, 11])
+        np.testing.assert_allclose(ref_int, [[0.3, 10]])
 
     def test_ref_band_none(self):
         events = EventList(
