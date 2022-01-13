@@ -1207,7 +1207,7 @@ class Crossspectrum(object):
         return np.angle(self.unnorm_power)
 
     def time_lag(self):
-        """Calculate the fourier time lag of the cross spectrum.
+        r"""Calculate the fourier time lag of the cross spectrum.
         The time lag is calculated by taking the phase lag :math:`\phi` and
 
         ..math::
