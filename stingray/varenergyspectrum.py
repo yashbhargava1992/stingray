@@ -50,6 +50,11 @@ def get_non_overlapping_ref_band(channel_band, ref_band):
     >>> new_ref = get_non_overlapping_ref_band(channel_band, ref_band)
     >>> np.allclose(new_ref, [[0, 2], [3, 10]])
     True
+
+    Test this also works with a 1-D ref. band
+    >>> new_ref = get_non_overlapping_ref_band(channel_band, [0, 10])
+    >>> np.allclose(new_ref, [[0, 2], [3, 10]])
+    True
     >>> new_ref = get_non_overlapping_ref_band([0, 1], [[2, 3]])
     >>> np.allclose(new_ref, [[2, 3]])
     True
