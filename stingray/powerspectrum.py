@@ -414,7 +414,7 @@ class Powerspectrum(Crossspectrum):
             Only relevant (and required) for AveragedPowerspectrum
         gti : [[gti0, gti1], ...]
             Good Time intervals
-        norm : str, default "abs"
+        norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
             unnormalized periodogram
@@ -455,7 +455,7 @@ class Powerspectrum(Crossspectrum):
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged
             Only relevant (and required) for AveragedPowerspectrum
-        norm : str, default "abs"
+        norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
             unnormalized periodogram
@@ -496,7 +496,7 @@ class Powerspectrum(Crossspectrum):
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged
             Only relevant (and required) for AveragedPowerspectrum
-        norm : str, default "abs"
+        norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
             unnormalized periodogram
@@ -539,7 +539,7 @@ class Powerspectrum(Crossspectrum):
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged
             Only relevant (and required) for AveragedPowerspectrum
-        norm : str, default "abs"
+        norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
             unnormalized periodogram
@@ -1042,7 +1042,7 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm="
         The length, in seconds, of the light curve segments that will be averaged
     gti : [[gti0, gti1], ...]
         Good Time intervals
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -1092,7 +1092,7 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
     ----------------
     segment_size : float
         The length, in seconds, of the light curve segments that will be averaged
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -1138,7 +1138,7 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
     ----------------
     segment_size : float
         The length, in seconds, of the light curve segments that will be averaged
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -1192,7 +1192,7 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
     segment_size : float, default None
         The length, in seconds, of the light curve segments that will be averaged.
         If not ``None``, it will be used to check the segment size of the output.
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram

@@ -1391,7 +1391,7 @@ class Crossspectrum(object):
             Only relevant (and required) for AveragedCrossspectrum
         gti : [[gti0, gti1], ...]
             Common Good Time intervals
-        norm : str, default "abs"
+        norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
             unnormalized periodogram
@@ -1450,7 +1450,7 @@ class Crossspectrum(object):
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged.
             Only relevant (and required) for AveragedCrossspectrum
-        norm : str, default "abs"
+        norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
             unnormalized periodogram
@@ -1504,7 +1504,7 @@ class Crossspectrum(object):
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged.
             Only relevant (and required) for AveragedCrossspectrum
-        norm : str, default "abs"
+        norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
             unnormalized periodogram
@@ -1560,7 +1560,7 @@ class Crossspectrum(object):
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged.
             Only relevant (and required) for AveragedCrossspectrum
-        norm : str, default "abs"
+        norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
             unnormalized periodogram
@@ -2282,7 +2282,7 @@ def crossspectrum_from_time_array(
         The length, in seconds, of the light curve segments that will be averaged
     gti : [[gti0, gti1], ...]
         Common Good Time intervals
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -2352,7 +2352,7 @@ def crossspectrum_from_events(
     ----------------
     segment_size : float, default None
         The length, in seconds, of the light curve segments that will be averaged
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -2415,7 +2415,7 @@ def crossspectrum_from_lightcurve(
     ----------------
     segment_size : float, default None
         The length, in seconds, of the light curve segments that will be averaged
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -2494,7 +2494,7 @@ def crossspectrum_from_lc_iterable(
 
     Other parameters
     ----------------
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram

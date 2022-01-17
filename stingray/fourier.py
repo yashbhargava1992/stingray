@@ -111,7 +111,7 @@ def poisson_level(norm="frac", meanrate=None, n_ph=None):
 
     Parameters
     ----------
-    norm : str, default "abs"
+    norm : str, default "frac"
         Normalization of the periodogram. One of ["abs", "frac", "leahy", "none"]
 
     Other Parameters
@@ -855,7 +855,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
 
     Other Parameters
     ----------------
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -1020,7 +1020,7 @@ def avg_cs_from_iterables_quick(
 
     Other Parameters
     ----------------
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -1166,7 +1166,7 @@ def avg_cs_from_iterables(
 
     Other Parameters
     ----------------
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -1446,7 +1446,7 @@ def avg_pds_from_events(
 
     Other Parameters
     ----------------
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
@@ -1531,7 +1531,7 @@ def avg_cs_from_events(
 
     Other Parameters
     ----------------
-    norm : str, default "abs"
+    norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
         unnormalized periodogram
