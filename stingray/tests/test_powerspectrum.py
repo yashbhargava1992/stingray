@@ -57,13 +57,23 @@ class TestAveragedPowerspectrumEvents(object):
             segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True)
         assert np.allclose(self.leahy_pds.power, pds_ev.power)
 
+    @pytest.mark.parametrize("err_dist", ["poisson", "gauss"])
     @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
-    def test_method_norm(self, norm):
+    def test_method_norm(self, norm, err_dist):
+        lc = self.events.to_lc(dt=self.dt)
+        if err_dist == "gauss":
+            factor = 1 / lc.counts.max()
+            lc.counts = lc.counts * factor
+            lc.counts_err = lc.counts_err * factor
+            lc.err_dist = "gauss"
 
-        loc_pds = AveragedPowerspectrum(
-            self.lc, segment_size=self.segment_size, dt=self.dt, norm=norm, silent=True)
+        pds = AveragedPowerspectrum.from_lightcurve(
+            lc, segment_size=self.segment_size, norm="leahy", silent=True)
 
-        renorm_pds = self.leahy_pds.to_norm(norm)
+        loc_pds = AveragedPowerspectrum.from_lightcurve(
+            lc, segment_size=self.segment_size, norm=norm, silent=True)
+
+        renorm_pds = pds.to_norm(norm)
 
         assert loc_pds.norm == renorm_pds.norm
         for attr in ["power", "unnorm_power", "power_err"]:
