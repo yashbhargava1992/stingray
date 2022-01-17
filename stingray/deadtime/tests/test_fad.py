@@ -62,7 +62,7 @@ def test_fad_power_spectrum_compliant(ctrate):
         calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
                           smoothing_alg='gauss',
                           strict=True, verbose=True,
-                          tolerance=0.05)
+                                 tolerance=0.05, norm="none")
 
     pds1_f = results['pds1']
     pds2_f = results['pds2']
@@ -108,7 +108,7 @@ def test_fad_power_spectrum_compliant_objects(ctrate):
 
     results = \
         calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
-                          smoothing_alg='gauss',
+                                 smoothing_alg='gauss', norm="none",
                           strict=True, verbose=True,
                           tolerance=0.05, return_objects=True)
 
