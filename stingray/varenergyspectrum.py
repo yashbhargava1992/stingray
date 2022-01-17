@@ -515,7 +515,7 @@ class RmsSpectrum(VarEnergySpectrum):
         use_pi=False,
         segment_size=None,
         events2=None,
-        norm="abs",
+        norm="frac",
     ):
 
         self.norm = norm
@@ -972,7 +972,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         use_pi=False,
         segment_size=None,
         events2=None,
-        norm="abs",
+        norm="frac",
         return_complex=True,
     ):
 
