@@ -155,7 +155,7 @@ class TestAveragedCrossspectrumEvents(object):
         self.events1 = EventList(times1, gti=gti)
         self.events2 = EventList(times2, gti=gti)
 
-        self.cs = Crossspectrum(self.events1, self.events2, dt=self.dt)
+        self.cs = Crossspectrum(self.events1, self.events2, dt=self.dt, norm="none")
 
         self.acs = AveragedCrossspectrum(self.events1.to_lc(self.dt),
                                          self.events2.to_lc(self.dt), silent=True,
@@ -266,7 +266,7 @@ class TestAveragedCrossspectrumEvents(object):
     def test_it_works_with_events(self):
         lc1 = self.events1.to_lc(self.dt)
         lc2 = self.events2.to_lc(self.dt)
-        lccs = Crossspectrum(lc1, lc2)
+        lccs = Crossspectrum(lc1, lc2, norm="none")
         assert np.allclose(lccs.power, self.cs.power)
 
     def test_no_segment_size(self):
@@ -812,8 +812,11 @@ class TestAveragedCrossspectrum(object):
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, tend]], dt=dt)
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
 
-        self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
-                                        save_all=True)
+        with pytest.warns(UserWarning) as record:
+            self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                            save_all=True)
+        assert np.any(['The large_data option and the save_all' in r.message.args[0]
+                       for r in record])
 
     @pytest.mark.parametrize("skip_checks", [True, False])
     def test_initialize_empty(self, skip_checks):
@@ -821,9 +824,12 @@ class TestAveragedCrossspectrum(object):
         assert cs.freq is None
 
     def test_save_all(self):
-        cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
-                                   save_all=True, legacy=True)
-        assert hasattr(cs, 'cs_all')
+        with pytest.warns(UserWarning) as record:
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                       save_all=True)
+        assert np.any(['The large_data option and the save_all' in r.message.args[0]
+                       for r in record])
+        assert hasattr(self.cs, 'cs_all')
 
     def test_lc_keyword_deprecation(self):
         cs1 = AveragedCrossspectrum(data1=self.lc1, data2=self.lc2,
@@ -952,10 +958,11 @@ class TestAveragedCrossspectrum(object):
     @pytest.mark.parametrize("legacy", [True, False])
     def test_rebin_with_valid_type_attribute(self, legacy):
         new_df = 2
+        save_all = legacy
         aps = AveragedCrossspectrum(self.lc1, self.lc2,
                                     segment_size=1, norm='leahy',
                                     legacy=legacy,
-                                    save_all=True)
+                                    save_all=save_all)
 
         assert aps.rebin(df=new_df)
 

@@ -540,7 +540,8 @@ class TestChunkPS(object):
     def test_calc_cpds_zarr_not_installed(self):
         with pytest.raises(ImportError) as excinfo:
             AveragedCrossspectrum(
-                self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
+                self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True,
+                legacy=True
             )
         assert "The large_data option requires zarr" in str(excinfo.value)
 
@@ -548,7 +549,8 @@ class TestChunkPS(object):
     def test_calc_pds_zarr_not_installed(self):
         with pytest.raises(ImportError) as excinfo:
             AveragedPowerspectrum(
-                self.lc1, segment_size=8192, large_data=True, silent=True
+                self.lc1, segment_size=8192, large_data=True, silent=True,
+                legacy=True
             )
         assert "The large_data option requires zarr" in str(excinfo.value)
 
@@ -557,9 +559,12 @@ class TestChunkPS(object):
         cs_normal = AveragedCrossspectrum(
             self.lc1, self.lc2, segment_size=8192, silent=True, legacy=True
         )
-        cs_large = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
-        )
+        with pytest.warns(UserWarning) as record:
+            cs_large = AveragedCrossspectrum(
+                self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
+            )
+            assert np.any(['The large_data option and the save_all' in r.message.args[0]
+                           for r in record])
 
         attrs = [
             "freq",

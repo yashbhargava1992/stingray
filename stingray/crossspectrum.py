@@ -1694,9 +1694,16 @@ class AveragedCrossspectrum(Crossspectrum):
         # input objects that are not EventList or Lightcurve (e.g. lists of
         # light curves.)
         accepted_new_style = (EventList, Lightcurve)
-        legacy = legacy or not isinstance(data1, accepted_new_style)
+        if not isinstance(data1, accepted_new_style) and not legacy:
+            warnings.warn("Anything but EventList and Lightcurve as input requires "
+                          " the legacy interface (legacy=True).")
+            legacy = True
         # The large_data option requires the legacy interface.
-        legacy = legacy or large_data
+        if (large_data or save_all) and not legacy:
+            warnings.warn("The large_data option and the save_all options are only"
+                          "available with the legacy interface (legacy=True).")
+            legacy = True
+
         if not legacy and data1 is not None and data2 is not None:
             if isinstance(data1, EventList):
                 spec = crossspectrum_from_events(
