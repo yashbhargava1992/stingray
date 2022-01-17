@@ -318,42 +318,6 @@ class VarEnergySpectrum(metaclass=ABCMeta):
         good = (freq >= self.freq_interval[0]) & (freq < self.freq_interval[1])
         return good
 
-    def _get_ctrate(self, events):
-        """Calculate the average count rate of an event list.
-
-        Parameters
-        ----------
-        events : `EventList`
-            Input event list
-
-        Returns
-        -------
-        ctrate : float
-            The average count rate of the event list, in the intervals that
-            will be used for analysis
-        """
-        return get_average_ctrate(events, self.gti, self.segment_size)
-
-    def _decide_ref_intervals(self, channel_band):
-        """Calculate non-overlapping reference intervals
-
-        This function eliminates from the reference band the intervals
-        belonging to the subject bands.
-
-        Parameters
-        ----------
-        channel_band : iterable of type ``[elow, ehigh]``
-            The lower/upper limits of the energies to be contained in the band
-            of interest
-
-        Returns
-        -------
-        ref_intervals : iterable
-            The channels that are both in the reference band in not in the
-            bands of interest
-        """
-        return get_non_overlapping_ref_band(channel_band, self.ref_band)
-
     def _construct_lightcurves(
         self, channel_band, tstart=None, tstop=None, exclude=True, only_base=False
     ):
@@ -415,7 +379,7 @@ class VarEnergySpectrum(metaclass=ABCMeta):
             return base_lc
 
         if exclude:
-            ref_intervals = self._decide_ref_intervals(channel_band)
+            ref_intervals = get_non_overlapping_ref_band(channel_band, self.ref_band)
         else:
             ref_intervals = self.ref_band
 
@@ -549,7 +513,7 @@ class RmsSpectrum(VarEnergySpectrum):
             # Extract events from the subject band and calculate the count rate
             # and Poisson noise level.
             sub_events = self._get_times_from_energy_range(self.events1, eint)
-            countrate_sub = self._get_ctrate(sub_events)
+            countrate_sub = get_average_ctrate(sub_events, self.gti, self.segment_size)
             sub_power_noise = poisson_level(norm="abs", meanrate=countrate_sub)
 
             # If we provided the `events2` array, calculate the rms from the
@@ -558,7 +522,7 @@ class RmsSpectrum(VarEnergySpectrum):
                 # Extract events from the subject band in the other array, and
                 # calculate the count rate and Poisson noise level.
                 sub_events2 = self._get_times_from_energy_range(self.events2, eint)
-                countrate_sub2 = self._get_ctrate(sub_events2)
+                countrate_sub2 = get_average_ctrate(sub_events2, self.gti, self.segment_size)
                 sub2_power_noise = poisson_level(norm="abs", meanrate=countrate_sub2)
 
                 # Calculate the cross spectrum
@@ -1001,7 +965,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         # Extract events from the reference band and calculate the PDS and
         # the Poisson noise level.
         ref_events = self._get_times_from_energy_range(self.events2, self.ref_band[0])
-        countrate_ref = self._get_ctrate(ref_events)
+        countrate_ref = get_average_ctrate(ref_events, self.gti, self.segment_size)
         ref_power_noise = poisson_level(norm="abs", meanrate=countrate_ref)
 
         results = avg_pds_from_events(
@@ -1023,7 +987,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         for i, eint in enumerate(show_progress(self.energy_intervals)):
             # Extract events from the subject band
             sub_events = self._get_times_from_energy_range(self.events1, eint)
-            countrate_sub = self._get_ctrate(sub_events)
+            countrate_sub = get_average_ctrate(sub_events, self.gti, self.segment_size)
             sub_power_noise = poisson_level(norm="abs", meanrate=countrate_sub)
 
             results_cross = avg_cs_from_events(
