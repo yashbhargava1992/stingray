@@ -407,13 +407,13 @@ class Powerspectrum(Crossspectrum):
         dt : float
             The time resolution of the intermediate light curves
             (sets the Nyquist frequency)
-        segment_size : float
-            The length, in seconds, of the light curve segments that will be averaged
-        gti : [[gti0, gti1], ...]
-            Good Time intervals
-
         Other parameters
         ----------------
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged
+            Only relevant (and required) for AveragedPowerspectrum
+        gti : [[gti0, gti1], ...]
+            Good Time intervals
         norm : str, default "abs"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -449,11 +449,12 @@ class Powerspectrum(Crossspectrum):
         dt : float
             The time resolution of the intermediate light curves
             (sets the Nyquist frequency)
-        segment_size : float
-            The length, in seconds, of the light curve segments that will be averaged
 
         Other parameters
         ----------------
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged
+            Only relevant (and required) for AveragedPowerspectrum
         norm : str, default "abs"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -489,11 +490,12 @@ class Powerspectrum(Crossspectrum):
         dt : float
             The time resolution of the intermediate light curves
             (sets the Nyquist frequency)
-        segment_size : float
-            The length, in seconds, of the light curve segments that will be averaged
 
         Other parameters
         ----------------
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged
+            Only relevant (and required) for AveragedPowerspectrum
         norm : str, default "abs"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -531,11 +533,12 @@ class Powerspectrum(Crossspectrum):
         dt : float
             The time resolution of the light curves
             (sets the Nyquist frequency)
-        segment_size : float
-            The length, in seconds, of the light curve segments that will be averaged
 
         Other parameters
         ----------------
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged
+            Only relevant (and required) for AveragedPowerspectrum
         norm : str, default "abs"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the

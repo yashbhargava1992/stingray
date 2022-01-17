@@ -1388,7 +1388,7 @@ class Crossspectrum(object):
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged.
-            Only relevant for AveragedCrossspectrum
+            Only relevant (and required) for AveragedCrossspectrum
         gti : [[gti0, gti1], ...]
             Common Good Time intervals
         norm : str, default "abs"
@@ -1417,7 +1417,7 @@ class Crossspectrum(object):
             segment_size=segment_size,
             gti=gti,
             norm=norm,
-            power_type=all,
+            power_type=power_type,
             silent=silent,
             fullspec=fullspec,
             use_common_mean=use_common_mean)
@@ -1449,7 +1449,7 @@ class Crossspectrum(object):
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged.
-            Only relevant for AveragedCrossspectrum
+            Only relevant (and required) for AveragedCrossspectrum
         norm : str, default "abs"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -1503,7 +1503,7 @@ class Crossspectrum(object):
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged.
-            Only relevant for AveragedCrossspectrum
+            Only relevant (and required) for AveragedCrossspectrum
         norm : str, default "abs"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -1559,7 +1559,7 @@ class Crossspectrum(object):
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged.
-            Only relevant for AveragedCrossspectrum
+            Only relevant (and required) for AveragedCrossspectrum
         norm : str, default "abs"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
