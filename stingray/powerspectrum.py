@@ -396,7 +396,8 @@ class Powerspectrum(Crossspectrum):
             power[maximum_val] * self.m, self.nphots, n=self.m, c=c, nyq_ratio=nyq_ratio, fft_corr=True)
 
     @staticmethod
-    def from_time_array(*args, **kwargs):
+    def from_time_array(times, dt, segment_size=None, gti=None, norm="frac",
+                        silent=False, use_common_mean=True):
         """Calculate AveragedPowerspectrum from an array of event times.
 
         Parameters
@@ -432,10 +433,13 @@ class Powerspectrum(Crossspectrum):
             the real part
         """
 
-        return powerspectrum_from_time_array(*args, **kwargs)
+        return powerspectrum_from_time_array(
+            times, dt, segment_size=segment_size, gti=gti, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_events(*args, **kwargs):
+    def from_events(events, dt, segment_size=None, norm="frac",
+                    silent=False, use_common_mean=True):
         """Calculate AveragedPowerspectrum from an event list
 
         Parameters
@@ -469,10 +473,13 @@ class Powerspectrum(Crossspectrum):
             the real part
         """
 
-        return powerspectrum_from_events(*args, **kwargs)
+        return powerspectrum_from_events(
+            events, dt, segment_size=segment_size, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_lightcurve(*args, **kwargs):
+    def from_lightcurve(lc, segment_size=None, norm="frac",
+                        silent=False, use_common_mean=True):
         """Calculate AveragedPowerspectrum from a light curve
 
         Parameters
@@ -506,10 +513,13 @@ class Powerspectrum(Crossspectrum):
             the real part
         """
 
-        return powerspectrum_from_lightcurve(*args, **kwargs)
+        return powerspectrum_from_lightcurve(
+            lc, segment_size=segment_size, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_lc_iterable(*args, **kwargs):
+    def from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
+                         silent=False, use_common_mean=True):
         """Calculate AveragedCrossspectrum from two light curves
 
         Parameters
@@ -545,7 +555,9 @@ class Powerspectrum(Crossspectrum):
             the real part
         """
 
-        return powerspectrum_from_lc_iterable(*args, **kwargs)
+        return powerspectrum_from_lc_iterable(
+            iter_lc, dt, segment_size=segment_size, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
 
 
 class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):

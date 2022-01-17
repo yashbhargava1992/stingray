@@ -1361,7 +1361,17 @@ class Crossspectrum(object):
         return pvals
 
     @staticmethod
-    def from_time_array(*args, **kwargs):
+    def from_time_array(
+            times1,
+            times2,
+            dt,
+            segment_size=None,
+            gti=None,
+            norm="none",
+            power_type="all",
+            silent=False,
+            fullspec=False,
+            use_common_mean=True,):
         """Calculate AveragedCrossspectrum from two arrays of event times.
 
         Parameters
@@ -1400,10 +1410,29 @@ class Crossspectrum(object):
             the real part
         """
 
-        return crossspectrum_from_time_array(*args, **kwargs)
+        return crossspectrum_from_time_array(
+            times1,
+            times2,
+            dt,
+            segment_size=segment_size,
+            gti=gti,
+            norm=norm,
+            power_type=all,
+            silent=silent,
+            fullspec=fullspec,
+            use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_events(*args, **kwargs):
+    def from_events(
+            events1,
+            events2,
+            dt,
+            segment_size=None,
+            norm="none",
+            power_type="all",
+            silent=False,
+            fullspec=False,
+            use_common_mean=True):
         """Calculate AveragedCrossspectrum from two event lists
 
         Parameters
@@ -1440,10 +1469,27 @@ class Crossspectrum(object):
             the real part
         """
 
-        return crossspectrum_from_events(*args, **kwargs)
+        return crossspectrum_from_events(
+            events1,
+            events2,
+            dt,
+            segment_size=segment_size,
+            norm=norm,
+            power_type=power_type,
+            silent=silent,
+            fullspec=fullspec,
+            use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_lightcurve(*args, **kwargs):
+    def from_lightcurve(
+            lc1,
+            lc2,
+            segment_size=None,
+            norm="none",
+            power_type="all",
+            silent=False,
+            fullspec=False,
+            use_common_mean=True):
         """Calculate AveragedCrossspectrum from two light curves
 
         Parameters
@@ -1476,10 +1522,27 @@ class Crossspectrum(object):
             If 'all', give complex powers. If 'abs', the absolute value; if 'real',
             the real part
         """
-        return crossspectrum_from_lightcurve(*args, **kwargs)
+        return crossspectrum_from_lightcurve(
+            lc1,
+            lc2,
+            segment_size=segment_size,
+            norm=norm,
+            power_type=power_type,
+            silent=silent,
+            fullspec=fullspec,
+            use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_lc_iterable(*args, **kwargs):
+    def from_lc_iterable(
+            iter_lc1,
+            iter_lc2,
+            dt,
+            segment_size,
+            norm="none",
+            power_type="all",
+            silent=False,
+            fullspec=False,
+            use_common_mean=True):
         """Calculate AveragedCrossspectrum from two light curves
 
         Parameters
@@ -1516,7 +1579,16 @@ class Crossspectrum(object):
             the real part
         """
 
-        return crossspectrum_from_lc_iterable(*args, **kwargs)
+        return crossspectrum_from_lc_iterable(
+            iter_lc1,
+            iter_lc2,
+            dt,
+            segment_size,
+            norm=norm,
+            power_type=power_type,
+            silent=silent,
+            fullspec=fullspec,
+            use_common_mean=use_common_mean)
 
 
 class AveragedCrossspectrum(Crossspectrum):
