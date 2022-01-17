@@ -89,7 +89,7 @@ def positive_fft_bins(n_bin, include_zero=False):
     return slice(minbin, (n_bin + 1) // 2)
 
 
-def poisson_level(norm="abs", meanrate=None, n_ph=None):
+def poisson_level(norm="frac", meanrate=None, n_ph=None):
     """Poisson (white)-noise level in a periodogram of pure counting noise.
 
     For Leahy normalization, this is:
@@ -367,7 +367,7 @@ def normalize_leahy_poisson(unnorm_power, n_ph):
     return unnorm_power * 2. / n_ph
 
 
-def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, variance=None, norm="abs", power_type="all"):
+def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, variance=None, norm="frac", power_type="all"):
     """Wrapper around all the normalize_NORM methods.
 
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
@@ -842,7 +842,7 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes
         yield cts
 
 
-def avg_pds_from_iterable(flux_iterable, dt, norm="abs", use_common_mean=True, silent=False):
+def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, silent=False):
     """Calculate the average periodogram from an iterable of light curves
 
     Parameters
@@ -994,7 +994,7 @@ def avg_cs_from_iterables_quick(
     flux_iterable1,
     flux_iterable2,
     dt,
-    norm="abs"
+    norm="frac"
 ):
     """Like `avg_cs_from_iterables`, with default options that make it quick.
 
@@ -1145,7 +1145,7 @@ def avg_cs_from_iterables(
     flux_iterable1,
     flux_iterable2,
     dt,
-    norm="abs",
+    norm="frac",
     use_common_mean=True,
     silent=False,
     fullspec=False,
@@ -1420,7 +1420,7 @@ def avg_pds_from_events(
     gti,
     segment_size,
     dt,
-    norm="abs",
+    norm="frac",
     use_common_mean=True,
     silent=False,
     fluxes=None,
@@ -1498,7 +1498,7 @@ def avg_cs_from_events(
     gti,
     segment_size,
     dt,
-    norm="abs",
+    norm="frac",
     use_common_mean=True,
     fullspec=False,
     silent=False,

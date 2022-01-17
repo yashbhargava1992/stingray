@@ -24,7 +24,7 @@ def FAD(
     data2,
     segment_size,
     dt=None,
-    norm="abs",
+    norm="frac",
     plot=False,
     ax=None,
     smoothing_alg='gauss',
@@ -284,7 +284,7 @@ def FAD(
     return results
 
 
-def calculate_FAD_correction(lc1, lc2, segment_size, norm="none", gti=None,
+def calculate_FAD_correction(lc1, lc2, segment_size, norm="frac", gti=None,
                              plot=False, ax=None, smoothing_alg='gauss',
                              smoothing_length=None, verbose=False,
                              tolerance=0.05, strict=False,

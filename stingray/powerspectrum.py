@@ -1009,7 +1009,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         return new_dynspec_object
 
 
-def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm='none',
+def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm="frac",
                                   silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from an array of event times.
 
@@ -1061,7 +1061,7 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm='
     return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
 
 
-def powerspectrum_from_events(events, dt, segment_size=None, norm='none',
+def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
                               silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from an event list
 
@@ -1107,7 +1107,7 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm='none',
     )
 
 
-def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
+def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
                                   silent=False, use_common_mean=True):
     """Calculate AveragedPowerspectrum from a light curve
 
@@ -1158,7 +1158,7 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm='none',
     return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
 
 
-def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm='none',
+def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
                                    silent=False, use_common_mean=True):
     """Calculate AveragedCrossspectrum from two light curves
 
