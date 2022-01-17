@@ -891,7 +891,7 @@ class LagSpectrum(VarEnergySpectrum):
                 Cmean, mean_sub_power, mean_ref_power, m_tot, sub_power_noise, ref_power_noise, common_ref=common_ref
             )
 
-            lag = np.mean((np.angle(cross[good]) / (2 * np.pi * freq[good])))
+            lag = np.angle(Cmean) / (2 * np.pi * f)
             lag_e = phi_e / (2 * np.pi * f)
             self.spectrum[i] = lag
             self.spectrum_error[i] = lag_e
