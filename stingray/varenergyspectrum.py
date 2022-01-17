@@ -866,7 +866,7 @@ class LagSpectrum(VarEnergySpectrum):
                 self.segment_size,
                 self.bin_time,
                 silent=True,
-                norm="none",
+                norm="none"
             )
 
             results_ps = avg_pds_from_events(
@@ -880,6 +880,7 @@ class LagSpectrum(VarEnergySpectrum):
             sub_power = results_ps["power"]
 
             Cmean = np.mean(cross[good])
+
             mean_sub_power = np.mean(sub_power[good])
 
             # Is the subject band overlapping with the reference band?
@@ -891,7 +892,8 @@ class LagSpectrum(VarEnergySpectrum):
                 Cmean, mean_sub_power, mean_ref_power, m_tot, sub_power_noise, ref_power_noise, common_ref=common_ref
             )
 
-            lag = np.angle(Cmean) / (2 * np.pi * f)
+            lag = np.mean((np.angle(cross[good]) / (2 * np.pi * freq[good])))
+
             lag_e = phi_e / (2 * np.pi * f)
             self.spectrum[i] = lag
             self.spectrum_error[i] = lag_e

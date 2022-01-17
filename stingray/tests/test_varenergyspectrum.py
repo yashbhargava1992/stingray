@@ -344,16 +344,18 @@ class TestLagEnergySpectrum(object):
         from ..simulator import Simulator
 
         dt = 0.01
-        cls.time_lag = 5
+        cls.time_lag = 5.
         data = np.load(os.path.join(datadir, "sample_variable_lc.npy"))
         flux = data
         times = np.arange(data.size) * dt
         maxfreq = 0.25 / cls.time_lag
         roll_amount = int(cls.time_lag // dt)
-        good = slice(roll_amount, roll_amount + int(200 / dt))
+        good = slice(roll_amount, roll_amount + int(200 // dt))
 
         rolled_flux = np.array(np.roll(flux, roll_amount))
         times, flux, rolled_flux = times[good], flux[good], rolled_flux[good]
+
+        length = times[-1] - times[0]
         test_lc1 = Lightcurve(times, flux, err_dist="gauss", dt=dt, skip_checks=True)
         test_lc2 = Lightcurve(test_lc1.time, rolled_flux, err_dist=test_lc1.err_dist, dt=dt)
         test_ev1, test_ev2 = EventList(), EventList()
@@ -365,11 +367,11 @@ class TestLagEnergySpectrum(object):
 
         cls.lag = LagEnergySpectrum(
             test_ev1,
-            [0.0, maxfreq],
-            (0.3, 9, 1, "lin"),
-            [9, 12],
+            freq_interval=[0, maxfreq],
+            energy_spec=(0.3, 9, 1, "lin"),
+            ref_band=[9, 12],
             bin_time=dt / 2,
-            segment_size=199,
+            segment_size=length,
             events2=test_ev2,
         )
 
@@ -378,11 +380,11 @@ class TestLagEnergySpectrum(object):
 
         cls.lag_same = LagEnergySpectrum(
             test_ev,
-            [0.0, maxfreq],
-            (0.3, 9, 1, "lin"),
-            [9, 12],
+            freq_interval=[0, maxfreq],
+            energy_spec=(0.3, 9, 1, "lin"),
+            ref_band=[9, 12],
             bin_time=dt / 2,
-            segment_size=199,
+            segment_size=length,
         )
 
     def test_lagspectrum_values_and_errors(self):
