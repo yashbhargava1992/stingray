@@ -339,6 +339,10 @@ class EventList(object):
         Randomly simulate photon arrival times to an :class:`EventList` from a
         :class:`stingray.Lightcurve` object, using the inverse CDF method.
 
+        ..note::
+            Preferably use model light curves containing **no Poisson noise**,
+            as this method will intrinsically add Poisson noise to them.
+
         Parameters
         ----------
         lc: :class:`stingray.Lightcurve` object
