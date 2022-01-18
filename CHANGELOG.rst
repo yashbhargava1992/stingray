@@ -4,6 +4,16 @@ Changelog
 Not Yet Released
 ----------------
 
+- Partial support for non-uniformly sampled data
+- Fixes in the `stingray.simulator` module
+- New stingray.fourier module containing the basic timing products, usable on `numpy` arrays
+- Lots of performance improvements in the `AveragedCrossspectrum` and `AveragedPowerspectrum` classes
+- New methods in `Crossspectrum` and `Powerspectrum` to load data from specific inputs: `from_events`, `from_lightcurve`, `from_time_array`, `from_lc_list`
+    - `from_time_array` was also tested using memory-mapped event lists as inputs: useful in very large datasets
+- New and improved spectral timing methods: `ComplexCovarianceSpectrum`, `CovarianceSpectrum`, `LagSpectrum`, `RmsSpectrum`
+- Improved error bars on cross-spectral and spectral timing methods
+- Some deprecated features are now removed
+
 `Full list of changes`__
 
 __ https://github.com/StingraySoftware/stingray/compare/v0.3...main
