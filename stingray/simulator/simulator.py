@@ -380,7 +380,7 @@ class Simulator(object):
         local_std = np.std(np.diff(counts)) / np.sqrt(2)
 
         rescaled_counts = self._extract_and_scale(counts)
-        err = local_std + np.zeros_like(rescaled_counts) / self.std * self.rms
+        err = (local_std + np.zeros_like(rescaled_counts)) / self.std * self.rms
 
         if self.poisson:
             bad = rescaled_counts < 0
