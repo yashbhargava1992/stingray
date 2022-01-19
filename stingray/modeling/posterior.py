@@ -28,6 +28,43 @@ __all__ = ["set_logprior", "Posterior", "PSDPosterior", "LogLikelihood", "Poisso
 
 logmin = -10000000000000000.0
 
+
+def assign_if_not_finite(value, default):
+    """Check if a value is finite. Otherwise, return the default.
+
+    Parameters
+    ----------
+    value : float, int or `np.array`
+        The input value
+    default : float
+        The default value
+
+    Returns
+    -------
+    output : same as ``value``
+        The result
+
+    Examples
+    --------
+    >>> assign_if_not_finite(1, 3.2)
+    1
+    >>> assign_if_not_finite(np.inf, 3.2)
+    3.2
+    >>> input_arr = np.array([np.nan, 1, np.inf, 2])
+    >>> np.allclose(assign_if_not_finite(input_arr, 3.2), [3.2, 1, 3.2, 2])
+    True
+
+    """
+    if isinstance(value, Iterable):
+        values = [assign_if_not_finite(val, default) for val in value]
+        values = np.array(values)
+        return values
+
+    if not np.isfinite(value):
+        return default
+    return value
+
+
 class PriorUndefinedError(Exception):
     pass
 
@@ -141,8 +178,7 @@ def set_logprior(lpost, priors):
 
                 ii += 1
 
-        if not np.isfinite(logp):
-            logp = logmin
+        logp = assign_if_not_finite(logp, logmin)
 
         if neg:
             return -logp
@@ -285,8 +321,7 @@ class GaussianLogLikelihood(LogLikelihood):
         loglike = np.sum(-0.5*np.log(2.*np.pi) - np.log(self.yerr) -
                          (self.y-mean_model)**2/(2.*self.yerr**2))
 
-        if not np.isfinite(loglike):
-            loglike = logmin
+        loglike = assign_if_not_finite(loglike, logmin)
 
         if neg:
             return -loglike
@@ -372,8 +407,7 @@ class PoissonLogLikelihood(LogLikelihood):
         loglike = np.sum(-mean_model + self.y*np.log(mean_model) \
                - scipy_gammaln(self.y + 1.))
 
-        if not np.isfinite(loglike):
-            loglike = logmin
+        loglike = assign_if_not_finite(loglike, logmin)
 
         if neg:
             return -loglike
@@ -471,14 +505,13 @@ class PSDLogLikelihood(LogLikelihood):
                           np.sum(self.y/mean_model)
 
             else:
+                loglike = -2.0 * (
+                    np.sum(self.m * np.log(mean_model)) +
+                    np.sum(self.m * self.y/mean_model) +
+                    np.sum(self.m * (2.0 / (2. * self.m) - 1.0) * np.log(self.y)))
 
-                    loglike = -2.0*self.m*(np.sum(np.log(mean_model)) +
-                                       np.sum(self.y/mean_model) +
-                                       np.sum((2.0 / (2. * self.m) - 1.0) *
-                                              np.log(self.y)))
+        loglike = assign_if_not_finite(loglike, logmin)
 
-        if not np.isfinite(loglike):
-            loglike = logmin
 
         if neg:
             return -loglike
@@ -567,8 +600,7 @@ class LaplaceLogLikelihood(LogLikelihood):
                         loglike = np.sum(-np.log(2.*self.yerr) - \
                                   (np.abs(self.y - mean_model)/self.yerr))
 
-        if not np.isfinite(loglike):
-            loglike = logmin
+        loglike = assign_if_not_finite(loglike, logmin)
 
         if neg:
             return -loglike
