@@ -89,7 +89,7 @@ def positive_fft_bins(n_bin, include_zero=False):
     return slice(minbin, (n_bin + 1) // 2)
 
 
-def poisson_level(norm="frac", meanrate=None, n_ph=None):
+def poisson_level(norm="frac", meanrate=None, n_ph=None, backrate=0):
     """Poisson (white)-noise level in a periodogram of pure counting noise.
 
     For Leahy normalization, this is:
@@ -166,7 +166,7 @@ def poisson_level(norm="frac", meanrate=None, n_ph=None):
     if norm == "abs":
         return 2. * meanrate
     if norm == "frac":
-        return 2. / meanrate
+        return 2. / (meanrate - backrate)**2 * meanrate
     if norm == "leahy":
         return 2.0
     if norm == "none":
@@ -175,19 +175,36 @@ def poisson_level(norm="frac", meanrate=None, n_ph=None):
     raise ValueError(f"Unknown value for norm: {norm}")
 
 
-def normalize_frac(unnorm_power, dt, n_bin, mean_flux):
+def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
     """Fractional rms normalization.
 
-    .. math::
-        P = \frac{P_{Leahy}}{\mu}
+    ..math::
+        P = \frac{P_{Leahy}}{\mu} = \frac{2T}{N_{ph}^2}P_{unnorm}
 
-    where :math:`\mu` is the mean count rate
+    where :math:`\mu` is the mean count rate, :math:`T` is the length of
+    the observation, and :math:`N_{ph}` the number of photons.
+    Alternative formulas found in the literature substitute :math:`T=N\,dt`,
+    :math:`\mu=N_{ph}/T`, which give equivalent results.
+
+    If the background can be estimated, one can calculate the source rms
+    normalized periodogram as
+    ..math::
+        P = P_{Leahy} * \frac{\mu}{(\mu - \beta)^2}
+
+    or
+    ..math::
+        P = \frac{2T}{(N_{ph} - \beta T)^2}P_{unnorm}
+
+    where :math:`\beta` is the background count rate.
 
     This is also called the Belloni or Miyamoto normalization.
     In this normalization, the periodogram is in units of
     :math:`(rms/mean)^2 Hz^{-1}`, and the squared root of the
     integrated periodogram will give the fractional rms in the
     required frequency range.
+
+    TODO: Check the actual Belloni normalization, which is a factor
+    T off somewhere.
 
     Belloni & Hasinger (1990) A&A 230, 103
 
@@ -214,13 +231,19 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux):
     Examples
     --------
     >>> mean = var = 1000000
+    >>> back = 100000
     >>> n_bin = 1000000
     >>> dt = 0.2
     >>> meanrate = mean / dt
+    >>> backrate = back / dt
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_frac(pds, dt, lc.size, mean)
     >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(meanrate=meanrate,norm="frac"), rtol=0.01)
+    True
+    >>> pdsnorm = normalize_frac(pds, dt, lc.size, mean, background_flux=back)
+    >>> np.isclose(pdsnorm[1:n_bin//2].mean(),
+    ...            poisson_level(meanrate=meanrate,norm="frac",backrate=backrate), rtol=0.01)
     True
     """
     #     (mean * n_bin) / (mean /dt) = n_bin * dt
@@ -229,8 +252,12 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux):
     #     meanrate = mean / dt
     #     norm = 2 / (n_ph * meanrate) = 2 * dt / (mean**2 * n_bin)
 
-    # Note: this corresponds to eq. 3 in Uttley+14
-    return unnorm_power * 2. * dt / (mean_flux ** 2 * n_bin)
+    if background_flux > 0:
+        power = unnorm_power * 2. * dt / ((mean_flux - background_flux) ** 2 * n_bin)
+    else:
+        # Note: this corresponds to eq. 3 in Uttley+14
+        power = unnorm_power * 2. * dt / (mean_flux ** 2 * n_bin)
+    return power
 
 
 def normalize_abs(unnorm_power, dt, n_bin):
