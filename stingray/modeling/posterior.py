@@ -499,19 +499,18 @@ class PSDLogLikelihood(LogLikelihood):
         mean_model = self.model(self.x)
 
         with warnings.catch_warnings(record=True) as out:
-
             if not isinstance(self.m, Iterable) and self.m == 1:
                 loglike = -np.sum(np.log(mean_model)) - \
                           np.sum(self.y/mean_model)
 
             else:
-                loglike = -2.0 * (
-                    np.sum(self.m * np.log(mean_model)) +
-                    np.sum(self.m * self.y/mean_model) +
-                    np.sum(self.m * (2.0 / (2. * self.m) - 1.0) * np.log(self.y)))
+                dof = 2.0 * self.m
+                loglike = -(
+                    np.sum(dof * np.log(mean_model)) +
+                    np.sum(dof * self.y / mean_model) +
+                    np.sum(dof * (2.0 / dof - 1.0) * np.log(self.y)))
 
         loglike = assign_if_not_finite(loglike, logmin)
-
 
         if neg:
             return -loglike

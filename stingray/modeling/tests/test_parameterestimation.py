@@ -872,7 +872,7 @@ class TestPSDParEst(object):
 
         model2 = models.PowerLaw1D() + models.Const1D()
         model2.x_0_0.fixed = True
-        loglike2 = PSDLogLikelihood(ps.freq, ps.power, model2, 1)
+        loglike2 = PSDLogLikelihood(ps.freq, ps.power, model2, m=1)
 
         pe = PSDParEst(ps)
 
