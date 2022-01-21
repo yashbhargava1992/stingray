@@ -850,8 +850,9 @@ class TestPSDParEst(object):
     def test_calibrate_lrt_works_as_expected(self):
 
         m = 1
-        nfreq = 100
-        freq = np.linspace(1, 10, nfreq)
+        df = 0.01
+        freq = np.arange(df, 5 + df, df)
+        nfreq = freq.size
         rng = np.random.RandomState(100)
         noise = rng.exponential(size=nfreq)
         model = models.Const1D()
@@ -863,7 +864,7 @@ class TestPSDParEst(object):
         ps.freq = freq
         ps.power = power
         ps.m = m
-        ps.df = freq[1] - freq[0]
+        ps.df = df
         ps.norm = "leahy"
 
         loglike = PSDLogLikelihood(ps.freq, ps.power, model, m=1)

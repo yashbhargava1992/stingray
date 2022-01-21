@@ -741,7 +741,6 @@ class ParameterEstimation(object):
             The p-value for the test statistic given the simulations.
 
         """
-
         # cast the simulations as a numpy array
         sim = np.array(sim)
 
