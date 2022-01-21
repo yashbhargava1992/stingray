@@ -266,7 +266,9 @@ def normalize_abs(unnorm_power, dt, n_bin):
     .. math::
         P = P_{frac} * \mu^2
 
-    where :math:`\mu` is the mean count rate
+    where :math:`\mu` is the mean count rate, or equivalently
+    .. math::
+        P = \frac{2}{T}P_{unnorm}
 
     In this normalization, the periodogram is in units of
     :math:`rms^2 Hz^{-1}`, and the squared root of the
