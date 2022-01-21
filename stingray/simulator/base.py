@@ -125,7 +125,7 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
     ValueError: simulate_times can only work with...
     """
     time = np.asarray(time)
-    counts = np.asarray(counts)
+    counts = np.asarray(counts).astype(float)
     gti = np.asarray(gti)
     kind = "linear"
     if use_spline and time.size > 2:
