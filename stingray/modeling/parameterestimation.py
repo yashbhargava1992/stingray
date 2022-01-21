@@ -873,7 +873,6 @@ class ParameterEstimation(object):
             s_all = sample[rng.choice(sample.shape[0], nsim,
                                      replace=False)]
 
-
         # simulate LRTs
         # this method is defined in the subclasses!
         lrt_sim = self.simulate_lrts(s_all, lpost1, t1, lpost2, t2,
@@ -1431,7 +1430,7 @@ class PSDParEst(ParameterEstimation):
             # make LogLikelihood objects for both:
             if isinstance(lpost1, LogLikelihood):
                 sim_lpost1 = PSDLogLikelihood(sim_ps.freq, sim_ps.power,
-                                              model=lpost1.model)
+                                              model=lpost1.model, m=sim_ps.m)
                 sim_lpost2 = PSDLogLikelihood(sim_ps.freq, sim_ps.power,
                                               model=lpost2.model, m=sim_ps.m)
                 max_post = False
