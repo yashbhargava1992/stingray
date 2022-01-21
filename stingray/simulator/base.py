@@ -160,7 +160,8 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
 
 
 def simulate_with_inverse_cdf(
-        binned_pdf, N, x_range=None, interp_kind=None, sorted=False):
+        binned_pdf, N, x_range=None, interp_kind=None, sorted=False,
+        edges=None):
     """Simulate single values from a binned probability distribution.
 
     Parameters
@@ -174,6 +175,9 @@ def simulate_with_inverse_cdf(
 
     Other parameters
     ----------------
+    edges : `np.array`
+        The edges of the PDF bins. The array is longer than binned_pdf by 1
+        bin, a la `np.histogram`
     x_range : [float, float], default None
         The range of the values to be generated. Defaults to [0, 1].
     interp_kind : str
@@ -209,6 +213,19 @@ def simulate_with_inverse_cdf(
     >>> np.all(np.diff(vals)) >= 0
     True
 
+    We should get exactly the same result by passing the edges.
+    >>> vals = simulate_with_inverse_cdf([2, 0, 4, 3], 103,
+    ...                                  edges=[0, 0.25, 0.5, 0.75, 1],
+    ...                                  interp_kind="linear", sorted=True)
+
+    No values were simulated between 0.25 and 0.5
+    >>> np.count_nonzero((vals > 0.25)&(vals < 0.5)) == 0
+    True
+
+    All values are between 0 and 1
+    >>> np.all((vals >= 0)&(vals < 1))
+    True
+
     Do not pass negative values in the binned PDF!
     >>> simulate_with_inverse_cdf([2, -1., 4], 10)
     Traceback (most recent call last):
@@ -232,6 +249,9 @@ def simulate_with_inverse_cdf(
     if x_range is None:
         x_range = [0, 1]
 
+    if edges is None:
+        edges = np.linspace(x_range[0], x_range[1], binned_pdf.size + 1)
+
     if np.any(binned_pdf < 0):
         raise ValueError(
             "simulate_with_inverse_cdf only works on positive-definite input "
@@ -247,11 +267,9 @@ def simulate_with_inverse_cdf(
     cdf = np.cumsum(binned_pdf)
     cdf /= cdf[-1]
 
-    phase_bins = np.linspace(x_range[0], x_range[1], cdf.size)
-
     inv_cdf_func = sci.interp1d(
         cdf,
-        phase_bins,
+        edges,
         kind=interp_kind)
 
     cdf_vals = np.random.uniform(0, 1, N)

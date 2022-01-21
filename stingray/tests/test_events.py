@@ -159,20 +159,17 @@ class TestEvents(object):
         fluxes = np.array(self.spectrum[1])
         ev = EventList(ncounts=1000)
         ev.simulate_energies(self.spectrum)
-        energy = [int(p) for p in ev.energy]
 
-        # Histogram energy to get shape approximation
-        gen_energy = ((np.array(energy) - 1) / 1).astype(int)
-        lc = np.bincount(energy)
-
-        # Remove first entry as it contains occurences of '0' element
-        lc = lc[0:len(lc)]
+        # Note: I'm passing the edges: when the bin center is 1, the
+        # edge is at 0.5
+        lc, _ = np.histogram(ev.energy, bins=np.arange(0.5, 7, 1))
 
         # Calculate probabilities and compare
         lc_prob = (lc/float(sum(lc)))
         fluxes_prob = fluxes/float(sum(fluxes))
 
         assert np.all(np.abs(lc_prob - fluxes_prob) < 3 * np.sqrt(fluxes_prob))
+        assert np.all((ev.energy >= 0.5)&(ev.energy < 6.5))
 
     def test_join_without_times_simulated(self):
         """Test if exception is raised when join method is

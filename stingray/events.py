@@ -11,7 +11,6 @@ from collections.abc import Iterable
 
 import numpy as np
 import numpy.random as ra
-from scipy.interpolate import interp1d
 from astropy.table import Table
 
 from .filters import get_deadtime_mask
@@ -360,7 +359,8 @@ class EventList(object):
         times : array-like
             Simulated photon arrival times
         """
-        from stingray.simulator.base import simulate_times
+        # Need import here, or there will be a circular import
+        from .simulator.base import simulate_times
         if bin_time is not None:
             warnings.warn("Bin time will be ignored in simulate_times",
                           DeprecationWarning)
@@ -369,17 +369,23 @@ class EventList(object):
         self.gti = lc.gti
         self.ncounts = len(self.time)
 
-    def simulate_energies(self, spectrum):
+    def simulate_energies(self, spectrum, use_spline=False):
         """
         Assign (simulate) energies to event list from a spectrum.
 
         Parameters
         ----------
-        spectrum: 2-d array or list
+        spectrum: 2-d array or list [energies, spectrum]
             Energies versus corresponding fluxes. The 2-d array or list must
             have energies across the first dimension and fluxes across the
-            second one.
+            second one. If the dimension of the energies is the same as
+            spectrum, they are interpreted as bin centers.
+            If it is longer by one, they are interpreted as proper bin edges
+            (similarly to the bins of `np.histogram`).
+            Note that for non-uniformly binned spectra, it is advisable to pass
+            the exact edges.
         """
+        from .simulator.base import simulate_with_inverse_cdf
 
         if self.ncounts is None:
             simon("Either set time values or explicity provide counts.")
@@ -396,21 +402,12 @@ class EventList(object):
         else:
             raise TypeError("Spectrum must be a 2-d array or list")
 
-        # Create a set of probability values
-        cum_flux = np.cumsum(fluxes)
+        if energy.size == fluxes.size:
+            de = energy[1] - energy[0]
+            energy = np.concatenate([energy - de / 2, [energy[-1] + de / 2]])
 
-        # Calculate cumulative probability
-        cum_prob = (cum_flux - cum_flux[0])
-        cum_prob = cum_prob / cum_prob[-1]
-
-        spec_fun = interp1d(
-            cum_prob, energy, bounds_error=None, fill_value="extrapolate",
-            kind="cubic")
-        # Draw N random numbers between 0 and 1, where N is the size of event
-        # list
-        R = ra.uniform(0, 1, self.ncounts)
-
-        self.energy = spec_fun(R)
+        self.energy = simulate_with_inverse_cdf(
+            fluxes, self.ncounts, edges=energy, sorted=False, interp_kind="linear")
 
     def sort(self, inplace=False):
         """Sort the event list in time.
