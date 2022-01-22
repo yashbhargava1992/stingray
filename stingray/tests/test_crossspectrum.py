@@ -980,7 +980,8 @@ class TestAveragedCrossspectrum(object):
         with pytest.raises(ValueError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
 
-    def test_with_iterable_of_lightcurves(self):
+    @pytest.mark.parametrize("legacy", [False, True])
+    def test_with_iterable_of_lightcurves(self, legacy):
         def iter_lc(lc, n):
             "Generator of n parts of lc."
             t0 = int(len(lc) / n)
@@ -993,10 +994,15 @@ class TestAveragedCrossspectrum(object):
                     break
                 else:
                     i, t = t, t + t0
-
         with pytest.warns(UserWarning) as record:
-            cs = AveragedCrossspectrum(iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),
-                                       segment_size=1)
+            cs = AveragedCrossspectrum(
+                iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),
+                segment_size=1, legacy=legacy)
+        if not legacy:
+            message = "The averaged Cross spectrum from a generator "
+
+            assert np.any([message in r.message.args[0]
+                        for r in record])
 
     def test_with_multiple_lightcurves_variable_length(self):
         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]

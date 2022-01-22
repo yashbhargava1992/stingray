@@ -1,6 +1,6 @@
 import copy
 import warnings
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Generator
 
 import numpy as np
 import scipy
@@ -1762,14 +1762,6 @@ class AveragedCrossspectrum(Crossspectrum):
             self.n = None
             return
 
-        # The legacy interface is used when the user asks for it, or for
-        # input objects that are not EventList or Lightcurve (e.g. lists of
-        # light curves.)
-        accepted_new_style = (EventList, Lightcurve)
-        if not isinstance(data1, accepted_new_style) and not legacy:
-            warnings.warn("Anything but EventList and Lightcurve as input requires "
-                          " the legacy interface (legacy=True).")
-            legacy = True
         # The large_data option requires the legacy interface.
         if (large_data or save_all) and not legacy:
             warnings.warn("The large_data option and the save_all options are only"
@@ -1793,6 +1785,30 @@ class AveragedCrossspectrum(Crossspectrum):
                 spec = crossspectrum_from_lightcurve(
                     data1,
                     data2,
+                    segment_size,
+                    norm=norm,
+                    power_type=power_type,
+                    silent=silent,
+                    fullspec=fullspec,
+                    use_common_mean=use_common_mean,
+                )
+            else:
+                if isinstance(data1, Generator):
+                    warnings.warn(
+                        "The averaged Cross spectrum from a generator of "
+                        "light curves pre-allocates the full list of light "
+                        "curves, losing all advantage of lazy loading. If it "
+                        "is important for you, use the "
+                        "AveragedCrossspectrum.from_lc_iterable static "
+                        "method, specifying the sampling time `dt`.")
+                    data1 = list(data1)
+                    data2 = list(data2)
+                dt = data1[0].dt
+                # This is a list of light curves.
+                spec = crossspectrum_from_lc_iterable(
+                    data1,
+                    data2,
+                    dt,
                     segment_size,
                     norm=norm,
                     power_type=power_type,
@@ -2525,10 +2541,13 @@ def crossspectrum_from_lc_iterable(
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):
-                out = lc.counts
-                if lc._counts_err is not None:
-                    out = (out, lc._counts_err)
-                yield out
+                n_bin = np.rint(segment_size / lc.dt).astype(int)
+
+                flux_iterable = get_flux_iterable_from_segments(
+                    lc.time, lc.gti, segment_size, n_bin, fluxes=lc.counts, errors=lc._counts_err
+                )
+                for out in flux_iterable:
+                    yield out
             else:
                 yield lc
 
