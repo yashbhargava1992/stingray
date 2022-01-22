@@ -1,5 +1,6 @@
 import copy
 import warnings
+from collections.abc import Generator, Iterable
 
 import numpy as np
 import scipy
@@ -19,6 +20,7 @@ from .lightcurve import Lightcurve
 from .fourier import avg_pds_from_iterable
 from .fourier import avg_pds_from_events
 from .fourier import fftfreq, fft
+from .fourier import get_flux_iterable_from_segments
 
 try:
     from tqdm import tqdm as show_progress
@@ -114,17 +116,19 @@ class Powerspectrum(Crossspectrum):
                 dt=dt
             )
 
+        self.norm = norm.lower()
+        self.dt = dt
+
         if not good_input:
             self.freq = None
             self.power = None
             self.power_err = None
             self.df = None
             self.dt = None
+            self.nphots = None
             self.nphots1 = None
-            self.nphots2 = None
             self.m = 1
             self.n = None
-            self.norm = norm
             return
 
         Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
@@ -645,7 +649,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
                  silent=False, dt=None, lc=None, large_data=False,
-                 save_all=False, skip_checks=False):
+                 save_all=False, skip_checks=False,
+                 use_common_mean=True, legacy=False):
 
         self._type = None
         if lc is not None:
@@ -667,17 +672,67 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                 dt=dt,
                 segment_size=segment_size
             )
+
+        norm = norm.lower()
+        self.dt = dt
+        self.save_all = save_all
+        self.segment_size = segment_size
+        self.show_progress = not silent
+
         if not good_input:
             self.freq = None
             self.power = None
             self.power_err = None
             self.df = None
             self.dt = None
+            self.nphots = None
             self.nphots1 = None
-            self.nphots2 = None
             self.m = 1
             self.n = None
             self.norm = norm
+            return
+
+        if not legacy and data is not None:
+            if isinstance(data, EventList):
+                spec = powerspectrum_from_events(
+                    data,
+                    dt,
+                    segment_size,
+                    norm=norm.lower(),
+                    silent=silent,
+                    use_common_mean=use_common_mean,
+                )
+            elif isinstance(data, Lightcurve):
+                spec = powerspectrum_from_lightcurve(
+                    data,
+                    segment_size,
+                    norm=norm,
+                    silent=silent,
+                    use_common_mean=use_common_mean,
+                )
+            else:
+                if isinstance(data, Generator):
+                    warnings.warn(
+                        "The averaged Power spectrum from a generator of "
+                        "light curves pre-allocates the full list of light "
+                        "curves, losing all advantage of lazy loading. If it "
+                        "is important for you, use the "
+                        "AveragedPowerspectrum.from_lc_iterable static "
+                        "method, specifying the sampling time `dt`.")
+                    data = list(data)
+                dt = data[0].dt
+                # This is a list of light curves.
+                spec = powerspectrum_from_lc_iterable(
+                    data,
+                    dt,
+                    segment_size,
+                    norm=norm,
+                    silent=silent,
+                    use_common_mean=use_common_mean,
+                )
+
+            for key, val in spec.__dict__.items():
+                setattr(self, key, val)
             return
 
         if large_data and data is not None:
@@ -712,16 +767,11 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
             return
 
-        self.dt = dt
-        self.save_all = save_all
-
         if isinstance(data, EventList):
             lengths = data.gti[:, 1] - data.gti[:, 0]
             good = lengths >= segment_size
             data.gti = data.gti[good]
 
-        self.segment_size = segment_size
-        self.show_progress = not silent
         Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt, skip_checks=True)
 
         return
@@ -1222,12 +1272,19 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):
-                out = lc.counts
-                if lc._counts_err is not None:
-                    out = (out, lc._counts_err)
-                yield out
-            else:
+                n_bin = np.rint(segment_size / lc.dt).astype(int)
+
+                flux_iterable = get_flux_iterable_from_segments(
+                    lc.time, lc.gti, segment_size, n_bin, fluxes=lc.counts, errors=lc._counts_err
+                )
+                for out in flux_iterable:
+                    yield out
+            elif isinstance(lc, Iterable):
                 yield lc
+            else:
+                raise TypeError(
+                    "The inputs to `powerspectrum_from_lc_iterable`"
+                    " must be Lightcurve objects or arrays")
 
     table = avg_pds_from_iterable(
         iterate_lc_counts(iter_lc),

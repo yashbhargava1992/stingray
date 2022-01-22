@@ -589,6 +589,9 @@ class Crossspectrum(object):
                 fullspec=fullspec,
             )
 
+        norm = norm.lower()
+        self.dt = dt
+
         if not good_input:
             self.freq = None
             self.power = None
@@ -601,8 +604,6 @@ class Crossspectrum(object):
             self.n = None
             self.norm = norm
             return
-
-        self.norm = norm.lower()
 
         if not isinstance(data1, EventList):
             lc1 = data1
@@ -621,6 +622,7 @@ class Crossspectrum(object):
         self.lc2 = lc2
         self.power_type = power_type
         self.fullspec = fullspec
+        self.norm = norm
 
         self._make_crossspectrum(lc1, lc2, fullspec)
 
@@ -1749,6 +1751,11 @@ class AveragedCrossspectrum(Crossspectrum):
                 fullspec=fullspec,
                 segment_size=segment_size
             )
+        self.norm = norm.lower()
+        self.dt = dt
+        self.save_all = save_all
+        self.segment_size = segment_size
+        self.show_progress = not silent
 
         if not good_input:
             self.freq = None

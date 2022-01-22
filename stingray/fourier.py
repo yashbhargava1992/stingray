@@ -932,7 +932,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
     sum_of_photons = 0
     common_variance = None
     for flux in local_show_progress(flux_iterable):
-        if flux is None:
+        if flux is None or np.all(flux == 0):
             continue
 
         # If the iterable returns the uncertainty, use it to calculate the variance.
@@ -1085,7 +1085,8 @@ def avg_cs_from_iterables_quick(
     sum_of_photons1 = sum_of_photons2 = 0
 
     for flux1, flux2 in zip(flux_iterable1, flux_iterable2):
-        if flux1 is None or flux2 is None:
+        if flux1 is None or flux2 is None or \
+                np.all(flux1 == 0) or np.all(flux2 == 0):
             continue
 
         n_bin = flux1.size
@@ -1257,7 +1258,8 @@ def avg_cs_from_iterables(
     common_variance1 = common_variance2 = common_variance = None
 
     for flux1, flux2 in local_show_progress(zip(flux_iterable1, flux_iterable2)):
-        if flux1 is None or flux2 is None:
+        if flux1 is None or flux2 is None or \
+                np.all(flux1 == 0) or np.all(flux2 == 0):
             continue
 
         # Does the flux iterable return the uncertainty?

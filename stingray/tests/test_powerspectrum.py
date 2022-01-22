@@ -201,7 +201,8 @@ class TestAveragedPowerspectrumEvents(object):
         with pytest.raises(AttributeError):
             assert aps.rebin(df=new_df)
 
-    def test_leahy_correct_for_multiple(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_leahy_correct_for_multiple(self, legacy):
 
         n = 10
         lc_all = []
@@ -211,10 +212,11 @@ class TestAveragedPowerspectrumEvents(object):
             lc = Lightcurve(time, counts)
             lc_all.append(lc)
 
-        ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy")
+        ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy", legacy=legacy)
 
+        assert ps.m == 100
         assert np.isclose(np.mean(ps.power), 2.0, atol=1e-2, rtol=1e-2)
-        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(n*10), atol=0.1,
+        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(ps.m), atol=0.1,
                           rtol=0.1)
 
 
@@ -604,7 +606,7 @@ class TestAveragedPowerspectrum(object):
             0 * newlc.counts[:newlc.counts.size // 2]
 
         with pytest.warns(UserWarning) as record:
-            ps = AveragedPowerspectrum(newlc, 0.2)
+            ps = AveragedPowerspectrum(newlc, 0.2, legacy=True)
 
         assert np.any(["No counts in "
                        in r.message.args[0] for r in record])
