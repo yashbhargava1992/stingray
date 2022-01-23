@@ -66,6 +66,11 @@ jobs:
             python: '3.10'
             tox_env: 'py310-test-astropy5'
 
+          # Development version of dependencies
+          - os: ubuntu-latest
+            python: '3.10'
+            tox_env: 'py310-test-devdeps'
+
           # Test the documentation build
           - os: ubuntu-latest
             python: '3.10'
