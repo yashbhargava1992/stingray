@@ -35,6 +35,14 @@ class TestAveragedPowerspectrumEvents(object):
         cls.leahy_pds_sng = Powerspectrum(
             cls.lc, dt=cls.dt, norm="leahy")
 
+    def test_legacy_equivalent(self):
+        leahy_pds = AveragedPowerspectrum(
+            self.lc, segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True, legacy=True)
+        for attr in ["power", "unnorm_power"]:
+            assert np.allclose(
+                getattr(leahy_pds, attr),
+                getattr(self.leahy_pds, attr))
+
     def test_type_change(self):
         pds = copy.deepcopy(self.leahy_pds)
         assert pds.type == "powerspectrum"
