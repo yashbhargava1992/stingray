@@ -692,6 +692,12 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             self.norm = norm
             return
 
+       # The large_data option requires the legacy interface.
+        if (large_data or save_all) and not legacy:
+            warnings.warn("The large_data option and the save_all options are only"
+                          "available with the legacy interface (legacy=True).")
+            legacy = True
+
         if not legacy and data is not None:
             if isinstance(data, EventList):
                 spec = powerspectrum_from_events(
@@ -710,6 +716,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                     silent=silent,
                     use_common_mean=use_common_mean,
                 )
+                spec.lc1 = data
             else:
                 if isinstance(data, Generator):
                     warnings.warn(

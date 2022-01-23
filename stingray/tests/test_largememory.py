@@ -491,13 +491,16 @@ class TestChunkPS(object):
         ps_normal = AveragedPowerspectrum(
             self.lc1, segment_size=8192, silent=True, norm="leahy"
         )
-        ps_large = AveragedPowerspectrum(
-            self.lc1,
-            segment_size=8192,
-            large_data=True,
-            silent=True,
-            norm="leahy",
-        )
+        with pytest.warns(UserWarning) as record:
+            ps_large = AveragedPowerspectrum(
+                self.lc1,
+                segment_size=8192,
+                large_data=True,
+                silent=True,
+                norm="leahy",
+            )
+        assert np.any(["The large_data option " in r.message.args[0]
+                for r in record])
 
         attrs = [
             "freq",

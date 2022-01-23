@@ -1799,6 +1799,8 @@ class AveragedCrossspectrum(Crossspectrum):
                     fullspec=fullspec,
                     use_common_mean=use_common_mean,
                 )
+                spec.lc1 = data1
+                spec.lc2 = data2
             else:
                 if isinstance(data1, Generator):
                     warnings.warn(
