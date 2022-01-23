@@ -692,6 +692,29 @@ class TestAveragedPowerspectrum(object):
         aps = AveragedPowerspectrum(lc, segment_size=5.0, norm="leahy")
         assert aps.m == 1
 
+    @pytest.mark.parametrize("legacy", [False, True])
+    def test_with_iterable_of_lightcurves(self, legacy):
+        def iter_lc(lc, n):
+            "Generator of n parts of lc."
+            t0 = int(len(lc) / n)
+            t = t0
+            i = 0
+            while (True):
+                lc_seg = lc[i:t]
+                yield lc_seg
+                if t + t0 > len(lc):
+                    break
+                else:
+                    i, t = t, t + t0
+        with pytest.warns(UserWarning) as record:
+            cs = AveragedPowerspectrum(
+                iter_lc(self.lc, 1),
+                segment_size=1, legacy=legacy)
+        message = "The averaged Power spectrum from a generator "
+
+        assert np.any([message in r.message.args[0]
+                    for r in record])
+
     def test_with_iterable_of_variable_length_lightcurves(self):
         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]
         lc = copy.deepcopy(self.lc)

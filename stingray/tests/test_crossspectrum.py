@@ -998,11 +998,10 @@ class TestAveragedCrossspectrum(object):
             cs = AveragedCrossspectrum(
                 iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),
                 segment_size=1, legacy=legacy)
-        if not legacy:
-            message = "The averaged Cross spectrum from a generator "
+        message = "The averaged Cross spectrum from a generator "
 
-            assert np.any([message in r.message.args[0]
-                        for r in record])
+        assert np.any([message in r.message.args[0]
+                    for r in record])
 
     def test_with_multiple_lightcurves_variable_length(self):
         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]

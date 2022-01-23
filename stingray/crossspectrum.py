@@ -1769,6 +1769,17 @@ class AveragedCrossspectrum(Crossspectrum):
             self.n = None
             return
 
+        if isinstance(data1, Generator):
+            warnings.warn(
+                "The averaged Cross spectrum from a generator of "
+                "light curves pre-allocates the full list of light "
+                "curves, losing all advantage of lazy loading. If it "
+                "is important for you, use the "
+                "AveragedCrossspectrum.from_lc_iterable static "
+                "method, specifying the sampling time `dt`.")
+            data1 = list(data1)
+            data2 = list(data2)
+
         # The large_data option requires the legacy interface.
         if (large_data or save_all) and not legacy:
             warnings.warn("The large_data option and the save_all options are only"
@@ -1802,16 +1813,6 @@ class AveragedCrossspectrum(Crossspectrum):
                 spec.lc1 = data1
                 spec.lc2 = data2
             else:
-                if isinstance(data1, Generator):
-                    warnings.warn(
-                        "The averaged Cross spectrum from a generator of "
-                        "light curves pre-allocates the full list of light "
-                        "curves, losing all advantage of lazy loading. If it "
-                        "is important for you, use the "
-                        "AveragedCrossspectrum.from_lc_iterable static "
-                        "method, specifying the sampling time `dt`.")
-                    data1 = list(data1)
-                    data2 = list(data2)
                 dt = data1[0].dt
                 # This is a list of light curves.
                 spec = crossspectrum_from_lc_iterable(
