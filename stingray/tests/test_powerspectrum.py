@@ -776,7 +776,8 @@ class TestAveragedPowerspectrum(object):
         with pytest.raises(AttributeError):
             assert aps.rebin(df=new_df)
 
-    def test_list_with_nonsense_component(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_list_with_nonsense_component(self, legacy):
         n_lcs = 10
 
         tstart = 0.0
@@ -800,7 +801,8 @@ class TestAveragedPowerspectrum(object):
         segment_size = 0.5
 
         with pytest.raises(TypeError):
-            assert AveragedPowerspectrum(lc_all, segment_size)
+            assert AveragedPowerspectrum(
+                lc_all, segment_size, legacy=legacy)
 
     def test_leahy_correct_for_multiple(self):
 
