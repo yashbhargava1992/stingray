@@ -13,6 +13,8 @@ Not Yet Released
 - New and improved spectral timing methods: `ComplexCovarianceSpectrum`, `CovarianceSpectrum`, `LagSpectrum`, `RmsSpectrum`
 - Improved error bars on cross-spectral and spectral timing methods
 - Some deprecated features are now removed
+- PSDLogLikelihood now also works with a log-rebinned PDS
+- PDS/CrossSp initially store the unnormalized power, and convert it on the fly when requested, to any normalization
 - Lots of bug fixes
 
 `Full list of changes`__
