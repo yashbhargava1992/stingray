@@ -607,6 +607,20 @@ def pds_logprobability(level, ntrial=1, n_summed_spectra=1, n_rebin=1):
     -------
     epsilon : float
         The probability value(s)
+
+    Examples
+    --------
+    Let us test that it is always consistent with `pds_probability`.
+    We use relatively small power values, because for large values
+    `pds_probability` underflows.
+    >>> powers = np.random.uniform(2, 40, 10)
+    >>> nrebin = np.random.randint(1, 10, 10)
+    >>> nsummed = np.random.randint(1, 100, 10)
+    >>> ntrial = np.random.randint(1, 10000, 10)
+    >>> logp = pds_logprobability(powers, ntrial, nsummed, nrebin)
+    >>> p = pds_probability(powers, ntrial, nsummed, nrebin)
+    >>> np.allclose(p, np.exp(logp))
+    True
     """
 
     epsilon_1 = chi2_logp(level * n_summed_spectra * n_rebin,
@@ -813,7 +827,7 @@ def power_confidence_limits(preal, n=1, c=0.95):
     c: float
         The confidence level (e.g. 0.95=95%)
 
-    Results
+    Returns
     -------
     pmeas: [float, float]
         The upper and lower confidence interval (a, 1-a) on the measured power
@@ -861,7 +875,7 @@ def power_upper_limit(pmeas, n=1, c=0.95):
     c: float
         The confidence value for the probability (e.g. 0.95 = 95%)
 
-    Results
+    Returns
     -------
     psig: float
         The signal power that could produce P>pmeas with 1 - c probability
@@ -937,7 +951,7 @@ def amplitude_upper_limit(pmeas, counts, n=1, c=0.95, fft_corr=False, nyq_ratio=
         response decays between 0 and f_Nyq similarly to the response inside
         a frequency bin: from 1 at 0 Hz to ~2/pi at f_Nyq
 
-    Results
+    Returns
     -------
     a: float
         The modulation amplitude that could produce P>pmeas with 1 - c probability
@@ -997,7 +1011,7 @@ def pf_upper_limit(*args, **kwargs):
         response decays between 0 and f_Nyq similarly to the response inside
         a frequency bin: from 1 at 0 Hz to ~2/pi at f_Nyq
 
-    Results
+    Returns
     -------
     pf: float
         The pulsed fraction that could produce P>pmeas with 1 - c probability

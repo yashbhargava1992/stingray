@@ -11,19 +11,11 @@ from astropy.io import fits
 from stingray.crossspectrum import AveragedCrossspectrum
 from stingray.events import EventList
 from stingray.io import load_events_and_gtis, ref_mjd
-from stingray.largememory import retrieveData, saveData, genDataPath
-from stingray.largememory import _retrieveDataEV, _retrieveDataLC
+from stingray.largememory import retrieveData, saveData, genDataPath, HAS_ZARR
+from stingray.largememory import _retrieveDataEV, _retrieveDataLC, zarr
 from stingray.lightcurve import Lightcurve
 from stingray.powerspectrum import AveragedPowerspectrum
 
-HAS_ZARR = False
-try:
-    import zarr
-
-    HAS_ZARR = True
-    from numcodecs import Blosc
-except ImportError:
-    pass
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
@@ -31,6 +23,7 @@ datadir = os.path.join(curdir, "data")
 IS_LINUX = True
 if not (platform == "linux" or platform == "linux2"):
     IS_LINUX = False
+
 
 class TestSaveSpec(object):
     @classmethod
@@ -443,6 +436,7 @@ class TestRetrieveSpec(object):
         assert gti is None
         assert notes == ""
 
+
 class TestChunkPS(object):
     @classmethod
     def setup_class(cls):
@@ -467,6 +461,20 @@ class TestChunkPS(object):
         assert "Invalid input data type: str" in str(excinfo.value)
 
     @pytest.mark.skipif("not HAS_ZARR")
+    def test_events_to_cpds_unimplemented(self):
+        """Large memory option not implemented for events (and maybe never will)"""
+        with pytest.raises(NotImplementedError) as excinfo:
+            ev1 = EventList(np.random.uniform(0, 10, 10))
+            AveragedCrossspectrum(
+                ev1,
+                ev1,
+                dt=0.01,
+                segment_size=5,
+                large_data=True,
+                silent=True,
+            )
+
+    @pytest.mark.skipif("not HAS_ZARR")
     def test_invalid_data_to_cpds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedCrossspectrum(
@@ -483,13 +491,16 @@ class TestChunkPS(object):
         ps_normal = AveragedPowerspectrum(
             self.lc1, segment_size=8192, silent=True, norm="leahy"
         )
-        ps_large = AveragedPowerspectrum(
-            self.lc1,
-            segment_size=8192,
-            large_data=True,
-            silent=True,
-            norm="leahy",
-        )
+        with pytest.warns(UserWarning) as record:
+            ps_large = AveragedPowerspectrum(
+                self.lc1,
+                segment_size=8192,
+                large_data=True,
+                silent=True,
+                norm="leahy",
+            )
+        assert np.any(["The large_data option " in r.message.args[0]
+                for r in record])
 
         attrs = [
             "freq",
@@ -528,19 +539,38 @@ class TestChunkPS(object):
                 print("\n")
         assert allgood
 
+    @pytest.mark.skipif("HAS_ZARR")
+    def test_calc_cpds_zarr_not_installed(self):
+        with pytest.raises(ImportError) as excinfo:
+            AveragedCrossspectrum(
+                self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True,
+                legacy=True
+            )
+        assert "The large_data option requires zarr" in str(excinfo.value)
+
+    @pytest.mark.skipif("HAS_ZARR")
+    def test_calc_pds_zarr_not_installed(self):
+        with pytest.raises(ImportError) as excinfo:
+            AveragedPowerspectrum(
+                self.lc1, segment_size=8192, large_data=True, silent=True
+            )
+        assert "The large_data option requires zarr" in str(excinfo.value)
+
     @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_cpds(self):
         cs_normal = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=8192, silent=True
+            self.lc1, self.lc2, segment_size=8192, silent=True, legacy=True
         )
-        cs_large = AveragedCrossspectrum(
-            self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
-        )
+        with pytest.warns(UserWarning) as record:
+            cs_large = AveragedCrossspectrum(
+                self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
+            )
+            assert np.any(['The large_data option and the save_all' in r.message.args[0]
+                           for r in record])
 
         attrs = [
             "freq",
             "power",
-            "power_err",
             "unnorm_power",
             "df",
             "n",

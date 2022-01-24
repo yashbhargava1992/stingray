@@ -5,7 +5,6 @@ from stingray.pulse import z_n, z_n_events, z_n_binned_events, z_n_gauss, htest
 from stingray.pulse import z_n_events_all, z_n_binned_events_all, z_n_gauss_all
 from stingray.pulse import get_orbital_correction_from_ephemeris_file
 from stingray.pulse import HAS_PINT
-from astropy.tests.helper import remote_data
 import pytest
 import os
 import warnings
@@ -28,7 +27,7 @@ class TestAll(object):
         cls.curdir = os.path.abspath(os.path.dirname(__file__))
         cls.datadir = os.path.join(cls.curdir, 'data')
 
-    @remote_data
+    @pytest.mark.remote_data
     @pytest.mark.skipif('not HAS_PINT')
     def test_pint_installed_correctly(self):
 
@@ -51,7 +50,7 @@ class TestAll(object):
         # Due to the gps2utc clock correction. We are at 3e-8 seconds level.
         assert np.all(np.abs(pint_resids_us.value) < 3e-6)
 
-    @remote_data
+    @pytest.mark.remote_data
     @pytest.mark.skipif('not HAS_PINT')
     def test_orbit_from_parfile(self):
         import pint.toa as toa

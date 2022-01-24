@@ -1,5 +1,6 @@
 import copy
 import warnings
+from collections.abc import Generator, Iterable
 
 import numpy as np
 import scipy
@@ -9,13 +10,17 @@ import scipy.stats
 import stingray.utils as utils
 from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
-from stingray.largememory import createChunkedSpectra, saveData
+from stingray.largememory import createChunkedSpectra, saveData, HAS_ZARR
 from stingray.stats import pds_probability, amplitude_upper_limit
 from stingray.utils import genDataPath
 
 from .events import EventList
 from .gti import cross_two_gtis
 from .lightcurve import Lightcurve
+from .fourier import avg_pds_from_iterable
+from .fourier import avg_pds_from_events
+from .fourier import fftfreq, fft
+from .fourier import get_flux_iterable_from_segments
 
 try:
     from tqdm import tqdm as show_progress
@@ -52,6 +57,10 @@ class Powerspectrum(Crossspectrum):
         This choice overrides the GTIs in the single light curves. Use with
         care!
 
+    skip_checks: bool
+        Skip initial checks, for speed or other reasons (you need to trust your
+        inputs!)
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
@@ -84,16 +93,46 @@ class Powerspectrum(Crossspectrum):
         The total number of photons in the light curve
 
     """
+
     def __init__(self, data=None, norm="frac", gti=None,
-                 dt=None, lc=None):
+                 dt=None, lc=None, skip_checks=False):
+
+        self._type = None
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
                           "instead", DeprecationWarning)
         if data is None:
             data = lc
 
+        good_input = True
+        if not skip_checks:
+            good_input = self.initial_checks(
+                data1=data,
+                data2=data,
+                norm=norm,
+                gti=gti,
+                lc1=lc,
+                lc2=lc,
+                dt=dt
+            )
+
+        self.norm = norm.lower()
+        self.dt = dt
+
+        if not good_input:
+            self.freq = None
+            self.power = None
+            self.power_err = None
+            self.df = None
+            self.dt = None
+            self.nphots = None
+            self.nphots1 = None
+            self.m = 1
+            self.n = None
+            return
+
         Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
-                               dt=dt)
+                               dt=dt, skip_checks=True)
         self.nphots = self.nphots1
         self.dt = dt
 
@@ -253,7 +292,7 @@ class Powerspectrum(Crossspectrum):
         Returns
         -------
         pvals : iterable
-            A list of ``(index, p-value)`` tuples for all powers that have p-values
+            A list of ``(p-value, index)`` tuples for all powers that have p-values
             lower than the threshold specified in ``threshold``.
 
         """
@@ -313,7 +352,7 @@ class Powerspectrum(Crossspectrum):
         c: float
             The confidence value for the upper limit (e.g. 0.95 = 95%)
 
-        Results
+        Returns
         -------
         a: float
             The modulation amplitude that could produce P>pmeas with 1 - c probability
@@ -360,6 +399,153 @@ class Powerspectrum(Crossspectrum):
         return amplitude_upper_limit(
             power[maximum_val] * self.m, self.nphots, n=self.m, c=c, nyq_ratio=nyq_ratio, fft_corr=True)
 
+    @staticmethod
+    def from_time_array(times, dt, segment_size=None, gti=None, norm="frac",
+                        silent=False, use_common_mean=True):
+        """Calculate AveragedPowerspectrum from an array of event times.
+
+        Parameters
+        ----------
+        times : `np.array`
+            Event arrival times
+        dt : float
+            The time resolution of the intermediate light curves
+            (sets the Nyquist frequency)
+        Other parameters
+        ----------------
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged
+            Only relevant (and required) for AveragedPowerspectrum
+        gti : [[gti0, gti1], ...]
+            Good Time intervals
+        norm : str, default "frac"
+            The normalization of the periodogram. "abs" is absolute rms, "frac" is
+            fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+            unnormalized periodogram
+        use_common_mean : bool, default True
+            The mean of the light curve can be estimated in each interval, or on
+            the full light curve. This gives different results (Alston+2013).
+            Here we assume the mean is calculated on the full light curve, but
+            the user can set ``use_common_mean`` to False to calculate it on a
+            per-segment basis.
+        silent : bool, default False
+            Silence the progress bars
+        """
+
+        return powerspectrum_from_time_array(
+            times, dt, segment_size=segment_size, gti=gti, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
+
+    @staticmethod
+    def from_events(events, dt, segment_size=None, norm="frac",
+                    silent=False, use_common_mean=True):
+        """Calculate AveragedPowerspectrum from an event list
+
+        Parameters
+        ----------
+        events : `stingray.EventList`
+            Event list to be analyzed
+        dt : float
+            The time resolution of the intermediate light curves
+            (sets the Nyquist frequency)
+
+        Other parameters
+        ----------------
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged
+            Only relevant (and required) for AveragedPowerspectrum
+        norm : str, default "frac"
+            The normalization of the periodogram. "abs" is absolute rms, "frac" is
+            fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+            unnormalized periodogram
+        use_common_mean : bool, default True
+            The mean of the light curve can be estimated in each interval, or on
+            the full light curve. This gives different results (Alston+2013).
+            Here we assume the mean is calculated on the full light curve, but
+            the user can set ``use_common_mean`` to False to calculate it on a
+            per-segment basis.
+        silent : bool, default False
+            Silence the progress bars
+        """
+
+        return powerspectrum_from_events(
+            events, dt, segment_size=segment_size, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
+
+    @staticmethod
+    def from_lightcurve(lc, segment_size=None, norm="frac",
+                        silent=False, use_common_mean=True):
+        """Calculate AveragedPowerspectrum from a light curve
+
+        Parameters
+        ----------
+        events : `stingray.Lightcurve`
+            Light curve to be analyzed
+        dt : float
+            The time resolution of the intermediate light curves
+            (sets the Nyquist frequency)
+
+        Other parameters
+        ----------------
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged
+            Only relevant (and required) for AveragedPowerspectrum
+        norm : str, default "frac"
+            The normalization of the periodogram. "abs" is absolute rms, "frac" is
+            fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+            unnormalized periodogram
+        use_common_mean : bool, default True
+            The mean of the light curve can be estimated in each interval, or on
+            the full light curve. This gives different results (Alston+2013).
+            Here we assume the mean is calculated on the full light curve, but
+            the user can set ``use_common_mean`` to False to calculate it on a
+            per-segment basis.
+        silent : bool, default False
+            Silence the progress bars
+        """
+
+        return powerspectrum_from_lightcurve(
+            lc, segment_size=segment_size, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
+
+    @staticmethod
+    def from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
+                         silent=False, use_common_mean=True):
+        """Calculate AveragedCrossspectrum from two light curves
+
+        Parameters
+        ----------
+        iter_lc1 : iterable of `stingray.Lightcurve` objects or `np.array`
+            Light curves from channel 1. If arrays, use them as counts
+        iter_lc1 : iterable of `stingray.Lightcurve` objects or `np.array`
+            Light curves from channel 2. If arrays, use them as counts
+        dt : float
+            The time resolution of the light curves
+            (sets the Nyquist frequency)
+
+        Other parameters
+        ----------------
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged
+            Only relevant (and required) for AveragedPowerspectrum
+        norm : str, default "frac"
+            The normalization of the periodogram. "abs" is absolute rms, "frac" is
+            fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+            unnormalized periodogram
+        use_common_mean : bool, default True
+            The mean of the light curve can be estimated in each interval, or on
+            the full light curve. This gives different results (Alston+2013).
+            Here we assume the mean is calculated on the full light curve, but
+            the user can set ``use_common_mean`` to False to calculate it on a
+            per-segment basis.
+        silent : bool, default False
+            Silence the progress bars
+        """
+
+        return powerspectrum_from_lc_iterable(
+            iter_lc, dt, segment_size=segment_size, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
+
 
 class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     """
@@ -404,6 +590,10 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         This is likely to fill up your RAM on medium-sized datasets, and to
         slow down the computation when rebinning.
 
+    skip_checks: bool
+        Skip initial checks, for speed or other reasons (you need to trust your
+        inputs!)
+
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
@@ -436,10 +626,13 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The total number of photons in the light curve
 
     """
+
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
                  silent=False, dt=None, lc=None, large_data=False,
-                 save_all=False):
+                 save_all=False, skip_checks=False,
+                 use_common_mean=True, legacy=False):
 
+        self._type = None
         if lc is not None:
             warnings.warn("The lc keyword is now deprecated. Use data "
                           "instead", DeprecationWarning)
@@ -447,12 +640,92 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if data is None:
             data = lc
 
-        if segment_size is None and data is not None:
-            raise ValueError("segment_size must be specified")
-        if segment_size is not None and not np.isfinite(segment_size):
-            raise ValueError("segment_size must be finite!")
+        good_input = True
+        if not skip_checks:
+            good_input = self.initial_checks(
+                data1=data,
+                data2=data,
+                norm=norm,
+                gti=gti,
+                lc1=lc,
+                lc2=lc,
+                dt=dt,
+                segment_size=segment_size
+            )
+
+        norm = norm.lower()
+        self.dt = dt
+        self.save_all = save_all
+        self.segment_size = segment_size
+        self.show_progress = not silent
+
+        if not good_input:
+            self.freq = None
+            self.power = None
+            self.power_err = None
+            self.df = None
+            self.dt = None
+            self.nphots = None
+            self.nphots1 = None
+            self.m = 1
+            self.n = None
+            self.norm = norm
+            return
+
+        if isinstance(data, Generator):
+            warnings.warn(
+                "The averaged Power spectrum from a generator of "
+                "light curves pre-allocates the full list of light "
+                "curves, losing all advantage of lazy loading. If it "
+                "is important for you, use the "
+                "AveragedPowerspectrum.from_lc_iterable static "
+                "method, specifying the sampling time `dt`.")
+            data = list(data)
+
+       # The large_data option requires the legacy interface.
+        if (large_data or save_all) and not legacy:
+            warnings.warn("The large_data option and the save_all options are only"
+                          "available with the legacy interface (legacy=True).")
+            legacy = True
+
+        if not legacy and data is not None:
+            if isinstance(data, EventList):
+                spec = powerspectrum_from_events(
+                    data,
+                    dt,
+                    segment_size,
+                    norm=norm.lower(),
+                    silent=silent,
+                    use_common_mean=use_common_mean,
+                )
+            elif isinstance(data, Lightcurve):
+                spec = powerspectrum_from_lightcurve(
+                    data,
+                    segment_size,
+                    norm=norm,
+                    silent=silent,
+                    use_common_mean=use_common_mean,
+                )
+                spec.lc1 = data
+            else:
+                dt = data[0].dt
+                # This is a list of light curves.
+                spec = powerspectrum_from_lc_iterable(
+                    data,
+                    dt,
+                    segment_size,
+                    norm=norm,
+                    silent=silent,
+                    use_common_mean=use_common_mean,
+                )
+
+            for key, val in spec.__dict__.items():
+                setattr(self, key, val)
+            return
 
         if large_data and data is not None:
+            if not HAS_ZARR:
+                raise ImportError("The large_data option requires zarr.")
             chunks = None
 
             if isinstance(data, EventList):
@@ -482,20 +755,17 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
             return
 
-        self.type = "powerspectrum"
-        self.dt = dt
-        self.save_all = save_all
-
         if isinstance(data, EventList):
             lengths = data.gti[:, 1] - data.gti[:, 0]
             good = lengths >= segment_size
             data.gti = data.gti[good]
 
-        self.segment_size = segment_size
-        self.show_progress = not silent
-        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt)
+        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt, skip_checks=True)
 
         return
+
+    def initial_checks(self, *args, **kwargs):
+        return AveragedCrossspectrum.initial_checks(self, *args, **kwargs)
 
     def _make_segment_spectrum(self, lc, segment_size, silent=False):
         """
@@ -544,7 +814,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         local_show_progress = show_progress
         if not self.show_progress or silent:
-            local_show_progress = lambda a: a
+            def local_show_progress(a): return a
 
         for start_ind, end_ind in \
                 local_show_progress(zip(start_inds, end_inds)):
@@ -747,7 +1017,6 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         return np.array(max_positions)
 
     def rebin_time(self, dt_new, method='sum'):
-
         """
         Rebin the Dynamic Power Spectrum to a new time resolution.
         While the new resolution need not be an integer multiple of the
@@ -791,3 +1060,251 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         new_dynspec_object.dyn_ps = np.array(dynspec_new)
         new_dynspec_object.dt = dt_new
         return new_dynspec_object
+
+
+def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm="frac",
+                                  silent=False, use_common_mean=True):
+    """Calculate AveragedPowerspectrum from an array of event times.
+
+    Parameters
+    ----------
+    times : `np.array`
+        Event arrival times
+    dt : float
+        The time resolution of the intermediate light curves
+        (sets the Nyquist frequency)
+
+    Other parameters
+    ----------------
+    segment_size : float
+        The length, in seconds, of the light curve segments that will be averaged
+    gti : [[gti0, gti1], ...]
+        Good Time intervals
+    norm : str, default "frac"
+        The normalization of the periodogram. "abs" is absolute rms, "frac" is
+        fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+        unnormalized periodogram
+    use_common_mean : bool, default True
+        The mean of the light curve can be estimated in each interval, or on
+        the full light curve. This gives different results (Alston+2013).
+        Here we assume the mean is calculated on the full light curve, but
+        the user can set ``use_common_mean`` to False to calculate it on a
+        per-segment basis.
+    silent : bool, default False
+        Silence the progress bars
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
+    """
+    force_averaged = segment_size is not None
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
+    table = avg_pds_from_events(
+        times, gti, segment_size, dt,
+        norm=norm, use_common_mean=use_common_mean,
+        silent=silent)
+
+    return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
+
+
+def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
+                              silent=False, use_common_mean=True):
+    """Calculate AveragedPowerspectrum from an event list
+
+    Parameters
+    ----------
+    events : `stingray.EventList`
+        Event list to be analyzed
+    dt : float
+        The time resolution of the intermediate light curves
+        (sets the Nyquist frequency)
+
+    Other parameters
+    ----------------
+    segment_size : float
+        The length, in seconds, of the light curve segments that will be averaged
+    norm : str, default "frac"
+        The normalization of the periodogram. "abs" is absolute rms, "frac" is
+        fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+        unnormalized periodogram
+    use_common_mean : bool, default True
+        The mean of the light curve can be estimated in each interval, or on
+        the full light curve. This gives different results (Alston+2013).
+        Here we assume the mean is calculated on the full light curve, but
+        the user can set ``use_common_mean`` to False to calculate it on a
+        per-segment basis.
+    silent : bool, default False
+        Silence the progress bars
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
+    """
+
+    return powerspectrum_from_time_array(
+        events.time, dt, segment_size, events.gti, norm=norm,
+        silent=silent, use_common_mean=use_common_mean
+    )
+
+
+def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
+                                  silent=False, use_common_mean=True):
+    """Calculate AveragedPowerspectrum from a light curve
+
+    Parameters
+    ----------
+    events : `stingray.Lightcurve`
+        Light curve to be analyzed
+    dt : float
+        The time resolution of the intermediate light curves
+        (sets the Nyquist frequency)
+
+    Other parameters
+    ----------------
+    segment_size : float
+        The length, in seconds, of the light curve segments that will be averaged
+    norm : str, default "frac"
+        The normalization of the periodogram. "abs" is absolute rms, "frac" is
+        fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+        unnormalized periodogram
+    use_common_mean : bool, default True
+        The mean of the light curve can be estimated in each interval, or on
+        the full light curve. This gives different results (Alston+2013).
+        Here we assume the mean is calculated on the full light curve, but
+        the user can set ``use_common_mean`` to False to calculate it on a
+        per-segment basis.
+    silent : bool, default False
+        Silence the progress bars
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
+    """
+    force_averaged = segment_size is not None
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
+    table = avg_pds_from_events(
+        lc.time, lc.gti, segment_size, lc.dt,
+        norm=norm, use_common_mean=use_common_mean,
+        silent=silent,
+        fluxes=lc.counts)
+
+    return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
+
+
+def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
+                                   silent=False, use_common_mean=True):
+    """Calculate AveragedCrossspectrum from two light curves
+
+    Parameters
+    ----------
+    iter_lc1 : iterable of `stingray.Lightcurve` objects or `np.array`
+        Light curves from channel 1. If arrays, use them as counts
+    iter_lc1 : iterable of `stingray.Lightcurve` objects or `np.array`
+        Light curves from channel 2. If arrays, use them as counts
+    dt : float
+        The time resolution of the light curves
+        (sets the Nyquist frequency)
+
+    Other parameters
+    ----------------
+    segment_size : float, default None
+        The length, in seconds, of the light curve segments that will be averaged.
+        If not ``None``, it will be used to check the segment size of the output.
+    norm : str, default "frac"
+        The normalization of the periodogram. "abs" is absolute rms, "frac" is
+        fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+        unnormalized periodogram
+    use_common_mean : bool, default True
+        The mean of the light curve can be estimated in each interval, or on
+        the full light curve. This gives different results (Alston+2013).
+        Here we assume the mean is calculated on the full light curve, but
+        the user can set ``use_common_mean`` to False to calculate it on a
+        per-segment basis.
+    silent : bool, default False
+        Silence the progress bars
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
+    """
+    force_averaged = segment_size is not None
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
+
+    def iterate_lc_counts(iter_lc):
+        for lc in iter_lc:
+            if hasattr(lc, "counts"):
+                n_bin = np.rint(segment_size / lc.dt).astype(int)
+
+                flux_iterable = get_flux_iterable_from_segments(
+                    lc.time, lc.gti, segment_size, n_bin, fluxes=lc.counts, errors=lc._counts_err
+                )
+                for out in flux_iterable:
+                    yield out
+            elif isinstance(lc, Iterable):
+                yield lc
+            else:
+                raise TypeError(
+                    "The inputs to `powerspectrum_from_lc_iterable`"
+                    " must be Lightcurve objects or arrays")
+
+    table = avg_pds_from_iterable(
+        iterate_lc_counts(iter_lc),
+        dt,
+        norm=norm,
+        use_common_mean=use_common_mean,
+        silent=silent
+    )
+    return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
+
+
+def _create_powerspectrum_from_result_table(table, force_averaged=False):
+    """Copy the columns and metadata from the results of
+    ``stingray.fourier.avg_pds_from_XX`` functions into
+    `AveragedPowerspectrum` or `Powerspectrum` objects.
+
+    By default, allocates a Powerspectrum object if the number of
+    averaged spectra is 1, otherwise an AveragedPowerspectrum.
+    If the user specifies ``force_averaged=True``, it always allocates
+    an AveragedPowerspectrum.
+
+    Parameters
+    ----------
+    table : `astropy.table.Table`
+        results of `avg_cs_from_iterables` or `avg_cs_from_iterables_quick`
+
+    Other parameters
+    ----------------
+    force_averaged : bool, default False
+
+    Returns
+    -------
+    spec : `AveragedPowerspectrum` or `Powerspectrum`
+        The output periodogram.
+    """
+    if table.meta["m"] > 1 or force_averaged:
+        cs = AveragedPowerspectrum()
+    else:
+        cs = Powerspectrum()
+
+    cs.freq = np.array(table["freq"])
+    cs.power = np.array(table["power"])
+    cs.unnorm_power = np.array(table["unnorm_power"])
+
+    for attr, val in table.meta.items():
+        setattr(cs, attr, val)
+
+    cs.err_dist = "poisson"
+    if hasattr(cs, "variance") and cs.variance is not None:
+        cs.err_dist = "gauss"
+
+    cs.power_err = cs.power / np.sqrt(cs.m)
+    cs.unnorm_power_err = cs.unnorm_power / np.sqrt(cs.m)
+    cs.nphots1 = cs.nphots
+    return cs

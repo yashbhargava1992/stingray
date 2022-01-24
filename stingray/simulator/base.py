@@ -125,7 +125,7 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
     ValueError: simulate_times can only work with...
     """
     time = np.asarray(time)
-    counts = np.asarray(counts)
+    counts = np.asarray(counts).astype(float)
     gti = np.asarray(gti)
     kind = "linear"
     if use_spline and time.size > 2:
@@ -149,36 +149,131 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
             all_events.append(new_events)
         return np.concatenate(all_events)
 
-    if len(counts) == 1:  # Corner case: a single light curve bin
-        dt = dt
-        t0 = time[0] - dt / 2
-        t1 = time[0] + dt / 2
-        N = int(np.rint(counts[0]))
-        return np.sort(np.random.uniform(t0, t1, N))
-
+    n_events_predict = np.random.poisson(np.sum(counts))
     tmin = gti[0, 0]
     tmax = gti[-1, 1]
-    duration = (tmax - tmin)
-    phase_bins = (time - tmin) / duration
-    dph = dt / duration
+    times = simulate_with_inverse_cdf(
+        counts, n_events_predict, sorted=True, x_range=[tmin, tmax],
+        interp_kind=kind)
 
-    counts = np.concatenate(([0], counts))
-    phase_bins = np.concatenate(
-        ([0], phase_bins + dph / 2))
-    n_events_predict = np.random.poisson(np.sum(counts))
+    return times
 
-    cdf = np.cumsum(counts, dtype=float)
-    cdf -= cdf[0]
+
+def simulate_with_inverse_cdf(
+        binned_pdf, N, x_range=None, interp_kind="linear", sorted=False,
+        edges=None):
+    """Simulate single values from a binned probability distribution.
+
+    Parameters
+    ----------
+    binned_pdf : `np.array`
+        The input "probability distribution". It does not need to be an actual
+        probability distribution, but it can be a light curve, a spectrum, or
+        any other histogram-like curve. It just needs to be positive definite!
+    N : int
+        The number of values to generate.
+
+    Other parameters
+    ----------------
+    edges : `np.array`
+        The edges of the PDF bins. The array is longer than binned_pdf by 1
+        bin, a la `np.histogram`
+    x_range : [float, float], default None
+        The range of the values to be generated. Defaults to [0, 1].
+    interp_kind : str
+        Any valid interpolation kind accepted from `sci.interp1d`.
+    sorted : bool, default False
+        If true, sort the values.
+
+    Raises
+    ------
+    ValueError
+        If the input probability distribution has negative values
+
+    Examples
+    --------
+    Let us simulate values between 0 and 1, with none between 0.25 and 0.5,
+    sorted.
+    >>> vals = simulate_with_inverse_cdf([2, 0, 4, 3], 103,
+    ...                                  interp_kind="linear", sorted=True)
+
+    103 values were simulated
+    >>> vals.size
+    103
+
+    No values were simulated between 0.25 and 0.5
+    >>> np.count_nonzero((vals > 0.25)&(vals < 0.5)) == 0
+    True
+
+    All values are between 0 and 1
+    >>> np.all((vals >= 0)&(vals < 1))
+    True
+
+    Values are sorted
+    >>> np.all(np.diff(vals)) >= 0
+    True
+
+    We should get exactly the same result by passing the edges.
+    >>> vals = simulate_with_inverse_cdf([2, 0, 4, 3], 103,
+    ...                                  edges=[0, 0.25, 0.5, 0.75, 1],
+    ...                                  interp_kind="linear", sorted=True)
+
+    No values were simulated between 0.25 and 0.5
+    >>> np.count_nonzero((vals > 0.25)&(vals < 0.5)) == 0
+    True
+
+    All values are between 0 and 1
+    >>> np.all((vals >= 0)&(vals < 1))
+    True
+
+    Do not pass negative values in the binned PDF!
+    >>> simulate_with_inverse_cdf([2, -1., 4], 10)
+    Traceback (most recent call last):
+        ...
+    ValueError: simulate_with_inverse_cdf only works on...
+
+    A single bin is interpreted as a uniform distribution.
+    >>> vals = simulate_with_inverse_cdf([2], 14, sorted=True)
+
+    14 values were simulated
+    >>> vals.size
+    14
+
+    Values are sorted
+    >>> np.all(np.diff(vals)) >= 0
+    True
+
+    """
+    binned_pdf = np.asarray(binned_pdf).astype(float)
+
+    if x_range is None:
+        x_range = [0, 1]
+
+    if edges is None:
+        edges = np.linspace(x_range[0], x_range[1], binned_pdf.size + 1)
+
+    if np.any(binned_pdf < 0):
+        raise ValueError(
+            "simulate_with_inverse_cdf only works on positive-definite input "
+            "curves")
+
+    if len(binned_pdf) == 1:  # Corner case: a single bin
+        vals = np.random.uniform(x_range[0], x_range[1], N)
+        if sorted:
+            vals = np.sort(vals)
+        return vals
+
+    binned_pdf = np.concatenate([[0], binned_pdf])
+    cdf = np.cumsum(binned_pdf)
     cdf /= cdf[-1]
 
     inv_cdf_func = sci.interp1d(
         cdf,
-        phase_bins,
-        kind=kind)
+        edges,
+        kind=interp_kind)
 
-    cdf_vals = np.sort(np.random.uniform(0, 1, n_events_predict))
-    times = inv_cdf_func(cdf_vals)
-    times *= duration
-    times += tmin
+    cdf_vals = np.random.uniform(0, 1, N)
+    if sorted:
+        cdf_vals = np.sort(cdf_vals)
 
-    return times
+    return inv_cdf_func(cdf_vals)

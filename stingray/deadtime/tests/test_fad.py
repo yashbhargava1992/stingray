@@ -5,8 +5,8 @@ import pytest
 import warnings
 
 from astropy.table import Table
-from stingray.lightcurve import Lightcurve
-from stingray.deadtime.fad import calculate_FAD_correction
+from stingray import Lightcurve, EventList
+from stingray.deadtime.fad import calculate_FAD_correction, FAD
 from stingray.deadtime.fad import get_periodograms_from_FAD_results
 from stingray.filters import filter_for_deadtime
 from stingray.crossspectrum import AveragedCrossspectrum
@@ -32,6 +32,15 @@ def generate_deadtime_lc(ev, dt, tstart=0, tseg=None, deadtime=2.5e-3):
                                       gti=np.array([[tstart, tseg]]))
 
 
+def test_fad_only_one_good_interval():
+    ev1 = EventList([1.1, 3], gti=[[0, 11.]])
+    ev2 = EventList([2.4, 3.6], gti=[[0, 11.]])
+    results_out_ev = \
+        FAD(ev1, ev2, 5., dt=0.1)
+
+    assert results_out_ev.meta["M"] == 1
+
+
 @pytest.mark.parametrize('ctrate', [0.5, 5, 50, 200])
 def test_fad_power_spectrum_compliant(ctrate):
     dt = 0.1
@@ -53,7 +62,7 @@ def test_fad_power_spectrum_compliant(ctrate):
         calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
                           smoothing_alg='gauss',
                           strict=True, verbose=True,
-                          tolerance=0.05)
+                                 tolerance=0.05, norm="none")
 
     pds1_f = results['pds1']
     pds2_f = results['pds2']
@@ -99,7 +108,7 @@ def test_fad_power_spectrum_compliant_objects(ctrate):
 
     results = \
         calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
-                          smoothing_alg='gauss',
+                                 smoothing_alg='gauss', norm="none",
                           strict=True, verbose=True,
                           tolerance=0.05, return_objects=True)
 
@@ -126,6 +135,36 @@ def test_fad_power_spectrum_compliant_objects(ctrate):
                       rtol=0.1)
     assert np.isclose(ptot_f.std() * 2 / ncounts_per_intvtot, pds_std_theor,
                       rtol=0.1)
+
+
+@pytest.mark.parametrize('ctrate', [200, 400])
+def test_fad_power_spectrum_equal_ev_lc(ctrate):
+    dt = 0.1
+    deadtime = 2.5e-3
+    length = 25600
+    gti = [[0, length]]
+    segment_size = 256.
+    ncounts = int(ctrate * length)
+    ev1 = filter_for_deadtime(generate_events(length, ncounts), deadtime)
+    ev2 = filter_for_deadtime(generate_events(length, ncounts), deadtime)
+
+    lc1 = Lightcurve.make_lightcurve(ev1, dt=dt, gti=gti, tstart=0, tseg=length)
+    lc2 = Lightcurve.make_lightcurve(ev2, dt=dt, gti=gti, tstart=0, tseg=length)
+
+    ev1 = EventList(ev1, gti=gti)
+    ev2 = EventList(ev2, gti=gti)
+
+    results_out_ev = \
+        FAD(ev1, ev2, segment_size, dt=dt, plot=True,
+            strict=True, verbose=True,
+            tolerance=0.05, norm="leahy")
+    results_out_lc = \
+        calculate_FAD_correction(lc1, lc2, segment_size, plot=True,
+                                 strict=True, verbose=True,
+                                 tolerance=0.05, norm="leahy")
+
+    for attr in ['pds1', 'pds2', 'cs', 'ptot']:
+        assert np.allclose(results_out_ev[attr], results_out_lc[attr])
 
 
 @pytest.mark.skipif('not HAS_HDF5')

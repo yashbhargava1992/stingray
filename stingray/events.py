@@ -127,6 +127,7 @@ class EventList(object):
         The full header of the original FITS file, if relevant
 
     """
+
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
                  notes="", gti=None, pi=None, high_precision=False,
                  mission=None, instr=None, header=None, detector_id=None,
@@ -173,6 +174,13 @@ class EventList(object):
 
         Examples
         --------
+        For an empty eventlist, this will be an empty list.
+        >>> ev = EventList()
+        >>> attrs = ev.array_attrs()
+        >>> len(attrs)
+        0
+
+        Otherwise, it will contain all attrs with the same shape as ``time``.
         >>> ev = EventList(time=np.arange(5), pi=np.zeros(5), gti=[[45, 4]])
         >>> attrs = ev.array_attrs()
         >>> len(attrs)
@@ -184,6 +192,9 @@ class EventList(object):
         >>> "gti" in attrs #  The shape of self.gti is not equal to time! Not an array attr
         False
         """
+        if self.time is None:
+            return []
+
         return [
             attr for attr in dir(self)
             if (
@@ -237,7 +248,6 @@ class EventList(object):
         -------
         lc: :class:`stingray.Lightcurve` object
         """
-
         if tstart is None and self.gti is not None:
             tstart = self.gti[0][0]
             tseg = self.gti[-1][1] - tstart
@@ -328,6 +338,10 @@ class EventList(object):
         Randomly simulate photon arrival times to an :class:`EventList` from a
         :class:`stingray.Lightcurve` object, using the inverse CDF method.
 
+        ..note::
+            Preferably use model light curves containing **no Poisson noise**,
+            as this method will intrinsically add Poisson noise to them.
+
         Parameters
         ----------
         lc: :class:`stingray.Lightcurve` object
@@ -345,7 +359,8 @@ class EventList(object):
         times : array-like
             Simulated photon arrival times
         """
-        from stingray.simulator.base import simulate_times
+        # Need import here, or there will be a circular import
+        from .simulator.base import simulate_times
         if bin_time is not None:
             warnings.warn("Bin time will be ignored in simulate_times",
                           DeprecationWarning)
@@ -354,17 +369,23 @@ class EventList(object):
         self.gti = lc.gti
         self.ncounts = len(self.time)
 
-    def simulate_energies(self, spectrum):
+    def simulate_energies(self, spectrum, use_spline=False):
         """
         Assign (simulate) energies to event list from a spectrum.
 
         Parameters
         ----------
-        spectrum: 2-d array or list
+        spectrum: 2-d array or list [energies, spectrum]
             Energies versus corresponding fluxes. The 2-d array or list must
             have energies across the first dimension and fluxes across the
-            second one.
+            second one. If the dimension of the energies is the same as
+            spectrum, they are interpreted as bin centers.
+            If it is longer by one, they are interpreted as proper bin edges
+            (similarly to the bins of `np.histogram`).
+            Note that for non-uniformly binned spectra, it is advisable to pass
+            the exact edges.
         """
+        from .simulator.base import simulate_with_inverse_cdf
 
         if self.ncounts is None:
             simon("Either set time values or explicity provide counts.")
@@ -381,22 +402,55 @@ class EventList(object):
         else:
             raise TypeError("Spectrum must be a 2-d array or list")
 
-        # Create a set of probability values
-        prob = fluxes / float(sum(fluxes))
+        if energy.size == fluxes.size:
+            de = energy[1] - energy[0]
+            energy = np.concatenate([energy - de / 2, [energy[-1] + de / 2]])
 
-        # Calculate cumulative probability
-        cum_prob = np.cumsum(prob)
+        self.energy = simulate_with_inverse_cdf(
+            fluxes, self.ncounts, edges=energy, sorted=False, interp_kind="linear")
 
-        # Draw N random numbers between 0 and 1, where N is the size of event
-        # list
-        R = ra.uniform(0, 1, self.ncounts)
+    def sort(self, inplace=False):
+        """Sort the event list in time.
 
-        # Assign energies to events corresponding to the random numbers drawn
-        self.energy = \
-            np.asarray([
-                energy[np.argwhere(
-                    cum_prob == np.min(cum_prob[(cum_prob - r) > 0]))]
-                      for r in R])
+        Other parameters
+        ----------------
+        inplace : bool, default False
+            Sort in place. If False, return a new event list.
+
+        Returns
+        -------
+        eventlist : `EventList`
+            The sorted event list. If ``inplace=True``, it will be a shallow copy
+            of ``self``.
+
+        Examples
+        --------
+        >>> events = EventList(time=[0, 2, 1], energy=[0.3, 2, 0.5], pi=[3, 20, 5])
+        >>> e1 = events.sort()
+        >>> np.allclose(e1.time, [0, 1, 2])
+        True
+        >>> np.allclose(e1.energy, [0.3, 0.5, 2])
+        True
+        >>> np.allclose(e1.pi, [3, 5, 20])
+        True
+
+        But the original event list has not been altered (``inplace=False`` by
+        default):
+        >>> np.allclose(events.time, [0, 2, 1])
+        True
+
+        Let's do it in place instead
+        >>> e2 = events.sort(inplace=True)
+        >>> np.allclose(e2.time, [0, 1, 2])
+        True
+
+        In this case, the original event list has been altered.
+        >>> np.allclose(events.time, [0, 1, 2])
+        True
+
+        """
+        order = np.argsort(self.time)
+        return self.apply_mask(order, inplace=inplace)
 
     def join(self, other):
         """
@@ -509,7 +563,7 @@ class EventList(object):
         Currently supported formats are
 
         * pickle (not recommended for long-term storage)
-        * hea : FITS Event files from (well, some) HEASARC-supported missions.
+        * hea or ogip : FITS Event files from (well, some) HEASARC-supported missions.
         * any other formats compatible with the writers in
           :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
 
@@ -536,11 +590,11 @@ class EventList(object):
         ev: :class:`EventList` object
             The :class:`EventList` object reconstructed from file
         """
-        if format_ == 'pickle':
+        if format_.lower() == 'pickle':
             with open(filename, 'rb') as fobj:
                 return pickle.load(fobj)
 
-        if format_ in ('hea'):
+        if format_.lower() in ('hea', 'ogip'):
             evtdata = load_events_and_gtis(filename, **kwargs)
 
             evt = EventList(time=evtdata.ev_list,
@@ -561,7 +615,7 @@ class EventList(object):
                         setattr(evt, key.lower(), evtdata.additional_data[key])
             return evt
 
-        if format_ == 'ascii':
+        if format_.lower() == 'ascii':
             format_ = 'ascii.ecsv'
 
         ts = Table.read(filename, format=format_)
@@ -676,13 +730,12 @@ class EventList(object):
             new_ev = self
         else:
             new_ev = EventList()
-            for attr in dir(self):
-                if not attr.startswith("_") and attr not in array_attrs:
-                    setattr(new_ev, attr, getattr(self, attr))
+            for attr in self.meta_attrs():
+                setattr(new_ev, attr, copy.deepcopy(getattr(self, attr)))
 
         for attr in array_attrs:
             if hasattr(self, attr) and getattr(self, attr) is not None:
-                setattr(new_ev, attr, np.asarray(getattr(self, attr))[mask])
+                setattr(new_ev, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
         return new_ev
 
     def apply_deadtime(self, deadtime, inplace=False, **kwargs):

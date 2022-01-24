@@ -1,19 +1,26 @@
-
+import os
 import numpy as np
 import pytest
 import warnings
 import matplotlib.pyplot as plt
 import scipy.special
+from astropy.io import fits
 from stingray import Lightcurve
-from stingray import Crossspectrum, AveragedCrossspectrum, coherence, time_lag
-from stingray.crossspectrum import  cospectra_pvalue, normalize_crossspectrum
+from stingray import Crossspectrum, AveragedCrossspectrum
+from stingray.crossspectrum import cospectra_pvalue
+from stingray.crossspectrum import (
+    normalize_crossspectrum, normalize_crossspectrum_gauss)
+from stingray.crossspectrum import coherence, time_lag
 from stingray import StingrayError
-from ..simulator import Simulator
+from stingray.simulator import Simulator
+from stingray.fourier import poisson_level, raw_coherence
 
 from stingray.events import EventList
 import copy
 
 np.random.seed(20160528)
+curdir = os.path.abspath(os.path.dirname(__file__))
+datadir = os.path.join(curdir, "data")
 
 
 def avg_cdf_two_spectra(x):
@@ -29,6 +36,7 @@ def avg_cdf_two_spectra(x):
 
     return prefac * (fac1 + fac2)
 
+
 class TestClassicalPvalue(object):
 
     def test_pval_returns_float_when_float_input(self):
@@ -40,6 +48,14 @@ class TestClassicalPvalue(object):
     def test_pval_returns_iterable_when_iterable_input(self):
         power = [0, 1, 2]
         nspec = 1.0
+        pval = cospectra_pvalue(power, nspec)
+        assert isinstance(pval, np.ndarray)
+        assert len(pval) == len(power)
+
+    def test_pval_returns_iterable_when_iterable_input_nspec2(self):
+        power = [0, 1, 2]
+        nspec = 2
+        # It will use the formulation by Huppenkothen & Bachetti
         pval = cospectra_pvalue(power, nspec)
         assert isinstance(pval, np.ndarray)
         assert len(pval) == len(power)
@@ -126,24 +142,131 @@ class TestAveragedCrossspectrumEvents(object):
         tstart = 0.0
         tend = 1.0
         self.dt = np.longdouble(0.0001)
+        segment_size = 1
+        self.segment_size = segment_size
+        N = np.rint(segment_size / self.dt).astype(int)
+        # adjust dt
+        self.dt = segment_size / N
 
-        times1 = np.sort(np.random.uniform(tstart, tend, 1000))
-        times2 = np.sort(np.random.uniform(tstart, tend, 1000))
+        times1 = np.sort(np.random.uniform(tstart, tend, 1000000))
+        times2 = np.sort(np.random.uniform(tstart, tend, 1000000))
         gti = np.array([[tstart, tend]])
 
         self.events1 = EventList(times1, gti=gti)
         self.events2 = EventList(times2, gti=gti)
 
-        self.cs = Crossspectrum(self.events1, self.events2, dt=self.dt)
+        self.cs = Crossspectrum(self.events1, self.events2, dt=self.dt, norm="none")
 
-        self.acs = AveragedCrossspectrum(self.events1, self.events2,
-                                         segment_size=1, dt=self.dt)
+        self.acs = AveragedCrossspectrum(self.events1.to_lc(self.dt),
+                                         self.events2.to_lc(self.dt), silent=True,
+                                         segment_size=segment_size, dt=self.dt, norm='none',
+                                         power_type="all")
         self.lc1, self.lc2 = self.events1, self.events2
+
+    def test_from_events_works_cs(self):
+        lccs = Crossspectrum.from_events(self.events1, self.events2,
+                                         dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.cs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+        lag1 = lccs.time_lag()
+        lag2 = self.cs.time_lag()
+        assert np.allclose(lag1, lag2)
+        assert lccs.power_err is not None
+
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_internal_from_events_works_acs(self, legacy):
+        lccs = AveragedCrossspectrum(self.events1, self.events2,
+                                     segment_size=1, dt=self.dt, norm='none', silent=True, legacy=legacy)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+        lag1, lag1_e = lccs.time_lag()
+        lag2, lag2_e = self.acs.time_lag()
+        assert np.allclose(lag1, lag2)
+        good = ~np.isnan(lag2_e)
+        assert np.allclose(lag1_e[good], lag2_e[good])
+        assert lccs.power_err is not None
+
+    def test_from_events_works_acs(self):
+        lccs = AveragedCrossspectrum.from_events(self.events1, self.events2,
+                                                 segment_size=1, dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+        lag1, lag1_e = lccs.time_lag()
+        lag2, lag2_e = self.acs.time_lag()
+        assert np.allclose(lag1, lag2)
+        assert np.allclose(lag1_e, lag2_e, equal_nan=True)
+        assert lccs.power_err is not None
+
+    def test_from_lc_iter_works(self):
+        lccs = AveragedCrossspectrum.from_lc_iterable(
+            self.events1.to_lc_iter(self.dt, self.segment_size),
+            self.events2.to_lc_iter(self.dt, self.segment_size),
+            segment_size=self.segment_size, dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_lc_iter_with_err_works(self):
+        def iter_lc_with_errs(iter_lc):
+            for lc in iter_lc:
+                lc._counts_err = np.zeros_like(lc.counts) + lc.counts.mean()**0.5
+                yield lc
+
+        lccs = AveragedCrossspectrum.from_lc_iterable(
+            iter_lc_with_errs(self.events1.to_lc_iter(self.dt, self.segment_size)),
+            iter_lc_with_errs(self.events2.to_lc_iter(self.dt, self.segment_size)),
+            segment_size=self.segment_size, dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_lc_iter_counts_only_works(self):
+        def iter_lc_counts_only(iter_lc):
+            for lc in iter_lc:
+                yield lc.counts
+
+        lccs = AveragedCrossspectrum.from_lc_iterable(
+            iter_lc_counts_only(self.events1.to_lc_iter(self.dt, self.segment_size)),
+            iter_lc_counts_only(self.events2.to_lc_iter(self.dt, self.segment_size)),
+            segment_size=self.segment_size, dt=self.dt, norm='none', silent=True)
+        power1 = lccs.power.real
+        power2 = self.acs.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_time_array_works_with_memmap(self):
+        with fits.open(os.path.join(datadir, "monol_testA.evt"), memmap=True) as hdul:
+            times1 = hdul[1].data["TIME"]
+
+            gti = np.array([[hdul[2].data["START"][0], hdul[2].data["STOP"][0]]])
+
+            times2 = np.random.uniform(gti[0, 0], gti[0, 1], 1000)
+
+            _ = AveragedCrossspectrum.from_time_array(
+                times1, times2, segment_size=128, dt=self.dt, gti=gti, norm='none',
+                use_common_mean=False)
+
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
+    def test_from_lc_with_err_works(self, norm):
+        lc1 = self.events1.to_lc(self.dt)
+        lc2 = self.events2.to_lc(self.dt)
+        lc1._counts_err = np.sqrt(lc1.counts.mean()) + np.zeros_like(lc1.counts)
+        lc2._counts_err = np.sqrt(lc2.counts.mean()) + np.zeros_like(lc2.counts)
+        pds = AveragedCrossspectrum.from_lightcurve(
+            lc1, lc2,
+            segment_size=self.segment_size, norm=norm)
+        pds_ev = AveragedCrossspectrum.from_events(
+            self.events1, self.events2,
+            segment_size=self.segment_size, dt=self.dt, norm=norm)
+        for attr in ["power", "freq", "m", "n", "nphots1", "nphots2", "segment_size"]:
+            assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
 
     def test_it_works_with_events(self):
         lc1 = self.events1.to_lc(self.dt)
         lc2 = self.events2.to_lc(self.dt)
-        lccs = Crossspectrum(lc1, lc2)
+        lccs = Crossspectrum(lc1, lc2, norm="none")
         assert np.allclose(lccs.power, self.cs.power)
 
     def test_no_segment_size(self):
@@ -211,69 +334,9 @@ class TestAveragedCrossspectrumEvents(object):
         assert np.iscomplexobj(new_cs.power_err[0])
 
 
-class TestCoherenceFunction(object):
-
-    def setup_class(self):
-        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
-        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
-
-    def test_coherence_runs(self):
-        with pytest.warns(UserWarning) as record:
-            coh = coherence(self.lc1, self.lc2)
-
-    def test_coherence_fails_if_data1_not_lc(self):
-        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
-
-        with pytest.raises(TypeError):
-            coh = coherence(self.lc1, data)
-
-    def test_coherence_fails_if_data2_not_lc(self):
-        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
-
-        with pytest.raises(TypeError):
-            coh = coherence(data, self.lc2)
-
-    def test_coherence_computes_correctly(self):
-        with pytest.warns(UserWarning) as record:
-            coh = coherence(self.lc1, self.lc2)
-
-        assert len(coh) == 2
-        assert np.abs(np.mean(coh)) < 1
-
-
-class TestTimelagFunction(object):
-
-    def setup_class(self):
-        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
-        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
-
-    def test_time_lag_runs(self):
-        with pytest.warns(UserWarning) as record:
-            lag = time_lag(self.lc1, self.lc2)
-
-    def test_time_lag_fails_if_data1_not_lc(self):
-        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
-
-        with pytest.raises(TypeError):
-            lag = time_lag(self.lc1, data)
-
-    def test_time_lag_fails_if_data2_not_lc(self):
-        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
-
-        with pytest.raises(TypeError):
-            lag = time_lag(data, self.lc2)
-
-    def test_time_lag_computes_correctly(self):
-        with pytest.warns(UserWarning) as record:
-            lag = time_lag(self.lc1, self.lc2)
-
-        assert np.max(lag) <= np.pi
-        assert np.min(lag) >= -np.pi
-
-
 class TestCoherence(object):
 
-    def test_coherence(self):
+    def test_coherence_is_one_on_single_interval(self):
         lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
         lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
 
@@ -282,7 +345,8 @@ class TestCoherence(object):
             coh = cs.coherence()
 
         assert len(coh) == 2
-        assert np.abs(np.mean(coh)) < 1
+        # The raw coherence of a single interval is 1 by definition
+        assert np.abs(np.mean(coh)) == 1
 
     def test_high_coherence(self):
         t = np.arange(1280)
@@ -291,11 +355,10 @@ class TestCoherence(object):
         lc2 = Lightcurve(t, copy.copy(a))
 
         with pytest.warns(UserWarning) as record:
-            c = AveragedCrossspectrum(lc, lc2, 128)
+            c = AveragedCrossspectrum(lc, lc2, 128, use_common_mean=True)
             coh, _ = c.coherence()
 
-        np.testing.assert_almost_equal(np.mean(coh).real, 1.0)
-
+        assert np.isclose(np.mean(coh).real, 1.0, atol=0.01)
 
 
 class TestNormalization(object):
@@ -323,6 +386,53 @@ class TestNormalization(object):
         with pytest.warns(UserWarning) as record:
             self.cs_norm = Crossspectrum(self.lc1_norm, self.lc1_norm, norm="none")
 
+    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
+    def test_method_norm(self, norm):
+
+        # Testing for a power spectrum of lc1
+        cs1 = copy.deepcopy(self.cs)
+
+        unnorm = copy.deepcopy(cs1.unnorm_power)
+        new_cs = cs1.to_norm(norm)
+        assert norm == new_cs.norm
+        assert np.allclose(cs1.unnorm_power[1:], unnorm[1:], atol=0.5)
+        power_norm = new_cs.power
+        n_ph = np.sqrt(cs1.nphots1 * cs1.nphots2)
+        mean1 = cs1.nphots1 / cs1.n
+        mean2 = cs1.nphots2 / cs1.n
+        mean = np.sqrt(mean1 * mean2)
+        noise = poisson_level(norm=norm, meanrate=mean / cs1.dt, n_ph=n_ph)
+        assert np.isclose(np.mean(power_norm[1:]), noise, rtol=0.01)
+
+    def test_method_norm_gauss(self):
+        norm = "leahy"
+        # Testing for a power spectrum of lc1
+        cs1 = copy.deepcopy(self.cs_norm)
+
+        unnorm = copy.deepcopy(cs1.unnorm_power)
+        new_cs = cs1.to_norm(norm)
+        assert norm == new_cs.norm
+        assert np.allclose(cs1.unnorm_power[1:], unnorm[1:], atol=0.5)
+        power_norm = new_cs.power
+        n_ph = np.sqrt(cs1.nphots1 * cs1.nphots2)
+        mean1 = cs1.nphots1 / cs1.n
+        mean2 = cs1.nphots2 / cs1.n
+        mean = np.sqrt(mean1 * mean2)
+        noise = poisson_level(norm=norm, meanrate=mean / cs1.dt, n_ph=n_ph)
+        assert np.isclose(np.mean(power_norm[1:]), noise, rtol=0.01)
+
+    @pytest.mark.parametrize("power_type", ["abs", "real", "all"])
+    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
+    def test_method_norm_equivalent_old_method(self, norm, power_type):
+
+        # Testing for a power spectrum of lc1
+        cs1 = copy.deepcopy(self.cs)
+        cs2 = copy.deepcopy(self.cs)
+        cs1.norm = norm
+        cs1.power = cs1._normalize_crossspectrum(cs1.unnorm_power)
+        cs2 = cs2.to_norm(norm)
+        assert np.allclose(cs1.power, cs2.power)
+
     @pytest.mark.parametrize('power_type', ['all', 'real', 'absolute'])
     def test_norm_abs(self, power_type):
         # Testing for a power spectrum of lc1
@@ -336,8 +446,8 @@ class TestNormalization(object):
         cs.power_type = power_type
         self.cs.power_type = power_type
 
-        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
-        power_norm = cs._normalize_crossspectrum(cs.unnorm_power, self.tseg)
+        power = self.cs. _normalize_crossspectrum(self.cs.unnorm_power)
+        power_norm = cs. _normalize_crossspectrum(cs.unnorm_power)
         abs_noise = 2. * self.rate1  # expected Poisson noise level
         assert np.isclose(np.mean(power[1:]), abs_noise, rtol=0.01)
         assert np.allclose(power[1:], power_norm[1:], atol=0.5)
@@ -350,8 +460,8 @@ class TestNormalization(object):
         self.cs.power_type = power_type
         self.cs_norm.power_type = power_type
 
-        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
-        power_norm = self.cs_norm._normalize_crossspectrum(self.cs_norm.unnorm_power, self.tseg)
+        power = self.cs. _normalize_crossspectrum(self.cs.unnorm_power)
+        power_norm = self.cs_norm. _normalize_crossspectrum(self.cs_norm.unnorm_power)
 
         assert np.allclose(power[1:], power_norm[1:], atol=0.5)
         leahy_noise = 2.0  # expected Poisson noise level
@@ -363,8 +473,8 @@ class TestNormalization(object):
         self.cs_norm.norm = 'frac'
         self.cs.power_type = power_type
         self.cs_norm.power_type = power_type
-        power = self.cs._normalize_crossspectrum(self.cs.unnorm_power, self.tseg)
-        power_norm = self.cs_norm._normalize_crossspectrum(self.cs_norm.unnorm_power, self.tseg)
+        power = self.cs. _normalize_crossspectrum(self.cs.unnorm_power)
+        power_norm = self.cs_norm. _normalize_crossspectrum(self.cs_norm.unnorm_power)
 
         assert np.allclose(power[1:], power_norm[1:])
         norm = 2. / self.rate1
@@ -378,11 +488,9 @@ class TestNormalization(object):
         self.cs.norm = 'asdgfasdfa'
         self.cs_norm.norm = 'adfafaf'
         with pytest.raises(ValueError):
-            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power,
-                                                     self.tseg)
+            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power)
         with pytest.raises(ValueError):
-            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power,
-                                                          self.tseg)
+            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power)
 
     def test_failure_wrong_power_type(self):
         self.cs.power_type = 'asdgfasdfa'
@@ -391,11 +499,9 @@ class TestNormalization(object):
         self.cs_norm.norm = 'leahy'
 
         with pytest.raises(ValueError):
-            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power,
-                                                     self.tseg)
+            power = self.cs._normalize_crossspectrum(self.cs.unnorm_power)
         with pytest.raises(ValueError):
-            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power,
-                                                          self.tseg)
+            power = self.cs_norm._normalize_crossspectrum(self.cs.unnorm_power)
 
 
 class TestCrossspectrum(object):
@@ -415,6 +521,11 @@ class TestCrossspectrum(object):
 
         with pytest.warns(UserWarning) as record:
             self.cs = Crossspectrum(self.lc1, self.lc2)
+
+    @pytest.mark.parametrize("skip_checks", [True, False])
+    def test_initialize_empty(self, skip_checks):
+        cs = Crossspectrum(skip_checks=skip_checks)
+        assert cs.freq is None
 
     def test_lc_keyword_deprecation(self):
         cs1 = Crossspectrum(self.lc1, self.lc2)
@@ -437,7 +548,7 @@ class TestCrossspectrum(object):
         assert cs.power_err is None
 
     def test_init_with_one_lc_none(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             cs = Crossspectrum(self.lc1)
 
     def test_init_with_multiple_gti(self):
@@ -454,12 +565,12 @@ class TestCrossspectrum(object):
             cs = Crossspectrum(norm='frabs')
 
     def test_init_with_wrong_lc1_instance(self):
-        lc_ = {"a":1, "b":2}
+        lc_ = {"a": 1, "b": 2}
         with pytest.raises(TypeError):
             cs = Crossspectrum(lc_, self.lc2)
 
     def test_init_with_wrong_lc2_instance(self):
-        lc_ =  {"a":1, "b":2}
+        lc_ = {"a": 1, "b": 2}
         with pytest.raises(TypeError):
             cs = Crossspectrum(self.lc1, lc_)
 
@@ -553,10 +664,10 @@ class TestCrossspectrum(object):
         with pytest.raises(ValueError):
             cs = Crossspectrum(self.lc1, self.lc2, norm='wrong')
 
-    def test_coherence(self):
+    def test_coherence_one_on_single_interval(self):
         coh = self.cs.coherence()
         assert len(coh) == 4999
-        assert np.abs(coh[0]) < 1
+        assert np.isclose(coh[0], 1)
 
     def test_timelag(self):
         time_lag = self.cs.time_lag()
@@ -578,6 +689,31 @@ class TestCrossspectrum(object):
     def test_plot_simple(self):
         self.cs.plot()
         assert plt.fignum_exists('crossspectrum')
+        plt.close('crossspectrum')
+
+    def test_plot_labels_and_fname(self):
+        outfname = "blabla.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+
+        self.cs.plot(labels=["x", "y"], axis=[0, 10, 0, 10],
+                     filename=outfname, save=True)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_plot_labels_and_fname_default(self):
+        outfname = "spec.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+        self.cs.plot(labels=["x", "y"], save=True)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_plot_single_label(self):
+        with pytest.warns(UserWarning) as record:
+            self.cs.plot(labels=["x"])
+        assert np.any(['must have two labels' in r.message.args[0]
+                       for r in record])
 
     def test_rebin_error(self):
         cs = Crossspectrum()
@@ -624,7 +760,6 @@ class TestCrossspectrum(object):
                                           trial_correction=True)
         assert np.size(pval) == 0
 
-
     def test_classical_significances_with_logbinned_psd(self):
         with pytest.warns(UserWarning) as record:
             cs = Crossspectrum(self.lc1, self.lc2, norm='leahy')
@@ -661,6 +796,7 @@ class TestCrossspectrum(object):
         assert len(csT.power) == len(self.lc1)
         assert csT.freq[csT.n//2] <= 0.
 
+
 class TestAveragedCrossspectrum(object):
 
     def setup_class(self):
@@ -677,12 +813,23 @@ class TestAveragedCrossspectrum(object):
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
 
         with pytest.warns(UserWarning) as record:
-            self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
+            self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                            save_all=True)
+        assert np.any(['The large_data option and the save_all' in r.message.args[0]
+                       for r in record])
+
+    @pytest.mark.parametrize("skip_checks", [True, False])
+    def test_initialize_empty(self, skip_checks):
+        cs = AveragedCrossspectrum(skip_checks=skip_checks)
+        assert cs.freq is None
 
     def test_save_all(self):
-        cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
-                                   save_all=True)
-        assert hasattr(cs, 'cs_all')
+        with pytest.warns(UserWarning) as record:
+            cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1,
+                                       save_all=True)
+        assert np.any(['The large_data option and the save_all' in r.message.args[0]
+                       for r in record])
+        assert hasattr(self.cs, 'cs_all')
 
     def test_lc_keyword_deprecation(self):
         cs1 = AveragedCrossspectrum(data1=self.lc1, data2=self.lc2,
@@ -711,7 +858,7 @@ class TestAveragedCrossspectrum(object):
         newlc.counts[:newlc.counts.size // 2] = \
             0 * newlc.counts[:newlc.counts.size // 2]
         with pytest.warns(UserWarning) as record:
-            ps = AveragedCrossspectrum(newlc, self.lc2, segment_size=0.2)
+            ps = AveragedCrossspectrum(newlc, self.lc2, segment_size=0.2, legacy=True)
 
         assert np.any(["No counts in "
                        in r.message.args[0] for r in record])
@@ -722,7 +869,7 @@ class TestAveragedCrossspectrum(object):
 
     def test_invalid_type_attribute(self):
         with pytest.raises(ValueError):
-            cs_test = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1)
+            cs_test = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, legacy=True)
             cs_test.type = 'invalid_type'
             assert AveragedCrossspectrum._make_crossspectrum(cs_test,
                                                              self.lc1,
@@ -739,7 +886,7 @@ class TestAveragedCrossspectrum(object):
                                                              [self.lc1,
                                                               self.lc2],
                                                              [self.lc2,
-                                                                  self.lc1])
+                                                              self.lc1])
         assert "Type of spectrum not recognized" in str(excinfo.value)
 
     def test_different_dt(self):
@@ -772,7 +919,7 @@ class TestAveragedCrossspectrum(object):
         assert test_lc2.tseg != test_lc1.tseg
 
         with pytest.warns(UserWarning) as record:
-            AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5)
+            AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5, legacy=True)
             assert np.any(["same tseg" in r.message.args[0]
                            for r in record])
 
@@ -791,28 +938,32 @@ class TestAveragedCrossspectrum(object):
 
         with pytest.warns(UserWarning) as record:
             acs = AveragedCrossspectrum(
-                lc1, lc2, segment_size=5.0, norm="leahy")
+                lc1, lc2, segment_size=5.0, norm="leahy", legacy=True)
         assert acs.m == 1
         assert np.any(["No counts in interval" in r.message.args[0]
                        for r in record])
-
 
     def test_rebin_with_invalid_type_attribute(self):
         new_df = 2
 
         with pytest.warns(UserWarning) as record:
             aps = AveragedCrossspectrum(lc1=self.lc1, lc2=self.lc2,
-                                        segment_size=1, norm='leahy')
+                                        segment_size=1, norm='leahy',
+                                        legacy=True)
         aps.type = 'invalid_type'
         with pytest.raises(ValueError) as excinfo:
             assert aps.rebin(df=new_df, method=aps.type)
         assert "Method for summing or averaging not recognized. " in str(excinfo.value)
 
-    def test_rebin_with_valid_type_attribute(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_rebin_with_valid_type_attribute(self, legacy):
         new_df = 2
-        with pytest.warns(UserWarning) as record:
-            aps = AveragedCrossspectrum(self.lc1, self.lc2,
-                                        segment_size=1, norm='leahy')
+        save_all = legacy
+        aps = AveragedCrossspectrum(self.lc1, self.lc2,
+                                    segment_size=1, norm='leahy',
+                                    legacy=legacy,
+                                    save_all=save_all)
+
         assert aps.rebin(df=new_df)
 
     def test_init_with_norm_not_str(self):
@@ -829,7 +980,8 @@ class TestAveragedCrossspectrum(object):
         with pytest.raises(ValueError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
 
-    def test_with_iterable_of_lightcurves(self):
+    @pytest.mark.parametrize("legacy", [False, True])
+    def test_with_iterable_of_lightcurves(self, legacy):
         def iter_lc(lc, n):
             "Generator of n parts of lc."
             t0 = int(len(lc) / n)
@@ -842,11 +994,14 @@ class TestAveragedCrossspectrum(object):
                     break
                 else:
                     i, t = t, t + t0
-
         with pytest.warns(UserWarning) as record:
-            cs = AveragedCrossspectrum(iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),
-                                   segment_size=1)
+            cs = AveragedCrossspectrum(
+                iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),
+                segment_size=1, legacy=legacy)
+        message = "The averaged Cross spectrum from a generator "
 
+        assert np.any([message in r.message.args[0]
+                    for r in record])
 
     def test_with_multiple_lightcurves_variable_length(self):
         gti = [[0, 0.05], [0.05, 0.5], [0.555, 1.0]]
@@ -860,7 +1015,6 @@ class TestAveragedCrossspectrum(object):
 
         cs = AveragedCrossspectrum(lc1_split, lc2_split, segment_size=0.05,
                                    norm="leahy", silent=True)
-
 
     def test_coherence(self):
         with warnings.catch_warnings(record=True) as w:
@@ -882,6 +1036,14 @@ class TestAveragedCrossspectrum(object):
                                             segment_size=1,
                                             power_type="wrong")
 
+    def test_old_normalize_crossspectrum_warns(self):
+        with pytest.warns(DeprecationWarning):
+            normalize_crossspectrum(1., 2., 3., 4., 5., norm='abs')
+
+    def test_old_normalize_crossspectrum_gauss_warns(self):
+        with pytest.warns(DeprecationWarning):
+            normalize_crossspectrum_gauss(1., 2., 3., 4., 5., norm='abs')
+
     def test_normalize_crossspectrum(self):
         cs1 = Crossspectrum(self.lc1, self.lc2, norm="leahy")
         cs2 = Crossspectrum(self.lc1, self.lc2, norm="leahy",
@@ -893,15 +1055,50 @@ class TestAveragedCrossspectrum(object):
         assert np.allclose(cs1.power.real, cs3.power)
         assert np.all(np.isclose(np.abs(cs2.power), cs4.power, atol=0.0001))
 
+    def test_normalize_crossspectrum_with_method_inplace(self):
+        cs1 = AveragedCrossspectrum.from_lightcurve(self.lc1, self.lc2,  segment_size=1, norm="abs")
+        cs2 = cs1.to_norm("leahy", inplace=True)
+        cs3 = cs1.to_norm("leahy", inplace=False)
+        assert cs3 is not cs1
+        assert cs2 is cs1
+
+    @pytest.mark.parametrize("norm1", ["leahy", "abs", "frac", "none"])
+    @pytest.mark.parametrize("norm2", ["leahy", "abs", "frac", "none"])
+    def test_normalize_crossspectrum_with_method(self, norm1, norm2):
+        cs1 = AveragedCrossspectrum.from_lightcurve(self.lc1, self.lc2, segment_size=1,
+                                                    norm=norm1)
+        cs2 = AveragedCrossspectrum.from_lightcurve(self.lc1, self.lc2, segment_size=1,
+                                                    norm=norm2)
+        cs3 = cs2.to_norm(norm1)
+        for attr in ["power", "power_err", "unnorm_power", "unnorm_power_err"]:
+            assert np.allclose(getattr(cs1, attr), getattr(cs3, attr))
+            assert np.allclose(getattr(cs1.pds1, attr), getattr(cs3.pds1, attr))
+            assert np.allclose(getattr(cs1.pds2, attr), getattr(cs3.pds2, attr))
+
+    @pytest.mark.parametrize("f", [None, 1.5])
+    @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
+    def test_rebin_factor_rebins_all_attrs(self, f, norm):
+        cs1 = AveragedCrossspectrum.from_lightcurve(self.lc1, self.lc2, segment_size=1,
+                                                    norm=norm)
+        # N.B.: if f is not None, df gets ignored.
+        new_cs = cs1.rebin(df=1.5, f=f)
+        N = new_cs.freq.size
+        for attr in ["power", "power_err", "unnorm_power", "unnorm_power_err"]:
+            assert hasattr(new_cs, attr) and getattr(new_cs, attr).size == N
+            assert hasattr(new_cs.pds1, attr) and getattr(new_cs.pds1, attr).size == N
+            assert hasattr(new_cs.pds2, attr) and getattr(new_cs.pds2, attr).size == N
+
     def test_rebin(self):
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin(df=1.5)
+        assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert new_cs.df == 1.5
         new_cs.time_lag()
 
     def test_rebin_factor(self):
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin(f=1.5)
+        assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert new_cs.df == self.cs.df * 1.5
         new_cs.time_lag()
 
@@ -909,19 +1106,15 @@ class TestAveragedCrossspectrum(object):
         # For now, just verify that it doesn't crash
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin_log(f=0.1)
+        assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert type(new_cs) == type(self.cs)
         new_cs.time_lag()
 
-    def test_rebin_log_returns_complex_values(self):
+    def test_rebin_log_returns_complex_values_and_errors(self):
         # For now, just verify that it doesn't crash
         with warnings.catch_warnings(record=True) as w:
             new_cs = self.cs.rebin_log(f=0.1)
         assert np.iscomplexobj(new_cs.power[0])
-
-    def test_rebin_log_returns_complex_errors(self):
-        # For now, just verify that it doesn't crash
-        with warnings.catch_warnings(record=True) as w:
-            new_cs = self.cs.rebin_log(f=0.1)
         assert np.iscomplexobj(new_cs.power_err[0])
 
     def test_timelag(self):
@@ -948,14 +1141,14 @@ class TestAveragedCrossspectrum(object):
 
         assert np.all(np.abs(time_lag[:6] - 0.1) < 3 * time_lag_err[:6])
 
-    def test_errorbars(self):
+    def test_errorbars_legacy(self):
         time = np.arange(10000) * 0.1
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
 
         with warnings.catch_warnings(record=True) as w:
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
-                                       norm="leahy")
+                                       norm="leahy", legacy=True)
 
         assert np.allclose(cs.power_err, np.sqrt(2 / cs.m))
 
@@ -969,4 +1162,68 @@ class TestAveragedCrossspectrum(object):
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10,
                                        norm="leahy")
         maxpower = np.max(cs.power)
-        assert np.all(np.isfinite(cs.classical_significances(threshold = maxpower/2.)))
+        assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower/2.)))
+
+
+class TestCoherenceFunction(object):
+
+    def setup_class(self):
+        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+
+    def test_coherence_runs(self):
+        with pytest.warns(DeprecationWarning):
+            coherence(self.lc1, self.lc2)
+
+    def test_coherence_fails_if_data1_not_lc(self):
+        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
+
+        with pytest.warns(DeprecationWarning):
+            with pytest.raises(TypeError):
+                coherence(self.lc1, data)
+
+    def test_coherence_fails_if_data2_not_lc(self):
+        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
+
+        with pytest.warns(DeprecationWarning):
+            with pytest.raises(TypeError):
+                coherence(data, self.lc2)
+
+    def test_coherence_computes_correctly(self):
+        with pytest.warns(DeprecationWarning):
+            coh = coherence(self.lc1, self.lc2)
+
+        assert len(coh) == 2
+        assert np.abs(np.mean(coh)) == 1
+
+
+class TestTimelagFunction(object):
+
+    def setup_class(self):
+        self.lc1 = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        self.lc2 = Lightcurve([1, 2, 3, 4, 5], [4, 8, 1, 9, 11])
+
+    def test_time_lag_runs(self):
+        with pytest.warns(DeprecationWarning):
+            time_lag(self.lc1, self.lc2)
+
+    def test_time_lag_fails_if_data1_not_lc(self):
+        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
+
+        with pytest.warns(DeprecationWarning):
+            with pytest.raises(TypeError):
+                time_lag(self.lc1, data)
+
+    def test_time_lag_fails_if_data2_not_lc(self):
+        data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 1]])
+
+        with pytest.warns(DeprecationWarning):
+            with pytest.raises(TypeError):
+                time_lag(data, self.lc2)
+
+    def test_time_lag_computes_correctly(self):
+        with pytest.warns(DeprecationWarning):
+            lag = time_lag(self.lc1, self.lc2)
+
+        assert np.max(lag) <= np.pi
+        assert np.min(lag) >= -np.pi

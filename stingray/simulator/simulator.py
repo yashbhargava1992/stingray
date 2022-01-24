@@ -1,4 +1,5 @@
 
+from os import error
 import numpy as np
 import numbers
 import warnings
@@ -10,6 +11,7 @@ from stingray import Lightcurve
 from stingray import AveragedPowerspectrum
 
 __all__ = ['Simulator']
+
 
 class Simulator(object):
     """
@@ -28,24 +30,28 @@ class Simulator(object):
     rms : float, default 1
         fractional rms of the simulated light curve,
         actual rms is calculated by mean*rms
+    err : float, default 0
+        the errorbars on the final light curve
     red_noise : int, default 1
         multiple of real length of light curve, by
         which to simulate, to avoid red noise leakage
     random_state : int, default None
         seed value for random processes
+    poisson : bool, default False
+        return Poisson-distributed light curves.
     """
 
-    def __init__(self, dt, N, mean, rms, red_noise=1,
-                 random_state=None, tstart=0.0):
+    def __init__(self, dt, N, mean, rms, err=0., red_noise=1,
+                 random_state=None, tstart=0.0, poisson=False):
         self.dt = dt
- 
+
         if not isinstance(N, (int, np.integer)):
-            raise ValueError("N must be integer!") 
- 
+            raise ValueError("N must be integer!")
+
         self.N = N
 
         if mean == 0:
-            warnings.warn("Careful! A mean of zero is unphysical!" + \
+            warnings.warn("Careful! A mean of zero is unphysical!" +
                           "This may have unintended consequences!")
         self.mean = mean
         self.nphot = self.mean * self.N
@@ -53,14 +59,17 @@ class Simulator(object):
         self.red_noise = red_noise
         self.tstart = tstart
         self.time = dt*np.arange(N) + self.tstart
+        self.nphot_factor = 1000_000
+        self.err = err
+        self.poisson = poisson
 
         # Initialize a tuple of energy ranges with corresponding light curves
         self.channels = []
 
         self.random_state = utils.get_random_state(random_state)
 
-        assert rms<=1, 'Fractional rms must be less than 1.'
-        assert dt>0, 'Time resolution must be greater than 0'
+        assert rms <= 1, 'Fractional rms must be less than 1.'
+        assert dt > 0, 'Time resolution must be greater than 0'
 
     def simulate(self, *args):
         """
@@ -140,7 +149,7 @@ class Simulator(object):
 
         """
         if isinstance(args[0], (numbers.Integral, float)) and len(args) == 1:
-            return  self._simulate_power_law(args[0])
+            return self._simulate_power_law(args[0])
 
         elif isinstance(args[0], astropy.modeling.Model) and len(args) == 1:
             return self._simulate_model(args[0])
@@ -303,9 +312,9 @@ class Simulator(object):
 
         dt = self.dt
 
-        assert t2>t1, 'Secondary peak must be after primary peak.'
-        assert t3>t2, 'End time must be after secondary peak.'
-        assert p2>p1, 'Secondary peak must be greater than primary peak.'
+        assert t2 > t1, 'Secondary peak must be after primary peak.'
+        assert t3 > t2, 'End time must be after secondary peak.'
+        assert p2 > p1, 'Secondary peak must be greater than primary peak.'
 
         # Append zeros before start time
         h_primary = np.append(np.zeros(int(t1/dt)), p1)
@@ -328,6 +337,66 @@ class Simulator(object):
 
         return h
 
+    def _find_inverse(self, real, imaginary):
+        """
+        Forms complex numbers corresponding to real and imaginary
+        parts and finds inverse series.
+
+        Parameters
+        ----------
+        real : numpy.ndarray
+            Co-effients corresponding to real parts of complex numbers
+        imaginary : numpy.ndarray
+            Co-efficients correspondong to imaginary parts of complex
+            numbers
+
+        Returns
+        -------
+        ifft : numpy.ndarray
+            Real inverse fourier transform of complex numbers
+        """
+
+        # Form complex numbers corresponding to each frequency
+        f = [complex(r, i) for r, i in zip(real, imaginary)]
+
+        f = np.hstack([self.mean * self.N * self.red_noise, f])
+
+        # Obtain time series
+        return np.fft.irfft(f, n=self.N * self.red_noise)
+
+    def _timmerkoenig(self, pds_shape):
+        """Straight application of T&K method to a PDS shape.
+
+        """
+        pds_size = pds_shape.size
+
+        real = np.random.normal(size=pds_size) * np.sqrt(0.5 * pds_shape)
+        imaginary = np.random.normal(size=pds_size) * np.sqrt(0.5 * pds_shape)
+        imaginary[-1] = 0
+
+        counts = self._find_inverse(real, imaginary)
+
+        self.std = counts.std()
+        local_std = np.std(np.diff(counts)) / np.sqrt(2)
+
+        rescaled_counts = self._extract_and_scale(counts)
+        err = (local_std + np.zeros_like(rescaled_counts)) / self.std * self.rms
+
+        if self.poisson:
+            bad = rescaled_counts < 0
+            if np.any(bad):
+                warnings.warn("Some bins of the light curve have counts < 0. Setting to 0")
+                rescaled_counts[bad] = 0
+            lc = Lightcurve(self.time, np.random.poisson(rescaled_counts),
+                            err_dist='poisson', dt=self.dt, skip_checks=True)
+            lc.smooth_counts = rescaled_counts
+        else:
+            lc = Lightcurve(self.time, rescaled_counts,
+                            err=err,
+                            err_dist='gauss', dt=self.dt, skip_checks=True)
+
+        return lc
+
     def _simulate_power_law(self, B):
         """
         Generate LightCurve from a power law spectrum.
@@ -344,29 +413,9 @@ class Simulator(object):
         # Define frequencies at which to compute PSD
         w = np.fft.rfftfreq(self.red_noise*self.N, d=self.dt)[1:]
 
-        # Draw two set of 'N' guassian distributed numbers
-        a1 = self.random_state.normal(size=len(w))
-        a2 = self.random_state.normal(size=len(w))
+        pds_shape = np.power((1/w), B)
 
-        psd = np.power((1/w),B)
-
-        if self.nphot == 0:
-            nphot = 1.0
-        else:
-            nphot = self.nphot
-        self.std = np.sqrt((nphot / (self.N**2.)) * (np.sum(psd[:-1]) + 0.5*psd[-1]))
-
-        # Multiply by (1/w)^B to get real and imaginary parts
-        real = a1 * np.sqrt(psd*nphot/4)
-        imaginary = a2 * np.sqrt(psd*nphot/4)
-
-        # Obtain time series
-        long_lc = self._find_inverse(real, imaginary)
-        lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
-                        err=np.zeros_like(self.time) + np.sqrt(self.mean),
-                        err_dist='gauss', dt=self.dt, skip_checks=True)
-
-        return lc
+        return self._timmerkoenig(pds_shape)
 
     def _simulate_power_spectrum(self, s):
         """
@@ -382,31 +431,10 @@ class Simulator(object):
         lightCurve : `LightCurve` object
         """
         # Cast spectrum as numpy array
-        s = np.array(s)
+        pds_shape = np.zeros(s.size * self.red_noise)
+        pds_shape[:s.size] = s
 
-
-        if self.nphot == 0:
-            nphot = 1.0
-        else:
-            nphot = self.nphot
-        self.std = np.sqrt((nphot / (self.N**2.)) * (np.sum(s[:-1]) + 0.5*s[-1]))
-
-        self.red_noise = 1
-
-        # Draw two set of 'N' guassian distributed numbers
-        a1 = self.random_state.normal(size=len(s))
-        a2 = self.random_state.normal(size=len(s))
-
-        real = a1 * nphot * np.sqrt(s) / 4.0
-        imaginary = a2 * nphot * np.sqrt(s) / 4.0
-
-        lc = self._find_inverse(real, imaginary)
-        lc = Lightcurve(self.time, self._extract_and_scale(lc),
-                        err=np.zeros_like(self.time) + np.sqrt(self.mean),
-                        err_dist='gauss', dt=self.dt, skip_checks=True)
-
-        return lc
-
+        return self._timmerkoenig(pds_shape)
 
     def _simulate_model(self, model):
         """
@@ -425,29 +453,13 @@ class Simulator(object):
         """
         # Frequencies at which the PSD is to be computed
         # (only positive frequencies, since the signal is real)
-        nbins = self.red_noise*self.N
+        nbins = self.red_noise * self.N
         simfreq = np.fft.rfftfreq(nbins, d=self.dt)[1:]
 
         # Compute PSD from model
         simpsd = model(simfreq)
 
-        if self.nphot == 0:
-            nphot = 1.0
-        else:
-            nphot = self.nphot
-        self.std = np.sqrt((nphot / (self.N**2.)) * (np.sum(simpsd[:-1]) + 0.5*simpsd[-1]))
-
-        fac = np.sqrt(simpsd) * nphot / 4.0
-        pos_real   = self.random_state.normal(size=nbins//2)*fac
-        pos_imag   = self.random_state.normal(size=nbins//2)*fac
-
-        long_lc = self._find_inverse(pos_real, pos_imag)
-
-        lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
-                        err=np.zeros_like(self.time) + np.sqrt(self.mean),
-                        err_dist='gauss', dt=self.dt, skip_checks=True)
-        return lc
-
+        return self._timmerkoenig(simpsd)
 
     def _simulate_model_string(self, model_str, params):
         """
@@ -470,34 +482,19 @@ class Simulator(object):
         nbins = self.red_noise*self.N
         simfreq = np.fft.rfftfreq(nbins, d=self.dt)[1:]
 
-        if model_str in dir(models):
-            if isinstance(params, dict):
-                model = eval('models.' + model_str + '(**params)')
-                # Compute PSD from model
-                simpsd = model(simfreq)
-            elif isinstance(params, list):
-                simpsd = eval('models.' + model_str + '(simfreq, params)')
-            else:
-                raise ValueError('Params should be list or dictionary!')
-
-            if self.nphot == 0:
-                nphot = 1.0
-            else:
-                nphot = self.nphot
-            self.std = np.sqrt((nphot / (self.N**2.)) * (np.sum(simpsd[:-1]) + 0.5*simpsd[-1]))
-
-            fac = np.sqrt(simpsd) * nphot / 4.0
-            pos_real   = self.random_state.normal(size=nbins//2)*fac
-            pos_imag   = self.random_state.normal(size=nbins//2)*fac
-
-            long_lc = self._find_inverse(pos_real, pos_imag)
-
-            lc = Lightcurve(self.time, self._extract_and_scale(long_lc),
-                            err=np.zeros_like(self.time) + np.sqrt(self.mean),
-                            err_dist='gauss', dt=self.dt, skip_checks=True)
-            return lc
-        else:
+        if model_str not in dir(models):
             raise ValueError('Model is not defined!')
+
+        if isinstance(params, dict):
+            model = eval('models.' + model_str + '(**params)')
+            # Compute PSD from model
+            simpsd = model(simfreq)
+        elif isinstance(params, list):
+            simpsd = eval('models.' + model_str + '(simfreq, params)')
+        else:
+            raise ValueError('Params should be list or dictionary!')
+
+        return self._timmerkoenig(simpsd)
 
     def _simulate_impulse_response(self, s, h, mode='same'):
         """
@@ -532,40 +529,10 @@ class Simulator(object):
         elif mode == 'filtered':
             lc = lc[(len(h) - 1):-(len(h) - 1)]
 
-        time = self.dt * np.arange(len(lc)) + self.tstart
+        time = self.dt * np.arange(0.5, len(lc)) + self.tstart
         return Lightcurve(time, lc, err_dist='gauss', dt=self.dt,
                           err=np.zeros_like(self.time) + np.sqrt(self.mean),
                           skip_checks=True)
-
-    def _find_inverse(self, real, imaginary):
-        """
-        Forms complex numbers corresponding to real and imaginary
-        parts and finds inverse series.
-
-        Parameters
-        ----------
-        real : numpy.ndarray
-            Co-effients corresponding to real parts of complex numbers
-        imaginary : numpy.ndarray
-            Co-efficients correspondong to imaginary parts of complex
-            numbers
-
-        Returns
-        -------
-        ifft : numpy.ndarray
-            Real inverse fourier transform of complex numbers
-        """
-
-        # Form complex numbers corresponding to each frequency
-        f = [complex(r, i) for r,i in zip(real,imaginary)]
-
-        f = np.hstack([self.mean, f])
-
-        # Obtain real valued time series
-        f_conj = np.conjugate(np.array(f))
-
-        # Obtain time series
-        return np.fft.irfft(f_conj, n=self.red_noise*self.N)
 
     def _extract_and_scale(self, long_lc):
         """

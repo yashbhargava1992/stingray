@@ -22,10 +22,8 @@ try:
     HAS_ZARR = True
     from numcodecs import Blosc
 except ImportError:
-    warnings.warn(
-        "Large Datasets may not be processed efficiently due to "
-        "computational constraints"
-    )
+    zarr = None
+    pass
 
 __all__ = ["createChunkedSpectra", "saveData", "retrieveData"]
 
@@ -1124,6 +1122,6 @@ def createChunkedSpectra(
         )
 
     else:
-        raise RuntimeError("Only input light curves are allowed")
+        raise NotImplementedError("Only input light curves are allowed")
 
     return _combineSpectra(fin_spec)

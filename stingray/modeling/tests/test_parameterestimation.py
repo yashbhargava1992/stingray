@@ -8,7 +8,7 @@ from astropy.tests.helper import pytest, catch_warnings
 from astropy.modeling import models
 from astropy.modeling.fitting import _fitter_to_model_params
 
-from stingray import Powerspectrum
+from stingray import Powerspectrum, AveragedPowerspectrum
 from stingray.modeling import ParameterEstimation, PSDParEst, \
     OptimizationResults, SamplingResults
 from stingray.modeling import PSDPosterior, set_logprior, PSDLogLikelihood, \
@@ -530,7 +530,8 @@ class TestPSDParEst(object):
 
         m = 1
         nfreq = 100
-        freq = np.linspace(1, 10.0, nfreq)
+        freq = np.linspace(0, 10.0, nfreq + 1)[1:]
+
 
         rng = np.random.RandomState(100)  # set the seed for the random number generator
         noise = rng.exponential(size=nfreq)
@@ -589,7 +590,8 @@ class TestPSDParEst(object):
         cls.t0 = [cls.x_0_0, cls.fwhm_0, cls.amplitude_0, cls.amplitude_1]
         cls.neg = True
 
-    def test_fitting_with_ties_and_bounds(self, capsys):
+    @pytest.mark.parametrize("rebin", [0, 0.01])
+    def test_fitting_with_ties_and_bounds(self, capsys, rebin):
         double_f = lambda model : model.x_0_0 * 2
         model = self.model.copy()
         model += models.Lorentz1D(amplitude=model.amplitude_0,
@@ -614,6 +616,9 @@ class TestPSDParEst(object):
         ps.m = self.ps.m
         ps.df = self.ps.df
         ps.norm = "leahy"
+
+        if rebin != 0:
+            ps = ps.rebin_log(rebin)
 
         pe = PSDParEst(ps, fitmethod="TNC")
         llike = PSDLogLikelihood(ps.freq, ps.power, model)
@@ -845,8 +850,9 @@ class TestPSDParEst(object):
     def test_calibrate_lrt_works_as_expected(self):
 
         m = 1
-        nfreq = 100
-        freq = np.linspace(1, 10, nfreq)
+        df = 0.01
+        freq = np.arange(df, 5 + df, df)
+        nfreq = freq.size
         rng = np.random.RandomState(100)
         noise = rng.exponential(size=nfreq)
         model = models.Const1D()
@@ -858,7 +864,7 @@ class TestPSDParEst(object):
         ps.freq = freq
         ps.power = power
         ps.m = m
-        ps.df = freq[1] - freq[0]
+        ps.df = df
         ps.norm = "leahy"
 
         loglike = PSDLogLikelihood(ps.freq, ps.power, model, m=1)
@@ -867,7 +873,7 @@ class TestPSDParEst(object):
 
         model2 = models.PowerLaw1D() + models.Const1D()
         model2.x_0_0.fixed = True
-        loglike2 = PSDLogLikelihood(ps.freq, ps.power, model2, 1)
+        loglike2 = PSDLogLikelihood(ps.freq, ps.power, model2, m=1)
 
         pe = PSDParEst(ps)
 
