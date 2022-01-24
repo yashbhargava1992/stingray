@@ -1,4 +1,5 @@
 import copy
+from turtle import back
 import warnings
 from collections.abc import Iterable
 
@@ -120,6 +121,8 @@ def poisson_level(norm="frac", meanrate=None, n_ph=None, backrate=0):
         Mean count rate in counts/s. Needed for r.m.s. norms (``abs`` and ``frac``)
     n_ph : float, default None
         Total number of counts in the light curve. Needed if ``norm=="none"``
+    backrate : float, default 0
+        Background count rate in counts/s. Optional for fractional r.m.s. norm
 
     Raises
     ------
@@ -203,9 +206,6 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
     integrated periodogram will give the fractional rms in the
     required frequency range.
 
-    TODO: Check the actual Belloni normalization, which is a factor
-    T off somewhere.
-
     Belloni & Hasinger (1990) A&A 230, 103
 
     Miyamoto et al. (1991), ApJ 383, 784
@@ -222,6 +222,11 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
         The mean of the light curve used to calculate the periodogram.
         If the light curve is in counts, it gives the mean counts per
         bin.
+
+    Other parameters
+    ----------------
+    background_flux : float, default 0
+        The background flux, in the same units as `mean_flux`.
 
     Returns
     -------
@@ -396,7 +401,7 @@ def normalize_leahy_poisson(unnorm_power, n_ph):
     return unnorm_power * 2. / n_ph
 
 
-def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, variance=None, norm="frac", power_type="all"):
+def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, variance=None, background_flux=0., norm="frac", power_type="all"):
     """Wrapper around all the normalize_NORM methods.
 
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
@@ -439,6 +444,9 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, v
         One of ``real`` (real part), ``all`` (all complex powers), ``abs``
         (absolute value)
 
+    background_flux : float, default 0
+        The background flux, in the same units as `mean_flux`.
+
     Returns
     -------
     power: numpy.nd.array
@@ -451,7 +459,9 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, v
     elif norm == "leahy":
         pds = normalize_leahy_poisson(unnorm_power, n_ph)
     elif norm == "frac":
-        pds = normalize_frac(unnorm_power, dt, n_bin, mean_flux)
+        pds = normalize_frac(
+            unnorm_power, dt, n_bin, mean_flux,
+            background_flux=background_flux)
     elif norm == "abs":
         pds = normalize_abs(unnorm_power, dt, n_bin)
     elif norm == "none":
