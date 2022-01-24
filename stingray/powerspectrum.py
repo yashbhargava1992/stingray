@@ -428,13 +428,8 @@ class Powerspectrum(Crossspectrum):
             Here we assume the mean is calculated on the full light curve, but
             the user can set ``use_common_mean`` to False to calculate it on a
             per-segment basis.
-        fullspec : bool, default False
-            Return the full periodogram, including negative frequencies
         silent : bool, default False
             Silence the progress bars
-        power_type : str, default 'all'
-            If 'all', give complex powers. If 'abs', the absolute value; if 'real',
-            the real part
         """
 
         return powerspectrum_from_time_array(
@@ -469,13 +464,8 @@ class Powerspectrum(Crossspectrum):
             Here we assume the mean is calculated on the full light curve, but
             the user can set ``use_common_mean`` to False to calculate it on a
             per-segment basis.
-        fullspec : bool, default False
-            Return the full periodogram, including negative frequencies
         silent : bool, default False
             Silence the progress bars
-        power_type : str, default 'all'
-            If 'all', give complex powers. If 'abs', the absolute value; if 'real',
-            the real part
         """
 
         return powerspectrum_from_events(
@@ -510,13 +500,8 @@ class Powerspectrum(Crossspectrum):
             Here we assume the mean is calculated on the full light curve, but
             the user can set ``use_common_mean`` to False to calculate it on a
             per-segment basis.
-        fullspec : bool, default False
-            Return the full periodogram, including negative frequencies
         silent : bool, default False
             Silence the progress bars
-        power_type : str, default 'all'
-            If 'all', give complex powers. If 'abs', the absolute value; if 'real',
-            the real part
         """
 
         return powerspectrum_from_lightcurve(
@@ -553,13 +538,8 @@ class Powerspectrum(Crossspectrum):
             Here we assume the mean is calculated on the full light curve, but
             the user can set ``use_common_mean`` to False to calculate it on a
             per-segment basis.
-        fullspec : bool, default False
-            Return the full periodogram, including negative frequencies
         silent : bool, default False
             Silence the progress bars
-        power_type : str, default 'all'
-            If 'all', give complex powers. If 'abs', the absolute value; if 'real',
-            the real part
         """
 
         return powerspectrum_from_lc_iterable(
@@ -1110,13 +1090,8 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm="
         Here we assume the mean is calculated on the full light curve, but
         the user can set ``use_common_mean`` to False to calculate it on a
         per-segment basis.
-    fullspec : bool, default False
-        Return the full periodogram, including negative frequencies
     silent : bool, default False
         Silence the progress bars
-    power_type : str, default 'all'
-        If 'all', give complex powers. If 'abs', the absolute value; if 'real',
-        the real part
 
     Returns
     -------
@@ -1160,13 +1135,8 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
         Here we assume the mean is calculated on the full light curve, but
         the user can set ``use_common_mean`` to False to calculate it on a
         per-segment basis.
-    fullspec : bool, default False
-        Return the full periodogram, including negative frequencies
     silent : bool, default False
         Silence the progress bars
-    power_type : str, default 'all'
-        If 'all', give complex powers. If 'abs', the absolute value; if 'real',
-        the real part
 
     Returns
     -------
@@ -1206,13 +1176,8 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
         Here we assume the mean is calculated on the full light curve, but
         the user can set ``use_common_mean`` to False to calculate it on a
         per-segment basis.
-    fullspec : bool, default False
-        Return the full periodogram, including negative frequencies
     silent : bool, default False
         Silence the progress bars
-    power_type : str, default 'all'
-        If 'all', give complex powers. If 'abs', the absolute value; if 'real',
-        the real part
 
     Returns
     -------
@@ -1260,13 +1225,8 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
         Here we assume the mean is calculated on the full light curve, but
         the user can set ``use_common_mean`` to False to calculate it on a
         per-segment basis.
-    fullspec : bool, default False
-        Return the full periodogram, including negative frequencies
     silent : bool, default False
         Silence the progress bars
-    power_type : str, default 'all'
-        If 'all', give complex powers. If 'abs', the absolute value; if 'real',
-        the real part
 
     Returns
     -------
