@@ -1782,3 +1782,39 @@ def sum_if_not_none_or_initialize(A, B):
     if A is None:
         return copy.deepcopy(B)
     return A + B
+
+
+def assign_if_not_finite(value, default):
+    """Check if a value is finite. Otherwise, return the default.
+
+    Parameters
+    ----------
+    value : float, int or `np.array`
+        The input value
+    default : float
+        The default value
+
+    Returns
+    -------
+    output : same as ``value``
+        The result
+
+    Examples
+    --------
+    >>> assign_if_not_finite(1, 3.2)
+    1
+    >>> assign_if_not_finite(np.inf, 3.2)
+    3.2
+    >>> input_arr = np.array([np.nan, 1, np.inf, 2])
+    >>> np.allclose(assign_if_not_finite(input_arr, 3.2), [3.2, 1, 3.2, 2])
+    True
+
+    """
+    if isinstance(value, Iterable):
+        values = [assign_if_not_finite(val, default) for val in value]
+        values = np.array(values)
+        return values
+
+    if not np.isfinite(value):
+        return default
+    return value
