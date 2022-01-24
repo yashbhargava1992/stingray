@@ -38,7 +38,7 @@ The simulator object can be instantiated as::
 	>>> sim = simulator.Simulator(N=1024, mean=0.5, dt=0.125, rms=1.0)
 
 Here, `N` specifies the bins count of the simulated light curve, `mean` specifies
-the mean value, `dt` is the time resolution, and `rms` is the fractional rms amplitude, 
+the mean value, `dt` is the time resolution, and `rms` is the fractional rms amplitude,
 defined as the ratio of standard deviation to the mean.. Additional arguments can be
 provided e.g. to account for the effect of red noise leakage.
 
@@ -180,6 +180,7 @@ Important Concepts
    :maxdepth: 2
 
    notebooks/Simulator/Concepts/Simulator.ipynb
+   notebooks/Simulator/Concepts/Simulate Event Lists With Inverse CDF.ipynb
    notebooks/Simulator/Concepts/Inverse Transform Sampling.ipynb
    notebooks/Simulator/Concepts/PowerLaw Spectrum.ipynb
 
@@ -198,7 +199,7 @@ Available Spectral Models
 .. toctree::
    :maxdepth: 2
 
-   notebooks/Simulator/Spectral Models.ipynb
+   notebooks/Simulator/Power Spectral Models.ipynb
 
 An Example Lag Analysis
 -----------------------
