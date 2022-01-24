@@ -160,7 +160,7 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
 
 
 def simulate_with_inverse_cdf(
-        binned_pdf, N, x_range=None, interp_kind=None, sorted=False,
+        binned_pdf, N, x_range=None, interp_kind="linear", sorted=False,
         edges=None):
     """Simulate single values from a binned probability distribution.
 
