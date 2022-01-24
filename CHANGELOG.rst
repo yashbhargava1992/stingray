@@ -4,8 +4,8 @@ Changelog
 Not Yet Released
 ----------------
 
-- Partial support for non-uniformly sampled data
-- Fixes in the `stingray.simulator` module
+- Multi-taper periodogram, including a Lomb-Scargle implementation for non-uniformly sampled data.
+- Upper limits on pulsations in periodograms and Z searches
 - New stingray.fourier module containing the basic timing products, usable on `numpy` arrays
 - Lots of performance improvements in the `AveragedCrossspectrum` and `AveragedPowerspectrum` classes
 - New methods in `Crossspectrum` and `Powerspectrum` to load data from specific inputs: `from_events`, `from_lightcurve`, `from_time_array`, `from_lc_list`
@@ -13,6 +13,7 @@ Not Yet Released
 - New and improved spectral timing methods: `ComplexCovarianceSpectrum`, `CovarianceSpectrum`, `LagSpectrum`, `RmsSpectrum`
 - Improved error bars on cross-spectral and spectral timing methods
 - Some deprecated features are now removed
+- Lots of bug fixes
 
 `Full list of changes`__
 
