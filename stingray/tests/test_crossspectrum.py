@@ -163,6 +163,39 @@ class TestAveragedCrossspectrumEvents(object):
                                          power_type="all")
         self.lc1, self.lc2 = self.events1, self.events2
 
+    @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
+    def test_common_mean_gives_comparable_scatter(self, norm):
+        acs = AveragedCrossspectrum(
+             self.events1, self.events2, dt=self.dt, silent=True,
+             segment_size=self.segment_size, norm=norm, power_type="real",
+             use_common_mean=False)
+        acs_comm = AveragedCrossspectrum(
+             self.events1, self.events2, dt=self.dt, silent=True,
+             segment_size=self.segment_size, norm=norm, power_type="real",
+             use_common_mean=True)
+
+        assert np.isclose(acs_comm.power.std(), acs.power.std(), rtol=0.1)
+
+    @pytest.mark.parametrize("use_common_mean", [True, False])
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_leahy_correct_for_multiple(self, legacy, use_common_mean):
+
+        n = 10
+        lc_all = []
+        for i in range(n):
+            time = np.arange(0.0, 10.0, 10. / 10000)
+            counts = np.random.poisson(1000, size=time.shape[0])
+            lc = Lightcurve(time, counts)
+            lc_all.append(lc)
+
+        ps = AveragedCrossspectrum(lc_all, lc_all, 1.0, norm="leahy", legacy=legacy,
+                                   use_common_mean=use_common_mean)
+
+        assert ps.m == 100
+        assert np.isclose(np.mean(ps.power), 2.0, atol=1e-2, rtol=1e-2)
+        assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(ps.m), atol=0.1,
+                          rtol=0.1)
+
     def test_from_events_works_cs(self):
         lccs = Crossspectrum.from_events(self.events1, self.events2,
                                          dt=self.dt, norm='none', silent=True)

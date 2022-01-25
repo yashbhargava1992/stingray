@@ -1,4 +1,5 @@
 import os
+from pickle import FALSE
 import pytest
 from stingray.fourier import *
 
@@ -175,6 +176,54 @@ class TestFourier(object):
         out_ev = avg_cs_from_events(times1, times2, self.gti,
                                     self.segment_size, self.dt, return_auxil=return_auxil)
         assert out_ev is None
+
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
+    def test_avg_pds_use_common_mean_similar_stats(self, norm):
+        out_comm = avg_pds_from_events(
+            self.times,
+            self.gti,
+            self.segment_size,
+            self.dt,
+            norm=norm,
+            use_common_mean=True,
+            silent=True,
+            fluxes=None,
+        )["power"]
+        out = avg_pds_from_events(
+            self.times,
+            self.gti,
+            self.segment_size,
+            self.dt,
+            norm=norm,
+            use_common_mean=False,
+            silent=True,
+            fluxes=None,
+        )["power"]
+        assert np.isclose(out_comm.std(), out.std(), rtol=0.1)
+
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
+    def test_avg_cs_use_common_mean_similar_stats(self, norm):
+        out_comm = avg_cs_from_events(
+            self.times,
+            self.times2,
+            self.gti,
+            self.segment_size,
+            self.dt,
+            norm=norm,
+            use_common_mean=True,
+            silent=True,
+        )["power"]
+        out = avg_cs_from_events(
+            self.times,
+            self.times2,
+            self.gti,
+            self.segment_size,
+            self.dt,
+            norm=norm,
+            use_common_mean=False,
+            silent=True,
+        )["power"]
+        assert np.isclose(out_comm.std(), out.std(), rtol=0.1)
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
