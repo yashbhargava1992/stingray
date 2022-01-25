@@ -174,7 +174,7 @@ class TestAveragedCrossspectrumEvents(object):
              segment_size=self.segment_size, norm=norm, power_type="real",
              use_common_mean=True)
 
-        assert np.isclose(acs_comm.power.std(), acs_comm.power.std(), rtol=0.1)
+        assert np.isclose(acs_comm.power.std(), acs.power.std(), rtol=0.1)
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("legacy", [True, False])

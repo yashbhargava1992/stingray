@@ -46,7 +46,7 @@ class TestAveragedPowerspectrumEvents(object):
              segment_size=self.segment_size, norm=norm,
              use_common_mean=True)
 
-        assert np.isclose(acs_comm.power.std(), acs_comm.power.std(), rtol=0.1)
+        assert np.isclose(acs_comm.power.std(), acs.power.std(), rtol=0.1)
 
     def test_legacy_equivalent(self):
         leahy_pds = AveragedPowerspectrum(
