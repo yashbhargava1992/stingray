@@ -35,6 +35,19 @@ class TestAveragedPowerspectrumEvents(object):
         cls.leahy_pds_sng = Powerspectrum(
             cls.lc, dt=cls.dt, norm="leahy")
 
+    @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
+    def test_common_mean_gives_comparable_scatter(self, norm):
+        acs = AveragedPowerspectrum(
+             self.events, dt=self.dt, silent=True,
+             segment_size=self.segment_size, norm=norm,
+             use_common_mean=False)
+        acs_comm = AveragedPowerspectrum(
+             self.events, dt=self.dt, silent=True,
+             segment_size=self.segment_size, norm=norm,
+             use_common_mean=True)
+
+        assert np.isclose(acs_comm.power.std(), acs_comm.power.std(), rtol=0.1)
+
     def test_legacy_equivalent(self):
         leahy_pds = AveragedPowerspectrum(
             self.lc, segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True, legacy=True)
@@ -209,8 +222,9 @@ class TestAveragedPowerspectrumEvents(object):
         with pytest.raises(AttributeError):
             assert aps.rebin(df=new_df)
 
+    @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("legacy", [True, False])
-    def test_leahy_correct_for_multiple(self, legacy):
+    def test_leahy_correct_for_multiple(self, legacy, use_common_mean):
 
         n = 10
         lc_all = []
@@ -220,7 +234,8 @@ class TestAveragedPowerspectrumEvents(object):
             lc = Lightcurve(time, counts)
             lc_all.append(lc)
 
-        ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy", legacy=legacy)
+        ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy", legacy=legacy,
+                                   use_common_mean=use_common_mean)
 
         assert ps.m == 100
         assert np.isclose(np.mean(ps.power), 2.0, atol=1e-2, rtol=1e-2)
@@ -804,7 +819,9 @@ class TestAveragedPowerspectrum(object):
             assert AveragedPowerspectrum(
                 lc_all, segment_size, legacy=legacy)
 
-    def test_leahy_correct_for_multiple(self):
+    @pytest.mark.parametrize("use_common_mean", [True, False])
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_leahy_correct_for_multiple(self, legacy, use_common_mean):
 
         n = 10
         lc_all = []
@@ -814,7 +831,8 @@ class TestAveragedPowerspectrum(object):
             lc = Lightcurve(time, counts)
             lc_all.append(lc)
 
-        ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy")
+        ps = AveragedPowerspectrum(lc_all, 1.0, norm="leahy", legacy=legacy,
+                                   use_common_mean=use_common_mean)
 
         assert np.isclose(np.mean(ps.power), 2.0, atol=1e-2, rtol=1e-2)
         assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(n*10), atol=0.1,

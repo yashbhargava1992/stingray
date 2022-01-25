@@ -935,7 +935,7 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
             return a
 
     # Initialize stuff
-    cross = None
+    cross = unnorm_cross = None
     n_ave = 0
 
     sum_of_photons = 0
@@ -988,6 +988,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
 
         # Accumulate the total sum cross spectrum
         cross = sum_if_not_none_or_initialize(cross, cs_seg)
+        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross, unnorm_power)
+
         n_ave += 1
 
     # If there were no good intervals, return None
@@ -1004,7 +1006,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
         common_variance /= n_ave
 
     # Transform a sum into the average
-    unnorm_cross = cross / n_ave
+    unnorm_cross = unnorm_cross / n_ave
+    cross = cross / n_ave
 
     # Final normalization (If not done already!)
     if use_common_mean:
