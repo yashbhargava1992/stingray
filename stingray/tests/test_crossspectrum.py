@@ -179,19 +179,18 @@ class TestAveragedCrossspectrumEvents(object):
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("legacy", [True, False])
     def test_leahy_correct_for_multiple(self, legacy, use_common_mean):
-
-        n = 10
+        n = 30
         lc_all = []
         for i in range(n):
             time = np.arange(0.0, 10.0, 10. / 10000)
-            counts = np.random.poisson(1000, size=time.shape[0])
+            counts = np.random.poisson(1000, size=time.size)
             lc = Lightcurve(time, counts)
             lc_all.append(lc)
 
         ps = AveragedCrossspectrum(lc_all, lc_all, 1.0, norm="leahy", legacy=legacy,
                                    use_common_mean=use_common_mean)
 
-        assert ps.m == 100
+        assert ps.m == 300
         assert np.isclose(np.mean(ps.power), 2.0, atol=1e-2, rtol=1e-2)
         assert np.isclose(np.std(ps.power), 2.0 / np.sqrt(ps.m), atol=0.1,
                           rtol=0.1)
@@ -385,7 +384,7 @@ class TestCoherence(object):
         t = np.arange(1280)
         a = np.random.poisson(100, len(t))
         lc = Lightcurve(t, a)
-        lc2 = Lightcurve(t, copy.copy(a))
+        lc2 = Lightcurve(t, copy.deepcopy(a))
 
         with pytest.warns(UserWarning) as record:
             c = AveragedCrossspectrum(lc, lc2, 128, use_common_mean=True)
@@ -597,10 +596,16 @@ class TestCrossspectrum(object):
         with pytest.raises(ValueError):
             cs = Crossspectrum(norm='frabs')
 
+    def test_init_with_wrong_lc_instance(self):
+        lc1_ = {"a": 1, "b": 2}
+        lc2_ = {"a": 1, "b": 2}
+        with pytest.raises(TypeError):
+            cs = Crossspectrum(lc1_, lc2_)
+
     def test_init_with_wrong_lc1_instance(self):
         lc_ = {"a": 1, "b": 2}
         with pytest.raises(TypeError):
-            cs = Crossspectrum(lc_, self.lc2)
+            cs = Crossspectrum(self.lc1, lc_)
 
     def test_init_with_wrong_lc2_instance(self):
         lc_ = {"a": 1, "b": 2}
@@ -612,10 +617,10 @@ class TestCrossspectrum(object):
         time = np.linspace(0.0, 1.0001, 10001)
         lc_ = Lightcurve(time, counts)
         with pytest.raises(StingrayError):
-            cs = Crossspectrum(self.lc1, lc_)
+            cs = Crossspectrum(self.lc1, lc_, legacy=True)
 
     def test_make_crossspectrum_diff_lc_stat(self):
-        lc_ = copy.copy(self.lc1)
+        lc_ = copy.deepcopy(self.lc1)
         lc_.err_dist = 'gauss'
 
         with pytest.warns(UserWarning) as record:
@@ -624,13 +629,13 @@ class TestCrossspectrum(object):
                        for r in record])
 
     def test_make_crossspectrum_bad_lc_stat(self):
-        lc1 = copy.copy(self.lc1)
+        lc1 = copy.deepcopy(self.lc1)
         lc1.err_dist = 'gauss'
-        lc2 = copy.copy(self.lc1)
+        lc2 = copy.deepcopy(self.lc1)
         lc2.err_dist = 'gauss'
 
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(lc1, lc2)
+            cs = Crossspectrum(lc1, lc2, legacy=True)
         assert np.any(["is not poisson" in r.message.args[0]
                        for r in record])
 
@@ -662,18 +667,19 @@ class TestCrossspectrum(object):
         assert type(new_cs) == type(self.cs)
         new_cs.time_lag()
 
-    def test_norm_abs(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_norm_abs(self, legacy):
         # Testing for a power spectrum of lc1
-        cs = Crossspectrum(self.lc1, self.lc1, norm='abs')
+        cs = Crossspectrum(self.lc1, self.lc1, norm='abs', legacy=legacy)
         assert len(cs.power) == 4999
         assert cs.norm == 'abs'
         abs_noise = 2. * self.rate1  # expected Poisson noise level
         assert np.isclose(np.mean(cs.power[1:]), abs_noise)
 
-    def test_norm_leahy(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_norm_leahy(self, legacy):
         # with pytest.warns(UserWarning) as record:
-        cs = Crossspectrum(self.lc1, self.lc1,
-                           norm='leahy')
+        cs = Crossspectrum(self.lc1, self.lc1, norm='leahy', legacy=legacy)
         assert len(cs.power) == 4999
         assert cs.norm == 'leahy'
         leahy_noise = 2.0  # expected Poisson noise level
@@ -818,8 +824,9 @@ class TestCrossspectrum(object):
         assert isinstance(pval, np.ndarray)
         assert pval.shape[0] == 2
 
-    def test_fullspec(self):
-        csT = Crossspectrum(self.lc1, self.lc2, fullspec=True)
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_fullspec(self, legacy):
+        csT = Crossspectrum(self.lc1, self.lc2, fullspec=True, legacy=legacy)
         assert csT.fullspec == True
         assert self.cs.fullspec == False
         assert csT.n == self.cs.n
@@ -935,7 +942,7 @@ class TestAveragedCrossspectrum(object):
 
         assert test_lc1.dt != test_lc2.dt
 
-        with pytest.raises(ValueError):
+        with pytest.raises(StingrayError):
             assert AveragedCrossspectrum(test_lc1, test_lc2, segment_size=1)
 
     def test_different_tseg(self):

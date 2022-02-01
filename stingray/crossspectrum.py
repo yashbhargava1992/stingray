@@ -601,7 +601,7 @@ class Crossspectrum(object):
         if not legacy and data1 is not None and data2 is not None:
             return self._initialize_from_any_input(
                 data1, data2, dt=dt, norm=norm, power_type=power_type,
-                fullspec=fullspec)
+                fullspec=fullspec, gti=gti)
 
         if not isinstance(data1, EventList):
             lc1 = data1
@@ -635,6 +635,7 @@ class Crossspectrum(object):
         gti=None,
         lc1=None,
         lc2=None,
+        segment_size=None,
         power_type="real",
         dt=None,
         fullspec=False,
@@ -713,10 +714,42 @@ class Crossspectrum(object):
 
         dt_is_invalid = (dt is None) or (dt <= np.finfo(float).resolution)
 
-        if (isinstance(data1, EventList) or isinstance(data2, EventList)) and dt_is_invalid:
-            raise ValueError(
-                "If using event lists, please specify the bin time to generate lightcurves."
+        if type(data1) != type(data2):
+            raise TypeError("Input data have to be of the same kind")
+
+        if isinstance(data1, EventList):
+            if dt_is_invalid:
+                raise ValueError(
+                    "If using event lists, please specify the bin time to generate lightcurves."
+                )
+        elif isinstance(data1, Lightcurve):
+            if (data1.err_dist.lower() != data2.err_dist.lower()):
+                simon(
+                    "Your lightcurves have different statistics."
+                    "The errors in the Crossspectrum will be incorrect."
             )
+
+            # If dt differs slightly, its propagated error must not be more than
+            # 1/100th of the bin
+            if not np.isclose(data1.dt, data2.dt, rtol=0.01 * data1.dt / data1.tseg):
+                raise StingrayError("Light curves do not have same time binning dt.")
+
+            if data1.tseg != data2.tseg:
+                simon(
+                    "Lightcurves do not have same tseg. This means that the data"
+                    "from the two channels are not completely in sync. This "
+                    "might or might not be an issue. Keep an eye on it."
+                )
+        elif isinstance(data1, (list, tuple)):
+            if (data1[0].err_dist.lower() != data2[0].err_dist.lower()):
+                simon(
+                    "Your lightcurves have different statistics."
+                    "The errors in the Crossspectrum will be incorrect."
+            )
+        elif isinstance(data1, (Generator, Iterator)):
+            pass
+        else:
+            raise TypeError("Input data are invalid")
 
         return True
 
@@ -1608,6 +1641,7 @@ class Crossspectrum(object):
                 silent=silent,
                 fullspec=fullspec,
                 use_common_mean=use_common_mean,
+                gti=gti,
             )
         elif isinstance(data1, Lightcurve):
             spec = crossspectrum_from_lightcurve(
@@ -1619,6 +1653,7 @@ class Crossspectrum(object):
                 silent=silent,
                 fullspec=fullspec,
                 use_common_mean=use_common_mean,
+                gti=gti,
             )
             spec.lc1 = data1
             spec.lc2 = data2
@@ -1634,6 +1669,7 @@ class Crossspectrum(object):
                 power_type=power_type,
                 silent=silent,
                 fullspec=fullspec,
+                gti=gti,
                 use_common_mean=use_common_mean,
             )
         else:
@@ -1656,6 +1692,7 @@ class Crossspectrum(object):
         self.nphots2 = None
         self.m = 1
         self.n = None
+        self.fullspec = None
         return
 
 class AveragedCrossspectrum(Crossspectrum):
@@ -2023,13 +2060,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
         assert isinstance(lc1, Lightcurve)
         assert isinstance(lc2, Lightcurve)
-
-        if lc1.tseg != lc2.tseg:
-            simon(
-                "Lightcurves do not have same tseg. This means that the data"
-                "from the two channels are not completely in sync. This "
-                "might or might not be an issue. Keep an eye on it."
-            )
 
         # If dt differs slightly, its propagated error must not be more than
         # 1/100th of the bin
@@ -2490,8 +2520,10 @@ def crossspectrum_from_lightcurve(
     if gti is None:
         gti = cross_two_gtis(lc1.gti, lc2.gti)
 
-    err1 = lc1._counts_err
-    err2 = lc2._counts_err
+    err1 = err2 = None
+    if lc1.err_dist == "gauss":
+        err1 = lc1._counts_err
+        err2 = lc2._counts_err
 
     results = avg_cs_from_events(
         lc1.time,
@@ -2577,8 +2609,16 @@ def crossspectrum_from_lc_iterable(
             if hasattr(lc, "counts"):
                 n_bin = np.rint(segment_size / lc.dt).astype(int)
 
+                gti = lc.gti
+                if common_gti is not None:
+                    gti = cross_two_gtis(common_gti, lc.gti)
+
+                err = None
+                if lc.err_dist == "gauss":
+                    err = lc.counts_err
+
                 flux_iterable = get_flux_iterable_from_segments(
-                    lc.time, lc.gti, segment_size, n_bin, fluxes=lc.counts, errors=lc._counts_err
+                    lc.time, gti, segment_size, n_bin, fluxes=lc.counts, errors=err
                 )
                 for out in flux_iterable:
                     yield out
