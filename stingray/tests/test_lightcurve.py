@@ -643,8 +643,9 @@ class TestLightcurve(object):
         assert lc[0] == lc[1] == lc[2] == lc[3] == 2
 
     def test_slicing(self):
-        lc = Lightcurve(self.times, self.counts, gti=self.gti)
-
+        lc = Lightcurve(self.times, self.counts, dt=self.dt,
+                        gti=self.gti, err=self.counts / 10,
+                        err_dist="gauss")
         assert np.allclose(lc[1:3].counts, np.array([2, 2]))
         assert np.allclose(lc[:2].counts, np.array([2, 2]))
         assert np.allclose(lc[:2].gti, [[0.5, 2.5]])
@@ -655,6 +656,11 @@ class TestLightcurve(object):
         assert np.allclose(lc[:].gti, lc.gti)
         assert lc[:].mjdref == lc.mjdref
         assert lc[::2].n == 2
+        assert np.allclose(lc[1:3].counts_err, np.array([2, 2]) / 10)
+        assert np.allclose(lc[:2].counts_err, np.array([2, 2]) / 10)
+        assert np.allclose(lc[2:].counts_err, np.array([2, 2]) / 10)
+        assert np.allclose(lc[:].counts_err, np.array([2, 2, 2, 2]) / 10)
+        assert lc[:].err_dist == lc.err_dist
 
     def test_slicing_index_error(self):
         lc = Lightcurve(self.times, self.counts)
