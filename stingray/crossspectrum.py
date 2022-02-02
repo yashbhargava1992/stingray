@@ -750,7 +750,7 @@ class Crossspectrum(object):
                 simon(
                     "Your lightcurves have different statistics."
                     "The errors in the Crossspectrum will be incorrect."
-            )
+                )
         elif isinstance(data1, (Generator, Iterator)):
             pass
         else:
