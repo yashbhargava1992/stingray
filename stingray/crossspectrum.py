@@ -593,7 +593,8 @@ class Crossspectrum(object):
             )
 
         self.dt = dt
-        self.norm = norm.lower()
+        norm = norm.lower()
+        self.norm = norm
 
         if not good_input:
             return self._initialize_empty()
@@ -746,6 +747,9 @@ class Crossspectrum(object):
                     "might or might not be an issue. Keep an eye on it."
                 )
         elif isinstance(data1, (list, tuple)):
+            if not isinstance(data1[0], Lightcurve) or not isinstance(data2[0], Lightcurve):
+                raise TypeError("Inputs lists have to contain light curve objects")
+
             if (data1[0].err_dist.lower() != data2[0].err_dist.lower()):
                 simon(
                     "Your lightcurves have different statistics."
@@ -1858,7 +1862,8 @@ class AveragedCrossspectrum(Crossspectrum):
                 fullspec=fullspec,
                 segment_size=segment_size
             )
-        self.norm = norm.lower()
+        norm = norm.lower()
+        self.norm = norm
         self.dt = dt
         self.save_all = save_all
         self.segment_size = segment_size

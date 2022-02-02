@@ -120,7 +120,8 @@ class Powerspectrum(Crossspectrum):
                 dt=dt
             )
 
-        self.norm = norm.lower()
+        norm = norm.lower()
+        self.norm = norm
         self.dt = dt
 
         if not good_input:
@@ -716,7 +717,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                 segment_size=segment_size
             )
 
-        self.norm = norm.lower()
+        norm = norm.lower()
+        self.norm = norm
         self.dt = dt
         self.save_all = save_all
         self.segment_size = segment_size
