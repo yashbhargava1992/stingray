@@ -578,7 +578,6 @@ class Crossspectrum(object):
         if data2 is None:
             data2 = lc2
 
-        norm = norm.lower()
         good_input = data1 is not None and data2 is not None
         if not skip_checks:
             good_input = self.initial_checks(
@@ -594,7 +593,7 @@ class Crossspectrum(object):
             )
 
         self.dt = dt
-        self.norm = norm
+        self.norm = norm.lower()
 
         if not good_input:
             return self._initialize_empty()

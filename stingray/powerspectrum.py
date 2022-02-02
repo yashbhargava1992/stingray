@@ -108,8 +108,6 @@ class Powerspectrum(Crossspectrum):
         if data is None:
             data = lc
 
-        if isinstance(norm, str):
-            norm = norm.lower()
         good_input = True
         if not skip_checks:
             good_input = self.initial_checks(
@@ -705,8 +703,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         if data is None:
             data = lc
 
-        norm = norm.lower()
-
         good_input = True
         if not skip_checks:
             good_input = self.initial_checks(
@@ -720,7 +716,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                 segment_size=segment_size
             )
 
-        self.norm = norm
+        self.norm = norm.lower()
         self.dt = dt
         self.save_all = save_all
         self.segment_size = segment_size
