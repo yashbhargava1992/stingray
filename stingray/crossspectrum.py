@@ -714,6 +714,11 @@ class Crossspectrum(object):
 
         dt_is_invalid = (dt is None) or (dt <= np.finfo(float).resolution)
 
+        if segment_size is None:
+            # checks to be run for non-averaged spectra
+            if gti is not None and len(gti) > 1:
+                raise TypeError("Non-averaged cross spectra need a single GTI")
+
         if type(data1) != type(data2):
             raise TypeError("Input data have to be of the same kind")
 
@@ -2138,6 +2143,7 @@ class AveragedCrossspectrum(Crossspectrum):
                     norm=self.norm,
                     power_type=self.power_type,
                     fullspec=self.fullspec,
+                    legacy=True
                 )
 
             cs_all.append(cs_seg)

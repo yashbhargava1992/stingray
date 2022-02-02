@@ -1213,8 +1213,8 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
     err = None
-    if lc1.err_dist == "gauss":
-        err = lc1.counts_err
+    if lc.err_dist == "gauss":
+        err = lc.counts_err
 
     table = avg_pds_from_events(
         lc.time, lc.gti, segment_size, lc.dt,
