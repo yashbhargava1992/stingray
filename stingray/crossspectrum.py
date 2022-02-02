@@ -1785,6 +1785,11 @@ class AveragedCrossspectrum(Crossspectrum):
         with old results, and is also needed to use light curve lists as an input, to
         conserve the spectra of each segment, or to use the large_data option.
 
+    gti: 2-d float array, default None
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        If None, they are calculated by taking the common GTI between the
+        two light curves
+
     Attributes
     ----------
     freq: numpy.ndarray
@@ -1817,8 +1822,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
     gti: 2-d float array
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
-        They are calculated by taking the common GTI between the
-        two light curves
+
     """
 
     def __init__(
@@ -2364,8 +2368,9 @@ def crossspectrum_from_time_array(
     ----------------
     segment_size : float
         The length, in seconds, of the light curve segments that will be averaged
-    gti : [[gti0, gti1], ...]
-        Common Good Time intervals
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Default to the common GTIs from the two input
+        objects
     norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
         fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -2454,6 +2459,9 @@ def crossspectrum_from_events(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Default to the common GTIs from the two input
+        objects
 
     Returns
     -------
@@ -2519,6 +2527,9 @@ def crossspectrum_from_lightcurve(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Default to the common GTIs from the two input
+        objects
 
     Returns
     -------
@@ -2602,6 +2613,9 @@ def crossspectrum_from_lc_iterable(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. The GTIs of the input light curves are
+        interesected with these.
 
     Returns
     -------

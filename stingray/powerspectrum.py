@@ -1163,6 +1163,8 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
         per-segment basis.
     silent : bool, default False
         Silence the progress bars
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Default to the GTIs of the input object
 
     Returns
     -------
@@ -1205,6 +1207,8 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
         per-segment basis.
     silent : bool, default False
         Silence the progress bars
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Default to the GTIs of the input object
 
     Returns
     -------
@@ -1258,6 +1262,9 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
         per-segment basis.
     silent : bool, default False
         Silence the progress bars
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. These are interesected with the GTIs of the input
+        object
 
     Returns
     -------
