@@ -986,7 +986,7 @@ class Crossspectrum(object):
         bin_cs.nphots1 = self.nphots1
         bin_cs.power_err = binerr
 
-        if hasattr(self, "unnorm_power"):
+        if hasattr(self, "unnorm_power") and self.unnorm_power is not None:
             unnorm_power_err = None
             if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
                 unnorm_power_err = self.unnorm_power_err
@@ -1187,7 +1187,7 @@ class Crossspectrum(object):
         new_spec.m = nsamples * self.m
         new_spec.dt = self.dt
 
-        if hasattr(self, "unnorm_power"):
+        if hasattr(self, "unnorm_power") and self.unnorm_power is not None:
             unnorm_power_err = None
             if hasattr(self, "unnorm_power_err") and self.unnorm_power_err is not None:
                 unnorm_power_err = self.unnorm_power_err
