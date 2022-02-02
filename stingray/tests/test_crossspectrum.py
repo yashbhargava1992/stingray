@@ -619,7 +619,7 @@ class TestCrossspectrum(object):
         lc_.err_dist = 'gauss'
 
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(self.lc1, lc_)
+            cs = Crossspectrum(self.lc1, lc_, legacy=True)
         assert np.any(["different statistics" in r.message.args[0]
                        for r in record])
 

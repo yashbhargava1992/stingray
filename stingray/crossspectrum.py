@@ -550,6 +550,11 @@ class Crossspectrum(object):
 
     nphots2: float
         The total number of photons in light curve 2
+
+    legacy: bool
+        Use the legacy machinery of AveragedCrossspectrum. This might be useful to compare
+        with old results, and is also needed to use light curve lists as an input, to
+        conserve the spectra of each segment, or to use the large_data option.
     """
 
     def __init__(
@@ -563,7 +568,8 @@ class Crossspectrum(object):
         power_type="real",
         dt=None,
         fullspec=False,
-        skip_checks=False
+        skip_checks=False,
+        legacy=False
     ):
         self._type = None
         # for backwards compatibility
@@ -572,6 +578,7 @@ class Crossspectrum(object):
         if data2 is None:
             data2 = lc2
 
+        norm = norm.lower()
         good_input = data1 is not None and data2 is not None
         if not skip_checks:
             good_input = self.initial_checks(
@@ -586,21 +593,16 @@ class Crossspectrum(object):
                 fullspec=fullspec,
             )
 
-        norm = norm.lower()
         self.dt = dt
+        self.norm = norm
 
         if not good_input:
-            self.freq = None
-            self.power = None
-            self.power_err = None
-            self.df = None
-            self.dt = None
-            self.nphots1 = None
-            self.nphots2 = None
-            self.m = 1
-            self.n = None
-            self.norm = norm
-            return
+            return self._initialize_empty()
+
+        if not legacy and data1 is not None and data2 is not None:
+            return self._initialize_from_any_input(
+                data1, data2, dt=dt, norm=norm, power_type=power_type,
+                fullspec=fullspec)
 
         if not isinstance(data1, EventList):
             lc1 = data1
@@ -1585,6 +1587,77 @@ class Crossspectrum(object):
             fullspec=fullspec,
             use_common_mean=use_common_mean)
 
+    def _initialize_from_any_input(
+            self, data1, data2, dt=None, segment_size=None, norm="frac",
+            power_type="all", silent=False, fullspec=False, gti=None,
+            use_common_mean=True):
+        """Initialize the class, trying to understand the input types.
+
+        The input arguments are the same as ``__init__()``. Based on the type
+        of ``data1``, this method will call the appropriate
+        ``crossspectrum_from_XXXX`` function, and initialize ``self`` with
+        the correct attributes.
+        """
+        if isinstance(data1, EventList):
+            spec = crossspectrum_from_events(
+                data1,
+                data2,
+                dt,
+                segment_size,
+                norm=norm,
+                power_type=power_type,
+                silent=silent,
+                fullspec=fullspec,
+                use_common_mean=use_common_mean,
+            )
+        elif isinstance(data1, Lightcurve):
+            spec = crossspectrum_from_lightcurve(
+                data1,
+                data2,
+                segment_size,
+                norm=norm,
+                power_type=power_type,
+                silent=silent,
+                fullspec=fullspec,
+                use_common_mean=use_common_mean,
+            )
+            spec.lc1 = data1
+            spec.lc2 = data2
+        elif isinstance(data1, (tuple, list)):
+            dt = data1[0].dt
+            # This is a list of light curves.
+            spec = crossspectrum_from_lc_iterable(
+                data1,
+                data2,
+                dt,
+                segment_size,
+                norm=norm,
+                power_type=power_type,
+                silent=silent,
+                fullspec=fullspec,
+                use_common_mean=use_common_mean,
+            )
+        else:
+            raise TypeError(f"Bad inputs to Crosssspectrum: {type(data1)}")
+
+        for key, val in spec.__dict__.items():
+            setattr(self, key, val)
+        return
+
+    def _initialize_empty(self):
+        """Set all attributes to None."""
+        self.freq = None
+        self.power = None
+        self.power_err = None
+        self.unnorm_power = None
+        self.unnorm_power_err = None
+        self.df = None
+        self.dt = None
+        self.nphots1 = None
+        self.nphots2 = None
+        self.m = 1
+        self.n = None
+        return
 
 class AveragedCrossspectrum(Crossspectrum):
     """
@@ -1751,16 +1824,7 @@ class AveragedCrossspectrum(Crossspectrum):
         self.show_progress = not silent
 
         if not good_input:
-            self.freq = None
-            self.power = None
-            self.power_err = None
-            self.df = None
-            self.dt = None
-            self.nphots1 = None
-            self.nphots2 = None
-            self.m = 1
-            self.n = None
-            return
+            return self._initialize_empty()
 
         if isinstance(data1, Generator):
             warnings.warn(
@@ -1780,49 +1844,10 @@ class AveragedCrossspectrum(Crossspectrum):
             legacy = True
 
         if not legacy and data1 is not None and data2 is not None:
-            if isinstance(data1, EventList):
-                spec = crossspectrum_from_events(
-                    data1,
-                    data2,
-                    dt,
-                    segment_size,
-                    norm=norm,
-                    power_type=power_type,
-                    silent=silent,
-                    fullspec=fullspec,
-                    use_common_mean=use_common_mean,
-                )
-            elif isinstance(data1, Lightcurve):
-                spec = crossspectrum_from_lightcurve(
-                    data1,
-                    data2,
-                    segment_size,
-                    norm=norm,
-                    power_type=power_type,
-                    silent=silent,
-                    fullspec=fullspec,
-                    use_common_mean=use_common_mean,
-                )
-                spec.lc1 = data1
-                spec.lc2 = data2
-            else:
-                dt = data1[0].dt
-                # This is a list of light curves.
-                spec = crossspectrum_from_lc_iterable(
-                    data1,
-                    data2,
-                    dt,
-                    segment_size,
-                    norm=norm,
-                    power_type=power_type,
-                    silent=silent,
-                    fullspec=fullspec,
-                    use_common_mean=use_common_mean,
-                )
-
-            for key, val in spec.__dict__.items():
-                setattr(self, key, val)
-            return
+            return self._initialize_from_any_input(
+                data1, data2, dt=dt, segment_size=segment_size, gti=gti, norm=norm,
+                power_type=power_type, silent=silent, fullspec=fullspec,
+                use_common_mean=use_common_mean)
 
         log.info("Using legacy interface.")
 
@@ -1886,7 +1911,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         Crossspectrum.__init__(
             self, data1, data2, norm, gti=gti, power_type=power_type, dt=dt,
-            fullspec=fullspec, skip_checks=True
+            fullspec=fullspec, skip_checks=True, legacy=legacy
         )
 
         return
@@ -2354,6 +2379,7 @@ def crossspectrum_from_events(
     silent=False,
     fullspec=False,
     use_common_mean=True,
+    gti=None,
 ):
     """Calculate AveragedCrossspectrum from two event lists
 
@@ -2395,7 +2421,8 @@ def crossspectrum_from_events(
         The output cross spectrum.
     """
 
-    gti = cross_two_gtis(events1.gti, events2.gti)
+    if gti is None:
+        gti = cross_two_gtis(events1.gti, events2.gti)
 
     return crossspectrum_from_time_array(
         events1.time,
@@ -2420,6 +2447,7 @@ def crossspectrum_from_lightcurve(
     silent=False,
     fullspec=False,
     use_common_mean=True,
+    gti=None
 ):
     """Calculate AveragedCrossspectrum from two light curves
 
@@ -2460,7 +2488,8 @@ def crossspectrum_from_lightcurve(
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
-    gti = cross_two_gtis(lc1.gti, lc2.gti)
+    if gti is None:
+        gti = cross_two_gtis(lc1.gti, lc2.gti)
 
     err1 = lc1._counts_err
     err2 = lc2._counts_err
@@ -2496,6 +2525,7 @@ def crossspectrum_from_lc_iterable(
     silent=False,
     fullspec=False,
     use_common_mean=True,
+    gti=None,
 ):
     """Calculate AveragedCrossspectrum from two light curves
 
@@ -2540,6 +2570,8 @@ def crossspectrum_from_lc_iterable(
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
+
+    common_gti = gti
 
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:

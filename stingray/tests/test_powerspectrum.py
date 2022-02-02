@@ -157,10 +157,11 @@ class TestAveragedPowerspectrumEvents(object):
         with pytest.raises(ValueError):
             assert AveragedPowerspectrum(self.lc, dt=self.dt)
 
-    def test_init_with_nonsense_segment(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_segment(self, legacy):
         segment_size = "foo"
         with pytest.raises(TypeError):
-            assert AveragedPowerspectrum(self.lc, segment_size, dt=self.dt)
+            assert AveragedPowerspectrum(self.lc, segment_size, dt=self.dt, legacy=legacy)
 
     def test_init_with_none_segment(self):
         segment_size = None
@@ -276,12 +277,13 @@ class TestPowerspectrum(object):
         assert ps.m == 1
         assert ps.n is None
 
-    def test_make_periodogram_from_lightcurve(self):
-        ps = Powerspectrum(self.lc)
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_make_periodogram_from_lightcurve(self, legacy):
+        ps = Powerspectrum(self.lc, legacy=legacy)
         assert ps.freq is not None
         assert ps.power is not None
         assert ps.power_err is not None
-        assert ps.df == 1.0 / self.lc.tseg
+        assert np.isclose(ps.df, 1.0 / self.lc.tseg)
         assert ps.norm == "frac"
         assert ps.m == 1
         assert ps.n == self.lc.time.shape[0]
@@ -300,15 +302,23 @@ class TestPowerspectrum(object):
         with pytest.raises(TypeError):
             assert Powerspectrum(self.lc.counts)
 
-    def test_init_with_nonsense_data(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_list(self, legacy):
         nonsense_data = [None for i in range(100)]
         with pytest.raises(TypeError):
-            assert Powerspectrum(nonsense_data)
+            assert Powerspectrum(nonsense_data, legacy=legacy)
 
-    def test_init_with_nonsense_norm(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_data(self, legacy):
+        nonsense_data = 34
+        with pytest.raises(TypeError):
+            assert Powerspectrum(nonsense_data, legacy=legacy)
+
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_norm(self, legacy):
         nonsense_norm = "bla"
         with pytest.raises(ValueError):
-            assert Powerspectrum(self.lc, norm=nonsense_norm)
+            assert Powerspectrum(self.lc, norm=nonsense_norm, legacy=legacy)
 
     def test_init_with_wrong_norm_type(self):
         nonsense_norm = 1.0
@@ -475,8 +485,9 @@ class TestPowerspectrum(object):
         """
         pass
 
-    def test_rebin_makes_right_attributes(self):
-        ps = Powerspectrum(self.lc, norm="Leahy")
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_rebin_makes_right_attributes(self, legacy):
+        ps = Powerspectrum(self.lc, norm="Leahy", legacy=legacy)
         # replace powers
         ps.power = np.ones_like(ps.power) * 2.0
 
@@ -486,7 +497,7 @@ class TestPowerspectrum(object):
         assert bin_ps.freq is not None
         assert bin_ps.power is not None
         assert bin_ps.power is not None
-        assert bin_ps.df == rebin_factor * 1.0 / self.lc.tseg
+        assert np.isclose(bin_ps.df, rebin_factor * 1.0 / self.lc.tseg)
         assert bin_ps.norm.lower() == "leahy"
         assert bin_ps.m == 2
         assert bin_ps.n == self.lc.time.shape[0]
@@ -660,15 +671,17 @@ class TestAveragedPowerspectrum(object):
         with pytest.raises(ValueError):
             assert AveragedPowerspectrum(self.lc)
 
-    def test_init_with_nonsense_segment(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_segment(self, legacy):
         segment_size = "foo"
         with pytest.raises(TypeError):
-            assert AveragedPowerspectrum(self.lc, segment_size)
+            assert AveragedPowerspectrum(self.lc, segment_size, legacy=legacy)
 
-    def test_init_with_none_segment(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_none_segment(self, legacy):
         segment_size = None
         with pytest.raises(ValueError):
-            assert AveragedPowerspectrum(self.lc, segment_size)
+            assert AveragedPowerspectrum(self.lc, segment_size, legacy=legacy)
 
     def test_init_with_inf_segment(self):
         segment_size = np.inf
