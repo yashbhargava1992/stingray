@@ -410,13 +410,14 @@ class Powerspectrum(Crossspectrum):
         dt : float
             The time resolution of the intermediate light curves
             (sets the Nyquist frequency)
+
         Other parameters
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged
             Only relevant (and required) for AveragedPowerspectrum
-        gti : [[gti0, gti1], ...]
-            Good Time intervals
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals.
         norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -437,7 +438,7 @@ class Powerspectrum(Crossspectrum):
 
     @staticmethod
     def from_events(events, dt, segment_size=None, norm="frac",
-                    silent=False, use_common_mean=True):
+                    silent=False, use_common_mean=True, gti=None):
         """Calculate AveragedPowerspectrum from an event list
 
         Parameters
@@ -465,15 +466,17 @@ class Powerspectrum(Crossspectrum):
             per-segment basis.
         silent : bool, default False
             Silence the progress bars
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals. Defaults to the GTIs from the input object
         """
 
         return powerspectrum_from_events(
             events, dt, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+            silent=silent, use_common_mean=use_common_mean, gti=gti)
 
     @staticmethod
     def from_lightcurve(lc, segment_size=None, norm="frac",
-                        silent=False, use_common_mean=True):
+                        silent=False, use_common_mean=True, gti=None):
         """Calculate AveragedPowerspectrum from a light curve
 
         Parameters
@@ -501,15 +504,17 @@ class Powerspectrum(Crossspectrum):
             per-segment basis.
         silent : bool, default False
             Silence the progress bars
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals. Defaults to the GTIs from the input object
         """
 
         return powerspectrum_from_lightcurve(
             lc, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+            silent=silent, use_common_mean=use_common_mean, gti=gti)
 
     @staticmethod
     def from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
-                         silent=False, use_common_mean=True):
+                         silent=False, use_common_mean=True, gti=None):
         """Calculate AveragedCrossspectrum from two light curves
 
         Parameters
@@ -539,15 +544,17 @@ class Powerspectrum(Crossspectrum):
             per-segment basis.
         silent : bool, default False
             Silence the progress bars
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals. Defaults to the GTIs from the input object
         """
 
         return powerspectrum_from_lc_iterable(
             iter_lc, dt, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+            silent=silent, use_common_mean=use_common_mean, gti=gti)
 
     def _initialize_from_any_input(
             self, data, dt=None, segment_size=None, norm="frac",
-            silent=False, use_common_mean=True):
+            silent=False, use_common_mean=True, gti=None):
         """Initialize the class, trying to understand the input types.
 
         The input arguments are the same as ``__init__()``. Based on the type
@@ -563,6 +570,7 @@ class Powerspectrum(Crossspectrum):
                 norm=norm.lower(),
                 silent=silent,
                 use_common_mean=use_common_mean,
+                gti=gti,
             )
         elif isinstance(data, Lightcurve):
             spec = powerspectrum_from_lightcurve(
@@ -571,6 +579,7 @@ class Powerspectrum(Crossspectrum):
                 norm=norm,
                 silent=silent,
                 use_common_mean=use_common_mean,
+                gti=gti,
             )
             spec.lc1 = data
         elif isinstance(data, (tuple, list)):
@@ -585,6 +594,7 @@ class Powerspectrum(Crossspectrum):
                 norm=norm,
                 silent=silent,
                 use_common_mean=use_common_mean,
+                gti=gti,
             )
         else: # pragma: no cover
             raise TypeError(f"Bad inputs to Powerspectrum: {type(data)}")

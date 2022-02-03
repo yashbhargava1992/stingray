@@ -497,10 +497,9 @@ class Crossspectrum(object):
 
     Other Parameters
     ----------------
-    gti: 2-d float array
-        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
-        This choice overrides the GTIs in the single light curves. Use with
-        care!
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Defaults to the common GTIs from the two input
+        objects
 
     lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
         For backwards compatibility only. Like ``data1``, but no
@@ -1470,7 +1469,8 @@ class Crossspectrum(object):
             power_type="all",
             silent=False,
             fullspec=False,
-            use_common_mean=True):
+            use_common_mean=True,
+            gti=None):
         """Calculate AveragedCrossspectrum from two event lists
 
         Parameters
@@ -1505,6 +1505,9 @@ class Crossspectrum(object):
         power_type : str, default 'all'
             If 'all', give complex powers. If 'abs', the absolute value; if 'real',
             the real part
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals. Defaults to the common GTIs from the two input
+            objects
         """
 
         return crossspectrum_from_events(
@@ -1516,7 +1519,8 @@ class Crossspectrum(object):
             power_type=power_type,
             silent=silent,
             fullspec=fullspec,
-            use_common_mean=use_common_mean)
+            use_common_mean=use_common_mean,
+            gti=gti)
 
     @staticmethod
     def from_lightcurve(
@@ -1527,7 +1531,8 @@ class Crossspectrum(object):
             power_type="all",
             silent=False,
             fullspec=False,
-            use_common_mean=True):
+            use_common_mean=True,
+            gti=None):
         """Calculate AveragedCrossspectrum from two light curves
 
         Parameters
@@ -1559,6 +1564,9 @@ class Crossspectrum(object):
         power_type : str, default 'all'
             If 'all', give complex powers. If 'abs', the absolute value; if 'real',
             the real part
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals. Defaults to the common GTIs from the two input
+            objects
         """
         return crossspectrum_from_lightcurve(
             lc1,
@@ -1568,7 +1576,8 @@ class Crossspectrum(object):
             power_type=power_type,
             silent=silent,
             fullspec=fullspec,
-            use_common_mean=use_common_mean)
+            use_common_mean=use_common_mean,
+            gti=gti)
 
     @staticmethod
     def from_lc_iterable(
@@ -1580,7 +1589,8 @@ class Crossspectrum(object):
             power_type="all",
             silent=False,
             fullspec=False,
-            use_common_mean=True):
+            use_common_mean=True,
+            gti=None):
         """Calculate AveragedCrossspectrum from two light curves
 
         Parameters
@@ -1615,6 +1625,9 @@ class Crossspectrum(object):
         power_type : str, default 'all'
             If 'all', give complex powers. If 'abs', the absolute value; if 'real',
             the real part
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals. Defaults to the common GTIs from the two input
+            objects
         """
 
         return crossspectrum_from_lc_iterable(
@@ -1626,7 +1639,8 @@ class Crossspectrum(object):
             power_type=power_type,
             silent=silent,
             fullspec=fullspec,
-            use_common_mean=use_common_mean)
+            use_common_mean=use_common_mean,
+            gti=gti)
 
     def _initialize_from_any_input(
             self, data1, data2, dt=None, segment_size=None, norm="frac",
@@ -1732,10 +1746,9 @@ class AveragedCrossspectrum(Crossspectrum):
 
     Other Parameters
     ----------------
-    gti: 2-d float array
-        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
-        This choice overrides the GTIs in the single light curves. Use with
-        care!
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Defaults to the common GTIs from the two input
+        objects
 
     dt : float
         The time resolution of the light curve. Only needed when constructing
@@ -1785,10 +1798,9 @@ class AveragedCrossspectrum(Crossspectrum):
         with old results, and is also needed to use light curve lists as an input, to
         conserve the spectra of each segment, or to use the large_data option.
 
-    gti: 2-d float array, default None
-        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
-        If None, they are calculated by taking the common GTI between the
-        two light curves
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Defaults to the common GTIs from the two input
+        objects
 
     Attributes
     ----------
@@ -1820,9 +1832,9 @@ class AveragedCrossspectrum(Crossspectrum):
     nphots2: float
         The total number of photons in the second (reference) light curve
 
-    gti: 2-d float array
-        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
-
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Defaults to the common GTIs from the two input
+        objects
     """
 
     def __init__(
@@ -2369,7 +2381,7 @@ def crossspectrum_from_time_array(
     segment_size : float
         The length, in seconds, of the light curve segments that will be averaged
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Good Time intervals. Default to the common GTIs from the two input
+        Good Time intervals. Defaults to the common GTIs from the two input
         objects
     norm : str, default "frac"
         The normalization of the periodogram. "abs" is absolute rms, "frac" is
@@ -2460,7 +2472,7 @@ def crossspectrum_from_events(
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Good Time intervals. Default to the common GTIs from the two input
+        Good Time intervals. Defaults to the common GTIs from the two input
         objects
 
     Returns
@@ -2528,7 +2540,7 @@ def crossspectrum_from_lightcurve(
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Good Time intervals. Default to the common GTIs from the two input
+        Good Time intervals. Defaults to the common GTIs from the two input
         objects
 
     Returns
