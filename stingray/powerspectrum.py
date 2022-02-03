@@ -574,8 +574,8 @@ class Powerspectrum(Crossspectrum):
             )
             spec.lc1 = data
         elif isinstance(data, (tuple, list)):
-            if not isinstance(data[0], Lightcurve):
-                raise TypeError(f"Bad inputs to Powersspectrum: {type(data[0])}")
+            if not isinstance(data[0], Lightcurve): # pragma: no cover
+                raise TypeError(f"Bad inputs to Powerspectrum: {type(data[0])}")
             dt = data[0].dt
             # This is a list of light curves.
             spec = powerspectrum_from_lc_iterable(
@@ -586,8 +586,8 @@ class Powerspectrum(Crossspectrum):
                 silent=silent,
                 use_common_mean=use_common_mean,
             )
-        else:
-            raise TypeError(f"Bad inputs to Powersspectrum: {type(data)}")
+        else: # pragma: no cover
+            raise TypeError(f"Bad inputs to Powerspectrum: {type(data)}")
 
         for key, val in spec.__dict__.items():
             setattr(self, key, val)
@@ -1275,7 +1275,7 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
 
-    common_gti = None
+    common_gti = gti
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):

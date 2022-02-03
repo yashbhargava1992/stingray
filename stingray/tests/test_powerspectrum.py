@@ -158,7 +158,7 @@ class TestAveragedPowerspectrumEvents(object):
             gti = np.array([[hdul[2].data["START"][0], hdul[2].data["STOP"][0]]])
 
             _ = AveragedPowerspectrum.from_time_array(
-                times,  segment_size=128, dt=self.dt, gti=gti, norm='none',
+                times, segment_size=128, dt=self.dt, gti=gti, norm='none',
                 use_common_mean=False)
 
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -166,9 +166,10 @@ class TestAveragedPowerspectrumEvents(object):
         lc = self.events.to_lc(self.dt)
         lc._counts_err = np.sqrt(lc.counts.mean()) + np.zeros_like(lc.counts)
         pds = AveragedPowerspectrum.from_lightcurve(
-            lc, segment_size=self.segment_size, norm=norm, silent=True)
+            lc, segment_size=self.segment_size, norm=norm, silent=True,
+            gti=lc.gti)
         pds_ev = AveragedPowerspectrum.from_events(
-            self.events, segment_size=self.segment_size, dt=self.dt, norm=norm, silent=True)
+            self.events, segment_size=self.segment_size, dt=self.dt, norm=norm, silent=True, gti=self.events.gti)
         for attr in ["power", "freq", "m", "n", "nphots", "segment_size"]:
             assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
 
@@ -764,7 +765,8 @@ class TestAveragedPowerspectrum(object):
         with pytest.warns(UserWarning) as record:
             cs = AveragedPowerspectrum(
                 iter_lc(self.lc, 1),
-                segment_size=1, legacy=legacy)
+                segment_size=1, legacy=legacy,
+                gti=self.lc.gti)
         message = "The averaged Power spectrum from a generator "
 
         assert np.any([message in r.message.args[0]
@@ -776,7 +778,16 @@ class TestAveragedPowerspectrum(object):
         lc.gti = gti
         lc_split = lc.split_by_gti()
 
-        cs = AveragedPowerspectrum(lc_split, segment_size=0.05, norm="leahy")
+        cs = AveragedPowerspectrum(lc_split, segment_size=0.05, norm="leahy",
+                                   gti=lc.gti)
+        cs_lc = AveragedPowerspectrum(lc, segment_size=0.05, norm="leahy",
+                                      gti=lc.gti)
+        for attr in ("power", "unnorm_power", "power_err", "unnorm_power_err",
+                     "freq"):
+            assert np.allclose(getattr(cs, attr), getattr(cs_lc, attr))
+
+        for attr in ("m", "n", "norm"):
+            assert getattr(cs, attr) == getattr(cs_lc, attr)
 
     @pytest.mark.parametrize('df', [2, 3, 5, 1.5, 1, 85])
     def test_rebin(self, df):

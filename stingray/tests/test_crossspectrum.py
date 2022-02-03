@@ -628,6 +628,15 @@ class TestCrossspectrum(object):
         assert np.any(["different statistics" in r.message.args[0]
                        for r in record])
 
+    def test_make_crossspectrum_diff_lc_iter_stat(self):
+        lc_ = copy.deepcopy(self.lc1)
+        lc_.err_dist = 'gauss'
+
+        with pytest.warns(UserWarning) as record:
+            cs = AveragedCrossspectrum([self.lc1], [lc_], segment_size=1, legacy=True)
+        assert np.any(["different statistics" in r.message.args[0]
+                       for r in record])
+
     def test_make_crossspectrum_bad_lc_stat(self):
         lc1 = copy.deepcopy(self.lc1)
         lc1.err_dist = 'gauss'
@@ -1021,7 +1030,8 @@ class TestAveragedCrossspectrum(object):
             cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=np.inf)
 
     @pytest.mark.parametrize("legacy", [False, True])
-    def test_with_iterable_of_lightcurves(self, legacy):
+    @pytest.mark.parametrize("err_dist", ["poisson", "gauss"])
+    def test_with_iterable_of_lightcurves(self, legacy, err_dist):
         def iter_lc(lc, n):
             "Generator of n parts of lc."
             t0 = int(len(lc) / n)
@@ -1034,6 +1044,9 @@ class TestAveragedCrossspectrum(object):
                     break
                 else:
                     i, t = t, t + t0
+        lc1 = copy.deepcopy(self.lc1)
+        lc2 = copy.deepcopy(self.lc2)
+        lc1.err_dist = lc2.err_dist = err_dist
         with pytest.warns(UserWarning) as record:
             cs = AveragedCrossspectrum(
                 iter_lc(self.lc1, 1), iter_lc(self.lc2, 1),

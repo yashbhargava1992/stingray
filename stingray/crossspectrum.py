@@ -1681,7 +1681,7 @@ class Crossspectrum(object):
                 gti=gti,
                 use_common_mean=use_common_mean,
             )
-        else:
+        else:  # pragma: no cover
             raise TypeError(f"Bad inputs to Crosssspectrum: {type(data1)}")
 
         for key, val in spec.__dict__.items():
@@ -1988,7 +1988,7 @@ class AveragedCrossspectrum(Crossspectrum):
         ...
         ValueError: segment_size must be finite!
         """
-        good = Crossspectrum.initial_checks(self, data1, **kwargs)
+        good = Crossspectrum.initial_checks(self, data1, segment_size=segment_size, **kwargs)
         if not good:
             return False
         if isinstance(self, AveragedCrossspectrum) and segment_size is None and data1 is not None:
