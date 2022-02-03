@@ -75,7 +75,8 @@ class TestAveragedPowerspectrumEvents(object):
     def test_from_lc_iter_works(self):
         pds_ev = AveragedPowerspectrum.from_lc_iterable(
             self.events.to_lc_iter(self.dt, self.segment_size),
-            segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True)
+            segment_size=self.segment_size, dt=self.dt, norm="leahy",
+            silent=True, gti=self.events.gti)
         assert np.allclose(self.leahy_pds.power, pds_ev.power)
 
     @pytest.mark.parametrize("err_dist", ["poisson", "gauss"])
