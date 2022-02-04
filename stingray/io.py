@@ -694,7 +694,7 @@ def load_events_and_gtis(
     returns.gti_list = gti_list
     returns.pi_list = pi
     returns.cal_pi_list = cal_pi
-    if "energy" in additional_data:
+    if "energy" in additional_data and np.any(additional_data["energy"] > 0.):
         returns.energy_list = additional_data["energy"]
     else:
         try:

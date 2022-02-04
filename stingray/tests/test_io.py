@@ -78,13 +78,24 @@ class TestIO(object):
         fname = os.path.join(datadir, 'monol_testA.evt')
         load_events_and_gtis(fname, additional_columns=["PI"])
 
-    def test_event_file_read_additional_warns(self):
+    def test_event_file_read_additional_warns_uncal(self):
         """Test event file reading."""
         fname = os.path.join(datadir, 'monol_testA.evt')
         with pytest.warns(UserWarning) as record:
-            load_events_and_gtis(fname, additional_columns=["energy"])
+            vals = load_events_and_gtis(fname, additional_columns=["energy"])
         assert np.any(["Column energy not found"
                        in r.message.args[0] for r in record])
+        # This is the default calibration for nustar data, as returned
+        # from rough_calibration
+        assert np.allclose(vals.energy_list, vals.pi_list * 0.04 + 1.6)
+
+    def test_event_file_read_additional_energy_cal(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, 'monol_testA_calib.evt')
+        vals = load_events_and_gtis(fname, additional_columns=["energy"])
+        # These energies were calibrated with a different calibration than
+        # returned from rough_calibration, on purpose! (notice the +1.)
+        assert np.allclose(vals.energy_list, vals.pi_list * 0.04 + 1.6 + 1.)
 
     def test_event_file_read_xmm(self):
         """Test event file reading."""
