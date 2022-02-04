@@ -668,6 +668,9 @@ def load_events_and_gtis(
         additional_columns = [pi_col]
     if pi_col not in additional_columns:
         additional_columns.append(pi_col)
+    # If data were already calibrated, use this!
+    if "energy" not in additional_columns:
+        additional_columns.append("energy")
 
     additional_data = _get_additional_data(datatable, additional_columns)
     hdulist.close()
