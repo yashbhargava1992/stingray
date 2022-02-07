@@ -377,10 +377,9 @@ class Simulator(object):
         counts = self._find_inverse(real, imaginary)
 
         self.std = counts.std()
-        local_std = np.std(np.diff(counts)) / np.sqrt(2)
 
         rescaled_counts = self._extract_and_scale(counts)
-        err = (local_std + np.zeros_like(rescaled_counts)) / self.std * self.rms
+        err = np.zeros_like(rescaled_counts)
 
         if self.poisson:
             bad = rescaled_counts < 0
@@ -530,8 +529,8 @@ class Simulator(object):
             lc = lc[(len(h) - 1):-(len(h) - 1)]
 
         time = self.dt * np.arange(0.5, len(lc)) + self.tstart
-        return Lightcurve(time, lc, err_dist='gauss', dt=self.dt,
-                          err=np.zeros_like(self.time) + np.sqrt(self.mean),
+        err = np.zeros_like(time)
+        return Lightcurve(time, lc, err_dist='gauss', dt=self.dt, err=err,
                           skip_checks=True)
 
     def _extract_and_scale(self, long_lc):
