@@ -728,8 +728,12 @@ class Lightcurve(object):
                 new_gti = cross_two_gtis(new_gti, new_gt1)
             new_gti = cross_two_gtis(self.gti, new_gti)
 
-            return Lightcurve(new_time, new_counts, mjdref=self.mjdref,
-                              gti=new_gti, dt=self.dt, skip_checks=True)
+            lc = Lightcurve(new_time, new_counts, mjdref=self.mjdref,
+                            gti=new_gti, dt=self.dt, skip_checks=True,
+                            err_dist=self.err_dist)
+            if self._counts_err is not None:
+                lc._counts_err = self._counts_err[start:stop:step]
+            return lc
         else:
             raise IndexError("The index must be either an integer or a slice "
                              "object !")
