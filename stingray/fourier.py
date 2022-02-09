@@ -355,7 +355,16 @@ def normalize_leahy_from_variance(unnorm_power, variance, n_bin):
     True
     >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
     True
+
+    If the variance is zero, it will fail:
+    >>> pdsnorm = normalize_leahy_from_variance(pds, 0., lc.size)
+    Traceback (most recent call last):
+    ...
+    ValueError: The variance used to normalize the ...
     """
+    if variance == 0.:
+        raise ValueError(
+            "The variance used to normalize the periodogram is 0.")
     return unnorm_power * 2. / (variance * n_bin)
 
 
