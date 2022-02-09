@@ -442,6 +442,12 @@ class TestNorms(object):
         )
         assert np.isclose(pdsnorm.mean(), 2, rtol=0.01)
 
+    def test_normalize_with_variance_fails_if_variance_zero(self):
+        # If the variance is zero, it will fail:
+        with pytest.raises(ValueError) as excinfo:
+            pdsnorm = normalize_leahy_from_variance(self.pds, 0., self.N)
+        assert "The variance used to normalize the" in str(excinfo.value)
+
     def test_normalize_none(self):
         pdsnorm = normalize_periodograms(self.pds, self.dt, self.N,
                                          self.mean, n_ph=self.nph, norm="none")
