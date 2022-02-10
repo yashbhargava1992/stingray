@@ -12,7 +12,7 @@ We are proudly open source and believe our(yes! yours as well) work will help en
 - Submitting a fix
 - Proposing new features
 
-A successful project is not just built by amazing programmers but by the combined, unrelenting efforts of coders, testers,  reviewers and even documentation writers. There are a few guidelines that we need all contributors to follow so that we can have a chance of keeping on top of things.
+A successful project is not just built by amazing programmers but by the combined, unrelenting efforts of coders, testers, reviewers, and documentation writers. There are a few guidelines that we need all contributors to follow so that we can have a chance of keeping on top of things.
 
 ## Contribution Guidelines
 
@@ -21,11 +21,11 @@ A successful project is not just built by amazing programmers but by the combine
 Contributions from everyone, experienced and inexperienced, are welcome! If you don't know where to start, look at the [Open Issues](https://github.com/StingraySoftware/stingray/issues) and/or get involved in our [Slack channel](http://slack-invite.timelabtechnologies.com/) . This code is written in Python 3.8+, but in general we will follow the Astropy/Numpy minimum Python versions. Tests run at each commit during Pull Requests, so it is easy to single out points in the code that break this compatibility.
 
 - **Branches:**
-    - Don't use your master **branch(forked) for anything. Consider deleting your master** branch.
+    - Don't use your main **branch(forked) for anything. Consider deleting your main** branch.
     - Make a new branch, called a feature branch, for each separable set of changes: “one task, one branch”.
     - Start that new feature branch from the most current development version of stingray.
     - Name of branch should be the purpose of change eg. *bugfix-for-issue20* or *refactor-lightcurve-code.*
-    - Never merge changes from stingray/master into your feature branch. If changes in the development version require changes to our code you can rebase, but only if asked.
+    - Never merge changes from stingray/main into your feature branch. If changes in the development version require changes to our code you can rebase, but only if asked.
 - **Commits:**
     - Make frequent commits.
     - One commit per logical change in the code-base.
@@ -38,7 +38,7 @@ Contributions from everyone, experienced and inexperienced, are welcome! If you 
 
 These, conceptually, are the steps you will follow in contributing to stingray. These steps keep work well organized, with readable history. This in turn makes it easier for project maintainers (that might be you) to see what you’ve done, and why you did it:
 
-1. Regularly fetch latest stingray development version `stingray/master` from GitHub.
+1. Regularly fetch latest stingray development version `stingray/main` from GitHub.
 2. Make a new feature branch. **Recommended:** Use virtual environments to work on branch.
 3. Editing Workflow:
     1. One commit per logical change.
@@ -46,12 +46,12 @@ These, conceptually, are the steps you will follow in contributing to stingray. 
     3. Code should have appropriate docstring.
     4. Update appropriate documentation if necessary and test it on sphinx.
     5. Write a test for code changes.
-    6. If  modifications require more than one commit, break changes into smaller commits.
+    6. If modifications require more than one commit, break changes into smaller commits.
     7. Push the code on your remote(forked) repository.
 4. All code changes should be submitted via PRs (i.e. fork, branch, work on stuff, just submit pull request).
 Code Reviews are super-useful: another contributor can review the code, which means both the contributor and reviewer will be up to date with how everything fits together, and can get better by reading each other's code! :)
 5. Take feedback and make changes/revise the PR as asked.
-<!-- 6. Don't merge using web interface if your branch falls behind master. Fetch and rebase. -->
+<!-- 6. Don't merge using web interface if your branch falls behind main. Fetch and rebase. -->
 
 ## Coding Guidelines
 
@@ -71,7 +71,7 @@ Code Reviews are super-useful: another contributor can review the code, which me
     - Indentation should be **ONLY** with **four spaces** no mixing of tabs-and-spaces.
     - Maximum line length should be **79** characters unless doing so makes the code unreadable, ugly.
     - Functions and methods should be lower-case only, and separated by a `_`  in case of multiple words eg. `my_new_method`.
-    - Use verbose variable names(readability > economy). Only loop iteration variables are allowed to be a single letter.
+    - Use verbose variable names (readability > economy). Only loop iteration variables are allowed to be a single letter.
     - Classes start with an upper-case letter and use CamelCase eg. `MyNewClass`.
     - Inline comments should start with two spaces and a single #.
 - **Formatting Style:**  The new Python 3 formatting style should be used, i.e. f-strings `f"{variable_name}"`  or  `"{0}".format(variable_name}`should be used instead of `"%s" % (variable_name)`.
