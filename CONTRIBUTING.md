@@ -61,7 +61,7 @@ Code Reviews are super-useful: another contributor can review the code, which me
 
 - **Compatibility:** All code must be compatible with **Python 3.8** **or later**.
 - **Dependency Management:**
-    - The core package and affiliated packages should be importable with no dependencies other than the [Python Standard Library](https://docs.python.org/3/library/index.html), [astropy](https://docs.astropy.org/en/stable/), [numpy](https://numpy.org/doc/stable/)>=1.17.0, [scipy](https://www.scipy.org/docs.html)>=1.1, [matplotlib](https://matplotlib.org/contents.html)>=3.0
+    - The core package and affiliated packages should be importable with no dependencies other than the [Python Standard Library](https://docs.python.org/3/library/index.html), [astropy](https://docs.astropy.org/en/stable/)>=4.0, [numpy](https://numpy.org/doc/stable/)>=1.17.0, [scipy](https://www.scipy.org/docs.html)>=1.1, [matplotlib](https://matplotlib.org/contents.html)>=3.0
     - Additional dependencies are allowed for sub-modules or in function calls, but they must be noted in the package documentation and should only affect the relevant component. In functions and methods, the optional dependency should use a normal `import` statement, which will raise an `ImportError` if the dependency is not available.
 
 ### Coding Style and Conventions

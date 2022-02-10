@@ -44,6 +44,7 @@ jobs:
             python: '3.10'
             tox_env: 'py310-test'
 
+          # Test with all optional dependencies installed.
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'py310-test-alldeps-cov'
