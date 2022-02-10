@@ -1149,7 +1149,6 @@ class TestLightcurve(object):
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
-    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.
@@ -1165,7 +1164,6 @@ class TestLightcurve(object):
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
-    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip_ctrate(self):
         """Test that io methods raise Key Error when
         wrong format is provided.
@@ -1187,7 +1185,6 @@ class TestLightcurve(object):
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
-    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_from_timeseries_bad(self):
         from astropy.time import TimeDelta
         times = TimeDelta(np.arange(10) * u.s)
