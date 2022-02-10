@@ -4,6 +4,7 @@ Changelog
 Not Yet Released
 ----------------
 
+- Dropped support to Python <3.8
 - Multi-taper periodogram, including a Lomb-Scargle implementation for non-uniformly sampled data.
 - Upper limits on pulsations in periodograms and Z searches
 - New stingray.fourier module containing the basic timing products, usable on `numpy` arrays
