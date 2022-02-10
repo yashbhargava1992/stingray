@@ -12,18 +12,15 @@ datadir = os.path.join(curdir, 'data')
 
 _H5PY_INSTALLED = True
 _HAS_YAML = True
-_HAS_TIMESERIES = _HAS_XARRAY = _HAS_PANDAS = True
+_HAS_XARRAY = _HAS_PANDAS = True
 
 try:
     import h5py
 except ImportError:
     _H5PY_INSTALLED = False
 
-try:
-    import astropy.timeseries
-    from astropy.timeseries import TimeSeries
-except ImportError:
-    _HAS_TIMESERIES = False
+import astropy.timeseries
+from astropy.timeseries import TimeSeries
 
 try:
     import xarray
@@ -320,7 +317,7 @@ class TestEvents(object):
                 np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert np.allclose(ev_new.gti, np.array([[5, 6]]))
 
-    @pytest.mark.skipif('not (_HAS_YAML and _HAS_TIMESERIES)')
+    @pytest.mark.skipif('not (_HAS_YAML)')
     def test_io_with_ascii(self):
         ev = EventList(self.time)
         ev.write('ascii_ev.ecsv', format_='ascii')
@@ -370,14 +367,12 @@ class TestEvents(object):
         ev = ev.read(fname, format_='hea', additional_columns=['PRIOR'])
         assert hasattr(ev, 'prior')
 
-    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_empty_evts(self):
         N = len(self.time)
         ev = EventList()
         ts = ev.to_astropy_timeseries()
         assert len(ts.columns) == 0
 
-    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
         N = len(self.time)
         ev = EventList(time=self.time, gti=self.gti, energy=np.zeros(N),

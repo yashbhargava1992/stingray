@@ -51,35 +51,12 @@ assert np.allclose(expected, actual)
 """
 
 import numpy as np
+from numpy import flip
 
 from itertools import product
 from typing import List, Iterable, Tuple
 
 from typing import List
-
-
-def flip_all(array):
-    """Flip all array dimensions (compatibility with old numpy)
-
-    Substitutes for np.flip(array, axis=None) introduced in Numpy 1.15
-
-    Examples
-    --------
-    >>> array = np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]]])
-    >>> flipped_array = np.array([[[7, 6], [5, 4]], [[3, 2], [1, 0]]])
-    >>> np.allclose(flipped_array, flip_all(array))
-    True
-    """
-    for dim in range(len(array.shape)):
-        array = np.flip(array, dim)
-    return array
-
-
-try:
-    from numpy import flip
-    flip(np.zeros((0, 0)))
-except TypeError:
-    flip = flip_all
 
 
 def nextpow(a: float, x: float) -> float:

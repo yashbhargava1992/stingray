@@ -10,6 +10,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 from astropy.logger import AstropyUserWarning
+import matplotlib.pyplot as plt
 
 import stingray.utils as utils
 
@@ -730,14 +731,7 @@ def mkdir_p(path):  # pragma: no cover
     .. [so-mkdir] http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
     """
     import os
-    import errno
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
+    os.makedirs(path, exist_ok=True)
 
 
 def read_header_key(fits_file, key, hdu=1):
@@ -1450,11 +1444,6 @@ def savefig(filename, **kwargs):
         ``matplotlib.pyplot``. For example use `bbox_inches='tight'` to
         remove the undesirable whitepace around the image.
     """
-
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError:
-        raise ImportError("Matplotlib required for savefig()")
 
     if not plt.fignum_exists(1):
         utils.simon("use ``plot`` function to plot the image first and "

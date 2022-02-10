@@ -8,11 +8,7 @@ from stingray import Lightcurve
 from stingray.bispectrum import Bispectrum
 from stingray.exceptions import StingrayError
 
-try:
-    import matplotlib.pyplot as plt
-    HAS_MPL = True
-except ImportError:
-    HAS_MPL = False
+import matplotlib.pyplot as plt
 
 
 def allclose_with_wrap(array1, array2):
@@ -531,47 +527,31 @@ class TestBispectrum(object):
         with pytest.raises(ValueError):
             bs = Bispectrum(self.lc, maxlag=2, window=window_not)
 
-    @pytest.mark.skipif(HAS_MPL, reason='Matplotlib is already installed if condition is met')
-    def test_plot_matplotlib_not_installed(self):
-        bs = Bispectrum(self.lc)
-        with pytest.raises(ImportError) as excinfo:
-            bs.plot_cum3()
-            bs.plot_mag()
-            bs.plot_phase()
-        message = str(excinfo.value)
-        assert "Matplotlib required for plot()" in message
-
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_cum3(self):
         bs = Bispectrum(self.lc)
         bs.plot_cum3()
         assert plt.fignum_exists(1)
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_mag(self):
         bs = Bispectrum(self.lc)
         bs.plot_mag()
         assert plt.fignum_exists(1)
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_phase(self):
         bs = Bispectrum(self.lc)
         bs.plot_phase()
         assert plt.fignum_exists(1)
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_cum3_axis(self):
         bs = Bispectrum(self.lc)
         bs.plot_cum3(axis=[0, 1, 0, 100])
         assert plt.fignum_exists(1)
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_mag_axis(self):
         bs = Bispectrum(self.lc)
         bs.plot_mag(axis=[0, 1, 0, 100])
         assert plt.fignum_exists(1)
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_phase_axis(self):
         bs = Bispectrum(self.lc)
         bs.plot_phase(axis=[0, 1, 0, 100])

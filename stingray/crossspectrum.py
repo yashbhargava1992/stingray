@@ -7,6 +7,7 @@ import scipy
 import scipy.optimize
 import scipy.stats
 from astropy import log
+import matplotlib.pyplot as plt
 
 from stingray.exceptions import StingrayError
 from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
@@ -21,11 +22,7 @@ from .fourier import avg_cs_from_events, poisson_level
 from .fourier import fftfreq, fft, normalize_periodograms, raw_coherence
 from .fourier import get_flux_iterable_from_segments
 
-# location of factorial moved between scipy versions
-try:
-    from scipy.misc import factorial
-except ImportError:
-    from scipy.special import factorial
+from scipy.special import factorial
 
 
 __all__ = [
@@ -1253,10 +1250,6 @@ class Crossspectrum(object):
         filename : str
             File name of the image to save. Depends on the boolean ``save``.
         """
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for plot()")
 
         plt.figure("crossspectrum")
         plt.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")

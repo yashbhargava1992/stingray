@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 from scipy import signal
+import matplotlib.pyplot as plt
 
 try:
     from pyfftw.interfaces.scipy_fft import ifft, fftfreq
@@ -270,12 +271,6 @@ class CrossCorrelation(object):
         ax : ``matplotlib.Axes`` object
             An axes object to fill with the cross correlation plot.
         """
-
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for plot()")
-
         if ax is None:
             fig, ax = plt.subplots(1, 1, figsize=(6, 4))
 

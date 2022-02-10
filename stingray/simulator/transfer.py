@@ -137,10 +137,7 @@ class TransferFunction(object):
             picked, plot is not saved.
         """
 
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for plot()")
+        import matplotlib.pyplot as plt
 
         fig = plt.figure()
 

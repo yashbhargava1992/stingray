@@ -10,12 +10,8 @@ from stingray import Crossspectrum
 from stingray.crosscorrelation import CrossCorrelation, AutoCorrelation
 from stingray.exceptions import StingrayError
 
-try:
-    import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
-    HAS_MPL = True
-except ImportError:
-    HAS_MPL = False
 
 
 class TestCrossCorrelation(object):
@@ -165,21 +161,11 @@ class TestCrossCorrelation(object):
         assert cr.mode == 'same'
         assert cr.auto is False
 
-    @pytest.mark.skipif(HAS_MPL, reason='Matplotlib is already installed if condition is met')
-    def test_plot_matplotlib_not_installed(self):
-        cr = CrossCorrelation(self.lc1, self.lc2)
-        with pytest.raises(ImportError) as excinfo:
-            cr.plot()
-        message = str(excinfo.value)
-        assert "Matplotlib required for plot()" in message
-
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_simple_plot(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
         cr.plot()
         assert plt.fignum_exists(1)
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_wrong_label_type(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
         with pytest.raises(TypeError):
@@ -187,33 +173,28 @@ class TestCrossCorrelation(object):
                 cr.plot(labels=123)
                 assert np.any(["must be either a list or tuple" in str(wi.message) for wi in w])
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_labels_index_error(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
         with warnings.catch_warnings(record=True) as w:
             cr.plot(labels='x')
             assert np.any(["must have two labels" in str(wi.message) for wi in w])
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_axis(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
         cr.plot(axis=[0, 1, 0, 100])
         assert plt.fignum_exists(1)
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_title(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
         cr.plot(title="Test for Cross Correlation")
         assert plt.fignum_exists(1)
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_default_filename(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
         cr.plot(save=True, title="Correlation")
         assert os.path.isfile('corr.pdf')
         os.unlink('corr.pdf')
 
-    @pytest.mark.skipif(not HAS_MPL, reason='Matplotlib is not installed')
     def test_plot_custom_filename(self):
         cr = CrossCorrelation(self.lc1, self.lc2)
         cr.plot(save=True, filename='cr.png')

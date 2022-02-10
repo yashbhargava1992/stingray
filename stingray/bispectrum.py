@@ -3,6 +3,7 @@
 import numpy as np
 from scipy.linalg import toeplitz
 import warnings
+import matplotlib.pyplot as plt
 
 try:
     from pyfftw.interfaces.scipy_fft import fftshift, fft2, ifftshift, fft
@@ -349,12 +350,6 @@ class Bispectrum(object):
         plt : ``matplotlib.pyplot`` object
             Reference to plot, call ``show()`` to display it
         """
-
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for plot()")
-
         cont = plt.contourf(self.lags, self.lags, self.cum3, 100, cmap=plt.cm.Spectral_r)
         plt.colorbar(cont)
         plt.title('3rd Order Cumulant')
@@ -396,10 +391,6 @@ class Bispectrum(object):
         plt : ``matplotlib.pyplot`` object
             Reference to plot, call ``show()`` to display it
         """
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for plot()")
 
         cont = plt.contourf(self.freq, self.freq, self.bispec_mag, 100, cmap=plt.cm.Spectral_r)
         plt.colorbar(cont)
@@ -442,10 +433,6 @@ class Bispectrum(object):
         plt : ``matplotlib.pyplot`` object
             Reference to plot, call ``show()`` to display it
         """
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for plot()")
 
         cont = plt.contourf(self.freq, self.freq, self.bispec_phase, 100, cmap=plt.cm.Spectral_r)
         plt.colorbar(cont)

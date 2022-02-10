@@ -10,7 +10,7 @@ import warnings
 import pickle
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 from astropy.table import Table
 from astropy.time import TimeDelta, Time
 from astropy import units as u
@@ -1603,10 +1603,6 @@ class Lightcurve(object):
         filename : str
             File name of the image to save. Depends on the boolean ``save``.
         """
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Matplotlib required for plot()")
 
         fig = plt.figure()
         if witherrors:

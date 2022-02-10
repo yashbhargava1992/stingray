@@ -7,6 +7,7 @@ from collections.abc import Iterable
 import warnings
 from scipy.optimize import minimize, basinhopping
 import numpy as np
+import matplotlib.pyplot as plt
 
 from .fftfit import fftfit as taylor_fftfit
 from ..utils import simon, jit
@@ -681,7 +682,6 @@ def fftfit(prof, template=None, quick=False, sigma=None, use_bootstrap=False,
 def _plot_TOA_fit(profile, template, toa, mod=None, toaerr=None,
                   additional_phase=0., show=True, period=1):
     """Plot diagnostic information on the TOA."""
-    import matplotlib.pyplot as plt
     from scipy.interpolate import interp1d
     import time
     phases = np.arange(0, 2, 1 / len(profile))
