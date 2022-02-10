@@ -682,6 +682,10 @@ class TestPSDParEst(object):
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 
+        pe.plotfits(res, res2=res, log=True, save_plot=True)
+        assert os.path.exists("test_ps_fit.png")
+        os.unlink("test_ps_fit.png")
+
     def test_compute_lrt_fails_when_garbage_goes_in(self):
         pe = PSDParEst(self.ps)
         t0 = [2.0, 1, 1, 1]
