@@ -4,6 +4,7 @@ Changelog
 Not Yet Released
 ----------------
 
+- Dropped support to Python <3.8
 - Multi-taper periodogram, including a Lomb-Scargle implementation for non-uniformly sampled data.
 - Upper limits on pulsations in periodograms and Z searches
 - New stingray.fourier module containing the basic timing products, usable on `numpy` arrays
@@ -49,7 +50,7 @@ v0.2 (2020-06-17)
 - Added Citation info
 - Fixed various normalization bugs in Powerspectrum
 - Speedup of lightcurve creation and handling
-- Made code compatible with Python 3.8, and dropped support to Python 2.7
+- Made code compatible with Python 3.6, and dropped support to Python 2.7
 - Test speedups
 - Dead time models and Fourier Amplitude Difference correction
 - Roundtrip of LightCurve to lightkurve objects

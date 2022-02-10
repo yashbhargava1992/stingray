@@ -5,12 +5,8 @@ __all__ = ["OptimizationResults", "ParameterEstimation", "PSDParEst",
 
 
 # check whether matplotlib is installed for easy plotting
-try:
-    import matplotlib.pyplot as plt
-    from matplotlib.ticker import MaxNLocator
-    can_plot = True
-except ImportError:
-    can_plot = False
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 # check whether emcee is installed for sampling
@@ -406,10 +402,7 @@ class ParameterEstimation(object):
             raise ValueError("Parameter set t0 must be of right "
                              "length for model in lpost.")
 
-        if scipy.__version__ < "0.10.0":
-            args = [neg]
-        else:
-            args = (neg,)
+        args = (neg,)
 
         if not scipy_optimize_options:
             scipy_optimize_options = {}
@@ -1123,7 +1116,6 @@ class SamplingResults(object):
         ----------
         .. [corner] https://github.com/dfm/corner.py
         """
-        assert can_plot, "Need to have matplotlib installed for plotting"
         if use_corner:
             fig = corner.corner(self.samples, labels=None, fig=fig, bins=int(20),
                                 quantiles=[0.16, 0.5, 0.84],
@@ -1787,138 +1779,135 @@ class PSDParEst(ParameterEstimation):
             If ``True``, plot the axes logarithmically.
         """
 
-        if not can_plot:
-            logging.info("No matplotlib imported. Can't plot!")
+        # make a figure
+        f = plt.figure(figsize=(12, 10))
+        # adjust subplots such that the space between the top and bottom
+        # of each are zero
+        plt.subplots_adjust(hspace=0.0, wspace=0.4)
+
+        # first subplot of the grid, twice as high as the other two
+        # This is the periodogram with the two fitted models overplotted
+        s1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
+
+        if log:
+            logx = np.log10(self.ps.freq)
+            logy = np.log10(self.ps.power)
+            logpar1 = np.log10(res1.mfit)
+
+            p1, = s1.plot(logx, logy, color='black', drawstyle='steps-mid')
+            p2, = s1.plot(logx, logpar1, color='blue', lw=2)
+            s1.set_xlim([np.min(logx), np.max(logx)])
+            s1.set_ylim([np.min(logy)-1.0, np.max(logy)+1])
+            if self.ps.norm == "leahy":
+                s1.set_ylabel('log(Leahy-Normalized Power)', fontsize=18)
+            elif self.ps.norm == "rms":
+                s1.set_ylabel('log(RMS-Normalized Power)', fontsize=18)
+            else:
+                s1.set_ylabel("log(Power)", fontsize=18)
+
         else:
-            # make a figure
-            f = plt.figure(figsize=(12, 10))
-            # adjust subplots such that the space between the top and bottom
-            # of each are zero
-            plt.subplots_adjust(hspace=0.0, wspace=0.4)
-
-            # first subplot of the grid, twice as high as the other two
-            # This is the periodogram with the two fitted models overplotted
-            s1 = plt.subplot2grid((4, 1), (0, 0), rowspan=2)
-
-            if log:
-                logx = np.log10(self.ps.freq)
-                logy = np.log10(self.ps.power)
-                logpar1 = np.log10(res1.mfit)
-
-                p1, = s1.plot(logx, logy, color='black', drawstyle='steps-mid')
-                p2, = s1.plot(logx, logpar1, color='blue', lw=2)
-                s1.set_xlim([np.min(logx), np.max(logx)])
-                s1.set_ylim([np.min(logy)-1.0, np.max(logy)+1])
-                if self.ps.norm == "leahy":
-                    s1.set_ylabel('log(Leahy-Normalized Power)', fontsize=18)
-                elif self.ps.norm == "rms":
-                    s1.set_ylabel('log(RMS-Normalized Power)', fontsize=18)
-                else:
-                    s1.set_ylabel("log(Power)", fontsize=18)
-
-            else:
-                p1, = s1.plot(self.ps.freq, self.ps.power,
-                              color='black', drawstyle='steps-mid')
-                p2, = s1.plot(self.ps.freq, res1.mfit,
-                              color='blue', lw=2)
-
-                s1.set_xscale("log")
-                s1.set_yscale("log")
-
-                s1.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
-                s1.set_ylim([np.min(self.ps.freq)/10.0,
-                             np.max(self.ps.power)*10.0])
-
-                if self.ps.norm == "leahy":
-                    s1.set_ylabel('Leahy-Normalized Power', fontsize=18)
-                elif self.ps.norm == "rms":
-                    s1.set_ylabel('RMS-Normalized Power', fontsize=18)
-                else:
-                    s1.set_ylabel("Power", fontsize=18)
-
-            if res2 is not None:
-                if log:
-                    logpar2 = np.log10(res2.mfit)
-                    p3, = s1.plot(logx, logpar2, color='red', lw=2)
-                else:
-                    p3, = s1.plot(self.ps.freq, res2.mfit,
-                                  color='red', lw=2)
-                s1.legend([p1, p2, p3], ["data", "model 1 fit", "model 2 fit"])
-            else:
-                s1.legend([p1, p2], ["data", "model fit"])
-
-            s1.set_title("Periodogram and fits for data set " + namestr,
-                         fontsize=18)
-
-            # second subplot: power/model for Power law and straight line
-            s2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1)
-            pldif = self.ps.power / res1.mfit
-
-            s2.set_ylabel("Residuals, \n first model",
-                          fontsize=18)
-
-            if log:
-                s2.plot(logx, pldif, color='black', drawstyle='steps-mid')
-                s2.plot(logx, np.ones(self.ps.freq.shape[0]),
-                        color='blue', lw=2)
-                s2.set_xlim([np.min(logx), np.max(logx)])
-                s2.set_ylim([np.min(pldif), np.max(pldif)])
-
-            else:
-                s2.plot(self.ps.freq, pldif, color='black',
-                        drawstyle='steps-mid')
-                s2.plot(self.ps.freq, np.ones_like(self.ps.power),
-                        color='blue', lw=2)
-
-                s2.set_xscale("log")
-                s2.set_yscale("log")
-                s2.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
-                s2.set_ylim([np.min(pldif), np.max(pldif)])
-
-            if res2 is not None:
-                bpldif = self.ps.power/res2.mfit
-
-            # third subplot: power/model for bent power law and straight line
-                s3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1)
-
-                if log:
-                    s3.plot(logx, bpldif, color='black', drawstyle='steps-mid')
-                    s3.plot(logx, np.ones(len(self.ps.freq)),
-                            color='red', lw=2)
-                    s3.axis([np.min(logx), np.max(logx), np.min(bpldif), np.max(bpldif)])
-                    s3.set_xlabel("log(Frequency) [Hz]", fontsize=18)
-
-                else:
-                    s3.plot(self.ps.freq, bpldif,
+            p1, = s1.plot(self.ps.freq, self.ps.power,
                             color='black', drawstyle='steps-mid')
-                    s3.plot(self.ps.freq, np.ones(len(self.ps.freq)),
-                            color='red', lw=2)
-                    s3.set_xscale("log")
-                    s3.set_yscale("log")
-                    s3.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
-                    s3.set_ylim([np.min(bpldif), np.max(bpldif)])
-                    s3.set_xlabel("Frequency [Hz]", fontsize=18)
+            p2, = s1.plot(self.ps.freq, res1.mfit,
+                            color='blue', lw=2)
 
-                s3.set_ylabel("Residuals, \n second model",
-                              fontsize=18)
+            s1.set_xscale("log")
+            s1.set_yscale("log")
+
+            s1.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
+            s1.set_ylim([np.min(self.ps.freq)/10.0,
+                            np.max(self.ps.power)*10.0])
+
+            if self.ps.norm == "leahy":
+                s1.set_ylabel('Leahy-Normalized Power', fontsize=18)
+            elif self.ps.norm == "rms":
+                s1.set_ylabel('RMS-Normalized Power', fontsize=18)
+            else:
+                s1.set_ylabel("Power", fontsize=18)
+
+        if res2 is not None:
+            if log:
+                logpar2 = np.log10(res2.mfit)
+                p3, = s1.plot(logx, logpar2, color='red', lw=2)
+            else:
+                p3, = s1.plot(self.ps.freq, res2.mfit,
+                                color='red', lw=2)
+            s1.legend([p1, p2, p3], ["data", "model 1 fit", "model 2 fit"])
+        else:
+            s1.legend([p1, p2], ["data", "model fit"])
+
+        s1.set_title("Periodogram and fits for data set " + namestr,
+                        fontsize=18)
+
+        # second subplot: power/model for Power law and straight line
+        s2 = plt.subplot2grid((4, 1), (2, 0), rowspan=1)
+        pldif = self.ps.power / res1.mfit
+
+        s2.set_ylabel("Residuals, \n first model",
+                        fontsize=18)
+
+        if log:
+            s2.plot(logx, pldif, color='black', drawstyle='steps-mid')
+            s2.plot(logx, np.ones(self.ps.freq.shape[0]),
+                    color='blue', lw=2)
+            s2.set_xlim([np.min(logx), np.max(logx)])
+            s2.set_ylim([np.min(pldif), np.max(pldif)])
+
+        else:
+            s2.plot(self.ps.freq, pldif, color='black',
+                    drawstyle='steps-mid')
+            s2.plot(self.ps.freq, np.ones_like(self.ps.power),
+                    color='blue', lw=2)
+
+            s2.set_xscale("log")
+            s2.set_yscale("log")
+            s2.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
+            s2.set_ylim([np.min(pldif), np.max(pldif)])
+
+        if res2 is not None:
+            bpldif = self.ps.power/res2.mfit
+
+        # third subplot: power/model for bent power law and straight line
+            s3 = plt.subplot2grid((4, 1), (3, 0), rowspan=1)
+
+            if log:
+                s3.plot(logx, bpldif, color='black', drawstyle='steps-mid')
+                s3.plot(logx, np.ones(len(self.ps.freq)),
+                        color='red', lw=2)
+                s3.axis([np.min(logx), np.max(logx), np.min(bpldif), np.max(bpldif)])
+                s3.set_xlabel("log(Frequency) [Hz]", fontsize=18)
 
             else:
-                if log:
-                    s2.set_xlabel("log(Frequency) [Hz]", fontsize=18)
-                else:
-                    s2.set_xlabel("Frequency [Hz]", fontsize=18)
+                s3.plot(self.ps.freq, bpldif,
+                        color='black', drawstyle='steps-mid')
+                s3.plot(self.ps.freq, np.ones(len(self.ps.freq)),
+                        color='red', lw=2)
+                s3.set_xscale("log")
+                s3.set_yscale("log")
+                s3.set_xlim([np.min(self.ps.freq), np.max(self.ps.freq)])
+                s3.set_ylim([np.min(bpldif), np.max(bpldif)])
+                s3.set_xlabel("Frequency [Hz]", fontsize=18)
 
-            ax = plt.gca()
+            s3.set_ylabel("Residuals, \n second model",
+                            fontsize=18)
 
-            for label in ax.get_xticklabels() + ax.get_yticklabels():
-                label.set_fontsize(14)
+        else:
+            if log:
+                s2.set_xlabel("log(Frequency) [Hz]", fontsize=18)
+            else:
+                s2.set_xlabel("Frequency [Hz]", fontsize=18)
 
-            # make sure xticks are taken from first plots, but don't
-            # appear there
-            plt.setp(s1.get_xticklabels(), visible=False)
+        ax = plt.gca()
 
-            if save_plot:
-                # save figure in png file and close plot device
-                plt.savefig(namestr + '_ps_fit.png', format='png')
+        for label in ax.get_xticklabels() + ax.get_yticklabels():
+            label.set_fontsize(14)
+
+        # make sure xticks are taken from first plots, but don't
+        # appear there
+        plt.setp(s1.get_xticklabels(), visible=False)
+
+        if save_plot:
+            # save figure in png file and close plot device
+            plt.savefig(namestr + '_ps_fit.png', format='png')
 
         return

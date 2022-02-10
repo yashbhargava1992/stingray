@@ -26,11 +26,7 @@ try:
 except ImportError:
     can_sample = False
 
-try:
-    import matplotlib.pyplot as plt
-    can_plot = True
-except ImportError:
-    can_plot = False
+import matplotlib.pyplot as plt
 
 
 class LogLikelihoodDummy(LogLikelihood):
@@ -171,7 +167,7 @@ class TestParameterEstimation(object):
         assert pe.max_post is False
         assert delta_deviance < 1e-7
 
-    @pytest.mark.skipif("not can_sample", "not can_plot")
+    @pytest.mark.skipif("not can_sample")
     def test_sampler_runs(self):
         pe = ParameterEstimation()
         if os.path.exists("test_corner.pdf"):
@@ -185,7 +181,7 @@ class TestParameterEstimation(object):
         assert isinstance(sample_res, SamplingResults)
 
 # TODO: Fix pooling with the current setup of logprior
-#    @pytest.mark.skipif("not can_sample", "not can_plot")
+#    @pytest.mark.skipif("not can_sample")
 #    def test_sampler_pooling(self):
 #        pe = ParameterEstimation()
 #        if os.path.exists("test_corner.pdf"):
@@ -664,7 +660,6 @@ class TestPSDParEst(object):
         with pytest.raises(ValueError):
             res = pe.fit(self.lpost, t0)
 
-    @pytest.mark.skipif("not can_plot")
     def test_fit_method_works_with_correct_parameter(self):
         pe = PSDParEst(self.ps)
         lpost = PSDPosterior(self.ps.freq, self.ps.power,
@@ -684,6 +679,10 @@ class TestPSDParEst(object):
         os.unlink("test_ps_fit.png")
 
         pe.plotfits(res, res2=res, save_plot=True)
+        assert os.path.exists("test_ps_fit.png")
+        os.unlink("test_ps_fit.png")
+
+        pe.plotfits(res, res2=res, log=True, save_plot=True)
         assert os.path.exists("test_ps_fit.png")
         os.unlink("test_ps_fit.png")
 

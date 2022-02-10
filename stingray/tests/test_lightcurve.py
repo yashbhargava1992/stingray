@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from numpy.testing import assert_allclose
 import astropy.units as u
 from astropy.time import Time
+import astropy.timeseries
+from astropy.timeseries import TimeSeries
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
@@ -17,7 +19,6 @@ np.random.seed(20150907)
 
 _H5PY_INSTALLED = True
 _HAS_LIGHTKURVE = True
-_HAS_TIMESERIES = True
 _HAS_YAML = True
 _IS_WINDOWS = os.name == "nt"
 
@@ -30,12 +31,6 @@ try:
     import lightkurve
 except ImportError:
     _HAS_LIGHTKURVE = False
-
-try:
-    import astropy.timeseries
-    from astropy.timeseries import TimeSeries
-except ImportError:
-    _HAS_TIMESERIES = False
 
 try:
     import yaml
@@ -973,18 +968,6 @@ class TestLightcurve(object):
         assert_allclose(sr.counts, lc.flux)
         assert_allclose(sr.counts_err, lc.flux_err)
 
-    def test_plot_matplotlib_not_installed(self):
-        try:
-            import matplotlib.pyplot as plt
-        except Exception as e:
-
-            lc = Lightcurve(self.times, self.counts)
-            try:
-                lc.plot()
-            except Exception as e:
-                assert type(e) is ImportError
-                assert str(e) == "Matplotlib required for plot()"
-
     def test_plot_simple(self):
         lc = Lightcurve(self.times, self.counts)
         with warnings.catch_warnings():
@@ -1166,7 +1149,6 @@ class TestLightcurve(object):
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
-    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip(self):
         """Test that io methods raise Key Error when
         wrong format is provided.
@@ -1182,7 +1164,6 @@ class TestLightcurve(object):
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
-    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_timeseries_roundtrip_ctrate(self):
         """Test that io methods raise Key Error when
         wrong format is provided.
@@ -1204,7 +1185,6 @@ class TestLightcurve(object):
         for attr in ['mission', 'instr', 'mjdref']:
             assert getattr(lc, attr) == getattr(new_lc, attr)
 
-    @pytest.mark.skipif('not _HAS_TIMESERIES')
     def test_from_timeseries_bad(self):
         from astropy.time import TimeDelta
         times = TimeDelta(np.arange(10) * u.s)

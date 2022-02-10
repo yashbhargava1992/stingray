@@ -4,7 +4,6 @@ import abc
 import warnings
 
 import numpy as np
-import six
 from collections.abc import Iterable
 
 np.seterr('warn')
@@ -153,8 +152,7 @@ def set_logprior(lpost, priors):
     return logprior
 
 
-@six.add_metaclass(abc.ABCMeta)
-class LogLikelihood(object):
+class LogLikelihood(object, metaclass=abc.ABCMeta):
     """
 
     Abstract Base Class defining the structure of a :class:`LogLikelihood` object.

@@ -1,6 +1,7 @@
 
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 from astropy.tests.helper import pytest
 
@@ -277,20 +278,7 @@ class TestFileFormats(object):
         del rec_object
         os.remove('test.fits')
 
-    def test_savefig_matplotlib_not_installed(self):
-        from ..io import savefig
-        try:
-            import matplotlib.pyplot as plt
-        except Exception as e:
-            lc = Lightcurve([1, 2, 3], [2, 2, 2])
-            try:
-                savefig("test.png")
-            except Exception as e:
-                assert type(e) is ImportError
-                assert str(e) == "Matplotlib required for savefig()"
-
     def test_savefig_without_plot(self):
-        import matplotlib.pyplot as plt
         from ..io import savefig
         plt.close("all")
         with warnings.catch_warnings(record=True) as w:
@@ -299,7 +287,6 @@ class TestFileFormats(object):
         os.unlink('test.png')
 
     def test_savefig(self):
-        import matplotlib.pyplot as plt
         from ..io import savefig
         plt.plot([1, 2, 3])
         savefig("test.png")

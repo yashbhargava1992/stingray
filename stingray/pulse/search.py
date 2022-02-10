@@ -5,6 +5,7 @@ from .pulsar import profile_stat, fold_events, z_n, pulse_phase
 from ..utils import jit, HAS_NUMBA
 from ..utils import contiguous_regions
 from astropy.stats import poisson_conf_interval
+import matplotlib.pyplot as plt
 
 
 __all__ = ['epoch_folding_search', 'z_n_search', 'search_best_peaks',
@@ -326,7 +327,6 @@ def plot_profile(phase, profile, err=None, ax=None):
     ax : `matplotlib.pyplot.axis` instance
         Axis where the profile was plotted.
     """
-    import matplotlib.pyplot as plt
     if ax is None:
         plt.figure('Pulse profile')
         ax = plt.subplot()
@@ -380,7 +380,6 @@ def plot_phaseogram(phaseogram, phase_bins, time_bins, unit_str='s', ax=None,
     ax : `matplotlib.pyplot.axis` instance
         Axis where the phaseogram was plotted.
     """
-    import matplotlib.pyplot as plt
     if ax is None:
         plt.figure('Phaseogram')
         ax = plt.subplot()

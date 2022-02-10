@@ -8,12 +8,7 @@ from stingray.pulse import HAS_PINT
 import pytest
 import os
 import warnings
-
-try:
-    import matplotlib.pyplot as plt
-    HAS_MPL = True
-except ImportError:
-    HAS_MPL = False
+import matplotlib.pyplot as plt
 
 
 def _template_fun(phase, ph0, amplitude, baseline=0):
@@ -263,7 +258,6 @@ class TestAll(object):
         real_toa = tstart + start_phase * period
         assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
 
-    @pytest.mark.skipif('not HAS_MPL')
     def test_get_TOA4(self):
         np.random.seed(1234)
         period = 1.2
@@ -281,7 +275,6 @@ class TestAll(object):
         real_toa = tstart + start_phase * period
         assert (real_toa >= toa - toaerr * 3) & (real_toa <= toa + toaerr * 3)
 
-    @pytest.mark.skipif('not HAS_MPL')
     def test_get_TOA_notemplate(self):
         np.random.seed(1234)
         period = 1.2

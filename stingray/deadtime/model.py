@@ -2,12 +2,7 @@ from stingray.utils import njit, prange
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import log
-
-
-try:
-    from scipy.special import factorial
-except ImportError:
-    from scipy.misc import factorial
+from scipy.special import factorial
 
 
 __FACTORIALS = factorial(np.arange(160))

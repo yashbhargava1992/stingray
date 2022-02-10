@@ -11,11 +11,7 @@ import scipy.optimize
 import scipy.stats
 from scipy import signal, fft, interpolate
 
-# location of LombScargle moved between astropy versions
-try:
-    from astropy.timeseries import LombScargle
-except ImportError:
-    from astropy.stats import LombScargle
+from astropy.timeseries import LombScargle
 
 from .events import EventList
 from .lightcurve import Lightcurve

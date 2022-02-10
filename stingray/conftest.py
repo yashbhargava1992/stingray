@@ -8,24 +8,15 @@ import os
 from astropy.tests.helper import enable_deprecations_as_exceptions  # noqa
 from astropy.version import version as astropy_version
 
-# For Astropy 3.0 and later, we can use the standalone pytest plugin
-if astropy_version < '3.0':
-    from astropy.tests.pytest_plugins import *  # noqa
-    del pytest_report_header
-    ASTROPY_HEADER = True
-else:
-    try:
-        from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
-        ASTROPY_HEADER = True
-    except ImportError:
-        ASTROPY_HEADER = False
 
-    try:
-        import matplotlib
-    except ImportError:
-        pass
-    else:
-        matplotlib.use('Agg')
+try:
+    from pytest_astropy_header.display import PYTEST_HEADER_MODULES, TESTED_VERSIONS
+    ASTROPY_HEADER = True
+except ImportError:
+    ASTROPY_HEADER = False
+
+import matplotlib
+matplotlib.use('Agg')
 
 
 def pytest_configure(config):

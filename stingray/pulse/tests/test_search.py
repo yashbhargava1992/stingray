@@ -1,14 +1,14 @@
+import numpy as np
+import pytest
+import matplotlib.pyplot as plt
 
 from stingray.pulse import epoch_folding_search, z_n_search
 from stingray.pulse import phaseogram, plot_phaseogram
 from stingray.pulse.search import _profile_fast
 from stingray.pulse import plot_profile
 from stingray.pulse import fold_events
-import numpy as np
 from stingray import Lightcurve
 from stingray.events import EventList
-import pytest
-
 np.random.seed(20150907)
 
 
@@ -34,7 +34,6 @@ class TestAll(object):
         pass
 
     def test_phaseogram(self):
-        import matplotlib.pyplot as plt
         phaseogr, phases, times, additional_info = \
             phaseogram(self.event_times, self.pulse_frequency)
         assert np.all(times < 25.6)
@@ -56,14 +55,13 @@ class TestAll(object):
         assert np.all(times < 25.6)
         assert np.any(times > 25)
         assert np.all((phases >= 0) & (phases <= 2))
-        import matplotlib.pyplot as plt
         fig = plt.figure('Phaseogram direct weights')
         plot_phaseogram(phaseogr, phases, times)
         plt.savefig('phaseogram_weights.png')
         plt.close(fig)
 
     def test_phaseogram_mjdref(self):
-        import matplotlib.pyplot as plt
+
         phaseogr, phases, times, additional_info = \
             phaseogram(self.event_times, self.pulse_frequency,
                        mjdref=57000, out_filename='phaseogram_mjdref.png')
@@ -80,7 +78,6 @@ class TestAll(object):
         assert np.all((phases >= 0) & (phases <= 2))
 
     def test_plot_phaseogram_fromfunc(self):
-        import matplotlib.pyplot as plt
         fig = plt.figure('Phaseogram from func')
         ax = plt.subplot()
         phaseogr, phases, times, additional_info = \
@@ -90,7 +87,6 @@ class TestAll(object):
         plt.close(fig)
 
     def test_plot_phaseogram_direct(self):
-        import matplotlib.pyplot as plt
         phaseogr, phases, times, additional_info = \
             phaseogram(self.event_times, self.pulse_frequency)
         plot_phaseogram(phaseogr, phases, times)
@@ -98,7 +94,6 @@ class TestAll(object):
         plt.close(plt.gcf())
 
     def test_plot_profile(self):
-        import matplotlib.pyplot as plt
         phase, prof, _ = fold_events(self.event_times,
                                      self.pulse_frequency)
         ax = plot_profile(phase, prof)
@@ -106,7 +101,6 @@ class TestAll(object):
         plt.close(plt.gcf())
 
     def test_plot_profile_existing_ax(self):
-        import matplotlib.pyplot as plt
         fig = plt.figure('Pulse profile')
         ax = plt.subplot()
         phase, prof, _ = fold_events(self.event_times,
@@ -116,7 +110,6 @@ class TestAll(object):
         plt.close(fig)
 
     def test_plot_profile_errorbars(self):
-        import matplotlib.pyplot as plt
         fig = plt.figure('Pulse profile')
         ax = plt.subplot()
         phase, prof, err = fold_events(self.event_times,

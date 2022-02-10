@@ -9,6 +9,7 @@ from scipy import special
 import scipy.signal
 from astropy import log
 from astropy.table import Table
+import matplotlib.pyplot as plt
 
 try:
     from tqdm import tqdm as show_progress
@@ -360,7 +361,6 @@ def accelsearch(times, signal, delta_z=1, fmin=1, fmax=1e32,
 
     if debug:
         _good_f = freq > 0
-        import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(12, 8))
         plt.plot(freq[_good_f], (spectr * spectr.conj()).real[_good_f],
                  label='initial PDS')
