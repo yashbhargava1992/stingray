@@ -49,7 +49,7 @@ v0.2 (2020-06-17)
 - Added Citation info
 - Fixed various normalization bugs in Powerspectrum
 - Speedup of lightcurve creation and handling
-- Made code compatible with Python 3.8, and dropped support to Python 2.7
+- Made code compatible with Python 3.6, and dropped support to Python 2.7
 - Test speedups
 - Dead time models and Fourier Amplitude Difference correction
 - Roundtrip of LightCurve to lightkurve objects

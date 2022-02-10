@@ -30,8 +30,8 @@ jobs:
           # Basic tests on the oldest & newest supported versions of Python,
           # recording coverage data for the latter.
           - os: ubuntu-latest
-            python: '3.6'
-            tox_env: 'py36-test'
+            python: '3.8'
+            tox_env: 'py38-test'
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'py310-test-cov'
@@ -44,21 +44,12 @@ jobs:
             python: '3.10'
             tox_env: 'py310-test'
 
-          # Test with all optional dependencies installed.
-          # NOTE: At time of writing, some dependencies are known to fail on
-          # Python 3.10, so we call back to 3.8. This should be advanced to
-          # 3.10 when the dependencies are verified as fixed.
           - os: ubuntu-latest
-            python: '3.8'
-            tox_env: 'py38-test-alldeps-cov'
+            python: '3.10'
+            tox_env: 'py310-test-alldeps-cov'
             use_remote_data: true
 
           # Test with the various supported releases of Astropy.
-          # NOTE: At time of writing, Astropy 3 is known to fail on Python
-          # 3.10, so we fall back to Python 3.9.
-          - os: ubuntu-latest
-            python: '3.9'
-            tox_env: 'py39-test-astropy3'
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'py310-test-astropy4'
