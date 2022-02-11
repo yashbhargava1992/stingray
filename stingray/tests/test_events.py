@@ -329,7 +329,6 @@ class TestEvents(object):
     @pytest.mark.skipif('not (_HAS_YAML)')
     def test_io_with_ascii(self):
         ev = EventList(self.time)
-        with pytest.warns(DeprecationWarning)
         ev.write('ascii_ev.ecsv', fmt='ascii')
         ev = ev.read('ascii_ev.ecsv', fmt='ascii')
         print(ev.time, self.time)

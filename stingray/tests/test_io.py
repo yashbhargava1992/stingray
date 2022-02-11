@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 
 from astropy.tests.helper import pytest
 
-from ..io import read, write, split_numbers
+from ..io import split_numbers
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
 from ..io import load_events_and_gtis, read_mission_info
-from ..io import read_header_key, _retrieve_ascii_object
+from ..io import read_header_key
 
 import warnings
 
