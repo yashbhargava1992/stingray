@@ -617,6 +617,6 @@ class TestSimulator(object):
         with pytest.raises(KeyError):
             sim.write('sim.hdf5', format_='hdf5')
         with pytest.raises(KeyError):
-            sim.write('sim.pickle', format_='pickle')
-            sim.read('sim.pickle', format_='hdf5')
+            sim.write('sim.pickle', fmt='pickle')
+            sim.read('sim.pickle', fmt='hdf5')
         os.remove('sim.pickle')

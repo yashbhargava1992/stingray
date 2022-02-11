@@ -1,7 +1,5 @@
-
+import pickle
 import numpy as np
-
-from stingray.io import read, write
 
 """
 Implementation of time and energy averaged responses from 2-d
@@ -181,13 +179,13 @@ class TransferFunction(object):
             plt.close()
 
     @staticmethod
-    def read(filename, format_='pickle'):
+    def read(filename, fmt='pickle', format_=None):
         """
         Reads transfer function from a 'pickle' file.
 
         Parameter
         ---------
-        format\_ : str
+        fmt : str
             the format of the file to be retrieved - accepts 'pickle'.
 
         Returns
@@ -195,28 +193,30 @@ class TransferFunction(object):
         data : class instance
             `TransferFunction` object
         """
+        if format_ is not None:
+            fmt = format_
 
-        object = read(filename, format_)
-
-        if format_ == 'pickle':
-            return object
+        if fmt == 'pickle':
+            with open(filename, "rb") as fobj:
+                return pickle.load(fobj)
 
         else:
             raise KeyError("Format not understood.")
 
-    def write(self, filename, format_='pickle'):
+    def write(self, filename, fmt="pickle", format_=None):
         """
         Writes a transfer function to 'pickle' file.
 
         Parameters
         ----------
-        format\_ : str
+        fmt : str
             the format of the file to be saved - accepts 'pickle'
         """
-
-        if format_ == 'pickle':
-            write(self, filename, format_)
-
+        if format_ is not None:
+            fmt = format_
+        if fmt == 'pickle':
+            with open(filename, "wb") as fobj:
+                pickle.dump(self, fobj)
         else:
             raise KeyError("Format not understood.")
 

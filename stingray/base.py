@@ -2,6 +2,7 @@
 from collections.abc import Iterable
 from abc import ABCMeta
 import pickle
+import warnings
 
 import numpy as np
 from astropy.table import Table
@@ -253,7 +254,7 @@ class StingrayObject(metaclass=ABCMeta):
         return cls
 
     @classmethod
-    def read(cls, filename, fmt=None):
+    def read(cls, filename, fmt=None, format_=None):
         r"""Generic reader for :class`StingrayObject`
 
         Currently supported formats are
@@ -292,6 +293,10 @@ class StingrayObject(metaclass=ABCMeta):
         obj: :class:`StingrayObject` object
             The object reconstructed from file
         """
+        if fmt is None and format_ is not None:
+            warnings.warn("The format_ keyword for read and write is deprecated. Use fmt instead", DeprecationWarning)
+            fmt = format_
+
         if fmt is None:
             pass
         elif fmt.lower() == "pickle":
@@ -334,7 +339,7 @@ class StingrayObject(metaclass=ABCMeta):
 
         return cls.from_astropy_table(ts)
 
-    def write(self, filename, fmt=None):
+    def write(self, filename, fmt=None, format_=None):
         """Generic writer for :class`StingrayObject`
 
         Currently supported formats are
@@ -360,6 +365,9 @@ class StingrayObject(metaclass=ABCMeta):
             The file format to store the data in.
             Available options are ``pickle``, ``hdf5``, ``ascii``, ``fits``
         """
+        if fmt is None and format_ is not None:
+            warnings.warn("The format_ keyword for read and write is deprecated. Use fmt instead", DeprecationWarning)
+            fmt = format_
         if fmt is None:
             pass
         elif fmt.lower() == "pickle":

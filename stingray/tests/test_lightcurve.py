@@ -1021,7 +1021,7 @@ class TestLightcurve(object):
         fname = 'lcurveA.fits'
         with pytest.warns(UserWarning):
             lc = Lightcurve.read(os.path.join(datadir, fname),
-                                 format_='hea', skip_checks=True)
+                                 fmt='hea', skip_checks=True)
         ctrate = 1
         assert np.isclose(lc.countrate[0], ctrate)
 
@@ -1029,25 +1029,32 @@ class TestLightcurve(object):
         fname = 'lcurve_new.fits'
         with pytest.warns(UserWarning):
             lc = Lightcurve.read(os.path.join(datadir, fname),
-                                 format_='hea', skip_checks=True)
+                                 fmt='hea', skip_checks=True)
         ctrate = 0.91
 
         assert np.isclose(lc.countrate[0], ctrate)
         assert np.isclose(lc.mjdref, 55197.00076601852)
 
+    def test_io_warns(self):
+        lc = Lightcurve(self.times, self.counts)
+        with pytest.warns(DeprecationWarning):
+            lc.write('lc.pickle', format_='pickle')
+        with pytest.warns(DeprecationWarning):
+            lc.read('lc.pickle', format_='pickle')
+
     @pytest.mark.skipif('not _HAS_YAML')
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write('ascii_lc.ecsv', format_='ascii')
-        lc = lc.read('ascii_lc.ecsv', format_='ascii')
+        lc.write('ascii_lc.ecsv', fmt='ascii')
+        lc = lc.read('ascii_lc.ecsv', fmt='ascii')
         assert np.allclose(lc.time, self.times)
         assert np.allclose(lc.counts, self.counts)
         os.remove('ascii_lc.ecsv')
 
     def test_io_with_pickle(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write('lc.pickle', format_='pickle')
-        lc.read('lc.pickle', format_='pickle')
+        lc.write('lc.pickle', fmt='pickle')
+        lc.read('lc.pickle', fmt='pickle')
         assert np.allclose(lc.time, self.times)
         assert np.allclose(lc.counts, self.counts)
         assert np.allclose(lc.gti, self.gti)
@@ -1056,9 +1063,9 @@ class TestLightcurve(object):
     @pytest.mark.skipif('not _H5PY_INSTALLED')
     def test_io_with_hdf5(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write('lc.hdf5', format_='hdf5')
+        lc.write('lc.hdf5', fmt='hdf5')
 
-        data = lc.read('lc.hdf5', format_='hdf5')
+        data = lc.read('lc.hdf5', fmt='hdf5')
         assert np.allclose(data.time, self.times)
         assert np.allclose(data.counts, self.counts)
         assert np.allclose(data.gti, self.gti)

@@ -1,11 +1,10 @@
-
+import pickle
 from os import error
 import numpy as np
 import numbers
 import warnings
 from scipy import signal
 import astropy.modeling.models
-from stingray.io import write, read
 from stingray import utils
 from stingray import Lightcurve
 from stingray import AveragedPowerspectrum
@@ -591,41 +590,43 @@ class Simulator(object):
         return AveragedPowerspectrum(lc, seg_size).power
 
     @staticmethod
-    def read(filename, format_='pickle'):
+    def read(filename, fmt='pickle', format_=None):
         """
-        Imports Simulator object.
+        Reads transfer function from a 'pickle' file.
 
-        Parameters
-        ----------
-        filename : str
-            Name of the Simulator object to be read.
-
-        format_ : str
-            Available option is 'pickle.'
+        Parameter
+        ---------
+        fmt : str
+            the format of the file to be retrieved - accepts 'pickle'.
 
         Returns
         -------
-        object : `Simulator` object
+        data : class instance
+            `TransferFunction` object
         """
-        if format_ == 'pickle':
-            data = read(filename, 'pickle')
-            return data
-        else:
-            raise KeyError("Format not supported.")
+        if format_ is not None:
+            fmt = format_
 
-    def write(self, filename, format_='pickle'):
+        if fmt == 'pickle':
+            with open(filename, "rb") as fobj:
+                return pickle.load(fobj)
+
+        else:
+            raise KeyError("Format not understood.")
+
+    def write(self, filename, fmt="pickle", format_=None):
         """
-        Exports Simulator object.
+        Writes a transfer function to 'pickle' file.
 
         Parameters
         ----------
-        filename : str
-            Name of the Simulator object to be created.
-
-        format_ : str
-            Available options are 'pickle' and 'hdf5'.
+        fmt : str
+            the format of the file to be saved - accepts 'pickle'
         """
-        if format_ == 'pickle':
-            write(self, filename)
+        if format_ is not None:
+            fmt = format_
+        if fmt == 'pickle':
+            with open(filename, "wb") as fobj:
+                pickle.dump(self, fobj)
         else:
-            raise KeyError("Format not supported.")
+            raise KeyError("Format not understood.")
