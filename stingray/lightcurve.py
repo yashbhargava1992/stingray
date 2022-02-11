@@ -15,6 +15,7 @@ from astropy.table import Table
 from astropy.time import TimeDelta, Time
 from astropy import units as u
 
+from stingray.base import StingrayObject
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.gti import (bin_intervals_from_gtis, check_gtis, create_gti_mask,
@@ -28,7 +29,7 @@ __all__ = ["Lightcurve"]
 valid_statistics = ["poisson", "gauss", None]
 
 
-class Lightcurve(object):
+class Lightcurve(StingrayObject):
     """
     Make a light curve object from an array of time stamps and an
     array of counts.
@@ -164,11 +165,14 @@ class Lightcurve(object):
         The full header of the original FITS file, if relevant
 
     """
+    main_array_attr = "time"
 
     def __init__(self, time, counts, err=None, input_counts=True,
                  gti=None, err_dist='poisson', mjdref=0, dt=None,
                  skip_checks=False, low_memory=False, mission=None,
                  instr=None, header=None, **other_kw):
+
+        StingrayObject.__init__(self)
 
         if other_kw != {}:
             warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
@@ -1639,39 +1643,8 @@ class Lightcurve(object):
         else:
             plt.show(block=False)
 
-    def write(self, filename, format_='pickle', **kwargs):
-        """
-        Write a :class:`Lightcurve` object to file. Currently supported formats are
-
-        * pickle (not recommended for long-term storage)
-        * HDF5
-        * ASCII
-
-        Parameters
-        ----------
-        filename: str
-            Path and file name for the output file.
-
-        format\_: str
-            Available options are 'pickle', 'hdf5', 'ascii'
-        """
-        if format_ == 'pickle':
-            with open(filename, "wb") as fobj:
-                pickle.dump(self, fobj)
-            return
-
-        if format_ == 'ascii':
-            format_ = 'ascii.ecsv'
-
-        ts = self.to_astropy_table()
-        try:
-            ts.write(filename, format=format_, overwrite=True,
-                     serialize_meta=True)
-        except TypeError:
-            ts.write(filename, format=format_, overwrite=True)
-
-    @staticmethod
-    def read(filename, format_='pickle', err_dist='gauss',
+    @classmethod
+    def read(cls, filename, fmt=None, format_=None, err_dist='gauss',
              skip_checks=False):
         """
         Read a :class:`Lightcurve` object from file.
@@ -1715,21 +1688,16 @@ class Lightcurve(object):
         --------
         lc : :class:`Lightcurve` object
         """
-        if format_ == 'pickle':
-            with open(filename, 'rb') as fobj:
-                return pickle.load(fobj)
+        if fmt is None and format_ is not None:
+            warnings.warn("The format_ keyword for read and write is deprecated. Use fmt instead", DeprecationWarning)
+            fmt = format_
 
-        if format_ == 'hea':
+        if fmt == 'hea':
             data = lcurve_from_fits(filename)
             data.update({'err_dist': err_dist, 'skip_checks': skip_checks})
             return Lightcurve(**data)
 
-        if format_ == 'ascii':
-            format_ = 'ascii.ecsv'
-
-        ts = Table.read(filename, format=format_)
-        return Lightcurve.from_astropy_table(
-            ts, err_dist=err_dist, skip_checks=skip_checks)
+        return super().read(filename=filename, fmt=fmt)
 
     def split_by_gti(self, gti=None, min_points=2):
         """
