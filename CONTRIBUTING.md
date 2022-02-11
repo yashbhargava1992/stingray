@@ -21,7 +21,7 @@ A successful project is not just built by amazing programmers but by the combine
 Contributions from everyone, experienced and inexperienced, are welcome! If you don't know where to start, look at the [Open Issues](https://github.com/StingraySoftware/stingray/issues) and/or get involved in our [Slack channel](http://slack-invite.timelabtechnologies.com/) . This code is written in Python 3.8+, but in general we will follow the Astropy/Numpy minimum Python versions. Tests run at each commit during Pull Requests, so it is easy to single out points in the code that break this compatibility.
 
 - **Branches:**
-    - Don't use your main **branch(forked) for anything. Consider deleting your main** branch.
+    - Don't use your main **branch (forked) for anything. Consider deleting your main** branch.
     - Make a new branch, called a feature branch, for each separable set of changes: “one task, one branch”.
     - Start that new feature branch from the most current development version of stingray.
     - Name of branch should be the purpose of change eg. *bugfix-for-issue20* or *refactor-lightcurve-code.*
