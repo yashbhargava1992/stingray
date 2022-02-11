@@ -10,6 +10,25 @@ from stingray.events import EventList
 from stingray import Powerspectrum, AveragedPowerspectrum, \
     DynamicalPowerspectrum
 
+_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
+
+try:
+    import xarray
+    from xarray import Dataset
+except ImportError:
+    _HAS_XARRAY = False
+
+try:
+    import pandas
+    from pandas import DataFrame
+except ImportError:
+    _HAS_PANDAS = False
+
+try:
+    import h5py
+except ImportError:
+    _HAS_H5PY = False
+
 np.random.seed(20150907)
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
@@ -1080,3 +1099,60 @@ class TestDynamicalPowerspectrum(object):
         assert np.allclose(new_dps.freq, rebin_freq)
         assert np.allclose(new_dps.dyn_ps, rebin_dps, atol=0.00001)
         assert np.isclose(new_dps.df, df_new)
+
+
+class TestRoundTrip():
+    @classmethod
+    def setup_class(cls):
+        cls.cs = AveragedPowerspectrum()
+        cls.cs.freq = np.arange(10)
+        cls.cs.power = np.random.uniform(0, 10, 10)
+        cls.cs.m = 2
+        cls.cs.nphots1 = 34
+
+    def _check_equal(self, so, new_so):
+        for attr in ["freq", "power"]:
+            assert np.allclose(getattr(so, attr), getattr(new_so, attr))
+
+        for attr in ["m", "nphots1"]:
+            assert getattr(so, attr) == getattr(new_so, attr)
+
+    def test_astropy_roundtrip(self):
+        so = self.cs
+        ts = so.to_astropy_table()
+        new_so = so.from_astropy_table(ts)
+        self._check_equal(so, new_so)
+
+    @pytest.mark.skipif('not _HAS_XARRAY')
+    def test_xarray_roundtrip(self):
+        so = self.cs
+        ts = so.to_xarray()
+        new_so = so.from_xarray(ts)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.skipif('not _HAS_PANDAS')
+    def test_pandas_roundtrip(self):
+        so = self.cs
+        ts = so.to_pandas()
+        new_so = so.from_pandas(ts)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.skipif('not _HAS_H5PY')
+    def test_hdf_roundtrip(self):
+        so = self.cs
+        so.write("dummy.hdf5")
+        new_so = so.read("dummy.hdf5")
+        os.unlink("dummy.hdf5")
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv", "fits"])
+    def test_file_roundtrip(self, fmt):
+        so = self.cs
+        so.write("dummy", fmt=fmt)
+        new_so = so.read("dummy", fmt=fmt)
+        os.unlink("dummy")
+
+        self._check_equal(so, new_so)

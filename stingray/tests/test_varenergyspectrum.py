@@ -11,6 +11,25 @@ from stingray.lightcurve import Lightcurve
 
 from astropy.tests.helper import pytest
 
+_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
+
+try:
+    import xarray
+    from xarray import Dataset
+except ImportError:
+    _HAS_XARRAY = False
+
+try:
+    import pandas
+    from pandas import DataFrame
+except ImportError:
+    _HAS_PANDAS = False
+
+try:
+    import h5py
+except ImportError:
+    _HAS_H5PY = False
+
 np.random.seed(20150907)
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
@@ -398,3 +417,68 @@ class TestLagEnergySpectrum(object):
 
         assert np.all(np.isnan(lag.spectrum))
         assert np.all(np.isnan(lag.spectrum_error))
+
+
+class TestRoundTrip():
+    @classmethod
+    def setup_class(cls):
+        tstart = 0.0
+        tend = 100.0
+        nphot = 1000
+        alltimes = np.random.uniform(tstart, tend, nphot)
+        alltimes.sort()
+        cls.events = EventList(
+            alltimes, energy=np.random.uniform(0.3, 12, nphot), gti=[[tstart, tend]]
+        )
+        cls.vespec = DummyVarEnergy(
+            cls.events, [0.0, 10000], (0.5, 5, 10, "lin"), [0.3, 10], bin_time=0.1
+        )
+        cls.vespec.spectrum = np.zeros_like(cls.vespec.energy)
+        cls.vespec.spectrum_error = np.zeros_like(cls.vespec.energy)
+
+    def _check_equal(self, so, new_so):
+        for attr in ["energy", "spectrum", "spectrum_error"]:
+            assert np.allclose(getattr(so, attr), getattr(new_so, attr))
+
+        for attr in ["freq_interval"]:
+            assert getattr(so, attr) == getattr(new_so, attr)
+
+    def test_astropy_roundtrip(self):
+        so = self.vespec
+        ts = so.to_astropy_table()
+        new_so = so.from_astropy_table(ts)
+        self._check_equal(so, new_so)
+
+    @pytest.mark.skipif('not _HAS_XARRAY')
+    def test_xarray_roundtrip(self):
+        so = self.vespec
+        ts = so.to_xarray()
+        new_so = so.from_xarray(ts)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.skipif('not _HAS_PANDAS')
+    def test_pandas_roundtrip(self):
+        so = self.vespec
+        ts = so.to_pandas()
+        new_so = so.from_pandas(ts)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.skipif('not _HAS_H5PY')
+    def test_hdf_roundtrip(self):
+        so = self.vespec
+        so.write("dummy.hdf5")
+        new_so = so.read("dummy.hdf5")
+        os.unlink("dummy.hdf5")
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv", "fits"])
+    def test_file_roundtrip(self, fmt):
+        so = self.vespec
+        so.write("dummy", fmt=fmt)
+        new_so = so.read("dummy", fmt=fmt)
+        os.unlink("dummy")
+
+        self._check_equal(so, new_so)

@@ -14,6 +14,7 @@ from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
 from stingray.largememory import createChunkedSpectra, saveData, HAS_ZARR
 from stingray.utils import genDataPath, rebin_data, rebin_data_log, simon
 
+from .base import StingrayObject
 from .events import EventList
 from .lightcurve import Lightcurve
 from .utils import show_progress
@@ -470,7 +471,9 @@ def cospectra_pvalue(power, nspec):
     return pval
 
 
-class Crossspectrum(object):
+class Crossspectrum(StingrayObject):
+    main_array_attr = "freq"
+
     """
     Make a cross spectrum from a (binned) light curve.
     You can also make an empty :class:`Crossspectrum` object to populate with your

@@ -18,6 +18,25 @@ from stingray.fourier import poisson_level, raw_coherence
 from stingray.events import EventList
 import copy
 
+_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
+
+try:
+    import xarray
+    from xarray import Dataset
+except ImportError:
+    _HAS_XARRAY = False
+
+try:
+    import pandas
+    from pandas import DataFrame
+except ImportError:
+    _HAS_PANDAS = False
+
+try:
+    import h5py
+except ImportError:
+    _HAS_H5PY = False
+
 np.random.seed(20160528)
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
@@ -1280,3 +1299,58 @@ class TestTimelagFunction(object):
 
         assert np.max(lag) <= np.pi
         assert np.min(lag) >= -np.pi
+
+
+class TestRoundTrip():
+    @classmethod
+    def setup_class(cls):
+        cls.cs = Crossspectrum()
+        cls.cs.freq = np.arange(10)
+        cls.cs.power = np.random.uniform(0, 10, 10) + 3j
+        cls.cs.m = 1
+        cls.cs.nphots1 = 34
+        cls.cs.nphots2 = 25
+
+    def _check_equal(self, so, new_so):
+        for attr in ["freq", "power"]:
+            assert np.allclose(getattr(so, attr), getattr(new_so, attr))
+
+        for attr in ["m", "nphots1", "nphots2"]:
+            assert getattr(so, attr) == getattr(new_so, attr)
+
+    def test_astropy_roundtrip(self):
+        so = self.cs
+        ts = so.to_astropy_table()
+        new_so = so.from_astropy_table(ts)
+        self._check_equal(so, new_so)
+
+    @pytest.mark.skipif('not _HAS_XARRAY')
+    def test_xarray_roundtrip(self):
+        so = self.cs
+        ts = so.to_xarray()
+        new_so = so.from_xarray(ts)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.skipif('not _HAS_PANDAS')
+    def test_pandas_roundtrip(self):
+        so = self.cs
+        ts = so.to_pandas()
+        new_so = so.from_pandas(ts)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv", "fits", "hdf5"])
+    def test_file_roundtrip(self, fmt):
+        so = self.cs
+        fname = f"dummy.{fmt}"
+        if not _HAS_H5PY and fmt=="hdf5":
+            with pytest.raises(Exception) as excinfo:
+                so.write(fname, fmt=fmt)
+                assert h5py in str(excinfo.value)
+            return True
+        so.write(fname, fmt=fmt)
+        new_so = so.read(fname, fmt=fmt)
+        os.unlink(fname)
+
+        self._check_equal(so, new_so)
