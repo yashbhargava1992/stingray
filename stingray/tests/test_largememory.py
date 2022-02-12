@@ -456,9 +456,9 @@ class TestChunkPS(object):
     def test_invalid_data_to_pds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedPowerspectrum(
-                "sdfasfsa", segment_size=2048, large_data=True, silent=True
+                [self.lc1, self.lc1], segment_size=2048, large_data=True, silent=True
             )
-        assert "Invalid input data type: str" in str(excinfo.value)
+        assert "Invalid input data type: list" in str(excinfo.value)
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_events_to_cpds_unimplemented(self):
@@ -478,13 +478,13 @@ class TestChunkPS(object):
     def test_invalid_data_to_cpds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedCrossspectrum(
-                "sdfasfsa",
-                "sdfasfsa",
+                [self.lc1, self.lc1],
+                [self.lc2, self.lc2],
                 segment_size=4096,
                 large_data=True,
                 silent=True,
             )
-        assert "Invalid input data type: str" in str(excinfo.value)
+        assert "Invalid input data type: list" in str(excinfo.value)
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_pds(self):

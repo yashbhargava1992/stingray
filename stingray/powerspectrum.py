@@ -92,10 +92,14 @@ class Powerspectrum(Crossspectrum):
     nphots: float
         The total number of photons in the light curve
 
+    legacy: bool
+        Use the legacy machinery of AveragedPowerspectrum. This might be useful to compare
+        with old results, and is also needed to use light curve lists as an input, to
+        conserve the spectra of each segment, or to use the large_data option.
     """
 
     def __init__(self, data=None, norm="frac", gti=None,
-                 dt=None, lc=None, skip_checks=False):
+                 dt=None, lc=None, skip_checks=False, legacy=False):
 
         self._type = None
         if lc is not None:
@@ -116,23 +120,18 @@ class Powerspectrum(Crossspectrum):
                 dt=dt
             )
 
-        self.norm = norm.lower()
+        norm = norm.lower()
+        self.norm = norm
         self.dt = dt
 
         if not good_input:
-            self.freq = None
-            self.power = None
-            self.power_err = None
-            self.df = None
-            self.dt = None
-            self.nphots = None
-            self.nphots1 = None
-            self.m = 1
-            self.n = None
-            return
+            return self._initialize_empty()
+
+        if not legacy and data is not None:
+            return self._initialize_from_any_input(data, dt=dt, norm=norm)
 
         Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
-                               dt=dt, skip_checks=True)
+                               dt=dt, skip_checks=True, legacy=legacy)
         self.nphots = self.nphots1
         self.dt = dt
 
@@ -411,13 +410,14 @@ class Powerspectrum(Crossspectrum):
         dt : float
             The time resolution of the intermediate light curves
             (sets the Nyquist frequency)
+
         Other parameters
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be averaged
             Only relevant (and required) for AveragedPowerspectrum
-        gti : [[gti0, gti1], ...]
-            Good Time intervals
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals.
         norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -438,7 +438,7 @@ class Powerspectrum(Crossspectrum):
 
     @staticmethod
     def from_events(events, dt, segment_size=None, norm="frac",
-                    silent=False, use_common_mean=True):
+                    silent=False, use_common_mean=True, gti=None):
         """Calculate AveragedPowerspectrum from an event list
 
         Parameters
@@ -466,15 +466,18 @@ class Powerspectrum(Crossspectrum):
             per-segment basis.
         silent : bool, default False
             Silence the progress bars
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Additional, optional, Good Time intervals, that get interesected with the 
+            GTIs of the input object.
         """
 
         return powerspectrum_from_events(
             events, dt, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+            silent=silent, use_common_mean=use_common_mean, gti=gti)
 
     @staticmethod
     def from_lightcurve(lc, segment_size=None, norm="frac",
-                        silent=False, use_common_mean=True):
+                        silent=False, use_common_mean=True, gti=None):
         """Calculate AveragedPowerspectrum from a light curve
 
         Parameters
@@ -502,15 +505,18 @@ class Powerspectrum(Crossspectrum):
             per-segment basis.
         silent : bool, default False
             Silence the progress bars
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Additional, optional, Good Time intervals, that get interesected with the 
+            GTIs of the input object.
         """
 
         return powerspectrum_from_lightcurve(
             lc, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+            silent=silent, use_common_mean=use_common_mean, gti=gti)
 
     @staticmethod
     def from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
-                         silent=False, use_common_mean=True):
+                         silent=False, use_common_mean=True, gti=None):
         """Calculate AveragedCrossspectrum from two light curves
 
         Parameters
@@ -540,12 +546,78 @@ class Powerspectrum(Crossspectrum):
             per-segment basis.
         silent : bool, default False
             Silence the progress bars
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals.
         """
 
         return powerspectrum_from_lc_iterable(
             iter_lc, dt, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+            silent=silent, use_common_mean=use_common_mean, gti=gti)
 
+    def _initialize_from_any_input(
+            self, data, dt=None, segment_size=None, norm="frac",
+            silent=False, use_common_mean=True, gti=None):
+        """Initialize the class, trying to understand the input types.
+
+        The input arguments are the same as ``__init__()``. Based on the type
+        of ``data``, this method will call the appropriate
+        ``powerspectrum_from_XXXX`` function, and initialize ``self`` with
+        the correct attributes.
+        """
+        if isinstance(data, EventList):
+            spec = powerspectrum_from_events(
+                data,
+                dt,
+                segment_size,
+                norm=norm.lower(),
+                silent=silent,
+                use_common_mean=use_common_mean,
+                gti=gti,
+            )
+        elif isinstance(data, Lightcurve):
+            spec = powerspectrum_from_lightcurve(
+                data,
+                segment_size,
+                norm=norm,
+                silent=silent,
+                use_common_mean=use_common_mean,
+                gti=gti,
+            )
+            spec.lc1 = data
+        elif isinstance(data, (tuple, list)):
+            if not isinstance(data[0], Lightcurve): # pragma: no cover
+                raise TypeError(f"Bad inputs to Powerspectrum: {type(data[0])}")
+            dt = data[0].dt
+            # This is a list of light curves.
+            spec = powerspectrum_from_lc_iterable(
+                data,
+                dt,
+                segment_size,
+                norm=norm,
+                silent=silent,
+                use_common_mean=use_common_mean,
+                gti=gti,
+            )
+        else: # pragma: no cover
+            raise TypeError(f"Bad inputs to Powerspectrum: {type(data)}")
+
+        for key, val in spec.__dict__.items():
+            setattr(self, key, val)
+        return
+
+    def _initialize_empty(self):
+        """Set all attributes to None."""
+        self.freq = None
+        self.power = None
+        self.power_err = None
+        self.unnorm_power = None
+        self.unnorm_power_err = None
+        self.df = None
+        self.dt = None
+        self.nphots1 = None
+        self.m = 1
+        self.n = None
+        return
 
 class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     """
@@ -625,6 +697,10 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     nphots: float
         The total number of photons in the light curve
 
+    legacy: bool
+        Use the legacy machinery of AveragedPowerspectrum. This might be useful to compare
+        with old results, and is also needed to use light curve lists as an input, to
+        conserve the spectra of each segment, or to use the large_data option.
     """
 
     def __init__(self, data=None, segment_size=None, norm="frac", gti=None,
@@ -654,23 +730,14 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             )
 
         norm = norm.lower()
+        self.norm = norm
         self.dt = dt
         self.save_all = save_all
         self.segment_size = segment_size
         self.show_progress = not silent
 
         if not good_input:
-            self.freq = None
-            self.power = None
-            self.power_err = None
-            self.df = None
-            self.dt = None
-            self.nphots = None
-            self.nphots1 = None
-            self.m = 1
-            self.n = None
-            self.norm = norm
-            return
+            return self._initialize_empty()
 
         if isinstance(data, Generator):
             warnings.warn(
@@ -689,39 +756,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             legacy = True
 
         if not legacy and data is not None:
-            if isinstance(data, EventList):
-                spec = powerspectrum_from_events(
-                    data,
-                    dt,
-                    segment_size,
-                    norm=norm.lower(),
-                    silent=silent,
-                    use_common_mean=use_common_mean,
-                )
-            elif isinstance(data, Lightcurve):
-                spec = powerspectrum_from_lightcurve(
-                    data,
-                    segment_size,
-                    norm=norm,
-                    silent=silent,
-                    use_common_mean=use_common_mean,
-                )
-                spec.lc1 = data
-            else:
-                dt = data[0].dt
-                # This is a list of light curves.
-                spec = powerspectrum_from_lc_iterable(
-                    data,
-                    dt,
-                    segment_size,
-                    norm=norm,
-                    silent=silent,
-                    use_common_mean=use_common_mean,
-                )
-
-            for key, val in spec.__dict__.items():
-                setattr(self, key, val)
-            return
+            return self._initialize_from_any_input(
+                data, dt=dt, segment_size=segment_size, norm=norm,
+                silent=silent, use_common_mean=use_common_mean)
 
         if large_data and data is not None:
             if not HAS_ZARR:
@@ -760,7 +797,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             good = lengths >= segment_size
             data.gti = data.gti[good]
 
-        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt, skip_checks=True)
+        Powerspectrum.__init__(
+            self, data, norm, gti=gti, dt=dt, skip_checks=True, legacy=legacy)
 
         return
 
@@ -1110,7 +1148,7 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None, norm="
 
 
 def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
-                              silent=False, use_common_mean=True):
+                              silent=False, use_common_mean=True, gti=None):
     """Calculate AveragedPowerspectrum from an event list
 
     Parameters
@@ -1137,6 +1175,9 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
         per-segment basis.
     silent : bool, default False
         Silence the progress bars
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Additional, optional, Good Time intervals, that get interesected with the 
+        GTIs of the input object.
 
     Returns
     -------
@@ -1151,7 +1192,8 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
 
 
 def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
-                                  silent=False, use_common_mean=True):
+                                  silent=False, use_common_mean=True,
+                                  gti=None):
     """Calculate AveragedPowerspectrum from a light curve
 
     Parameters
@@ -1178,6 +1220,9 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
         per-segment basis.
     silent : bool, default False
         Silence the progress bars
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Additional, optional, Good Time intervals, that get interesected with the 
+        GTIs of the input object.
 
     Returns
     -------
@@ -1187,17 +1232,21 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
+    err = None
+    if lc.err_dist == "gauss":
+        err = lc.counts_err
+
     table = avg_pds_from_events(
         lc.time, lc.gti, segment_size, lc.dt,
         norm=norm, use_common_mean=use_common_mean,
         silent=silent,
-        fluxes=lc.counts)
+        fluxes=lc.counts, errors=err)
 
     return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
 
 
 def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
-                                   silent=False, use_common_mean=True):
+                                   silent=False, use_common_mean=True, gti=None):
     """Calculate AveragedCrossspectrum from two light curves
 
     Parameters
@@ -1227,6 +1276,8 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
         per-segment basis.
     silent : bool, default False
         Silence the progress bars
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. 
 
     Returns
     -------
@@ -1237,13 +1288,22 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
 
+    common_gti = gti
     def iterate_lc_counts(iter_lc):
         for lc in iter_lc:
             if hasattr(lc, "counts"):
                 n_bin = np.rint(segment_size / lc.dt).astype(int)
 
+                gti = lc.gti
+                if common_gti is not None:
+                    gti = cross_two_gtis(common_gti, lc.gti)
+                err = None
+                if lc.err_dist == "gauss":
+                    err = lc.counts_err
+
                 flux_iterable = get_flux_iterable_from_segments(
-                    lc.time, lc.gti, segment_size, n_bin, fluxes=lc.counts, errors=lc._counts_err
+                    lc.time, gti, segment_size, n_bin, fluxes=lc.counts,
+                    errors=err
                 )
                 for out in flux_iterable:
                     yield out

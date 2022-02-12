@@ -75,7 +75,8 @@ class TestAveragedPowerspectrumEvents(object):
     def test_from_lc_iter_works(self):
         pds_ev = AveragedPowerspectrum.from_lc_iterable(
             self.events.to_lc_iter(self.dt, self.segment_size),
-            segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True)
+            segment_size=self.segment_size, dt=self.dt, norm="leahy",
+            silent=True, gti=self.events.gti)
         assert np.allclose(self.leahy_pds.power, pds_ev.power)
 
     @pytest.mark.parametrize("err_dist", ["poisson", "gauss"])
@@ -110,7 +111,26 @@ class TestAveragedPowerspectrumEvents(object):
     def test_from_lc_iter_with_err_works(self):
         def iter_lc_with_errs(iter_lc):
             for lc in iter_lc:
+                # In order for error bars to be considered,
+                # err_dist has to be gauss.
+                lc.err_dist = "gauss"
                 lc._counts_err = np.zeros_like(lc.counts) + lc.counts.mean()**0.5
+                yield lc
+
+        lccs = AveragedPowerspectrum.from_lc_iterable(
+            iter_lc_with_errs(self.events.to_lc_iter(self.dt, self.segment_size)),
+            segment_size=self.segment_size, dt=self.dt, norm='leahy', silent=True)
+        power1 = lccs.power.real
+        power2 = self.leahy_pds.power.real
+        assert np.allclose(power1, power2, rtol=0.01)
+
+    def test_from_lc_iter_with_err_ignored_with_wrong_err_dist(self):
+        def iter_lc_with_errs(iter_lc):
+            for lc in iter_lc:
+                # Not supposed to have error bars
+                lc.err_dist = "poisson"
+                # use a completely wrong error bar, for fun
+                lc._counts_err = np.zeros_like(lc.counts) + 14.2345425252462
                 yield lc
 
         lccs = AveragedPowerspectrum.from_lc_iterable(
@@ -139,7 +159,7 @@ class TestAveragedPowerspectrumEvents(object):
             gti = np.array([[hdul[2].data["START"][0], hdul[2].data["STOP"][0]]])
 
             _ = AveragedPowerspectrum.from_time_array(
-                times,  segment_size=128, dt=self.dt, gti=gti, norm='none',
+                times, segment_size=128, dt=self.dt, gti=gti, norm='none',
                 use_common_mean=False)
 
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -147,9 +167,10 @@ class TestAveragedPowerspectrumEvents(object):
         lc = self.events.to_lc(self.dt)
         lc._counts_err = np.sqrt(lc.counts.mean()) + np.zeros_like(lc.counts)
         pds = AveragedPowerspectrum.from_lightcurve(
-            lc, segment_size=self.segment_size, norm=norm, silent=True)
+            lc, segment_size=self.segment_size, norm=norm, silent=True,
+            gti=lc.gti)
         pds_ev = AveragedPowerspectrum.from_events(
-            self.events, segment_size=self.segment_size, dt=self.dt, norm=norm, silent=True)
+            self.events, segment_size=self.segment_size, dt=self.dt, norm=norm, silent=True, gti=self.events.gti)
         for attr in ["power", "freq", "m", "n", "nphots", "segment_size"]:
             assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
 
@@ -157,10 +178,11 @@ class TestAveragedPowerspectrumEvents(object):
         with pytest.raises(ValueError):
             assert AveragedPowerspectrum(self.lc, dt=self.dt)
 
-    def test_init_with_nonsense_segment(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_segment(self, legacy):
         segment_size = "foo"
         with pytest.raises(TypeError):
-            assert AveragedPowerspectrum(self.lc, segment_size, dt=self.dt)
+            assert AveragedPowerspectrum(self.lc, segment_size, dt=self.dt, legacy=legacy)
 
     def test_init_with_none_segment(self):
         segment_size = None
@@ -276,12 +298,13 @@ class TestPowerspectrum(object):
         assert ps.m == 1
         assert ps.n is None
 
-    def test_make_periodogram_from_lightcurve(self):
-        ps = Powerspectrum(self.lc)
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_make_periodogram_from_lightcurve(self, legacy):
+        ps = Powerspectrum(self.lc, legacy=legacy)
         assert ps.freq is not None
         assert ps.power is not None
         assert ps.power_err is not None
-        assert ps.df == 1.0 / self.lc.tseg
+        assert np.isclose(ps.df, 1.0 / self.lc.tseg)
         assert ps.norm == "frac"
         assert ps.m == 1
         assert ps.n == self.lc.time.shape[0]
@@ -300,15 +323,23 @@ class TestPowerspectrum(object):
         with pytest.raises(TypeError):
             assert Powerspectrum(self.lc.counts)
 
-    def test_init_with_nonsense_data(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_list(self, legacy):
         nonsense_data = [None for i in range(100)]
         with pytest.raises(TypeError):
-            assert Powerspectrum(nonsense_data)
+            assert Powerspectrum(nonsense_data, legacy=legacy)
 
-    def test_init_with_nonsense_norm(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_data(self, legacy):
+        nonsense_data = 34
+        with pytest.raises(TypeError):
+            assert Powerspectrum(nonsense_data, legacy=legacy)
+
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_norm(self, legacy):
         nonsense_norm = "bla"
         with pytest.raises(ValueError):
-            assert Powerspectrum(self.lc, norm=nonsense_norm)
+            assert Powerspectrum(self.lc, norm=nonsense_norm, legacy=legacy)
 
     def test_init_with_wrong_norm_type(self):
         nonsense_norm = 1.0
@@ -475,8 +506,9 @@ class TestPowerspectrum(object):
         """
         pass
 
-    def test_rebin_makes_right_attributes(self):
-        ps = Powerspectrum(self.lc, norm="Leahy")
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_rebin_makes_right_attributes(self, legacy):
+        ps = Powerspectrum(self.lc, norm="Leahy", legacy=legacy)
         # replace powers
         ps.power = np.ones_like(ps.power) * 2.0
 
@@ -486,7 +518,7 @@ class TestPowerspectrum(object):
         assert bin_ps.freq is not None
         assert bin_ps.power is not None
         assert bin_ps.power is not None
-        assert bin_ps.df == rebin_factor * 1.0 / self.lc.tseg
+        assert np.isclose(bin_ps.df, rebin_factor * 1.0 / self.lc.tseg)
         assert bin_ps.norm.lower() == "leahy"
         assert bin_ps.m == 2
         assert bin_ps.n == self.lc.time.shape[0]
@@ -660,15 +692,17 @@ class TestAveragedPowerspectrum(object):
         with pytest.raises(ValueError):
             assert AveragedPowerspectrum(self.lc)
 
-    def test_init_with_nonsense_segment(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_nonsense_segment(self, legacy):
         segment_size = "foo"
         with pytest.raises(TypeError):
-            assert AveragedPowerspectrum(self.lc, segment_size)
+            assert AveragedPowerspectrum(self.lc, segment_size, legacy=legacy)
 
-    def test_init_with_none_segment(self):
+    @pytest.mark.parametrize("legacy", [True, False])
+    def test_init_with_none_segment(self, legacy):
         segment_size = None
         with pytest.raises(ValueError):
-            assert AveragedPowerspectrum(self.lc, segment_size)
+            assert AveragedPowerspectrum(self.lc, segment_size, legacy=legacy)
 
     def test_init_with_inf_segment(self):
         segment_size = np.inf
@@ -732,7 +766,8 @@ class TestAveragedPowerspectrum(object):
         with pytest.warns(UserWarning) as record:
             cs = AveragedPowerspectrum(
                 iter_lc(self.lc, 1),
-                segment_size=1, legacy=legacy)
+                segment_size=1, legacy=legacy,
+                gti=self.lc.gti)
         message = "The averaged Power spectrum from a generator "
 
         assert np.any([message in r.message.args[0]
@@ -744,7 +779,16 @@ class TestAveragedPowerspectrum(object):
         lc.gti = gti
         lc_split = lc.split_by_gti()
 
-        cs = AveragedPowerspectrum(lc_split, segment_size=0.05, norm="leahy")
+        cs = AveragedPowerspectrum(lc_split, segment_size=0.05, norm="leahy",
+                                   gti=lc.gti)
+        cs_lc = AveragedPowerspectrum(lc, segment_size=0.05, norm="leahy",
+                                      gti=lc.gti)
+        for attr in ("power", "unnorm_power", "power_err", "unnorm_power_err",
+                     "freq"):
+            assert np.allclose(getattr(cs, attr), getattr(cs_lc, attr))
+
+        for attr in ("m", "n", "norm"):
+            assert getattr(cs, attr) == getattr(cs_lc, attr)
 
     @pytest.mark.parametrize('df', [2, 3, 5, 1.5, 1, 85])
     def test_rebin(self, df):
