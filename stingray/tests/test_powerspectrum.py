@@ -1135,8 +1135,9 @@ class TestRoundTrip():
     @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv", "fits"])
     def test_file_roundtrip(self, fmt):
         so = self.cs
-        so.write("dummy", fmt=fmt)
-        new_so = so.read("dummy", fmt=fmt)
-        os.unlink("dummy")
+        fname = f"dummy.{fmt}"
+        so.write(fname, fmt=fmt)
+        new_so = so.read(fname, fmt=fmt)
+        # os.unlink(fname)
 
         self._check_equal(so, new_so)

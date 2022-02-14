@@ -29,9 +29,12 @@ class StingrayObject(object):
     attributes are compared: if they are of the same shape, they get saved as
     columns of the table/dataframe, otherwise as metadata.
     """
+
     def __init__(cls, *args, **kwargs):
         if not hasattr(cls, "main_array_attr"):
-            raise RuntimeError("A StingrayObject needs to have the main_array_attr attribute specified")
+            raise RuntimeError(
+                "A StingrayObject needs to have the main_array_attr attribute specified"
+            )
 
     def array_attrs(self):
         """List the names of the array attributes of the Stingray Object.
@@ -118,6 +121,7 @@ class StingrayObject(object):
         using the standard attributes of the wanted StingrayObject (e.g.
         ``time``, ``pi``, etc. for ``EventList``)
         """
+        cls = cls()
 
         if len(ts) == 0:
             # return an empty object
@@ -132,10 +136,10 @@ class StingrayObject(object):
         for attr in array_attrs:
             if attr == cls.main_array_attr:
                 continue
-            setattr(cls, attr, np.array(ts[attr]))
+            setattr(cls, attr.lower(), np.array(ts[attr]))
 
         for key, val in ts.meta.items():
-            setattr(cls, key, val)
+            setattr(cls, key.lower(), val)
 
         return cls
 
@@ -174,7 +178,9 @@ class StingrayObject(object):
         using the standard attributes of the wanted StingrayObject (e.g.
         ``time``, ``pi``, etc. for ``EventList``)
         """
-        if len(ts) == 0:
+        cls = cls()
+
+        if len(ts[cls.main_array_attr]) == 0:
             # return an empty object
             return cls
 
@@ -231,6 +237,8 @@ class StingrayObject(object):
         ``time``, ``pi``, etc. for ``EventList``)
 
         """
+        cls = cls()
+
         if len(ts) == 0:
             # return an empty object
             return cls
@@ -293,7 +301,10 @@ class StingrayObject(object):
             The object reconstructed from file
         """
         if fmt is None and format_ is not None:
-            warnings.warn("The format_ keyword for read and write is deprecated. Use fmt instead", DeprecationWarning)
+            warnings.warn(
+                "The format_ keyword for read and write is deprecated. Use fmt instead",
+                DeprecationWarning,
+            )
             fmt = format_
 
         if fmt is None:
@@ -365,7 +376,10 @@ class StingrayObject(object):
             Available options are ``pickle``, ``hdf5``, ``ascii``, ``fits``
         """
         if fmt is None and format_ is not None:
-            warnings.warn("The format_ keyword for read and write is deprecated. Use fmt instead", DeprecationWarning)
+            warnings.warn(
+                "The format_ keyword for read and write is deprecated. Use fmt instead",
+                DeprecationWarning,
+            )
             fmt = format_
         if fmt is None:
             pass
@@ -391,7 +405,6 @@ class StingrayObject(object):
 
 
 class StingrayTimeseries(StingrayObject):
-
     def to_astropy_timeseries(self):
         """Save the event list to an Astropy timeseries.
 
@@ -402,6 +415,7 @@ class StingrayTimeseries(StingrayObject):
         from astropy.timeseries import TimeSeries
         from astropy.time import TimeDelta
         from astropy import units as u
+
         data = {}
         array_attrs = self.array_attrs()
 
@@ -413,7 +427,7 @@ class StingrayTimeseries(StingrayObject):
         if data == {}:
             data = None
 
-        if self.time is not None and self.time.size > 0:
+        if self.time is not None and np.size(self.time) > 0:
             times = TimeDelta(self.time * u.s)
             ts = TimeSeries(data=data, time=times)
         else:
@@ -547,7 +561,7 @@ def interpret_times(time, mjdref=0):
     ValueError: Unknown time format: ...
     """
     if isinstance(time, TimeDelta):
-        out_times = time.to('s').value
+        out_times = time.to("s").value
         return out_times, mjdref
 
     if isinstance(time, Time):
@@ -563,7 +577,7 @@ def interpret_times(time, mjdref=0):
         return out_times, mjdref
 
     if isinstance(time, Quantity):
-        out_times = time.to('s').value
+        out_times = time.to("s").value
         return out_times, mjdref
 
     if isinstance(time, (tuple, list, np.ndarray)):
@@ -577,4 +591,3 @@ def interpret_times(time, mjdref=0):
             pass
 
     raise ValueError(f"Unknown time format: {type(time)}")
-

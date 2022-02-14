@@ -1641,7 +1641,9 @@ class Lightcurve(StingrayTimeseries):
         lc : :class:`Lightcurve` object
         """
         if fmt is None and format_ is not None:
-            warnings.warn("The format_ keyword for read and write is deprecated. Use fmt instead", DeprecationWarning)
+            warnings.warn(
+                "The format_ keyword for read and write is deprecated. "
+                "Use fmt instead", DeprecationWarning)
             fmt = format_
 
         if fmt == 'hea':
