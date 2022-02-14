@@ -44,6 +44,7 @@ class TestEvents(object):
 
     @classmethod
     def setup_class(self):
+        np.random.seed(57239875)
         self.time = [0.5, 1.5, 2.5, 3.5]
         self.counts = [3000, 2000, 2200, 3600]
         self.counts_flat = [3000, 3000, 3000, 3000]
@@ -113,13 +114,14 @@ class TestEvents(object):
         lc_sim = ev.to_lc(dt=lc.dt, tstart=lc.tstart, tseg=lc.tseg)
         assert np.all((lc - lc_sim).counts < 3 * np.sqrt(lc.counts))
 
-    def test_simulate_times_with_spline(self):
+    @pytest.mark.parametrize("use_spline", [True, False])
+    def test_simulate_times(self, use_spline):
         """Simulate photon arrival times, with use_spline option
         enabled.
         """
         lc = Lightcurve(self.time, self.counts_flat, gti=self.gti)
         ev = EventList()
-        ev.simulate_times(lc, use_spline=True)
+        ev.simulate_times(lc, use_spline=use_spline)
         lc_sim = ev.to_lc(dt=lc.dt, tstart=lc.tstart, tseg=lc.tseg)
         assert np.all((lc - lc_sim).counts < 3 * np.sqrt(lc.counts))
 
