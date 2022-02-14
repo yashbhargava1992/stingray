@@ -414,6 +414,18 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
     def _spectrum_function(self):
         pass
 
+    def from_astropy_table(self, *args, **kwargs):
+        raise NotImplementedError(
+            "from_XXXX methods are not implemented for VarEnergySpectrum")
+
+    def from_xarray(self, *args, **kwargs):
+        raise NotImplementedError(
+            "from_XXXX methods are not implemented for VarEnergySpectrum")
+
+    def from_pandas(self, *args, **kwargs):
+        raise NotImplementedError(
+            "from_XXXX methods are not implemented for VarEnergySpectrum")
+
 
 class RmsSpectrum(VarEnergySpectrum):
     """Calculate the rms-Energy spectrum.

@@ -10,6 +10,7 @@ from stingray.varenergyspectrum import ExcessVarianceSpectrum
 from stingray.lightcurve import Lightcurve
 
 from astropy.tests.helper import pytest
+from astropy.table import Table
 
 _HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
 
@@ -436,49 +437,60 @@ class TestRoundTrip():
         cls.vespec.spectrum = np.zeros_like(cls.vespec.energy)
         cls.vespec.spectrum_error = np.zeros_like(cls.vespec.energy)
 
-    def _check_equal(self, so, new_so):
+    def _check_equal(self, so, table):
         for attr in ["energy", "spectrum", "spectrum_error"]:
-            assert np.allclose(getattr(so, attr), getattr(new_so, attr))
+            assert np.allclose(getattr(so, attr), table[attr])
 
-        for attr in ["freq_interval"]:
-            assert getattr(so, attr) == getattr(new_so, attr)
+        if hasattr(table, "meta"):
+            for attr in ["freq_interval"]:
+                assert getattr(so, attr) == table.meta[attr]
+        if hasattr(table, "attrs"):
+            for attr in ["freq_interval"]:
+                assert getattr(so, attr) == table.attrs[attr]
 
-    def test_astropy_roundtrip(self):
+    def test_astropy_export(self):
         so = self.vespec
         ts = so.to_astropy_table()
-        new_so = so.from_astropy_table(ts)
-        self._check_equal(so, new_so)
+        self._check_equal(so, ts)
+        with pytest.raises(NotImplementedError):
+            so.from_astropy_table(ts)
 
     @pytest.mark.skipif('not _HAS_XARRAY')
-    def test_xarray_roundtrip(self):
+    def test_xarray_export(self):
         so = self.vespec
         ts = so.to_xarray()
-        new_so = so.from_xarray(ts)
-
-        self._check_equal(so, new_so)
+        self._check_equal(so, ts)
+        with pytest.raises(NotImplementedError):
+            so.from_xarray(ts)
 
     @pytest.mark.skipif('not _HAS_PANDAS')
-    def test_pandas_roundtrip(self):
+    def test_pandas_export(self):
         so = self.vespec
         ts = so.to_pandas()
-        new_so = so.from_pandas(ts)
-
-        self._check_equal(so, new_so)
+        self._check_equal(so, ts)
+        with pytest.raises(NotImplementedError):
+            so.from_pandas(ts)
 
     @pytest.mark.skipif('not _HAS_H5PY')
-    def test_hdf_roundtrip(self):
+    def test_hdf_export(self):
         so = self.vespec
         so.write("dummy.hdf5")
-        new_so = so.read("dummy.hdf5")
+        new_so = Table.read("dummy.hdf5")
         os.unlink("dummy.hdf5")
-
         self._check_equal(so, new_so)
 
-    @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv", "fits"])
-    def test_file_roundtrip(self, fmt):
+    @pytest.mark.parametrize("fmt", ["ascii.ecsv", "fits"])
+    def test_file_export(self, fmt):
+        so = self.vespec
+        so.write("dummy", fmt=fmt)
+        new_so = Table.read("dummy", format=fmt)
+        os.unlink("dummy")
+        self._check_equal(so, new_so)
+
+    @pytest.mark.parametrize("fmt", ["pickle"])
+    def test_file_export_pickle(self, fmt):
         so = self.vespec
         so.write("dummy", fmt=fmt)
         new_so = so.read("dummy", fmt=fmt)
         os.unlink("dummy")
-
-        self._check_equal(so, new_so)
+        self._check_equal(so, new_so.to_astropy_table())
