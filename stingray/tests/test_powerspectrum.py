@@ -88,7 +88,7 @@ class TestAveragedPowerspectrumEvents(object):
     def test_type_change(self):
         pds = copy.deepcopy(self.leahy_pds)
         assert pds.type == "powerspectrum"
-        pds._type = "astdfawerfsaf"
+        pds.type = "astdfawerfsaf"
         assert pds.type == "astdfawerfsaf"
 
     def test_from_events_works_ps(self):
@@ -264,14 +264,6 @@ class TestAveragedPowerspectrumEvents(object):
         aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm="Leahy", dt=self.dt)
         bin_aps = aps.rebin_log(df)
-
-    def test_rebin_with_invalid_type_attribute(self):
-        new_df = 2
-        aps = AveragedPowerspectrum(self.lc, segment_size=1,
-                                    norm='leahy', dt=self.dt)
-        aps.type = 'invalid_type'
-        with pytest.raises(AttributeError):
-            assert aps.rebin(df=new_df)
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("legacy", [True, False])
@@ -855,14 +847,6 @@ class TestAveragedPowerspectrum(object):
         aps = AveragedPowerspectrum(self.lc, segment_size=1,
                                     norm="Leahy")
         bin_aps = aps.rebin_log(df)
-
-    def test_rebin_with_invalid_type_attribute(self):
-        new_df = 2
-        aps = AveragedPowerspectrum(self.lc, segment_size=1,
-                                    norm='leahy')
-        aps.type = 'invalid_type'
-        with pytest.raises(AttributeError):
-            assert aps.rebin(df=new_df)
 
     @pytest.mark.parametrize("legacy", [True, False])
     def test_list_with_nonsense_component(self, legacy):

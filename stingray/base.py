@@ -29,6 +29,9 @@ class StingrayObject(object):
     attributes are compared: if they are of the same shape, they get saved as
     columns of the table/dataframe, otherwise as metadata.
     """
+    def __init__(cls, *args, **kwargs):
+        if not hasattr(cls, "main_array_attr"):
+            raise RuntimeError("A StingrayObject needs to have the main_array_attr attribute specified")
 
     def array_attrs(self):
         """List the names of the array attributes of the Stingray Object.
@@ -502,6 +505,7 @@ def interpret_times(time, mjdref=0):
 
     Examples
     --------
+    >>> import astropy.units as u
     >>> time = Time(57483, format='mjd')
     >>> newt, mjdref = interpret_times(time)
     >>> newt == 0
