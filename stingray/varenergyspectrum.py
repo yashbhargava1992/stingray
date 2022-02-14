@@ -124,7 +124,7 @@ def _decode_energy_specification(energy_spec):
     return energies
 
 
-class VarEnergySpectrum(StingrayObject):
+class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
     main_array_attr = "energy"
     """
     Base class for variability-energy spectrum.
