@@ -1,14 +1,16 @@
 """Base classes"""
 from collections.abc import Iterable
-from abc import ABCMeta
 import pickle
 import warnings
+import copy
 
 import numpy as np
 from astropy.table import Table
+from astropy.time import Time, TimeDelta
+from astropy.units import Quantity
 
 
-class StingrayObject(metaclass=ABCMeta):
+class StingrayObject(object):
     """This base class defines some general-purpose utilities.
 
     The main purpose is to have a consistent mechanism for:
@@ -27,12 +29,6 @@ class StingrayObject(metaclass=ABCMeta):
     attributes are compared: if they are of the same shape, they get saved as
     columns of the table/dataframe, otherwise as metadata.
     """
-
-    def __init__(self):
-        if not hasattr(self, "main_array_attr"):
-            raise RuntimeError(
-                "A StingrayObject needs to have the main_array_attr attribute specified"
-            )
 
     def array_attrs(self):
         """List the names of the array attributes of the Stingray Object.
@@ -389,3 +385,192 @@ class StingrayObject(metaclass=ABCMeta):
             ts.write(filename, format=fmt, overwrite=True, serialize_meta=True)
         except TypeError:
             ts.write(filename, format=fmt, overwrite=True)
+
+
+class StingrayTimeseries(StingrayObject):
+
+    def to_astropy_timeseries(self):
+        """Save the event list to an Astropy timeseries.
+
+        Array attributes (time, pi, energy, etc.) are converted
+        into columns, while meta attributes (mjdref, gti, etc.)
+        are saved into the ``meta`` dictionary.
+        """
+        from astropy.timeseries import TimeSeries
+        from astropy.time import TimeDelta
+        from astropy import units as u
+        data = {}
+        array_attrs = self.array_attrs()
+
+        for attr in array_attrs:
+            if attr == "time":
+                continue
+            data[attr] = np.asarray(getattr(self, attr))
+
+        if data == {}:
+            data = None
+
+        if self.time is not None and self.time.size > 0:
+            times = TimeDelta(self.time * u.s)
+            ts = TimeSeries(data=data, time=times)
+        else:
+            ts = TimeSeries()
+
+        ts.meta.update(self.get_meta_dict())
+
+        return ts
+
+    @classmethod
+    def from_astropy_timeseries(cls, ts):
+        """Create a `StingrayObject` from data in an Astropy TimeSeries
+
+        The timeseries has to define at least a column called time,
+        the rest of columns will form the array attributes of the
+        new event list, while the attributes in table.meta will
+        form the new meta attributes of the event list.
+
+        It is strongly advisable to define such attributes and columns
+        using the standard attributes of EventList: time, pi, energy, gti etc.
+
+        """
+
+        time = ts["time"]
+        mjdref = None
+        if "mjdref" in ts.meta:
+            mjdref = ts.meta["mjdref"]
+
+        time, mjdref = interpret_times(time, mjdref)
+        cls.time = np.asarray(time)
+
+        array_attrs = ts.colnames
+        for key, val in ts.meta.items():
+            setattr(cls, key, val)
+
+        for attr in array_attrs:
+            if attr == "time":
+                continue
+            setattr(cls, attr, ts[attr])
+
+        return cls
+
+    def change_mjdref(self, new_mjdref):
+        """Change the MJD reference time (MJDREF) of the light curve.
+
+        Times will be now referred to this new MJDREF
+
+        Parameters
+        ----------
+        new_mjdref : float
+            New MJDREF
+
+        Returns
+        -------
+        new_lc : :class:`EventList` object
+            The new LC shifted by MJDREF
+        """
+        time_shift = (self.mjdref - new_mjdref) * 86400
+
+        new_ev = self.shift(time_shift)
+        new_ev.mjdref = new_mjdref
+        return new_ev
+
+    def shift(self, time_shift):
+        """
+        Shift the events and the GTIs in time.
+
+        Parameters
+        ----------
+        time_shift: float
+            The time interval by which the light curve will be shifted (in
+            the same units as the time array in :class:`Lightcurve`
+
+        Returns
+        -------
+        new_ev : lightcurve.Lightcurve object
+            The new event list shifted by ``time_shift``
+
+        """
+        new_ev = copy.deepcopy(self)
+        new_ev.time = new_ev.time + time_shift
+        new_ev.gti = new_ev.gti + time_shift
+
+        return new_ev
+
+
+def interpret_times(time, mjdref=0):
+    """Get time interval in seconds from an astropy Time object
+
+    Examples
+    --------
+    >>> time = Time(57483, format='mjd')
+    >>> newt, mjdref = interpret_times(time)
+    >>> newt == 0
+    True
+    >>> mjdref == 57483
+    True
+    >>> time = Time([57483], format='mjd')
+    >>> newt, mjdref = interpret_times(time)
+    >>> np.allclose(newt, 0)
+    True
+    >>> mjdref == 57483
+    True
+    >>> time = TimeDelta([3, 4, 5] * u.s)
+    >>> newt, mjdref = interpret_times(time)
+    >>> np.allclose(newt, [3, 4, 5])
+    True
+    >>> time = np.array([3, 4, 5])
+    >>> newt, mjdref = interpret_times(time, mjdref=45000)
+    >>> np.allclose(newt, [3, 4, 5])
+    True
+    >>> mjdref == 45000
+    True
+    >>> time = np.array([3, 4, 5] * u.s)
+    >>> newt, mjdref = interpret_times(time, mjdref=45000)
+    >>> np.allclose(newt, [3, 4, 5])
+    True
+    >>> mjdref == 45000
+    True
+    >>> newt, mjdref = interpret_times(1, mjdref=45000)
+    >>> newt == 1
+    True
+    >>> newt, mjdref = interpret_times(list, mjdref=45000)
+    Traceback (most recent call last):
+    ...
+    ValueError: Unknown time format: ...
+    >>> newt, mjdref = interpret_times("guadfkljfd", mjdref=45000)
+    Traceback (most recent call last):
+    ...
+    ValueError: Unknown time format: ...
+    """
+    if isinstance(time, TimeDelta):
+        out_times = time.to('s').value
+        return out_times, mjdref
+
+    if isinstance(time, Time):
+        mjds = time.mjd
+        if mjdref == 0:
+            if np.all(mjds > 10000):
+                if isinstance(mjds, Iterable):
+                    mjdref = mjds[0]
+                else:
+                    mjdref = mjds
+
+        out_times = (mjds - mjdref) * 86400
+        return out_times, mjdref
+
+    if isinstance(time, Quantity):
+        out_times = time.to('s').value
+        return out_times, mjdref
+
+    if isinstance(time, (tuple, list, np.ndarray)):
+        return time, mjdref
+
+    if not isinstance(time, Iterable):
+        try:
+            float(time)
+            return time, mjdref
+        except (ValueError, TypeError):
+            pass
+
+    raise ValueError(f"Unknown time format: {type(time)}")
+
