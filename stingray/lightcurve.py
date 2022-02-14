@@ -15,7 +15,7 @@ from astropy.table import Table
 from astropy.time import TimeDelta, Time
 from astropy import units as u
 
-from stingray.base import StingrayObject
+from stingray.base import StingrayTimeseries
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.gti import (bin_intervals_from_gtis, check_gtis, create_gti_mask,
@@ -29,7 +29,7 @@ __all__ = ["Lightcurve"]
 valid_statistics = ["poisson", "gauss", None]
 
 
-class Lightcurve(StingrayObject):
+class Lightcurve(StingrayTimeseries):
     """
     Make a light curve object from an array of time stamps and an
     array of counts.
@@ -172,7 +172,7 @@ class Lightcurve(StingrayObject):
                  skip_checks=False, low_memory=False, mission=None,
                  instr=None, header=None, **other_kw):
 
-        StingrayObject.__init__(self)
+        StingrayTimeseries.__init__(self)
 
         if other_kw != {}:
             warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
@@ -477,54 +477,6 @@ class Lightcurve(StingrayObject):
             simon("Bin sizes in input time array aren't equal throughout! "
                   "This could cause problems with Fourier transforms. "
                   "Please make the input time evenly sampled.")
-
-    def change_mjdref(self, new_mjdref):
-        """Change the MJD reference time (MJDREF) of the light curve.
-
-        Times will be now referred to this new MJDREF
-
-        Parameters
-        ----------
-        new_mjdref : float
-            New MJDREF
-
-        Returns
-        -------
-        new_lc : lightcurve.Lightcurve object
-            The new LC shifted by MJDREF
-        """
-        time_shift = -(new_mjdref - self.mjdref) * 86400
-
-        new_lc = self.shift(time_shift)
-        new_lc.mjdref = new_mjdref
-        return new_lc
-
-    def shift(self, time_shift):
-        """
-        Shift the light curve and the GTIs in time.
-
-        Parameters
-        ----------
-        time_shift: float
-            The time interval by which the light curve will be shifted (in
-            the same units as the time array in :class:`Lightcurve`
-
-        Returns
-        -------
-        new_lc : lightcurve.Lightcurve object
-            The new LC shifted by ``time_shift``
-
-        """
-        new_lc = Lightcurve(self.time + time_shift,
-                            self.counts,
-                            err=self._counts_err,
-                            gti=self.gti + time_shift,
-                            mjdref=self.mjdref,
-                            dt=self.dt,
-                            err_dist=self.err_dist,
-                            skip_checks=True)
-
-        return new_lc
 
     def _operation_with_other_lc(self, other, operation):
         """
