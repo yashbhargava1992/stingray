@@ -1351,6 +1351,6 @@ class TestRoundTrip():
             return True
         so.write(fname, fmt=fmt)
         new_so = so.read(fname, fmt=fmt)
-        # os.unlink(fname)
+        os.unlink(fname)
 
         self._check_equal(so, new_so)
