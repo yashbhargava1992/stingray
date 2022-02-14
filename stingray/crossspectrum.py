@@ -473,6 +473,7 @@ def cospectra_pvalue(power, nspec):
 
 class Crossspectrum(StingrayObject):
     main_array_attr = "freq"
+    type = "crossspectrum"
 
     """
     Make a cross spectrum from a (binned) light curve.
@@ -764,20 +765,6 @@ class Crossspectrum(StingrayObject):
 
         return True
 
-    @property
-    def type(self):
-        if self._type is not None:
-            pass
-        elif self.__class__.__name__ in ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]:
-            self._type = "powerspectrum"
-        elif self.__class__.__name__ in ["Crossspectrum", "AveragedCrossspectrum"]:
-            self._type = "crossspectrum"
-        return self._type
-
-    @type.setter
-    def type(self, value):
-        self._type = value
-
     def _make_auxil_pds(self, lc1, lc2):
         """
         Helper method to create the power spectrum of both light curves
@@ -986,10 +973,6 @@ class Crossspectrum(StingrayObject):
         bin_cs.freq = binfreq
         bin_cs.power = bincs
         bin_cs.df = df
-        bin_cs.dt = self.dt
-        bin_cs.n = self.n
-        bin_cs.norm = self.norm
-        bin_cs.nphots1 = self.nphots1
         bin_cs.power_err = binerr
 
         if hasattr(self, "unnorm_power") and self.unnorm_power is not None:
@@ -1015,14 +998,6 @@ class Crossspectrum(StingrayObject):
             bin_cs.pds1 = self.pds1.rebin(df=df, f=f, method=method)
         if hasattr(self, "pds2"):
             bin_cs.pds2 = self.pds2.rebin(df=df, f=f, method=method)
-
-        try:
-            bin_cs.nphots2 = self.nphots2
-        except AttributeError:
-            if self.type == "powerspectrum":
-                pass
-            else:
-                raise AttributeError("Spectrum has no attribute named nphots2.")
 
         bin_cs.m = np.rint(step_size * self.m)
 
@@ -1722,6 +1697,7 @@ class Crossspectrum(StingrayObject):
         return
 
 class AveragedCrossspectrum(Crossspectrum):
+    type = "crossspectrum"
     """
     Make an averaged cross spectrum from a light curve by segmenting two
     light curves, Fourier-transforming each segment and then averaging the
