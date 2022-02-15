@@ -370,7 +370,6 @@ class Powerspectrum(Crossspectrum):
         """
 
         pds = self
-        # TODO: add case with norm different from Leahy
         if self.norm != 'leahy':
             pds = self.to_norm("leahy")
 
