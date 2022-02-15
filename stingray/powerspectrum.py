@@ -367,20 +367,16 @@ class Powerspectrum(Crossspectrum):
         >>> pds.nphots = 30000
         >>> pds.modulation_upper_limit(fmin=2, fmax=5, c=0.99)
         0.1016...
-        >>> pds.norm = "frac"
-        >>> pds.modulation_upper_limit(2, 5, 0.99)
-        Traceback (most recent call last):
-         ...
-        ValueError: Modulation upper limit is only available in the Leahy...
         """
 
+        pds = self
         # TODO: add case with norm different from Leahy
         if self.norm != 'leahy':
-            raise ValueError("Modulation upper limit is only available in the Leahy normalization")
+            pds = self.to_norm("leahy")
 
-        freq = self.freq
+        freq = pds.freq
         fnyq = np.max(freq)
-        power = self.power
+        power = pds.power
         freq_mask = freq > 0
         if fmin is not None or fmax is not None:
             if fmin is not None:
@@ -393,10 +389,11 @@ class Powerspectrum(Crossspectrum):
         maximum_val = np.argmax(power)
         nyq_ratio = freq[maximum_val] / fnyq
 
-        # I multiply by M because the formulas from Vaughan+94 treat summed powers, while here
-        # we have averaged powers.
+        # I multiply by M because the formulas from Vaughan+94 treat summed
+        # powers, while here we have averaged powers.
         return amplitude_upper_limit(
-            power[maximum_val] * self.m, self.nphots, n=self.m, c=c, nyq_ratio=nyq_ratio, fft_corr=True)
+            power[maximum_val] * pds.m, pds.nphots, n=pds.m, c=c,
+            nyq_ratio=nyq_ratio, fft_corr=True)
 
     @staticmethod
     def from_time_array(times, dt, segment_size=None, gti=None, norm="frac",
@@ -467,7 +464,7 @@ class Powerspectrum(Crossspectrum):
         silent : bool, default False
             Silence the progress bars
         gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Additional, optional, Good Time intervals, that get interesected with the 
+            Additional, optional, Good Time intervals, that get interesected with the
             GTIs of the input object.
         """
 
@@ -506,7 +503,7 @@ class Powerspectrum(Crossspectrum):
         silent : bool, default False
             Silence the progress bars
         gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Additional, optional, Good Time intervals, that get interesected with the 
+            Additional, optional, Good Time intervals, that get interesected with the
             GTIs of the input object.
         """
 
@@ -1176,7 +1173,7 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
     silent : bool, default False
         Silence the progress bars
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Additional, optional, Good Time intervals, that get interesected with the 
+        Additional, optional, Good Time intervals, that get interesected with the
         GTIs of the input object.
 
     Returns
@@ -1221,7 +1218,7 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
     silent : bool, default False
         Silence the progress bars
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Additional, optional, Good Time intervals, that get interesected with the 
+        Additional, optional, Good Time intervals, that get interesected with the
         GTIs of the input object.
 
     Returns
@@ -1277,7 +1274,7 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
     silent : bool, default False
         Silence the progress bars
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Good Time intervals. 
+        Good Time intervals.
 
     Returns
     -------
