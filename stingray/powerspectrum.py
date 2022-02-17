@@ -467,7 +467,7 @@ class Powerspectrum(Crossspectrum):
         silent : bool, default False
             Silence the progress bars
         gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Additional, optional, Good Time intervals, that get interesected with the 
+            Additional, optional, Good Time intervals, that get interesected with the
             GTIs of the input object.
         """
 
@@ -506,7 +506,7 @@ class Powerspectrum(Crossspectrum):
         silent : bool, default False
             Silence the progress bars
         gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Additional, optional, Good Time intervals, that get interesected with the 
+            Additional, optional, Good Time intervals, that get interesected with the
             GTIs of the input object.
         """
 
@@ -935,6 +935,12 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     """
 
     def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
+        if isinstance(lc, EventList) and dt is None:
+            raise ValueError("To pass an input event lists, please specify dt")
+
+        if isinstance(lc, EventList):
+            lc = lc.to_lc(dt)
+
         if segment_size < 2 * lc.dt:
             raise ValueError("Length of the segment is too short to form a "
                              "light curve!")
@@ -1176,7 +1182,7 @@ def powerspectrum_from_events(events, dt, segment_size=None, norm="frac",
     silent : bool, default False
         Silence the progress bars
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Additional, optional, Good Time intervals, that get interesected with the 
+        Additional, optional, Good Time intervals, that get interesected with the
         GTIs of the input object.
 
     Returns
@@ -1221,7 +1227,7 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, norm="frac",
     silent : bool, default False
         Silence the progress bars
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Additional, optional, Good Time intervals, that get interesected with the 
+        Additional, optional, Good Time intervals, that get interesected with the
         GTIs of the input object.
 
     Returns
@@ -1277,7 +1283,7 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
     silent : bool, default False
         Silence the progress bars
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Good Time intervals. 
+        Good Time intervals.
 
     Returns
     -------
