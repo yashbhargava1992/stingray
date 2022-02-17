@@ -524,8 +524,9 @@ class StingrayTimeseries(StingrayObject):
 
         """
         ts = copy.deepcopy(self)
-        ts.time = ts.time + time_shift
-        ts.gti = ts.gti + time_shift
+        ts.time = np.asarray(ts.time) + time_shift
+        if hasattr(ts, "gti"):
+            ts.gti = np.asarray(ts.gti) + time_shift
 
         return ts
 

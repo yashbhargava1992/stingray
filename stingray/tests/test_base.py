@@ -196,10 +196,11 @@ class TestStingrayTimeseries:
     def setup_class(cls):
         cls.arr = [4, 5, 2]
         sting_obj = DummyStingrayTs(cls.arr)
-        sting_obj.time = [0, 1, 2]
+        sting_obj.time = np.asarray([0, 1, 2])
         sting_obj.mjdref = 59777.000
         sting_obj.parafritus = "bonus!"
-        sting_obj.panesapa = [[41, 25], [98, 3]]
+        sting_obj.panesapa = np.asarray([[41, 25], [98, 3]])
+        sting_obj.gti = np.asarray([[-0.5, 2.5]])
         cls.sting_obj = sting_obj
 
     def test_astropy_roundtrip(self):
@@ -214,3 +215,14 @@ class TestStingrayTimeseries:
         ts = so.to_astropy_timeseries()
         new_so = DummyStingrayTs.from_astropy_timeseries(ts)
         _check_equal(so, new_so)
+
+    def test_shift_time(self):
+        new_so = self.sting_obj.shift(1)
+        assert np.allclose(new_so.time - 1, self.sting_obj.time)
+        assert np.allclose(new_so.gti - 1, self.sting_obj.gti)
+
+    def test_change_mjdref(self):
+        new_so = self.sting_obj.change_mjdref(59776.5)
+        assert new_so.mjdref == 59776.5
+        assert np.allclose(new_so.time - 43200, self.sting_obj.time)
+        assert np.allclose(new_so.gti - 43200, self.sting_obj.gti)
