@@ -196,11 +196,8 @@ class CrossCorrelation(object):
         lc2_counts = self.lc2.counts - np.mean(self.lc2.counts)
 
         # Calculates cross-correlation of two lightcurves
-        # Note that this is normalized so that the maximum is proportional to
-        # the number of bins in the first input light curve. Hence, the
-        # division by the lc size
         self.corr = \
-            signal.correlate(lc1_counts, lc2_counts, self.mode) / lc1_counts.size
+            signal.correlate(lc1_counts, lc2_counts, self.mode)
 
         self.n = np.size(self.corr)
         self.time_shift, self.time_lags, self.n = self.cal_timeshift(dt=self.dt)
@@ -208,9 +205,12 @@ class CrossCorrelation(object):
         # Normalization that makes the maximum correlation equal to 1, and
         # maximum anticorrelation -1.
         if self.norm == "variance":
+            # Note that self.corr is normalized so that the maximum is
+            # proportional to the number of bins in the first input
+            # light curve. Hence, the division by the lc size
             variance1 = np.var(lc1.counts) - np.mean(lc1.counts_err)**2
             variance2 = np.var(lc2.counts) - np.mean(lc2.counts_err)**2
-            self.corr = self.corr / np.sqrt(variance1 * variance2)
+            self.corr = self.corr / np.sqrt(variance1 * variance2) / lc1_counts.size
 
     def cal_timeshift(self, dt=1.0):
         """
