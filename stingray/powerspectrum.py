@@ -337,6 +337,10 @@ class Powerspectrum(Crossspectrum):
 
         See `stingray.stats.power_upper_limit`, `stingray.stats.amplitude_upper_limit`
         for more information.
+        
+        The formula used to calculate the upper limit assumes the Leahy normalization.
+        If the periodogram is in another normalization, we will internally convert
+        it to Leahy before calculating the upper limit. 
 
         Parameters
         ----------
