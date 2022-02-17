@@ -1621,7 +1621,7 @@ class Lightcurve(StingrayTimeseries):
         filename: str
             Path and file name for the file to be read.
 
-        format\_: str
+        fmt: str
             Available options are 'pickle', 'hea', and any `Table`-supported
             format such as 'hdf5', 'ascii.ecsv', etc.
 
@@ -1646,7 +1646,7 @@ class Lightcurve(StingrayTimeseries):
                 "Use fmt instead", DeprecationWarning)
             fmt = format_
 
-        if fmt == 'hea':
+        if fmt.lower() in ('hea', 'ogip'):
             data = lcurve_from_fits(filename)
             data.update({'err_dist': err_dist, 'skip_checks': skip_checks})
             return Lightcurve(**data)

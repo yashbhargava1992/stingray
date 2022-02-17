@@ -156,7 +156,6 @@ class Powerspectrum(Crossspectrum):
             The newly binned power spectrum.
         """
         bin_ps = Crossspectrum.rebin(self, df=df, f=f, method=method)
-        print("What happens here")
         bin_ps.nphots = bin_ps.nphots1
 
         return bin_ps

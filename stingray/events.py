@@ -522,9 +522,15 @@ class EventList(StingrayTimeseries):
         filename: str
             Path and file name for the file to be read.
 
-        format\_: str
+        fmt: str
             Available options are 'pickle', 'hea', and any `Table`-supported
             format such as 'hdf5', 'ascii.ecsv', etc.
+
+        Other parameters
+        ----------------
+        kwargs : dict
+            Any further keyword arguments to be passed to `load_events_and_gtis`
+            for reading in event lists in OGIP/HEASOFT format
 
         Returns
         -------

@@ -89,7 +89,7 @@ class StingrayObject(object):
         return meta_dict
 
     def to_astropy_table(self):
-        """Save the Stingray Object to an Astropy Table.
+        """Create an Astropy Table from a ``StingrayObject``
 
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
         ``EventList``) are converted into columns, while meta attributes
@@ -144,7 +144,7 @@ class StingrayObject(object):
         return cls
 
     def to_xarray(self):
-        """Save the :class:`StingrayObject` to an xarray Dataset.
+        """Create an ``xarray`` Dataset from a `StingrayObject`.
 
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
         ``EventList``) are converted into columns, while meta attributes
@@ -166,7 +166,7 @@ class StingrayObject(object):
 
     @classmethod
     def from_xarray(cls, ts):
-        """Create an `EventList` object from data in an xarray Dataset.
+        """Create a `StingrayObject` from data in an xarray Dataset.
 
         The dataset MUST contain at least a column named like the
         ``main_array_attr``.
@@ -202,7 +202,7 @@ class StingrayObject(object):
         return cls
 
     def to_pandas(self):
-        """Save the :class:`StingrayObject` to a pandas DataFrame.
+        """Create a pandas ``DataFrame`` from a :class:`StingrayObject`.
 
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
         ``EventList``) are converted into columns, while meta attributes
@@ -283,8 +283,8 @@ class StingrayObject(object):
             Complex values can be dealt with out-of-the-box in some formats
             like HDF5 or FITS, not in others (e.g. all ASCII formats).
             With these formats, and in any case when fmt is ``None``, complex
-            values should be stored as two real columns ending with ".real" and
-            ".imag".
+            values should be stored as two columns of real numbers, whose names
+            are of the format <variablename>.real and <variablename>.imag
 
         Parameters
         ----------
@@ -363,8 +363,8 @@ class StingrayObject(object):
             Complex values can be dealt with out-of-the-box in some formats
             like HDF5 or FITS, not in others (e.g. all ASCII formats).
             With these formats, and in any case when fmt is ``None``, complex
-            values will be stored as two real columns ending with ".real" and
-            ".imag".
+            values will be stored as two columns of real numbers, whose names
+            are of the format <variablename>.real and <variablename>.imag
 
         Parameters
         ----------
@@ -406,11 +406,17 @@ class StingrayObject(object):
 
 class StingrayTimeseries(StingrayObject):
     def to_astropy_timeseries(self):
-        """Save the event list to an Astropy timeseries.
+        """Save the ``StingrayTimeseries`` to an ``Astropy`` timeseries.
 
         Array attributes (time, pi, energy, etc.) are converted
         into columns, while meta attributes (mjdref, gti, etc.)
         are saved into the ``meta`` dictionary.
+
+        Returns
+        -------
+        ts : `astropy.timeseries.TimeSeries`
+            A ``TimeSeries`` object with the array attributes as columns,
+            and the meta attributes in the `meta` dictionary
         """
         from astropy.timeseries import TimeSeries
         from astropy.time import TimeDelta
@@ -439,7 +445,7 @@ class StingrayTimeseries(StingrayObject):
 
     @classmethod
     def from_astropy_timeseries(cls, ts):
-        """Create a `StingrayObject` from data in an Astropy TimeSeries
+        """Create a `StingrayTimeseries` from data in an Astropy TimeSeries
 
         The timeseries has to define at least a column called time,
         the rest of columns will form the array attributes of the
@@ -449,6 +455,16 @@ class StingrayTimeseries(StingrayObject):
         It is strongly advisable to define such attributes and columns
         using the standard attributes of EventList: time, pi, energy, gti etc.
 
+        Parameters
+        ----------
+        ts : `astropy.timeseries.TimeSeries`
+            A ``TimeSeries`` object with the array attributes as columns,
+            and the meta attributes in the `meta` dictionary
+
+        Returns
+        -------
+        ts : `StingrayTimeseries`
+            Timeseries object
         """
 
         time = ts["time"]
@@ -471,9 +487,10 @@ class StingrayTimeseries(StingrayObject):
         return cls
 
     def change_mjdref(self, new_mjdref):
-        """Change the MJD reference time (MJDREF) of the light curve.
+        """Change the MJD reference time (MJDREF) of the time series
 
-        Times will be now referred to this new MJDREF
+        The times of the time series will be shifted in order to be referred to
+        this new MJDREF
 
         Parameters
         ----------
@@ -482,18 +499,17 @@ class StingrayTimeseries(StingrayObject):
 
         Returns
         -------
-        new_lc : :class:`EventList` object
-            The new LC shifted by MJDREF
+        new_lc : :class:`StingrayTimeseries` object
+            The new time series, shifted by MJDREF
         """
         time_shift = (self.mjdref - new_mjdref) * 86400
 
-        new_ev = self.shift(time_shift)
-        new_ev.mjdref = new_mjdref
-        return new_ev
+        ts = self.shift(time_shift)
+        ts.mjdref = new_mjdref
+        return ts
 
     def shift(self, time_shift):
-        """
-        Shift the events and the GTIs in time.
+        """Shift the time and the GTIs by the same amount
 
         Parameters
         ----------
@@ -503,19 +519,37 @@ class StingrayTimeseries(StingrayObject):
 
         Returns
         -------
-        new_ev : lightcurve.Lightcurve object
-            The new event list shifted by ``time_shift``
+        ts : ``StingrayTimeseries`` object
+            The new time series shifted by ``time_shift``
 
         """
-        new_ev = copy.deepcopy(self)
-        new_ev.time = new_ev.time + time_shift
-        new_ev.gti = new_ev.gti + time_shift
+        ts = copy.deepcopy(self)
+        ts.time = ts.time + time_shift
+        ts.gti = ts.gti + time_shift
 
-        return new_ev
+        return ts
 
 
 def interpret_times(time, mjdref=0):
-    """Get time interval in seconds from an astropy Time object
+    """Understand the format of input times, and return seconds from MJDREF
+
+    Parameters
+    ----------
+    time : class:`astropy.Time`, class:`time.Time`, class:`astropy.TimeDelta`, class:`astropy.Quantity`, class:`np.array`
+        Input times.
+
+    Other Parameters
+    ----------------
+    mjdref : float
+        Input MJD reference of the times. Optional.
+
+    Returns
+    -------
+    time_s : class:`np.array`
+        Times, in seconds from MJDREF
+    mjdref : float
+        MJDREF. If the input time is a `time.Time` object and the input mjdref
+        is 0, it will be defined as the MJD of the input time.
 
     Examples
     --------
