@@ -103,10 +103,8 @@ or from within a python interpreter:
 Documentation
 -------------
 
-The documentation including tutorials is hosted on `readthedocs <https://stingray.readthedocs.io>`_
-The documentation uses `sphinx <http://www.sphinx-doc.org/en/stable/>`_ to build and requires a couple
-of extensions (most notably `nbsphinx <http://nbsphinx.readthedocs.io/en/0.3.1/>`_ and the
-`astropy helpers <https://github.com/astropy/astropy-helpers>`_).
+The documentation including tutorials is hosted `here <https://docs.stingray.science/>`_.
+The documentation uses `sphinx <https://www.sphinx-doc.org/en/stable/>`_ to build and requires the extension sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`_.
 
 You can build the API reference yourself by going into the ``docs`` folder within the ``stingray`` root
 directory and running the ``Makefile``: ::
