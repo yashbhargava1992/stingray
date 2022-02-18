@@ -890,8 +890,8 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     Parameters
     ----------
-    lc : :class:`stingray.Lightcurve` object
-        The time series of which the Dynamical powerspectrum is
+    lc : :class:`stingray.Lightcurve` or :class:`stingray.EventList` object
+        The time series or event list of which the Dynamical powerspectrum is
         to be calculated.
 
     segment_size : float, default 1
