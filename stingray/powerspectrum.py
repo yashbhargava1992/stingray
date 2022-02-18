@@ -890,8 +890,8 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     Parameters
     ----------
-    lc : :class:`stingray.Lightcurve` object
-        The time series of which the Dynamical powerspectrum is
+    lc : :class:`stingray.Lightcurve` or :class:`stingray.EventList` object
+        The time series or event list of which the Dynamical powerspectrum is
         to be calculated.
 
     segment_size : float, default 1
@@ -935,6 +935,12 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     """
 
     def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
+        if isinstance(lc, EventList) and dt is None:
+            raise ValueError("To pass an input event lists, please specify dt")
+
+        if isinstance(lc, EventList):
+            lc = lc.to_lc(dt)
+
         if segment_size < 2 * lc.dt:
             raise ValueError("Length of the segment is too short to form a "
                              "light curve!")

@@ -920,6 +920,18 @@ class TestDynamicalPowerspectrum(object):
         with pytest.raises(ValueError):
             dps = DynamicalPowerspectrum(self.lc, segment_size=0)
 
+    def test_works_with_events(self):
+        lc = copy.deepcopy(self.lc)
+        lc.counts = np.floor(lc.counts)
+        ev = EventList.from_lc(lc)
+        dps = DynamicalPowerspectrum(lc, segment_size=10)
+        with pytest.raises(ValueError):
+            # Without dt, it fails
+            _ = DynamicalPowerspectrum(ev, segment_size=10)
+
+        dps_ev = DynamicalPowerspectrum(ev, segment_size=10, dt=self.lc.dt)
+        assert np.allclose(dps.dyn_ps, dps_ev.dyn_ps)
+
     def test_with_long_seg_size(self):
         with pytest.raises(ValueError):
             dps = DynamicalPowerspectrum(self.lc, segment_size=1000)
