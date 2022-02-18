@@ -179,7 +179,8 @@ class TestAll(object):
         period = 1
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
-            ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True, gti=gti)
+            ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True,
+                                    gti=gti)
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
                                              0.5/nbin)
@@ -195,7 +196,7 @@ class TestAll(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True,
-                                gti=gti)
+                                    gti=gti)
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
                                              0.5/nbin)
