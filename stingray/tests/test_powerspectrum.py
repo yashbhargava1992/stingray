@@ -48,6 +48,16 @@ class TestAveragedPowerspectrumEvents(object):
 
         assert np.isclose(acs_comm.power.std(), acs.power.std(), rtol=0.1)
 
+    @pytest.mark.parametrize("norm", ["frac", "leahy", "none", "abs"])
+    def test_modulation_upper_limit(self, norm):
+        val = 70
+        unnorm_val = 70 * self.leahy_pds.nphots / 2
+        pds = copy.deepcopy(self.leahy_pds)
+        pds.power[25] = val
+        pds.unnorm_power[25] = unnorm_val
+        pds_norm = pds.to_norm(norm)
+        assert np.isclose(pds_norm.modulation_upper_limit(2, 5, 0.99), 0.5412103, atol=1e-4)
+
     def test_legacy_equivalent(self):
         leahy_pds = AveragedPowerspectrum(
             self.lc, segment_size=self.segment_size, dt=self.dt, norm="leahy", silent=True, legacy=True)
