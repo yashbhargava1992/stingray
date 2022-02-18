@@ -39,6 +39,11 @@ class CrossCorrelation(object):
         See the relevant ``scipy`` documentation [scipy-docs]_
         for more details.
 
+    norm: {``none``, ``variance``}
+        if "variance", the cross correlation is normalized so that perfect
+        correlation gives 1, and perfect anticorrelation gives -1. See
+        Gaskell \& Peterson 1987, Gardner \& Done 2017
+
     Attributes
     ----------
     lc1: :class:`stingray.Lightcurve`
@@ -70,15 +75,19 @@ class CrossCorrelation(object):
     auto: bool
         An internal flag to indicate whether this is a cross-correlation or an auto-correlation.
 
+    norm: {``none``, ``variance``}
+        The normalization specified in input
+
     References
     ----------
     .. [scipy-docs] https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
 
     """
 
-    def __init__(self, lc1=None, lc2=None, cross=None, mode='same'):
+    def __init__(self, lc1=None, lc2=None, cross=None, mode='same', norm="none"):
 
         self.auto = False
+        self.norm = norm
         if isinstance(mode, str) is False:
             raise TypeError("mode must be a string")
 
@@ -187,9 +196,21 @@ class CrossCorrelation(object):
         lc2_counts = self.lc2.counts - np.mean(self.lc2.counts)
 
         # Calculates cross-correlation of two lightcurves
-        self.corr = signal.correlate(lc1_counts, lc2_counts, self.mode)
-        self.n = len(self.corr)
+        self.corr = \
+            signal.correlate(lc1_counts, lc2_counts, self.mode)
+
+        self.n = np.size(self.corr)
         self.time_shift, self.time_lags, self.n = self.cal_timeshift(dt=self.dt)
+
+        # Normalization that makes the maximum correlation equal to 1, and
+        # maximum anticorrelation -1.
+        if self.norm == "variance":
+            # Note that self.corr is normalized so that the maximum is
+            # proportional to the number of bins in the first input
+            # light curve. Hence, the division by the lc size
+            variance1 = np.var(lc1.counts) - np.mean(lc1.counts_err)**2
+            variance2 = np.var(lc2.counts) - np.mean(lc2.counts_err)**2
+            self.corr = self.corr / np.sqrt(variance1 * variance2) / lc1_counts.size
 
     def cal_timeshift(self, dt=1.0):
         """
@@ -212,7 +233,6 @@ class CrossCorrelation(object):
         """
         if self.dt is None:
             self.dt = dt
-
         if self.corr is None:
             if (self.lc1 is None or self.lc2 is None) and (self.cross is None):
                 raise StingrayError('Please provide either two lightcurve objects or \

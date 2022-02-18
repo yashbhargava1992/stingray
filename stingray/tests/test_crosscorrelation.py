@@ -14,6 +14,30 @@ import matplotlib.pyplot as plt
 
 
 
+class TestCrossCorrelationBase(object):
+    @classmethod
+    def setup_class(cls):
+        dt = 0.01
+        length = 10000
+        gti = [[0, length]]
+        times = np.arange(dt/2, length, dt)
+        freq = 1 / 50
+        flux1 = 0.5 + 0.5 * np.sin(2 * np.pi * freq * times)
+        flux2 = 0.5 + 0.5 * np.sin(2 * np.pi * freq * (times - 20))
+
+        cls.lc1 = Lightcurve(times, flux1, dt=dt, err_dist="gauss", gti=gti, skip_checks=True)
+        cls.lc2 = Lightcurve(times, flux2, dt=dt, err_dist="gauss", gti=gti, skip_checks=True)
+
+    def test_crosscorr(self):
+        cr = CrossCorrelation(self.lc1, self.lc2)
+        assert np.isclose(cr.time_shift, -20, atol=0.1)
+
+    def test_crosscorr_norm(self):
+        cr = CrossCorrelation(self.lc1, self.lc2, norm="variance")
+        assert np.isclose(cr.time_shift, -20, atol=0.1)
+        assert np.isclose(np.max(cr.corr), 1, atol=0.01)
+        assert np.isclose(np.min(cr.corr), -1, atol=0.01)
+
 class TestCrossCorrelation(object):
     @classmethod
     def setup_class(cls):
