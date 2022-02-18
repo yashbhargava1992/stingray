@@ -115,7 +115,7 @@ def pulse_phase(times, *frequency_derivatives, **opts):
     return ph
 
 
-def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
+def phase_exposure(start_time, stop_time, period, nbin=16, gti=None):
     """Calculate the exposure on each phase of a pulse profile.
 
     Parameters
@@ -129,7 +129,7 @@ def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
     ----------------
     nbin : int, optional, default 16
         The number of bins in the profile
-    gtis : [[gti00, gti01], [gti10, gti11], ...], optional, default None
+    gti : [[gti00, gti01], [gti10, gti11], ...], optional, default None
         Good Time Intervals
 
     Returns
@@ -138,14 +138,14 @@ def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
         The normalized exposure of each bin in the pulse profile (1 is the
         highest exposure, 0 the lowest)
     """
-    if gtis is None:
-        gtis = np.array([[start_time, stop_time]])
+    if gti is None:
+        gti = np.array([[start_time, stop_time]])
 
     # Use precise floating points -------------
     start_time = np.longdouble(start_time)
     stop_time = np.longdouble(stop_time)
     period = np.longdouble(period)
-    gtis = np.array(gtis, dtype=np.longdouble)
+    gti = np.array(gti, dtype=np.longdouble)
     # -----------------------------------------
 
     expo = np.zeros(nbin)
@@ -153,10 +153,10 @@ def phase_exposure(start_time, stop_time, period, nbin=16, gtis=None):
     phs = np.array(list(zip(phs[0:-1], phs[1:])))
 
     # Discard gtis outside [start, stop]
-    good = np.logical_and(gtis[:, 0] < stop_time, gtis[:, 1] > start_time)
-    gtis = gtis[good]
+    good = np.logical_and(gti[:, 0] < stop_time, gti[:, 1] > start_time)
+    gti = gti[good]
 
-    for g in gtis:
+    for g in gti:
         g0 = g[0]
         g1 = g[1]
         if g0 < start_time:
@@ -215,7 +215,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     weights : float or array of floats, optional
         The weights of the data. It can either be specified as a single value
         for all points, or an array with the same length as ``time``
-    gtis : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...], optional
+    gti : [[gti0_0, gti0_1], [gti1_0, gti1_1], ...], optional
         Good time intervals
     ref_time : float, optional, default 0
         Reference time for the timing solution
@@ -234,7 +234,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     '''
     nbin = _default_value_if_no_key(opts, "nbin", 16)
     weights = _default_value_if_no_key(opts, "weights", 1)
-    gtis = _default_value_if_no_key(opts, "gtis",
+    gti = _default_value_if_no_key(opts, "gti",
                                     np.array([[times[0], times[-1]]]))
     ref_time = _default_value_if_no_key(opts, "ref_time", 0)
     expocorr = _default_value_if_no_key(opts, "expocorr", False)
@@ -242,7 +242,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     if not isinstance(weights, Iterable):
         weights *= np.ones(len(times))
 
-    gtis = gtis - ref_time
+    gti = gti - ref_time
     times = times - ref_time
     # This dt has not the same meaning as in the Lightcurve case.
     # it's just to define stop_time as a meaningful value after
@@ -252,7 +252,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     stop_time = times[-1] + dt
 
     phases = pulse_phase(times, *frequency_derivatives, to_1=True)
-    gti_phases = pulse_phase(gtis, *frequency_derivatives, to_1=False)
+    gti_phases = pulse_phase(gti, *frequency_derivatives, to_1=False)
     start_phase, stop_phase = pulse_phase(np.array([start_time, stop_time]),
                                           *frequency_derivatives,
                                           to_1=False)
@@ -262,7 +262,7 @@ def fold_events(times, *frequency_derivatives, **opts):
 
     if expocorr:
         expo_norm = phase_exposure(start_phase, stop_phase, 1, nbin,
-                                   gtis=gti_phases)
+                                   gti=gti_phases)
         simon("For exposure != 1, the uncertainty might be incorrect")
     else:
         expo_norm = 1
