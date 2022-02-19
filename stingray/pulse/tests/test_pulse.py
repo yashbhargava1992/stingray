@@ -132,10 +132,10 @@ class TestAll(object):
     def test_phase_exposure3(self):
         start_time = 0
         stop_time = 1
-        gtis = np.array([[0, 0.5]])
+        gti = np.array([[0, 0.5]])
         period = 1
         nbin = 16
-        expo = phase_exposure(start_time, stop_time, period, nbin, gtis=gtis)
+        expo = phase_exposure(start_time, stop_time, period, nbin, gti=gti)
         expected = np.ones(nbin)
         expected[nbin//2:] = 0
         np.testing.assert_array_almost_equal(expo, expected)
@@ -143,10 +143,10 @@ class TestAll(object):
     def test_phase_exposure4(self):
         start_time = 0
         stop_time = 1
-        gtis = np.array([[-0.2, 1.2]])
+        gti = np.array([[-0.2, 1.2]])
         period = 1
         nbin = 16
-        expo = phase_exposure(start_time, stop_time, period, nbin, gtis=gtis)
+        expo = phase_exposure(start_time, stop_time, period, nbin, gti=gti)
         expected = np.ones(nbin)
         np.testing.assert_array_almost_equal(expo, expected)
 
@@ -168,12 +168,13 @@ class TestAll(object):
         nbin = 16
         dt = 1/nbin
         times = np.arange(0, 2, dt)
-        gtis = np.array([[-0.5*dt, 2 + 0.5*dt]])
+        gti = np.array([[-0.5*dt, 2 + 0.5*dt]])
 
         period = 1
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
-            ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True, gtis=gtis)
+            ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True,
+                                    gti=gti)
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
                                              0.5/nbin)
@@ -184,12 +185,12 @@ class TestAll(object):
         nbin = 16
         dt = 1/nbin
         times = np.arange(0, 2 - dt, dt)
-        gtis = np.array([[-0.5*dt, 2 - dt]])
+        gti = np.array([[-0.5*dt, 2 - dt]])
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             ph, p, pe = fold_events(times, 1, nbin=nbin, expocorr=True,
-                                gtis=gtis)
+                                    gti=gti)
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin)/nbin +
                                              0.5/nbin)
