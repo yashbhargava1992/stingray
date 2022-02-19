@@ -238,7 +238,9 @@ def fold_events(times, *frequency_derivatives, **opts):
     # initial and final event
     gti = _default_value_if_no_key(opts, "gti", None)
     if gti is None:
-        gti = np.array([[times[0], times[-1]]])
+        gti = [[times[0], times[-1]]]
+    # Be safe if gtis are a list
+    gti = np.asarray(gti)
     ref_time = _default_value_if_no_key(opts, "ref_time", 0)
     expocorr = _default_value_if_no_key(opts, "expocorr", False)
 
