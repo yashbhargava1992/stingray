@@ -13,6 +13,7 @@ import numpy as np
 import numpy.random as ra
 from astropy.table import Table
 
+from .base import StingrayObject, StingrayTimeseries
 from .filters import get_deadtime_mask
 from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_boundaries
 from .io import load_events_and_gtis
@@ -22,7 +23,7 @@ from .utils import assign_value_if_none, simon, interpret_times
 __all__ = ['EventList']
 
 
-class EventList(object):
+class EventList(StingrayTimeseries):
     """
     Basic class for event list data. Event lists generally correspond to individual events (e.g. photons)
     recorded by the detector, and their associated properties. For X-ray data where this type commonly occurs,
@@ -127,12 +128,13 @@ class EventList(object):
         The full header of the original FITS file, if relevant
 
     """
-
+    main_array_attr = "time"
     def __init__(self, time=None, energy=None, ncounts=None, mjdref=0, dt=0,
                  notes="", gti=None, pi=None, high_precision=False,
                  mission=None, instr=None, header=None, detector_id=None,
                  ephem=None, timeref=None, timesys=None,
                  **other_kw):
+        StingrayObject.__init__(self)
 
         self.energy = None if energy is None else np.asarray(energy)
         self.notes = notes
@@ -165,67 +167,6 @@ class EventList(object):
         if (self.time is not None) and (self.energy is not None):
             if self.time.size != self.energy.size:
                 raise ValueError('Lengths of time and energy must be equal.')
-
-    def array_attrs(self):
-        """List the names of the array attributes of the event list.
-
-        By array attributes, we mean the ones with the same size and shape as
-        ``self.time``
-
-        Examples
-        --------
-        For an empty eventlist, this will be an empty list.
-        >>> ev = EventList()
-        >>> attrs = ev.array_attrs()
-        >>> len(attrs)
-        0
-
-        Otherwise, it will contain all attrs with the same shape as ``time``.
-        >>> ev = EventList(time=np.arange(5), pi=np.zeros(5), gti=[[45, 4]])
-        >>> attrs = ev.array_attrs()
-        >>> len(attrs)
-        2
-        >>> "pi" in attrs and "time" in attrs
-        True
-        >>> hasattr(ev, "gti") #  The gti attribute is set, however...
-        True
-        >>> "gti" in attrs #  The shape of self.gti is not equal to time! Not an array attr
-        False
-        """
-        if self.time is None:
-            return []
-
-        return [
-            attr for attr in dir(self)
-            if (
-                isinstance(getattr(self, attr), Iterable)
-                and np.shape(getattr(self, attr)) == self.time.shape
-            )
-        ]
-
-    def meta_attrs(self):
-        """List the names of the meta attributes of the event list.
-
-        By meta attributes, we mean the ones with a different size and shape
-        than ``self.time``
-
-        Examples
-        --------
-        >>> ev = EventList(time=np.arange(5), pi=np.zeros(5), gti=[[45, 4]])
-        >>> attrs = ev.meta_attrs()
-        >>> "pi" in attrs or "time" in attrs
-        False
-        >>> "gti" in attrs #  The shape of self.gti is not equal to time! Not an array attr
-        True
-        """
-        array_attrs = self.array_attrs()
-        return [
-            attr for attr in dir(self)
-            if (
-                attr not in array_attrs and not attr.startswith("_") and
-                not callable(getattr(self, attr))
-            )
-        ]
 
     def to_lc(self, dt, tstart=None, tseg=None):
         """
@@ -556,8 +497,8 @@ class EventList(object):
 
         return ev_new
 
-    @staticmethod
-    def read(filename, format_="pickle", **kwargs):
+    @classmethod
+    def read(cls, filename, fmt=None, format_=None, **kwargs):
         r"""Read a :class:`EventList` object from file.
 
         Currently supported formats are
@@ -581,20 +522,28 @@ class EventList(object):
         filename: str
             Path and file name for the file to be read.
 
-        format\_: str
+        fmt: str
             Available options are 'pickle', 'hea', and any `Table`-supported
             format such as 'hdf5', 'ascii.ecsv', etc.
+
+        Other parameters
+        ----------------
+        kwargs : dict
+            Any further keyword arguments to be passed to `load_events_and_gtis`
+            for reading in event lists in OGIP/HEASOFT format
 
         Returns
         -------
         ev: :class:`EventList` object
             The :class:`EventList` object reconstructed from file
         """
-        if format_.lower() == 'pickle':
-            with open(filename, 'rb') as fobj:
-                return pickle.load(fobj)
+        if fmt is None and format_ is not None:
+            warnings.warn(
+                "The format_ keyword for read and write is deprecated. "
+                "Use fmt instead", DeprecationWarning)
+            fmt = format_
 
-        if format_.lower() in ('hea', 'ogip'):
+        if fmt.lower() in ('hea', 'ogip'):
             evtdata = load_events_and_gtis(filename, **kwargs)
 
             evt = EventList(time=evtdata.ev_list,
@@ -615,45 +564,7 @@ class EventList(object):
                         setattr(evt, key.lower(), evtdata.additional_data[key])
             return evt
 
-        if format_.lower() == 'ascii':
-            format_ = 'ascii.ecsv'
-
-        ts = Table.read(filename, format=format_)
-        return EventList.from_astropy_table(ts)
-
-    def write(self, filename, format_='pickle'):
-        """
-        Write an :class:`EventList` object to file.
-
-        Possible file formats are
-
-        * pickle (not recommended for long-term storage)
-        * any other formats compatible with the writers in
-          :class:`astropy.table.Table` (ascii.ecsv, hdf5, etc.)
-
-        Parameters
-        ----------
-        filename: str
-            Name and path of the file to save the event list to..
-
-        format_: str
-            The file format to store the data in.
-            Available options are ``pickle``, ``hdf5``, ``ascii``, ``fits``
-        """
-        if format_ == 'pickle':
-            with open(filename, "wb") as fobj:
-                pickle.dump(self, fobj)
-            return
-
-        if format_ == 'ascii':
-            format_ = 'ascii.ecsv'
-
-        ts = self.to_astropy_table()
-        try:
-            ts.write(filename, format=format_, overwrite=True,
-                     serialize_meta=True)
-        except TypeError:
-            ts.write(filename, format=format_, overwrite=True)
+        return super().read(filename=filename, fmt=fmt)
 
     def filter_energy_range(self, energy_range, inplace=False, use_pi=False):
         """Filter the event list from a given energy range.
@@ -799,245 +710,3 @@ class EventList(object):
 
         return new_ev
 
-    def change_mjdref(self, new_mjdref):
-        """Change the MJD reference time (MJDREF) of the light curve.
-
-        Times will be now referred to this new MJDREF
-
-        Parameters
-        ----------
-        new_mjdref : float
-            New MJDREF
-
-        Returns
-        -------
-        new_lc : :class:`EventList` object
-            The new LC shifted by MJDREF
-        """
-        time_shift = (self.mjdref - new_mjdref) * 86400
-
-        new_ev = self.shift(time_shift)
-        new_ev.mjdref = new_mjdref
-        return new_ev
-
-    def shift(self, time_shift):
-        """
-        Shift the events and the GTIs in time.
-
-        Parameters
-        ----------
-        time_shift: float
-            The time interval by which the light curve will be shifted (in
-            the same units as the time array in :class:`Lightcurve`
-
-        Returns
-        -------
-        new_ev : lightcurve.Lightcurve object
-            The new event list shifted by ``time_shift``
-
-        """
-        new_ev = copy.deepcopy(self)
-        new_ev.time = new_ev.time + time_shift
-        new_ev.gti = new_ev.gti + time_shift
-
-        return new_ev
-
-    def get_meta_dict(self):
-        """Give a dictionary with all non-None meta attributes."""
-        meta_attrs = self.meta_attrs()
-        meta_dict = {}
-        for key in meta_attrs:
-            val = getattr(self, key)
-            if val is not None:
-                meta_dict[key] = val
-        return meta_dict
-
-    def to_astropy_timeseries(self):
-        """Save the event list to an Astropy timeseries.
-
-        Array attributes (time, pi, energy, etc.) are converted
-        into columns, while meta attributes (mjdref, gti, etc.)
-        are saved into the ``meta`` dictionary.
-        """
-        from astropy.timeseries import TimeSeries
-        from astropy.time import TimeDelta
-        from astropy import units as u
-        data = {}
-        array_attrs = self.array_attrs()
-
-        for attr in array_attrs:
-            if attr == "time":
-                continue
-            data[attr] = np.asarray(getattr(self, attr))
-
-        if data == {}:
-            data = None
-
-        if self.time is not None and self.time.size > 0:
-            times = TimeDelta(self.time * u.s)
-            ts = TimeSeries(data=data, time=times)
-        else:
-            ts = TimeSeries()
-
-        ts.meta.update(self.get_meta_dict())
-
-        return ts
-
-    @staticmethod
-    def from_astropy_timeseries(ts):
-        """Create an `EventList` object from data in an Astropy TimeSeries
-
-        The timeseries has to define at least a column called time,
-        the rest of columns will form the array attributes of the
-        new event list, while the attributes in table.meta will
-        form the new meta attributes of the event list.
-
-        It is strongly advisable to define such attributes and columns
-        using the standard attributes of EventList: time, pi, energy, gti etc.
-
-        """
-        kwargs = dict([(key.lower(), val) for (key, val) in ts.meta.items()])
-        ev = EventList(time=ts.time, **kwargs)
-        array_attrs = ts.colnames
-
-        for attr in array_attrs:
-            if attr == "time":
-                continue
-            setattr(ev, attr, ts[attr])
-
-        return ev
-
-    def to_astropy_table(self):
-        """Save the event list to an Astropy Table.
-
-        Array attributes (time, pi, energy, etc.) are converted
-        into columns, while meta attributes (mjdref, gti, etc.)
-        are saved into the ``meta`` dictionary.
-        """
-        data = {}
-        array_attrs = self.array_attrs()
-
-        for attr in array_attrs:
-            data[attr] = np.asarray(getattr(self, attr))
-
-        ts = Table(data)
-
-        ts.meta.update(self.get_meta_dict())
-
-        return ts
-
-    @staticmethod
-    def from_astropy_table(ts):
-        """Create an `EventList` object from data in an Astropy Table.
-
-        The table has to define at least a column called time,
-        the rest of columns will form the array attributes of the
-        new event list, while the attributes in table.meta will
-        form the new meta attributes of the event list.
-
-        It is strongly advisable to define such attributes and columns
-        using the standard attributes of EventList: time, pi, energy, gti etc.
-
-        """
-        kwargs = dict([(key.lower(), val) for (key, val) in ts.meta.items()])
-        ev = EventList(time=ts["time"], **kwargs)
-        array_attrs = ts.colnames
-
-        for attr in array_attrs:
-            if attr == "time":
-                continue
-            setattr(ev, attr, ts[attr])
-
-        return ev
-
-    def to_xarray(self):
-        """Save the event list to an xarray Dataset.
-
-        Array attributes (time, pi, energy, etc.) are converted
-        into columns, while meta attributes (mjdref, gti, etc.)
-        are saved into the ``ds.attrs`` dictionary.
-        """
-        from xarray import Dataset
-        data = {}
-        array_attrs = self.array_attrs()
-
-        for attr in array_attrs:
-            data[attr] = np.asarray(getattr(self, attr))
-
-        ts = Dataset(data)
-
-        ts.attrs.update(self.get_meta_dict())
-
-        return ts
-
-    @staticmethod
-    def from_xarray(ts):
-        """Create an `EventList` object from data in an xarray Dataset.
-
-        The dataset has to define at least a column called time,
-        the rest of columns will form the array attributes of the
-        new event list, while the attributes in ds.attrs will
-        form the new meta attributes of the event list.
-
-        It is strongly advisable to define such attributes and columns
-        using the standard attributes of EventList: time, pi, energy, gti etc.
-
-        """
-        array_attrs = ts.coords
-
-        kwargs = dict([(key.lower(), val)
-                      for (key, val) in ts.attrs.items() if key not in array_attrs])
-        ev = EventList(time=ts["time"].values, **kwargs)
-
-        for attr in array_attrs:
-            if attr == "time":
-                continue
-            setattr(ev, attr, ts[attr].values)
-
-        return ev
-
-    def to_pandas(self):
-        """Save the event list to a pandas DataFrame.
-
-        Array attributes (time, pi, energy, etc.) are converted
-        into columns, while meta attributes (mjdref, gti, etc.)
-        are saved into the ``ds.attrs`` dictionary.
-        """
-        from pandas import DataFrame
-        data = {}
-        array_attrs = self.array_attrs()
-
-        for attr in array_attrs:
-            data[attr] = np.asarray(getattr(self, attr))
-
-        ts = DataFrame(data)
-
-        ts.attrs.update(self.get_meta_dict())
-
-        return ts
-
-    @staticmethod
-    def from_pandas(ts):
-        """Create an `EventList` object from data in a pandas DataFrame.
-
-        The dataframe has to define at least a column called time,
-        the rest of columns will form the array attributes of the
-        new event list, while the attributes in ds.attrs will
-        form the new meta attributes of the event list.
-
-        It is strongly advisable to define such attributes and columns
-        using the standard attributes of EventList: time, pi, energy, gti etc.
-
-        """
-        array_attrs = ts.columns
-
-        kwargs = dict([(key.lower(), val)
-                      for (key, val) in ts.attrs.items() if key not in array_attrs])
-        ev = EventList(time=ts["time"].to_numpy(), **kwargs)
-
-        for attr in array_attrs:
-            if attr == "time":
-                continue
-            setattr(ev, attr, ts[attr].to_numpy())
-
-        return ev

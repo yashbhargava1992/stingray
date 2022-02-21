@@ -34,7 +34,7 @@ class TestSimulator(object):
         self.transfer.time_response(e0=3.3, e1=4.7)
 
     def test_time_response_with_incorrect_ranges(self):
-        """Test that incorrect energy ranges raises a 
+        """Test that incorrect energy ranges raises a
         Value Error.
         """
         with pytest.raises(ValueError):
@@ -72,8 +72,8 @@ class TestSimulator(object):
         os.remove('response.png')
 
     def test_io_with_pickle(self):
-        self.transfer.write('transfer.pickle', format_='pickle')
-        tr = self.transfer.read('transfer.pickle', format_='pickle')
+        self.transfer.write('transfer.pickle', fmt='pickle')
+        tr = self.transfer.read('transfer.pickle', fmt='pickle')
         assert (tr.data == self.transfer.data).all()
         os.remove('transfer.pickle')
 

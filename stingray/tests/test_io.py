@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 
 from astropy.tests.helper import pytest
 
-from ..io import read, write, split_numbers
+from ..io import split_numbers
 from ..io import ref_mjd
 from ..io import high_precision_keyword_read
 from ..io import load_events_and_gtis, read_mission_info
-from ..io import read_header_key, _retrieve_ascii_object
+from ..io import read_header_key
 
 import warnings
 
@@ -162,132 +162,6 @@ class TmpIOReadWrite(object):
 
 
 class TestFileFormats(object):
-
-    def test_pickle_read_write(self):
-        test_object = TmpIOReadWrite()
-        write(test_object, filename='test.pickle', format_='pickle')
-        assert read('test.pickle', 'pickle') is not None
-        os.remove('test.pickle')
-
-    def test_pickle_attributes(self):
-        """Test if pickle maintains class object attributes."""
-        test_object = TmpIOReadWrite()
-        write(test_object, filename='test.pickle', format_='pickle')
-        rec_object = read('test.pickle', 'pickle')
-        assert rec_object.number == test_object.number
-        assert rec_object.str == test_object.str
-        assert rec_object.list == test_object.list
-        assert (rec_object.array == test_object.array).all()
-        assert rec_object.long_number == test_object.long_number
-        assert (rec_object.long_array == test_object.long_array).all()
-
-        os.remove('test.pickle')
-
-    def test_pickle_functions(self):
-        """Test if pickle maintains class methods."""
-        test_object = TmpIOReadWrite()
-        write(test_object,'test.pickle', 'pickle')
-        assert read('test.pickle', 'pickle').test_operation() == test_object.number * 10
-        os.remove('test.pickle')
-
-    @skip_condition
-    def test_hdf5_write(self):
-        test_object = TmpIOReadWrite()
-        write(test_object, 'test.hdf5', 'hdf5')
-        os.remove('test.hdf5')
-
-    @skip_condition
-    def test_hdf5_read(self):
-        test_object = TmpIOReadWrite()
-        write(test_object, 'test.hdf5', 'hdf5')
-        read('test.hdf5','hdf5')
-        os.remove('test.hdf5')
-
-    @skip_condition
-    def test_hdf5_data_recovery(self):
-        test_object = TmpIOReadWrite()
-        write(test_object, 'test.hdf5', 'hdf5')
-        rec_object = read('test.hdf5','hdf5')
-
-        assert rec_object['number'] == test_object.number
-        assert rec_object['str'] == test_object.str
-        assert (rec_object['list'] == test_object.list).all()
-        assert (rec_object['array'] == np.array(test_object.array)).all()
-        assert rec_object['long_number'] == np.double(test_object.long_number)
-        assert (rec_object['long_array'] == np.double(np.array(test_object.long_array))).all()
-
-        os.remove('test.hdf5')
-
-    def test_save_ascii(self):
-        time = [1, 2, 3, 4]
-        counts = [2, 3, 41, 4]
-
-        write(np.array([time, counts]).T, "ascii_test.txt",
-              "ascii")
-
-        os.remove("ascii_test.txt")
-
-    def test_save_ascii_with_mixed_types(self):
-        time = ["bla", 1, 2, 3]
-        counts = [2,3,41,4]
-        with pytest.raises(Exception):
-             write(np.array([time, counts]).T,
-                   "ascii_test.txt", "ascii")
-
-    def test_save_ascii_with_format(self):
-        time = ["bla", 1, 2, 3]
-        counts = [2,3,41,4]
-        write(np.array([time, counts]).T,
-              filename="ascii_test.txt", format_="ascii",
-              fmt=["%s", "%s"])
-
-    def test_retrieve_bad(self):
-        with pytest.raises(TypeError):
-            _retrieve_ascii_object(1)
-
-    def test_read_ascii(self):
-        time = [1,2,3,4,5]
-        counts = [5,7,8,2,3]
-        np.savetxt("ascii_test.txt", np.array([time, counts]).T)
-        read("ascii_test.txt", "ascii")
-        os.remove("ascii_test.txt")
-
-    def test_fits_write(self):
-        test_object = TmpIOReadWrite()
-        with warnings.catch_warnings(record=True) as w:
-            write(test_object, 'test.fits', 'fits')
-        os.remove('test.fits')
-
-    def test_fits_read(self):
-        test_object = TmpIOReadWrite()
-        with warnings.catch_warnings(record=True) as w:
-            write(test_object, 'test.fits', 'fits')
-            read('test.fits','fits',cols=['array','number','long_number'])
-        os.remove('test.fits')
-
-    def test_fits_with_multiple_tables(self):
-        test_object = TmpIOReadWrite()
-        with warnings.catch_warnings(record=True) as w:
-            write(test_object, 'test.fits', 'fits', tnames=['EVENTS', 'GTI'],
-                colsassign={'number':'GTI', 'array':'GTI'})
-        os.remove('test.fits')
-
-    def test_fits_data_recovery(self):
-        test_object = TmpIOReadWrite()
-        with warnings.catch_warnings(record=True) as w:
-            write(test_object, 'test.fits', 'fits')
-            rec_object = read('test.fits', 'fits', cols = ['number', 'str', 'list',
-                'array','long_array','long_number'])
-
-        assert rec_object['NUMBER'] == test_object.number
-        assert rec_object['STR'] == test_object.str
-        assert (rec_object['LIST'] == test_object.list).all()
-        assert (rec_object['ARRAY'] == np.array(test_object.array)).all()
-        assert rec_object['LONG_NUMBER'] == np.double(test_object.long_number)
-        assert (rec_object['LONG_ARRAY'] == np.double(np.array(test_object.long_array))).all()
-
-        del rec_object
-        os.remove('test.fits')
 
     def test_savefig_without_plot(self):
         from ..io import savefig

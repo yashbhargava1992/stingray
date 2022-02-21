@@ -1,5 +1,6 @@
 import numpy as np
 import warnings
+from stingray.base import StingrayObject
 from stingray.gti import check_separate, cross_two_gtis
 
 from stingray.lightcurve import Lightcurve
@@ -123,7 +124,8 @@ def _decode_energy_specification(energy_spec):
     return energies
 
 
-class VarEnergySpectrum(metaclass=ABCMeta):
+class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
+    main_array_attr = "energy"
     """
     Base class for variability-energy spectrum.
 
@@ -411,6 +413,18 @@ class VarEnergySpectrum(metaclass=ABCMeta):
     @abstractmethod
     def _spectrum_function(self):
         pass
+
+    def from_astropy_table(self, *args, **kwargs):
+        raise NotImplementedError(
+            "from_XXXX methods are not implemented for VarEnergySpectrum")
+
+    def from_xarray(self, *args, **kwargs):
+        raise NotImplementedError(
+            "from_XXXX methods are not implemented for VarEnergySpectrum")
+
+    def from_pandas(self, *args, **kwargs):
+        raise NotImplementedError(
+            "from_XXXX methods are not implemented for VarEnergySpectrum")
 
 
 class RmsSpectrum(VarEnergySpectrum):

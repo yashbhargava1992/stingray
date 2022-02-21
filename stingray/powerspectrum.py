@@ -32,6 +32,7 @@ __all__ = ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]
 
 
 class Powerspectrum(Crossspectrum):
+    type = "powerspectrum"
     """
     Make a :class:`Powerspectrum` (also called periodogram) from a (binned) light curve.
     Periodograms can be normalized by either Leahy normalization, fractional rms
@@ -619,7 +620,9 @@ class Powerspectrum(Crossspectrum):
         self.n = None
         return
 
+
 class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
+    type = "powerspectrum"
     """
     Make an averaged periodogram from a light curve by segmenting the light
     curve, Fourier-transforming each segment and then averaging the
@@ -877,6 +880,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
 
 class DynamicalPowerspectrum(AveragedPowerspectrum):
+    type = "powerspectrum"
     """
     Create a dynamical power spectrum, also often called a *spectrogram*.
 

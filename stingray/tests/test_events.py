@@ -44,6 +44,7 @@ class TestEvents(object):
 
     @classmethod
     def setup_class(self):
+        np.random.seed(57239875)
         self.time = [0.5, 1.5, 2.5, 3.5]
         self.counts = [3000, 2000, 2200, 3600]
         self.counts_flat = [3000, 3000, 3000, 3000]
@@ -113,13 +114,14 @@ class TestEvents(object):
         lc_sim = ev.to_lc(dt=lc.dt, tstart=lc.tstart, tseg=lc.tseg)
         assert np.all((lc - lc_sim).counts < 3 * np.sqrt(lc.counts))
 
-    def test_simulate_times_with_spline(self):
+    @pytest.mark.parametrize("use_spline", [True, False])
+    def test_simulate_times(self, use_spline):
         """Simulate photon arrival times, with use_spline option
         enabled.
         """
         lc = Lightcurve(self.time, self.counts_flat, gti=self.gti)
         ev = EventList()
-        ev.simulate_times(lc, use_spline=True)
+        ev.simulate_times(lc, use_spline=use_spline)
         lc_sim = ev.to_lc(dt=lc.dt, tstart=lc.tstart, tseg=lc.tseg)
         assert np.all((lc - lc_sim).counts < 3 * np.sqrt(lc.counts))
 
@@ -318,34 +320,43 @@ class TestEvents(object):
         assert np.allclose(ev_new.gti, np.array([[5, 6]]))
 
     @pytest.mark.skipif('not (_HAS_YAML)')
+    def test_io_warns(self):
+        ev = EventList(self.time)
+        with pytest.warns(DeprecationWarning):
+            ev.write('ascii_ev.ecsv', format_='pickle')
+
+        with pytest.warns(DeprecationWarning):
+            ev = ev.read('ascii_ev.ecsv', format_='pickle')
+
+    @pytest.mark.skipif('not (_HAS_YAML)')
     def test_io_with_ascii(self):
         ev = EventList(self.time)
-        ev.write('ascii_ev.ecsv', format_='ascii')
-        ev = ev.read('ascii_ev.ecsv', format_='ascii')
+        ev.write('ascii_ev.ecsv', fmt='ascii')
+        ev = ev.read('ascii_ev.ecsv', fmt='ascii')
         print(ev.time, self.time)
         assert np.allclose(ev.time, self.time)
         os.remove('ascii_ev.ecsv')
 
     def test_io_with_pickle(self):
         ev = EventList(self.time, mjdref=54000)
-        ev.write('ev.pickle', format_='pickle')
-        ev = ev.read('ev.pickle', format_='pickle')
+        ev.write('ev.pickle', fmt='pickle')
+        ev = ev.read('ev.pickle', fmt='pickle')
         assert np.allclose(ev.time, self.time)
         os.remove('ev.pickle')
 
     @pytest.mark.skipif("not _H5PY_INSTALLED")
     def test_io_with_hdf5(self):
         ev = EventList(time=self.time, mjdref=54000)
-        ev.write('ev.hdf5', format_='hdf5')
+        ev.write('ev.hdf5', fmt='hdf5')
 
-        ev = ev.read('ev.hdf5', format_='hdf5')
+        ev = ev.read('ev.hdf5', fmt='hdf5')
         assert np.allclose(ev.time, self.time)
         os.remove('ev.hdf5')
 
     def test_io_with_fits(self):
         ev = EventList(time=self.time, mjdref=54000)
-        ev.write('ev.fits', format_='fits')
-        ev = ev.read('ev.fits', format_='fits')
+        ev.write('ev.fits', fmt='fits')
+        ev = ev.read('ev.fits', fmt='fits')
         assert np.allclose(ev.time, self.time)
         os.remove('ev.fits')
 
@@ -355,7 +366,7 @@ class TestEvents(object):
         """
         fname = os.path.join(datadir, 'monol_testA.evt')
         ev = EventList()
-        ev = ev.read(fname, format_='hea')
+        ev = ev.read(fname, fmt='hea')
         assert np.isclose(ev.mjdref, 55197.00076601852)
 
     def test_fits_with_additional(self):
@@ -364,7 +375,7 @@ class TestEvents(object):
         """
         fname = os.path.join(datadir, 'xmm_test.fits')
         ev = EventList()
-        ev = ev.read(fname, format_='hea', additional_columns=['PRIOR'])
+        ev = ev.read(fname, fmt='hea', additional_columns=['PRIOR'])
         assert hasattr(ev, 'prior')
 
     def test_timeseries_empty_evts(self):

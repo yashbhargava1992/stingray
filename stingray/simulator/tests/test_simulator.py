@@ -615,8 +615,9 @@ class TestSimulator(object):
     def test_io_with_unsupported_format(self):
         sim = Simulator(N=self.N, dt=self.dt, rms=self.rms, mean=self.mean)
         with pytest.raises(KeyError):
+            # Also use the deprecated format_, just because
             sim.write('sim.hdf5', format_='hdf5')
+        sim.write('sim.pickle', fmt='pickle')
         with pytest.raises(KeyError):
-            sim.write('sim.pickle', format_='pickle')
             sim.read('sim.pickle', format_='hdf5')
         os.remove('sim.pickle')

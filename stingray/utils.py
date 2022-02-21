@@ -10,11 +10,9 @@ from collections.abc import Iterable
 
 import numpy as np
 import scipy
-from astropy.time import Time, TimeDelta
-import astropy.units as u
-from astropy.units import Quantity
 from numpy import histogram as histogram_np
 from numpy import histogram2d as histogram2d_np
+from .base import interpret_times
 
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
@@ -219,7 +217,7 @@ def rebin_data(x, y, dx_new, yerr=None, method='sum', dx=None):
     xbin = np.arange(xedges[0], xedges[-1]+dx_new, dx_new)
 
     output = np.zeros(xbin.shape[0] - 1, dtype=type(y[0]))
-    outputerr = np.zeros(xbin.shape[0] - 1, dtype=type(y[0]))
+    outputerr = np.zeros(xbin.shape[0] - 1, dtype=type(yerr[0]))
     step_size = np.zeros(xbin.shape[0] - 1)
 
     all_x = np.searchsorted(xedges, xbin)
@@ -1060,84 +1058,6 @@ def genDataPath(dir_path):
 
     else:
         raise IOError(("Directory does not exist."))
-
-
-def interpret_times(time, mjdref=0):
-    """Get time interval in seconds from an astropy Time object
-
-    Examples
-    --------
-    >>> time = Time(57483, format='mjd')
-    >>> newt, mjdref = interpret_times(time)
-    >>> newt == 0
-    True
-    >>> mjdref == 57483
-    True
-    >>> time = Time([57483], format='mjd')
-    >>> newt, mjdref = interpret_times(time)
-    >>> np.allclose(newt, 0)
-    True
-    >>> mjdref == 57483
-    True
-    >>> time = TimeDelta([3, 4, 5] * u.s)
-    >>> newt, mjdref = interpret_times(time)
-    >>> np.allclose(newt, [3, 4, 5])
-    True
-    >>> time = np.array([3, 4, 5])
-    >>> newt, mjdref = interpret_times(time, mjdref=45000)
-    >>> np.allclose(newt, [3, 4, 5])
-    True
-    >>> mjdref == 45000
-    True
-    >>> time = np.array([3, 4, 5] * u.s)
-    >>> newt, mjdref = interpret_times(time, mjdref=45000)
-    >>> np.allclose(newt, [3, 4, 5])
-    True
-    >>> mjdref == 45000
-    True
-    >>> newt, mjdref = interpret_times(1, mjdref=45000)
-    >>> newt == 1
-    True
-    >>> newt, mjdref = interpret_times(list, mjdref=45000)
-    Traceback (most recent call last):
-    ...
-    ValueError: Unknown time format: ...
-    >>> newt, mjdref = interpret_times("guadfkljfd", mjdref=45000)
-    Traceback (most recent call last):
-    ...
-    ValueError: Unknown time format: ...
-    """
-    if isinstance(time, TimeDelta):
-        out_times = time.to('s').value
-        return out_times, mjdref
-
-    if isinstance(time, Time):
-        mjds = time.mjd
-        if mjdref == 0:
-            if np.all(mjds > 10000):
-                if isinstance(mjds, Iterable):
-                    mjdref = mjds[0]
-                else:
-                    mjdref = mjds
-
-        out_times = (mjds - mjdref) * 86400
-        return out_times, mjdref
-
-    if isinstance(time, Quantity):
-        out_times = time.to('s').value
-        return out_times, mjdref
-
-    if isinstance(time, (tuple, list, np.ndarray)):
-        return time, mjdref
-
-    if not isinstance(time, Iterable):
-        try:
-            float(time)
-            return time, mjdref
-        except (ValueError, TypeError):
-            pass
-
-    raise ValueError(f"Unknown time format: {type(time)}")
 
 
 def check_iterables_close(iter0, iter1, **kwargs):

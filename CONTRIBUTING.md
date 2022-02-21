@@ -83,7 +83,9 @@ Code Reviews are super-useful: another contributor can review the code, which me
 - **Imports:**
     - Absolute imports are to be used in general. The exception to this is relative imports of the form `from . import modulename`, this convention makes it clearer what code is from the current sub-module as opposed to from another. It is best to use when referring to files within the same sub-module.
     - The import `numpy as np`, `import scipy as sp`, `import matplotlib as mpl`, and `import matplotlib.pyplot as plt` naming conventions should be used wherever relevant. `from packagename import *` should never be used, except as a tool to flatten the namespace of a module.
-- **Variable access in Classes:** Classes should either use direct variable access, or Python’s property mechanism for setting object instance variables. `get_value/set_value` style methods should be used only when getting and setting the values requires a computationally-expensive operation.
+- **Variable access in Classes:**
+    - Classes should either use direct variable access, or Python’s property mechanism for setting object instance variables. `get_value/set_value` style methods should be used only when getting and setting the values requires a computationally-expensive operation.
+    - Attribute names should be descriptive if possible, use names of desserts otherwise (e.g. for dummy test classes)
 - **super() function:** Classes should use the built-in `super()` function when making calls to methods in their super-class(es) unless there are specific reasons not to. `super()` should be used consistently in all sub-classes since it does not work otherwise.
 - **Multiple Inheritance:** Multiple inheritance should be avoided in general without good reason.
 - **__init__.py:** The `__init__.py` files for modules should not contain any significant implementation code.  `__init__.py` can contain docstrings and code for organizing the module layout, however if a module is small enough that it fits in one file, it should simply be a single file, rather than a directory with an  `__init__.py` file.
