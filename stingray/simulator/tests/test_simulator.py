@@ -4,7 +4,7 @@ import os
 from scipy.interpolate import interp1d
 from astropy.tests.helper import pytest
 import astropy.modeling.models
-from stingray import Lightcurve, Crossspectrum, sampledata
+from stingray import Lightcurve, Crossspectrum, sampledata, Powerspectrum
 from stingray.simulator import Simulator
 from stingray.simulator import models
 
@@ -154,15 +154,39 @@ class TestSimulator(object):
         with pytest.raises(TypeError):
             simulator = Simulator()
 
-    def test_rms_and_mean(self):
-        nsim = 1000
-        lc_all = [self.simulator.simulate(-2.0) for i in range(nsim)]
+    @pytest.mark.parametrize("model_kind", ["astropy", "array", "float"])
+    def test_rms_and_mean(self, model_kind):
+        np.random.seed(103442357)
+        nbins = 8192
+        dt = 1/128
+        mean = 100
+        rms = 0.2
+        nsim = 128
+        astropy_model = astropy.modeling.models.PowerLaw1D(alpha=2)
+        if model_kind == "astropy":
+            model = astropy_model
+        elif model_kind == "array":
+            freq_fine = np.fft.rfftfreq(nbins, d=dt)[1:]
+            model = astropy_model(freq_fine)
+        elif model_kind == "float":
+            model = 2.0
+
+        lc_all = [self.simulator.simulate(model) for i in range(nsim)]
 
         mean_all = np.mean([np.mean(lc.counts) for lc in lc_all])
         std_all = np.mean([np.std(lc.counts) for lc in lc_all])
 
-        assert np.isclose(mean_all, self.mean, rtol=0.1)
-        assert np.isclose(std_all/mean_all, self.rms, rtol=0.1)
+        assert np.isclose(mean_all, self.mean, rtol=0.001)
+        assert np.isclose(std_all/mean_all, self.rms, rtol=0.001)
+
+        pds_all = [Powerspectrum(lc_all[i]) for i in range(nsim)]
+        pds = pds_all[0]
+        model_compare = (mc := astropy_model(pds.freq)) / (np.sum(mc) * pds.df) * rms**2
+
+        ratios = [pds.power / model_compare for pds in pds_all]
+        assert np.all([np.mean(rat) / (np.std(rat) * 3) < 1 for rat in ratios])
+
+
 
     def test_rms_zero_mean(self):
         nsim = 1000

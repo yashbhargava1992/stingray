@@ -52,8 +52,8 @@ jobs:
 
           # Test with the various supported releases of Astropy.
           - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-astropy4'
+            python: '3.8'
+            tox_env: 'py38-test-astropy4'
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'py310-test-astropy5'
