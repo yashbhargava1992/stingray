@@ -610,7 +610,9 @@ def load_events_and_gtis(
     ephem = timeref = timesys = None
 
     if "PLEPHEM" in header:
-        ephem = header["PLEPHEM"].strip().lstrip('JPL-').lower()
+        # For the rare cases where this is a number, e.g. 200, I add `str`
+        # It's supposed to be a string.
+        ephem = str(header["PLEPHEM"]).strip().lstrip('JPL-').lower()
     if "TIMEREF" in header:
         timeref = header["TIMEREF"].strip().lower()
     if "TIMESYS" in header:
