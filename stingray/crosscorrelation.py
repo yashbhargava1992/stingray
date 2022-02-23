@@ -2,12 +2,7 @@ import warnings
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
-
-try:
-    from pyfftw.interfaces.scipy_fft import ifft, fftfreq
-except ImportError:
-    warnings.warn("pyfftw not installed. Using standard scipy fft")
-    from scipy.fft import ifft, fftfreq
+from stingray.utils import ifft, fftfreq
 
 from stingray.lightcurve import Lightcurve
 from stingray.crossspectrum import Crossspectrum, AveragedCrossspectrum

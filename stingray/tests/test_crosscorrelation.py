@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.fft
 
 import pytest
 import warnings
@@ -9,6 +8,7 @@ from stingray import Lightcurve
 from stingray import Crossspectrum
 from stingray.crosscorrelation import CrossCorrelation, AutoCorrelation
 from stingray.exceptions import StingrayError
+from stingray.utils import ifft, fftfreq
 
 import matplotlib.pyplot as plt
 
@@ -100,9 +100,9 @@ class TestCrossCorrelation(object):
     def test_crossparam_input(self):
         # need to create new results to check against
         spec = Crossspectrum(self.lc1, self.lc2, fullspec=True)
-        ifft = abs(scipy.fft.ifft(spec.power).real)
-        time = scipy.fft.fftfreq(len(ifft), spec.df)
-        time, resultifft = (list(t) for t in zip(*sorted(zip(time, ifft))))
+        iff = abs(ifft(spec.power).real)
+        time = fftfreq(len(iff), spec.df)
+        time, resultifft = (list(t) for t in zip(*sorted(zip(time, iff))))
         cr2 = CrossCorrelation(cross=spec)
         lags_result = np.array([-2, -1, 0, 1, 2])
 

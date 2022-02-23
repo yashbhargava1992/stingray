@@ -14,6 +14,19 @@ from numpy import histogram as histogram_np
 from numpy import histogram2d as histogram2d_np
 from .base import interpret_times
 
+try:
+    import pyfftw
+    from pyfftw.interfaces.numpy_fft import (
+        ifft, fft, fftfreq, fftn, ifftn, fftshift, fft2, ifftshift, rfft, rfftfreq)
+
+    pyfftw.interfaces.cache.enable()
+    HAS_PYFFTW = True
+except ImportError:
+    warnings.warn("pyfftw not installed. Using standard scipy fft")
+    from numpy.fft import (
+        ifft, fft, fftfreq, fftn, ifftn, fftshift, fft2, ifftshift, rfft, rfftfreq)
+    HAS_PYFFTW = False
+
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
