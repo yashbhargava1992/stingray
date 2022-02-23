@@ -3,11 +3,7 @@ import numpy as np
 from scipy.signal import fftconvolve
 from .ols import prepareh, olsStep, ols, nextprod
 
-try:
-    from pyfftw.interfaces.numpy_fft import fft, fftfreq, fftn, ifftn
-    HAS_PYFFTW = True
-except ImportError:
-    HAS_PYFFTW = False
+from stingray.utils import fft, fftfreq, fftn, ifftn, HAS_PYFFTW
 
 
 @pytest.mark.skipif("not HAS_PYFFTW")

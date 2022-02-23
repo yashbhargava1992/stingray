@@ -7,16 +7,7 @@ from astropy.table import Table
 
 from .gti import (generate_indices_of_segment_boundaries_binned,
                   generate_indices_of_segment_boundaries_unbinned)
-from .utils import histogram, show_progress, sum_if_not_none_or_initialize
-
-try:
-    import pyfftw
-    from pyfftw.interfaces.numpy_fft import fft, fftfreq
-
-    pyfftw.interfaces.cache.enable()
-except ImportError:
-    warnings.warn("pyfftw not installed. Using standard scipy fft")
-    from scipy.fft import fft, fftfreq
+from .utils import histogram, show_progress, sum_if_not_none_or_initialize, fft, fftfreq
 
 
 def positive_fft_bins(n_bin, include_zero=False):

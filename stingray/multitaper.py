@@ -6,16 +6,15 @@ from stingray.powerspectrum import Powerspectrum
 import warnings
 
 import numpy as np
-import scipy
 import scipy.optimize
 import scipy.stats
-from scipy import signal, fft, interpolate
+from scipy import signal, interpolate
 
 from astropy.timeseries import LombScargle
 
 from .events import EventList
 from .lightcurve import Lightcurve
-from .utils import rebin_data, simon
+from .utils import rebin_data, simon, fft, rfft, rfftfreq
 
 __all__ = [
     "Multitaper"
@@ -335,7 +334,7 @@ class Multitaper(Powerspectrum):
         data_multitaper = np.tile(data_multitaper, (len(eigvals), 1))
         data_multitaper = np.multiply(data_multitaper, dpss_tapers)
 
-        freq_response = scipy.fft.rfft(data_multitaper, n=lc.n)
+        freq_response = rfft(data_multitaper, n=lc.n)
 
         # Adjust DC and maybe Nyquist, depending on one-sided transform
         freq_response[..., 0] /= np.sqrt(2.)
@@ -343,7 +342,7 @@ class Multitaper(Powerspectrum):
             freq_response[..., -1] /= np.sqrt(2.)
 
         freq_response = freq_response[..., 1:-1]
-        freq_multitaper = scipy.fft.rfftfreq(lc.n, d=lc.dt)[1:-1]
+        freq_multitaper = rfftfreq(lc.n, d=lc.dt)[1:-1]
 
         if adaptive:
             psd_multitaper, weights_multitaper = \
@@ -767,7 +766,7 @@ class Multitaper(Powerspectrum):
         # freq_mtls = freq_mtls[1:]
 
         # The frequencies rest of Stingray uses
-        freq_multitaper_ls = fft.rfftfreq(
+        freq_multitaper_ls = rfftfreq(
             n=lc.n, d=lc.dt)[1:-1]  # Avoiding zero
 
         for values in dpss_data_interpolated:

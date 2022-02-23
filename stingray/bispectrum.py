@@ -5,16 +5,11 @@ from scipy.linalg import toeplitz
 import warnings
 import matplotlib.pyplot as plt
 
-try:
-    from pyfftw.interfaces.scipy_fft import fftshift, fft2, ifftshift, fft
-except ImportError:
-    warnings.warn("pyfftw not installed. Using standard scipy fft")
-    from scipy.fft import fftshift, fft2, ifftshift, fft
-
 from  scipy.linalg import hankel
 
 from stingray import lightcurve
 import stingray.utils as utils
+from stingray.utils import fftshift, fft2, ifftshift, fft
 
 __all__ = ["Bispectrum"]
 

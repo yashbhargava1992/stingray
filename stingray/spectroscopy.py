@@ -1,13 +1,12 @@
 import numpy as np
 from scipy.stats import binned_statistic
-from scipy.fft import fft, ifft
 from scipy.optimize import brent
 
 
 from astropy.table import Table
 from astropy.modeling.models import Lorentz1D
 from stingray import Lightcurve, Crossspectrum
-from stingray.utils import standard_error, find_nearest
+from stingray.utils import standard_error, find_nearest, fft, ifft
 from stingray.filters import Optimal1D, Window1D
 
 

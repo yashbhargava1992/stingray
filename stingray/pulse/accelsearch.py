@@ -17,18 +17,9 @@ except ImportError:
     def show_progress(a, **kwargs):
         return a
 
-try:
-    import pyfftw
-    from pyfftw.interfaces.numpy_fft import fft, fftfreq, fftn, ifftn
-    HAS_PYFFTW = True
-except ImportError:
-    warnings.warn("Using standard numpy fft")
-    from scipy.fft import fft, fftfreq, fftn, ifftn
-    HAS_PYFFTW = False
-
 from stingray.pulse.overlapandsave.ols import ols
 
-from ..utils import njit
+from ..utils import njit, fft, fftfreq, fftn, ifftn, HAS_PYFFTW
 from ..stats import pds_probability, pds_detection_level
 from ..gti import create_gti_mask
 
