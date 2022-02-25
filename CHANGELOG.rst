@@ -1,28 +1,54 @@
 Changelog
 =========
 
-Not Yet Released
-----------------
+v1.0beta (2022-02-25)
+---------------------
+TL,DR: these things will break your code with v1.0beta:
 
-- A new infrastructure for converting ``EventList`` and ``LightCurve`` objects into Astropy ``TimeSeries``
-- A new infrastructure for converting most ``Stingray`` classes into Astropy ``Table`` objects
-- Save and load of most ``Stingray`` classes to/from many different file formats (``pickle``, ``ECSV``, ``HDF5``, ``FITS``, and all formats compatible with Astropy Table)
-- Accept input ``EventList`` in ``DynamicalPowerSpectrum``
+- Python version < 3.8
+- The `gtis` keyword in `pulse/pulsar.py` (it is now `gti`, without the 's')
+
+New
+^^^
+- Dropped support to Python < 3.8
+- Multi-taper periodogram, including a Lomb-Scargle implementation for non-uniformly sampled data
+- Create Count rate spectrum when calculating spectral-timing products
+- Make modulation upper limit in ``(Averaged)Powerspectrum`` work with any normalization (internally converts to Leahy for the calculation)
 - Implement Gardner-Done normalization (1 for perfect correlation, -1 for perfect anticorrelation) for ``Auto/Crosscorrelation``
-- Make modulation upper limit in ``(Averaged)Powerspectrum`` work with any normalization
-- Dropped support to Python <3.8
-- Multi-taper periodogram, including a Lomb-Scargle implementation for non-uniformly sampled data.
-- Upper limits on pulsations in periodograms and Z searches
-- New stingray.fourier module containing the basic timing products, usable on ``numpy`` arrays
-- Lots of performance improvements in the ``AveragedCrossspectrum`` and ``AveragedPowerspectrum`` classes
-- New methods in ``Crossspectrum`` and ``Powerspectrum`` to load data from specific inputs: ``from_events``, ``from_lightcurve``, ``from_time_array``, ``from_lc_list``
-    - ``from_time_array`` was also tested using memory-mapped event lists as inputs: useful in very large datasets
+- New infrastructure for converting ``EventList`` and ``LightCurve`` objects into Astropy ``TimeSeries``
+- New infrastructure for converting most ``Stingray`` classes into Astropy ``Table`` objects
+- Save and load of most ``Stingray`` classes to/from many different file formats (``pickle``, ``ECSV``, ``HDF5``, ``FITS``, and all formats compatible with Astropy Table)
+- Accept input ``EventList`` in ``DynamicalPowerSpectrum`` 
+- New ``stingray.fourier`` module containing the basic timing products, usable on ``numpy`` arrays, and centralizes fft import
+- New methods in ``Crossspectrum`` and ``Powerspectrum`` to load data from specific inputs: ``from_events``, ``from_lightcurve``, ``from_time_array``, ``from_lc_list`` (``from_time_array`` was also tested using memory-mapped event lists as inputs: useful in very large datasets)
 - New and improved spectral timing methods: ``ComplexCovarianceSpectrum``, ``CovarianceSpectrum``, ``LagSpectrum``, ``RmsSpectrum``
-- Improved error bars on cross-spectral and spectral timing methods
-- Some deprecated features are now removed
+- Some depreciated features are now removed
 - ``PSDLogLikelihood`` now also works with a log-rebinned PDS
+
+Improvements
+^^^^^^^^^^^^
+- Performance on large data sets is VASTLY improved
+- Lots of performance improvements in the ``AveragedCrossspectrum`` and ``AveragedPowerspectrum`` classes
+- Standardized use of new fast psd/cs algorithm, with ``legacy`` still available as an alternative option to specify
+- Reading calibrated photon energy from event files by default
+- In ``pulse/pulsar.py``, methods use the keyword ``gti`` instead of ``gtis`` (for consistency with the rest of Stingray)
+- Moved ``CovarianceSpectrum` to ``VarEnergySpectrum`` and reuse part of the machinery
+- Improved error bars on cross-spectral and spectral timing methods
+- Measure absolute rms in ``RmsEnergySpectrum``
+- Friendlier ``pyfftw`` warnings
+- Streamline PDS/CrossSp production, adding ``from_events``, ``from_lc``, ``from_lc_iterable``, and ``from_time_array`` (to input a numpy array) methods
 - PDS/CrossSp initially store the unnormalized power, and convert it on the fly when requested, to any normalization
-- Lots of bug fixes
+
+Bug fixes
+^^^^^^^^^
+- Fixed error bars and ``err_dist`` for sliced (iterated) light curves and power spectra
+- Fixed a bug in how the start time when applying GTIs (now using the minimum value of the GTI array, instead of half a time bin below the minimum value)
+- All simulator errors are zero
+- Fixed coherence uncertainty
+- Documented a Windows-specific issue when large count rate light curves are defined as integer arrays (Windows users should use ``float`` or specify ``int-64``)
+- If the variance of the lightcurve is zero, the code will fail to implement Leahy normalization
+- The value of the ``PLEPHEM`` header keyword is forced to be a string, in the rare cases that it's a number
+- and more!
 
 `Full list of changes`__
 
