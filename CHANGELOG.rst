@@ -16,13 +16,13 @@ New
 - Make modulation upper limit in ``(Averaged)Powerspectrum`` work with any normalization (internally converts to Leahy for the calculation)
 - Implement Gardner-Done normalization (1 for perfect correlation, -1 for perfect anticorrelation) for ``Auto/Crosscorrelation``
 - New infrastructure for converting ``EventList`` and ``LightCurve`` objects into Astropy ``TimeSeries``
-- New infrastructure for converting most ``Stingray`` classes into Astropy ``Table`` objects
+- New infrastructure for converting most ``Stingray`` classes into Astropy ``Table`` objects, ``xarray`` and ``pandas`` data frames.
 - Save and load of most ``Stingray`` classes to/from many different file formats (``pickle``, ``ECSV``, ``HDF5``, ``FITS``, and all formats compatible with Astropy Table)
 - Accept input ``EventList`` in ``DynamicalPowerSpectrum`` 
 - New ``stingray.fourier`` module containing the basic timing products, usable on ``numpy`` arrays, and centralizes fft import
 - New methods in ``Crossspectrum`` and ``Powerspectrum`` to load data from specific inputs: ``from_events``, ``from_lightcurve``, ``from_time_array``, ``from_lc_list`` (``from_time_array`` was also tested using memory-mapped event lists as inputs: useful in very large datasets)
 - New and improved spectral timing methods: ``ComplexCovarianceSpectrum``, ``CovarianceSpectrum``, ``LagSpectrum``, ``RmsSpectrum``
-- Some depreciated features are now removed
+- Some deprecated features are now removed
 - ``PSDLogLikelihood`` now also works with a log-rebinned PDS
 
 Improvements
