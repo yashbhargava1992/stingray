@@ -193,9 +193,14 @@ class CrossCorrelation(object):
         # Calculates cross-correlation of two lightcurves
         self.corr = \
             signal.correlate(lc1_counts, lc2_counts, self.mode)
+        # Obtains correlation lags 
+        x_lags = \
+            signal.correlation_lags(lc1_counts.size, lc2_counts.size, self.mode)
 
         self.n = np.size(self.corr)
-        self.time_shift, self.time_lags, self.n = self.cal_timeshift(dt=self.dt)
+        self.time_lags = x_lags * self.dt
+        # time_shift is the time lag for max. correlation
+        self.time_shift = self.time_lags[np.argmax(self.corr)]
 
         # Normalization that makes the maximum correlation equal to 1, and
         # maximum anticorrelation -1.
