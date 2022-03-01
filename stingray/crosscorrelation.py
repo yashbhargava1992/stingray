@@ -76,7 +76,7 @@ class CrossCorrelation(object):
     References
     ----------
     .. [scipy-docs] https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
-
+    .. [scipy-docs] https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlation_lags.html
     """
 
     def __init__(self, lc1=None, lc2=None, cross=None, mode='same', norm="none"):
@@ -156,6 +156,7 @@ class CrossCorrelation(object):
         """
         Do some checks on the light curves supplied to the method, and then calculate the time
         shifts, time lags and cross correlation.
+        The method signal.correlation_lags() uses SciPy versions >= 1.6.1
 
         Parameters
         ----------
@@ -194,6 +195,7 @@ class CrossCorrelation(object):
         self.corr = \
             signal.correlate(lc1_counts, lc2_counts, self.mode)
         # Obtains correlation lags 
+        # signal.correlation_lags() method uses SciPy versions >= 1.6.1
         x_lags = \
             signal.correlation_lags(lc1_counts.size, lc2_counts.size, self.mode)
 
