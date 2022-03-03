@@ -6,13 +6,13 @@ v1.0beta (2022-02-25)
 TL,DR: these things will break your code with v1.0beta:
 
 - Python version < 3.8
-- The `gtis` keyword in `pulse/pulsar.py` (it is now `gti`, without the 's')
+- The ``gtis`` keyword in `pulse/pulsar.py` (it is now ``gti``, without the 's')
 
 New
 ^^^
 - Dropped support to Python < 3.8
 - Multi-taper periodogram, including a Lomb-Scargle implementation for non-uniformly sampled data
-- Create Count rate spectrum when calculating spectral-timing products
+- Create count-rate spectrum when calculating spectral-timing products
 - Make modulation upper limit in ``(Averaged)Powerspectrum`` work with any normalization (internally converts to Leahy for the calculation)
 - Implement Gardner-Done normalization (1 for perfect correlation, -1 for perfect anticorrelation) for ``Auto/Crosscorrelation``
 - New infrastructure for converting ``EventList`` and ``LightCurve`` objects into Astropy ``TimeSeries``
