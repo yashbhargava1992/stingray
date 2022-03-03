@@ -13,11 +13,11 @@ New
 - Dropped support to Python < 3.8
 - Multi-taper periodogram, including a Lomb-Scargle implementation for non-uniformly sampled data
 - Create count-rate spectrum when calculating spectral-timing products
-- Make modulation upper limit in ``(Averaged)Powerspectrum`` work with any normalization (internally converts to Leahy for the calculation)
+- Make modlation upper limit in ``(Averaged)Powerspectrum`` work with any normalization (internally converts to Leahy for the calculation)
 - Implement Gardner-Done normalization (1 for perfect correlation, -1 for perfect anticorrelation) for ``Auto/Crosscorrelation``
 - New infrastructure for converting ``EventList`` and ``LightCurve`` objects into Astropy ``TimeSeries``
-- New infrastructure for converting most ``Stingray`` classes into Astropy ``Table`` objects, ``xarray`` and ``pandas`` data frames.
-- Save and load of most ``Stingray`` classes to/from many different file formats (``pickle``, ``ECSV``, ``HDF5``, ``FITS``, and all formats compatible with Astropy Table)
+- New infrastructure for converting most Stingray classes into Astropy ``Table`` objects, Xarray and Pandas data frames.
+- Save and load of most Stingray classes to/from many different file formats (``pickle``, ``ECSV``, ``HDF5``, ``FITS``, and all formats compatible with Astropy Table)
 - Accept input ``EventList`` in ``DynamicalPowerSpectrum`` 
 - New ``stingray.fourier`` module containing the basic timing products, usable on ``numpy`` arrays, and centralizes fft import
 - New methods in ``Crossspectrum`` and ``Powerspectrum`` to load data from specific inputs: ``from_events``, ``from_lightcurve``, ``from_time_array``, ``from_lc_list`` (``from_time_array`` was also tested using memory-mapped event lists as inputs: useful in very large datasets)
@@ -43,7 +43,7 @@ Bug fixes
 ^^^^^^^^^
 - Fixed error bars and ``err_dist`` for sliced (iterated) light curves and power spectra
 - Fixed a bug in how the start time when applying GTIs (now using the minimum value of the GTI array, instead of half a time bin below the minimum value)
-- All simulator errors are zero
+- Fixed a bug in which all simulator errors were incorrectly non-zero
 - Fixed coherence uncertainty
 - Documented a Windows-specific issue when large count rate light curves are defined as integer arrays (Windows users should use ``float`` or specify ``int-64``)
 - If the variance of the lightcurve is zero, the code will fail to implement Leahy normalization
@@ -52,7 +52,7 @@ Bug fixes
 
 `Full list of changes`__
 
-__ https://github.com/StingraySoftware/stingray/compare/v0.3...main
+__ https://github.com/StingraySoftware/stingray/compare/v0.3...v1.0-beta
 
 v0.3 (2021-05-31)
 -----------------
