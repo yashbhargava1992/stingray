@@ -252,3 +252,29 @@ class TestCrossCorrelation(object):
         assert np.isclose(ac.time_shift, 0.0)
         assert ac.mode == 'full'
         assert ac.auto is True
+        
+    def test_cross_correlation_with_identical_lc_oddlength(self):
+        result =  np.array([ 1.68, -3.36, 5.2, -3.36, 1.68])
+        lags_result = np.array([-2, -1, 0, 1, 2])
+        cr = CrossCorrelation(self.lc_odd,self.lc_odd)
+        assert np.allclose(cr.lc1, cr.lc2)
+        assert np.allclose(cr.corr, result)
+        assert np.isclose(cr.dt, lc_odd.dt)
+        assert cr.n == 5
+        assert np.allclose(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift,0.0)
+        assert cr.mode == 'same'
+        assert cr.auto is False
+   
+    def test_cross_correlation_with_identical_lc_evenlength(self):
+        result =  np.array([-1.75, 2.5, -4.25, 5.5, -4.25, 2.5])
+        lags_result = np.array([-3, -2, -1, 0, 1, 2])
+        cr = CrossCorrelation(self.lc_even,self.lc_even)
+        assert np.allclose(cr.lc1, cr.lc2)
+        assert np.allclose(cr.corr, result)
+        assert np.isclose(cr.dt, lc_even.dt)
+        assert cr.n == 6
+        assert np.allclose(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift,0.0)
+        assert cr.mode == 'same'
+        assert cr.auto is False
