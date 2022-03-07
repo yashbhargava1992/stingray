@@ -47,6 +47,10 @@ class TestCrossCorrelation(object):
         cls.lc_s = Lightcurve([1, 2, 3], [5, 3, 2])
         # lc with different time resolution
         cls.lc_u = Lightcurve([1, 3, 5, 7, 9], [4, 8, 1, 9, 11])
+        # Light curve with odd number of data points
+        cls.lc_odd = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        # Light curve with even number of data points
+        cls.lc_even = Lightcurve([1, 2, 3, 4, 5, 6], [2, 3, 2, 4, 1, 3])
 
     def test_empty_cross_correlation(self):
         cr = CrossCorrelation()
