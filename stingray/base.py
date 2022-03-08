@@ -1,4 +1,6 @@
 """Base classes"""
+from __future__ import annotations
+
 from collections.abc import Iterable
 import pickle
 import warnings
@@ -8,6 +10,14 @@ import numpy as np
 from astropy.table import Table
 from astropy.time import Time, TimeDelta
 from astropy.units import Quantity
+
+from typing import TYPE_CHECKING, Union
+if TYPE_CHECKING:
+    from xarray import Dataset
+    from pandas import DataFrame
+    from astropy.timeseries import TimeSeries
+    from astropy.time import TimeDelta
+    TTime = Union[Time,TimeDelta,Quantity,np.array]
 
 
 class StingrayObject(object):
@@ -30,13 +40,13 @@ class StingrayObject(object):
     columns of the table/dataframe, otherwise as metadata.
     """
 
-    def __init__(cls, *args, **kwargs):
+    def __init__(cls, *args, **kwargs) -> None:
         if not hasattr(cls, "main_array_attr"):
             raise RuntimeError(
                 "A StingrayObject needs to have the main_array_attr attribute specified"
             )
 
-    def array_attrs(self):
+    def array_attrs(self) -> list[str]:
         """List the names of the array attributes of the Stingray Object.
 
         By array attributes, we mean the ones with the same size and shape as
@@ -56,7 +66,7 @@ class StingrayObject(object):
             )
         ]
 
-    def meta_attrs(self):
+    def meta_attrs(self) -> list[str]:
         """List the names of the meta attributes of the Stingray Object.
 
         By array attributes, we mean the ones with a different size and shape
@@ -78,7 +88,7 @@ class StingrayObject(object):
             )
         ]
 
-    def get_meta_dict(self):
+    def get_meta_dict(self) -> dict:
         """Give a dictionary with all non-None meta attrs of the object."""
         meta_attrs = self.meta_attrs()
         meta_dict = {}
@@ -88,7 +98,7 @@ class StingrayObject(object):
                 meta_dict[key] = val
         return meta_dict
 
-    def to_astropy_table(self):
+    def to_astropy_table(self) -> Table:
         """Create an Astropy Table from a ``StingrayObject``
 
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
@@ -108,7 +118,7 @@ class StingrayObject(object):
         return ts
 
     @classmethod
-    def from_astropy_table(cls, ts):
+    def from_astropy_table(cls, ts: Table) -> StingrayObject:
         """Create a Stingray Object object from data in an Astropy Table.
 
         The table MUST contain at least a column named like the
@@ -143,7 +153,7 @@ class StingrayObject(object):
 
         return cls
 
-    def to_xarray(self):
+    def to_xarray(self) -> Dataset:
         """Create an ``xarray`` Dataset from a `StingrayObject`.
 
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
@@ -165,7 +175,7 @@ class StingrayObject(object):
         return ts
 
     @classmethod
-    def from_xarray(cls, ts):
+    def from_xarray(cls, ts: Dataset) -> StingrayObject:
         """Create a `StingrayObject` from data in an xarray Dataset.
 
         The dataset MUST contain at least a column named like the
@@ -201,7 +211,7 @@ class StingrayObject(object):
 
         return cls
 
-    def to_pandas(self):
+    def to_pandas(self) -> DataFrame:
         """Create a pandas ``DataFrame`` from a :class:`StingrayObject`.
 
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
@@ -223,7 +233,7 @@ class StingrayObject(object):
         return ts
 
     @classmethod
-    def from_pandas(cls, ts):
+    def from_pandas(cls, ts: DataFrame) -> StingrayObject:
         """Create an `StingrayObject` object from data in a pandas DataFrame.
 
         The dataframe MUST contain at least a column named like the
@@ -261,7 +271,7 @@ class StingrayObject(object):
         return cls
 
     @classmethod
-    def read(cls, filename, fmt=None, format_=None):
+    def read(cls, filename: str, fmt: str=None, format_=None) -> StingrayObject:
         r"""Generic reader for :class`StingrayObject`
 
         Currently supported formats are
@@ -349,7 +359,7 @@ class StingrayObject(object):
 
         return cls.from_astropy_table(ts)
 
-    def write(self, filename, fmt=None, format_=None):
+    def write(self, filename: str, fmt: str=None, format_=None) -> None:
         """Generic writer for :class`StingrayObject`
 
         Currently supported formats are
@@ -405,7 +415,7 @@ class StingrayObject(object):
 
 
 class StingrayTimeseries(StingrayObject):
-    def to_astropy_timeseries(self):
+    def to_astropy_timeseries(self) -> StingrayTimeseries:
         """Save the ``StingrayTimeseries`` to an ``Astropy`` timeseries.
 
         Array attributes (time, pi, energy, etc.) are converted
@@ -444,7 +454,7 @@ class StingrayTimeseries(StingrayObject):
         return ts
 
     @classmethod
-    def from_astropy_timeseries(cls, ts):
+    def from_astropy_timeseries(cls, ts: TimeSeries) -> StingrayTimeseries:
         """Create a `StingrayTimeseries` from data in an Astropy TimeSeries
 
         The timeseries has to define at least a column called time,
@@ -486,7 +496,7 @@ class StingrayTimeseries(StingrayObject):
 
         return cls
 
-    def change_mjdref(self, new_mjdref):
+    def change_mjdref(self, new_mjdref: float) -> StingrayTimeseries:
         """Change the MJD reference time (MJDREF) of the time series
 
         The times of the time series will be shifted in order to be referred to
@@ -508,7 +518,7 @@ class StingrayTimeseries(StingrayObject):
         ts.mjdref = new_mjdref
         return ts
 
-    def shift(self, time_shift):
+    def shift(self, time_shift: float) -> StingrayTimeseries:
         """Shift the time and the GTIs by the same amount
 
         Parameters
@@ -531,7 +541,7 @@ class StingrayTimeseries(StingrayObject):
         return ts
 
 
-def interpret_times(time, mjdref=0):
+def interpret_times(time: TTime, mjdref: float=0) -> tuple[np.array,float]:
     """Understand the format of input times, and return seconds from MJDREF
 
     Parameters
