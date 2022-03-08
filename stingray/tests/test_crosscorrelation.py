@@ -263,7 +263,7 @@ class TestCrossCorrelation(object):
         cr = CrossCorrelation(self.lc_odd,self.lc_odd)
         assert np.allclose(cr.lc1, cr.lc2)
         assert np.allclose(cr.corr, result)
-        assert np.isclose(cr.dt, lc_odd.dt)
+        assert np.isclose(cr.dt, self.lc_odd.dt)
         assert cr.n == 5
         assert np.allclose(cr.time_lags, lags_result)
         assert np.isclose(cr.time_shift,0.0)
@@ -276,7 +276,7 @@ class TestCrossCorrelation(object):
         cr = CrossCorrelation(self.lc_even,self.lc_even)
         assert np.allclose(cr.lc1, cr.lc2)
         assert np.allclose(cr.corr, result)
-        assert np.isclose(cr.dt, lc_even.dt)
+        assert np.isclose(cr.dt, self.lc_even.dt)
         assert cr.n == 6
         assert np.allclose(cr.time_lags, lags_result)
         assert np.isclose(cr.time_shift,0.0)
