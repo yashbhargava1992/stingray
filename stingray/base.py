@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from pandas import DataFrame
     from astropy.timeseries import TimeSeries
     from astropy.time import TimeDelta
-    TTime = Union[Time,TimeDelta,Quantity,np.array]
+    TTime = Union[Time, TimeDelta, Quantity, np.array]
 
 
 class StingrayObject(object):
@@ -271,7 +271,7 @@ class StingrayObject(object):
         return cls
 
     @classmethod
-    def read(cls, filename: str, fmt: str=None, format_=None) -> StingrayObject:
+    def read(cls, filename: str, fmt: str = None, format_=None) -> StingrayObject:
         r"""Generic reader for :class`StingrayObject`
 
         Currently supported formats are
@@ -359,7 +359,7 @@ class StingrayObject(object):
 
         return cls.from_astropy_table(ts)
 
-    def write(self, filename: str, fmt: str=None, format_=None) -> None:
+    def write(self, filename: str, fmt: str = None, format_=None) -> None:
         """Generic writer for :class`StingrayObject`
 
         Currently supported formats are
@@ -541,7 +541,7 @@ class StingrayTimeseries(StingrayObject):
         return ts
 
 
-def interpret_times(time: TTime, mjdref: float=0) -> tuple[np.array,float]:
+def interpret_times(time: TTime, mjdref: float = 0) -> tuple[np.array, float]:
     """Understand the format of input times, and return seconds from MJDREF
 
     Parameters
