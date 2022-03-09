@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from astropy.time import TimeDelta
     import numpy.typing as npt
     TTime = Union[Time, TimeDelta, Quantity, npt.ArrayLike]
-    Tso=TypeVar("Tso", bound = "StingrayObject")
+    Tso = TypeVar("Tso", bound="StingrayObject")
 
 
 class StingrayObject(object):
