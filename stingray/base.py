@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from astropy.time import TimeDelta
     import numpy.typing as npt
     TTime = Union[Time, TimeDelta, Quantity, npt.ArrayLike]
-    Tso = TypeVar("Tso", bound = "StingrayObject")
+    Tso=TypeVar("Tso", bound = "StingrayObject")
 
 
 class StingrayObject(object):
@@ -142,11 +142,11 @@ class StingrayObject(object):
         array_attrs = ts.colnames
 
         # Set the main attribute first
-        mainarray = np.array(ts[cls.main_array_attr]) # type: ignore
-        setattr(cls, cls.main_array_attr, mainarray) # type: ignore
+        mainarray = np.array(ts[cls.main_array_attr])  # type: ignore
+        setattr(cls, cls.main_array_attr, mainarray)  # type: ignore
 
         for attr in array_attrs:
-            if attr == cls.main_array_attr: # type: ignore
+            if attr == cls.main_array_attr:  # type: ignore
                 continue
             setattr(cls, attr.lower(), np.array(ts[attr]))
 
@@ -192,18 +192,18 @@ class StingrayObject(object):
         """
         cls = cls()
 
-        if len(ts[cls.main_array_attr]) == 0: # type: ignore
+        if len(ts[cls.main_array_attr]) == 0:  # type: ignore
             # return an empty object
             return cls
 
         array_attrs = ts.coords
 
         # Set the main attribute first
-        mainarray = np.array(ts[cls.main_array_attr]) # type: ignore
-        setattr(cls, cls.main_array_attr, mainarray) # type: ignore
+        mainarray = np.array(ts[cls.main_array_attr])  # type: ignore
+        setattr(cls, cls.main_array_attr, mainarray)  # type: ignore
 
         for attr in array_attrs:
-            if attr == cls.main_array_attr: # type: ignore
+            if attr == cls.main_array_attr:  # type: ignore
                 continue
             setattr(cls, attr, np.array(ts[attr]))
 
@@ -258,11 +258,11 @@ class StingrayObject(object):
         array_attrs = ts.columns
 
         # Set the main attribute first
-        mainarray = np.array(ts[cls.main_array_attr]) # type: ignore
-        setattr(cls, cls.main_array_attr, mainarray) # type: ignore
+        mainarray = np.array(ts[cls.main_array_attr])  # type: ignore
+        setattr(cls, cls.main_array_attr, mainarray)  # type: ignore
 
         for attr in array_attrs:
-            if attr == cls.main_array_attr: # type: ignore
+            if attr == cls.main_array_attr:  # type: ignore
                 continue
             setattr(cls, attr, np.array(ts[attr]))
 
@@ -445,8 +445,8 @@ class StingrayTimeseries(StingrayObject):
         if data == {}:
             data = None
 
-        if self.time is not None and np.size(self.time) > 0: # type: ignore
-            times = TimeDelta(self.time * u.s) # type: ignore
+        if self.time is not None and np.size(self.time) > 0:  # type: ignore
+            times = TimeDelta(self.time * u.s)  # type: ignore
             ts = TimeSeries(data=data, time=times)
         else:
             ts = TimeSeries()
@@ -485,7 +485,7 @@ class StingrayTimeseries(StingrayObject):
             mjdref = ts.meta["mjdref"]
 
         time, mjdref = interpret_times(time, mjdref)
-        cls.time = np.asarray(time) # type: ignore
+        cls.time = np.asarray(time)  # type: ignore
 
         array_attrs = ts.colnames
         for key, val in ts.meta.items():
@@ -514,10 +514,10 @@ class StingrayTimeseries(StingrayObject):
         new_lc : :class:`StingrayTimeseries` object
             The new time series, shifted by MJDREF
         """
-        time_shift = (self.mjdref - new_mjdref) * 86400 # type: ignore
+        time_shift = (self.mjdref - new_mjdref) * 86400  # type: ignore
 
         ts = self.shift(time_shift)
-        ts.mjdref = new_mjdref # type: ignore
+        ts.mjdref = new_mjdref  # type: ignore
         return ts
 
     def shift(self, time_shift: float) -> StingrayTimeseries:
@@ -536,9 +536,9 @@ class StingrayTimeseries(StingrayObject):
 
         """
         ts = copy.deepcopy(self)
-        ts.time = np.asarray(ts.time) + time_shift # type: ignore
+        ts.time = np.asarray(ts.time) + time_shift  # type: ignore
         if hasattr(ts, "gti"):
-            ts.gti = np.asarray(ts.gti) + time_shift # type: ignore
+            ts.gti = np.asarray(ts.gti) + time_shift  # type: ignore
 
         return ts
 
