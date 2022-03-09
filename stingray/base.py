@@ -11,13 +11,15 @@ from astropy.table import Table
 from astropy.time import Time, TimeDelta
 from astropy.units import Quantity
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Type, TypeVar, Union
 if TYPE_CHECKING:
     from xarray import Dataset
     from pandas import DataFrame
     from astropy.timeseries import TimeSeries
     from astropy.time import TimeDelta
-    TTime = Union[Time, TimeDelta, Quantity, np.array]
+    import numpy.typing as npt
+    TTime = Union[Time, TimeDelta, Quantity, npt.ArrayLike]
+    Tso = TypeVar("Tso", bound = "StingrayObject")
 
 
 class StingrayObject(object):
@@ -118,7 +120,7 @@ class StingrayObject(object):
         return ts
 
     @classmethod
-    def from_astropy_table(cls, ts: Table) -> StingrayObject:
+    def from_astropy_table(cls: Type[Tso], ts: Table) -> Tso:
         """Create a Stingray Object object from data in an Astropy Table.
 
         The table MUST contain at least a column named like the
@@ -140,11 +142,11 @@ class StingrayObject(object):
         array_attrs = ts.colnames
 
         # Set the main attribute first
-        mainarray = np.array(ts[cls.main_array_attr])
-        setattr(cls, cls.main_array_attr, mainarray)
+        mainarray = np.array(ts[cls.main_array_attr]) # type: ignore
+        setattr(cls, cls.main_array_attr, mainarray) # type: ignore
 
         for attr in array_attrs:
-            if attr == cls.main_array_attr:
+            if attr == cls.main_array_attr: # type: ignore
                 continue
             setattr(cls, attr.lower(), np.array(ts[attr]))
 
@@ -175,7 +177,7 @@ class StingrayObject(object):
         return ts
 
     @classmethod
-    def from_xarray(cls, ts: Dataset) -> StingrayObject:
+    def from_xarray(cls: Type[Tso], ts: Dataset) -> Tso:
         """Create a `StingrayObject` from data in an xarray Dataset.
 
         The dataset MUST contain at least a column named like the
@@ -190,18 +192,18 @@ class StingrayObject(object):
         """
         cls = cls()
 
-        if len(ts[cls.main_array_attr]) == 0:
+        if len(ts[cls.main_array_attr]) == 0: # type: ignore
             # return an empty object
             return cls
 
         array_attrs = ts.coords
 
         # Set the main attribute first
-        mainarray = np.array(ts[cls.main_array_attr])
-        setattr(cls, cls.main_array_attr, mainarray)
+        mainarray = np.array(ts[cls.main_array_attr]) # type: ignore
+        setattr(cls, cls.main_array_attr, mainarray) # type: ignore
 
         for attr in array_attrs:
-            if attr == cls.main_array_attr:
+            if attr == cls.main_array_attr: # type: ignore
                 continue
             setattr(cls, attr, np.array(ts[attr]))
 
@@ -233,7 +235,7 @@ class StingrayObject(object):
         return ts
 
     @classmethod
-    def from_pandas(cls, ts: DataFrame) -> StingrayObject:
+    def from_pandas(cls: Type[Tso], ts: DataFrame) -> Tso:
         """Create an `StingrayObject` object from data in a pandas DataFrame.
 
         The dataframe MUST contain at least a column named like the
@@ -256,11 +258,11 @@ class StingrayObject(object):
         array_attrs = ts.columns
 
         # Set the main attribute first
-        mainarray = np.array(ts[cls.main_array_attr])
-        setattr(cls, cls.main_array_attr, mainarray)
+        mainarray = np.array(ts[cls.main_array_attr]) # type: ignore
+        setattr(cls, cls.main_array_attr, mainarray) # type: ignore
 
         for attr in array_attrs:
-            if attr == cls.main_array_attr:
+            if attr == cls.main_array_attr: # type: ignore
                 continue
             setattr(cls, attr, np.array(ts[attr]))
 
@@ -271,7 +273,7 @@ class StingrayObject(object):
         return cls
 
     @classmethod
-    def read(cls, filename: str, fmt: str = None, format_=None) -> StingrayObject:
+    def read(cls: Type[Tso], filename: str, fmt: str = None, format_=None) -> Tso:
         r"""Generic reader for :class`StingrayObject`
 
         Currently supported formats are
@@ -415,7 +417,7 @@ class StingrayObject(object):
 
 
 class StingrayTimeseries(StingrayObject):
-    def to_astropy_timeseries(self) -> StingrayTimeseries:
+    def to_astropy_timeseries(self) -> TimeSeries:
         """Save the ``StingrayTimeseries`` to an ``Astropy`` timeseries.
 
         Array attributes (time, pi, energy, etc.) are converted
@@ -443,8 +445,8 @@ class StingrayTimeseries(StingrayObject):
         if data == {}:
             data = None
 
-        if self.time is not None and np.size(self.time) > 0:
-            times = TimeDelta(self.time * u.s)
+        if self.time is not None and np.size(self.time) > 0: # type: ignore
+            times = TimeDelta(self.time * u.s) # type: ignore
             ts = TimeSeries(data=data, time=times)
         else:
             ts = TimeSeries()
@@ -483,7 +485,7 @@ class StingrayTimeseries(StingrayObject):
             mjdref = ts.meta["mjdref"]
 
         time, mjdref = interpret_times(time, mjdref)
-        cls.time = np.asarray(time)
+        cls.time = np.asarray(time) # type: ignore
 
         array_attrs = ts.colnames
         for key, val in ts.meta.items():
@@ -512,10 +514,10 @@ class StingrayTimeseries(StingrayObject):
         new_lc : :class:`StingrayTimeseries` object
             The new time series, shifted by MJDREF
         """
-        time_shift = (self.mjdref - new_mjdref) * 86400
+        time_shift = (self.mjdref - new_mjdref) * 86400 # type: ignore
 
         ts = self.shift(time_shift)
-        ts.mjdref = new_mjdref
+        ts.mjdref = new_mjdref # type: ignore
         return ts
 
     def shift(self, time_shift: float) -> StingrayTimeseries:
@@ -534,14 +536,14 @@ class StingrayTimeseries(StingrayObject):
 
         """
         ts = copy.deepcopy(self)
-        ts.time = np.asarray(ts.time) + time_shift
+        ts.time = np.asarray(ts.time) + time_shift # type: ignore
         if hasattr(ts, "gti"):
-            ts.gti = np.asarray(ts.gti) + time_shift
+            ts.gti = np.asarray(ts.gti) + time_shift # type: ignore
 
         return ts
 
 
-def interpret_times(time: TTime, mjdref: float = 0) -> tuple[np.array, float]:
+def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, float]:
     """Understand the format of input times, and return seconds from MJDREF
 
     Parameters
