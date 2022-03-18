@@ -128,8 +128,8 @@ class TestCrossCorrelation(object):
         assert np.allclose(cr.corr, result)
         assert np.isclose(cr.dt, self.lc1.dt)
         assert cr.n == 5
+        assert np.isclose(cr.time_shift, 3.0)
         assert np.allclose(cr.time_lags, lags_result)
-        assert np.isclose(cr.time_shift, 2.0)
         assert cr.mode == 'same'
         assert cr.auto is False
 
