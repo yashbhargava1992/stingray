@@ -47,6 +47,10 @@ class TestCrossCorrelation(object):
         cls.lc_s = Lightcurve([1, 2, 3], [5, 3, 2])
         # lc with different time resolution
         cls.lc_u = Lightcurve([1, 3, 5, 7, 9], [4, 8, 1, 9, 11])
+        # Light curve with odd number of data points
+        cls.lc_odd = Lightcurve([1, 2, 3, 4, 5], [2, 3, 2, 4, 1])
+        # Light curve with even number of data points
+        cls.lc_even = Lightcurve([1, 2, 3, 4, 5, 6], [2, 3, 2, 4, 1, 3])
 
     def test_empty_cross_correlation(self):
         cr = CrossCorrelation()
@@ -117,15 +121,15 @@ class TestCrossCorrelation(object):
 
     def test_cross_correlation_with_unequal_lc(self):
         result = np.array([-0.66666667, -0.33333333, -1., 0.66666667, 3.13333333])
-        lags_result = np.array([-2, -1, 0, 1, 2])
+        lags_result = np.array([-1.,  0.,  1.,  2.,  3.])
         cr = CrossCorrelation(self.lc1, self.lc_s)
         assert np.allclose(cr.lc1, self.lc1)
         assert np.allclose(cr.lc2, self.lc_s)
         assert np.allclose(cr.corr, result)
         assert np.isclose(cr.dt, self.lc1.dt)
         assert cr.n == 5
+        assert np.isclose(cr.time_shift, 3.0)
         assert np.allclose(cr.time_lags, lags_result)
-        assert np.isclose(cr.time_shift, 2.0)
         assert cr.mode == 'same'
         assert cr.auto is False
 
@@ -252,3 +256,29 @@ class TestCrossCorrelation(object):
         assert np.isclose(ac.time_shift, 0.0)
         assert ac.mode == 'full'
         assert ac.auto is True
+        
+    def test_cross_correlation_with_identical_lc_oddlength(self):
+        result =  np.array([ 1.68, -3.36, 5.2, -3.36, 1.68])
+        lags_result = np.array([-2, -1, 0, 1, 2])
+        cr = CrossCorrelation(self.lc_odd,self.lc_odd)
+        assert np.allclose(cr.lc1, cr.lc2)
+        assert np.allclose(cr.corr, result)
+        assert np.isclose(cr.dt, self.lc_odd.dt)
+        assert cr.n == 5
+        assert np.allclose(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift,0.0)
+        assert cr.mode == 'same'
+        assert cr.auto is False
+   
+    def test_cross_correlation_with_identical_lc_evenlength(self):
+        result =  np.array([-1.75, 2.5, -4.25, 5.5, -4.25, 2.5])
+        lags_result = np.array([-3, -2, -1, 0, 1, 2])
+        cr = CrossCorrelation(self.lc_even,self.lc_even)
+        assert np.allclose(cr.lc1, cr.lc2)
+        assert np.allclose(cr.corr, result)
+        assert np.isclose(cr.dt, self.lc_even.dt)
+        assert cr.n == 6
+        assert np.allclose(cr.time_lags, lags_result)
+        assert np.isclose(cr.time_shift,0.0)
+        assert cr.mode == 'same'
+        assert cr.auto is False

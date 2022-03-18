@@ -76,7 +76,6 @@ class CrossCorrelation(object):
     References
     ----------
     .. [scipy-docs] https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.signal.correlate.html
-
     """
 
     def __init__(self, lc1=None, lc2=None, cross=None, mode='same', norm="none"):
@@ -211,6 +210,12 @@ class CrossCorrelation(object):
         """
         Calculate the cross correlation against all possible time lags, both positive and negative.
 
+        The method signal.correlation_lags() uses SciPy versions >= 1.6.1 ([scipy-docs-lag]_)
+        
+        References
+        ----------
+        .. [scipy-docs-lag] https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.correlation_lags.html
+        
         Parameters
         ----------
         dt: float, optional, default ``1.0``
@@ -244,9 +249,20 @@ class CrossCorrelation(object):
                     self._make_corr(self.lc1, self.lc2)
 
         self.n = len(self.corr)
-        dur = int(self.n / 2)
-        # Correlation against all possible lags, positive as well as negative lags are stored
-        x_lags = np.linspace(-dur, dur, self.n)
+        
+        if self.cross is not None:
+          # Obtains correlation lags if a cross spectrum object is given
+          # Correlation against all possible lags, positive as well as negative lags are stored
+          # signal.correlation_lags() method uses SciPy versions >= 1.6.1
+          x_lags = signal.correlation_lags(self.n, self.n, self.mode)
+          
+        else:
+          # Obtains correlation lags if two light curves are porvided
+          # Correlation against all possible lags, positive as well as negative lags are stored
+          # signal.correlation_lags() method uses SciPy versions >= 1.6.1
+          x_lags = \
+              signal.correlation_lags(np.size(self.lc1.counts), np.size(self.lc2.counts), self.mode)
+        
         self.time_lags = x_lags * self.dt
         # time_shift is the time lag for max. correlation
         self.time_shift = self.time_lags[np.argmax(self.corr)]
