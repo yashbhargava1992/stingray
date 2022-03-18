@@ -121,7 +121,7 @@ class TestCrossCorrelation(object):
 
     def test_cross_correlation_with_unequal_lc(self):
         result = np.array([-0.66666667, -0.33333333, -1., 0.66666667, 3.13333333])
-        lags_result = np.array([-2, -1, 0, 1, 2])
+        lags_result = np.array([-1.,  0.,  1.,  2.,  3.])
         cr = CrossCorrelation(self.lc1, self.lc_s)
         assert np.allclose(cr.lc1, self.lc1)
         assert np.allclose(cr.lc2, self.lc_s)
