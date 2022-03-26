@@ -34,11 +34,11 @@ __all__ = ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]
 class Powerspectrum(Crossspectrum):
     type = "powerspectrum"
     """
-    Make a :class:`Powerspectrum` (also called periodogram) from a (binned) 
-    light curve. Periodograms can be normalized by either Leahy normalization, 
+    Make a :class:`Powerspectrum` (also called periodogram) from a (binned)
+    light curve. Periodograms can be normalized by either Leahy normalization,
     fractional rms normalization, absolute rms normalization, or not at all.
 
-    You can also make an empty :class:`Powerspectrum` object to populate with 
+    You can also make an empty :class:`Powerspectrum` object to populate with
     your own fourier-transformed data (this can sometimes be useful when making
     binned power spectra).
 
@@ -47,18 +47,18 @@ class Powerspectrum(Crossspectrum):
     data: :class:`stingray.Lightcurve` object, optional, default ``None``
         The light curve data to be Fourier-transformed.
 
-    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
+    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
         The normaliation of the power spectrum to be used. Options are
-        ``leahy``, ``frac``, ``abs`` and ``none``, default is ``frac``.
+        "leahy", "frac", "abs" and "none", default is "frac".
 
     Other Parameters
     ----------------
     gti: 2-d float array
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
-        care, especially if these GTIs have overlaps with the input 
-        `Lightcurve` GTIs! If you're getting errors regarding your GTIs, don't 
-        use this and only give GTIs to the `Lightcurve` object before making 
+        care, especially if these GTIs have overlaps with the input
+        object GTIs! If you're getting errors regarding your GTIs, don't
+        use this and only give GTIs to the input object before making
         the power spectrum.
 
     skip_checks: bool
@@ -67,7 +67,7 @@ class Powerspectrum(Crossspectrum):
 
     Attributes
     ----------
-    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
+    norm: {"leahy" | "frac" | "abs" | "none" }
         The normalization of the power spectrum.
 
     freq: numpy.ndarray
@@ -81,8 +81,8 @@ class Powerspectrum(Crossspectrum):
         The uncertainties of ``power``.
         An approximation for each bin given by ``power_err= power/sqrt(m)``.
         Where ``m`` is the number of power averaged in each bin (by frequency
-        binning, or averaging power spectra of segments of a light curve). 
-        Note that for a single realization (``m=1``) the error is equal to the 
+        binning, or averaging power spectra of segments of a light curve).
+        Note that for a single realization (``m=1``) the error is equal to the
         power.
 
     df: float
@@ -98,10 +98,10 @@ class Powerspectrum(Crossspectrum):
         The total number of photons in the light curve.
 
     legacy: bool
-        Use the legacy machinery of `AveragedPowerspectrum`. This might be 
-        useful to compare with old results, and is also needed to use light 
-        curve lists as an input, to conserve the spectra of each segment, or to 
-        use the large_data option.
+        Use the legacy machinery of ``AveragedPowerspectrum``. This might be
+        useful to compare with old results, and is also needed to use light
+        curve lists as an input, to conserve the spectra of each segment, or
+        to use the large_data option.
     """
 
     def __init__(self, data=None, norm="frac", gti=None,
@@ -136,8 +136,8 @@ class Powerspectrum(Crossspectrum):
         if not legacy and data is not None:
             return self._initialize_from_any_input(data, dt=dt, norm=norm)
 
-        Crossspectrum.__init__(self, data1=data, data2=data, norm=norm, gti=gti,
-                               dt=dt, skip_checks=True, legacy=legacy)
+        Crossspectrum.__init__(self, data1=data, data2=data, norm=norm,
+                               gti=gti, dt=dt, skip_checks=True, legacy=legacy)
         self.nphots = self.nphots1
         self.dt = dt
 
@@ -148,12 +148,13 @@ class Powerspectrum(Crossspectrum):
         Parameters
         ----------
         df: float
-            The new frequency resolution
+            The new frequency resolution.
 
         Other Parameters
         ----------------
         f: float
-            the rebin factor. If specified, it substitutes ``df`` with ``f*self.df``
+            The rebin factor. If specified, it substitutes ``df`` with
+            ``f*self.df``, so ``f>1`` is recommended.
 
         Returns
         -------
@@ -264,10 +265,11 @@ class Powerspectrum(Crossspectrum):
 
         1. The power spectrum is Leahy-normalized
         2. There is no source of variability in the data other than the
-           periodic signal to be determined with this method. This is important!
-           If there are other sources of (aperiodic) variability in the data, this
-           method will *not* produce correct results, but instead produce a large
-           number of spurious false positive detections!
+           periodic signal to be determined with this method. This is
+           important! If there are other sources of (aperiodic) variability in
+           the data, this method will *not* produce correct results, but
+           instead produce a large number of spurious false positive
+           detections!
         3. There are no significant instrumental effects changing the
            statistical distribution of the powers (e.g. pile-up or dead time)
 
@@ -287,18 +289,18 @@ class Powerspectrum(Crossspectrum):
             Default is ``1`` (all p-values will be reported).
 
         trial_correction : bool, optional, default ``False``
-            A Boolean flag that sets whether the ``threshold`` will be corrected
-            by the number of frequencies before being applied. This decreases
-            the ``threshold`` (p-values need to be lower to count as significant).
-            Default is ``False`` (report all powers) though for any application
-            where `threshold`` is set to something meaningful, this should also
-            be applied!
+            A Boolean flag that sets whether the ``threshold`` will be
+            corrected by the number of frequencies before being applied. This
+            decreases the ``threshold`` (p-values need to be lower to count as
+            significant). Default is ``False`` (report all powers) though for
+            any application where `threshold`` is set to something meaningful,
+            this should also be applied!
 
         Returns
         -------
         pvals : iterable
-            A list of ``(p-value, index)`` tuples for all powers that have p-values
-            lower than the threshold specified in ``threshold``.
+            A list of ``(p-value, index)`` tuples for all powers that have
+            p-values lower than the threshold specified in ``threshold``.
 
         """
         if not self.norm == "leahy":
@@ -312,7 +314,8 @@ class Powerspectrum(Crossspectrum):
 
         if np.size(self.m) == 1:
             # calculate p-values for all powers
-            # leave out zeroth power since it just encodes the number of photons!
+            # leave out zeroth power since it just encodes the number of
+            # photons!
             pv = pds_probability(self.power, n_summed_spectra=self.m,
                                  ntrial=ntrial)
         else:
@@ -346,7 +349,7 @@ class Powerspectrum(Crossspectrum):
         See `stingray.stats.power_upper_limit`,
         `stingray.stats.amplitude_upper_limit`
         for more information.
-        
+
         The formula used to calculate the upper limit assumes the Leahy
         normalization.
         If the periodogram is in another normalization, we will internally
@@ -413,22 +416,23 @@ class Powerspectrum(Crossspectrum):
     def from_time_array(times, dt, segment_size=None, gti=None, norm="frac",
                         silent=False, use_common_mean=True):
         """
-        Calculate `AveragedPowerspectrum` from an array of event times.
+        Calculate an average power spectrum from an array of event times.
 
         Parameters
         ----------
         times : `np.array`
-            Event arrival times
+            Event arrival times.
         dt : float
             The time resolution of the intermediate light curves
-            (sets the Nyquist frequency)
+            (sets the Nyquist frequency).
 
         Other parameters
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be
-            averaged. Only relevant (and required) for `AveragedPowerspectrum`.
-        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            averaged. Only relevant (and required) for
+            ``AveragedPowerspectrum``.
+        gti: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
             Additional, optional Good Time intervals that get intersected with
             the GTIs of the input object. Can cause errors if there are
             overlaps between these GTIs and the input object GTIs. If that
@@ -455,22 +459,23 @@ class Powerspectrum(Crossspectrum):
     def from_events(events, dt, segment_size=None, gti=None, norm="frac",
                     silent=False, use_common_mean=True):
         """
-        Calculate `AveragedPowerspectrum` from an event list.
+        Calculate an average power spectrum from an event list.
 
         Parameters
         ----------
         events : `stingray.EventList`
-            Event list to be analyzed
+            Event list to be analyzed.
         dt : float
             The time resolution of the intermediate light curves
-            (sets the Nyquist frequency)
+            (sets the Nyquist frequency).
 
         Other parameters
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be
-            averaged. Only relevant (and required) for `AveragedPowerspectrum`.
-        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            averaged. Only relevant (and required) for
+            ``AveragedPowerspectrum``.
+        gti: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
             Additional, optional Good Time intervals that get intersected with
             the GTIs of the input object. Can cause errors if there are
             overlaps between these GTIs and the input object GTIs. If that
@@ -496,22 +501,24 @@ class Powerspectrum(Crossspectrum):
     @staticmethod
     def from_lightcurve(lc, segment_size=None, gti=None, norm="frac",
                         silent=False, use_common_mean=True):
-        """Calculate AveragedPowerspectrum from a light curve
+        """
+        Calculate ``AveragedPowerspectrum`` from a light curve.
 
         Parameters
         ----------
         events : `stingray.Lightcurve`
-            Light curve to be analyzed
+            Light curve to be analyzed.
         dt : float
             The time resolution of the intermediate light curves
-            (sets the Nyquist frequency)
+            (sets the Nyquist frequency).
 
         Other parameters
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be
-            averaged. Only relevant (and required) for `AveragedPowerspectrum`.
-        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            averaged. Only relevant (and required) for
+            ``AveragedPowerspectrum``.
+        gti: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
             Additional, optional Good Time intervals that get intersected with
             the GTIs of the input object. Can cause errors if there are
             overlaps between these GTIs and the input object GTIs. If that
@@ -538,7 +545,8 @@ class Powerspectrum(Crossspectrum):
     def from_lc_iterable(iter_lc, dt, segment_size=None, gti=None, norm="frac",
                          silent=False, use_common_mean=True):
         """
-        Calculate `AveragedCrossspectrum` from two light curves.
+        Calculate the average power spectrum of an iterable collection of
+        light curves.
 
         Parameters
         ----------
@@ -552,8 +560,9 @@ class Powerspectrum(Crossspectrum):
         ----------------
         segment_size : float
             The length, in seconds, of the light curve segments that will be
-            averaged. Only relevant (and required) for `AveragedPowerspectrum`.
-        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            averaged. Only relevant (and required) for
+            ``AveragedPowerspectrum``.
+        gti: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
             Additional, optional Good Time intervals that get intersected with
             the GTIs of the input object. Can cause errors if there are
             overlaps between these GTIs and the input object GTIs. If that
@@ -652,27 +661,27 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     Parameters
     ----------
-    data: :class:`stingray.Lightcurve`object OR iterable of 
+    data: :class:`stingray.Lightcurve`object OR iterable of
     :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         The light curve data to be Fourier-transformed.
 
     segment_size: float
         The size of each segment to average. Note that if the total
-        duration of each :class:`Lightcurve` object in lc is not an integer multiple
-        of the ``segment_size``, then any fraction left-over at the end of the
-        time series will be lost.
+        duration of each :class:`Lightcurve` object in lc is not an integer
+        multiple of the ``segment_size``, then any fraction left-over at the
+        end of the time series will be lost.
 
-    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
-        The normaliation of the periodogram to be used.
+    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
+        The normalization of the periodogram to be used.
 
     Other Parameters
     ----------------
     gti: 2-d float array
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
-        care, especially if these GTIs have overlaps with the input 
-        `Lightcurve` GTIs! If you're getting errors regarding your GTIs, don't 
-        use this and only give GTIs to the `Lightcurve` object before making 
+        care, especially if these GTIs have overlaps with the input
+        object GTIs! If you're getting errors regarding your GTIs, don't
+        use this and only give GTIs to the input object before making
         the power spectrum.
 
     silent : bool, default False
@@ -684,7 +693,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         light curves in the case where data is of :class:EventList.
 
     large_data : bool, default False
-        Use only for data larger than 10**7 data points!! Uses zarr and dask 
+        Use only for data larger than 10**7 data points!! Uses zarr and dask
         for computation.
 
     save_all : bool, default False
@@ -712,8 +721,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The uncertainties of ``power``.
         An approximation for each bin given by ``power_err= power/sqrt(m)``.
         Where ``m`` is the number of power averaged in each bin (by frequency
-        binning, or averaging power spectra of segments of a light curve). 
-        Note that for a single realization (``m=1``) the error is equal to the 
+        binning, or averaging power spectra of segments of a light curve).
+        Note that for a single realization (``m=1``) the error is equal to the
         power.
 
     df: float
@@ -729,8 +738,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The total number of photons in the light curve.
 
     legacy: bool
-        Use the legacy machinery of `AveragedPowerspectrum`. This might be 
-        useful to compare with old results, and is also needed to use light 
+        Use the legacy machinery of `AveragedPowerspectrum`. This might be
+        useful to compare with old results, and is also needed to use light
         curve lists as an input, to conserve the spectra of each segment, or to
         use the large_data option.
     """
@@ -783,8 +792,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
        # The large_data option requires the legacy interface.
         if (large_data or save_all) and not legacy:
-            warnings.warn("The large_data option and the save_all options are only"
-                          "available with the legacy interface (legacy=True).")
+            warnings.warn("The large_data option and the save_all options are"
+                          " only available with the legacy interface"
+                          " (legacy=True).")
             legacy = True
 
         if not legacy and data is not None:
@@ -918,10 +928,10 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     This class will divide a :class:`Lightcurve` object into segments of
     length ``segment_size``, create a power spectrum for each segment and store
-    all powers in a matrix as a function of both time (using the mid-point of 
+    all powers in a matrix as a function of both time (using the mid-point of
     each segment) and frequency.
 
-    This is often used to trace changes in period of a (quasi-)periodic signal 
+    This is often used to trace changes in period of a (quasi-)periodic signal
     over time.
 
     Parameters
@@ -931,10 +941,10 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         to be calculated.
 
     segment_size : float, default 1
-         Length of the segment of light curve, default value is 1 (in whatever 
+         Length of the segment of light curve, default value is 1 (in whatever
          units the ``time`` array in the :class:`Lightcurve`` object uses).
 
-    norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }, optional, default ``frac``
+    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
         The normaliation of the periodogram to be used.
 
     Other Parameters
@@ -942,16 +952,16 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     gti: 2-d float array
         ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
         This choice overrides the GTIs in the single light curves. Use with
-        care, especially if these GTIs have overlaps with the input 
-        `Lightcurve` GTIs! If you're getting errors regarding your GTIs, don't 
-        use this and only give GTIs to the `Lightcurve` object before making 
+        care, especially if these GTIs have overlaps with the input
+        object GTIs! If you're getting errors regarding your GTIs, don't
+        use this and only give GTIs to the input object before making
         the power spectrum.
 
     Attributes
     ----------
     segment_size: float
         The size of each segment to average. Note that if the total
-        duration of each Lightcurve object in lc is not an integer multiple
+        duration of each input object in lc is not an integer multiple
         of the ``segment_size``, then any fraction left-over at the end of the
         time series will be lost.
 
@@ -964,13 +974,13 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         The normalization of the periodogram.
 
     freq: numpy.ndarray
-        The array of mid-bin frequencies that the Fourier transform samples
+        The array of mid-bin frequencies that the Fourier transform samples.
 
     df: float
-        The frequency resolution
+        The frequency resolution.
 
     dt: float
-        The time resolution
+        The time resolution.
     """
 
     def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
@@ -1035,8 +1045,9 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     def rebin_frequency(self, df_new, method="sum"):
         """
-        Rebin the Dynamic Power Spectrum to a new frequency resolution. Rebinning is
-        an in-place operation, i.e. will replace the existing ``dyn_ps`` attribute.
+        Rebin the Dynamic Power Spectrum to a new frequency resolution.
+        Rebinning is an in-place operation, i.e. will replace the existing
+        ``dyn_ps`` attribute.
 
         While the new resolution need not be an integer multiple of the
         previous frequency resolution, be aware that if it is not, the last
@@ -1049,7 +1060,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             Must be larger than the frequency resolution of the old dynamical
             power spectrum!
 
-        method: {``sum`` | ``mean`` | ``average``}, optional, default ``sum``
+        method: {"sum" | "mean" | "average"}, optional, default "sum"
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
         """
@@ -1117,7 +1128,6 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             This keyword argument sets whether the counts in the new bins
             should be summed or averaged.
 
-
         Returns
         -------
         time_new: numpy.ndarray
@@ -1149,22 +1159,22 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None,
                                   norm="frac", silent=False,
                                   use_common_mean=True):
     """
-    Calculate `AveragedPowerspectrum` from an array of event times.
+    Calculate a power spectrum from an array of event times.
 
     Parameters
     ----------
     times : `np.array`
-        Event arrival times
+        Event arrival times.
     dt : float
         The time resolution of the intermediate light curves
-        (sets the Nyquist frequency)
+        (sets the Nyquist frequency).
 
     Other parameters
     ----------------
     segment_size : float
         The length, in seconds, of the light curve segments that will be
-        averaged.
-    gti : [[gti0, gti1], ...]
+        averaged. Only required (and used) for ``AveragedPowerspectrum``.
+    gti : ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Additional, optional Good Time intervals that get intersected with
         the GTIs of the input object. Can cause errors if there are
         overlaps between these GTIs and the input object GTIs. If that
@@ -1200,12 +1210,13 @@ def powerspectrum_from_time_array(times, dt, segment_size=None, gti=None,
 
 def powerspectrum_from_events(events, dt, segment_size=None, gti=None,
                               norm="frac", silent=False, use_common_mean=True):
-    """Calculate AveragedPowerspectrum from an event list
+    """
+    Calculate a power spectrum from an event list.
 
     Parameters
     ----------
     events : `stingray.EventList`
-        Event list to be analyzed
+        Event list to be analyzed.
     dt : float
         The time resolution of the intermediate light curves
         (sets the Nyquist frequency)
@@ -1214,8 +1225,8 @@ def powerspectrum_from_events(events, dt, segment_size=None, gti=None,
     ----------------
     segment_size : float
         The length, in seconds, of the light curve segments that will be
-        averaged.
-    gti : [[gti0, gti1], ...]
+        averaged. Only required (and used) for ``AveragedPowerspectrum``.
+    gti : ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Additional, optional Good Time intervals that get intersected with
         the GTIs of the input object. Can cause errors if there are
         overlaps between these GTIs and the input object GTIs. If that
@@ -1248,7 +1259,7 @@ def powerspectrum_from_events(events, dt, segment_size=None, gti=None,
 def powerspectrum_from_lightcurve(lc, segment_size=None, gti=None, norm="frac",
                                   silent=False, use_common_mean=True):
     """
-    Calculate AveragedPowerspectrum from a light curve
+    Calculate a power spectrum from a light curve
 
     Parameters
     ----------
@@ -1262,8 +1273,8 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, gti=None, norm="frac",
     ----------------
     segment_size : float
         The length, in seconds, of the light curve segments that will be
-        averaged.
-    gti : [[gti0, gti1], ...]
+        averaged. Only required (and used) for ``AveragedPowerspectrum``.
+    gti : ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Additional, optional Good Time intervals that get intersected with
         the GTIs of the input object. Can cause errors if there are
         overlaps between these GTIs and the input object GTIs. If that
@@ -1306,15 +1317,17 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, gti=None, norm="frac",
 def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, gti=None,
                                    norm="frac", silent=False,
                                    use_common_mean=True):
-    """Calculate AveragedCrossspectrum from two light curves
+    """
+    Calculate an average power spectrum from an iterable collection of light
+    curves.
 
     Parameters
     ----------
     iter_lc : iterable of `stingray.Lightcurve` objects or `np.array`
-        Light curves. If arrays, use them as counts
+        Light curves. If arrays, use them as counts.
     dt : float
         The time resolution of the light curves
-        (sets the Nyquist frequency)
+        (sets the Nyquist frequency).
 
     Other parameters
     ----------------
@@ -1322,7 +1335,7 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, gti=None,
         The length, in seconds, of the light curve segments that will be
         averaged. If not ``None``, it will be used to check the segment size of
          the output.
-    gti : [[gti0, gti1], ...]
+    gti : ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Additional, optional Good Time intervals that get intersected with
         the GTIs of the input object. Can cause errors if there are
         overlaps between these GTIs and the input object GTIs. If that
@@ -1382,11 +1395,13 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, gti=None,
         use_common_mean=use_common_mean,
         silent=silent
     )
-    return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
+    return _create_powerspectrum_from_result_table(table,
+                                                force_averaged=force_averaged)
 
 
 def _create_powerspectrum_from_result_table(table, force_averaged=False):
-    """Copy the columns and metadata from the results of
+    """
+    Copy the columns and metadata from the results of
     ``stingray.fourier.avg_pds_from_XX`` functions into
     `AveragedPowerspectrum` or `Powerspectrum` objects.
 
