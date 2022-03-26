@@ -15,7 +15,7 @@ Current Capabilities
 
 Currently implemented functionality in this library comprises:
 
-* loading event lists from fits files of a few missions (RXTE/PCA, NuSTAR/FPM, XMM-Newton/EPIC)
+* loading event lists from fits files of a few missions (RXTE/PCA, NuSTAR/FPM, XMM-Newton/EPIC, NICER/XTI)
 * constructing light curves from event data, various operations on light curves (e.g. addition, subtraction, joining, and truncation)
 * Good Time Interval operations
 * power spectra in Leahy, rms normalization, absolute rms and no normalization
@@ -60,7 +60,8 @@ Presentations
 
 Members of the Stingray team have given a number of presentations which introduce Stingray.
 These include:
-
+- `2nd Severo Ochoa School on Statistics, Data Mining, and Machine Learning (2021) <https://github.com/abigailStev/timeseries-tutorial>`_
+- `9th Microquasar Workshop (2021) <https://speakerdeck.com/abigailstev/time-series-exploration-with-stingray>`_
 - `European Week of Astronomy and Space Science (2018) <http://ascl.net/wordpress/2018/05/24/software-in-astronomy-symposium-presentations-part-3/>`_
 - `ADASS (Astronomical Data Analysis Software and Systems; meeting 2017, proceedings 2020) <https://ui.adsabs.harvard.edu/abs/2020ASPC..522..521M/abstract>`_
 - `AAS 16th High-Energy Astrophysics Division meeting (2017) <https://speakerdeck.com/abigailstev/stingray-open-source-spectral-timing-software>`_
