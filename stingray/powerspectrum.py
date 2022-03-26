@@ -411,7 +411,8 @@ class Powerspectrum(Crossspectrum):
     @staticmethod
     def from_time_array(times, dt, segment_size=None, gti=None, norm="frac",
                         silent=False, use_common_mean=True):
-        """Calculate AveragedPowerspectrum from an array of event times.
+        """
+        Calculate `AveragedPowerspectrum` from an array of event times.
 
         Parameters
         ----------
@@ -426,6 +427,11 @@ class Powerspectrum(Crossspectrum):
         segment_size : float
             The length, in seconds, of the light curve segments that will be
             averaged. Only relevant (and required) for `AveragedPowerspectrum`.
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Additional, optional Good Time intervals that get intersected with
+            the GTIs of the input object. Can cause errors if there are
+            overlaps between these GTIs and the input object GTIs. If that
+            happens, assign the desired GTIs to the input object.
         norm : str, default "frac"
             The normalization of the periodogram. `abs` is absolute rms, `frac`
             is fractional rms, `leahy` is Leahy+83 normalization, and `none` is
@@ -438,11 +444,6 @@ class Powerspectrum(Crossspectrum):
             to calculate it on a per-segment basis.
         silent : bool, default False
             Silence the progress bars.
-        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Additional, optional Good Time intervals that get intersected with
-            the GTIs of the input object. Can cause errors if there are
-            overlaps between these GTIs and the input object GTIs. If that
-            happens, assign the desired GTIs to the input object.
         """
 
         return powerspectrum_from_time_array(
@@ -450,9 +451,10 @@ class Powerspectrum(Crossspectrum):
             silent=silent, use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_events(events, dt, segment_size=None, norm="frac",
-                    silent=False, use_common_mean=True, gti=None):
-        """Calculate AveragedPowerspectrum from an event list
+    def from_events(events, dt, segment_size=None, gti=None, norm="frac",
+                    silent=False, use_common_mean=True):
+        """
+        Calculate `AveragedPowerspectrum` from an event list.
 
         Parameters
         ----------
@@ -467,6 +469,11 @@ class Powerspectrum(Crossspectrum):
         segment_size : float
             The length, in seconds, of the light curve segments that will be
             averaged. Only relevant (and required) for `AveragedPowerspectrum`.
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Additional, optional Good Time intervals that get intersected with
+            the GTIs of the input object. Can cause errors if there are
+            overlaps between these GTIs and the input object GTIs. If that
+            happens, assign the desired GTIs to the input object.
         norm : str, default "frac"
             The normalization of the periodogram. `abs` is absolute rms, `frac`
             is fractional rms, `leahy` is Leahy+83 normalization, and `none` is
@@ -479,20 +486,15 @@ class Powerspectrum(Crossspectrum):
             to calculate it on a per-segment basis.
         silent : bool, default False
             Silence the progress bars.
-        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Additional, optional Good Time intervals that get intersected with
-            the GTIs of the input object. Can cause errors if there are
-            overlaps between these GTIs and the input object GTIs. If that
-            happens, assign the desired GTIs to the input object.
         """
 
         return powerspectrum_from_events(
-            events, dt, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean, gti=gti)
+            events, dt, segment_size=segment_size, gti=gti, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_lightcurve(lc, segment_size=None, norm="frac",
-                        silent=False, use_common_mean=True, gti=None):
+    def from_lightcurve(lc, segment_size=None, gti=None, norm="frac",
+                        silent=False, use_common_mean=True):
         """Calculate AveragedPowerspectrum from a light curve
 
         Parameters
@@ -508,6 +510,11 @@ class Powerspectrum(Crossspectrum):
         segment_size : float
             The length, in seconds, of the light curve segments that will be
             averaged. Only relevant (and required) for `AveragedPowerspectrum`.
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Additional, optional Good Time intervals that get intersected with
+            the GTIs of the input object. Can cause errors if there are
+            overlaps between these GTIs and the input object GTIs. If that
+            happens, assign the desired GTIs to the input object.
         norm : str, default "frac"
             The normalization of the periodogram. `abs` is absolute rms, `frac`
             is fractional rms, `leahy` is Leahy+83 normalization, and `none` is
@@ -520,21 +527,17 @@ class Powerspectrum(Crossspectrum):
             to calculate it on a per-segment basis.
         silent : bool, default False
             Silence the progress bars.
-        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Additional, optional Good Time intervals that get intersected with
-            the GTIs of the input object. Can cause errors if there are
-            overlaps between these GTIs and the input object GTIs. If that
-            happens, assign the desired GTIs to the input object.
         """
 
         return powerspectrum_from_lightcurve(
-            lc, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean, gti=gti)
+            lc, segment_size=segment_size, gti=gti, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
 
     @staticmethod
-    def from_lc_iterable(iter_lc, dt, segment_size=None, norm="frac",
-                         silent=False, use_common_mean=True, gti=None):
-        """Calculate AveragedCrossspectrum from two light curves
+    def from_lc_iterable(iter_lc, dt, segment_size=None, gti=None, norm="frac",
+                         silent=False, use_common_mean=True):
+        """
+        Calculate `AveragedCrossspectrum` from two light curves.
 
         Parameters
         ----------
@@ -549,6 +552,11 @@ class Powerspectrum(Crossspectrum):
         segment_size : float
             The length, in seconds, of the light curve segments that will be
             averaged. Only relevant (and required) for `AveragedPowerspectrum`.
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Additional, optional Good Time intervals that get intersected with
+            the GTIs of the input object. Can cause errors if there are
+            overlaps between these GTIs and the input object GTIs. If that
+            happens, assign the desired GTIs to the input object.
         norm : str, default "frac"
             The normalization of the periodogram. `abs` is absolute rms, `frac`
             is fractional rms, `leahy` is Leahy+83 normalization, and `none` is
@@ -561,20 +569,15 @@ class Powerspectrum(Crossspectrum):
             to calculate it on a per-segment basis.
         silent : bool, default False
             Silence the progress bars.
-        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-            Additional, optional Good Time intervals that get intersected with
-            the GTIs of the input object. Can cause errors if there are
-            overlaps between these GTIs and the input object GTIs. If that
-            happens, assign the desired GTIs to the input object.
         """
 
         return powerspectrum_from_lc_iterable(
-            iter_lc, dt, segment_size=segment_size, norm=norm,
-            silent=silent, use_common_mean=use_common_mean, gti=gti)
+            iter_lc, dt, segment_size=segment_size, gti=gti, norm=norm,
+            silent=silent, use_common_mean=use_common_mean)
 
     def _initialize_from_any_input(
-            self, data, dt=None, segment_size=None, norm="frac",
-            silent=False, use_common_mean=True, gti=None):
+            self, data, dt=None, segment_size=None, gti=None, norm="frac",
+            silent=False, use_common_mean=True):
         """
         Initialize the class, trying to understand the input types.
 
@@ -874,7 +877,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         check_gtis(self.gti)
 
         start_inds, end_inds = \
-            bin_intervals_from_gtis(current_gtis, segment_size, lc.time, dt=lc.dt)
+            bin_intervals_from_gtis(current_gtis, segment_size, lc.time,
+                                    dt=lc.dt)
 
         power_all = []
         nphots_all = []
@@ -912,11 +916,11 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
 
     This class will divide a :class:`Lightcurve` object into segments of
     length ``segment_size``, create a power spectrum for each segment and store
-    all powers in a matrix as a function of both time (using the mid-point of each
-    segment) and frequency.
+    all powers in a matrix as a function of both time (using the mid-point of 
+    each segment) and frequency.
 
-    This is often used to trace changes in period of a (quasi-)periodic signal over
-    time.
+    This is often used to trace changes in period of a (quasi-)periodic signal 
+    over time.
 
     Parameters
     ----------
