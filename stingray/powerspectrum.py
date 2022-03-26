@@ -63,38 +63,39 @@ class Powerspectrum(Crossspectrum):
 
     skip_checks: bool
         Skip initial checks, for speed or other reasons (you need to trust your
-        inputs!)
+        inputs!).
 
     Attributes
     ----------
     norm: {``leahy`` | ``frac`` | ``abs`` | ``none`` }
-        the normalization of the power spectrun
+        The normalization of the power spectrum.
 
     freq: numpy.ndarray
-        The array of mid-bin frequencies that the Fourier transform samples
+        The array of mid-bin frequencies that the Fourier transform samples.
 
     power: numpy.ndarray
         The array of normalized squared absolute values of Fourier
-        amplitudes
+        amplitudes.
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
         An approximation for each bin given by ``power_err= power/sqrt(m)``.
         Where ``m`` is the number of power averaged in each bin (by frequency
-        binning, or averaging power spectrum). Note that for a single
-        realization (``m=1``) the error is equal to the power.
+        binning, or averaging power spectra of segments of a light curve). 
+        Note that for a single realization (``m=1``) the error is equal to the 
+        power.
 
     df: float
-        The frequency resolution
+        The frequency resolution.
 
     m: int
-        The number of averaged powers in each bin
+        The number of averaged powers in each bin.
 
     n: int
-        The number of data points in the light curve
+        The number of data points in the light curve.
 
     nphots: float
-        The total number of photons in the light curve
+        The total number of photons in the light curve.
 
     legacy: bool
         Use the legacy machinery of `AveragedPowerspectrum`. This might be 
@@ -711,8 +712,9 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The uncertainties of ``power``.
         An approximation for each bin given by ``power_err= power/sqrt(m)``.
         Where ``m`` is the number of power averaged in each bin (by frequency
-        binning, or averaging powerspectrum). Note that for a single
-        realization (``m=1``) the error is equal to the power.
+        binning, or averaging power spectra of segments of a light curve). 
+        Note that for a single realization (``m=1``) the error is equal to the 
+        power.
 
     df: float
         The frequency resolution.
