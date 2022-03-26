@@ -19,15 +19,18 @@ __all__ = ['load_gtis', 'check_gtis',
            'cross_two_gtis', 'cross_gtis', 'get_btis',
            'get_gti_extensions_from_pattern', 'get_gti_from_all_extensions',
            'get_gti_from_hdu', 'get_gti_lengths', 'get_total_gti_length',
-           'check_separate', 'append_gtis', 'join_gtis', 'generate_indices_of_gti_boundaries',
+           'check_separate', 'append_gtis', 'join_gtis',
+           'generate_indices_of_gti_boundaries',
            'time_intervals_from_gtis', 'bin_intervals_from_gtis',
-           'gti_border_bins', 'generate_indices_of_segment_boundaries_unbinned', 'generate_indices_of_segment_boundaries_binned']
+           'gti_border_bins',
+           'generate_indices_of_segment_boundaries_unbinned',
+           'generate_indices_of_segment_boundaries_binned']
 
 
 def gti_len(gti):
     """Deprecated, will be removed in version 2.0. Use get_total_gti_length."""
-    warnings.warn("This function is deprecated. Use get_total_gti_length instead",
-                  DeprecationWarning)
+    warnings.warn("This function is deprecated. Use get_total_gti_length "\
+                  "instead", DeprecationWarning)
     return get_total_gti_length(gti, minlen=0)
 
 
@@ -328,7 +331,8 @@ def check_gtis(gti):
 
 
 @jit(nopython=True)
-def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):  # pragma: no cover
+def create_gti_mask_jit(time, gtis, mask, gti_mask,
+                        min_length=0):  # pragma: no cover
     """
     Compiled and fast function to create GTI mask.
 
@@ -1444,7 +1448,8 @@ def generate_indices_of_gti_boundaries(times, gti, dt=0):
 
 
 def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size):
-    """Get the indices of events from different segments of the observation.
+    """
+    Get the indices of events from different segments of the observation.
 
     This is a generator, yielding the boundaries of each segment and the
     corresponding indices in the time array.
