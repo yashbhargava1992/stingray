@@ -104,7 +104,7 @@ Documentation
 -------------
 
 The documentation including tutorials is hosted `here <https://docs.stingray.science/>`_.
-The documentation uses `sphinx <https://www.sphinx-doc.org/en/stable/>`_ to build and requires the extension sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`_.
+The documentation uses `sphinx <https://www.sphinx-doc.org/en/stable/>`_ to build and requires the extensions `sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`_ and `nbsphinx <https://pypi.org/project/nbsphinx/>`_.
 
 You can build the API reference yourself by going into the ``docs`` folder within the ``stingray`` root
 directory and running the ``Makefile``: ::
