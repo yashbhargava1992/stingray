@@ -32,7 +32,8 @@ def gti_len(gti):
 
 
 def get_gti_lengths(gti):
-    """Calculate the length of each Good Time Interval.
+    """
+    Calculate the length of each Good Time Interval.
 
     Parameters
     ----------
@@ -54,7 +55,8 @@ def get_gti_lengths(gti):
 
 
 def get_total_gti_length(gti, minlen=0):
-    """Calculate the total exposure during Good Time Intervals.
+    """
+    Calculate the total exposure during Good Time Intervals.
 
     Parameters
     ----------
@@ -98,8 +100,6 @@ def load_gtis(fits_file, gtistring=None):
     -------
     gti_list : list
         A list of GTI ``(start, stop)`` pairs extracted from the FITS file.
-
-
     """
 
     gtistring = assign_value_if_none(gtistring, 'GTI')
@@ -117,7 +117,8 @@ def load_gtis(fits_file, gtistring=None):
 
 
 def get_gti_extensions_from_pattern(lchdulist, name_pattern="GTI"):
-    """Gets the GTI extensions that match a given pattern.
+    """
+    Gets the GTI extensions that match a given pattern.
 
     Parameters
     ----------
@@ -156,7 +157,8 @@ def get_gti_extensions_from_pattern(lchdulist, name_pattern="GTI"):
 
 
 def hdu_contains_gti(hdu):
-    """Test if a given FITS HDU contains a list of GTIs.
+    """
+    Test if a given FITS HDU contains a list of GTIs.
 
     Examples
     --------
@@ -178,7 +180,8 @@ def hdu_contains_gti(hdu):
 
 
 def get_gti_from_hdu(gtihdu):
-    """Get the GTIs from a given FITS extension.
+    """
+    Get the GTIs from a given FITS extension.
 
     Parameters
     ----------
@@ -218,10 +221,10 @@ def get_gti_from_hdu(gtihdu):
     return gti_list
 
 
-def get_gti_from_all_extensions(
-    lchdulist, accepted_gtistrings=["GTI"], det_numbers=None
-):
-    """Intersect the GTIs from the all accepted extensions.
+def get_gti_from_all_extensions(lchdulist, accepted_gtistrings=["GTI"],
+                                det_numbers=None):
+    """
+    Intersect the GTIs from the all accepted extensions.
 
     Parameters
     ----------
@@ -278,7 +281,8 @@ def get_gti_from_all_extensions(
 
 
 def check_gtis(gti):
-    """Check if GTIs are well-behaved.
+    """
+    Check if GTIs are well-behaved.
 
     Check that:
 
@@ -377,7 +381,8 @@ def create_gti_mask_jit(time, gtis, mask, gti_mask, min_length=0):  # pragma: no
 
 def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
                     return_new_gtis=False, dt=None, epsilon=0.001):
-    """Create GTI mask.
+    """
+    Create GTI mask.
 
     Assumes that no overlaps are present between GTIs
 
@@ -482,7 +487,8 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
 def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
                              return_new_gtis=False, dt=None, epsilon=0.001):
-    """Create GTI mask, allowing for non-constant ``dt``.
+    """
+    Create GTI mask, allowing for non-constant ``dt``.
 
     Assumes that no overlaps are present between GTIs.
 
@@ -563,7 +569,8 @@ def create_gti_mask_complete(time, gtis, safe_interval=0, min_length=0,
 
 def create_gti_from_condition(time, condition,
                               safe_interval=0, dt=None):
-    """Create a GTI list from a time array and a boolean mask (``condition``).
+    """
+    Create a GTI list from a time array and a boolean mask (``condition``).
 
     Parameters
     ----------
@@ -615,7 +622,8 @@ def create_gti_from_condition(time, condition,
 
 
 def cross_two_gtis(gti0, gti1):
-    """Extract the common intervals from two GTI lists *EXACTLY*.
+    """
+    Extract the common intervals from two GTI lists *EXACTLY*.
 
     Parameters
     ----------
@@ -963,7 +971,8 @@ def append_gtis(gti0, gti1):
 
 
 def join_gtis(gti0, gti1):
-    """Union of two GTIs.
+    """
+    Union of two GTIs.
 
     If GTIs are mutually exclusive, it calls ``append_gtis``. Otherwise we put
     the extremes of partially overlapping GTIs on an ideal line and look at the
@@ -1041,7 +1050,8 @@ def join_gtis(gti0, gti1):
 
 def time_intervals_from_gtis(gtis, segment_size, fraction_step=1,
                              epsilon=1e-5):
-    """Compute start/stop times of equal time intervals, compatible with GTIs.
+    """
+    Compute start/stop times of equal time intervals, compatible with GTIs.
 
     Used to start each FFT/PDS/cospectrum from the start of a GTI,
     and stop before the next gap in data (end of GTI).
