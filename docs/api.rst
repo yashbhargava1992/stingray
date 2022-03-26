@@ -88,6 +88,8 @@ Dynamical Powerspectrum
 .. autoclass:: stingray.DynamicalPowerspectrum
    :members:
    :inherited-members:
+   
+----
 
 CrossCorrelation
 ----------------
