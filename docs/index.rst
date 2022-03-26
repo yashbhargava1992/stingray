@@ -33,9 +33,8 @@ Contents
    intro
    install
    core
-   quicklook
+   dataexplo
    modeling
-   spectime
    simulator
    pulsar
    deadtime
