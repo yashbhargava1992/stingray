@@ -803,10 +803,8 @@ class TestAveragedPowerspectrum(object):
                 else:
                     i, t = t, t + t0
         with pytest.warns(UserWarning) as record:
-            cs = AveragedPowerspectrum(
-                iter_lc(self.lc, 1),
-                segment_size=1, legacy=legacy,
-                gti=self.lc.gti)
+            cs = AveragedPowerspectrum(iter_lc(self.lc, 1), segment_size=1,
+                                       legacy=legacy, gti=self.lc.gti)
         message = "The averaged Power spectrum from a generator "
 
         assert np.any([message in r.message.args[0]
