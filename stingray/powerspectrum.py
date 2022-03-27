@@ -451,9 +451,10 @@ class Powerspectrum(Crossspectrum):
             Silence the progress bars.
         """
 
-        return powerspectrum_from_time_array(
-            times, dt, segment_size=segment_size, gti=gti, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+        return powerspectrum_from_time_array(times, dt,
+                                             segment_size=segment_size,
+                                             gti=gti, norm=norm, silent=silent,
+                                             use_common_mean=use_common_mean)
 
     @staticmethod
     def from_events(events, dt, segment_size=None, gti=None, norm="frac",
@@ -493,10 +494,11 @@ class Powerspectrum(Crossspectrum):
         silent : bool, default False
             Silence the progress bars.
         """
-
-        return powerspectrum_from_events(
-            events, dt, segment_size=segment_size, gti=gti, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+        if gti is None:
+            gti = events.gti
+        return powerspectrum_from_events(events, dt, segment_size=segment_size,
+                                         gti=gti, norm=norm, silent=silent,
+                                         use_common_mean=use_common_mean)
 
     @staticmethod
     def from_lightcurve(lc, segment_size=None, gti=None, norm="frac",
@@ -538,9 +540,9 @@ class Powerspectrum(Crossspectrum):
         """
         if gti is None:
             gti = lc.gti
-        return powerspectrum_from_lightcurve(
-            lc, segment_size=segment_size, gti=gti, norm=norm,
-            silent=silent, use_common_mean=use_common_mean)
+        return powerspectrum_from_lightcurve(lc, segment_size=segment_size,
+                                             gti=gti, norm=norm, silent=silent,
+                                             use_common_mean=use_common_mean)
 
     @staticmethod
     def from_lc_iterable(iter_lc, dt, segment_size=None, gti=None, norm="frac",
@@ -1390,13 +1392,9 @@ def powerspectrum_from_lc_iterable(iter_lc, dt, segment_size=None, gti=None,
                     "The inputs to `powerspectrum_from_lc_iterable`"
                     " must be Lightcurve objects or arrays")
 
-    table = avg_pds_from_iterable(
-        iterate_lc_counts(iter_lc),
-        dt,
-        norm=norm,
-        use_common_mean=use_common_mean,
-        silent=silent
-    )
+    table = avg_pds_from_iterable(iterate_lc_counts(iter_lc), dt, norm=norm,
+                                  use_common_mean=use_common_mean,
+                                  silent=silent)
     return _create_powerspectrum_from_result_table(table,
                                                 force_averaged=force_averaged)
 
