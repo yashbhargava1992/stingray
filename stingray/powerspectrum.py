@@ -504,7 +504,7 @@ class Powerspectrum(Crossspectrum):
     def from_lightcurve(lc, segment_size=None, gti=None, norm="frac",
                         silent=False, use_common_mean=True):
         """
-        Calculate ``AveragedPowerspectrum`` from a light curve.
+        Calculate a power spectrum from a light curve.
 
         Parameters
         ----------
@@ -664,8 +664,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
     Parameters
     ----------
-    data: :class:`stingray.Lightcurve`object OR iterable of
-    :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
+    data: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
         The light curve data to be Fourier-transformed.
 
     segment_size: float
@@ -741,7 +740,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The total number of photons in the light curve.
 
     legacy: bool
-        Use the legacy machinery of `AveragedPowerspectrum`. This might be
+        Use the legacy machinery of ``AveragedPowerspectrum``. This might be
         useful to compare with old results, and is also needed to use light
         curve lists as an input, to conserve the spectra of each segment, or to
         use the large_data option.
@@ -785,7 +784,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
 
         if isinstance(data, Generator):
             warnings.warn(
-                "The averaged Power spectrum from a generator of "
+                "The averaged power spectrum from a generator of "
                 "light curves pre-allocates the full list of light "
                 "curves, losing all advantage of lazy loading. If it "
                 "is important for you, use the "
