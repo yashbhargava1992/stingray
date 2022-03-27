@@ -249,7 +249,7 @@ class TestGTI(object):
         # Simulate something *clearly* non-constant
         counts = np.random.poisson(
             10000 + 2000 * np.sin(2 * np.pi * times))
-
+        # TODO: `counts` isn't actually used here.
         start_bins, stop_bins = bin_intervals_from_gtis(gti, 20, times)
         assert np.allclose(start_bins, [0, 200, 400, 600, 800])
 
