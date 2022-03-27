@@ -1249,7 +1249,8 @@ def powerspectrum_from_events(events, dt, segment_size=None, gti=None,
     spec : `AveragedPowerspectrum` or `Powerspectrum`
         The output periodogram.
     """
-
+    if gti is None:
+        gti = events.gti
     return powerspectrum_from_time_array(
         events.time, dt, segment_size, gti, norm=norm,
         silent=silent, use_common_mean=use_common_mean
