@@ -1305,12 +1305,12 @@ def powerspectrum_from_lightcurve(lc, segment_size=None, gti=None, norm="frac",
     err = None
     if lc.err_dist == "gauss":
         err = lc.counts_err
+    if gti is None:
+        gti = lc.gti
 
-    table = avg_pds_from_events(
-        lc.time, gti, segment_size, lc.dt,
-        norm=norm, use_common_mean=use_common_mean,
-        silent=silent,
-        fluxes=lc.counts, errors=err)
+    table = avg_pds_from_events(lc.time, gti, segment_size, lc.dt, norm=norm,
+                                use_common_mean=use_common_mean, silent=silent,
+                                fluxes=lc.counts, errors=err)
 
     return _create_powerspectrum_from_result_table(table,
                                                 force_averaged=force_averaged)
