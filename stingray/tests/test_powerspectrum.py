@@ -53,7 +53,8 @@ class TestAveragedPowerspectrumEvents(object):
                                               dt=cls.dt, norm="leahy",
                                               silent=True)
 
-        cls.leahy_pds_sng = Powerspectrum(cls.lc, dt=cls.dt, norm="leahy")
+        cls.leahy_pds_sng = Powerspectrum(
+            cls.lc, dt=cls.dt, norm="leahy")
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_common_mean_gives_comparable_scatter(self, norm):
@@ -80,9 +81,10 @@ class TestAveragedPowerspectrumEvents(object):
                           0.5412103, atol=1e-4)
 
     def test_legacy_equivalent(self):
-        leahy_pds = AveragedPowerspectrum(
-            self.lc, segment_size=self.segment_size, dt=self.dt, norm="leahy",
-            silent=True, legacy=True)
+        leahy_pds = AveragedPowerspectrum(self.lc,
+                                          segment_size=self.segment_size,
+                                          dt=self.dt, norm="leahy",
+                                          silent=True, legacy=True)
         for attr in ["power", "unnorm_power"]:
             assert np.allclose(
                 getattr(leahy_pds, attr),
@@ -147,7 +149,8 @@ class TestAveragedPowerspectrumEvents(object):
                 # In order for error bars to be considered,
                 # err_dist has to be gauss.
                 lc.err_dist = "gauss"
-                lc._counts_err = np.zeros_like(lc.counts) + lc.counts.mean()**0.5
+                lc._counts_err = np.zeros_like(lc.counts) + \
+                                 lc.counts.mean()**0.5
                 yield lc
 
         lccs = AveragedPowerspectrum.from_lc_iterable(
@@ -803,8 +806,10 @@ class TestAveragedPowerspectrum(object):
                 else:
                     i, t = t, t + t0
         with pytest.warns(UserWarning) as record:
-            cs = AveragedPowerspectrum(iter_lc(self.lc, 1), segment_size=1,
-                                       legacy=legacy, gti=self.lc.gti)
+            cs = AveragedPowerspectrum(
+                iter_lc(self.lc, 1),
+                segment_size=1, legacy=legacy,
+                gti=self.lc.gti)
         message = "The averaged Power spectrum from a generator "
 
         assert np.any([message in r.message.args[0]
