@@ -536,7 +536,8 @@ class Powerspectrum(Crossspectrum):
         silent : bool, default False
             Silence the progress bars.
         """
-
+        if gti is None:
+            gti = lc.gti
         return powerspectrum_from_lightcurve(
             lc, segment_size=segment_size, gti=gti, norm=norm,
             silent=silent, use_common_mean=use_common_mean)
