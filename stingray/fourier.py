@@ -918,7 +918,8 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None,
 
 def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True,
                           silent=False):
-    """Calculate the average periodogram from an iterable of light curves
+    """
+    Calculate the average periodogram from an iterable of light curves
 
     Parameters
     ----------
