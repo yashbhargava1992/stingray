@@ -211,8 +211,9 @@ class TestGTI(object):
     def test_join_gtis_overlapping(self):
         gti0 = [[0, 1], [2, 3], [4, 8]]
         gti1 = [[7, 8], [10, 11], [12, 13]]
-        assert np.all(join_gtis(gti0, gti1) == np.array([[0, 1], [2, 3], [4, 8],
-                                                         [10, 11], [12, 13]]))
+        assert np.all(join_gtis(gti0, gti1) == np.array([[0, 1], [2, 3],
+                                                         [4, 8], [10, 11],
+                                                         [12, 13]]))
 
     def test_time_intervals_from_gtis(self):
         """Test the division of start and end times to calculate spectra."""
