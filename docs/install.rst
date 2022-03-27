@@ -88,6 +88,11 @@ You may need to install tox first::
 
    $ pip install tox
 
+To run a specific test file (e.g., test_io.py), try::
+
+    $ cd stingray
+    $ py.test tests/test_io.py
+
 If you have installed Stingray via pip or conda, the source directory might
 not be easily accessible. Once installed, you can also run the tests using::
 
@@ -115,7 +120,7 @@ directory and running the ``Makefile``: ::
 If that doesn't work on your system, you can invoke ``sphinx-build`` itself from the stingray source directory: ::
 
     $ cd stingray
-    $ $ sphinx-build docs docs/_build
+    $ sphinx-build docs docs/_build
 
 The documentation should be located in ``stingray/docs/_build``. Try opening ``./docs/_build/index.rst`` from
 the stingray source directory.
