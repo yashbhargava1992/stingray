@@ -1,7 +1,7 @@
 Changelog
 =========
 
-v1.0 (2022-03-28)
+v1.0 (2022-03-29)
 ---------------------
 TL,DR: these things will break your code with v1.0:
 
@@ -52,7 +52,7 @@ Bug fixes
 
 `Full list of changes`__
 
-__ https://github.com/StingraySoftware/stingray/compare/v0.3...v1.0-beta
+__ https://github.com/StingraySoftware/stingray/compare/v0.3...v1.0
 
 v1.0beta was released on 2022-02-25.
 
