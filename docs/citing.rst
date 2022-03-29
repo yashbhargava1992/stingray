@@ -3,7 +3,7 @@ Citing Stingray
 ***************
 
 Citations are still the main currency of the academic world, and *the* best way to ensure that Stingray continues to be supported and we can continue to work on it.
-If you use Stingray in data analysis leading to a publication, we ask that you cite *both* a `DOI <https://www.doi.org>`_ which points to the software itself *and* our papers describing the Stingray project.
+If you use Stingray in data analysis leading to a publication, we ask that you cite *both* a `DOI <https://www.doi.org>`_, which points to the software itself, *and* our papers describing the Stingray project.
 
 DOI
 ===
@@ -74,27 +74,6 @@ Please cite both of the following papers:
            document.body.removeChild(el);
        }
 
-       function copyAsclBib() {
-           var bibtex = `@MISC{2016ascl.soft08001H,
-             author = {{Huppenkothen}, Daniela and {Bachetti}, Matteo and {Stevens}, Abigail L. and {Migliari}, Simone and {Balm}, Paul},
-             title = "{Stingray: Spectral-timing software}",
-             keywords = {Software},
-             year = 2016,
-             month = aug,
-             eid = {ascl:1608.001},
-             pages = {ascl:1608.001},
-             archivePrefix = {ascl},
-             eprint = {1608.001},
-             adsurl = {https://ui.adsabs.harvard.edu/abs/2016ascl.soft08001H},
-             adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-           }`;
-           const el = document.createElement('textarea');
-           el.value = bibtex;
-           document.body.appendChild(el);
-           el.select();
-           document.execCommand('copy');
-           document.body.removeChild(el);
-       }
    </script>
 
    <ul>

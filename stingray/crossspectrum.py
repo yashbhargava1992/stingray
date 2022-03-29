@@ -503,7 +503,10 @@ class Crossspectrum(StingrayObject):
     ----------------
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
-        objects
+        objects. Could throw errors if these GTIs have overlaps with the input 
+        `Lightcurve` GTIs! If you're getting errors regarding your GTIs, don't 
+        use this and only give GTIs to the `Lightcurve` objects before making 
+        the cross spectrum.
 
     lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
         For backwards compatibility only. Like ``data1``, but no
@@ -1402,10 +1405,14 @@ class Crossspectrum(StingrayObject):
         Other parameters
         ----------------
         segment_size : float
-            The length, in seconds, of the light curve segments that will be averaged.
-            Only relevant (and required) for AveragedCrossspectrum
+            The length, in seconds, of the light curve segments that will be
+            averaged. Only relevant (and required) for `AveragedCrossspectrum`.
         gti : [[gti0, gti1], ...]
-            Common Good Time intervals
+            Good Time intervals. Defaults to the common GTIs from the two input
+            objects. Could throw errors if these GTIs have overlaps with the
+            input object GTIs! If you're getting errors regarding your GTIs,
+            don't use this and only give GTIs to the input objects before
+            making the cross spectrum.
         norm : str, default "frac"
             The normalization of the periodogram. "abs" is absolute rms, "frac" is
             fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
@@ -1485,7 +1492,10 @@ class Crossspectrum(StingrayObject):
             the real part
         gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time intervals. Defaults to the common GTIs from the two input
-            objects
+            objects. Could throw errors if these GTIs have overlaps with the
+            input object GTIs! If you're getting errors regarding your GTIs,
+            don't use this and only give GTIs to the input objects before
+            making the cross spectrum.
         """
 
         return crossspectrum_from_events(
@@ -1544,7 +1554,10 @@ class Crossspectrum(StingrayObject):
             the real part
         gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time intervals. Defaults to the common GTIs from the two input
-            objects
+            objects. Could throw errors if these GTIs have overlaps with the
+            input object GTIs! If you're getting errors regarding your GTIs,
+            don't  use this and only give GTIs to the input objects before
+            making the cross spectrum.
         """
         return crossspectrum_from_lightcurve(
             lc1,
@@ -1605,7 +1618,10 @@ class Crossspectrum(StingrayObject):
             the real part
         gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
             Good Time intervals. Defaults to the common GTIs from the two input
-            objects
+            objects. Could throw errors if these GTIs have overlaps with the
+            input object GTIs! If you're getting errors regarding your GTIs,
+            don't  use this and only give GTIs to the input objects before
+            making the cross spectrum.
         """
 
         return crossspectrum_from_lc_iterable(
@@ -1706,16 +1722,18 @@ class AveragedCrossspectrum(Crossspectrum):
     Parameters
     ----------
     data1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
-        A light curve from which to compute the cross spectrum. In some cases, this would
-        be the light curve of the wavelength/energy/frequency band of interest.
+        A light curve from which to compute the cross spectrum. In some cases, 
+        this would be the light curve of the wavelength/energy/frequency band 
+        of interest.
 
     data2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
-        A second light curve to use in the cross spectrum. In some cases, this would be
-        the wavelength/energy/frequency reference band to compare the band of interest with.
+        A second light curve to use in the cross spectrum. In some cases, this 
+        would be the wavelength/energy/frequency reference band to compare the 
+        band of interest with.
 
     segment_size: float
-        The size of each segment to average. Note that if the total
-        duration of each :class:`Lightcurve` object in ``lc1`` or ``lc2`` is not an
+        The size of each segment to average. Note that if the total duration of
+        each :class:`Lightcurve` object in ``lc1`` or ``lc2`` is not an
         integer multiple of the ``segment_size``, then any fraction left-over
         at the end of the time series will be lost. Otherwise you introduce
         artifacts.
@@ -1727,7 +1745,10 @@ class AveragedCrossspectrum(Crossspectrum):
     ----------------
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
-        objects
+        objects. Could throw errors if these GTIs have overlaps with the 
+        input object GTIs! If you're getting errors regarding your GTIs, 
+        don't  use this and only give GTIs to the input objects before 
+        making the cross spectrum.
 
     dt : float
         The time resolution of the light curve. Only needed when constructing
@@ -1767,53 +1788,57 @@ class AveragedCrossspectrum(Crossspectrum):
         inputs!)
 
     use_common_mean: bool
-        Averaged Cross spectra are normalized in two possible ways: one is by normalizing
+        Averaged cross spectra are normalized in two possible ways: one is by normalizing
         each of the single spectra that get averaged, the other is by normalizing after the
         averaging. If `use_common_mean` is selected, the spectrum will be normalized
         after the average.
 
     legacy: bool
-        Use the legacy machinery of AveragedCrossspectrum. This might be useful to compare
-        with old results, and is also needed to use light curve lists as an input, to
-        conserve the spectra of each segment, or to use the large_data option.
+        Use the legacy machinery of `AveragedCrossspectrum`. This might be 
+        useful to compare with old results, and is also needed to use light 
+        curve lists as an input, to conserve the spectra of each segment, or 
+        to use the large_data option.
 
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
-        objects
+        objects. Could throw errors if these GTIs have overlaps with the 
+        input object GTIs! If you're getting errors regarding your GTIs, 
+        don't  use this and only give GTIs to the input objects before 
+        making the cross spectrum.
 
     Attributes
     ----------
     freq: numpy.ndarray
-        The array of mid-bin frequencies that the Fourier transform samples
+        The array of mid-bin frequencies that the Fourier transform samples.
 
     power: numpy.ndarray
-        The array of cross spectra
+        The array of cross spectra.
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
         An approximation for each bin given by ``power_err= power/sqrt(m)``.
         Where ``m`` is the number of power averaged in each bin (by frequency
-        binning, or averaging powerspectrum). Note that for a single
-        realization (``m=1``) the error is equal to the power.
+        binning, or averaging power spectra of segments of a light curve). 
+        Note that for a single realization (``m=1``) the error is equal to the 
+        power.
 
     df: float
-        The frequency resolution
+        The frequency resolution.
 
     m: int
-        The number of averaged cross spectra
+        The number of averaged cross spectra.
 
     n: int
-        The number of time bins per segment of light curve
+        The number of time bins per segment of light curve.
 
     nphots1: float
-        The total number of photons in the first (interest) light curve
+        The total number of photons in the first (interest) light curve.
 
     nphots2: float
-        The total number of photons in the second (reference) light curve
+        The total number of photons in the second (reference) light curve.
 
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
-        Good Time intervals. Defaults to the common GTIs from the two input
-        objects
+        Good Time intervals.
     """
 
     def __init__(
@@ -2738,7 +2763,7 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
             "Defaulting to sqrt(2 / M) in Leahy norm, rescaled to the appropriate norm."
         )
 
-    Nph = np.sqrt(cs.nphots1 * cs.nphots1)
+    Nph = np.sqrt(cs.nphots1 * cs.nphots2)
     default_err = np.sqrt(2 / cs.m) * Nph / 2
 
     dRe[bad] = default_err

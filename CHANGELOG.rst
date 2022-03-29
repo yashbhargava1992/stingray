@@ -1,9 +1,9 @@
 Changelog
 =========
 
-v1.0beta (2022-02-25)
+v1.0 (2022-03-29)
 ---------------------
-TL,DR: these things will break your code with v1.0beta:
+TL,DR: these things will break your code with v1.0:
 
 - Python version < 3.8
 - The ``gtis`` keyword in `pulse/pulsar.py` (it is now ``gti``, without the 's')
@@ -18,7 +18,7 @@ New
 - New infrastructure for converting ``EventList`` and ``LightCurve`` objects into Astropy ``TimeSeries``
 - New infrastructure for converting most Stingray classes into Astropy ``Table`` objects, Xarray and Pandas data frames.
 - Save and load of most Stingray classes to/from many different file formats (``pickle``, ``ECSV``, ``HDF5``, ``FITS``, and all formats compatible with Astropy Table)
-- Accept input ``EventList`` in ``DynamicalPowerSpectrum`` 
+- Accept input ``EventList`` in ``DynamicalPowerSpectrum``
 - New ``stingray.fourier`` module containing the basic timing products, usable on ``numpy`` arrays, and centralizes fft import
 - New methods in ``Crossspectrum`` and ``Powerspectrum`` to load data from specific inputs: ``from_events``, ``from_lightcurve``, ``from_time_array``, ``from_lc_list`` (``from_time_array`` was also tested using memory-mapped event lists as inputs: useful in very large datasets)
 - New and improved spectral timing methods: ``ComplexCovarianceSpectrum``, ``CovarianceSpectrum``, ``LagSpectrum``, ``RmsSpectrum``
@@ -52,7 +52,9 @@ Bug fixes
 
 `Full list of changes`__
 
-__ https://github.com/StingraySoftware/stingray/compare/v0.3...v1.0-beta
+__ https://github.com/StingraySoftware/stingray/compare/v0.3...v1.0
+
+v1.0beta was released on 2022-02-25.
 
 v0.3 (2021-05-31)
 -----------------

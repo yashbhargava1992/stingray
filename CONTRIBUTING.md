@@ -4,21 +4,33 @@
 
 > All great things have small beginnings.
 
-Hello there! We love and appreciate every small contribution you can make to improve stingray!
-We are proudly open source and believe our(yes! yours as well) work will help enhance the quality of research around the world.  We want to make contributing to stingray as easy and transparent as possible, whether it's:
+Hello there! We love and appreciate every small contribution you can make to
+improve Stingray! We are proudly open source and believe our(yes! yours as
+well) work will help enhance the quality of research around the world.  We
+want to make contributing to stingray as easy and transparent as possible,
+whether it's:
 
 - Reporting a bug
 - Discussing the current state of the code
 - Submitting a fix
 - Proposing new features
 
-A successful project is not just built by amazing programmers but by the combined, unrelenting efforts of coders, testers, reviewers, and documentation writers. There are a few guidelines that we need all contributors to follow so that we can have a chance of keeping on top of things.
+A successful project is not just built by amazing programmers but by the
+combined, unrelenting efforts of coders, testers, reviewers, and documentation
+writers. There are a few guidelines that we need all contributors to follow so
+that we can have a chance of keeping on top of things.
 
 ## Contribution Guidelines
 
 ---
 
-Contributions from everyone, experienced and inexperienced, are welcome! If you don't know where to start, look at the [Open Issues](https://github.com/StingraySoftware/stingray/issues) and/or get involved in our [Slack channel](http://slack-invite.timelabtechnologies.com/) . This code is written in Python 3.8+, but in general we will follow the Astropy/Numpy minimum Python versions. Tests run at each commit during Pull Requests, so it is easy to single out points in the code that break this compatibility.
+Contributions from everyone, experienced and inexperienced, are welcome! If
+you don't know where to start, look at the
+[Open Issues](https://github.com/StingraySoftware/stingray/issues) and/or get
+involved in our [Slack channel](http://slack-invite.timelabtechnologies.com/).
+This code is written in Python 3.8+, but in general we will follow the Astropy/
+Numpy minimum Python versions. Tests run at each commit during Pull Requests,
+so it is easy to single out points in the code that break this compatibility.
 
 - **Branches:**
     - Don't use your main **branch (forked) for anything. Consider deleting your main** branch.
@@ -36,7 +48,10 @@ Contributions from everyone, experienced and inexperienced, are welcome! If you 
 
 ### Contribution Workflow
 
-These, conceptually, are the steps you will follow in contributing to stingray. These steps keep work well organized, with readable history. This in turn makes it easier for project maintainers (that might be you) to see what you’ve done, and why you did it:
+These, conceptually, are the steps you will follow in contributing to
+Stingray. These steps keep work well organized, with readable history. This in
+turn makes it easier for project maintainers (that might be you) to see what
+you’ve done, and why you did it:
 
 1. Regularly fetch latest stingray development version `stingray/main` from GitHub.
 2. Make a new feature branch. **Recommended:** Use virtual environments to work on branch.
@@ -118,7 +133,9 @@ Code Reviews are super-useful: another contributor can review the code, which me
 
 ---
 
-The testing framework used by stingray is the pytest framework with tox. To run the tests, you will need to make sure you have the pytest package (version 3.1 or later) as well as the tox tool installed.
+The testing framework used by stingray is the pytest framework with tox. To
+run the tests, you will need to make sure you have the pytest package (version
+3.1 or later) as well as the tox tool installed.
 
 - Execute tests using the ```tox -e <test environment>``` command.
 - All tests should be py.test compliant: [http://pytest.org/latest/](http://pytest.org/latest/).
@@ -130,4 +147,4 @@ The testing framework used by stingray is the pytest framework with tox. To run 
 
 ---
 
-- Please refer [CODE_OF_CONDUCT.md](https://github.com/StingraySoftware/stingray/blob/master/CODE_OF_CONDUCT.md) to read about the Community Guidelines
+- Please refer to [CODE_OF_CONDUCT.md](https://github.com/StingraySoftware/stingray/blob/main/CODE_OF_CONDUCT.md) to read about the Community Guidelines

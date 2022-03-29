@@ -11,7 +11,8 @@ from .utils import histogram, show_progress, sum_if_not_none_or_initialize, fft,
 
 
 def positive_fft_bins(n_bin, include_zero=False):
-    """Give the range of positive frequencies of a complex FFT.
+    """
+    Give the range of positive frequencies of a complex FFT.
 
     This assumes we are using Numpy's FFT, or something compatible
     with it, like ``pyfftw.interfaces.numpy_fft``, where the positive
@@ -81,7 +82,8 @@ def positive_fft_bins(n_bin, include_zero=False):
 
 
 def poisson_level(norm="frac", meanrate=None, n_ph=None, backrate=0):
-    """Poisson (white)-noise level in a periodogram of pure counting noise.
+    """
+    Poisson (white)-noise level in a periodogram of pure counting noise.
 
     For Leahy normalization, this is:
     .. math::
@@ -103,16 +105,18 @@ def poisson_level(norm="frac", meanrate=None, n_ph=None, backrate=0):
     Parameters
     ----------
     norm : str, default "frac"
-        Normalization of the periodogram. One of ["abs", "frac", "leahy", "none"]
+        Normalization of the periodogram. One of ["abs", "frac", "leahy",
+        "none"].
 
     Other Parameters
     ----------------
     meanrate : float, default None
-        Mean count rate in counts/s. Needed for r.m.s. norms (``abs`` and ``frac``)
+        Mean count rate in counts/s. Needed for r.m.s. norms ("abs" and
+        "frac").
     n_ph : float, default None
-        Total number of counts in the light curve. Needed if ``norm=="none"``
+        Total number of counts in the light curve. Needed if ``norm=="none"``.
     backrate : float, default 0
-        Background count rate in counts/s. Optional for fractional r.m.s. norm
+        Background count rate in counts/s. Optional for fractional r.m.s. norm.
 
     Raises
     ------
@@ -154,7 +158,8 @@ def poisson_level(norm="frac", meanrate=None, n_ph=None, backrate=0):
     bad_input = bad_input or (norm.lower() == "none" and n_ph is None)
 
     if bad_input:
-        raise ValueError(f"Bad input parameters for norm {norm}: n_ph={n_ph}, meanrate={meanrate}")
+        raise ValueError(f"Bad input parameters for norm {norm}: n_ph={n_ph}, "
+                         f"meanrate={meanrate}")
 
     if norm == "abs":
         return 2. * meanrate
@@ -169,7 +174,8 @@ def poisson_level(norm="frac", meanrate=None, n_ph=None, backrate=0):
 
 
 def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
-    """Fractional rms normalization.
+    """
+    Fractional rms normalization.
 
     ..math::
         P = \frac{P_{Leahy}}{\mu} = \frac{2T}{N_{ph}^2}P_{unnorm}
@@ -248,7 +254,8 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
     #     norm = 2 / (n_ph * meanrate) = 2 * dt / (mean**2 * n_bin)
 
     if background_flux > 0:
-        power = unnorm_power * 2. * dt / ((mean_flux - background_flux) ** 2 * n_bin)
+        power = unnorm_power * 2. * dt / ((mean_flux - background_flux) ** 2 *
+                                          n_bin)
     else:
         # Note: this corresponds to eq. 3 in Uttley+14
         power = unnorm_power * 2. * dt / (mean_flux ** 2 * n_bin)
@@ -256,7 +263,8 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
 
 
 def normalize_abs(unnorm_power, dt, n_bin):
-    """Absolute rms normalization.
+    """
+    Absolute rms normalization.
 
     .. math::
         P = P_{frac} * \mu^2
@@ -307,7 +315,8 @@ def normalize_abs(unnorm_power, dt, n_bin):
 
 
 def normalize_leahy_from_variance(unnorm_power, variance, n_bin):
-    """Leahy+83 normalization, from the variance of the lc.
+    """
+    Leahy+83 normalization, from the variance of the lc.
 
     .. math::
         P = \frac{P_{unnorm}}{N <\delta{x}^2>}
@@ -360,7 +369,8 @@ def normalize_leahy_from_variance(unnorm_power, variance, n_bin):
 
 
 def normalize_leahy_poisson(unnorm_power, n_ph):
-    """Leahy+83 normalization.
+    """
+    Leahy+83 normalization.
 
     .. math::
         P = \frac{2}{N_{ph}} P_{unnorm}
@@ -400,8 +410,11 @@ def normalize_leahy_poisson(unnorm_power, n_ph):
     return unnorm_power * 2. / n_ph
 
 
-def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, variance=None, background_flux=0., norm="frac", power_type="all"):
-    """Wrapper around all the normalize_NORM methods.
+def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None,
+                           variance=None, background_flux=0., norm="frac",
+                           power_type="all"):
+    """
+    Wrapper around all the normalize_NORM methods.
 
     Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
@@ -429,11 +442,11 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, v
         the unnormalized periodogram. Only relevant for Leahy normalization.
 
     variance: float
-        The average variance of the measurements in light curve (if a cross spectrum,
-        the geometrical mean of the variances in the two channels). **NOT** the
-        variance of the light curve, but of each flux measurement (square of
-        light curve error bar)! Only relevant for the Leahy normalization of
-        non-Poissonian data.
+        The average variance of the measurements in light curve (if a cross
+        spectrum,  the geometrical mean of the variances in the two channels).
+        **NOT** the variance of the light curve, but of each flux measurement
+        (square of light curve error bar)! Only relevant for the Leahy
+        normalization of non-Poissonian data.
 
     norm : str
         One of ``leahy`` (Leahy+83), ``frac`` (fractional rms), ``abs``
@@ -477,8 +490,10 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None, v
     raise ValueError("Unrecognized power type")
 
 
-def bias_term(power1, power2, power1_noise, power2_noise, n_ave, intrinsic_coherence=1.0):
-    """Bias term needed to calculate the coherence.
+def bias_term(power1, power2, power1_noise, power2_noise, n_ave,
+              intrinsic_coherence=1.0):
+    """
+    Bias term needed to calculate the coherence.
 
     Introduced by
     Vaughan & Nowak 1997, ApJ 474, L43
@@ -513,12 +528,15 @@ def bias_term(power1, power2, power1_noise, power2_noise, n_ave, intrinsic_coher
     """
     if n_ave > 500:
         return 0. * power1
-    bsq = power1 * power2 - intrinsic_coherence * (power1 - power1_noise) * (power2 - power2_noise)
+    bsq = power1 * power2 - intrinsic_coherence * (power1 - power1_noise) * \
+          (power2 - power2_noise)
     return bsq / n_ave
 
 
-def raw_coherence(cross_power, power1, power2, power1_noise, power2_noise, n_ave, intrinsic_coherence=1):
-    """Raw coherence estimations from cross and power spectra.
+def raw_coherence(cross_power, power1, power2, power1_noise, power2_noise,
+                  n_ave, intrinsic_coherence=1):
+    """
+    Raw coherence estimations from cross and power spectra.
 
     Vaughan & Nowak 1997, ApJ 474, L43
 
@@ -558,8 +576,10 @@ def raw_coherence(cross_power, power1, power2, power1_noise, power2_noise, n_ave
     return num / den
 
 
-def _estimate_intrinsic_coherence_single(cross_power, power1, power2, power1_noise, power2_noise, n_ave):
-    """Estimate intrinsic coherence
+def _estimate_intrinsic_coherence_single(cross_power, power1, power2,
+                                         power1_noise, power2_noise, n_ave):
+    """
+    Estimate intrinsic coherence.
 
     Use the iterative procedure from sec. 5 of
 
@@ -588,7 +608,8 @@ def _estimate_intrinsic_coherence_single(cross_power, power1, power2, power1_noi
     new_coherence = 1
     old_coherence = 0
     count = 0
-    while not np.isclose(new_coherence, old_coherence, atol=0.01) and count < 40:
+    while not np.isclose(new_coherence, old_coherence, atol=0.01) and \
+            count < 40:
         old_coherence = new_coherence
         bsq = bias_term(power1, power2, power1_noise, power2_noise,
                         n_ave, intrinsic_coherence=new_coherence)
@@ -602,11 +623,14 @@ def _estimate_intrinsic_coherence_single(cross_power, power1, power2, power1_noi
 
 
 # This is the vectorized version of the function above.
-estimate_intrinsic_coherence_vec = np.vectorize(_estimate_intrinsic_coherence_single)
+estimate_intrinsic_coherence_vec = np.vectorize(
+    _estimate_intrinsic_coherence_single)
 
 
-def estimate_intrinsic_coherence(cross_power, power1, power2, power1_noise, power2_noise, n_ave):
-    """Estimate intrinsic coherence
+def estimate_intrinsic_coherence(cross_power, power1, power2, power1_noise,
+                                 power2_noise, n_ave):
+    """
+    Estimate intrinsic coherence
 
     Use the iterative procedure from sec. 5 of
 
@@ -637,8 +661,11 @@ def estimate_intrinsic_coherence(cross_power, power1, power2, power1_noise, powe
     return new_coherence
 
 
-def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave, seg_power_noise, ref_power_noise, common_ref="False"):
-    """Error on cross spectral quantities, From Ingram 2019.
+def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave,
+                                     seg_power_noise, ref_power_noise,
+                                     common_ref="False"):
+    """
+    Error on cross spectral quantities, From Ingram 2019.
 
     Note: this is only valid for a very large number of averaged powers.
     Beware if n_ave < 50 or so.
@@ -678,11 +705,13 @@ def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave, s
     if n_ave < 30:
         warnings.warn("n_ave is below 30. Please note that the error bars "
                       "on the quantities derived from the cross spectrum "
-                      "are only reliable for a large number of averaged powers.")
+                      "are only reliable for a large number of averaged "
+                      "powers.")
     two_n_ave = 2 * n_ave
     if common_ref:
         Gsq = (cross_power * np.conj(cross_power)).real
-        bsq = bias_term(seg_power, ref_power, seg_power_noise, ref_power_noise, n_ave)
+        bsq = bias_term(seg_power, ref_power, seg_power_noise, ref_power_noise,
+                        n_ave)
         frac = (Gsq - bsq) / (ref_power - ref_power_noise)
         power_over_2n = ref_power / two_n_ave
 
@@ -694,8 +723,10 @@ def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave, s
 
     else:
         PrPs = ref_power * seg_power
-        dRe = np.sqrt((PrPs + cross_power.real ** 2 - cross_power.imag ** 2) / two_n_ave)
-        dIm = np.sqrt((PrPs - cross_power.real ** 2 + cross_power.imag ** 2) / two_n_ave)
+        dRe = np.sqrt((PrPs + cross_power.real ** 2 - cross_power.imag ** 2) /
+                      two_n_ave)
+        dIm = np.sqrt((PrPs - cross_power.real ** 2 + cross_power.imag ** 2) /
+                      two_n_ave)
         gsq = raw_coherence(cross_power, seg_power, ref_power,
                             seg_power_noise, ref_power_noise, n_ave)
         dphi = np.sqrt((1 - gsq) / (2 * gsq * n_ave))
@@ -705,7 +736,8 @@ def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave, s
 
 
 def cross_to_covariance(cross_power, ref_power, ref_power_noise, delta_nu):
-    """Convert a cross spectrum into a covariance spectrum.
+    """
+    Convert a cross spectrum into a covariance spectrum.
 
     Covariance:
     Wilkinson & Uttley 2009, MNRAS, 397, 666
@@ -735,7 +767,8 @@ def cross_to_covariance(cross_power, ref_power, ref_power_noise, delta_nu):
 
 
 def _which_segment_idx_fun(binned=False, dt=None):
-    """Select which segment index function from ``gti.py`` to use.
+    """
+    Select which segment index function from ``gti.py`` to use.
 
     If ``binned`` is ``False``, call the unbinned function.
 
@@ -751,13 +784,15 @@ def _which_segment_idx_fun(binned=False, dt=None):
         # Define a new function, so that we can pass the correct dt as an
         # argument.
         def fun(*args, **kwargs):
-            return generate_indices_of_segment_boundaries_binned(*args, dt=dt, **kwargs)
+            return generate_indices_of_segment_boundaries_binned(*args, dt=dt,
+                                                                 **kwargs)
 
     return fun
 
 
 def get_average_ctrate(times, gti, segment_size, counts=None):
-    """Calculate the average count rate during the observation.
+    """
+    Calculate the average count rate during the observation.
 
     This function finds the same segments that the averaged periodogram
     functions (``avg_cs_from_iterables``, ``avg_pds_from_iterables`` etc) will
@@ -810,8 +845,10 @@ def get_average_ctrate(times, gti, segment_size, counts=None):
     return n_ph / (n_intvs * segment_size)
 
 
-def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes=None, errors=None):
-    """Get fluxes from different segments of the observation.
+def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None,
+                                    fluxes=None, errors=None):
+    """
+    Get fluxes from different segments of the observation.
 
     If ``fluxes`` is ``None``, the input times are interpreted as events, and
     they are split into many binned series of length ``segment_size`` with
@@ -850,9 +887,8 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes
 
     """
     if fluxes is None and n_bin is None:
-        raise ValueError(
-            "At least one between fluxes (if light curve) and n_bin (if events) has to be set"
-        )
+        raise ValueError("At least one between fluxes (if light curve) and "
+                         "n_bin (if events) has to be set")
 
     dt = None
     binned = fluxes is not None
@@ -880,14 +916,16 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes
         yield cts
 
 
-def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, silent=False):
-    """Calculate the average periodogram from an iterable of light curves
+def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True,
+                          silent=False):
+    """
+    Calculate the average periodogram from an iterable of light curves
 
     Parameters
     ----------
     flux_iterable : `iterable` of `np.array`s or of tuples (`np.array`, `np.array`)
-        Iterable providing either equal-length series of count measurements, or
-        of tuples (fluxes, errors). They must all be of the same length.
+        Iterable providing either equal-length series of count measurements,
+        or of tuples (fluxes, errors). They must all be of the same length.
     dt : float
         Time resolution of the light curves used to produce periodograms
 
@@ -944,7 +982,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
         if flux is None or np.all(flux == 0):
             continue
 
-        # If the iterable returns the uncertainty, use it to calculate the variance.
+        # If the iterable returns the uncertainty, use it to calculate the
+        # variance.
         variance = None
         if isinstance(flux, tuple):
             flux, err = flux
@@ -975,8 +1014,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
         # No need for the negative frequencies
         unnorm_power = unnorm_power[fgt0]
 
-        # If the user wants to normalize using the mean of the total lightcurve,
-        # normalize it here
+        # If the user wants to normalize using the mean of the total
+        # lightcurve, normalize it here
         cs_seg = unnorm_power
         if not use_common_mean:
             mean = n_ph / n_bin
@@ -988,7 +1027,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
 
         # Accumulate the total sum cross spectrum
         cross = sum_if_not_none_or_initialize(cross, cs_seg)
-        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross, unnorm_power)
+        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross,
+                                                     unnorm_power)
 
         n_ave += 1
 
@@ -1002,7 +1042,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
     common_mean = n_ph / n_bin
 
     if common_variance is not None:
-        # Note: the variances we summed were means, not sums. Hence M, not M*n_bin
+        # Note: the variances we summed were means, not sums.
+        # Hence M, not M*n_bin
         common_variance /= n_ave
 
     # Transform a sum into the average
@@ -1107,8 +1148,9 @@ def avg_cs_from_iterables_quick(
         n_ph1 = flux1.sum()
         n_ph2 = flux2.sum()
 
-        # At the first loop, we define the frequency array and the range of positive
-        # frequency bins (after the first loop, cross will not be None nymore)
+        # At the first loop, we define the frequency array and the range of
+        # positive frequency bins (after the first loop, cross will not be
+        # None anymore)
         if unnorm_cross is None:
             freq = fftfreq(n_bin, dt)
             fgt0 = positive_fft_bins(n_bin)
@@ -1128,7 +1170,8 @@ def avg_cs_from_iterables_quick(
         unnorm_power = unnorm_power[fgt0]
 
         # Initialize or accumulate final averaged spectrum
-        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross, unnorm_power)
+        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross,
+                                                     unnorm_power)
 
         n_ave += 1
 
@@ -1234,28 +1277,29 @@ def avg_cs_from_iterables(
     results : :class:`astropy.table.Table`
         Table containing the following columns:
         freq : `np.array`
-            The frequencies
+            The frequencies.
         power : `np.array`
-            The normalized cross spectral powers
+            The normalized cross spectral powers.
         unnorm_power : `np.array`
-            The unnormalized cross spectral power
+            The unnormalized cross spectral power.
         unnorm_pds1 : `np.array`
-            The unnormalized auxiliary PDS from channel 1. Only returned if ``return_auxil`` is ``True``
+            The unnormalized auxiliary PDS from channel 1. Only returned if
+            ``return_auxil`` is ``True``.
         unnorm_pds2 : `np.array`
-            The unnormalized auxiliary PDS from channel 2. Only returned if ``return_auxil`` is ``True``
+            The unnormalized auxiliary PDS from channel 2. Only returned if
+            ``return_auxil`` is ``True``.
 
         And a number of other useful diagnostics in the metadata, including
         all attributes needed to allocate Crossspectrum objects, such as all
         the input arguments of this function (``dt``, ``segment_size``), and,
         e.g.
         n : int
-            the number of bins in the light curves used in each segment
+            The number of bins in the light curves used in each segment.
         m : int
-            the number of averaged periodograms
+            The number of averaged periodograms.
         mean : float
-            the mean flux (geometrical average of the mean fluxes in the two
-            channels)
-
+            The mean flux (geometrical average of the mean fluxes in the two
+            channels).
     """
 
     local_show_progress = show_progress
@@ -1270,7 +1314,8 @@ def avg_cs_from_iterables(
     sum_of_photons1 = sum_of_photons2 = 0
     common_variance1 = common_variance2 = common_variance = None
 
-    for flux1, flux2 in local_show_progress(zip(flux_iterable1, flux_iterable2)):
+    for flux1, flux2 in local_show_progress(zip(flux_iterable1,
+                                                flux_iterable2)):
         if flux1 is None or flux2 is None or \
                 np.all(flux1 == 0) or np.all(flux2 == 0):
             continue
@@ -1289,13 +1334,16 @@ def avg_cs_from_iterables(
         if variance1 is None or variance2 is None:
             variance1 = variance2 = None
         else:
-            common_variance1 = sum_if_not_none_or_initialize(common_variance1, variance1)
-            common_variance2 = sum_if_not_none_or_initialize(common_variance2, variance2)
+            common_variance1 = sum_if_not_none_or_initialize(common_variance1,
+                                                             variance1)
+            common_variance2 = sum_if_not_none_or_initialize(common_variance2,
+                                                             variance2)
 
         n_bin = flux1.size
 
-        # At the first loop, we define the frequency array and the range of positive
-        # frequency bins (after the first loop, cross will not be None nymore)
+        # At the first loop, we define the frequency array and the range of
+        # positive frequency bins (after the first loop, cross will not be
+        # None anymore)
         if cross is None:
             freq = fftfreq(n_bin, dt)
             fgt0 = positive_fft_bins(n_bin)
@@ -1322,7 +1370,8 @@ def avg_cs_from_iterables(
         sum_of_photons1 += n_ph1
         sum_of_photons2 += n_ph2
 
-        # Take only positive frequencies unless the user wants the full spectrum
+        # Take only positive frequencies unless the user wants the full
+        # spectrum
         if not fullspec:
             unnorm_power = unnorm_power[fgt0]
             if return_auxil:
@@ -1344,22 +1393,28 @@ def avg_cs_from_iterables(
                 variance = np.sqrt(variance1 * variance2)
 
             cs_seg = normalize_periodograms(
-                unnorm_power, dt, n_bin, mean, n_ph=n_ph, norm=norm, power_type=power_type, variance=variance
+                unnorm_power, dt, n_bin, mean, n_ph=n_ph, norm=norm,
+                power_type=power_type, variance=variance
             )
             p1_seg = normalize_periodograms(
-                unnorm_pd1, dt, n_bin, mean1, n_ph=n_ph1, norm=norm, power_type=power_type, variance=variance1
+                unnorm_pd1, dt, n_bin, mean1, n_ph=n_ph1, norm=norm,
+                power_type=power_type, variance=variance1
             )
             p2_seg = normalize_periodograms(
-                unnorm_pd2, dt, n_bin, mean2, n_ph=n_ph2, norm=norm, power_type=power_type, variance=variance2
+                unnorm_pd2, dt, n_bin, mean2, n_ph=n_ph2, norm=norm,
+                power_type=power_type, variance=variance2
             )
 
         # Initialize or accumulate final averaged spectra
         cross = sum_if_not_none_or_initialize(cross, cs_seg)
-        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross, unnorm_power)
+        unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross,
+                                                     unnorm_power)
 
         if return_auxil:
-            unnorm_pds1 = sum_if_not_none_or_initialize(unnorm_pds1, unnorm_pd1)
-            unnorm_pds2 = sum_if_not_none_or_initialize(unnorm_pds2, unnorm_pd2)
+            unnorm_pds1 = sum_if_not_none_or_initialize(unnorm_pds1,
+                                                        unnorm_pd1)
+            unnorm_pds2 = sum_if_not_none_or_initialize(unnorm_pds2,
+                                                        unnorm_pd2)
             pds1 = sum_if_not_none_or_initialize(pds1, p1_seg)
             pds2 = sum_if_not_none_or_initialize(pds2, p2_seg)
 
@@ -1460,18 +1515,12 @@ def avg_cs_from_iterables(
     return results
 
 
-def avg_pds_from_events(
-    times,
-    gti,
-    segment_size,
-    dt,
-    norm="frac",
-    use_common_mean=True,
-    silent=False,
-    fluxes=None,
-    errors=None,
-):
-    """Calculate the average periodogram from a list of event times or a light curve.
+def avg_pds_from_events(times, gti, segment_size, dt, norm="frac",
+                        use_common_mean=True, silent=False, fluxes=None,
+                        errors=None):
+    """
+    Calculate the average periodogram from a list of event times or a light
+    curve.
 
     If the input is a light curve, the time array needs to be uniformly sampled
     inside GTIs (it can have gaps outside), and the fluxes need to be passed
@@ -1481,13 +1530,13 @@ def avg_pds_from_events(
     Parameters
     ----------
     times : float `np.array`
-        Array of times
+        Array of times.
     gti : [[gti00, gti01], [gti10, gti11], ...]
-        good time intervals
+        Good time intervals.
     segment_size : float
-        length of segments
+        Length of segments.
     dt : float
-        Time resolution of the light curves used to produce periodograms
+        Time resolution of the light curves used to produce periodograms.
 
     Other Parameters
     ----------------
@@ -1526,35 +1575,24 @@ def avg_pds_from_events(
     n_bin = np.rint(segment_size / dt).astype(int)
     dt = segment_size / n_bin
 
-    flux_iterable = get_flux_iterable_from_segments(
-        times, gti, segment_size, n_bin, fluxes=fluxes, errors=errors
-    )
-    cross = avg_pds_from_iterable(
-        flux_iterable, dt, norm=norm, use_common_mean=use_common_mean, silent=silent
-    )
+    flux_iterable = get_flux_iterable_from_segments(times, gti, segment_size,
+                                                    n_bin, fluxes=fluxes,
+                                                    errors=errors)
+    cross = avg_pds_from_iterable(flux_iterable, dt, norm=norm,
+                                  use_common_mean=use_common_mean,
+                                  silent=silent)
     if cross is not None:
         cross.meta["gti"] = gti
     return cross
 
 
-def avg_cs_from_events(
-    times1,
-    times2,
-    gti,
-    segment_size,
-    dt,
-    norm="frac",
-    use_common_mean=True,
-    fullspec=False,
-    silent=False,
-    power_type="all",
-    fluxes1=None,
-    fluxes2=None,
-    errors1=None,
-    errors2=None,
-    return_auxil=False,
-):
-    """Calculate the average cross spectrum from a list of event times or a light curve.
+def avg_cs_from_events(times1, times2, gti, segment_size, dt, norm="frac",
+                       use_common_mean=True, fullspec=False, silent=False,
+                       power_type="all", fluxes1=None, fluxes2=None,
+                       errors1=None, errors2=None, return_auxil=False):
+    """
+    Calculate the average cross spectrum from a list of event times or a light
+    curve.
 
     If the input is a light curve, the time arrays need to be uniformly sampled
     inside GTIs (they can have gaps outside), and the fluxes need to be passed
@@ -1626,7 +1664,8 @@ def avg_cs_from_events(
         times2, gti, segment_size, n_bin, fluxes=fluxes2, errors=errors2
     )
 
-    is_events = np.all([val is None for val in (fluxes1, fluxes2, errors1, errors2)])
+    is_events = np.all([val is None for val in (fluxes1, fluxes2, errors1,
+                                                errors2)])
 
     if (is_events
             and silent

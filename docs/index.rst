@@ -14,7 +14,7 @@ There are a number of official software packages for X-ray spectral fitting (XSP
 Such a widely used and standard software package does not exist for X-ray timing, so until now it has mainly been the domain of custom, proprietary software.
 Stingray originated during the 2016 workshop `The X-ray Spectral-Timing Revolution <http://www.lorentzcenter.nl/lc/web/2016/720/info.php3?wsid=720&venue=Oort/>`_: a group of X-ray astronomers and developers decided to agree on a common platform to develop a new software package.
 The goals were to merge existing efforts towards a timing package in Python, following the best guidelines for modern open-source programming, thereby providing the basis for developing spectral-timing analysis tools.
-This software provides an easily accessible scripting interface (possibly a GUI) and an API for power users.
+This software provides an easily accessible scripting interface, a GUI, and an API for experienced coders.
 Stingray's ultimate goal is to provide the community with a package that eases the learning curve for advanced spectral-timing techniques, with a correct statistical framework.
 
 Further spectral-timing functionality, in particularly command line scripts based on the API defined within Stingray, is available in the package `HENDRICS <https://github.com/StingraySoftware/HENDRICS>`_.
@@ -33,9 +33,8 @@ Contents
    intro
    install
    core
-   quicklook
+   dataexplo
    modeling
-   spectime
    simulator
    pulsar
    deadtime
