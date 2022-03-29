@@ -17,7 +17,7 @@ If this isn't possible — for example, because you worked with an unreleased v
 Papers
 ======
 
-Please cite both of the following papers from ApJ and JOSS:
+Please cite both of the following papers:
 
 .. raw:: html
 
