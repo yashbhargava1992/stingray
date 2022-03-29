@@ -2763,7 +2763,7 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
             "Defaulting to sqrt(2 / M) in Leahy norm, rescaled to the appropriate norm."
         )
 
-    Nph = np.sqrt(cs.nphots1 * cs.nphots1)
+    Nph = np.sqrt(cs.nphots1 * cs.nphots2)
     default_err = np.sqrt(2 / cs.m) * Nph / 2
 
     dRe[bad] = default_err
