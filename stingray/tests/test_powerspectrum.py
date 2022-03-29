@@ -810,7 +810,7 @@ class TestAveragedPowerspectrum(object):
                 iter_lc(self.lc, 1),
                 segment_size=1, legacy=legacy,
                 gti=self.lc.gti)
-        message = "The averaged Power spectrum from a generator "
+        message = "The averaged power spectrum from a generator"
 
         assert np.any([message in r.message.args[0]
                     for r in record])
