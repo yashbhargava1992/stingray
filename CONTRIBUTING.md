@@ -147,4 +147,4 @@ run the tests, you will need to make sure you have the pytest package (version
 
 ---
 
-- Please refer to [CODE_OF_CONDUCT.md](https://github.com/StingraySoftware/stingray/blob/master/CODE_OF_CONDUCT.md) to read about the Community Guidelines
+- Please refer to [CODE_OF_CONDUCT.md](https://github.com/StingraySoftware/stingray/blob/main/CODE_OF_CONDUCT.md) to read about the Community Guidelines
