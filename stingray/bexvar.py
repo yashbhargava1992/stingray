@@ -3,22 +3,22 @@ import numpy as np
 import scipy.stats, scipy.optimize
 from ultranest import ReactiveNestedSampler
 
-__all__ = ['Bexvar']
+__all__ = ['bexvar', 'bexvar_from_table']
 
 def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
-    """ 
-    Generates a log_src_crs_grid applicable to this particular light curve, 
-    with appropriately designated limits, for a faster and more accurate 
-    run of estimate_source_cr_marginalised and bexvar 
+    """
+    Generates a `log_src_crs_grid` applicable to this particular light curve,
+    with appropriately designated limits, for a faster and more accurate
+    run of _estimate_source_cr_marginalised() and bexvar
     """
     # lowest count rate
     a = scipy.special.gammaincinv(src_counts + 1, 0.001) / rate_conversion
     # highest background count rate
     b = scipy.special.gammaincinv(bkg_counts + 1, 0.999) / (rate_conversion * bkg_area)
     mindiff = min(a - b)
-    if mindiff > 0: # background-subtracted rate is positive
+    if mindiff > 0:  # background-subtracted rate is positive
         m0 = np.log10(mindiff)
-    else: # more background than source -> subtraction negative somewhere
+    else: #  more background than source -> subtraction negative somewhere
         m0 = -1
     # highest count rate (including background)
     c = scipy.special.gammaincinv(src_counts + 1, 0.999) / rate_conversion
@@ -36,9 +36,10 @@ def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
 
     return log_src_crs_grid
 
+
 def _estimate_source_cr_marginalised(log_src_crs_grid, src_counts, bkg_counts, bkg_area, rate_conversion):
-    """ 
-    Compute the PDF at positions in log(source count rate)s grid log_src_crs_grid 
+    """
+    Compute the PDF at positions in log(source count rate)s grid log_src_crs_grid
     for observing src_counts counts in the source region of size src_area,
     and bkg_counts counts in the background region of size bkg_area.
     
@@ -60,7 +61,7 @@ def _estimate_source_cr_marginalised(log_src_crs_grid, src_counts, bkg_counts, b
     
     return weights
 
-def _bexvar(log_src_crs_grid, pdfs):
+def _calculate_bexvar(log_src_crs_grid, pdfs):
     """ 
     Assumes that the source count rate is log-normal distributed.
     returns posterior samples of the mean and std of that distribution.
@@ -99,10 +100,74 @@ def _bexvar(log_src_crs_grid, pdfs):
     return log_mean, log_sigma
 
 
-def Bexvar(LightCurve):
+def bexvar(time, time_del, src_counts, bg_counts = None, bg_ratio = None, frac_exp = None):
     """
-    Given an eROSITA SRCTOOL light curve,
-    Computes a Bayesian excess variance, by estimating mean and variance of
+    Given a light curve data, Computes a Bayesian excess variance of count rate, 
+    by estimating mean and variance of the log of the count rate.
+    
+    Parameters
+    ----------
+    time : Iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+        A list or array of time stamps for a light curve.
+
+    time_del : iterable, `:class:numpy.array` or `:class:List` of floats
+        A list or array of time intervals for each bin of light curve.
+
+    src_counts : iterable, `:class:numpy.array` or `:class:List` of floats
+        A list or array of counts observed from source region in each bin.
+
+    bg_counts : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+        A list or array of counts observed from background region in each bin. If ``None``
+        we assume it as a numpy array of zeros, of length equal to length of src_counts.
+    
+    bg_ratio : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+        A list or array of source region area to background region area ratio in each bin.
+        If ``None`` we assume it as a numpy array of ones, of length equal to length of 
+        src_counts.
+
+    frac_exp : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+        A list or array of fractional exposers in each bin. If ``None`` we assume it as 
+        a numpy array of ones, of length equal to length of src_counts.
+
+
+    Returns
+     posterior_logcr_sigma : iterable, `:class:List` of floats  
+        Contains an array of posterior samples of log_srs_countrate_sigma corresponding 
+        to each band in the light curve.
+    """
+
+    if bg_counts is None:
+        bg_counts = np.zeros(src_counts.shape[0])
+    if bg_ratio is None:
+        bg_ratio = np.ones(src_counts.shape[0])
+    if frac_exp is None:
+        frac_exp = np.ones(src_counts.shape[0])
+
+    bg_area = 1. / bg_ratio
+    rate_conversion = frac_exp * time_del
+
+    log_src_crs_grid = _lscg_gen(src_counts , bg_counts, bg_area, rate_conversion, 100)
+    
+    src_posteriors = []
+
+    print("preparing time bin posteriors...")
+    for xi, ci, bci, bgareai, rate_conversion in zip(time, src_counts, bg_counts, bg_area, rate_conversion):
+        pdf = _estimate_source_cr_marginalised(log_src_crs_grid, ci, bci, bgareai, rate_conversion)
+        src_posteriors.append(pdf)
+
+    src_posteriors = np.array(src_posteriors)
+
+    print("running bexvar...")
+    logcr_mean, logcr_sigma = _calculate_bexvar(log_src_crs_grid, src_posteriors)
+    print("running bexvar... done")
+
+    return logcr_sigma
+
+
+def bexvar_from_table(LightCurve):
+    """
+    Given an eROSITA SRCTOOL light curve as an astropy table,
+    Computes Bayesian excess variance, by estimating mean and variance of
     the log of the count rate. If the light curve contains counts for multiple 
     bands then it iterates over each band to produce Bayesian excess variance
     corresponding to data in each band.
@@ -113,41 +178,29 @@ def Bexvar(LightCurve):
         Contains light curve for which Bayesian excess variance is to be calculated.
 
     Returns
-     posterior_logcr_sigma : list of ndarrays  
+    posterior_logcr_sigma : list of ndarrays  
         Contains an array of posterior samples of log_srs_countrate_sigma corresponding 
         to each band in the light curve.
     """
 
+    # Find the shape of "COUNTS" column to check for number of bands
     nbands = LightCurve['COUNTS'].shape[1]
 
-    # Initializing an empty array which will contain the posterior samples of log_srs_countrate_sigma
+    #  Initializing an empty array which will contain the posterior samples of log_srs_countrate_sigma
     posterior_logcr_sigma = [] 
     
     for band in range(nbands):
-        print("band %d" % band)
-        lc = LightCurve[LightCurve['FRACEXP'][:,band] > 0.1]
-        x = lc['TIME'] - lc['TIME'][0]
-        bc = lc['BACK_COUNTS'][:,band]
-        c = lc['COUNTS'][:,band]
-        bgarea = 1. / lc['BACKRATIO']
-        fe = lc['FRACEXP'][:,band]
-        rate_conversion = fe * lc['TIMEDEL']
 
-        log_src_crs_grid = _lscg_gen(c, bc, bgarea, rate_conversion, 100)
-        
-        src_posteriors = []
+        print("Calculating bexvar for band ", band)
+        # LightCurve = LightCurve[LightCurve['FRACEXP'][:,band] > 0.1]
+        time = LightCurve['TIME'] - LightCurve['TIME'][0]
+        time_delta = LightCurve["TIMEDEL"]
+        bg_counts = LightCurve["BACK_COUNTS"][:,band]
+        src_counts = LightCurve["COUNTS"][:,band]
+        bg_ratio = LightCurve["BACKRATIO"]
+        frac_exp = LightCurve["FRACEXP"][:,band]
 
-        print("preparing time bin posteriors...")
-        for xi, ci, bci, bgareai, rate_conversioni in zip(x, c, bc, bgarea, rate_conversion):
-            pdf = _estimate_source_cr_marginalised(log_src_crs_grid, ci, bci, bgareai, rate_conversioni)
-            src_posteriors.append(pdf)
-
-        src_posteriors = np.array(src_posteriors)
-        
-        
-        print("running bexvar...")
-        logcr_mean, logcr_sigma = _bexvar(log_src_crs_grid, src_posteriors)
-        print("running bexvar... done")
+        logcr_sigma = bexvar(time, time_delta, src_counts, bg_counts, bg_ratio, frac_exp)
         
         posterior_logcr_sigma.append(logcr_sigma)
     
