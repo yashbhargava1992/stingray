@@ -1,9 +1,15 @@
 import warnings
 import numpy as np
-import scipy.stats, scipy.optimize
-from ultranest import ReactiveNestedSampler
+import scipy.stats
+import scipy.optimize
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ultranest import ReactiveNestedSampler
+
 
 __all__ = ['bexvar', 'bexvar_from_table']
+
 
 def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
     """
@@ -43,9 +49,9 @@ def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
     b = scipy.special.gammaincinv(bkg_counts + 1, 0.999) / (rate_conversion * bkg_area)
 
     mindiff = min(a - b)
-    if mindiff > 0:  #  minimum background-subtracted rate is positive
+    if mindiff > 0: # minimum background-subtracted rate is positive
         m0 = np.log10(mindiff)
-    else:  #  minimum background-subtracted rate is negative (more background than source)
+    else: # minimum background-subtracted rate is negative (more background than source)
         m0 = -1
     # highest count rate (including background)
     c = scipy.special.gammaincinv(src_counts + 1, 0.999) / rate_conversion
