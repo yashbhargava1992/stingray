@@ -3,9 +3,12 @@ import numpy as np
 import scipy.stats
 import scipy.optimize
 
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+# check whether ultranest is installed for sampling
+try:
     from ultranest import ReactiveNestedSampler
+    can_sample = True
+except ImportError:
+    can_sample = False
 
 
 __all__ = ['bexvar', 'bexvar_from_table']
@@ -131,6 +134,9 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
         An array of posterior samples of log(standard deviation) or that of
         log(Bayesian excess varience).
     """
+
+    if not can_sample:
+        raise ImportError("ultranest not installed! Can't sample!")
 
     def transform(cube):
         params = cube.copy()
