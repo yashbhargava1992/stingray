@@ -145,7 +145,7 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
         return params
 
     def loglike(params):
-        log_mean  = params[0]
+        log_mean = params[0]
         log_sigma = params[1]
         # compute for each grid log-countrate its probability, according to log_mean, log_sigma
         variance_pdf = scipy.stats.norm.pdf(log_src_crs_grid, log_mean, log_sigma)
@@ -156,16 +156,16 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
             like = -1e300
         return like
 
-    sampler = ReactiveNestedSampler(['logmean', 'logsigma'], loglike, \
-        transform=transform, vectorized=False)
+    sampler = ReactiveNestedSampler(['logmean', 'logsigma'], loglike,
+    transform=transform, vectorized=False)
     samples = sampler.run(viz_callback=False)['samples']
     sampler.print_results()
     log_mean, log_sigma = samples.transpose()
 
-    return log_mean, log_sigma
+    return log_sigma
 
 
-def bexvar(time, time_del, src_counts, bg_counts = None, bg_ratio = None, frac_exp = None):
+def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=None):
     """
     Given a light curve data, Computes a Bayesian excess variance of count rate,
     by estimating mean and variance of the log of the count rate.
@@ -184,7 +184,7 @@ def bexvar(time, time_del, src_counts, bg_counts = None, bg_ratio = None, frac_e
      bg_counts : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of counts observed from background region in each bin. If ``None``
         we assume it as a numpy array of zeros, of length equal to length of ``src_counts``.
- 
+
     bg_ratio : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of source region area to background region area ratio in each bin.
         If ``None`` we assume it as a numpy array of ones, of length equal the to length of
@@ -197,7 +197,7 @@ def bexvar(time, time_del, src_counts, bg_counts = None, bg_ratio = None, frac_e
     Returns
     -------
     posterior_log_sigma_src_cr : iterable, `:class:List` of floats
-        Contains an array of posterior samples of log(Sigma source count rate) 
+        Contains an array of posterior samples of log(Sigma source count rate)
         (i.e. log(Bayesian excess varience) of source count rates).
     """
 
@@ -208,10 +208,18 @@ def bexvar(time, time_del, src_counts, bg_counts = None, bg_ratio = None, frac_e
     if frac_exp is None:
         frac_exp = np.ones(src_counts.shape[0])
 
+    # makes sure that data with frac_exp <= 0.1 gets discarded
+    time = time[frac_exp > 0.1]
+    time_del = time_del[frac_exp > 0.1]
+    src_counts = src_counts[frac_exp > 0.1]
+    bg_counts = bg_counts[frac_exp > 0.1]
+    bg_ratio = bg_ratio[frac_exp > 0.1]
+    frac_exp = frac_exp[frac_exp > 0.1]
+
     bg_area = 1. / bg_ratio
     rate_conversion = frac_exp * time_del
 
-    log_src_crs_grid = _lscg_gen(src_counts , bg_counts, bg_area, rate_conversion, 100)
+    log_src_crs_grid = _lscg_gen(src_counts, bg_counts, bg_area, rate_conversion, 100)
 
     src_posteriors = []
 
@@ -225,7 +233,7 @@ def bexvar(time, time_del, src_counts, bg_counts = None, bg_ratio = None, frac_e
     src_posteriors = np.array(src_posteriors)
 
     print("running bexvar...")
-    logcr_mean, posterior_log_sigma_src_cr = _calculate_bexvar(log_src_crs_grid, src_posteriors)
+    posterior_log_sigma_src_cr = _calculate_bexvar(log_src_crs_grid, src_posteriors)
     print("running bexvar... done")
 
     return posterior_log_sigma_src_cr
@@ -248,7 +256,7 @@ def bexvar_from_table(LightCurve):
     Returns
     -------
     posterior_log_sigma_src_cr : iterable, `:class:List` of lists
-        Contains a list of posterior samples of log(Sigma source count rate) corresponding 
+        Contains a list of posterior samples of log(Sigma source count rate) corresponding
         to each band in the light curve.
     """
 
@@ -262,13 +270,13 @@ def bexvar_from_table(LightCurve):
     for band in range(nbands):
 
         print("Calculating bexvar for band ", band)
-        LightCurve = LightCurve[LightCurve['FRACEXP'][:,band] > 0.1]
+        LightCurve = LightCurve[LightCurve['FRACEXP'][:, band] > 0.1]
         time = LightCurve['TIME'] - LightCurve['TIME'][0]
         time_delta = LightCurve["TIMEDEL"]
-        bg_counts = LightCurve["BACK_COUNTS"][:,band]
-        src_counts = LightCurve["COUNTS"][:,band]
+        bg_counts = LightCurve["BACK_COUNTS"][:, band]
+        src_counts = LightCurve["COUNTS"][:, band]
         bg_ratio = LightCurve["BACKRATIO"]
-        frac_exp = LightCurve["FRACEXP"][:,band]
+        frac_exp = LightCurve["FRACEXP"][:, band]
 
         logcr_sigma = bexvar(time, time_delta, src_counts, bg_counts, bg_ratio, frac_exp)
 
