@@ -2,6 +2,7 @@ import warnings
 import pytest
 import os
 import numpy as np
+import scipy.stats
 from stingray import bexvar
 from astropy.table import Table
 
@@ -37,7 +38,13 @@ class TestBexvarResult(object):
     def test_bexvar(self):
         log_cr_sigma_from_function = bexvar.bexvar(self.time, self.time_delta, self.src_counts, self.bg_counts, self.bg_ratio, self.frac_exp)
         log_cr_sigma_result = np.load(self.fname_result,allow_pickle=True)[1]
-        assert np.allclose(log_cr_sigma_from_function, log_cr_sigma_result)
+
+        quantile = scipy.stats.norm().cdf([-1])
+        scatt_lo_function = scipy.stats.mstats.mquantiles(log_cr_sigma_from_function, quantile)
+        scatt_lo_result = scipy.stats.mstats.mquantiles(log_cr_sigma_result, quantile)
+        
+        # Compares lower 1 sigma quantile of the estimated scatter of the log(count rate) in dex 
+        assert np.isclose(scatt_lo_function, scatt_lo_result, rtol = 0.1)
 
 
 class TestInternalFunctions(object):
@@ -84,4 +91,10 @@ class TestInternalFunctions(object):
         posterior_log_sigma_src_cr_from_function = bexvar._calculate_bexvar(log_src_crs_grid, pdfs)
         posterior_log_sigma_src_cr_results = self.function_result[1]
 
-        assert np.allclose(posterior_log_sigma_src_cr_from_function, posterior_log_sigma_src_cr_results)
+        quantile = scipy.stats.norm().cdf([-1])
+        scatt_lo_function = scipy.stats.mstats.mquantiles(posterior_log_sigma_src_cr_from_function, quantile)
+        scatt_lo_result = scipy.stats.mstats.mquantiles(posterior_log_sigma_src_cr_results, quantile)
+        
+        # Compares lower 1 sigma quantile of the estimated scatter of the log(count rate) in dex 
+
+        assert np.isclose(scatt_lo_function, scatt_lo_result, rtol = 0.1)
