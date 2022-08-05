@@ -42,8 +42,8 @@ class TestBexvarResult(object):
         log_cr_sigma_from_function = bexvar.bexvar(self.time, self.time_delta, self.src_counts, self.bg_counts, self.bg_ratio, self.frac_exp)
         log_cr_sigma_result = np.load(self.fname_result,allow_pickle=True)[1]
 
-        scatt_lo_function = scipy.stats.mstats.mquantiles(log_cr_sigma_from_function, cls.quantile)
-        scatt_lo_result = scipy.stats.mstats.mquantiles(log_cr_sigma_result, cls.quantile)
+        scatt_lo_function = scipy.stats.mstats.mquantiles(log_cr_sigma_from_function, self.quantile)
+        scatt_lo_result = scipy.stats.mstats.mquantiles(log_cr_sigma_result, self.quantile)
         
         # Compares lower 1 sigma quantile of the estimated scatter of the log(count rate) in dex 
         assert np.isclose(scatt_lo_function, scatt_lo_result, rtol = 0.1)
