@@ -135,3 +135,26 @@ class TestInternalFunctions(object):
         # Compares lower 1 sigma quantile of the estimated scatter of the log(count rate) in dex 
 
         assert np.isclose(scatt_lo_function, scatt_lo_result, rtol = 0.1)
+
+
+class TestBadValues(object):
+    @classmethod
+    def setup_class(cls):
+        fname_data = os.path.join(datadir, "lcurveA.fits")
+        hdul = fits.open(fname_data)[1]     
+        lightcurve = Table.read(hdul, format = 'fits')
+
+        cls.time = lightcurve["TIME"]
+        time_delta = np.array(list(map(operator.sub, cls.time[1:], cls.time[:-1])))
+        cls.time_delta = np.append(time_delta,float(1.0))
+        cls.src_count = lightcurve["RATE1"]*cls.time_delta
+        cls.frac_exp = lightcurve["FRACEXP"]
+
+    @pytest.mark.skipif("not _HAS_ULTRANEST")
+    def test_weights_sum_warning(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            _ = bexvar.bexvar(time = self.time, time_del = self.time_delta, \
+                src_counts = self.src_count, frac_exp = self.frac_exp)
+
+            assert any(["Weight problem! sum is <= 0" in str(wi.message) for wi in w])

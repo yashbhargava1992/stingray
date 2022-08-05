@@ -109,8 +109,11 @@ def _estimate_source_cr_marginalised(log_src_crs_grid, src_counts, bkg_counts, b
     weights = np.array([prob(log_src_cr) for log_src_cr in log_src_crs_grid])
 
     if weights.sum() <= 0:
-        print("WARNING: Weight problem! sum is" , weights.sum(), \
-            np.log10(src_counts.max() / rate_conversion), log_src_crs_grid[0], log_src_crs_grid[-1])
+        print("Sum is" , weights.sum(), \
+             "\n Maximum log(src_count_rate) ",np.log10(src_counts.max() / rate_conversion), \
+             "\n range of log_src_count_rate_grid ",  log_src_crs_grid[0], log_src_crs_grid[-1])
+        warnings.warn("Weight problem! sum is <= 0")
+
     weights /= weights.sum()
 
     return weights
