@@ -11,7 +11,7 @@ except ImportError:
     can_sample = False
 
 
-__all__ = ['bexvar', 'bexvar_from_table']
+__all__ = ['bexvar']
 
 
 def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):

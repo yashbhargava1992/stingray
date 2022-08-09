@@ -152,9 +152,10 @@ class TestBadValues(object):
 
     @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_weights_sum_warning(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        with pytest.warns(UserWarning) as record:
+            
             _ = bexvar.bexvar(time = self.time, time_del = self.time_delta, \
                 src_counts = self.src_count, frac_exp = self.frac_exp)
 
-            assert any(["Weight problem! sum is <= 0" in str(wi.message) for wi in w])
+
+            assert any(["Weight problem! sum is <= 0" in r.message.args[0] for r in record])
