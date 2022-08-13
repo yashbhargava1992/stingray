@@ -139,23 +139,13 @@ class TestInternalFunctions(object):
 
 class TestBadValues(object):
     @classmethod
-    def setup_class(cls):
-        fname_data = os.path.join(datadir, "lcurveA.fits")
-        hdul = fits.open(fname_data)[1]     
-        lightcurve = Table.read(hdul, format = 'fits')
-
-        cls.time = lightcurve["TIME"]
-        time_delta = np.array(list(map(operator.sub, cls.time[1:], cls.time[:-1])))
-        cls.time_delta = np.append(time_delta,float(1.0))
-        cls.src_count = lightcurve["RATE1"]*cls.time_delta
-        cls.frac_exp = lightcurve["FRACEXP"]
-
-    @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_weights_sum_warning(self):
         with pytest.warns(UserWarning) as record:
-            
-            _ = bexvar.bexvar(time = self.time, time_del = self.time_delta, \
-                src_counts = self.src_count, frac_exp = self.frac_exp)
-
-
-            assert any(["Weight problem! sum is <= 0" in r.message.args[0] for r in record])
+            _ = bexvar._estimate_source_cr_marginalised(
+                log_src_crs_grid=[2.0, 2.1],
+                src_counts=3.0,
+                bkg_counts=1.0,
+                bkg_area=np.inf,
+                rate_conversion=0,
+            )
+        assert any(["Weight problem! sum is <= 0" in r.message.args[0] for r in record])
