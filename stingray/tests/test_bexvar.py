@@ -5,7 +5,6 @@ import numpy as np
 import scipy.stats
 from stingray import bexvar
 from astropy.table import Table
-import operator
 from astropy.io import fits
 
 
@@ -136,9 +135,42 @@ class TestInternalFunctions(object):
 
         assert np.isclose(scatt_lo_function, scatt_lo_result, rtol = 0.1)
 
+    @pytest.mark.skipif("_HAS_ULTRANEST")
+    def test_ultranest_not_installed(self):
+        with pytest.raises(ImportError) as excinfo:
+
+            log_src_crs_grid = self.function_result[0]
+            pdfs = self.function_result[2]
+
+            _ = bexvar._calculate_bexvar(log_src_crs_grid, pdfs)
+        assert "ultranest not installed! Can't sample!" in str(excinfo.value)
+
+
 
 class TestBadValues(object):
     @classmethod
+    def setup_class(cls):
+        fname_data = os.path.join(datadir, "lcurveA.fits")
+        hdul = fits.open(fname_data)[1]     
+        lightcurve = Table.read(hdul, format = 'fits')
+
+        cls.time = lightcurve["TIME"]
+        time_delta = np.diff(cls.time)
+        cls.time_delta = np.append(time_delta, float(1.0))
+        cls.src_count = np.array(lightcurve["RATE1"]*cls.time_delta)
+        cls.frac_exp = lightcurve["FRACEXP"]
+
+    @pytest.mark.skipif("not _HAS_ULTRANEST")
+    def test_non_integer_src_counts_warning(self):
+        with pytest.warns(UserWarning) as record:
+            
+            _ = bexvar.bexvar(time = self.time, time_del = self.time_delta, \
+                src_counts = self.src_count, frac_exp = self.frac_exp)
+
+
+            assert any(["src_counts are not all integers" in r.message.args[0] for r in record])
+
+
     def test_weights_sum_warning(self):
         with pytest.warns(UserWarning) as record:
             _ = bexvar._estimate_source_cr_marginalised(
@@ -149,3 +181,4 @@ class TestBadValues(object):
                 rate_conversion=0,
             )
         assert any(["Weight problem! sum is <= 0" in r.message.args[0] for r in record])
+        
