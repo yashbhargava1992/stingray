@@ -182,6 +182,13 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
 
     src_counts : iterable, `:class:numpy.array` or `:class:List` of floats
         A list or array of counts observed from source region in each bin.
+        **Note**: src_counts are number of counts registerd in each time bin.
+        This are not counts per seconds in each bin.
+        The elements of this array are expacted to be zero or positive integers
+        or positive finite floats with integral values.
+        If all elements do not follow above mentiond critera, a userwarning
+        will be raised and function may produce unrealsitic likelihoods.
+
 
      bg_counts : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of counts observed from background region in each bin. If ``None``
@@ -202,7 +209,9 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
         Contains an array of posterior samples of log(Sigma source count rate)
         (i.e. log(Bayesian excess varience) of source count rates).
     """
-
+  
+    if src_counts is not np.all(np.array([val.is_integer() for val in src_counts])):
+        warnings.warn("src_counts are not all integers", UserWarning)
     if bg_counts is None:
         bg_counts = np.zeros(src_counts.shape[0])
     if bg_ratio is None:
