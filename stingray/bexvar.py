@@ -6,12 +6,13 @@ import scipy.optimize
 # check whether ultranest is installed for sampling
 try:
     from ultranest import ReactiveNestedSampler
+
     can_sample = True
 except ImportError:
     can_sample = False
 
 
-__all__ = ['bexvar']
+__all__ = ["bexvar"]
 
 
 def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
@@ -52,9 +53,9 @@ def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
     b = scipy.special.gammaincinv(bkg_counts + 1, 0.999) / (rate_conversion * bkg_area)
 
     mindiff = min(a - b)
-    if mindiff > 0: # minimum background-subtracted rate is positive
+    if mindiff > 0:  # minimum background-subtracted rate is positive
         m0 = np.log10(mindiff)
-    else: # minimum background-subtracted rate is negative (more background than source)
+    else:  # minimum background-subtracted rate is negative (more background than source)
         m0 = -1
     # highest count rate (including background)
     c = scipy.special.gammaincinv(src_counts + 1, 0.999) / rate_conversion
@@ -72,8 +73,9 @@ def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
     return log_src_crs_grid
 
 
-def _estimate_source_cr_marginalised(log_src_crs_grid, src_counts, bkg_counts, bkg_area, \
-        rate_conversion):
+def _estimate_source_cr_marginalised(
+    log_src_crs_grid, src_counts, bkg_counts, bkg_area, rate_conversion
+):
     """
     Compute the PDF at positions in log(source count rate)s grid ``log_src_crs_grid``
     for observing ``src_counts`` counts in the source region of size src_area,
@@ -109,13 +111,19 @@ def _estimate_source_cr_marginalised(log_src_crs_grid, src_counts, bkg_counts, b
     weights = np.array([prob(log_src_cr) for log_src_cr in log_src_crs_grid])
 
     if weights.sum() <= 0:
-        print("Sum is" , weights.sum(), \
-             "\n range of log_src_count_rate_grid ",  log_src_crs_grid[0], log_src_crs_grid[-1])
+        print(
+            "Sum is",
+            weights.sum(),
+            "\n range of log_src_count_rate_grid ",
+            log_src_crs_grid[0],
+            log_src_crs_grid[-1],
+        )
         warnings.warn("Weight problem! sum is <= 0")
 
     weights /= weights.sum()
 
     return weights
+
 
 def _calculate_bexvar(log_src_crs_grid, pdfs):
     """
@@ -142,8 +150,10 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
 
     def transform(cube):
         params = cube.copy()
-        params[0] = cube[0] * (log_src_crs_grid[-1] - log_src_crs_grid[0]) + log_src_crs_grid[0]
-        params[1] = 10**(cube[1]*4 - 2)
+        params[0] = (
+            cube[0] * (log_src_crs_grid[-1] - log_src_crs_grid[0]) + log_src_crs_grid[0]
+        )
+        params[1] = 10 ** (cube[1] * 4 - 2)
         return params
 
     def loglike(params):
@@ -158,9 +168,10 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
             like = -1e300
         return like
 
-    sampler = ReactiveNestedSampler(['logmean', 'logsigma'], loglike,
-    transform=transform, vectorized=False)
-    samples = sampler.run(viz_callback=False)['samples']
+    sampler = ReactiveNestedSampler(
+        ["logmean", "logsigma"], loglike, transform=transform, vectorized=False
+    )
+    samples = sampler.run(viz_callback=False)["samples"]
     sampler.print_results()
     log_mean, log_sigma = samples.transpose()
 
@@ -209,7 +220,7 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
         Contains an array of posterior samples of log(Sigma source count rate)
         (i.e. log(Bayesian excess varience) of source count rates).
     """
-  
+
     if src_counts is not np.all(np.array([val.is_integer() for val in src_counts])):
         warnings.warn("src_counts are not all integers", UserWarning)
     if bg_counts is None:
@@ -227,7 +238,7 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
     bg_ratio = bg_ratio[frac_exp > 0.1]
     frac_exp = frac_exp[frac_exp > 0.1]
 
-    bg_area = 1. / bg_ratio
+    bg_area = 1.0 / bg_ratio
     rate_conversion = frac_exp * time_del
 
     log_src_crs_grid = _lscg_gen(src_counts, bg_counts, bg_area, rate_conversion, 100)
@@ -235,10 +246,13 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
     src_posteriors = []
 
     print("preparing time bin posteriors...")
-    for xi, ci, bci, bgareai, rate_conversion in \
-            zip(time, src_counts, bg_counts, bg_area, rate_conversion):
+    for xi, ci, bci, bgareai, rate_conversion in zip(
+        time, src_counts, bg_counts, bg_area, rate_conversion
+    ):
 
-        pdf = _estimate_source_cr_marginalised(log_src_crs_grid, ci, bci, bgareai, rate_conversion)
+        pdf = _estimate_source_cr_marginalised(
+            log_src_crs_grid, ci, bci, bgareai, rate_conversion
+        )
         src_posteriors.append(pdf)
 
     src_posteriors = np.array(src_posteriors)
