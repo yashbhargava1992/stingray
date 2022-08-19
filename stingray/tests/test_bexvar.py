@@ -215,7 +215,10 @@ class TestBadValues(object):
             )
 
             assert any(
-                ["src_counts are not all integers" in r.message.args[0] for r in record]
+                [
+                    "src_counts are not all positive integers" in r.message.args[0]
+                    for r in record
+                ]
             )
 
     def test_weights_sum_warning(self):

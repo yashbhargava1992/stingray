@@ -221,8 +221,12 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
         (i.e. log(Bayesian excess varience) of source count rates).
     """
 
-    if src_counts is not np.all(np.array([val.is_integer() for val in src_counts])):
-        warnings.warn("src_counts are not all integers", UserWarning)
+    if not np.all(
+        np.array(
+            [True if (val >= 0 and val % 1.0 == 0) else False for val in src_counts]
+        )
+    ):
+        warnings.warn("src_counts are not all positive integers", UserWarning)
     if bg_counts is None:
         bg_counts = np.zeros(src_counts.shape[0])
     if bg_ratio is None:
