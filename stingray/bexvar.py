@@ -17,14 +17,14 @@ __all__ = ["bexvar"]
 
 def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
     """
-    Generates a grid of log(Source count rates), `log_src_crs_grid` applicable
+    Generates a grid of log(source count rates), ``log_src_crs_grid`` applicable
     to this particular light curve, with appropriately designated limits, for
     a faster and more accurate run of `_estimate_source_cr_marginalised()`
     and `_calculate_bexvar()`.
 
     Parameters
     ----------
-    src_counts : Iterable, `:class:numpy.array` or `:class:List` of floats
+    src_counts : iterable, `:class:numpy.array` or `:class:List` of floats
         A list or array of counts observed from source region in each bin.
 
     bkg_counts : iterable, `:class:numpy.array` or `:class:List` of floats
@@ -44,7 +44,7 @@ def _lscg_gen(src_counts, bkg_counts, bkg_area, rate_conversion, density_gp):
     Returns
     -------
     log_src_crs_grid : iterable, `:class:numpy.array` of floats
-        An array (grid) of log(Source count rates).
+        An array of log(source count rates).
     """
 
     # lowest count rate
@@ -77,14 +77,14 @@ def _estimate_source_cr_marginalised(
     log_src_crs_grid, src_counts, bkg_counts, bkg_area, rate_conversion
 ):
     """
-    Compute the PDF at positions in log(source count rate)s grid ``log_src_crs_grid``
-    for observing ``src_counts`` counts in the source region of size src_area,
+    Compute the PDF at positions in log(source count rates) grid ``log_src_crs_grid``
+    for observing ``src_counts`` counts in the source region of size ``src_area``,
     and ``bkg_counts`` counts in the background region of size ``bkg_area``.
 
     Parameters
     ----------
     log_src_crs_grid : iterable, `:class:numpy.array` of floats
-        An array (grid) of log(Source count rates).
+        An array of log(source count rates).
     src_counts : float
         Source region counts in one of the bin.
     bkg_counts : float
@@ -96,7 +96,7 @@ def _estimate_source_cr_marginalised(
 
     Returns
     -------
-    weights: float
+    weights: iterable, `:class:numpy.array` of floats
     """
     # background counts give background count rates deterministically
     N = 1000
@@ -128,19 +128,19 @@ def _estimate_source_cr_marginalised(
 def _calculate_bexvar(log_src_crs_grid, pdfs):
     """
     Assumes that the source count rate is log-normal distributed.
-    returns posterior samples of the mean and standard deviation of that distribution.
+    Returns posterior samples of the mean and standard deviation of that distribution.
 
     Parameters
     ----------
-    log_src_crs_grid : Iterable, `:class:numpy.array` of flots
-        An array (grid) of log(Source count rates).
-    pdfs : Iterable, `:class:List` of floats
+    log_src_crs_grid : iterable, `:class:numpy.array` of floats
+        An array of log(source count rates).
+    pdfs : iterable, `:class:numpy.ndarray` of floats
         An array of PDFs for each object defined over the
-        log(source count rate) grid ``log_src_crs_grid``.
+        log(source count rates) grid ``log_src_crs_grid``.
 
     Returns
     -------
-    log_sigma : iterable, `:class:numpy.array` of flots.
+    log_sigma : iterable, `:class:numpy.array` of floats.
         An array of posterior samples of log(standard deviation) or that of
         log(Bayesian excess varience).
     """
@@ -159,7 +159,7 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
     def loglike(params):
         log_mean = params[0]
         log_sigma = params[1]
-        # compute for each grid log-countrate its probability, according to log_mean, log_sigma
+        # compute probability for each element of log-countrate grid, according to log_mean, log_sigma
         variance_pdf = scipy.stats.norm.pdf(log_src_crs_grid, log_mean, log_sigma)
         # multiply that probability with the precomputed probabilities (pdfs)
         likes = np.log((variance_pdf.reshape((1, -1)) * pdfs).mean(axis=1) + 1e-100)
@@ -180,12 +180,12 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
 
 def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=None):
     """
-    Given a light curve data, Computes a Bayesian excess variance of count rate,
+    Given a light curve data, computes a Bayesian excess variance of count rate,
     by estimating mean and variance of the log of the count rate.
 
     Parameters
     ----------
-    time : Iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+    time : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of time stamps for a light curve.
 
     time_del : iterable, `:class:numpy.array` or `:class:List` of floats
@@ -193,21 +193,22 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
 
     src_counts : iterable, `:class:numpy.array` or `:class:List` of floats
         A list or array of counts observed from source region in each bin.
-        **Note**: src_counts are number of counts registerd in each time bin.
-        This are not counts per seconds in each bin.
-        The elements of this array are expacted to be zero or positive integers
+
+        **Note**: Each element of ``src_counts`` is a number of counts registerd in each time bin.
+        They are not counts per seconds in each bin.
+        The elements of this array are expected to be zero or positive integers
         or positive finite floats with integral values.
-        If all elements do not follow above mentiond critera, a userwarning
+        If all elements do not follow above mentioned criteria, then a user warning
         will be raised and function may produce unrealsitic likelihoods.
 
 
-     bg_counts : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+    bg_counts : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of counts observed from background region in each bin. If ``None``
         we assume it as a numpy array of zeros, of length equal to length of ``src_counts``.
 
     bg_ratio : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of source region area to background region area ratio in each bin.
-        If ``None`` we assume it as a numpy array of ones, of length equal the to length of
+        If ``None`` we assume it as a numpy array of ones, of length equal to the length of
         ``src_counts``.
 
     frac_exp : iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
@@ -216,8 +217,8 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
 
     Returns
     -------
-    posterior_log_sigma_src_cr : iterable, `:class:List` of floats
-        Contains an array of posterior samples of log(Sigma source count rate)
+    posterior_log_sigma_src_cr : iterable, `:class:numpy.array` of floats
+        An array of posterior samples of log(Sigma on source count rates)
         (i.e. log(Bayesian excess varience) of source count rates).
     """
 
