@@ -466,7 +466,7 @@ def lcurve_from_fits(
         fracexp = np.ones_like(rate)
 
     good_intervals = (
-        (rate == rate) * (fracexp >= fracexp_limit) * (fracexp <= 1)
+        (rate == rate) * (fracexp >= fracexp_limit)
     )
 
     rate[good_intervals] /= fracexp[good_intervals]
