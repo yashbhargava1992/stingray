@@ -23,6 +23,7 @@ from stingray.gti import (bin_intervals_from_gtis, check_gtis, create_gti_mask,
 from stingray.utils import (assign_value_if_none, baseline_als,
                             poisson_symmetrical_errors, simon, interpret_times)
 from stingray.io import lcurve_from_fits
+from stingray import bexvar
 
 __all__ = ["Lightcurve"]
 
@@ -73,6 +74,16 @@ class Lightcurve(StingrayTimeseries):
         uncertainties and other statistical values appropriately.
         Default makes no assumptions and keep errors equal to zero.
 
+    bg_counts: iterable,`:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+        A list or array of background counts in each bin corresponding to the
+        bins defined in `time`.
+      
+    bg_ratio: iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+        A list or array of source region area to background region area ratio in each bin.
+ 
+    frac_exp: iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+        A list or array of fractional exposer in each bin.
+
     mjdref: float
         MJD reference (useful in most high-energy mission data)
 
@@ -113,6 +124,15 @@ class Lightcurve(StingrayTimeseries):
 
     counts_err: numpy.ndarray
         The uncertainties corresponding to ``counts``
+
+    bg_counts: numpy.ndarray
+        The background counts corresponding to the bins in `time`.
+      
+    bg_ratio: numpy.ndarray
+        The ratio of source region area to background region area corresponding to each bin.
+ 
+    frac_exp: numpy.ndarray
+        The fractional exposers in each bin.
 
     countrate: numpy.ndarray
         The counts per second in each of the bins defined in ``time``.
@@ -167,9 +187,9 @@ class Lightcurve(StingrayTimeseries):
     """
     main_array_attr = "time"
 
-    def __init__(self, time, counts, err=None, input_counts=True,
-                 gti=None, err_dist='poisson', mjdref=0, dt=None,
-                 skip_checks=False, low_memory=False, mission=None,
+    def __init__(self, time, counts, err=None, input_counts=True, gti=None, 
+                 err_dist='poisson', bg_counts=None, bg_ratio=None, frac_exp=None,
+                 mjdref=0, dt=None, skip_checks=False, low_memory=False, mission=None,
                  instr=None, header=None, **other_kw):
 
         StingrayTimeseries.__init__(self)
@@ -254,6 +274,19 @@ class Lightcurve(StingrayTimeseries):
         else:
             self._countrate = np.asarray(counts)
             self._countrate_err = err
+
+        if bg_counts is not None:
+            self.bg_counts = np.asarray(bg_counts)
+        else:
+            self.bg_counts = None
+        if bg_ratio is not None:
+            self.bg_ratio = np.asarray(bg_ratio)
+        else:
+            self.bg_ratio = None
+        if frac_exp is not None:
+            self.frac_exp = np.asarray(frac_exp)
+        else:
+            self.frac_exp = None
 
         if not skip_checks:
             self.check_lightcurve()
@@ -1722,3 +1755,36 @@ class Lightcurve(StingrayTimeseries):
         self._n = None
         self.tseg = np.max(self.gti) - np.min(self.gti)
         self.tstart = self.time - 0.5 * self.dt
+
+    def find_bexvar(self,time_del=None):
+        """
+        Finds Bayesian excess varience (bexvar) for the light curve.
+        It requires source counts in ``counts`` and time interval for each bin
+        as ``time_del``. If time intervals are not provided, it calculates them
+        by assuming all intervals to be equal to ``dt``.
+
+        Parameters
+        ----------
+        time_del: iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
+            A list or array of time intervals for each bin of light curve.
+            **Note**: Use this parameter to provide time intervals corresponding
+            to each bin if intervals are not all equal. If ``None`` is passed
+            then the method will consider all bins to have time intervals equal to
+            ``dt``.
+
+        Returns
+        -------
+        lc_bexvar : iterable, `:class:numpy.array` of floats
+            An array of posterior samples of log(Sigma on source count rates)
+            (i.e. log(Bayesian excess varience) or log(bexvar) of source count rates).
+        """
+
+        # calculate time intervals for each bin if not provided by user
+        if time_del is None:
+            time_del = self.dt*np.ones(shape = self.n)
+
+        lc_bexvar = bexvar.bexvar(time = self._time, time_del=time_del, 
+                            src_counts = self.counts, bg_counts=self.bg_counts,
+                            bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
+    
+        return lc_bexvar

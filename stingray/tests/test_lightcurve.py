@@ -10,6 +10,8 @@ import astropy.units as u
 from astropy.time import Time
 import astropy.timeseries
 from astropy.timeseries import TimeSeries
+from astropy.table import Table
+import scipy.stats
 
 from stingray import Lightcurve
 from stingray.exceptions import StingrayError
@@ -21,6 +23,7 @@ _H5PY_INSTALLED = True
 _HAS_LIGHTKURVE = True
 _HAS_YAML = True
 _IS_WINDOWS = os.name == "nt"
+_HAS_ULTRANEST = True
 
 try:
     import h5py
@@ -36,6 +39,11 @@ try:
     import yaml
 except ImportError:
     _HAS_YAML = False
+
+try:
+    import ultranest
+except ImportError:
+    _HAS_ULTRANEST = False
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, 'data')
@@ -1356,3 +1364,63 @@ class TestLightcurveRebin(object):
         lc1 = Lightcurve(time, count1)
         lc2 = Lightcurve(time, count2)
         assert not lc1 == lc2
+
+class TestFindBexvar(object):
+    @classmethod
+    def setup_class(cls):
+
+        fname_data = os.path.join(datadir, "LightCurve_bexvar.fits")
+        lightcurve = Table.read(fname_data, hdu="RATE", format="fits")
+        band = 0
+
+        cls.time = lightcurve["TIME"] - lightcurve["TIME"][0]
+        cls.time_delta = lightcurve["TIMEDEL"]
+        cls.bg_counts = lightcurve["BACK_COUNTS"][:, band]
+        cls.src_counts = lightcurve["COUNTS"][:, band]
+        cls.bg_ratio = lightcurve["BACKRATIO"]
+        cls.frac_exp = lightcurve["FRACEXP"][:, band]
+
+        cls.fname_result = os.path.join(datadir, "bexvar_results_band_0.npy")
+        cls.quantile = scipy.stats.norm().cdf([-1])
+
+    @pytest.mark.skipif("not _HAS_ULTRANEST")
+    def test_find_bexvar(self):
+        
+        # create lightcurve
+        lc = Lightcurve(time=self.time, counts=self.src_counts, bg_counts=self.bg_counts,
+                           bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
+
+        log_cr_sigma_from_method = lc.find_bexvar()
+        log_cr_sigma_result = np.load(self.fname_result, allow_pickle=True)[1]
+
+        scatt_lo_function = scipy.stats.mstats.mquantiles(
+            log_cr_sigma_from_method, self.quantile
+        )
+        scatt_lo_result = scipy.stats.mstats.mquantiles(
+            log_cr_sigma_result, self.quantile
+        )
+
+        # Compares lower 1 sigma quantile of the estimated scatter of the log(count rate) in dex
+        assert np.isclose(scatt_lo_function, scatt_lo_result, rtol=0.1)
+
+    @pytest.mark.skipif("not _HAS_ULTRANEST")
+    def test_find_bexvar_with_time_delta(self):
+
+        # create lightcurve
+        lc = Lightcurve(time=self.time, counts=self.src_counts, bg_counts=self.bg_counts,
+                           bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
+
+        # provide time intervals externally to find bexvar
+        log_cr_sigma_from_method = lc.find_bexvar(time_del = self.time_delta)
+        log_cr_sigma_result = np.load(self.fname_result, allow_pickle=True)[1]
+
+        scatt_lo_function = scipy.stats.mstats.mquantiles(
+            log_cr_sigma_from_method, self.quantile
+        )
+        scatt_lo_result = scipy.stats.mstats.mquantiles(
+            log_cr_sigma_result, self.quantile
+        )
+
+        # Compares lower 1 sigma quantile of the estimated scatter of the log(count rate) in dex
+        assert np.isclose(scatt_lo_function, scatt_lo_result, rtol=0.1)
+        
