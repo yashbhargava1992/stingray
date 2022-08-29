@@ -20,7 +20,7 @@ def _pulse_phase_fast(time, f, fdot, buffer_array):
     return buffer_array
 
 
-def _folding_search(stat_func, times, frequencies, segment_size=5000,
+def _folding_search(stat_func, times, frequencies, segment_size=np.inf,
                     use_times=False, fdots=0, **kwargs):
 
     fgrid, fdgrid = np.meshgrid(np.asarray(frequencies).astype(np.float64),
@@ -82,7 +82,7 @@ def _profile_fast(phase, nbin=128):
     return bc
 
 
-def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
+def epoch_folding_search(times, frequencies, nbin=128, segment_size=np.inf,
                          expocorr=False, gti=None, weights=1, fdots=0):
     """Performs epoch folding at trial frequencies in photon data.
 
@@ -153,7 +153,7 @@ def epoch_folding_search(times, frequencies, nbin=128, segment_size=5000,
                            fdots=fdots)
 
 
-def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=5000,
+def z_n_search(times, frequencies, nharm=4, nbin=128, segment_size=np.inf,
                expocorr=False, weights=1, gti=None, fdots=0):
     """Calculates the Z^2_n statistics at trial frequencies in photon data.
 
