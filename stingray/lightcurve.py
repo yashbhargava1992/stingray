@@ -1270,18 +1270,12 @@ class Lightcurve(StingrayTimeseries):
             The :class:`Lightcurve` object with sorted time and counts
             arrays.
         """
-        new_time, new_counts, new_counts_err = \
-            zip(*sorted(zip(self.time, self.counts, self.counts_err),
-                        reverse=reverse))
-        new_time = np.asarray(new_time)
-        new_counts = np.asarray(new_counts)
-        new_counts_err = np.asarray(new_counts_err)
 
-        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
-                            gti=self.gti, dt=self.dt, mjdref=self.mjdref,
-                            skip_checks=True)
+        mask = np.argsort(self.time)
+        if reverse:
+            mask = mask[::-1]
 
-        return new_lc
+        return self.apply_mask(mask)
 
     def sort_counts(self, reverse=False):
         """
