@@ -479,12 +479,7 @@ class Lightcurve(StingrayTimeseries):
         unsorted = np.any(dt_array < 0)
 
         if unsorted:
-            logging.warning("The light curve is unsorted. Now, sorting...")
-            order = np.argsort(time)
-            time = time[order]
-            counts = counts[order]
-            if err is not None:
-                err = err[order]
+            logging.warning("The light curve is unsorted.")
         return time, counts, err
 
     def check_lightcurve(self):
@@ -1240,7 +1235,7 @@ class Lightcurve(StingrayTimeseries):
         lc_split = self.split_by_gti(gti, min_points=min_points)
         return lc_split
 
-    def sort(self, reverse=False):
+    def sort(self, reverse=False, inplace=False):
         """
         Sort a Lightcurve object by time.
 
@@ -1274,10 +1269,9 @@ class Lightcurve(StingrayTimeseries):
         mask = np.argsort(self.time)
         if reverse:
             mask = mask[::-1]
+        return self.apply_mask(mask, inplace=inplace)
 
-        return self.apply_mask(mask)
-
-    def sort_counts(self, reverse=False):
+    def sort_counts(self, reverse=False, inplace=False):
         """
         Sort a :class:`Lightcurve` object in accordance with its counts array.
 
@@ -1308,15 +1302,10 @@ class Lightcurve(StingrayTimeseries):
         True
         """
 
-        new_counts, new_time, new_counts_err = \
-            zip(*sorted(zip(self.counts, self.time, self.counts_err),
-                        reverse=reverse))
-
-        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
-                            gti=self.gti, dt=self.dt, mjdref=self.mjdref,
-                            skip_checks=True)
-
-        return new_lc
+        mask = np.argsort(self.counts)
+        if reverse:
+            mask = mask[::-1]
+        return self.apply_mask(mask, inplace=inplace)
 
     def estimate_chunk_length(self, *args, **kwargs):
         """Deprecated alias of estimate_segment_size.
