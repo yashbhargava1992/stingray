@@ -1170,6 +1170,22 @@ class Lightcurve(StingrayTimeseries):
 
         return self._truncate_by_index(start, stop)
 
+    def meta_attrs(self):
+        attrs = super().meta_attrs()
+        sure_array = ["counts", "counts_err", "countrate", "countrate_err"]
+        for attr in sure_array:
+            if attr in attrs:
+                attrs.remove(attr)
+        return attrs
+
+    def array_attrs(self):
+        attrs = super().array_attrs()
+        sure_array = ["counts", "counts_err", "countrate", "countrate_err"]
+        for attr in sure_array:
+            if attr not in attrs:
+                attrs.append(attr)
+        return attrs
+
     def split(self, min_gap, min_points=1):
         """
         For data with gaps, it can sometimes be useful to be able to split
@@ -1724,10 +1740,21 @@ class Lightcurve(StingrayTimeseries):
 
             # Note: GTIs are consistent with default in this case!
             new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
-                                err=self.counts_err[start:stop],
                                 mjdref=self.mjdref, gti=[gti[i]],
                                 dt=self.dt, err_dist=self.err_dist,
                                 skip_checks=True)
+            if isinstance(self.countrate_err, Iterable):
+                new_lc.countrate_err = self.countrate_err[start:stop]
+
+            for attr in self.array_attrs():
+                if attr not in new_lc.array_attrs():
+                    setattr(new_lc, attr, getattr(self, attr)[start:stop])
+            for attr in self.meta_attrs():
+                try:
+                    setattr(new_lc, attr, getattr(self, attr))
+                except AttributeError:
+                    continue
+
             list_of_lcs.append(new_lc)
 
         return list_of_lcs
