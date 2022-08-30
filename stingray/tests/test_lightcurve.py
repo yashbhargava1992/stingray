@@ -1524,7 +1524,7 @@ class TestNewPeraSupport():
         frac_exp = np.array([1, 1, 1, 1])
         gti = np.array([[0.5, 4.5]])
 
-        lc = Lightcurve(times, counts, gti= gti, dt = dt, bg_counts=bg_counts,
+        lc = Lightcurve(times, counts, err=counts_err, gti= gti, dt = dt, bg_counts=bg_counts,
                          frac_exp= frac_exp, bg_ratio= bg_ratio)
 
         lc1 = lc.truncate(start=1)
@@ -1533,16 +1533,16 @@ class TestNewPeraSupport():
         assert np.allclose(lc1.bg_counts, np.array([0, 0, 1]))
         assert np.allclose(lc1.bg_ratio, np.array([1, 0.5, 1]))
         assert np.allclose(lc1.frac_exp, np.array([1, 1, 1]))
-        np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
+        np.testing.assert_almost_equal(lc1.gti[0][0], 1.95)
         assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=2)
         assert np.allclose(lc2.time, np.array([1, 2]))
         assert np.allclose(lc2.counts, np.array([2, 2]))
-        assert np.allclose(lc1.bg_counts, np.array([1, 0]))
-        assert np.allclose(lc1.bg_ratio, np.array([1, 0.5]))
-        assert np.allclose(lc1.frac_exp, np.array([1, 1]))
-        np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
+        assert np.allclose(lc2.bg_counts, np.array([1, 0]))
+        assert np.allclose(lc2.bg_ratio, np.array([1, 1]))
+        assert np.allclose(lc2.frac_exp, np.array([1, 1]))
+        np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.05)
         assert lc2.mjdref == lc.mjdref
 
 
