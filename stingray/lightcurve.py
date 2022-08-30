@@ -5,6 +5,7 @@ Definition of :class::class:`Lightcurve`.
 or to save existing light curves in a class that's easy to use.
 """
 import os
+import copy
 import logging
 import warnings
 import pickle
@@ -1759,32 +1760,73 @@ class Lightcurve(StingrayTimeseries):
 
         return list_of_lcs
 
-    def apply_gtis(self):
+    def apply_mask(self, mask, inplace=False):
+        """Apply a mask to all array attributes of the event list
+
+        Parameters
+        ----------
+        mask : array of ``bool``
+            The mask. Has to be of the same length as ``self.time``
+
+        Other parameters
+        ----------------
+        inplace : bool
+            If True, overwrite the current event list. Otherwise, return a new one.
+
+        Examples
+        --------
+        >>> lc = Lightcurve(time=[0, 1, 2], counts=[2, 3, 4], mission="nustar")
+        >>> lc.bubuattr = [222, 111, 333]
+        >>> newlc0 = lc.apply_mask([True, True, False], inplace=False);
+        >>> newlc1 = lc.apply_mask([True, True, False], inplace=True);
+        >>> newlc0.mission == "nustar"
+        True
+        >>> np.allclose(newlc0.time, [0, 1])
+        True
+        >>> np.allclose(newlc0.bubuattr, [222, 111])
+        True
+        >>> np.allclose(newlc1.time, [0, 1])
+        True
+        >>> lc is newlc1
+        True
+        """
+        array_attrs = self.array_attrs()
+
+        self._mask = self._n = None
+        if inplace:
+            new_ev = self
+        else:
+            new_ev = Lightcurve(time=self.time[mask], counts=self.counts[mask], skip_checks=True, gti=self.gti)
+            for attr in self.meta_attrs():
+                try:
+                    setattr(new_ev, attr, copy.deepcopy(getattr(self, attr)))
+                except AttributeError:
+                    continue
+
+        for attr in array_attrs:
+            if hasattr(self, "_" + attr) or attr in ["time", "counts"]:
+                continue
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                setattr(new_ev, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
+        return new_ev
+
+    def apply_gtis(self, inplace=True):
         """
         Apply GTIs to a light curve. Filters the ``time``, ``counts``,
         ``countrate``, ``counts_err`` and ``countrate_err`` arrays for all bins
         that fall into Good Time Intervals and recalculates mean countrate
         and the number of bins.
         """
+
         check_gtis(self.gti)
 
         good = self.mask
-
-        # nota bene: We set the private properties, otherwise we'll get a
-        # ValueError from changing the shape of the arrays.
-        self._time = self.time[good]
-        self._counts = self.counts[good]
-        if self._counts_err is not None:
-            self._counts_err = self._counts_err[good]
-        self._countrate = None
-        self._countrate_err = None
-        self._mask = None
-
-        self._meanrate = None
-        self._meancounts = None
-        self._n = None
+        self.apply_mask(good, inplace=True)
+        dt = self.dt
+        if "dt" in self.array_attrs():
+            dt = self.dt[0]
+        self.tstart = self.time - 0.5 * dt
         self.tseg = np.max(self.gti) - np.min(self.gti)
-        self.tstart = self.time - 0.5 * self.dt
 
     def bexvar(self, time_del):
         """
