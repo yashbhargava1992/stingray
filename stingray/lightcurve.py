@@ -1739,22 +1739,12 @@ class Lightcurve(StingrayTimeseries):
             if (stop - start) < min_points:
                 continue
 
-            # Note: GTIs are consistent with default in this case!
-            new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
-                                mjdref=self.mjdref, gti=[gti[i]],
-                                dt=self.dt, err_dist=self.err_dist,
-                                skip_checks=True)
-            if isinstance(self.countrate_err, Iterable):
-                new_lc.countrate_err = self.countrate_err[start:stop]
+            new_gti = np.array([gti[i]])
+            mask = create_gti_mask(self.time, new_gti)
 
-            for attr in self.array_attrs():
-                if attr not in new_lc.array_attrs():
-                    setattr(new_lc, attr, getattr(self, attr)[start:stop])
-            for attr in self.meta_attrs():
-                try:
-                    setattr(new_lc, attr, getattr(self, attr))
-                except AttributeError:
-                    continue
+            # Note: GTIs are consistent with default in this case!
+            new_lc = self.apply_mask(mask)
+            new_lc.gti = new_gti
 
             list_of_lcs.append(new_lc)
 
@@ -1821,12 +1811,13 @@ class Lightcurve(StingrayTimeseries):
         check_gtis(self.gti)
 
         good = self.mask
-        self.apply_mask(good, inplace=True)
-        dt = self.dt
+        newlc = self.apply_mask(good, inplace=inplace)
+        dt = newlc.dt
         if "dt" in self.array_attrs():
-            dt = self.dt[0]
-        self.tstart = self.time - 0.5 * dt
-        self.tseg = np.max(self.gti) - np.min(self.gti)
+            dt = newlc.dt[0]
+        newlc.tstart = newlc.time - 0.5 * dt
+        newlc.tseg = np.max(newlc.gti) - np.min(newlc.gti)
+        return newlc
 
     def bexvar(self, time_del):
         """
