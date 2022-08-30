@@ -1260,6 +1260,8 @@ class Lightcurve(StingrayTimeseries):
         ----------
         reverse : boolean, default False
             If True then the object is sorted in reverse order.
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
 
         Examples
         --------
@@ -1296,6 +1298,8 @@ class Lightcurve(StingrayTimeseries):
         ----------
         reverse : boolean, default ``False``
             If ``True`` then the object is sorted in reverse order.
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
 
         Returns
         -------
@@ -1757,7 +1761,7 @@ class Lightcurve(StingrayTimeseries):
         Other parameters
         ----------------
         inplace : bool
-            If True, overwrite the current event list. Otherwise, return a new one.
+            If True, overwrite the current light curve. Otherwise, return a new one.
 
         Examples
         --------
@@ -1802,6 +1806,12 @@ class Lightcurve(StingrayTimeseries):
         ``countrate``, ``counts_err`` and ``countrate_err`` arrays for all bins
         that fall into Good Time Intervals and recalculates mean countrate
         and the number of bins.
+
+        Parameters
+        ----------
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
+
         """
 
         check_gtis(self.gti)
