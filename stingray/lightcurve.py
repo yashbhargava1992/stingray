@@ -911,6 +911,10 @@ class Lightcurve(StingrayTimeseries):
 
         bin_time, bin_counts, bin_err = [], [], []
         gti_new = []
+
+        # If it does not exist, we create it on the spot
+        self.counts_err
+
         for g in self.gti:
             if g[1] - g[0] < dt_new:
                 continue
@@ -921,6 +925,7 @@ class Lightcurve(StingrayTimeseries):
 
                 t_temp = self.time[start_ind:end_ind]
                 c_temp = self.counts[start_ind:end_ind]
+
                 e_temp = self.counts_err[start_ind:end_ind]
 
                 bin_t, bin_c, bin_e, _ = \
@@ -1173,6 +1178,7 @@ class Lightcurve(StingrayTimeseries):
         return self._truncate_by_index(start, stop)
 
     def meta_attrs(self):
+        """Extends StingrayObject.meta_attrs to the specifics of Lightcurve."""
         attrs = super().meta_attrs()
         sure_array = ["counts", "counts_err", "countrate", "countrate_err"]
         for attr in sure_array:
@@ -1181,6 +1187,7 @@ class Lightcurve(StingrayTimeseries):
         return attrs
 
     def array_attrs(self):
+        """Extends StingrayObject.array_attrs to the specifics of Lightcurve."""
         attrs = super().array_attrs()
         sure_array = ["counts", "counts_err", "countrate", "countrate_err"]
         for attr in sure_array:
