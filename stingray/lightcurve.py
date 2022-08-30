@@ -1125,16 +1125,22 @@ class Lightcurve(StingrayTimeseries):
 
     def _truncate_by_index(self, start, stop):
         """Private method for truncation using index values."""
-        time_new = self.time[start:stop]
-        counts_new = self.counts[start:stop]
-        counts_err_new = self.counts_err[start:stop]
+
+        new_lc = self.apply_mask(slice(start, stop))
+
+        dtstart = dtstop = new_lc.dt
+        if isinstance(self.dt, Iterable):
+            dtstart = self.dt[0]
+            dtstop = self.dt[-1]
+
         gti = \
             cross_two_gtis(self.gti,
-                           np.asarray([[self.time[start] - 0.5 * self.dt,
-                                        time_new[-1] + 0.5 * self.dt]]))
+                           np.asarray([[self.time[start] - 0.5 * dtstart,
+                                        self.time[stop - 1] + 0.5 * dtstop]]))
 
-        return Lightcurve(time_new, counts_new, err=counts_err_new, gti=gti,
-                          dt=self.dt, skip_checks=True)
+        new_lc.gti = gti
+
+        return new_lc
 
     def _truncate_by_time(self, start, stop):
         """Helper method for truncation using time values.
