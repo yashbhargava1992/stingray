@@ -1135,8 +1135,8 @@ class Lightcurve(StingrayTimeseries):
 
         gti = \
             cross_two_gtis(self.gti,
-                           np.asarray([[self.time[start] - 0.5 * dtstart,
-                                        self.time[stop - 1] + 0.5 * dtstop]]))
+                           np.asarray([[new_lc.time[0] - 0.5 * dtstart,
+                                        new_lc.time[-1] + 0.5 * dtstop]]))
 
         new_lc.gti = gti
 
