@@ -1384,13 +1384,13 @@ class TestFindBexvar(object):
         cls.quantile = scipy.stats.norm().cdf([-1])
 
     @pytest.mark.skipif("not _HAS_ULTRANEST")
-    def test_find_bexvar(self):
+    def test_bexvar(self):
         
         # create lightcurve
         lc = Lightcurve(time=self.time, counts=self.src_counts, bg_counts=self.bg_counts,
                            bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
 
-        log_cr_sigma_from_method = lc.find_bexvar()
+        log_cr_sigma_from_method = lc.bexvar()
         log_cr_sigma_result = np.load(self.fname_result, allow_pickle=True)[1]
 
         scatt_lo_function = scipy.stats.mstats.mquantiles(
@@ -1411,7 +1411,7 @@ class TestFindBexvar(object):
                            bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
 
         # provide time intervals externally to find bexvar
-        log_cr_sigma_from_method = lc.find_bexvar(time_del = self.time_delta)
+        log_cr_sigma_from_method = lc.bexvar(time_del = self.time_delta)
         log_cr_sigma_result = np.load(self.fname_result, allow_pickle=True)[1]
 
         scatt_lo_function = scipy.stats.mstats.mquantiles(
@@ -1423,4 +1423,124 @@ class TestFindBexvar(object):
 
         # Compares lower 1 sigma quantile of the estimated scatter of the log(count rate) in dex
         assert np.isclose(scatt_lo_function, scatt_lo_result, rtol=0.1)
+
+class TestNewPeraSupport():
+
+    def test_create(self):
+        """
+        Demonstrate that we can create a Lightcurve object with dt being an array of floats.
+        """
+        times = np.array([1, 2, 3, 4])
+        counts = np.array([2, 2, 2, 2])
+        counts_err = np.array([0.2, 0.2, 0.2, 0.2])
+        dt = np.array([1.0, 1.0, 1.0, 1.0])
+        bg_counts = np.array([1, 0, 0, 1])
+        bg_ratio = np.array([1, 1, 0.5, 1])
+        frac_exp = np.array([1, 1, 1, 1])
+        gti = np.array([[0.5, 4.5]])
+        lc = Lightcurve(time=times, counts=counts, dt=dt, counts_err=counts_err, gti=gti,
+                         bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
+
+    def test_split_lc_by_gtis(self):
+        times = [1, 2, 3, 4, 5, 6, 7, 8]
+        counts = [1, 1, 1, 1, 2, 3, 3, 2]
+        bg_counts = [0, 0, 0, 1, 0, 1, 2, 0]
+        bg_ratio = [0.1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1]
+        frac_exp = [1, 0.5, 1, 1, 1, 0.5, 0.5, 1]
+        gti = [[0.5, 4.5], [5.5, 7.5]]
+
+        lc = Lightcurve(times, counts, gti=gti, bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
+        list_of_lcs = lc.split_by_gti()
+        lc0 = list_of_lcs[0]
+        lc1 = list_of_lcs[1]
+        assert np.allclose(lc0.time, [1, 2, 3, 4])
+        assert np.allclose(lc1.time, [6, 7])
+        assert np.allclose(lc0.counts, [1, 1, 1, 1])
+        assert np.allclose(lc1.counts, [3, 3])
+        assert np.allclose(lc0.gti, [[0.5, 4.5]])
+        assert np.allclose(lc1.gti, [[5.5, 7.5]])
+        # Check if new attributes are also splited accordingly
+        assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
+        assert np.allclose(lc1.bg_counts, [1, 2])
+        assert np.allclose(lc0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
+        assert np.allclose(lc1.bg_ratio, [0.2, 0.2])
+        assert np.allclose(lc0.frac_exp, [1, 0.5, 1, 1])
+        assert np.allclose(lc1.frac_exp, [0.5, 0.5])
         
+    def test_sort(self):
+
+        _times = [2, 1, 3, 4]
+        _counts = [40, 10, 20, 5]
+        _counts_err = [4, 1, 2, 0.5]
+        _frac_exp = [1,2,4,3]   # We could similarly add _bg_counts and _bg_ratio
+
+        lc = Lightcurve(_times, _counts, err=_counts_err, frac_exp=_frac_exp, mjdref=57000)
+        mjdref = lc.mjdref
+
+        lc_new = lc.sort()
+
+        assert np.allclose(lc_new.counts_err, np.array([1, 4, 2, 0.5]))
+        assert np.allclose(lc_new.counts, np.array([10, 40, 20, 5]))
+        assert np.allclose(lc_new.time, np.array([1, 2, 3, 4]))
+        # check if frac_exp has also been sorted
+        assert np.allclose(lc_new.frac_exp, np.array([2, 1, 4, 3]))
+        assert lc_new.mjdref == mjdref
+
+        lc_new = lc.sort(reverse=True)
+
+        assert np.allclose(lc_new.counts, np.array([5, 20, 40,  10]))
+        assert np.allclose(lc_new.time, np.array([4, 3, 2, 1]))
+        # check if frac_exp has also been sorted
+        assert np.allclose(lc_new.frac_exp, np.array([3, 4, 1, 2]))
+        assert lc_new.mjdref == mjdref
+
+    def test_split_has_correct_data_points(self):
+        test_time = np.array([1, 2, 3, 6, 7, 8])
+        test_counts = np.random.rand(len(test_time))
+        test_bg_counts = np.random.rand(len(test_time))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            lc_test = Lightcurve(test_time, test_counts, bg_counts=test_bg_counts)
+        slc = lc_test.split(1.5)
+
+        assert np.allclose(slc[0].time, [1, 2, 3])
+        assert np.allclose(slc[1].time, [6, 7, 8])
+        assert np.allclose(slc[0].counts, test_counts[:3])
+        assert np.allclose(slc[1].counts, test_counts[3:])
+        assert np.allclose(slc[0].bg_counts, test_bg_counts[:3])
+        assert np.allclose(slc[1].bg_counts, test_bg_counts[3:])
+
+    def test_truncate_by_index(self):
+
+        times = np.array([1, 2, 3, 4])
+        counts = np.array([2, 2, 2, 2])
+        counts_err = np.array([0.2, 0.2, 0.2, 0.2])
+        dt = 0.1
+        bg_counts = np.array([1, 0, 0, 1])
+        bg_ratio = np.array([1, 1, 0.5, 1])
+        frac_exp = np.array([1, 1, 1, 1])
+        gti = np.array([[0.5, 4.5]])
+
+        lc = Lightcurve(times, counts, gti= gti, dt = dt, bg_counts=bg_counts,
+                         frac_exp= frac_exp, bg_ratio= bg_ratio)
+
+        lc1 = lc.truncate(start=1)
+        assert np.allclose(lc1.time, np.array([2, 3, 4]))
+        assert np.allclose(lc1.counts, np.array([2, 2, 2]))
+        assert np.allclose(lc1.bg_counts, np.array([0, 0, 1]))
+        assert np.allclose(lc1.bg_ratio, np.array([1, 0.5, 1]))
+        assert np.allclose(lc1.frac_exp, np.array([1, 1, 1]))
+        np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
+        assert lc1.mjdref == lc.mjdref
+
+        lc2 = lc.truncate(stop=2)
+        assert np.allclose(lc2.time, np.array([1, 2]))
+        assert np.allclose(lc2.counts, np.array([2, 2]))
+        assert np.allclose(lc1.bg_counts, np.array([1, 0]))
+        assert np.allclose(lc1.bg_ratio, np.array([1, 0.5]))
+        assert np.allclose(lc1.frac_exp, np.array([1, 1]))
+        np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
+        assert lc2.mjdref == lc.mjdref
+
+

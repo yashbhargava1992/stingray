@@ -77,10 +77,10 @@ class Lightcurve(StingrayTimeseries):
     bg_counts: iterable,`:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of background counts in each bin corresponding to the
         bins defined in `time`.
-      
+
     bg_ratio: iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of source region area to background region area ratio in each bin.
- 
+
     frac_exp: iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
         A list or array of fractional exposer in each bin.
 
@@ -127,10 +127,10 @@ class Lightcurve(StingrayTimeseries):
 
     bg_counts: numpy.ndarray
         The background counts corresponding to the bins in `time`.
-      
+
     bg_ratio: numpy.ndarray
         The ratio of source region area to background region area corresponding to each bin.
- 
+
     frac_exp: numpy.ndarray
         The fractional exposers in each bin.
 
@@ -187,7 +187,7 @@ class Lightcurve(StingrayTimeseries):
     """
     main_array_attr = "time"
 
-    def __init__(self, time, counts, err=None, input_counts=True, gti=None, 
+    def __init__(self, time, counts, err=None, input_counts=True, gti=None,
                  err_dist='poisson', bg_counts=None, bg_ratio=None, frac_exp=None,
                  mjdref=0, dt=None, skip_checks=False, low_memory=False, mission=None,
                  instr=None, header=None, **other_kw):
@@ -1756,7 +1756,7 @@ class Lightcurve(StingrayTimeseries):
         self.tseg = np.max(self.gti) - np.min(self.gti)
         self.tstart = self.time - 0.5 * self.dt
 
-    def find_bexvar(self,time_del=None):
+    def bexvar(self, time_del):
         """
         Finds Bayesian excess varience (bexvar) for the light curve.
         It requires source counts in ``counts`` and time interval for each bin
@@ -1781,10 +1781,10 @@ class Lightcurve(StingrayTimeseries):
 
         # calculate time intervals for each bin if not provided by user
         if time_del is None:
-            time_del = self.dt*np.ones(shape = self.n)
+            time_del = self.dt*np.ones(shape=self.n)
 
-        lc_bexvar = bexvar.bexvar(time = self._time, time_del=time_del, 
-                            src_counts = self.counts, bg_counts=self.bg_counts,
-                            bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
-    
+        lc_bexvar = bexvar.bexvar(time=self._time, time_del=time_del,
+                                  src_counts=self.counts, bg_counts=self.bg_counts,
+                                  bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
+
         return lc_bexvar
