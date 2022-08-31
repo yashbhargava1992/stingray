@@ -5,9 +5,11 @@ Definition of :class::class:`Lightcurve`.
 or to save existing light curves in a class that's easy to use.
 """
 import os
+import copy
 import logging
 import warnings
 import pickle
+from collections.abc import Iterable
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -477,12 +479,7 @@ class Lightcurve(StingrayTimeseries):
         unsorted = np.any(dt_array < 0)
 
         if unsorted:
-            logging.warning("The light curve is unsorted. Now, sorting...")
-            order = np.argsort(time)
-            time = time[order]
-            counts = counts[order]
-            if err is not None:
-                err = err[order]
+            logging.warning("The light curve is unsorted.")
         return time, counts, err
 
     def check_lightcurve(self):
@@ -497,15 +494,17 @@ class Lightcurve(StingrayTimeseries):
         check_gtis(self.gti)
 
         idxs = np.searchsorted(self.time, self.gti)
-        uneven = False
-        for idx in range(idxs.shape[0]):
-            istart, istop = idxs[idx, 0], min(idxs[idx, 1], self.time.size - 1)
+        uneven = isinstance(self.dt, Iterable)
 
-            local_diff = np.diff(self.time[istart:istop])
-            if np.any(~np.isclose(local_diff, self.dt)):
-                uneven = True
+        if not uneven:
+            for idx in range(idxs.shape[0]):
+                istart, istop = idxs[idx, 0], min(idxs[idx, 1], self.time.size - 1)
 
-                break
+                local_diff = np.diff(self.time[istart:istop])
+                if np.any(~np.isclose(local_diff, self.dt)):
+                    uneven = True
+
+                    break
         if uneven:
             simon("Bin sizes in input time array aren't equal throughout! "
                   "This could cause problems with Fourier transforms. "
@@ -912,6 +911,10 @@ class Lightcurve(StingrayTimeseries):
 
         bin_time, bin_counts, bin_err = [], [], []
         gti_new = []
+
+        # If it does not exist, we create it on the spot
+        self.counts_err
+
         for g in self.gti:
             if g[1] - g[0] < dt_new:
                 continue
@@ -922,6 +925,7 @@ class Lightcurve(StingrayTimeseries):
 
                 t_temp = self.time[start_ind:end_ind]
                 c_temp = self.counts[start_ind:end_ind]
+
                 e_temp = self.counts_err[start_ind:end_ind]
 
                 bin_t, bin_c, bin_e, _ = \
@@ -1126,16 +1130,22 @@ class Lightcurve(StingrayTimeseries):
 
     def _truncate_by_index(self, start, stop):
         """Private method for truncation using index values."""
-        time_new = self.time[start:stop]
-        counts_new = self.counts[start:stop]
-        counts_err_new = self.counts_err[start:stop]
+
+        new_lc = self.apply_mask(slice(start, stop))
+
+        dtstart = dtstop = new_lc.dt
+        if isinstance(self.dt, Iterable):
+            dtstart = self.dt[0]
+            dtstop = self.dt[-1]
+
         gti = \
             cross_two_gtis(self.gti,
-                           np.asarray([[self.time[start] - 0.5 * self.dt,
-                                        time_new[-1] + 0.5 * self.dt]]))
+                           np.asarray([[new_lc.time[0] - 0.5 * dtstart,
+                                        new_lc.time[-1] + 0.5 * dtstop]]))
 
-        return Lightcurve(time_new, counts_new, err=counts_err_new, gti=gti,
-                          dt=self.dt, skip_checks=True)
+        new_lc.gti = gti
+
+        return new_lc
 
     def _truncate_by_time(self, start, stop):
         """Helper method for truncation using time values.
@@ -1166,6 +1176,24 @@ class Lightcurve(StingrayTimeseries):
             stop = self.time.searchsorted(stop)
 
         return self._truncate_by_index(start, stop)
+
+    def meta_attrs(self):
+        """Extends StingrayObject.meta_attrs to the specifics of Lightcurve."""
+        attrs = super().meta_attrs()
+        sure_array = ["counts", "counts_err", "countrate", "countrate_err"]
+        for attr in sure_array:
+            if attr in attrs:
+                attrs.remove(attr)
+        return attrs
+
+    def array_attrs(self):
+        """Extends StingrayObject.array_attrs to the specifics of Lightcurve."""
+        attrs = super().array_attrs()
+        sure_array = ["counts", "counts_err", "countrate", "countrate_err"]
+        for attr in sure_array:
+            if attr not in attrs:
+                attrs.append(attr)
+        return attrs
 
     def split(self, min_gap, min_points=1):
         """
@@ -1220,7 +1248,7 @@ class Lightcurve(StingrayTimeseries):
         lc_split = self.split_by_gti(gti, min_points=min_points)
         return lc_split
 
-    def sort(self, reverse=False):
+    def sort(self, reverse=False, inplace=False):
         """
         Sort a Lightcurve object by time.
 
@@ -1232,6 +1260,8 @@ class Lightcurve(StingrayTimeseries):
         ----------
         reverse : boolean, default False
             If True then the object is sorted in reverse order.
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
 
         Examples
         --------
@@ -1250,20 +1280,13 @@ class Lightcurve(StingrayTimeseries):
             The :class:`Lightcurve` object with sorted time and counts
             arrays.
         """
-        new_time, new_counts, new_counts_err = \
-            zip(*sorted(zip(self.time, self.counts, self.counts_err),
-                        reverse=reverse))
-        new_time = np.asarray(new_time)
-        new_counts = np.asarray(new_counts)
-        new_counts_err = np.asarray(new_counts_err)
 
-        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
-                            gti=self.gti, dt=self.dt, mjdref=self.mjdref,
-                            skip_checks=True)
+        mask = np.argsort(self.time)
+        if reverse:
+            mask = mask[::-1]
+        return self.apply_mask(mask, inplace=inplace)
 
-        return new_lc
-
-    def sort_counts(self, reverse=False):
+    def sort_counts(self, reverse=False, inplace=False):
         """
         Sort a :class:`Lightcurve` object in accordance with its counts array.
 
@@ -1275,6 +1298,8 @@ class Lightcurve(StingrayTimeseries):
         ----------
         reverse : boolean, default ``False``
             If ``True`` then the object is sorted in reverse order.
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
 
         Returns
         -------
@@ -1294,15 +1319,10 @@ class Lightcurve(StingrayTimeseries):
         True
         """
 
-        new_counts, new_time, new_counts_err = \
-            zip(*sorted(zip(self.counts, self.time, self.counts_err),
-                        reverse=reverse))
-
-        new_lc = Lightcurve(new_time, new_counts, err=new_counts_err,
-                            gti=self.gti, dt=self.dt, mjdref=self.mjdref,
-                            skip_checks=True)
-
-        return new_lc
+        mask = np.argsort(self.counts)
+        if reverse:
+            mask = mask[::-1]
+        return self.apply_mask(mask, inplace=inplace)
 
     def estimate_chunk_length(self, *args, **kwargs):
         """Deprecated alias of estimate_segment_size.
@@ -1719,42 +1739,91 @@ class Lightcurve(StingrayTimeseries):
             if (stop - start) < min_points:
                 continue
 
+            new_gti = np.array([gti[i]])
+            mask = create_gti_mask(self.time, new_gti)
+
             # Note: GTIs are consistent with default in this case!
-            new_lc = Lightcurve(self.time[start:stop], self.counts[start:stop],
-                                err=self.counts_err[start:stop],
-                                mjdref=self.mjdref, gti=[gti[i]],
-                                dt=self.dt, err_dist=self.err_dist,
-                                skip_checks=True)
+            new_lc = self.apply_mask(mask)
+            new_lc.gti = new_gti
+
             list_of_lcs.append(new_lc)
 
         return list_of_lcs
 
-    def apply_gtis(self):
+    def apply_mask(self, mask, inplace=False):
+        """Apply a mask to all array attributes of the event list
+
+        Parameters
+        ----------
+        mask : array of ``bool``
+            The mask. Has to be of the same length as ``self.time``
+
+        Other parameters
+        ----------------
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
+
+        Examples
+        --------
+        >>> lc = Lightcurve(time=[0, 1, 2], counts=[2, 3, 4], mission="nustar")
+        >>> lc.bubuattr = [222, 111, 333]
+        >>> newlc0 = lc.apply_mask([True, True, False], inplace=False);
+        >>> newlc1 = lc.apply_mask([True, True, False], inplace=True);
+        >>> newlc0.mission == "nustar"
+        True
+        >>> np.allclose(newlc0.time, [0, 1])
+        True
+        >>> np.allclose(newlc0.bubuattr, [222, 111])
+        True
+        >>> np.allclose(newlc1.time, [0, 1])
+        True
+        >>> lc is newlc1
+        True
+        """
+        array_attrs = self.array_attrs()
+
+        self._mask = self._n = None
+        if inplace:
+            new_ev = self
+        else:
+            new_ev = Lightcurve(time=self.time[mask], counts=self.counts[mask], skip_checks=True, gti=self.gti)
+            for attr in self.meta_attrs():
+                try:
+                    setattr(new_ev, attr, copy.deepcopy(getattr(self, attr)))
+                except AttributeError:
+                    continue
+
+        for attr in array_attrs:
+            if hasattr(self, "_" + attr) or attr in ["time", "counts"]:
+                continue
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                setattr(new_ev, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
+        return new_ev
+
+    def apply_gtis(self, inplace=True):
         """
         Apply GTIs to a light curve. Filters the ``time``, ``counts``,
         ``countrate``, ``counts_err`` and ``countrate_err`` arrays for all bins
         that fall into Good Time Intervals and recalculates mean countrate
         and the number of bins.
+
+        Parameters
+        ----------
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
+
         """
+
         check_gtis(self.gti)
 
         good = self.mask
-
-        # nota bene: We set the private properties, otherwise we'll get a
-        # ValueError from changing the shape of the arrays.
-        self._time = self.time[good]
-        self._counts = self.counts[good]
-        if self._counts_err is not None:
-            self._counts_err = self._counts_err[good]
-        self._countrate = None
-        self._countrate_err = None
-        self._mask = None
-
-        self._meanrate = None
-        self._meancounts = None
-        self._n = None
-        self.tseg = np.max(self.gti) - np.min(self.gti)
-        self.tstart = self.time - 0.5 * self.dt
+        newlc = self.apply_mask(good, inplace=inplace)
+        dt = newlc.dt
+        if "dt" in self.array_attrs():
+            dt = newlc.dt[0]
+        newlc.tstart = newlc.time - 0.5 * dt
+        newlc.tseg = np.max(newlc.gti) - np.min(newlc.gti)
+        return newlc
 
     def bexvar(self, time_del):
         """

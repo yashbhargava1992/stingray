@@ -1385,7 +1385,7 @@ class TestFindBexvar(object):
 
     @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_bexvar(self):
-        
+
         # create lightcurve
         lc = Lightcurve(time=self.time, counts=self.src_counts, bg_counts=self.bg_counts,
                            bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
@@ -1450,6 +1450,7 @@ class TestNewPeraSupport():
         gti = [[0.5, 4.5], [5.5, 7.5]]
 
         lc = Lightcurve(times, counts, gti=gti, bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
+        print(lc.array_attrs())
         list_of_lcs = lc.split_by_gti()
         lc0 = list_of_lcs[0]
         lc1 = list_of_lcs[1]
@@ -1460,13 +1461,14 @@ class TestNewPeraSupport():
         assert np.allclose(lc0.gti, [[0.5, 4.5]])
         assert np.allclose(lc1.gti, [[5.5, 7.5]])
         # Check if new attributes are also splited accordingly
+        print(lc0.bg_counts)
         assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
         assert np.allclose(lc1.bg_counts, [1, 2])
         assert np.allclose(lc0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
         assert np.allclose(lc1.bg_ratio, [0.2, 0.2])
         assert np.allclose(lc0.frac_exp, [1, 0.5, 1, 1])
         assert np.allclose(lc1.frac_exp, [0.5, 0.5])
-        
+
     def test_sort(self):
 
         _times = [2, 1, 3, 4]
@@ -1522,7 +1524,7 @@ class TestNewPeraSupport():
         frac_exp = np.array([1, 1, 1, 1])
         gti = np.array([[0.5, 4.5]])
 
-        lc = Lightcurve(times, counts, gti= gti, dt = dt, bg_counts=bg_counts,
+        lc = Lightcurve(times, counts, err=counts_err, gti= gti, dt = dt, bg_counts=bg_counts,
                          frac_exp= frac_exp, bg_ratio= bg_ratio)
 
         lc1 = lc.truncate(start=1)
@@ -1531,16 +1533,16 @@ class TestNewPeraSupport():
         assert np.allclose(lc1.bg_counts, np.array([0, 0, 1]))
         assert np.allclose(lc1.bg_ratio, np.array([1, 0.5, 1]))
         assert np.allclose(lc1.frac_exp, np.array([1, 1, 1]))
-        np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
+        np.testing.assert_almost_equal(lc1.gti[0][0], 1.95)
         assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=2)
         assert np.allclose(lc2.time, np.array([1, 2]))
         assert np.allclose(lc2.counts, np.array([2, 2]))
-        assert np.allclose(lc1.bg_counts, np.array([1, 0]))
-        assert np.allclose(lc1.bg_ratio, np.array([1, 0.5]))
-        assert np.allclose(lc1.frac_exp, np.array([1, 1]))
-        np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
+        assert np.allclose(lc2.bg_counts, np.array([1, 0]))
+        assert np.allclose(lc2.bg_ratio, np.array([1, 1]))
+        assert np.allclose(lc2.frac_exp, np.array([1, 1]))
+        np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.05)
         assert lc2.mjdref == lc.mjdref
 
 
