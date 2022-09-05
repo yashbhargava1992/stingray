@@ -1092,9 +1092,12 @@ class TestLightcurve(object):
     def test_split_lc_by_gtis(self):
         times = [1, 2, 3, 4, 5, 6, 7, 8]
         counts = [1, 1, 1, 1, 2, 3, 3, 2]
+        bg_counts = [0, 0, 0, 1, 0, 1, 2, 0]
+        bg_ratio = [0.1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1]
+        frac_exp = [1, 0.5, 1, 1, 1, 0.5, 0.5, 1]
         gti = [[0.5, 4.5], [5.5, 7.5]]
 
-        lc = Lightcurve(times, counts, gti=gti)
+        lc = Lightcurve(times, counts, gti=gti, bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
         list_of_lcs = lc.split_by_gti()
         lc0 = list_of_lcs[0]
         lc1 = list_of_lcs[1]
@@ -1104,6 +1107,13 @@ class TestLightcurve(object):
         assert np.allclose(lc1.counts, [3, 3])
         assert np.allclose(lc0.gti, [[0.5, 4.5]])
         assert np.allclose(lc1.gti, [[5.5, 7.5]])
+        # Check if new attributes are also splited accordingly
+        assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
+        assert np.allclose(lc1.bg_counts, [1, 2])
+        assert np.allclose(lc0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
+        assert np.allclose(lc1.bg_ratio, [0.2, 0.2])
+        assert np.allclose(lc0.frac_exp, [1, 0.5, 1, 1])
+        assert np.allclose(lc1.frac_exp, [0.5, 0.5])
 
     def test_split_lc_by_gtis_minpoints(self):
         times = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -1451,34 +1461,6 @@ class TestNewPeraSupport():
         gti = np.array([[0.5, 4.5]])
         lc = Lightcurve(time=times, counts=counts, dt=dt, counts_err=counts_err, gti=gti,
                          bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
-
-    def test_split_lc_by_gtis(self):
-        times = [1, 2, 3, 4, 5, 6, 7, 8]
-        counts = [1, 1, 1, 1, 2, 3, 3, 2]
-        bg_counts = [0, 0, 0, 1, 0, 1, 2, 0]
-        bg_ratio = [0.1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1]
-        frac_exp = [1, 0.5, 1, 1, 1, 0.5, 0.5, 1]
-        gti = [[0.5, 4.5], [5.5, 7.5]]
-
-        lc = Lightcurve(times, counts, gti=gti, bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
-        print(lc.array_attrs())
-        list_of_lcs = lc.split_by_gti()
-        lc0 = list_of_lcs[0]
-        lc1 = list_of_lcs[1]
-        assert np.allclose(lc0.time, [1, 2, 3, 4])
-        assert np.allclose(lc1.time, [6, 7])
-        assert np.allclose(lc0.counts, [1, 1, 1, 1])
-        assert np.allclose(lc1.counts, [3, 3])
-        assert np.allclose(lc0.gti, [[0.5, 4.5]])
-        assert np.allclose(lc1.gti, [[5.5, 7.5]])
-        # Check if new attributes are also splited accordingly
-        print(lc0.bg_counts)
-        assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
-        assert np.allclose(lc1.bg_counts, [1, 2])
-        assert np.allclose(lc0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
-        assert np.allclose(lc1.bg_ratio, [0.2, 0.2])
-        assert np.allclose(lc0.frac_exp, [1, 0.5, 1, 1])
-        assert np.allclose(lc1.frac_exp, [0.5, 0.5])
 
     def test_sort(self):
 
