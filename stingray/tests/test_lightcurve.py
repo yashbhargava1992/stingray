@@ -288,6 +288,9 @@ class TestLightcurve(object):
         cls.times = np.array([1, 2, 3, 4])
         cls.counts = np.array([2, 2, 2, 2])
         cls.counts_err = np.array([0.2, 0.2, 0.2, 0.2])
+        cls.bg_counts = np.array([1, 0, 0, 1])
+        cls.bg_ratio = np.array([1, 1, 0.5, 1])
+        cls.frac_exp = np.array([1, 1, 1, 1])
         cls.dt = 1.0
         cls.gti = np.array([[0.5, 4.5]])
 
@@ -786,17 +789,24 @@ class TestLightcurve(object):
             assert np.allclose(lc3.counts_err, np.zeros_like(lc3.time))
 
     def test_truncate_by_index(self):
-        lc = Lightcurve(self.times, self.counts, gti=self.gti)
+        lc = Lightcurve(self.times, self.counts, err=self.counts_err, gti=self.gti, dt=self.dt,
+                         bg_counts=self.bg_counts, frac_exp=self.frac_exp, bg_ratio=self.bg_ratio)
 
         lc1 = lc.truncate(start=1)
         assert np.allclose(lc1.time, np.array([2, 3, 4]))
         assert np.allclose(lc1.counts, np.array([2, 2, 2]))
+        assert np.allclose(lc1.bg_counts, np.array([0, 0, 1]))
+        assert np.allclose(lc1.bg_ratio, np.array([1, 0.5, 1]))
+        assert np.allclose(lc1.frac_exp, np.array([1, 1, 1]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
         assert lc1.mjdref == lc.mjdref
 
         lc2 = lc.truncate(stop=2)
         assert np.allclose(lc2.time, np.array([1, 2]))
         assert np.allclose(lc2.counts, np.array([2, 2]))
+        assert np.allclose(lc2.bg_counts, np.array([1, 0]))
+        assert np.allclose(lc2.bg_ratio, np.array([1, 1]))
+        assert np.allclose(lc2.frac_exp, np.array([1, 1]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
         assert lc2.mjdref == lc.mjdref
 
@@ -1513,37 +1523,3 @@ class TestNewPeraSupport():
         assert np.allclose(slc[1].counts, test_counts[3:])
         assert np.allclose(slc[0].bg_counts, test_bg_counts[:3])
         assert np.allclose(slc[1].bg_counts, test_bg_counts[3:])
-
-    def test_truncate_by_index(self):
-
-        times = np.array([1, 2, 3, 4])
-        counts = np.array([2, 2, 2, 2])
-        counts_err = np.array([0.2, 0.2, 0.2, 0.2])
-        dt = 0.1
-        bg_counts = np.array([1, 0, 0, 1])
-        bg_ratio = np.array([1, 1, 0.5, 1])
-        frac_exp = np.array([1, 1, 1, 1])
-        gti = np.array([[0.5, 4.5]])
-
-        lc = Lightcurve(times, counts, err=counts_err, gti= gti, dt = dt, bg_counts=bg_counts,
-                         frac_exp= frac_exp, bg_ratio= bg_ratio)
-
-        lc1 = lc.truncate(start=1)
-        assert np.allclose(lc1.time, np.array([2, 3, 4]))
-        assert np.allclose(lc1.counts, np.array([2, 2, 2]))
-        assert np.allclose(lc1.bg_counts, np.array([0, 0, 1]))
-        assert np.allclose(lc1.bg_ratio, np.array([1, 0.5, 1]))
-        assert np.allclose(lc1.frac_exp, np.array([1, 1, 1]))
-        np.testing.assert_almost_equal(lc1.gti[0][0], 1.95)
-        assert lc1.mjdref == lc.mjdref
-
-        lc2 = lc.truncate(stop=2)
-        assert np.allclose(lc2.time, np.array([1, 2]))
-        assert np.allclose(lc2.counts, np.array([2, 2]))
-        assert np.allclose(lc2.bg_counts, np.array([1, 0]))
-        assert np.allclose(lc2.bg_ratio, np.array([1, 1]))
-        assert np.allclose(lc2.frac_exp, np.array([1, 1]))
-        np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.05)
-        assert lc2.mjdref == lc.mjdref
-
-
