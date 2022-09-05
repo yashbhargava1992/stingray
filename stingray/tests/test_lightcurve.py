@@ -1365,7 +1365,7 @@ class TestLightcurveRebin(object):
         lc2 = Lightcurve(time, count2)
         assert not lc1 == lc2
 
-class TestFindBexvar(object):
+class TestBexvar(object):
     @classmethod
     def setup_class(cls):
 
@@ -1404,11 +1404,12 @@ class TestFindBexvar(object):
         assert np.isclose(scatt_lo_function, scatt_lo_result, rtol=0.1)
 
     @pytest.mark.skipif("not _HAS_ULTRANEST")
-    def test_find_bexvar_with_time_delta(self):
+    def test_bexvar_with_dt_as_array(self):
 
-        # create lightcurve
-        lc = Lightcurve(time=self.time, counts=self.src_counts, bg_counts=self.bg_counts,
-                           bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
+        # create lightcurve with ``dt`` as an array
+        lc = Lightcurve(time=self.time, counts=self.src_counts, dt=self.time_delta,
+                         gti=[[self.time[0], self.time[-1]]], bg_counts=self.bg_counts,
+                         bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
 
         # provide time intervals externally to find bexvar
         log_cr_sigma_from_method = lc.bexvar(time_del = self.time_delta)

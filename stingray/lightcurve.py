@@ -1825,21 +1825,13 @@ class Lightcurve(StingrayTimeseries):
         newlc.tseg = np.max(newlc.gti) - np.min(newlc.gti)
         return newlc
 
-    def bexvar(self, time_del):
+    def bexvar(self):
         """
         Finds Bayesian excess varience (bexvar) for the light curve.
-        It requires source counts in ``counts`` and time interval for each bin
-        as ``time_del``. If time intervals are not provided, it calculates them
-        by assuming all intervals to be equal to ``dt``.
-
-        Parameters
-        ----------
-        time_del: iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
-            A list or array of time intervals for each bin of light curve.
-            **Note**: Use this parameter to provide time intervals corresponding
-            to each bin if intervals are not all equal. If ``None`` is passed
-            then the method will consider all bins to have time intervals equal to
-            ``dt``.
+        It requires source counts in ``counts`` and time intervals for each bin.
+        If the ``dt`` is an array then uses its elements as time intervals
+        for each bin. If ``dt`` is float, it calculates the time intervals by assuming
+        all intervals to be equal to ``dt``.
 
         Returns
         -------
@@ -1849,7 +1841,8 @@ class Lightcurve(StingrayTimeseries):
         """
 
         # calculate time intervals for each bin if not provided by user
-        if time_del is None:
+        # assumes that time intervals in each bin are equal to ``dt``
+        if not isinstance(self.dt, Iterable):
             time_del = self.dt*np.ones(shape=self.n)
 
         lc_bexvar = bexvar.bexvar(time=self._time, time_del=time_del,
