@@ -849,15 +849,26 @@ class TestLightcurve(object):
     def test_split_has_correct_data_points(self):
         test_time = np.array([1, 2, 3, 6, 7, 8])
         test_counts = np.random.rand(len(test_time))
+        test_bg_counts = np.random.rand(len(test_time))
+        test_bg_ratio = np.random.rand(len(test_time))
+        test_frac_exp = np.random.rand(len(test_time))
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
-            lc_test = Lightcurve(test_time, test_counts)
+            lc_test = Lightcurve(test_time, test_counts, bg_counts=test_bg_counts,
+                                 bg_ratio=test_bg_ratio, frac_exp=test_frac_exp)
         slc = lc_test.split(1.5)
 
         assert np.allclose(slc[0].time, [1, 2, 3])
         assert np.allclose(slc[1].time, [6, 7, 8])
         assert np.allclose(slc[0].counts, test_counts[:3])
         assert np.allclose(slc[1].counts, test_counts[3:])
+        assert np.allclose(slc[0].bg_counts, test_bg_counts[:3])
+        assert np.allclose(slc[1].bg_counts, test_bg_counts[3:])
+        assert np.allclose(slc[0].bg_ratio, test_bg_ratio[:3])
+        assert np.allclose(slc[1].bg_ratio, test_bg_ratio[3:])
+        assert np.allclose(slc[0].frac_exp, test_frac_exp[:3])
+        assert np.allclose(slc[1].frac_exp, test_frac_exp[3:])
 
     def test_split_with_three_segments(self):
         test_time = np.array([1, 2, 3, 6, 7, 8, 10, 11, 12])
@@ -1489,19 +1500,3 @@ class TestNewPeraSupport():
         assert np.allclose(lc_new.frac_exp, np.array([3, 4, 1, 2]))
         assert lc_new.mjdref == mjdref
 
-    def test_split_has_correct_data_points(self):
-        test_time = np.array([1, 2, 3, 6, 7, 8])
-        test_counts = np.random.rand(len(test_time))
-        test_bg_counts = np.random.rand(len(test_time))
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
-            lc_test = Lightcurve(test_time, test_counts, bg_counts=test_bg_counts)
-        slc = lc_test.split(1.5)
-
-        assert np.allclose(slc[0].time, [1, 2, 3])
-        assert np.allclose(slc[1].time, [6, 7, 8])
-        assert np.allclose(slc[0].counts, test_counts[:3])
-        assert np.allclose(slc[1].counts, test_counts[3:])
-        assert np.allclose(slc[0].bg_counts, test_bg_counts[:3])
-        assert np.allclose(slc[1].bg_counts, test_bg_counts[3:])
