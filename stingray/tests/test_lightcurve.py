@@ -1412,7 +1412,7 @@ class TestBexvar(object):
                          bg_ratio=self.bg_ratio, frac_exp=self.frac_exp)
 
         # provide time intervals externally to find bexvar
-        log_cr_sigma_from_method = lc.bexvar(time_del = self.time_delta)
+        log_cr_sigma_from_method = lc.bexvar()
         log_cr_sigma_result = np.load(self.fname_result, allow_pickle=True)[1]
 
         scatt_lo_function = scipy.stats.mstats.mquantiles(
