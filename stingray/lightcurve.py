@@ -428,6 +428,8 @@ class Lightcurve(StingrayTimeseries):
         countrate_err = self._countrate_err
         if countrate_err is None and self._counts_err is not None:
             countrate_err = self._counts_err / self.dt
+        elif countrate_err is None:
+            countrate_err = np.zeros(np.size(self.time))
 
         # If not in low-memory regime, cache the values ONLY if they have
         # been changed!
