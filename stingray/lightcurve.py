@@ -1844,6 +1844,8 @@ class Lightcurve(StingrayTimeseries):
         # assumes that time intervals in each bin are equal to ``dt``
         if not isinstance(self.dt, Iterable):
             time_del = self.dt*np.ones(shape=self.n)
+        else:
+            time_del = self.dt
 
         lc_bexvar = bexvar.bexvar(time=self._time, time_del=time_del,
                                   src_counts=self.counts, bg_counts=self.bg_counts,
