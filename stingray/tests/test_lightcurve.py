@@ -1478,9 +1478,21 @@ class TestBexvar(object):
         # Compares lower 1 sigma quantile of the estimated scatter of the log(count rate) in dex
         assert np.isclose(scatt_lo_function, scatt_lo_result, rtol=0.1)
 
-class TestNewPeraSupport():
+class TestArraydt(object):
+    @classmethod
+    def setup_class(cls):
 
-    def test_create(self):
+        cls.times = np.array([1, 3, 4, 7])
+        # setup dt as an array
+        cls.dt = np.array([1, 2, 1, 3])
+        cls.counts = np.array([2, 2, 2, 2])
+        cls.counts_err = np.array([0.2, 0.2, 0.2, 0.2])
+        cls.bg_counts = np.array([1, 0, 0, 1])
+        cls.bg_ratio = np.array([1, 1, 0.5, 1])
+        cls.frac_exp = np.array([1, 1, 1, 1])
+        cls.gti = np.array([[0.5, 7.5]])
+
+    def test_create_with_dt_as_array(self):
         """
         Demonstrate that we can create a Lightcurve object with dt being an array of floats.
         """
@@ -1495,4 +1507,190 @@ class TestNewPeraSupport():
         lc = Lightcurve(time=times, counts=counts, dt=dt, counts_err=counts_err, gti=gti,
                          bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
 
+        # demonstrate that we can create a Lightcurve object with dt being an array of floats 
+        # and without explicitly providing gtis.
+
+        lc = Lightcurve(time=times, counts=counts, dt=dt, counts_err=counts_err,
+                         bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
+
+
+    def test_truncate_by_index_when_dt_is_array(self):
+        """
+        Checks if `truncate_by_index()` works if `dt` is an array.
+        """
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            lc = Lightcurve(self.times, self.counts, err=self.counts_err, gti=self.gti, 
+                             dt=self.dt, bg_counts=self.bg_counts, frac_exp=self.frac_exp,
+                             bg_ratio=self.bg_ratio)
+
+        lc1 = lc.truncate(start=1)
+        assert np.allclose(lc1.time, np.array([3, 4, 7]))
+        assert np.allclose(lc1.counts, np.array([2, 2, 2]))
+        assert np.allclose(lc1.dt, np.array([2, 1, 3]))
+        assert np.allclose(lc1.bg_counts, np.array([0, 0, 1]))
+        assert np.allclose(lc1.bg_ratio, np.array([1, 0.5, 1]))
+        assert np.allclose(lc1.frac_exp, np.array([1, 1, 1]))
+        np.testing.assert_almost_equal(lc1.gti[0][0], 2.5)
+        assert lc1.mjdref == lc.mjdref
+
+        lc2 = lc.truncate(stop=2)
+        assert np.allclose(lc2.time, np.array([1, 3]))
+        assert np.allclose(lc2.counts, np.array([2, 2]))
+        assert np.allclose(lc2.dt, np.array([1, 2]))
+        assert np.allclose(lc2.bg_counts, np.array([1, 0]))
+        assert np.allclose(lc2.bg_ratio, np.array([1, 1]))
+        assert np.allclose(lc2.frac_exp, np.array([1, 1]))
+        np.testing.assert_almost_equal(lc2.gti[-1][-1], 4.5)
+        assert lc2.mjdref == lc.mjdref
+
+    def test_split_has_correct_data_points_when_dt_is_array(self):
+        """
+        Checks if `split()` works when `dt` is an array.
+        """
+
+        test_time = np.array([1, 2, 3, 6, 7, 8])
+        test_dt = np.array([1, 1, 1, 3, 1, 1])
+        test_counts = np.random.rand(len(test_time))
+        test_bg_counts = np.random.rand(len(test_time))
+        test_bg_ratio = np.random.rand(len(test_time))
+        test_frac_exp = np.random.rand(len(test_time))
+        test_gti = np.array([[0.5,8.5]])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            lc_test = Lightcurve(test_time, test_counts, bg_counts=test_bg_counts, dt=test_dt,
+                                 bg_ratio=test_bg_ratio, frac_exp=test_frac_exp, gti=test_gti)
+        slc = lc_test.split(1.5)
+
+        assert np.allclose(slc[0].time, [1, 2, 3])
+        assert np.allclose(slc[1].time, [6, 7, 8])
+        assert np.allclose(slc[0].dt, [1, 1, 1])
+        assert np.allclose(slc[1].dt, [3, 1, 1])
+        assert np.allclose(slc[0].counts, test_counts[:3])
+        assert np.allclose(slc[1].counts, test_counts[3:])
+        assert np.allclose(slc[0].bg_counts, test_bg_counts[:3])
+        assert np.allclose(slc[1].bg_counts, test_bg_counts[3:])
+        assert np.allclose(slc[0].bg_ratio, test_bg_ratio[:3])
+        assert np.allclose(slc[1].bg_ratio, test_bg_ratio[3:])
+        assert np.allclose(slc[0].frac_exp, test_frac_exp[:3])
+        assert np.allclose(slc[1].frac_exp, test_frac_exp[3:])
+
+    def test_split_lc_by_gtis_when_dt_is_array(self):
+        """
+        Checks if `split_by_gti()` works when `dt` is an array.
+        """
+
+        times = np.array([1, 2, 3, 5, 7, 8, 10, 11])
+        dt = np.array([1, 1, 1, 2, 2, 1, 2, 1])
+        counts = np.array([1, 1, 1, 1, 2, 3, 3, 2])
+        bg_counts = np.array([0, 0, 0, 1, 0, 1, 2, 0])
+        bg_ratio = np.array([0.1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1])
+        frac_exp = np.array([1, 0.5, 1, 1, 1, 0.5, 0.5, 1])
+        gti = np.array([[0.5, 5.5], [6.5, 8.5]])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            lc = Lightcurve(times, counts, gti=gti, dt=dt, bg_counts=bg_counts, bg_ratio=bg_ratio,
+                             frac_exp=frac_exp)
+
+        list_of_lcs = lc.split_by_gti()
+        lc0 = list_of_lcs[0]
+        lc1 = list_of_lcs[1]
+        assert np.allclose(lc0.time, [1, 2, 3, 5])
+        assert np.allclose(lc1.time, [6, 7])
+        assert np.allclose(lc0.counts, [1, 1, 1, 1])
+        assert np.allclose(lc1.counts, [3, 3])
+        assert np.allclose(lc0.gti, [[0.5, 5.5]])
+        assert np.allclose(lc1.gti, [[6.5, 8.5]])
+        assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
+        assert np.allclose(lc1.bg_counts, [1, 2])
+        assert np.allclose(lc0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
+        assert np.allclose(lc1.bg_ratio, [0.2, 0.2])
+        assert np.allclose(lc0.frac_exp, [1, 0.5, 1, 1])
+        assert np.allclose(lc1.frac_exp, [0.5, 0.5])
+        # Check if `dt` is also splited accordingly
+        assert np.allclose(lc0.dt, [1, 1, 1, 2])
+        assert np.allclose(lc1.dt, [1, 2])
+
+    def test_sort_when_dt_is_array(self):
+        """
+        Checks if `sort()` works when `dt` is an array.
+        """
+
+        _times = np.array([4, 1, 3, 7])
+        _dt = np.array([1, 1, 2, 3])
+        _counts = np.array([40, 10, 20, 5])
+        _counts_err = np.array([4, 1, 2, 0.5])
+        _frac_exp = np.array([1, 0.8, 0.6, 0.9])
+        _bg_counts = np.array([1, 3, 2, 1])
+        _bg_ratio = np.array([0.5, 1, 1, 0.4])
+        _gti = np.array([[0.5, 7.5]])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            lc = Lightcurve(_times, _counts, dt=_dt, err=_counts_err, frac_exp=_frac_exp, mjdref=57000,
+                            bg_counts=_bg_counts, bg_ratio=_bg_ratio, gti=_gti)
+        mjdref = lc.mjdref
+
+        lc_new = lc.sort()
+
+        assert np.allclose(lc_new.counts_err, np.array([1, 2, 4, 0.5]))
+        assert np.allclose(lc_new.counts, np.array([10, 20, 40, 5]))
+        assert np.allclose(lc_new.time, np.array([1, 3, 4, 7]))
+        assert np.allclose(lc_new.dt, np.array([1, 2, 1, 3]))
+        assert np.allclose(lc_new.frac_exp, np.array([0.8, 0.6, 1, 0.9]))
+        assert np.allclose(lc_new.bg_counts, np.array([3, 2, 1, 1]))
+        assert np.allclose(lc_new.bg_ratio, np.array([1, 1, 0.5, 0.4]))
+        assert lc_new.mjdref == mjdref
+
+        lc_new = lc.sort(reverse=True)
+
+        assert np.allclose(lc_new.counts, np.array([5, 40, 20,  10]))
+        assert np.allclose(lc_new.time, np.array([7, 4, 3, 1]))
+        assert np.allclose(lc_new.dt, np.array([3, 1, 2, 1]))
+        assert np.allclose(lc_new.frac_exp, np.array([0.9, 1, 0.6, 0.8]))
+        assert np.allclose(lc_new.bg_counts, np.array([1, 1, 2, 3]))
+        assert np.allclose(lc_new.bg_ratio, np.array([0.4, 0.5, 1, 1]))
+        assert lc_new.mjdref == mjdref
+
+    def test_sort_count_when_dt_is_array(self):
+        """
+        Checks if `sort_counts()` works when `dt` is an array.
+        """
+        _times = np.array([1, 2, 4, 7])
+        _dt = np.array([1, 1, 2, 3])
+        _counts = np.array([40, 10, 20, 5])
+        _counts_err = np.array([4, 1, 2, 0.5])
+        _frac_exp = np.array([1, 0.8, 0.6, 0.9])
+        _bg_counts = np.array([1, 3, 2, 1])
+        _bg_ratio = np.array([0.5, 1, 1, 0.4])
+        _gti = np.array([[0.5, 7.5]])
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            lc = Lightcurve(_times, _counts, dt=_dt, err=_counts_err, frac_exp=_frac_exp, mjdref=57000,
+                            bg_counts=_bg_counts, bg_ratio=_bg_ratio, gti=_gti)
+        mjdref = lc.mjdref
+
+        lc_new = lc.sort_counts()
+
+        assert np.allclose(lc_new.counts_err, np.array([0.5, 1, 2, 4]))
+        assert np.allclose(lc_new.counts, np.array([5, 10, 20, 40]))
+        assert np.allclose(lc_new.time, np.array([7, 2, 4, 1]))
+        assert np.allclose(lc_new.dt, np.array([3, 1, 2, 1]))
+        assert np.allclose(lc_new.frac_exp, np.array([0.9, 0.8, 0.6, 1]))
+        assert np.allclose(lc_new.bg_counts, np.array([1, 3, 2, 1]))
+        assert np.allclose(lc_new.bg_ratio, np.array([0.4, 1, 1, 0.5]))
+        assert lc_new.mjdref == mjdref
+
+        lc_new = lc.sort_counts(reverse=True)
+
+        assert np.allclose(lc_new.counts, np.array([40, 20, 10, 5]))
+        assert np.allclose(lc_new.time, np.array([1, 4, 2, 7]))
+        assert np.allclose(lc_new.dt, np.array([1, 2, 1, 3]))
+        assert np.allclose(lc_new.frac_exp, np.array([1, 0.6, 0.8, 0.9]))
+        assert np.allclose(lc_new.bg_counts, np.array([1, 2, 3, 1]))
+        assert np.allclose(lc_new.bg_ratio, np.array([0.5, 1, 1, 0.4]))
+        assert lc_new.mjdref == mjdref
 
