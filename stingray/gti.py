@@ -1275,8 +1275,9 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
 
     Other Parameters
     ----------------
-    dt : float, default median(diff(time))
-        Time resolution of the light curve.
+    dt : float or array of floats. Default median(diff(time))
+        Time resolution of the light curve. Can be an array of the same dimension
+        as ``time``
 
     epsilon : float, default 0.001
         The tolerance, in fraction of ``dt``, for the comparisons at the
@@ -1317,13 +1318,30 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     True
     >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5])
     True
-    """
+
+    >>> start_bins, stop_bins = gti_border_bins(
+    ...    [[0, 5], [6, 8]], times, dt=np.ones_like(times))
+
+    >>> np.allclose(start_bins, [0, 6])
+    True
+    >>> np.allclose(stop_bins, [5, 8])
+    True
+    >>> np.allclose(times[start_bins[0]:stop_bins[0]], [0.5, 1.5, 2.5, 3.5, 4.5])
+    True
+    >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5])
+    True    """
     time = np.asarray(time)
     gtis = np.asarray(gtis)
     if dt is None:
         dt = np.median(np.diff(time))
 
-    epsilon_times_dt = epsilon * dt
+    dt_start = dt_stop = dt
+    epsilon_times_dt_start = epsilon_times_dt_stop = epsilon * dt
+    if isinstance(dt, Iterable):
+        dt_start = dt[np.searchsorted(time, gtis[:, 0])]
+        dt_stop = dt[np.searchsorted(time, gtis[:, 1])]
+        epsilon_times_dt_start = epsilon * dt_start
+        epsilon_times_dt_stop = epsilon * dt_stop
 
     if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
         raise ValueError("Invalid time interval for the given GTIs")
@@ -1331,8 +1349,8 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     spectrum_start_bins = []
     spectrum_stop_bins = []
 
-    gti_low = gtis[:, 0] + dt / 2 - epsilon_times_dt
-    gti_up = gtis[:, 1] - dt / 2 + epsilon_times_dt
+    gti_low = gtis[:, 0] + dt_start / 2 - epsilon_times_dt_start
+    gti_up = gtis[:, 1] - dt_stop / 2 + epsilon_times_dt_stop
 
     for g0, g1 in zip(gti_low, gti_up):
         startbin, stopbin = np.searchsorted(time, [g0, g1], "left")
