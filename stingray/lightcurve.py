@@ -249,7 +249,7 @@ class Lightcurve(StingrayTimeseries):
 
         if isinstance(self.dt, Iterable):
             self.tstart = self._time[0] - 0.5 * self.dt[0]
-            self.tseg = self._time[-1] - self._time[0] + self.dt[-1]
+            self.tseg = self._time[-1] - self._time[0] + self.dt[-1] / 2 + self.dt[0] / 2
         else:
             self.tstart = self._time[0] - 0.5 * self.dt
             self.tseg = self._time[-1] - self._time[0] + self.dt
