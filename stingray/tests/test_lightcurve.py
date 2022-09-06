@@ -921,11 +921,16 @@ class TestLightcurve(object):
         assert np.allclose(slc[1].counts, test_counts[4:])
 
     def test_sort(self):
+
         _times = [2, 1, 3, 4]
         _counts = [40, 10, 20, 5]
         _counts_err = [4, 1, 2, 0.5]
+        _frac_exp = [1, 0.8, 0.6, 0.9]
+        _bg_counts = [1, 3, 2, 1]
+        _bg_ratio = [0.5, 1, 1, 0.4]
 
-        lc = Lightcurve(_times, _counts, err=_counts_err, mjdref=57000)
+        lc = Lightcurve(_times, _counts, err=_counts_err, frac_exp=_frac_exp, mjdref=57000,
+                         bg_counts=_bg_counts, bg_ratio=_bg_ratio)
         mjdref = lc.mjdref
 
         lc_new = lc.sort()
@@ -933,30 +938,47 @@ class TestLightcurve(object):
         assert np.allclose(lc_new.counts_err, np.array([1, 4, 2, 0.5]))
         assert np.allclose(lc_new.counts, np.array([10, 40, 20, 5]))
         assert np.allclose(lc_new.time, np.array([1, 2, 3, 4]))
+        assert np.allclose(lc_new.frac_exp, np.array([0.8, 1, 0.6, 0.9]))
+        assert np.allclose(lc_new.bg_counts, np.array([3, 1, 2, 1]))
+        assert np.allclose(lc_new.bg_ratio, np.array([1, 0.5, 1, 0.4]))
         assert lc_new.mjdref == mjdref
 
         lc_new = lc.sort(reverse=True)
 
         assert np.allclose(lc_new.counts, np.array([5, 20, 40,  10]))
         assert np.allclose(lc_new.time, np.array([4, 3, 2, 1]))
+        assert np.allclose(lc_new.frac_exp, np.array([0.9, 0.6, 1, 0.8]))
+        assert np.allclose(lc_new.bg_counts, np.array([1, 2, 1, 3]))
+        assert np.allclose(lc_new.bg_ratio, np.array([0.4, 1, 0.5, 1]))
         assert lc_new.mjdref == mjdref
 
     def test_sort_counts(self):
         _times = [1, 2, 3, 4]
         _counts = [40, 10, 20, 5]
-        lc = Lightcurve(_times, _counts, mjdref=57000)
+        _frac_exp = [1, 0.8, 0.6, 0.9]
+        _bg_counts = [1, 3, 2, 1]
+        _bg_ratio = [0.5, 1, 1, 0.4]
+
+        lc = Lightcurve(_times, _counts, mjdref=57000, frac_exp=_frac_exp, bg_counts=_bg_counts,
+                         bg_ratio=_bg_ratio)
         mjdref = lc.mjdref
 
         lc_new = lc.sort_counts()
 
         assert np.allclose(lc_new.counts, np.array([5, 10, 20, 40]))
         assert np.allclose(lc_new.time, np.array([4, 2, 3, 1]))
+        assert np.allclose(lc_new.frac_exp, np.array([0.9, 0.8, 0.6, 1]))
+        assert np.allclose(lc_new.bg_counts, np.array([1, 3, 2, 1]))
+        assert np.allclose(lc_new.bg_ratio, np.array([0.4, 1, 1, 0.5]))
         assert lc_new.mjdref == mjdref
 
         lc_new = lc.sort_counts(reverse=True)
 
         assert np.allclose(lc_new.counts, np.array([40, 20, 10,  5]))
         assert np.allclose(lc_new.time, np.array([1, 3, 2, 4]))
+        assert np.allclose(lc_new.frac_exp, np.array([1, 0.6, 0.8, 0.9]))
+        assert np.allclose(lc_new.bg_counts, np.array([1, 2, 3, 1]))
+        assert np.allclose(lc_new.bg_ratio, np.array([0.5, 1, 1, 0.4]))
         assert lc_new.mjdref == mjdref
 
     def test_sort_reverse(self):
@@ -1473,30 +1495,4 @@ class TestNewPeraSupport():
         lc = Lightcurve(time=times, counts=counts, dt=dt, counts_err=counts_err, gti=gti,
                          bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
 
-    def test_sort(self):
-
-        _times = [2, 1, 3, 4]
-        _counts = [40, 10, 20, 5]
-        _counts_err = [4, 1, 2, 0.5]
-        _frac_exp = [1,2,4,3]   # We could similarly add _bg_counts and _bg_ratio
-
-        lc = Lightcurve(_times, _counts, err=_counts_err, frac_exp=_frac_exp, mjdref=57000)
-        mjdref = lc.mjdref
-
-        lc_new = lc.sort()
-
-        assert np.allclose(lc_new.counts_err, np.array([1, 4, 2, 0.5]))
-        assert np.allclose(lc_new.counts, np.array([10, 40, 20, 5]))
-        assert np.allclose(lc_new.time, np.array([1, 2, 3, 4]))
-        # check if frac_exp has also been sorted
-        assert np.allclose(lc_new.frac_exp, np.array([2, 1, 4, 3]))
-        assert lc_new.mjdref == mjdref
-
-        lc_new = lc.sort(reverse=True)
-
-        assert np.allclose(lc_new.counts, np.array([5, 20, 40,  10]))
-        assert np.allclose(lc_new.time, np.array([4, 3, 2, 1]))
-        # check if frac_exp has also been sorted
-        assert np.allclose(lc_new.frac_exp, np.array([3, 4, 1, 2]))
-        assert lc_new.mjdref == mjdref
 
