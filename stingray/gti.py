@@ -1320,15 +1320,15 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     True
 
     >>> start_bins, stop_bins = gti_border_bins(
-    ...    [[0, 5], [6, 8]], times, dt=np.ones_like(times))
+    ...    [[0, 5], [6, 13]], times, dt=np.ones_like(times))
 
     >>> np.allclose(start_bins, [0, 6])
     True
-    >>> np.allclose(stop_bins, [5, 8])
+    >>> np.allclose(stop_bins, [5, 13])
     True
     >>> np.allclose(times[start_bins[0]:stop_bins[0]], [0.5, 1.5, 2.5, 3.5, 4.5])
     True
-    >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5])
+    >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5])
     True    """
     time = np.asarray(time)
     gtis = np.asarray(gtis)
@@ -1338,8 +1338,10 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     dt_start = dt_stop = dt
     epsilon_times_dt_start = epsilon_times_dt_stop = epsilon * dt
     if isinstance(dt, Iterable):
-        dt_start = dt[np.searchsorted(time, gtis[:, 0])]
-        dt_stop = dt[np.searchsorted(time, gtis[:, 1])]
+        idxs = np.searchsorted(time, gtis)
+        idxs[idxs == time.size] = -1
+        dt_start = dt[idxs[:, 0]]
+        dt_stop = dt[idxs[:, 1]]
         epsilon_times_dt_start = epsilon * dt_start
         epsilon_times_dt_stop = epsilon * dt_stop
 
