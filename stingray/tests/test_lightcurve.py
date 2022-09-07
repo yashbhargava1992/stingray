@@ -1513,7 +1513,6 @@ class TestArraydt(object):
         lc = Lightcurve(time=times, counts=counts, dt=dt, counts_err=counts_err,
                          bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
 
-
     def test_truncate_by_index_when_dt_is_array(self):
         """
         Checks if `truncate_by_index()` works if `dt` is an array.
@@ -1587,7 +1586,7 @@ class TestArraydt(object):
         bg_counts = np.array([0, 0, 0, 1, 0, 1, 2, 0])
         bg_ratio = np.array([0.1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1])
         frac_exp = np.array([1, 0.5, 1, 1, 1, 0.5, 0.5, 1])
-        gti = np.array([[0.5, 5.5], [6.5, 8.5]])
+        gti = np.array([[0.5, 5.5], [7.5, 10.5]])
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
@@ -1598,11 +1597,11 @@ class TestArraydt(object):
         lc0 = list_of_lcs[0]
         lc1 = list_of_lcs[1]
         assert np.allclose(lc0.time, [1, 2, 3, 5])
-        assert np.allclose(lc1.time, [6, 7])
+        assert np.allclose(lc1.time, [8, 10])
         assert np.allclose(lc0.counts, [1, 1, 1, 1])
         assert np.allclose(lc1.counts, [3, 3])
         assert np.allclose(lc0.gti, [[0.5, 5.5]])
-        assert np.allclose(lc1.gti, [[6.5, 8.5]])
+        assert np.allclose(lc1.gti, [[7.5, 10.5]])
         assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
         assert np.allclose(lc1.bg_counts, [1, 2])
         assert np.allclose(lc0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
