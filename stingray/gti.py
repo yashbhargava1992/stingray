@@ -456,7 +456,16 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     dt = apply_function_if_none(dt, time,
                                 lambda x: np.median(np.diff(x)))
-    epsilon_times_dt = epsilon * dt
+    dt_start = dt_stop = dt
+    epsilon_times_dt_start = epsilon_times_dt_stop = epsilon * dt
+    if isinstance(dt, Iterable):
+        idxs = np.searchsorted(time, gtis)
+        idxs[idxs == time.size] = -1
+        dt_start = dt[idxs[:, 0]]
+        dt_stop = dt[idxs[:, 1]]
+        epsilon_times_dt_start = epsilon * dt_start
+        epsilon_times_dt_stop = epsilon * dt_stop
+
     gtis_new = copy.deepcopy(gtis)
     gti_mask = np.zeros(len(gtis), dtype=bool)
 
@@ -472,8 +481,8 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     # in order to simplify the calculation of the mask, but they will _not_
     # be returned.
     gtis_to_mask = copy.deepcopy(gtis_new)
-    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon_times_dt + dt / 2
-    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon_times_dt - dt / 2
+    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon_times_dt_start + dt_start / 2
+    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon_times_dt_stop - dt_stop / 2
 
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
