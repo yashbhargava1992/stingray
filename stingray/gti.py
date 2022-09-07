@@ -484,6 +484,9 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon_times_dt_start + dt_start / 2
     gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon_times_dt_stop - dt_stop / 2
 
+    if isinstance(dt, Iterable):
+        dt = np.min(abs(dt_stop-dt_start))
+
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
                             (gtis_to_mask - time[0]).astype(np.float64),
