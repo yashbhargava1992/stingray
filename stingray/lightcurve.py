@@ -245,6 +245,10 @@ class Lightcurve(StingrayTimeseries):
             dt = np.median(np.diff(self._time))
 
         self.dt = dt
+
+        if isinstance(dt, Iterable):
+            warnings.warn("Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable")
+
         self.err_dist = err_dist
 
         if isinstance(self.dt, Iterable):

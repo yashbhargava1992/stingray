@@ -1504,14 +1504,22 @@ class TestArraydt(object):
         bg_ratio = np.array([1, 1, 0.5, 1])
         frac_exp = np.array([1, 1, 1, 1])
         gti = np.array([[0.5, 4.5]])
-        lc = Lightcurve(time=times, counts=counts, dt=dt, counts_err=counts_err, gti=gti,
+        lc = Lightcurve(time=times, counts=counts, dt=dt, err=counts_err, gti=gti,
                          bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
 
         # demonstrate that we can create a Lightcurve object with dt being an array of floats 
         # and without explicitly providing gtis.
 
-        lc = Lightcurve(time=times, counts=counts, dt=dt, counts_err=counts_err,
+        lc = Lightcurve(time=times, counts=counts, dt=dt, err=counts_err,
                          bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp)
+
+    def test_warning_when_dt_is_array(self):
+
+        with pytest.warns(UserWarning) as record:
+
+            _ = Lightcurve(time=self.times, counts=self.counts, dt=self.dt)
+        
+        assert any(["Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable" in r.message.args[0] for r in record])
 
     def test_truncate_by_index_when_dt_is_array(self):
         """
@@ -1692,4 +1700,3 @@ class TestArraydt(object):
         assert np.allclose(lc_new.bg_counts, np.array([1, 2, 3, 1]))
         assert np.allclose(lc_new.bg_ratio, np.array([0.5, 1, 1, 0.4]))
         assert lc_new.mjdref == mjdref
-
