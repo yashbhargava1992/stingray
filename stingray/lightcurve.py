@@ -77,17 +77,23 @@ class Lightcurve(StingrayTimeseries):
         Default makes no assumptions and keep errors equal to zero.
 
     bg_counts: iterable,`:class:numpy.array` or `:class:List` of floats, optional, default ``None``
-        A list or array of background counts in each bin corresponding to the
-        bins defined in `time`.
+        A list or array of background counts detected in the background extraction region
+        in each bin corresponding to the bins defined in `time`.
 
     bg_ratio: iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
-        A list or array of source region area to background region area ratio in each bin.
+        A list or array of source region area to background region area ratio in each bin. These are
+        factors by which the `bg_counts` should be scaled to estimate background counts within the 
+        source aperture.
 
     frac_exp: iterable, `:class:numpy.array` or `:class:List` of floats, optional, default ``None``
-        A list or array of fractional exposer in each bin.
+        A list or array of fractional exposers in each bin. 
 
     mjdref: float
         MJD reference (useful in most high-energy mission data)
+
+    dt: float or array of floats. Default median(diff(time))
+        Time resolution of the light curve. Can be an array of the same dimension
+        as ``time`` specifying width of each bin.
 
     skip_checks: bool
         If True, the user specifies that data are already sorted and contain no
@@ -151,7 +157,7 @@ class Lightcurve(StingrayTimeseries):
     n: int
         The number of data points in the light curve.
 
-    dt: float
+    dt: float or array of floats
         The time resolution of the light curve.
 
     mjdref: float
