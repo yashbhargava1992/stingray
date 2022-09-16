@@ -456,7 +456,16 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
 
     dt = apply_function_if_none(dt, time,
                                 lambda x: np.median(np.diff(x)))
-    epsilon_times_dt = epsilon * dt
+    dt_start = dt_stop = dt
+    epsilon_times_dt_start = epsilon_times_dt_stop = epsilon * dt
+    if isinstance(dt, Iterable):
+        idxs = np.searchsorted(time, gtis)
+        idxs[idxs == time.size] = -1
+        dt_start = dt[idxs[:, 0]]
+        dt_stop = dt[idxs[:, 1]]
+        epsilon_times_dt_start = epsilon * dt_start
+        epsilon_times_dt_stop = epsilon * dt_stop
+
     gtis_new = copy.deepcopy(gtis)
     gti_mask = np.zeros(len(gtis), dtype=bool)
 
@@ -472,8 +481,11 @@ def create_gti_mask(time, gtis, safe_interval=None, min_length=0,
     # in order to simplify the calculation of the mask, but they will _not_
     # be returned.
     gtis_to_mask = copy.deepcopy(gtis_new)
-    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon_times_dt + dt / 2
-    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon_times_dt - dt / 2
+    gtis_to_mask[:, 0] = gtis_new[:, 0] - epsilon_times_dt_start + dt_start / 2
+    gtis_to_mask[:, 1] = gtis_new[:, 1] + epsilon_times_dt_stop - dt_stop / 2
+
+    if isinstance(dt, Iterable):
+        dt = np.min(abs(dt_stop-dt_start))
 
     mask, gtimask = \
         create_gti_mask_jit((time - time[0]).astype(np.float64),
@@ -1275,8 +1287,9 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
 
     Other Parameters
     ----------------
-    dt : float, default median(diff(time))
-        Time resolution of the light curve.
+    dt : float or array of floats. Default median(diff(time))
+        Time resolution of the light curve. Can be an array of the same dimension
+        as ``time``
 
     epsilon : float, default 0.001
         The tolerance, in fraction of ``dt``, for the comparisons at the
@@ -1317,13 +1330,32 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     True
     >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5])
     True
-    """
+
+    >>> start_bins, stop_bins = gti_border_bins(
+    ...    [[0, 5], [6, 13]], times, dt=np.ones_like(times))
+
+    >>> np.allclose(start_bins, [0, 6])
+    True
+    >>> np.allclose(stop_bins, [5, 13])
+    True
+    >>> np.allclose(times[start_bins[0]:stop_bins[0]], [0.5, 1.5, 2.5, 3.5, 4.5])
+    True
+    >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5])
+    True    """
     time = np.asarray(time)
     gtis = np.asarray(gtis)
     if dt is None:
         dt = np.median(np.diff(time))
 
-    epsilon_times_dt = epsilon * dt
+    dt_start = dt_stop = dt
+    epsilon_times_dt_start = epsilon_times_dt_stop = epsilon * dt
+    if isinstance(dt, Iterable):
+        idxs = np.searchsorted(time, gtis)
+        idxs[idxs == time.size] = -1
+        dt_start = dt[idxs[:, 0]]
+        dt_stop = dt[idxs[:, 1]]
+        epsilon_times_dt_start = epsilon * dt_start
+        epsilon_times_dt_stop = epsilon * dt_stop
 
     if time[-1] < np.min(gtis) or time[0] > np.max(gtis):
         raise ValueError("Invalid time interval for the given GTIs")
@@ -1331,8 +1363,8 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     spectrum_start_bins = []
     spectrum_stop_bins = []
 
-    gti_low = gtis[:, 0] + dt / 2 - epsilon_times_dt
-    gti_up = gtis[:, 1] - dt / 2 + epsilon_times_dt
+    gti_low = gtis[:, 0] + dt_start / 2 - epsilon_times_dt_start
+    gti_up = gtis[:, 1] - dt_stop / 2 + epsilon_times_dt_stop
 
     for g0, g1 in zip(gti_low, gti_up):
         startbin, stopbin = np.searchsorted(time, [g0, g1], "left")
