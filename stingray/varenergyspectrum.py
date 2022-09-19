@@ -881,7 +881,7 @@ class LagSpectrum(VarEnergySpectrum):
             fmean = np.sum(freq[good] * csabs) / np.sum(csabs)
             lag = np.angle(Cmean) / (2 * np.pi * fmean)
 
-            lag_e = phi_e / (2 * np.pi * f)
+            lag_e = phi_e / (2 * np.pi * fmean)
             self.spectrum[i] = lag
             self.spectrum_error[i] = lag_e
 
