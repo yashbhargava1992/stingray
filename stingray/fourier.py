@@ -526,7 +526,7 @@ def bias_term(power1, power2, power1_noise, power2_noise, n_ave,
     bias : float `np.array`, same shape as ``power1`` and ``power2``
         The bias term
     """
-    if n_ave > 500:
+    if (isinstance(n_ave, Iterable) and np.all(n_ave > 500)) or (not isinstance(n_ave, Iterable) and n_ave > 500):
         return 0. * power1
     bsq = power1 * power2 - intrinsic_coherence * (power1 - power1_noise) * \
           (power2 - power2_noise)
@@ -571,6 +571,7 @@ def raw_coherence(cross_power, power1, power2, power1_noise, power2_noise,
     if isinstance(num, Iterable):
         num[num < 0] = (cross_power * np.conj(cross_power)).real[num < 0]
     elif num < 0:
+        warnings.warn("Negative numerator in raw_coherence calculation. Setting bias term to 0")
         num = (cross_power * np.conj(cross_power)).real
     den = power1 * power2
     return num / den
@@ -663,7 +664,7 @@ def estimate_intrinsic_coherence(cross_power, power1, power2, power1_noise,
 
 def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave,
                                      seg_power_noise, ref_power_noise,
-                                     common_ref="False"):
+                                     common_ref=False):
     """
     Error on cross spectral quantities, From Ingram 2019.
 
@@ -702,7 +703,7 @@ def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave,
         Error on the modulus of the cross spectrum
 
     """
-    if n_ave < 30:
+    if (not isinstance(n_ave, Iterable) and n_ave < 30) or (isinstance(n_ave, Iterable) and np.any(n_ave) < 30):
         warnings.warn("n_ave is below 30. Please note that the error bars "
                       "on the quantities derived from the cross spectrum "
                       "are only reliable for a large number of averaged "
