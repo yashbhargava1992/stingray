@@ -1219,6 +1219,9 @@ class TestAveragedCrossspectrum(object):
                                   test_lc1.counts,
                                   err_dist=test_lc1.err_dist,
                                   dt=dt)
+            # The second light curve is delayed by two bins.
+            # The time lag should be -2 * dt, because this will
+            # become the reference band in AveragedCrossspectrum
             test_lc2 = Lightcurve(test_lc1.time,
                                   np.array(np.roll(test_lc1.counts, 2)),
                                   err_dist=test_lc1.err_dist,
@@ -1230,7 +1233,9 @@ class TestAveragedCrossspectrum(object):
 
             time_lag, time_lag_err = cs.time_lag()
 
-        assert np.all(np.abs(time_lag[:6] - 0.1) < 3 * time_lag_err[:6])
+        # The actual measured time lag will be half that for AveragedCrosspectrum
+        measured_lag = -dt
+        assert np.all(np.abs(time_lag[:6] - measured_lag) < 3 * time_lag_err[:6])
 
     def test_errorbars_legacy(self):
         time = np.arange(10000) * 0.1
