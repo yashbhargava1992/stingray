@@ -1161,7 +1161,7 @@ def avg_cs_from_iterables_quick(
         ft2 = fft(flux2)
 
         # Calculate the unnormalized cross spectrum
-        unnorm_power = ft1 * ft2.conj()
+        unnorm_power = ft1.conj() * ft2
 
         # Accumulate the sum to calculate the total mean of the lc
         sum_of_photons1 += n_ph1
@@ -1359,7 +1359,7 @@ def avg_cs_from_iterables(
         n_ph = np.sqrt(n_ph1 * n_ph2)
 
         # Calculate the unnormalized cross spectrum
-        unnorm_power = ft1 * ft2.conj()
+        unnorm_power = ft1.conj() * ft2
         unnorm_pd1 = unnorm_pd2 = 0
 
         # If requested, calculate the auxiliary PDSs
