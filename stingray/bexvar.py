@@ -140,7 +140,8 @@ def _estimate_source_cr_marginalised(
 def _calculate_bexvar(log_src_crs_grid, pdfs):
     """
     Assumes that the source count rate is log-normal distributed.
-    Returns posterior samples of the mean and standard deviation of that distribution.
+    Returns posterior samples of Bayesian excess varience(bexvar)
+    (i.e. standard deviation of that distribution).
 
     Parameters
     ----------
@@ -153,8 +154,7 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
     Returns
     -------
     log_sigma : iterable, `:class:numpy.array` of floats.
-        An array of posterior samples of log(standard deviation) or that of
-        log(Bayesian excess varience).
+        An array of posterior samples of Bayesian excess varience(bexvar).
     """
 
     if not can_sample:
@@ -192,8 +192,9 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
 
 def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=None):
     """
-    Given a light curve data, computes a Bayesian excess variance of count rate,
-    by estimating mean and variance of the log of the count rate.
+    Given a light curve data, computes posterier distribution samples of
+    Bayesian excess variance (bexvar), by estimating mean and variance of the 
+    log of the count rates.
 
     Parameters
     ----------
@@ -230,8 +231,7 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
     Returns
     -------
     posterior_log_sigma_src_cr : iterable, `:class:numpy.array` of floats
-        An array of posterior samples of log(Sigma on source count rates)
-        (i.e. log(Bayesian excess varience) of source count rates).
+        An array of posterior samples of Bayesian excess varience (bexvar).
     """
 
     if not np.all(
