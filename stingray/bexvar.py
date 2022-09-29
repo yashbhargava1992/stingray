@@ -154,7 +154,8 @@ def _calculate_bexvar(log_src_crs_grid, pdfs):
     Returns
     -------
     log_sigma : iterable, `:class:numpy.array` of floats.
-        An array of posterior samples of Bayesian excess varience(bexvar).
+        An array of posterior samples of Bayesian excess variance (bexvar).
+
     """
 
     if not can_sample:
