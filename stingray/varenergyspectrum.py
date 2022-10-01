@@ -875,9 +875,13 @@ class LagSpectrum(VarEnergySpectrum):
                 Cmean, mean_sub_power, mean_ref_power, m_tot, sub_power_noise, ref_power_noise, common_ref=common_ref
             )
 
-            lag = np.mean((np.angle(cross[good]) / (2 * np.pi * freq[good])))
+            # The frequency of these lags is measured from the *weighted* mean of the frequencies
+            # in the cross spectrum. The weight is just the absolute value of the CS
+            csabs = np.abs(cross[good])
+            fmean = np.sum(freq[good] * csabs) / np.sum(csabs)
+            lag = np.angle(Cmean) / (2 * np.pi * fmean)
 
-            lag_e = phi_e / (2 * np.pi * f)
+            lag_e = phi_e / (2 * np.pi * fmean)
             self.spectrum[i] = lag
             self.spectrum_error[i] = lag_e
 

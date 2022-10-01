@@ -503,9 +503,9 @@ class Crossspectrum(StingrayObject):
     ----------------
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
-        objects. Could throw errors if these GTIs have overlaps with the input 
-        `Lightcurve` GTIs! If you're getting errors regarding your GTIs, don't 
-        use this and only give GTIs to the `Lightcurve` objects before making 
+        objects. Could throw errors if these GTIs have overlaps with the input
+        `Lightcurve` GTIs! If you're getting errors regarding your GTIs, don't
+        use this and only give GTIs to the `Lightcurve` objects before making
         the cross spectrum.
 
     lc1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects
@@ -928,7 +928,7 @@ class Crossspectrum(StingrayObject):
         fourier_2 = fft(lc2.counts)  # do Fourier transform 2
 
         freqs = fftfreq(lc1.n, lc1.dt)
-        cross = np.multiply(fourier_1, np.conj(fourier_2))
+        cross = np.multiply(fourier_2, np.conj(fourier_1))
 
         if fullspec is True:
             return freqs, cross
@@ -1722,13 +1722,13 @@ class AveragedCrossspectrum(Crossspectrum):
     Parameters
     ----------
     data1: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
-        A light curve from which to compute the cross spectrum. In some cases, 
-        this would be the light curve of the wavelength/energy/frequency band 
+        A light curve from which to compute the cross spectrum. In some cases,
+        this would be the light curve of the wavelength/energy/frequency band
         of interest.
 
     data2: :class:`stingray.Lightcurve`object OR iterable of :class:`stingray.Lightcurve` objects OR :class:`stingray.EventList` object
-        A second light curve to use in the cross spectrum. In some cases, this 
-        would be the wavelength/energy/frequency reference band to compare the 
+        A second light curve to use in the cross spectrum. In some cases, this
+        would be the wavelength/energy/frequency reference band to compare the
         band of interest with.
 
     segment_size: float
@@ -1745,9 +1745,9 @@ class AveragedCrossspectrum(Crossspectrum):
     ----------------
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
-        objects. Could throw errors if these GTIs have overlaps with the 
-        input object GTIs! If you're getting errors regarding your GTIs, 
-        don't  use this and only give GTIs to the input objects before 
+        objects. Could throw errors if these GTIs have overlaps with the
+        input object GTIs! If you're getting errors regarding your GTIs,
+        don't  use this and only give GTIs to the input objects before
         making the cross spectrum.
 
     dt : float
@@ -1794,16 +1794,16 @@ class AveragedCrossspectrum(Crossspectrum):
         after the average.
 
     legacy: bool
-        Use the legacy machinery of `AveragedCrossspectrum`. This might be 
-        useful to compare with old results, and is also needed to use light 
-        curve lists as an input, to conserve the spectra of each segment, or 
+        Use the legacy machinery of `AveragedCrossspectrum`. This might be
+        useful to compare with old results, and is also needed to use light
+        curve lists as an input, to conserve the spectra of each segment, or
         to use the large_data option.
 
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
-        objects. Could throw errors if these GTIs have overlaps with the 
-        input object GTIs! If you're getting errors regarding your GTIs, 
-        don't  use this and only give GTIs to the input objects before 
+        objects. Could throw errors if these GTIs have overlaps with the
+        input object GTIs! If you're getting errors regarding your GTIs,
+        don't  use this and only give GTIs to the input objects before
         making the cross spectrum.
 
     Attributes
@@ -1818,8 +1818,8 @@ class AveragedCrossspectrum(Crossspectrum):
         The uncertainties of ``power``.
         An approximation for each bin given by ``power_err= power/sqrt(m)``.
         Where ``m`` is the number of power averaged in each bin (by frequency
-        binning, or averaging power spectra of segments of a light curve). 
-        Note that for a single realization (``m=1``) the error is equal to the 
+        binning, or averaging power spectra of segments of a light curve).
+        Note that for a single realization (``m=1``) the error is equal to the
         power.
 
     df: float

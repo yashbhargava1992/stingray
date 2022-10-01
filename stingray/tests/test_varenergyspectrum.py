@@ -358,35 +358,36 @@ class TestLagEnergySpectrum(object):
         data = np.load(os.path.join(datadir, "sample_variable_lc.npy"))
         flux = data
         times = np.arange(data.size) * dt
-        maxfreq = 0.25 / cls.time_lag
+        maxfreq = 0.15 / cls.time_lag
         roll_amount = int(cls.time_lag // dt)
         good = slice(roll_amount, roll_amount + int(200 // dt))
 
+        # When rolling, a positive delay is introduced
         rolled_flux = np.array(np.roll(flux, roll_amount))
         times, flux, rolled_flux = times[good], flux[good], rolled_flux[good]
 
         length = times[-1] - times[0]
-        test_lc1 = Lightcurve(times, flux, err_dist="gauss", dt=dt, skip_checks=True)
-        test_lc2 = Lightcurve(test_lc1.time, rolled_flux, err_dist=test_lc1.err_dist, dt=dt)
-        test_ev1, test_ev2 = EventList(), EventList()
-        test_ev1.simulate_times(test_lc1)
-        test_ev2.simulate_times(test_lc2)
+        test_ref = Lightcurve(times, flux, err_dist="gauss", dt=dt, skip_checks=True)
+        test_sub = Lightcurve(test_ref.time, rolled_flux, err_dist=test_ref.err_dist, dt=dt)
+        test_ref_ev, test_sub_ev = EventList(), EventList()
+        test_ref_ev.simulate_times(test_ref)
+        test_sub_ev.simulate_times(test_sub)
 
-        test_ev1.energy = np.random.uniform(0.3, 9, len(test_ev1.time))
-        test_ev2.energy = np.random.uniform(9, 12, len(test_ev2.time))
+        test_sub_ev.energy = np.random.uniform(0.3, 9, len(test_sub_ev.time))
+        test_ref_ev.energy = np.random.uniform(9, 12, len(test_ref_ev.time))
 
         cls.lag = LagEnergySpectrum(
-            test_ev1,
-            freq_interval=[0, maxfreq],
+            test_sub_ev,
+            freq_interval=[maxfreq / 2, maxfreq],
             energy_spec=(0.3, 9, 1, "lin"),
             ref_band=[9, 12],
             bin_time=dt / 2,
             segment_size=length,
-            events2=test_ev2,
+            events2=test_ref_ev,
         )
 
         # Make single event list
-        test_ev = test_ev1.join(test_ev2)
+        test_ev = test_sub_ev.join(test_ref_ev)
 
         cls.lag_same = LagEnergySpectrum(
             test_ev,

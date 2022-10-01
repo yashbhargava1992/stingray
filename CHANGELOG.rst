@@ -1,6 +1,21 @@
 Changelog
 =========
 
+v1.1 (unreleased)
+-----------------
+Bug fixes
+^^^^^^^^^
+- IMPORTANT: Fixed sign of time lags, which were calculated using the interest band as the reference.
+- Fixed an issue when the fractional exposure in FITS light curves is slightly >1 (as sometimes happens in NICER data)
+
+New
+^^^
+- Implemented the ``bexvar`` variability estimation method for light curves.
+
+Improvements
+^^^^^^^^^^^^
+- A less confusing default value of segment_size in Z searches
+
 v1.0 (2022-03-29)
 ---------------------
 TL,DR: these things will break your code with v1.0:

@@ -64,7 +64,7 @@ class TestCoherence(object):
         good = (freq > 0) & (freq < 0.1)
         ft1, ft2 = ft1[good], ft2[good]
         cls.cross = normalize_periodograms(
-            ft1 * ft2.conj(), dt, cls.N, mean, norm="abs", power_type="all")
+            ft1.conj() * ft2, dt, cls.N, mean, norm="abs", power_type="all")
         cls.pds1 = normalize_periodograms(
             ft1 * ft1.conj(), dt, cls.N, mean, norm="abs", power_type="real")
         cls.pds2 = normalize_periodograms(
