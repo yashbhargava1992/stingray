@@ -18,7 +18,7 @@ Improvements
 
 `Full list of changes`__
 
-__https://github.com/StingraySoftware/stingray/compare/v1.0...v1.1
+__ https://github.com/StingraySoftware/stingray/compare/v1.0...v1.1
 
 v1.0 (2022-03-29)
 ---------------------
