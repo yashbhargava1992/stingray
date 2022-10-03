@@ -1,7 +1,7 @@
 Changelog
 =========
 
-v1.1 (unreleased)
+v1.1 (2022-10-02)
 -----------------
 Bug fixes
 ^^^^^^^^^
@@ -15,6 +15,10 @@ New
 Improvements
 ^^^^^^^^^^^^
 - A less confusing default value of segment_size in Z searches
+
+`Full list of changes`__
+
+__ https://github.com/StingraySoftware/stingray/compare/v1.0...v1.1
 
 v1.0 (2022-03-29)
 ---------------------
