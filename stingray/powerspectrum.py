@@ -166,7 +166,7 @@ class Powerspectrum(Crossspectrum):
 
         return bin_ps
 
-    def compute_rms(self, min_freq, max_freq, white_noise_offset=0.):
+    def compute_rms(self, min_freq, max_freq, white_noise_offset=2.):
         """
         Compute the fractional rms amplitude in the power spectrum
         between two frequencies.
