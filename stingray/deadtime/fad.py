@@ -410,7 +410,7 @@ def get_periodograms_from_FAD_results(FAD_results, kind='ptot'):
 
     if kind.startswith('p') and kind in FAD_results.colnames:
         powersp = AveragedPowerspectrum()
-        powersp.nphot = FAD_results.meta['nph']
+        powersp.nphots = FAD_results.meta['nph']
         if '1' in kind:
             powersp.nphots = FAD_results.meta['nph1']
         elif '2' in kind:
