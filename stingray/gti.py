@@ -939,7 +939,7 @@ def join_equal_gti_boundaries(gti, threshold=0.0):
     new_gtis = []
     for l in gti:
         new_gtis.append(l)
-    touching = (np.abs(gti[:-1, 1] - gti[1:, 0])) < threshold
+    touching = (np.abs(gti[:-1, 1] - gti[1:, 0])) <= threshold
     ng = []
     count = 0
     while count < len(gti)-1:
