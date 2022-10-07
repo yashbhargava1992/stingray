@@ -204,7 +204,7 @@ class Powerspectrum(Crossspectrum):
 
         if self.norm.lower() == 'leahy':
             powers_leahy = powers.copy()
-        elif self.norm.lower() == "frac":
+        elif self.norm.lower() in ["frac", "abs", "none"]:
             powers_leahy = \
                 self.unnorm_power[minind:maxind].real * 2 / nphots
         else:
