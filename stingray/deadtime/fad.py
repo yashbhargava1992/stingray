@@ -128,6 +128,10 @@ def FAD(
     freq = None
     # These will be the final averaged periodograms. Initializing with a single
     # scalar 0, but the final products will be arrays.
+    pds1_unnorm = 0
+    pds2_unnorm = 0
+    ptot_unnorm = 0
+    cs_unnorm = 0
     pds1 = 0
     pds2 = 0
     ptot = 0
@@ -199,10 +203,18 @@ def FAD(
             ax.plot(freq, f1_leahy.real, zorder=5, lw=1)
             ax.plot(freq, f2_leahy.real, zorder=5, lw=1)
 
+# Save the unnormalised (but smoothed) powerspectra and cross-spectrum
+        pds1_unnorm += p1
+        pds2_unnorm += p2
+        ptot_unnorm += pt
+        cs_unnorm += c
+
+# Save the normalised and smoothed powerspectra and cross-spectrum
         ptot += power_tot
         pds1 += power1
         pds2 += power2
         cs += cs_power
+
         average_diff += fourier_diff / smooth_real ** 0.5 * np.sqrt(2)
         average_diff_uncorr += fourier_diff
         nph1_tot += nph1
@@ -253,6 +265,10 @@ def FAD(
     results['pds2'] = pds2 / M
     results['cs'] = cs / M
     results['ptot'] = ptot / M
+    results['pds1_unnorm'] = pds1_unnorm / M
+    results['pds2_unnorm'] = pds2_unnorm / M
+    results['cs_unnorm'] = cs_unnorm / M
+    results['ptot_unnorm'] = ptot_unnorm / M
     results['fad'] = average_diff / M
     results.meta['fad_delta'] = (std - stdtheor) / stdtheor
     results.meta['is_compliant'] = is_compliant
@@ -424,7 +440,9 @@ def get_periodograms_from_FAD_results(FAD_results, kind='ptot'):
 
     powersp.freq = FAD_results['freq']
     powersp.power = FAD_results[kind]
+    powersp.unnorm_power = FAD_results[kind+'_unnorm']
     powersp.power_err = np.zeros_like(powersp.power)
+    powersp.unnorm_power_err = np.zeros_like(powersp.unnorm_power)
     powersp.m = FAD_results.meta['M']
     powersp.df = FAD_results.meta['df']
     powersp.dt = FAD_results.meta['dt']
