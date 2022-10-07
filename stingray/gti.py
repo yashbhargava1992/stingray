@@ -919,14 +919,27 @@ def check_separate(gti0, gti1):
                            (gti1 - t0).astype(np.double))
 
 
-def join_equal_gti_boundaries(gti):
+def join_equal_gti_boundaries(gti, threshold=0.0):
     """
-    If the start of a GTI is right at the end of another, join them.
+    If the start of a GTI and the end of the previous one is within a certain time value, join them.
+
+    Parameters
+    ----------
+    gti: 2-d float array
+        List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``.
+
+    threshold: float number (units sec)
+        Maximum time interval to join two adjacent GTIs
+
+    Returns
+    -------
+    gti: 2-d float array
+        The newly created GTI array.
     """
     new_gtis = []
     for l in gti:
         new_gtis.append(l)
-    touching = gti[:-1, 1] == gti[1:, 0]
+    touching = (np.abs(gti[:-1, 1] - gti[1:, 0])) <= threshold
     ng = []
     count = 0
     while count < len(gti)-1:
