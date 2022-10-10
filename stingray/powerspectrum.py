@@ -166,7 +166,7 @@ class Powerspectrum(Crossspectrum):
 
         return bin_ps
 
-    def compute_rms(self, min_freq, max_freq, white_noise_offset=0.):
+    def compute_rms(self, min_freq, max_freq, white_noise_offset=2.):
         """
         Compute the fractional rms amplitude in the power spectrum
         between two frequencies.
@@ -204,11 +204,9 @@ class Powerspectrum(Crossspectrum):
 
         if self.norm.lower() == 'leahy':
             powers_leahy = powers.copy()
-        elif self.norm.lower() == "frac":
+        else:
             powers_leahy = \
                 self.unnorm_power[minind:maxind].real * 2 / nphots
-        else:
-            raise TypeError("Normalization not recognized!")
 
         rms = np.sqrt(np.sum(powers_leahy - white_noise_offset) / nphots)
         rms_err = self._rms_error(powers_leahy)
