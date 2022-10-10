@@ -261,7 +261,7 @@ def test_fad_power_spectrum_compliant_leahy_objects(ctrate):
     ptot_f = results_out['ptot'].power
 
     # Verify that compute_rms works
-    results['ptot'].compute_rms(0.01, 1)
+    results_out['ptot'].compute_rms(0.01, 1)
 
     n = length / segment_size
 
