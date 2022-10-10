@@ -421,8 +421,8 @@ class TestPowerspectrum(object):
     def test_compute_rms_wrong_norm(self):
         ps = Powerspectrum(self.lc)
         ps.norm = 'gibberish'
-        with pytest.raises(TypeError):
-            ps.compute_rms(0, 10)
+        # This will now pass, due to changes on 2022-10-10
+        ps.compute_rms(0, 10)
 
     def test_fractional_rms_in_frac_norm_is_consistent(self):
         time = np.arange(0, 100, 1) + 0.5
@@ -513,16 +513,11 @@ class TestPowerspectrum(object):
         """
         ps = Powerspectrum(self.lc, norm="Leahy")
         rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
-                                         max_freq=ps.freq[-1])
+                                         max_freq=ps.freq[-1],
+                                         white_noise_offset=0)
 
         rms_lc = np.std(self.lc.counts) / np.mean(self.lc.counts)
         assert np.isclose(rms_ps, rms_lc, atol=0.01)
-
-    def test_fractional_rms_fails_when_rms_not_leahy(self):
-        with pytest.raises(Exception):
-            ps = Powerspectrum(self.lc, norm="rms")
-            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
-                                             max_freq=ps.freq[-1])
 
     def test_abs_norm_Poisson_noise(self):
         """
