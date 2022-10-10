@@ -204,11 +204,9 @@ class Powerspectrum(Crossspectrum):
 
         if self.norm.lower() == 'leahy':
             powers_leahy = powers.copy()
-        elif self.norm.lower() in ["frac", "abs", "none"]:
+        else self.norm.lower() in ["frac", "abs", "none"]:
             powers_leahy = \
                 self.unnorm_power[minind:maxind].real * 2 / nphots
-        else:
-            raise TypeError("Normalization not recognized!")
 
         rms = np.sqrt(np.sum(powers_leahy - white_noise_offset) / nphots)
         rms_err = self._rms_error(powers_leahy)
