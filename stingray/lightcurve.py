@@ -1704,7 +1704,7 @@ class Lightcurve(StingrayTimeseries):
             See :class:`Lightcurve` documentation
 
         Returns
-        --------
+        -------
         lc : :class:`Lightcurve` object
         """
         if fmt is None and format_ is not None:

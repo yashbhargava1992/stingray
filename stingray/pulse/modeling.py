@@ -35,7 +35,7 @@ def sinc_square_model(x, amplitude=1., mean=0., width=1.):
     x: array-like
 
     Other Parameters
-    ----------
+    ----------------
     amplitude : float
         the value for x=mean
     mean : float
@@ -66,7 +66,7 @@ def sinc_square_deriv(x, amplitude=1., mean=0., width=1.):
     x: array-like
 
     Other Parameters
-    ----------
+    ----------------
     amplitude : float
         the value for x=mean
     mean : float

@@ -1461,7 +1461,7 @@ def generate_indices_of_gti_boundaries(times, gti, dt=0):
         If times are uniformly binned, this is the binning time.
 
     Yields
-    -------
+    ------
     g0: float
         Start time of current GTI.
     g1: float
@@ -1509,7 +1509,7 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size):
         Length of segments.
 
     Yields
-    -------
+    ------
     t0: float
         Start time of current segment.
     t1: float
@@ -1569,7 +1569,7 @@ def generate_indices_of_segment_boundaries_binned(times, gti, segment_size,
         length of segments
 
     Yields
-    -------
+    ------
     t0: float
         First time value, from the time array, in the current segment
     t1: float

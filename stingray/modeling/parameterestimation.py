@@ -362,7 +362,7 @@ class ParameterEstimation(object):
         MAP fits include priors, ML fits do not.
 
         Parameters
-        -----------
+        ----------
         lpost : :class:`Posterior` (or subclass) instance
             and instance of class :class:`Posterior` or one of its subclasses
             that defines the function to be minimized (either in ``loglikelihood``
@@ -381,7 +381,7 @@ class ParameterEstimation(object):
             directly passed on as keyword arguments.
 
         Returns
-        --------
+        -------
         res : :class:`OptimizationResults` object
             An object containing useful summaries of the fitting procedure.
             For details, see documentation of class:`OptimizationResults`.
@@ -689,8 +689,8 @@ class ParameterEstimation(object):
             A list of parameters to be passed to ``lpost.model`` in oder
             to generate a model data set.
 
-        Returns:
-        --------
+        Returns
+        -------
         model_data : numpy.ndarray
             An array of model values for each bin in ``lpost.x``
 
@@ -1211,7 +1211,7 @@ class PSDParEst(ParameterEstimation):
         MAP fits include priors, ML fits do not.
 
         Parameters
-        -----------
+        ----------
         lpost : :class:`stingray.modeling.PSDPosterior` object
             An instance of class :class:`stingray.modeling.PSDPosterior` that defines the
             function to be minimized (either in ``loglikelihood`` or ``logposterior``)
@@ -1228,7 +1228,7 @@ class PSDParEst(ParameterEstimation):
             directly passed on as keyword arguments.
 
         Returns
-        --------
+        -------
         res : :class:`OptimizationResults` object
             An object containing useful summaries of the fitting procedure.
             For details, see documentation of :class:`OptimizationResults`.
@@ -1335,8 +1335,8 @@ class PSDParEst(ParameterEstimation):
             A list of parameters to be passed to ``lpost.model`` in oder
             to generate a model data set.
 
-        Returns:
-        --------
+        Returns
+        -------
         sim_ps : :class:`stingray.Powerspectrum` object
             The simulated :class:`Powerspectrum` object
 
