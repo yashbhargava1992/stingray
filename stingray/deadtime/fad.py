@@ -135,7 +135,7 @@ def FAD(
     pds1 = 0
     pds2 = 0
     ptot = 0
-    cs = 0
+    cs = 0j
     M = 0
     nph1_tot = nph2_tot = nph_tot = 0
     average_diff = average_diff_uncorr = 0
@@ -189,7 +189,7 @@ def FAD(
         pt = (ftot * ftot.conj()).real
         pt = pt / smooth_real * 2
 
-        c = (f2 * f1.conj()).real
+        c = (f2 * f1.conj())
         c = c / smooth_real * 2
 
         nphgeom = np.sqrt(nph1 * nph2)
@@ -433,6 +433,8 @@ def get_periodograms_from_FAD_results(FAD_results, kind='ptot'):
             powersp.nphots = FAD_results.meta['nph2']
     elif kind == 'cs':
         powersp = AveragedCrossspectrum(power_type='all')
+        powersp.pds1 = get_periodograms_from_FAD_results(FAD_results, kind='pds1')
+        powersp.pds2 = get_periodograms_from_FAD_results(FAD_results, kind='pds2')
         powersp.nphots1 = FAD_results.meta['nph1']
         powersp.nphots2 = FAD_results.meta['nph2']
     else:
