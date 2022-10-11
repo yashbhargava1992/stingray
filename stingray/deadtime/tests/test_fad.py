@@ -83,7 +83,7 @@ def test_fad_power_spectrum_compliant(ctrate):
                       rtol=0.1)
     assert np.isclose(pds2_f.std() * 2 / ncounts_per_intv2, pds_std_theor,
                       rtol=0.1)
-    assert np.isclose(cs_f.std() * 2 / ncounts_per_intv_geomav, cs_std_theor,
+    assert np.isclose(cs_f.real.std() * 2 / ncounts_per_intv_geomav, cs_std_theor,
                       rtol=0.1)
     assert np.isclose(ptot_f.std() * 2 / ncounts_per_intvtot, pds_std_theor,
                       rtol=0.1)
@@ -134,7 +134,7 @@ def test_fad_power_spectrum_compliant_objects(ctrate):
                       rtol=0.1)
     assert np.isclose(pds2_f.std() * 2 / ncounts_per_intv2, pds_std_theor,
                       rtol=0.1)
-    assert np.isclose(cs_f.std() * 2 / ncounts_per_intv_geomav, cs_std_theor,
+    assert np.isclose(cs_f.real.std() * 2 / ncounts_per_intv_geomav, cs_std_theor,
                       rtol=0.1)
     assert np.isclose(ptot_f.std() * 2 / ncounts_per_intvtot, pds_std_theor,
                       rtol=0.1)
@@ -210,7 +210,7 @@ def test_fad_power_spectrum_compliant_leahy(ctrate):
 
     assert np.isclose(pds1_f.std(), pds_std_theor, rtol=0.1)
     assert np.isclose(pds2_f.std(), pds_std_theor, rtol=0.1)
-    assert np.isclose(cs_f.std(), cs_std_theor, rtol=0.1)
+    assert np.isclose(cs_f.real.std(), cs_std_theor, rtol=0.1)
     assert np.isclose(ptot_f.std(), pds_std_theor, rtol=0.1)
 
     results_cs = get_periodograms_from_FAD_results(results_out, kind='cs')
@@ -270,7 +270,7 @@ def test_fad_power_spectrum_compliant_leahy_objects(ctrate):
 
     assert np.isclose(pds1_f.std(), pds_std_theor, rtol=0.1)
     assert np.isclose(pds2_f.std(), pds_std_theor, rtol=0.1)
-    assert np.isclose(cs_f.std(), cs_std_theor, rtol=0.1)
+    assert np.isclose(cs_f.real.std(), cs_std_theor, rtol=0.1)
     assert np.isclose(ptot_f.std(), pds_std_theor, rtol=0.1)
 
 
