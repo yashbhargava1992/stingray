@@ -44,14 +44,6 @@ Contents
    citing
    acknowledgements
 
-.. The below notebooks aren't linked from anywhere above; we need to include
-.. them somewhere, or Sphinx regards it as an error and the build fails.
-.. toctree::
-   :hidden:
-
-   notebooks/Bexvar/Bexvar tutorial.ipynb
-   notebooks/Multitaper/multitaper_example.ipynb
-
 Indices and tables
 ==================
 
