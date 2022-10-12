@@ -1480,7 +1480,7 @@ class Lightcurve(StingrayTimeseries):
         """
         Returns a `lightkurve.LightCurve` object.
         This feature requires `Lightkurve
-        <https://docs.lightkurve.org/index.html/>`_ to be installed
+        <https://docs.lightkurve.org/>`_ to be installed
         (e.g. ``pip install lightkurve``).  An `ImportError` will
         be raised if this package is not available.
 
@@ -1704,7 +1704,7 @@ class Lightcurve(StingrayTimeseries):
             See :class:`Lightcurve` documentation
 
         Returns
-        --------
+        -------
         lc : :class:`Lightcurve` object
         """
         if fmt is None and format_ is not None:

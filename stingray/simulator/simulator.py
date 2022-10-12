@@ -594,8 +594,8 @@ class Simulator(object):
         """
         Reads transfer function from a 'pickle' file.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fmt : str
             the format of the file to be retrieved - accepts 'pickle'.
 

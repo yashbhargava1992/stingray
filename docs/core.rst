@@ -69,3 +69,19 @@ Bispectra
    notebooks/Bispectrum/bispectrum_tutorial.ipynb
 
 
+Bayesian Excess Variance
+------------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Bexvar/Bexvar tutorial.ipynb
+
+
+Multi-taper Periodogram
+-----------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/Multitaper/multitaper_example.ipynb
