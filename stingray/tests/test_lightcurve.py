@@ -384,6 +384,12 @@ class TestLightcurve(object):
         assert np.allclose(lc.time, lc2.time)
         assert np.allclose(lc.counts, lc2.counts)
 
+    def test_lightcurve_from_toa_gti(self):
+        lc = Lightcurve.make_lightcurve(self.times, self.dt, gti=self.gti)
+        lc2 = Lightcurve.make_lightcurve(self.times, self.dt, tstart=0.5, tseg=4.0)
+        assert np.allclose(lc.time, lc2.time)
+        assert np.allclose(lc.counts, lc2.counts)
+
     def test_lightcurve_from_toa_quantity(self):
         lc = Lightcurve.make_lightcurve(self.times * u.s, self.dt,
                                         use_hist=True, tstart=0.5)

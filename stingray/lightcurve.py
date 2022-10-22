@@ -818,8 +818,8 @@ class Lightcurve(StingrayTimeseries):
         tseg: float, optional, default ``None``
             The total duration of the light curve.
             If this is ``None``, then the total duration of the light curve will
-            be the interval between the arrival between the first and the last
-            photon in ``toa``.
+            be the interval between the arrival between either the first and the last
+            gti boundary or, if gti is not set, the first and the last photon in ``toa``.
 
                 **Note**: If ``tseg`` is not divisible by ``dt`` (i.e. if ``tseg``/``dt`` is
                 not an integer number), then the last fractional bin will be
@@ -827,7 +827,8 @@ class Lightcurve(StingrayTimeseries):
 
         tstart: float, optional, default ``None``
             The start time of the light curve.
-            If this is ``None``, the arrival time of the first photon will be used
+            If this is ``None``, either the first gti boundary or, if not available, 
+            the arrival time of the first photon will be used
             as the start time of the light curve.
 
         gti: 2-d float array
@@ -849,16 +850,20 @@ class Lightcurve(StingrayTimeseries):
         # tstart is an optional parameter to set a starting time for
         # the light curve in case this does not coincide with the first photon
         if tstart is None:
-            # if tstart is not set, assume light curve starts with first photon
+            # if tstart is not set, assume light curve starts with first photon 
+            # or the first gti if is set
             tstart = toa[0]
+            if gti is not None:
+                tstart = np.min(gti)
 
         # compute the number of bins in the light curve
         # for cases where tseg/dt is not integer.
         # TODO: check that this is always consistent and that we
         # are not throwing away good events.
-
         if tseg is None:
             tseg = toa[-1] - tstart
+            if gti is not None:
+                tseg = np.max(gti) - tstart
 
         logging.info("make_lightcurve: tseg: " + str(tseg))
 
@@ -1713,7 +1718,7 @@ class Lightcurve(StingrayTimeseries):
                 "Use fmt instead", DeprecationWarning)
             fmt = format_
 
-        if fmt.lower() in ('hea', 'ogip'):
+        if fmt is not None and fmt.lower() in ('hea', 'ogip'):
             data = lcurve_from_fits(filename)
             data.update({'err_dist': err_dist, 'skip_checks': skip_checks})
             return Lightcurve(**data)
