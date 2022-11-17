@@ -109,14 +109,11 @@ class TestRebinDataLog(object):
         cls.y = np.arange(cls.xmin, cls.xmax, cls.dx)
         cls.y_err = np.ones_like(cls.y)
 
-        cls.true_bins = np.array(
-            [1., 1.1, 1.21, 1.331, 1.4641, 1.61051, 1.771561,
-             1.9487171, 2.14358881, 2.35794769, 2.59374246, 2.85311671])
+        cls.true_bins = np.array([1., 1., 1.5, 1.5, 1.5, 1.5, 1.5, 2.5,
+             2.5, 2.5, 2. ])
 
         cls.true_bin_edges = np.array(
-            [0.5, 1.5, 2.6000000000000001, 3.81, 5.141, 6.6051, 8.21561,
-             9.987171, 11.9358881, 14.07947691, 16.437424601, 19.0311670611,
-             21.88428376721])
+            [ 1., 2., 3., 4.5, 6., 7.5, 9., 10.5, 13., 15.5, 18., 20. ])
 
         cls.true_values = np.array(
             [1., 2., 3., 4.5, 6., 7.5, 9., 10.5, 13., 15.5, 18., 20.])
@@ -146,7 +143,7 @@ class TestRebinDataLog(object):
 
         # binx describes the bin _edges_ rather than midpoints, so has one
         # more entry than biny and the rest
-        assert binx.shape[0] == biny.shape[0] + 1
+        assert binx.shape[0] == biny.shape[0]
         assert biny.shape[0] == binyerr.shape[0]
         assert binyerr.shape[0] == nsamples.shape[0]
 
