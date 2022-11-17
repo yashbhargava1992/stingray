@@ -458,3 +458,26 @@ class TestNorms(object):
             pdsnorm = normalize_periodograms(
                 self.pds, self.var, self.N, self.mean, n_ph=self.nph, norm="asdfjlasdjf"
             )
+    
+    @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
+    def test_unnormalize_periodogram(self, norm):
+        pdsnorm = normalize_periodograms(
+        self.pds, self.dt, self.N, self.mean, n_ph=self.nph,
+        norm=norm, power_type="all")
+
+        pdsunnorm = unnormalize_periodograms(
+        pdsnorm, self.dt, self.N, self.mean, n_ph=self.nph,
+        norm=norm, power_type="all")
+
+        assert np.allclose(self.pds, pdsunnorm)
+
+
+    @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
+    def test_unnormalize_poisson_noise(self, norm):
+        noise = poisson_level(norm, self.meanrate, self.nph)
+        unnorm_noise = unnormalize_periodograms(
+            noise, self.dt, self.N, self.meanrate, n_ph=self.nph,
+            norm=norm, power_type="all")
+        noise_notnorm = poisson_level('none', self.meanrate, self.nph)
+        
+        assert np.allclose(noise_notnorm, unnorm_noise)
