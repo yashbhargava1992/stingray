@@ -364,6 +364,10 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     real_err = y_err.real
     # compute the mean of the ys that fall into each new frequency bin.
     # we cast to np.double due to scipy's bad handling of longdoubles
+    binx_new, bin_edges, binno = scipy.stats.binned_statistic(
+        x.astype(np.double), x.astype(np.double),
+        statistic="mean", bins=binx)
+
     biny, bin_edges, binno = scipy.stats.binned_statistic(
         x.astype(np.double), real.astype(np.double),
         statistic="mean", bins=binx)
@@ -392,7 +396,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     nsamples = np.array([len(binno[np.where(binno == i)[0]])
                          for i in range(1, np.max(binno) + 1, 1)])
 
-    return binx, biny, biny_err, nsamples
+    return binx_new, biny, biny_err, nsamples
 
 
 def apply_function_if_none(variable, value, func):
