@@ -424,61 +424,122 @@ class TestPowerspectrum(object):
         # This will now pass, due to changes on 2022-10-10
         ps.compute_rms(0, 10)
 
-    def test_fractional_rms_in_frac_norm_is_consistent(self):
+    def test_compute_rms_rebinning_is_consistent(self):
         time = np.arange(0, 100, 1) + 0.5
 
         poisson_counts = np.random.poisson(100.0,
-                                           size=time.shape[0])
+                                        size=time.shape[0])
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1,
                         gti=[[0, 100]])
         ps = Powerspectrum(lc, norm="leahy")
-        rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
-                                             max_freq=ps.freq[-1],
-                                             white_noise_offset=0)
+        ps_rebinned = ps.rebin_log()
+        rms, err_rms = ps.compute_rms(min_freq=ps.freq[1], max_freq=ps.freq[-2],
+            poisson_noise_level=0)
+        rms_reb, err_rms_reb = ps_rebinned.compute_rms(min_freq=ps.freq[1], 
+        max_freq=ps.freq[-2], poisson_noise_level=0)
+        assert np.isclose(rms, rms_reb, atol=0.01, rtol=0.01)
 
-        ps = Powerspectrum(lc, norm="frac")
-        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
-                                         max_freq=ps.freq[-1],
-                                         white_noise_offset=0)
-        assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
-        assert np.allclose(rms_err, rms_err_l, atol=0.01)
+
+    def test_fractional_rms_in_frac_norm_is_consistent(self):
+            time = np.arange(0, 100, 1) + 0.5
+
+            poisson_counts = np.random.poisson(100.0,
+                                            size=time.shape[0])
+
+            lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                            gti=[[0, 100]])
+            ps = Powerspectrum(lc, norm="leahy")
+            rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
+                                                max_freq=ps.freq[-1],
+                                                poisson_noise_level=0)
+
+            ps = Powerspectrum(lc, norm="frac")
+            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                            max_freq=ps.freq[-1],
+                                            poisson_noise_level=0)
+            assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+            assert np.allclose(rms_err, rms_err_l, atol=0.01)
+
+    def test_fractional_rms_in_frac_norm_is_consistent_old(self):
+        with pytest.warns(DeprecationWarning):
+            time = np.arange(0, 100, 1) + 0.5
+
+            poisson_counts = np.random.poisson(100.0,
+                                            size=time.shape[0])
+
+            lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                            gti=[[0, 100]])
+            ps = Powerspectrum(lc, norm="leahy")
+            rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
+                                                max_freq=ps.freq[-1],
+                                                white_noise_offset=0)
+
+            ps = Powerspectrum(lc, norm="frac")
+            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                            max_freq=ps.freq[-1],
+                                            white_noise_offset=0)
+            assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+            assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
     def test_fractional_rms_in_frac_norm_is_consistent_averaged(self):
-        time = np.arange(0, 400, 1) + 0.5
+            time = np.arange(0, 400, 1) + 0.5
 
-        poisson_counts = np.random.poisson(100.0,
-                                           size=time.shape[0])
+            poisson_counts = np.random.poisson(100.0,
+                                            size=time.shape[0])
 
-        lc = Lightcurve(time, counts=poisson_counts, dt=1,
-                        gti=[[0, 400]])
-        ps = AveragedPowerspectrum(lc, norm="leahy", segment_size=100,
-                                   silent=True)
-        rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
-                                             max_freq=ps.freq[-1],
-                                             white_noise_offset=0)
+            lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                            gti=[[0, 400]])
+            ps = AveragedPowerspectrum(lc, norm="leahy", segment_size=100,
+                                    silent=True)
+            rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
+                                                max_freq=ps.freq[-1],
+                                                poisson_noise_level=0)
 
-        ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
-        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
-                                         max_freq=ps.freq[-1],
-                                         white_noise_offset=0)
-        assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
-        assert np.allclose(rms_err, rms_err_l, atol=0.01)
+            ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
+            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                            max_freq=ps.freq[-1],
+                                            poisson_noise_level=0)
+            assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+            assert np.allclose(rms_err, rms_err_l, atol=0.01)
+
+    def test_fractional_rms_in_frac_norm_is_consistent_averaged_old(self):
+        with pytest.warns(DeprecationWarning):
+            time = np.arange(0, 400, 1) + 0.5
+
+            poisson_counts = np.random.poisson(100.0,
+                                            size=time.shape[0])
+
+            lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                            gti=[[0, 400]])
+            ps = AveragedPowerspectrum(lc, norm="leahy", segment_size=100,
+                                    silent=True)
+            rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
+                                                max_freq=ps.freq[-1],
+                                                white_noise_offset=0)
+
+            ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
+            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                            max_freq=ps.freq[-1],
+                                            white_noise_offset=0)
+            assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+            assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
     def test_fractional_rms_in_frac_norm(self):
-        time = np.arange(0, 400, 1) + 0.5
+        with pytest.warns(DeprecationWarning):
+            time = np.arange(0, 400, 1) + 0.5
 
-        poisson_counts = np.random.poisson(100.0,
-                                           size=time.shape[0])
+            poisson_counts = np.random.poisson(100.0,
+                                            size=time.shape[0])
 
-        lc = Lightcurve(time, counts=poisson_counts, dt=1,
-                        gti=[[0, 400]])
-        ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
-        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
-                                         max_freq=ps.freq[-1],
-                                         white_noise_offset=0)
-        rms_lc = np.std(lc.counts) / np.mean(lc.counts)
-        assert np.isclose(rms_ps, rms_lc, atol=0.01)
+            lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                            gti=[[0, 400]])
+            ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
+            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                            max_freq=ps.freq[-1],
+                                            white_noise_offset=0)
+            rms_lc = np.std(lc.counts) / np.mean(lc.counts)
+            assert np.isclose(rms_ps, rms_lc, atol=0.01)
 
     def test_leahy_norm_Poisson_noise(self):
         """
@@ -511,13 +572,14 @@ class TestPowerspectrum(object):
         deviation divided by the mean of the light curve. Therefore, we allow
         for a larger tolerance in np.isclose()
         """
-        ps = Powerspectrum(self.lc, norm="Leahy")
-        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
-                                         max_freq=ps.freq[-1],
-                                         white_noise_offset=0)
+        with pytest.warns(DeprecationWarning):
+            ps = Powerspectrum(self.lc, norm="Leahy")
+            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[0],
+                                            max_freq=ps.freq[-1],
+                                            white_noise_offset=0)
 
-        rms_lc = np.std(self.lc.counts) / np.mean(self.lc.counts)
-        assert np.isclose(rms_ps, rms_lc, atol=0.01)
+            rms_lc = np.std(self.lc.counts) / np.mean(self.lc.counts)
+            assert np.isclose(rms_ps, rms_lc, atol=0.01)
 
     def test_abs_norm_Poisson_noise(self):
         """
