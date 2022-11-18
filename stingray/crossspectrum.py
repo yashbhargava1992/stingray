@@ -1157,9 +1157,7 @@ class Crossspectrum(StingrayObject):
         binfreq, binpower, binpower_err, nsamples = rebin_data_log(
             self.freq, self.power, f, y_err=self.power_err, dx=self.df
         )
-        # the frequency resolution
-        df = np.diff(binfreq)
-        
+            
         new_spec = copy.copy(self)
         new_spec.freq = binfreq
         new_spec.power = binpower
