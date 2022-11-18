@@ -468,7 +468,7 @@ class TestNorms(object):
         norm=norm, power_type=power_type)
 
         pdsunnorm = unnormalize_periodograms(
-        pdsnorm, self.dt, self.N, self.mean, n_ph=self.nph,
+        pdsnorm, self.dt, self.N, n_ph=self.nph,
         norm=norm, power_type=power_type)
 
         if power_type == "all":
@@ -486,7 +486,7 @@ class TestNorms(object):
     def test_unnormalize_poisson_noise(self, norm, power_type):
         noise = poisson_level(norm, self.meanrate, self.nph)
         unnorm_noise = unnormalize_periodograms(
-            noise, self.dt, self.N, self.mean, n_ph=self.nph,
+            noise, self.dt, self.N, n_ph=self.nph,
             norm=norm, power_type=power_type)
         noise_notnorm = poisson_level('none', self.meanrate, self.nph)
         

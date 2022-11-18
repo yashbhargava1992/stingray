@@ -490,6 +490,88 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None,
     raise ValueError("Unrecognized power type")
 
 
+def unnormalize_periodograms(norm_power, dt, n_bin, n_ph,
+                           variance=None, background_flux=0., norm=None,
+                           power_type="all"):
+    """
+    Wrapper around all the normalize_NORM methods.
+
+    Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
+    fractional rms^2 normalization, or not at all.
+
+    Parameters
+    ----------
+    norm_power: numpy.ndarray
+        The normalized cross-spectrum or poisson noise
+
+    dt: float
+        The sampling time of the light curve
+
+    n_bin: int
+        The number of bins in the light curve
+
+    Other parameters
+    ----------------
+    mean_flux: float
+        The mean of the light curve used to calculate the powers
+        (If a cross spectrum, the geometrical mean of the light
+        curves in the two channels). Only relevant for "frac" normalization
+
+    n_ph: int or float
+        The number of counts in the light curve used to calculate
+        the unnormalized periodogram. Only relevant for Leahy normalization.
+
+    variance: float
+        The average variance of the measurements in light curve (if a cross
+        spectrum,  the geometrical mean of the variances in the two channels).
+        **NOT** the variance of the light curve, but of each flux measurement
+        (square of light curve error bar)! Only relevant for the Leahy
+        normalization of non-Poissonian data.
+
+    norm : str
+        One of ``leahy`` (Leahy+83), ``frac`` (fractional rms), ``abs``
+        (absolute rms),
+
+    power_type : str
+        One of ``real`` (real part), ``all`` (all complex powers), ``abs``
+        (absolute value)
+
+    background_flux : float, default 0
+        The background flux, in the same units as `mean_flux`.
+
+    Returns
+    -------
+    power: numpy.nd.array
+        The normalized co-spectrum (real part of the cross spectrum). For
+        'none' normalization, imaginary part is returned as well.
+    """
+
+    if norm == "leahy" and variance is not None:
+        unnorm_power = norm_power * (variance * n_bin) / 2.
+    elif norm == "leahy":
+        unnorm_power = norm_power * n_ph / 2.
+    elif norm == "frac":
+        if background_flux > 0:
+            unnorm_power = norm_power * ((n_ph/n_bin - background_flux) ** 2 *
+                                          n_bin) / (2. * dt)
+        else:
+            unnorm_power = norm_power * (n_ph**2/n_bin) / (2. * dt)  
+    elif norm == "abs":
+        unnorm_power = norm_power * dt * n_bin / 2.
+    elif norm == "none":
+        unnorm_power = norm_power
+    else:
+        raise ValueError("Unknown value for the norm")
+
+    if power_type == "all":
+        return unnorm_power
+    if power_type == "real":
+        return unnorm_power.real
+    if power_type in ["abs", "absolute"]:
+        return np.abs(unnorm_power)
+    raise ValueError("Unrecognized power type")
+
+
 def bias_term(power1, power2, power1_noise, power2_noise, n_ave,
               intrinsic_coherence=1.0):
     """
@@ -660,6 +742,77 @@ def estimate_intrinsic_coherence(cross_power, power1, power2, power1_noise,
     new_coherence = estimate_intrinsic_coherence_vec(
         cross_power, power1, power2, power1_noise, power2_noise, n_ave)
     return new_coherence
+
+
+def rms_calculation(unnorm_powers, min_freq, max_freq, nphots, 
+    T, M_freqs, K_freqs, freq_bins, poisson_noise_unnrom, deadtime=0.):
+    """
+    Compute the fractional rms amplitude in the given power or cross spectrum
+    
+    NOTE: all array quantities are already in the correct energy range
+
+    Parameters
+    ----------
+    unnrom_powers: array of float 
+        unnormalised power or cross spectrum, the array has already been 
+        filtered for the given frequency range
+
+    min_freq: float
+        The lower frequency bound for the calculation (from the freq grid).
+
+    max_freq: float
+        The upper frequency bound for the calculation (from the freq grid).
+    
+    nphots: float 
+        Number of photons for the full power or cross spectrum
+    
+    T: float 
+        Time length of the light curve 
+    
+    M_freq: scalar or array of float 
+        If scalar, it is the number of segments in the AveragedCrossspectrum
+        If array, it is the number of segments times the rebinning sample 
+        in the given frequency range.
+
+    K_freq: scalar or array of float 
+        If scalar, the power or cross spectrum is not rebinned (K_freq = 1) 
+        If array,  the power or cross spectrum is rebinned and it is the 
+        rebinned sample in the given frequency range.
+
+    freq_bins: integer 
+        if the cross or power spectrum is rebinned freq_bins = 1, 
+        if it NOT rebinned freq_bins is the number of frequency bins 
+        in the given frequency range.
+
+    poisson_noise_unnrom : float
+        This is the Poisson noise level unnormalised.
+
+    Other parameters
+    ----------------
+    deadtime: float 
+        Deadtime of the instrument 
+
+    Returns
+    -------
+    rms: float
+        The fractional rms amplitude contained between ``min_freq`` and
+        ``max_freq``.
+
+    rms_err: float
+        The error on the fractional rms amplitude.
+
+    """
+    rms_squared = np.sum((unnorm_powers - poisson_noise_unnrom) * 1/T * K_freqs) \
+        * 2 * T / nphots**2
+    rms = np.sqrt(rms_squared)
+
+    rms_noise_squared = poisson_noise_unnrom * (max_freq - min_freq) \
+        * 2 * T / nphots**2 #rms of the noise    
+    rms_err_squared = (2 * rms_squared * rms_noise_squared + rms_noise_squared**2) / \
+        (2 * np.sum(M_freqs) * freq_bins * rms_squared)
+    rms_err = np.sqrt(rms_err_squared)
+
+    return rms, rms_err
 
 
 def error_on_averaged_cross_spectrum(cross_power, seg_power, ref_power, n_ave,
