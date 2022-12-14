@@ -1286,7 +1286,7 @@ class Lightcurve(StingrayTimeseries):
         --------
         >>> time = [2, 1, 3]
         >>> count = [200, 100, 300]
-        >>> lc = Lightcurve(time, count, dt=1)
+        >>> lc = Lightcurve(time, count, dt=1, skip_checks=True)
         >>> lc_new = lc.sort()
         >>> lc_new.time
         array([1, 2, 3])
@@ -1330,7 +1330,7 @@ class Lightcurve(StingrayTimeseries):
         --------
         >>> time = [1, 2, 3]
         >>> count = [200, 100, 300]
-        >>> lc = Lightcurve(time, count, dt=1)
+        >>> lc = Lightcurve(time, count, dt=1, skip_checks=True)
         >>> lc_new = lc.sort_counts()
         >>> lc_new.time
         array([2, 1, 3])
