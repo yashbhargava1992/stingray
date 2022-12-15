@@ -6,6 +6,13 @@ import scipy.stats
 from stingray import bexvar
 from astropy.table import Table
 from astropy.io import fits
+import signal
+
+class TimeoutException(Exception):
+    pass
+
+def timeout_handler(signum, frame):
+    raise TimeoutException
 
 
 _HAS_ULTRANEST = True
@@ -207,12 +214,18 @@ class TestBadValues(object):
     def test_non_integer_src_counts_warning(self):
         with pytest.warns(UserWarning) as record:
 
-            _ = bexvar.bexvar(
-                time=self.time,
-                time_del=self.time_delta,
-                src_counts=self.src_count,
-                frac_exp=self.frac_exp,
-            )
+            signal.signal(signal.SIGALRM, timeout_handler)
+
+            signal.alarm(5)
+            try:
+                _ = bexvar.bexvar(
+                    time=self.time,
+                    time_del=self.time_delta,
+                    src_counts=self.src_count,
+                    frac_exp=self.frac_exp,
+                )
+            except TimeoutException:
+                print('function terminated')
 
             assert any(
                 [
