@@ -114,7 +114,8 @@ html_theme_options = {
 
 extensions += [
     'matplotlib.sphinxext.plot_directive', 'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon', 'nbsphinx'
+    'sphinx.ext.napoleon', 'nbsphinx', 
+    'IPython.sphinxext.ipython_console_highlighting'
 ]
 
 # Custom sidebar templates, maps document names to template names.
