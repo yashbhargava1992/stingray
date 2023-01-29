@@ -22,4 +22,4 @@ Then, fork the `stingray <https://github.com/StingraySoftware/stingray>`_ and `n
 Once you've familiarized yourself with the basics of Stingray, go to the `Stingray issues page <https://github.com/StingraySoftware/stingray>`_ and try to tackle one!
 Finally, you can read `these slides <https://speakerdeck.com/abigailstev/time-series-exploration-with-stingray>`_ from a talk on Stingray in 2021 at the 9th Microquasar Workshop.
 
-For organizing and coordinating the software development, we have a Slack group and a mailing list -- please use `this link <https://stingray-slack.herokuapp.com>`_ for Slack or send `one of us <https://github.com/orgs/StingraySoftware/people>`_ an email to join.
+For organizing and coordinating the software development, we have a Slack group and a mailing list -- please use `this link <https://join.slack.com/t/stingraysoftware/shared_invite/zt-49kv4kba-mD1Y~s~rlrOOmvqM7mZugQ>`_ for Slack or send `one of us <https://github.com/orgs/StingraySoftware/people>`_ an email to join.
