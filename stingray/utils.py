@@ -349,34 +349,38 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
     minx = x[0] * 0.5  # frequency to start from
     maxx = x[-1]  # maximum frequency to end
-    binx = [minx, minx + dx_init]  # first
+    binx_for_stats = [minx, minx + dx_init]  # first
     dx = dx_init  # the frequency resolution of the first bin
 
     # until we reach the maximum frequency, increase the width of each
     # frequency bin by f
-    while binx[-1] <= maxx:
-        binx.append(binx[-1] + dx * (1.0 + f))
-        dx = binx[-1] - binx[-2]
+    while binx_for_stats[-1] <= maxx:
+        binx_for_stats.append(binx_for_stats[-1] + dx * (1.0 + f))
+        dx = binx_for_stats[-1] - binx_for_stats[-2]
 
-    binx = np.asarray(binx)
+    binx_for_stats = np.asarray(binx_for_stats)
 
     real = y.real
     real_err = y_err.real
     # compute the mean of the ys that fall into each new frequency bin.
     # we cast to np.double due to scipy's bad handling of longdoubles
+    binx, bin_edges, binno = scipy.stats.binned_statistic(
+        x.astype(np.double), x.astype(np.double),
+        statistic="mean", bins=binx_for_stats)
+
     biny, bin_edges, binno = scipy.stats.binned_statistic(
         x.astype(np.double), real.astype(np.double),
-        statistic="mean", bins=binx)
+        statistic="mean", bins=binx_for_stats)
 
     biny_err, bin_edges, binno = scipy.stats.binned_statistic(
         x.astype(np.double), real_err.astype(np.double),
-        statistic=_root_squared_mean, bins=binx)
+        statistic=_root_squared_mean, bins=binx_for_stats)
 
     if np.iscomplexobj(y):
         imag = y.imag
         biny_imag, bin_edges, binno = scipy.stats.binned_statistic(
             x.astype(np.double), imag.astype(np.double),
-            statistic="mean", bins=binx)
+            statistic="mean", bins=binx_for_stats)
 
         biny = biny + 1j * biny_imag
 
@@ -385,7 +389,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
 
         biny_err_imag, bin_edges, binno = scipy.stats.binned_statistic(
             x.astype(np.double), imag_err.astype(np.double),
-            statistic=_root_squared_mean, bins=binx)
+            statistic=_root_squared_mean, bins=binx_for_stats)
         biny_err = biny_err + 1j * biny_err_imag
 
     # compute the number of powers in each frequency bin
