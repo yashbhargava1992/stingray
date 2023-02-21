@@ -416,7 +416,7 @@ def normalize_periodograms(unnorm_power, dt, n_bin, mean_flux=None, n_ph=None,
     """
     Wrapper around all the normalize_NORM methods.
 
-    Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
+    Normalize the cross-spectrum or the power-spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
 
     Parameters
@@ -496,7 +496,7 @@ def unnormalize_periodograms(norm_power, dt, n_bin, n_ph,
     """
     Wrapper around all the normalize_NORM methods.
 
-    Normalize the real part of the cross spectrum to Leahy, absolute rms^2,
+    Unnormalize the power of the cross-spectrum to Leahy, absolute rms^2,
     fractional rms^2 normalization, or not at all.
 
     Parameters
