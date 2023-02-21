@@ -1176,8 +1176,8 @@ class TestAveragedCrossspectrum(object):
             assert hasattr(new_cs.pds2, attr) and getattr(new_cs.pds2, attr).size == N
 
         for attr in cs1.meta_attrs():
-            if attr not in ["df", "gti", "m"]:
-                assert getattr(cs1, attr) == getattr(new_cs, attr)
+            if attr not in ["df", "gti", "m", "k"]:
+                assert np.all(getattr(cs1, attr) == getattr(new_cs, attr))
 
     def test_rebin(self):
         with warnings.catch_warnings(record=True) as w:
