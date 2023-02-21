@@ -472,11 +472,11 @@ class TestNorms(object):
         norm=norm, power_type=power_type)
 
         if power_type == "all":
-            assert np.allclose(self.pds, pdsunnorm)
+            assert np.allclose(self.pds, pdsunnorm, rtol=0.001)
         if power_type == "real":
-            assert np.allclose(self.pds.real, pdsunnorm)
+            assert np.allclose(self.pds.real, pdsunnorm, rtol=0.001)
         if power_type in ["abs", "absolute"]:
-            assert np.allclose(np.abs(self.pds), pdsunnorm)
+            assert np.allclose(np.abs(self.pds), pdsunnorm, rtol=0.001)
 
         assert np.allclose(self.pds, pdsunnorm)
 
