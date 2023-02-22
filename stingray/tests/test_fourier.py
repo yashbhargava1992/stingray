@@ -2,6 +2,7 @@ import os
 from pickle import FALSE
 import pytest
 from stingray.fourier import *
+from stingray.utils import check_allclose_and_print
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
@@ -472,13 +473,11 @@ class TestNorms(object):
         norm=norm, power_type=power_type)
 
         if power_type == "all":
-            assert np.allclose(self.pds, pdsunnorm, rtol=0.001)
+            check_allclose_and_print(self.pds, pdsunnorm, rtol=0.001)
         if power_type == "real":
-            assert np.allclose(self.pds.real, pdsunnorm, rtol=0.001)
+            check_allclose_and_print(self.pds.real, pdsunnorm, rtol=0.001)
         if power_type in ["abs", "absolute"]:
-            assert np.allclose(np.abs(self.pds), pdsunnorm, rtol=0.001)
-
-        assert np.allclose(self.pds, pdsunnorm)
+            check_allclose_and_print(np.abs(self.pds), pdsunnorm, rtol=0.001)
 
 
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])

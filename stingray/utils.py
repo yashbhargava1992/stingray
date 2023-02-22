@@ -1115,6 +1115,30 @@ def check_iterables_close(iter0, iter1, **kwargs):
     return True
 
 
+def check_allclose_and_print(v1, v2, rtol=1e-05, atol=1e-08,):
+    """Check that the values in the array v1 and v2 are equal. 
+    It prints the values that are different. 
+
+    Uses `np.allclose` and it has the option to specify rtol and atol 
+
+    Parameters
+    ----------
+    v1 : array
+    v2 : array 
+    rtol : The relative tolerance parameter
+    atol : The absolute tolerance parameter
+
+    If the following equation element-wise True, then allclose returns True.
+    absolute(a - b) <= (atol + rtol * absolute(b))
+
+    """
+    try:
+        assert np.allclose(v1, v2, rtol, atol)
+    except Exception as e:
+        bad = np.abs(v1 - v2) >= (atol + rtol * np.abs(v2))
+        print('Different values in the arrays check by allclose: ', v1[bad], v2[bad])
+        raise
+
 @njit(nogil=True, parallel=False)
 def compute_bin(x, bin_edges):
     """Given a list of bin edges, get what bin will a number end up to
