@@ -102,6 +102,9 @@ class Multitaper(Powerspectrum):
 
     n: int
         The number of data points in the light curve
+    
+    k: array of int
+        The rebinning scheme if the object has been rebinned otherwise is set to 1. 
 
     nphots: float
         The total number of photons in the light curve
@@ -158,6 +161,7 @@ class Multitaper(Powerspectrum):
             self.m = 1
             self.n = None
             self.nphots = None
+            self.k = 1
             self.jk_var_deg_freedom = None
             return
         elif not isinstance(data, EventList):
@@ -169,6 +173,7 @@ class Multitaper(Powerspectrum):
         self.lc = lc
         self.power_type = 'real'
         self.fullspec = False
+        self.k = 1
 
         self._make_multitaper_periodogram(lc, NW=NW, adaptive=adaptive,
                                           jackknife=jackknife, low_bias=low_bias,
