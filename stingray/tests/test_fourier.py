@@ -461,7 +461,7 @@ class TestNorms(object):
                 self.pds, self.var, self.N, self.mean, n_ph=self.nph, norm="asdfjlasdjf"
             )
     
-    @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
+    @pytest.mark.parametrize("norm", ["abs", "frac", "leahy", "none"])
     @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
     def test_unnormalize_periodogram(self, norm, power_type):
         pdsnorm = normalize_periodograms(
@@ -479,7 +479,6 @@ class TestNorms(object):
         if power_type in ["abs", "absolute"]:
             check_allclose_and_print(np.abs(self.pds), pdsunnorm, rtol=0.001)
 
-
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
     @pytest.mark.parametrize("power_type", ["all", "real"])
     def test_unnormalize_poisson_noise(self, norm, power_type):
@@ -490,3 +489,18 @@ class TestNorms(object):
         noise_notnorm = poisson_level('none', self.meanrate, self.nph)
         
         assert np.isclose(noise_notnorm, unnorm_noise)
+
+    def test_periodogram_wrong_norm(self):
+        with pytest.raises(ValueError, match='Unknown value for the norm'):
+            unnormalize_periodograms(self.pds, self.dt, self.N, 
+            n_ph=self.nph, norm='wrong', power_type='all')
+
+    def test_periodogram_wrong_norm(self):
+        with pytest.raises(ValueError, match='Unknown value for the norm'):
+            unnormalize_periodograms(self.pds, self.dt, self.N, 
+            n_ph=self.nph, norm='none', power_type='all')
+
+    def test_periodogram_wrong_type(self):
+        with pytest.raises(ValueError, match='Unrecognized power type'):
+            unnormalize_periodograms(self.pds, self.dt, self.N, 
+            n_ph=self.nph, norm='frac', power_type='None')

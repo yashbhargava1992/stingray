@@ -262,6 +262,9 @@ class TestUtils(object):
         with pytest.raises(ValueError):
             utils.get_random_state('foobar')
 
+    def test_check_allclose_and_print(self):
+        with pytest.raises(AssertionError, match="Different values in the arrays check"):
+            utils.check_allclose_and_print([1.1], [4.5], rtol=1e-05, atol=1e-08,)
 
 class TestCreateWindow(object):
     @classmethod
