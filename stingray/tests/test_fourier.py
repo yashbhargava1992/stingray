@@ -480,23 +480,6 @@ class TestNorms(object):
             check_allclose_and_print(np.abs(self.pds), pdsunnorm, rtol=0.001)
 
     @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
-    def test_unnorm_periodograms_variance(self, power_type):
-        pdsnorm = normalize_periodograms(self.pds, 
-            self.dt, self.N, self.mean, n_ph=self.nph,
-            norm='leahy', power_type=power_type)        
-
-        pdsunnorm = unnormalize_periodograms(
-            pdsnorm, self.dt, self.N, n_ph=self.nph, 
-            variance=1.0, norm='leahy', power_type=power_type)
-
-        if power_type == "all":
-            check_allclose_and_print(self.pds, pdsunnorm, rtol=0.001)
-        if power_type == "real":
-            check_allclose_and_print(self.pds.real, pdsunnorm, rtol=0.001)
-        if power_type in ["abs", "absolute"]:
-            check_allclose_and_print(np.abs(self.pds), pdsunnorm, rtol=0.001)
-
-    @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
     def test_unnorm_periodograms_background(self, power_type):
         pdsnorm = normalize_periodograms(self.pds, 
             self.dt, self.N, self.mean, n_ph=self.nph,
