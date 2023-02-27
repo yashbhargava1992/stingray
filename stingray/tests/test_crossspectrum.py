@@ -1289,9 +1289,8 @@ class TestCoherenceFunction(object):
         with pytest.warns(DeprecationWarning):
             coh = coherence(self.lc1, self.lc2)
 
-        assert len(coh) == 2
-        assert np.abs(np.mean(coh)) == 1
-
+        assert np.isclose(len(coh), 2, rtol = 0.001)
+        assert np.isclose(np.abs(np.mean(coh)), 1, rtol = 0.001)
 
 class TestTimelagFunction(object):
 
