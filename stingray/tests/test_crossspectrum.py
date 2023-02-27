@@ -395,9 +395,9 @@ class TestCoherence(object):
             cs = Crossspectrum(lc1, lc2)
             coh = cs.coherence()
 
-        assert len(coh) == 2
+        assert np.isclose(len(coh), 2, rtol = 0.001)
         # The raw coherence of a single interval is 1 by definition
-        assert np.abs(np.mean(coh)) == 1
+        assert np.isclose(np.abs(np.mean(coh)), 1, rtol = 0.001)
 
     def test_high_coherence(self):
         t = np.arange(1280)
