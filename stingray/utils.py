@@ -1139,7 +1139,9 @@ def check_allclose_and_print(v1, v2, rtol=1e-05, atol=1e-08,):
         v2 = np.asarray(v2)
         bad = np.abs(v1 - v2) >= (atol + rtol * np.abs(v2))
 
-        raise AssertionError(f'Different values in the arrays check by allclose: {v1[bad]} vs {v2[bad]}')
+        raise AssertionError(f'Different values in the arrays check by allclose: \
+                        {v1[bad]} vs {v2[bad]}, indeces are {np.where(v1[bad])}\
+                        and {np.where(v2[bad])}')
 
 @njit(nogil=True, parallel=False)
 def compute_bin(x, bin_edges):

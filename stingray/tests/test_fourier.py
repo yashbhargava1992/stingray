@@ -479,6 +479,28 @@ class TestNorms(object):
         if power_type in ["abs", "absolute"]:
             check_allclose_and_print(np.abs(self.pds), pdsunnorm, rtol=0.001)
 
+    @pytest.mark.parametrize("norm", ["leahy"])
+    @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
+    def test_unnorm_periodograms_variance(self, norm, power_type):
+        pdsnorm = normalize_periodograms(
+        self.pds, self.dt, self.N, self.mean, n_ph=self.nph,
+        norm=norm, power_type=power_type)
+
+        pdsunnorm = unnormalize_periodograms(
+        pdsnorm, self.dt, self.N, n_ph=self.nph, 
+        variance = None, norm=norm, power_type=power_type)
+ 
+        pdsunnorm_var = unnormalize_periodograms(
+        pdsnorm, self.dt, self.N, n_ph=self.nph, 
+        variance = 1.0, norm=norm, power_type=power_type)
+
+        if power_type == "all":
+            check_allclose_and_print(pdsunnorm_var, pdsunnorm, rtol=0.001)
+        if power_type == "real":
+            check_allclose_and_print(pdsunnorm_var, pdsunnorm, rtol=0.001)
+        if power_type in ["abs", "absolute"]:
+            check_allclose_and_print(pdsunnorm_var, pdsunnorm, rtol=0.001)
+
     @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
     def test_unnorm_periodograms_background(self, power_type):
         pdsnorm = normalize_periodograms(self.pds, 
@@ -489,7 +511,7 @@ class TestNorms(object):
             norm='frac', power_type=power_type)
         pdsunnorm_bkg = unnormalize_periodograms(
             pdsnorm, self.dt, self.N, n_ph=self.nph, 
-            background_flux=0.0, norm='frac', power_type=power_type)
+            background_flux=1.0, norm='frac', power_type=power_type)
         check_allclose_and_print(pdsunnorm, pdsunnorm_bkg, rtol=0.001)
 
     def test_unorm_periodogram_wrong_norm(self):

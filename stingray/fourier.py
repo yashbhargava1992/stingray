@@ -547,7 +547,7 @@ def unnormalize_periodograms(norm_power, dt, n_bin, n_ph,
     """
 
     if norm == "leahy" and variance is not None:
-        unnorm_power = norm_power * (variance * n_bin) / 2.
+        unnorm_power = norm_power * (variance * n_ph) / 2.
     elif norm == "leahy":
         unnorm_power = norm_power * n_ph / 2.
     elif norm == "frac":
