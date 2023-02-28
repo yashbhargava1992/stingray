@@ -462,7 +462,7 @@ class TestPowerspectrum(object):
             assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
     def test_fractional_rms_in_frac_norm_is_consistent_old(self):
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(DeprecationWarning, match="the option white_noise_offset"):
             time = np.arange(0, 100, 1) + 0.5
 
             poisson_counts = np.random.poisson(100.0,
@@ -504,7 +504,7 @@ class TestPowerspectrum(object):
             assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
     def test_fractional_rms_in_frac_norm_is_consistent_averaged_old(self):
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(DeprecationWarning, match="the option white_noise_offset" ):
             time = np.arange(0, 400, 1) + 0.5
 
             poisson_counts = np.random.poisson(100.0,

@@ -503,16 +503,13 @@ class TestNorms(object):
 
     @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
     def test_unnorm_periodograms_background(self, power_type):
-        pdsnorm = normalize_periodograms(self.pds, 
-            self.dt, self.N, self.mean, n_ph=self.nph,
-            norm='frac', power_type=power_type)        
-        pdsunnorm = unnormalize_periodograms(
-            pdsnorm, self.dt, self.N, n_ph=self.nph, 
-            norm='frac', power_type=power_type)
+        background = 1.0 
+        pdsnorm = normalize_frac(self.pds, self.dt, self.N, self.mean,\
+                                    background_flux=background)        
         pdsunnorm_bkg = unnormalize_periodograms(
             pdsnorm, self.dt, self.N, n_ph=self.nph, 
-            background_flux=1.0, norm='frac', power_type=power_type)
-        check_allclose_and_print(pdsunnorm, pdsunnorm_bkg, rtol=0.001)
+            background_flux=background, norm='frac', power_type=power_type)
+        check_allclose_and_print(self.pds, pdsunnorm_bkg, rtol=0.001)
 
     def test_unorm_periodogram_wrong_norm(self):
         with pytest.raises(ValueError, match='Unknown value for the norm'):
