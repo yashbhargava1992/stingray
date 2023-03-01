@@ -472,12 +472,7 @@ class TestNorms(object):
         pdsnorm, self.dt, self.N, n_ph=self.nph,
         norm=norm, power_type=power_type)
 
-        if power_type == "all":
-            check_allclose_and_print(self.pds, pdsunnorm, rtol=0.001)
-        if power_type == "real":
-            check_allclose_and_print(self.pds.real, pdsunnorm, rtol=0.001)
-        if power_type in ["abs", "absolute"]:
-            check_allclose_and_print(np.abs(self.pds), pdsunnorm, rtol=0.001)
+        check_allclose_and_print(self.pds, pdsunnorm, rtol=0.001)
 
     @pytest.mark.parametrize("norm", ["leahy"])
     @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
@@ -494,12 +489,7 @@ class TestNorms(object):
         pdsnorm, self.dt, self.N, n_ph=self.nph, 
         variance = 1.0, norm=norm, power_type=power_type)
 
-        if power_type == "all":
-            check_allclose_and_print(pdsunnorm_var, pdsunnorm, rtol=0.001)
-        if power_type == "real":
-            check_allclose_and_print(pdsunnorm_var, pdsunnorm, rtol=0.001)
-        if power_type in ["abs", "absolute"]:
-            check_allclose_and_print(pdsunnorm_var, pdsunnorm, rtol=0.001)
+        check_allclose_and_print(pdsunnorm_var, pdsunnorm, rtol=0.001)
 
     @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
     def test_unnorm_periodograms_background(self, power_type):
@@ -519,17 +509,7 @@ class TestNorms(object):
     def test_unnorm_periodogram_wrong_type(self):
         with pytest.raises(ValueError, match='Unrecognized power type'):
             unnormalize_periodograms(self.pds, self.dt, self.N, 
-            n_ph=self.nph, norm='frac', power_type='None')
-
-    def test_unnorm_periodogram_wrong_type(self):
-        with pytest.raises(ValueError, match='Unrecognized power type'):
-            unnormalize_periodograms(self.pds, self.dt, self.N, 
-            n_ph=self.nph, norm='frac', power_type='None')
-
-    def test_unnorm_periodogram_background(self):
-        with pytest.raises(ValueError, match='Unrecognized power type'):
-            unnormalize_periodograms(self.pds, self.dt, self.N, 
-            n_ph=self.nph, norm='frac', power_type='None')            
+            n_ph=self.nph, norm='frac', power_type='None')         
 
     @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
     @pytest.mark.parametrize("power_type", ["all", "real"])
