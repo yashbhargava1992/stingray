@@ -442,24 +442,24 @@ class TestPowerspectrum(object):
 
 
     def test_fractional_rms_in_frac_norm_is_consistent(self):
-            time = np.arange(0, 100, 1) + 0.5
+        time = np.arange(0, 100, 1) + 0.5
 
-            poisson_counts = np.random.poisson(100.0,
-                                            size=time.shape[0])
+        poisson_counts = np.random.poisson(100.0,
+                                        size=time.shape[0])
 
-            lc = Lightcurve(time, counts=poisson_counts, dt=1,
-                            gti=[[0, 100]])
-            ps = Powerspectrum(lc, norm="leahy")
-            rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
-                                                max_freq=ps.freq[-1],
-                                                poisson_noise_level=0)
-
-            ps = Powerspectrum(lc, norm="frac")
-            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+        lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                        gti=[[0, 100]])
+        ps = Powerspectrum(lc, norm="leahy")
+        rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
                                             max_freq=ps.freq[-1],
                                             poisson_noise_level=0)
-            assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
-            assert np.allclose(rms_err, rms_err_l, atol=0.01)
+
+        ps = Powerspectrum(lc, norm="frac")
+        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                        max_freq=ps.freq[-1],
+                                        poisson_noise_level=0)
+        assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+        assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
     def test_fractional_rms_in_frac_norm_is_consistent_old(self):
         with pytest.warns(DeprecationWarning, match="the option white_noise_offset"):
@@ -483,25 +483,25 @@ class TestPowerspectrum(object):
             assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
     def test_fractional_rms_in_frac_norm_is_consistent_averaged(self):
-            time = np.arange(0, 400, 1) + 0.5
+        time = np.arange(0, 400, 1) + 0.5
 
-            poisson_counts = np.random.poisson(100.0,
-                                            size=time.shape[0])
+        poisson_counts = np.random.poisson(100.0,
+                                        size=time.shape[0])
 
-            lc = Lightcurve(time, counts=poisson_counts, dt=1,
-                            gti=[[0, 400]])
-            ps = AveragedPowerspectrum(lc, norm="leahy", segment_size=100,
-                                    silent=True)
-            rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
-                                                max_freq=ps.freq[-1],
-                                                poisson_noise_level=0)
-
-            ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
-            rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+        lc = Lightcurve(time, counts=poisson_counts, dt=1,
+                        gti=[[0, 400]])
+        ps = AveragedPowerspectrum(lc, norm="leahy", segment_size=100,
+                                silent=True)
+        rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[1],
                                             max_freq=ps.freq[-1],
                                             poisson_noise_level=0)
-            assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
-            assert np.allclose(rms_err, rms_err_l, atol=0.01)
+
+        ps = AveragedPowerspectrum(lc, norm="frac", segment_size=100)
+        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[1],
+                                        max_freq=ps.freq[-1],
+                                        poisson_noise_level=0)
+        assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+        assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
     def test_fractional_rms_in_frac_norm_is_consistent_averaged_old(self):
         with pytest.warns(DeprecationWarning, match="the option white_noise_offset" ):
