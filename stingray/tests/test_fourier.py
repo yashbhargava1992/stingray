@@ -2,6 +2,7 @@ import os
 from pickle import FALSE
 import pytest
 from stingray.fourier import *
+from stingray.utils import check_allclose_and_print
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
@@ -358,6 +359,7 @@ class TestNorms(object):
         cls.lc = np.random.poisson(cls.mean, cls.N).astype(float)
         cls.nph = np.sum(cls.lc)
         cls.pds = (np.abs(np.fft.fft(cls.lc)) ** 2)[good]
+        cls.cross = ((np.fft.fft(cls.lc)) ** 2)[good]
         cls.lc_bksub = cls.lc - cls.mean
         cls.pds_bksub = (np.abs(np.fft.fft(cls.lc_bksub)) ** 2)[good]
         cls.lc_renorm = cls.lc / cls.mean
@@ -458,3 +460,64 @@ class TestNorms(object):
             pdsnorm = normalize_periodograms(
                 self.pds, self.var, self.N, self.mean, n_ph=self.nph, norm="asdfjlasdjf"
             )
+    
+    @pytest.mark.parametrize("norm", ["abs", "frac", "leahy", "none"])
+    @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
+    def test_unnormalize_periodogram(self, norm, power_type):
+        pdsnorm = normalize_periodograms(
+        self.pds, self.dt, self.N, self.mean, n_ph=self.nph,
+        norm=norm, power_type=power_type)
+
+        pdsunnorm = unnormalize_periodograms(
+        pdsnorm, self.dt, self.N, n_ph=self.nph,
+        norm=norm, power_type=power_type)
+
+        check_allclose_and_print(self.pds, pdsunnorm, rtol=0.001)
+
+    @pytest.mark.parametrize("norm", ["leahy"])
+    @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
+    def test_unnorm_periodograms_variance(self, norm, power_type):
+        pdsnorm = normalize_periodograms(
+        self.pds, self.dt, self.N, self.mean, n_ph=self.nph,
+        norm=norm, power_type=power_type)
+
+        pdsunnorm = unnormalize_periodograms(
+        pdsnorm, self.dt, self.N, n_ph=self.nph, 
+        variance = None, norm=norm, power_type=power_type)
+ 
+        pdsunnorm_var = unnormalize_periodograms(
+        pdsnorm, self.dt, self.N, n_ph=self.nph, 
+        variance = 1.0, norm=norm, power_type=power_type)
+
+        check_allclose_and_print(pdsunnorm_var, pdsunnorm, rtol=0.001)
+
+    @pytest.mark.parametrize("power_type", ["all", "real", 'abs'])
+    def test_unnorm_periodograms_background(self, power_type):
+        background = 1.0 
+        pdsnorm = normalize_frac(self.pds, self.dt, self.N, self.mean,\
+                                    background_flux=background)        
+        pdsunnorm_bkg = unnormalize_periodograms(
+            pdsnorm, self.dt, self.N, n_ph=self.nph, 
+            background_flux=background, norm='frac', power_type=power_type)
+        check_allclose_and_print(self.pds, pdsunnorm_bkg, rtol=0.001)
+
+    def test_unorm_periodogram_wrong_norm(self):
+        with pytest.raises(ValueError, match='Unknown value for the norm'):
+            unnormalize_periodograms(self.pds, self.dt, self.N, 
+            n_ph=self.nph, norm='wrong', power_type='all')
+
+    def test_unnorm_periodogram_wrong_type(self):
+        with pytest.raises(ValueError, match='Unrecognized power type'):
+            unnormalize_periodograms(self.pds, self.dt, self.N, 
+            n_ph=self.nph, norm='frac', power_type='None')         
+
+    @pytest.mark.parametrize("norm", ["abs", "frac", "leahy"])
+    @pytest.mark.parametrize("power_type", ["all", "real"])
+    def test_unnormalize_poisson_noise(self, norm, power_type):
+        noise = poisson_level(norm, self.meanrate, self.nph)
+        unnorm_noise = unnormalize_periodograms(
+            noise, self.dt, self.N, n_ph=self.nph,
+            norm=norm, power_type=power_type)
+        noise_notnorm = poisson_level('none', self.meanrate, self.nph)
+        
+        assert np.isclose(noise_notnorm, unnorm_noise)
