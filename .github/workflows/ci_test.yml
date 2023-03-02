@@ -28,9 +28,6 @@ jobs:
           # why it is useful.
           - os: ubuntu-latest
             python: '3.10'
-            tox_env: 'codestyle'
-          - os: ubuntu-latest
-            python: '3.10'
             tox_env: 'black'
           # Basic tests on the oldest & newest supported versions of Python,
           # recording coverage data for the latter.
