@@ -551,6 +551,9 @@ class Crossspectrum(StingrayObject):
         The number of data points/time bins in one segment of the light
         curves.
 
+    k: array of int
+        The rebinning scheme if the object has been rebinned otherwise is set to 1. 
+
     nphots1: float
         The total number of photons in light curve 1
 
@@ -601,6 +604,7 @@ class Crossspectrum(StingrayObject):
         self.dt = dt
         norm = norm.lower()
         self.norm = norm
+        self.k = 1
 
         if not good_input:
             return self._initialize_empty()
@@ -1164,6 +1168,7 @@ class Crossspectrum(StingrayObject):
         new_spec.power_err = binpower_err
         new_spec.m = nsamples * self.m
         new_spec.dt = self.dt
+        new_spec.k = nsamples
 
         if hasattr(self, "unnorm_power") and self.unnorm_power is not None:
             unnorm_power_err = None
@@ -1704,6 +1709,7 @@ class Crossspectrum(StingrayObject):
         self.m = 1
         self.n = None
         self.fullspec = None
+        self.k = 1
         return
 
 class AveragedCrossspectrum(Crossspectrum):

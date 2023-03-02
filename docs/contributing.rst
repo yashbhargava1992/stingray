@@ -11,7 +11,7 @@ We are writing Stingray to be useful to you, so if you encounter problems, have 
 The best and easiest way to get in touch with us regarding bugs and issues is the GitHub `Issues page <https://github.com/StingraySoftware/stingray/issues>`_.
 If you're not sure whether what you've encountered is a bug, if you have any questions or need advice getting some of the code to run, or would like to request a feature or suggest additions/changes, you can also contact us via the Slack group or our mailing list.
 
-Please use `this link <https://stingray-slack.herokuapp.com>`_ to join Slack or send `one of us <https://github.com/orgs/StingraySoftware/people>`_ an email to join the mailing list.
+Please use `this link <https://join.slack.com/t/stingraysoftware/shared_invite/zt-49kv4kba-mD1Y~s~rlrOOmvqM7mZugQ>`_ to join Slack or send `one of us <https://github.com/orgs/StingraySoftware/people>`_ an email to join the mailing list.
 
 Getting Involved with Development
 =================================
@@ -22,4 +22,4 @@ Then, fork the `stingray <https://github.com/StingraySoftware/stingray>`_ and `n
 Once you've familiarized yourself with the basics of Stingray, go to the `Stingray issues page <https://github.com/StingraySoftware/stingray>`_ and try to tackle one!
 Finally, you can read `these slides <https://speakerdeck.com/abigailstev/time-series-exploration-with-stingray>`_ from a talk on Stingray in 2021 at the 9th Microquasar Workshop.
 
-For organizing and coordinating the software development, we have a Slack group and a mailing list -- please use `this link <https://stingray-slack.herokuapp.com>`_ for Slack or send `one of us <https://github.com/orgs/StingraySoftware/people>`_ an email to join.
+For organizing and coordinating the software development, we have a Slack group and a mailing list -- please use `this link <https://join.slack.com/t/stingraysoftware/shared_invite/zt-49kv4kba-mD1Y~s~rlrOOmvqM7mZugQ>`_ for Slack or send `one of us <https://github.com/orgs/StingraySoftware/people>`_ an email to join.

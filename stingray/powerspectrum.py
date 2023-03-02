@@ -17,10 +17,11 @@ from stingray.utils import genDataPath
 from .events import EventList
 from .gti import cross_two_gtis
 from .lightcurve import Lightcurve
-from .fourier import avg_pds_from_iterable
+from .fourier import avg_pds_from_iterable, unnormalize_periodograms
 from .fourier import avg_pds_from_events
 from .fourier import fftfreq, fft
 from .fourier import get_flux_iterable_from_segments
+from .fourier import rms_calculation, poisson_level
 
 try:
     from tqdm import tqdm as show_progress
@@ -166,7 +167,8 @@ class Powerspectrum(Crossspectrum):
 
         return bin_ps
 
-    def compute_rms(self, min_freq, max_freq, white_noise_offset=2.):
+    def compute_rms(self, min_freq, max_freq, poisson_noise_level=None, 
+        white_noise_offset=None, deadtime=0.):
         """
         Compute the fractional rms amplitude in the power spectrum
         between two frequencies.
@@ -181,7 +183,17 @@ class Powerspectrum(Crossspectrum):
 
         Other parameters
         ----------------
-        white_noise_offset : float, default 0
+        poisson_noise_level : float, default is None
+            This is the Poisson noise level of the PDS with same 
+            normalization as the PDS. If poissoin_noise_level is None, 
+            the Poisson noise is calculated in the idealcase 
+            e.g. 2./<countrate> for fractional rms normalisation 
+            Dead time and other instrumental effects can alter it. 
+            The user can fit the Poisson noise level outside 
+            this function using the same normalisation of the PDS 
+            and it will get subtracted from powers here.
+
+        white_noise_offset : float, default None
             This is the white noise level, in Leahy normalization. In the ideal
             case, this is 2. Dead time and other instrumental effects can alter
             it. The user can fit the white noise level outside this function
@@ -199,19 +211,46 @@ class Powerspectrum(Crossspectrum):
         """
         minind = self.freq.searchsorted(min_freq)
         maxind = self.freq.searchsorted(max_freq)
-        powers = self.power[minind:maxind]
         nphots = self.nphots
-
-        if self.norm.lower() == 'leahy':
-            powers_leahy = powers.copy()
+        # distinguish the rebinned and non-rebinned case
+        if isinstance(self.m, Iterable):
+            M_freq = self.m[minind:maxind]
+            K_freq = self.k[minind:maxind]
+            freq_bins = 1
         else:
-            powers_leahy = \
-                self.unnorm_power[minind:maxind].real * 2 / nphots
+            M_freq = self.m
+            K_freq = self.k
+            freq_bins = maxind - minind
+        T = self.dt * self.n 
 
-        rms = np.sqrt(np.sum(powers_leahy - white_noise_offset) / nphots)
-        rms_err = self._rms_error(powers_leahy)
+        if  white_noise_offset is not None:
+            powers = self.power[minind:maxind]
+            warnings.warn(
+            "the option white_noise_offset now deprecated and will be "
+            "removed in the next major release. The routine"
+            "is correct only with non-rebinned power-spectra.",
+            DeprecationWarning)
 
-        return rms, rms_err
+            if self.norm.lower() == 'leahy':
+                powers_leahy = powers.copy()
+            else:
+                powers_leahy = \
+                    self.unnorm_power[minind:maxind].real * 2 / nphots
+
+            rms = np.sqrt(np.sum(powers_leahy - white_noise_offset) / nphots)
+            rms_err = self._rms_error(powers_leahy)
+            return rms, rms_err
+        
+        else:
+            if poisson_noise_level is None: 
+                poisson_noise_unnorm = poisson_level('none', n_ph=self.nphots) 
+            else:   
+                poisson_noise_unnorm = unnormalize_periodograms(poisson_noise_level, 
+                self.dt, self.n, self.nphots, norm=self.norm)
+            return rms_calculation(self.unnorm_power[minind:maxind], self.freq[minind], 
+                self.freq[maxind], self.nphots, T, M_freq, K_freq, freq_bins, 
+                poisson_noise_unnorm, deadtime)
+
 
     def _rms_error(self, powers):
         """
@@ -650,6 +689,7 @@ class Powerspectrum(Crossspectrum):
         self.nphots1 = None
         self.m = 1
         self.n = None
+        self.k = 1
         return
 
 
@@ -776,6 +816,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         self.save_all = save_all
         self.segment_size = segment_size
         self.show_progress = not silent
+        self.k = 1
 
         if not good_input:
             return self._initialize_empty()
