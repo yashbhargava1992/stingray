@@ -42,7 +42,6 @@ datadir = os.path.join(curdir, "data")
 
 
 def avg_cdf_two_spectra(x):
-
     prefac = 0.25
 
     if x >= 0:
@@ -478,7 +477,6 @@ class TestNormalization(object):
 
     @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
     def test_method_norm(self, norm):
-
         # Testing for a power spectrum of lc1
         cs1 = copy.deepcopy(self.cs)
 
@@ -514,7 +512,6 @@ class TestNormalization(object):
     @pytest.mark.parametrize("power_type", ["abs", "real", "all"])
     @pytest.mark.parametrize("norm", ["leahy", "abs", "frac", "none"])
     def test_method_norm_equivalent_old_method(self, norm, power_type):
-
         # Testing for a power spectrum of lc1
         cs1 = copy.deepcopy(self.cs)
         cs2 = copy.deepcopy(self.cs)
@@ -544,7 +541,6 @@ class TestNormalization(object):
 
     @pytest.mark.parametrize("power_type", ["all", "real", "absolute"])
     def test_norm_leahy(self, power_type):
-
         self.cs.norm = "leahy"
         self.cs_norm.norm = "leahy"
         self.cs.power_type = power_type
@@ -1260,7 +1256,6 @@ class TestAveragedCrossspectrum(object):
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
         with warnings.catch_warnings(record=True) as w:
-
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10, norm="leahy")
         maxpower = np.max(cs.power)
         assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower / 2.0)))

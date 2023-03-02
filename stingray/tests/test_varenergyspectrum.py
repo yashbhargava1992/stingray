@@ -155,7 +155,6 @@ class TestVarEnergySpectrum(object):
 class TestCountSpectrum(object):
     @classmethod
     def setup_class(cls):
-
         cls.times = [0.1, 2, 4, 5.5]
         cls.energy = [3, 5, 2, 4]
 

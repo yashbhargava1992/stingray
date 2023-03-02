@@ -358,7 +358,6 @@ class ParameterEstimation(object):
     """
 
     def __init__(self, fitmethod="BFGS", max_post=True):
-
         self.fitmethod = fitmethod
 
         self.max_post = max_post
@@ -419,7 +418,6 @@ class ParameterEstimation(object):
         i = 0
 
         while funcval == 100 or funcval == 200 or funcval == 0.0 or not np.isfinite(funcval):
-
             if i > 20:
                 raise RuntimeError("Fitting unsuccessful!")
             # perturb parameters slightly
@@ -448,7 +446,6 @@ class ParameterEstimation(object):
 
             # if max_post is True, do the Maximum-A-Posteriori Fit
             if self.max_post:
-
                 if use_bounds:
                     opt = scipy.optimize.minimize(
                         lpost,
@@ -495,7 +492,6 @@ class ParameterEstimation(object):
                         )
 
                 elif isinstance(lpost, LogLikelihood):
-
                     if use_bounds:
                         # Except this could be a `LogLikelihood object
                         # In which case, use the evaluate function
@@ -677,7 +673,6 @@ class ParameterEstimation(object):
         p0 = np.array([np.random.multivariate_normal(t0, cov) for i in range(nwalkers)])
         if pool:
             with Pool() as pooling:
-
                 # initialize the sampler
                 sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False], pool=pooling)
 
@@ -810,7 +805,6 @@ class ParameterEstimation(object):
         namestr="test",
         seed=None,
     ):
-
         """Calibrate the outcome of a Likelihood Ratio Test via MCMC.
 
         In order to compare models via likelihood ratio test, one generally
@@ -990,7 +984,6 @@ class SamplingResults(object):
     """
 
     def __init__(self, sampler, ci_min=5, ci_max=95, log=None):
-
         if log is None:
             self.log = logging.getLogger("MCMC summary")
             self.log.setLevel(logging.DEBUG)
@@ -1136,7 +1129,6 @@ class SamplingResults(object):
         return
 
     def plot_results(self, nsamples=1000, fig=None, save_plot=False, filename="test.pdf"):
-
         """
         Plot some results in a triangle plot.
         If installed, will use [corner]_
@@ -1204,7 +1196,6 @@ class SamplingResults(object):
                         ax.axis([ymin, ymax, 0, np.max(ntemp) * 1.2])
 
                     else:
-
                         ax.axis([xmin, xmax, ymin, ymax])
 
                         # make a scatter plot first
@@ -1255,7 +1246,6 @@ class PSDParEst(ParameterEstimation):
     """
 
     def __init__(self, ps, fitmethod="BFGS", max_post=True):
-
         self.ps = ps
         ParameterEstimation.__init__(self, fitmethod=fitmethod, max_post=max_post)
 
@@ -1483,7 +1473,6 @@ class PSDParEst(ParameterEstimation):
 
         # now I can loop over all simulated parameter sets to generate a PSD
         for i, s in enumerate(s_all):
-
             # generate fake PSD
             sim_ps = self._generate_data(lpost1, s, rng)
 
@@ -1533,7 +1522,6 @@ class PSDParEst(ParameterEstimation):
         namestr="test",
         seed=None,
     ):
-
         r"""
         Calibrate the highest outlier in a data set using MCMC-simulated
         power spectra.
@@ -1713,7 +1701,6 @@ class PSDParEst(ParameterEstimation):
 
         # now I can loop over all simulated parameter sets to generate a PSD
         for i, s in enumerate(s_all):
-
             # generate fake PSD
             sim_ps = self._generate_data(lpost, s, rng=rng)
 

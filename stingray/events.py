@@ -355,7 +355,6 @@ class EventList(StingrayTimeseries):
             return
 
         if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
-
             energy = np.asarray(spectrum)[0]
             fluxes = np.asarray(spectrum)[1]
 

@@ -110,7 +110,6 @@ class Powerspectrum(Crossspectrum):
     def __init__(
         self, data=None, norm="frac", gti=None, dt=None, lc=None, skip_checks=False, legacy=False
     ):
-
         self._type = None
         if lc is not None:
             warnings.warn(
@@ -842,7 +841,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         use_common_mean=True,
         legacy=False,
     ):
-
         self._type = None
         if lc is not None:
             warnings.warn(

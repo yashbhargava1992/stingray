@@ -28,7 +28,6 @@ def _pulse_phase_fast(time, f, fdot, buffer_array):
 def _folding_search(
     stat_func, times, frequencies, segment_size=np.inf, use_times=False, fdots=0, **kwargs
 ):
-
     fgrid, fdgrid = np.meshgrid(
         np.asarray(frequencies).astype(np.float64), np.asarray(fdots).astype(np.float64)
     )
@@ -53,7 +52,6 @@ def _folding_search(
                     kwargs_copy = {}
                     for key in kwargs.keys():
                         if isinstance(kwargs[key], Iterable) and len(kwargs[key]) == len(times):
-
                             kwargs_copy[key] = kwargs[key][good]
                         else:
                             kwargs_copy[key] = kwargs[key]

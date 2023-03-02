@@ -63,7 +63,6 @@ class TestAll(object):
         plt.close(fig)
 
     def test_phaseogram_mjdref(self):
-
         phaseogr, phases, times, additional_info = phaseogram(
             self.event_times,
             self.pulse_frequency,

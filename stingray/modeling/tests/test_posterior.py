@@ -255,7 +255,6 @@ class TestPSDPosterior(object):
 class TestPoissonPosterior(object):
     @classmethod
     def setup_class(cls):
-
         nx = 1000000
         cls.x = np.arange(nx)
         cls.countrate = 10.0
@@ -377,7 +376,6 @@ class TestPoissonPosterior(object):
 class TestGaussianPosterior(object):
     @classmethod
     def setup_class(cls):
-
         nx = 1000000
         cls.x = np.arange(nx)
         cls.countrate = 10.0
@@ -516,7 +514,6 @@ class TestGaussianPosterior(object):
 class TestLaplacePosterior(object):
     @classmethod
     def setup_class(cls):
-
         nx = 1000000
         cls.x = np.arange(nx)
         cls.countrate = 10.0
@@ -641,7 +638,6 @@ class TestLaplacePosterior(object):
 class TestPerPosteriorAveragedPeriodogram(object):
     @classmethod
     def setup_class(cls):
-
         cls.m = 10
         nfreq = 1000000
         freq = np.arange(nfreq)

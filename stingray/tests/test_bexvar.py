@@ -140,7 +140,6 @@ class TestInternalFunctions(object):
         cls.function_result = np.load(fname_result, allow_pickle=True)
 
     def test_lscg_gen(self):
-
         log_src_crs_grid_from_function = bexvar._lscg_gen(
             self.src_counts, self.bg_counts, self.bg_area, self.rate_conversion, 100
         )
@@ -149,7 +148,6 @@ class TestInternalFunctions(object):
         assert np.allclose(log_src_crs_grid_from_function, log_src_crs_grid_result)
 
     def test_estimate_source_cr_marginalised(self):
-
         log_src_crs_grid = self.function_result[0]
         weights_from_function = bexvar._estimate_source_cr_marginalised(
             log_src_crs_grid,
@@ -185,7 +183,6 @@ class TestInternalFunctions(object):
     @pytest.mark.skipif("_HAS_ULTRANEST")
     def test_ultranest_not_installed(self):
         with pytest.raises(ImportError) as excinfo:
-
             log_src_crs_grid = self.function_result[0]
             pdfs = self.function_result[2]
 
@@ -209,7 +206,6 @@ class TestBadValues(object):
     @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_non_integer_src_counts_warning(self):
         with pytest.warns(UserWarning) as record:
-
             signal.signal(signal.SIGALRM, timeout_handler)
 
             signal.alarm(5)

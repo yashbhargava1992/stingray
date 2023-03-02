@@ -79,7 +79,6 @@ class CrossCorrelation(object):
     """
 
     def __init__(self, lc1=None, lc2=None, cross=None, mode="same", norm="none"):
-
         self.auto = False
         self.norm = norm
         if isinstance(mode, str) is False:
@@ -113,7 +112,6 @@ class CrossCorrelation(object):
             self._make_corr(lc1, lc2)
 
     def _make_cross_corr(self, cross):
-
         """
         Do some checks on the cross spectrum supplied to the method,
         and then calculate the time shifts, time lags and cross correlation.
@@ -151,7 +149,6 @@ class CrossCorrelation(object):
         self.time_shift, self.time_lags, self.n = self.cal_timeshift(dt=self.dt)
 
     def _make_corr(self, lc1, lc2):
-
         """
         Do some checks on the light curves supplied to the method, and then calculate the time
         shifts, time lags and cross correlation.
@@ -377,6 +374,5 @@ class AutoCorrelation(CrossCorrelation):
     """
 
     def __init__(self, lc=None, mode="same"):
-
         CrossCorrelation.__init__(self, lc1=lc, lc2=lc, mode=mode)
         self.auto = True

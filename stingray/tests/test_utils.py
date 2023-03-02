@@ -73,7 +73,6 @@ class TestRebinData(object):
         assert len(xbin) == 20
 
     def test_rebin_variable_input_mean(self):
-
         x1 = np.linspace(0, 10, 11)
         x2 = np.linspace(10.33, 20.0, 30)
         x3 = np.linspace(21, 30, 10)

@@ -193,7 +193,6 @@ class TestParameterEstimation(object):
             sample_res = pe.sample(self.lpost, [2.0])
 
     def test_simulate_lrt_fails_in_superclass(self):
-
         pe = ParameterEstimation()
         with pytest.raises(NotImplementedError):
             pe.simulate_lrts(None, None, None, None, None)
@@ -279,14 +278,12 @@ class TestOptimizationResults(object):
         assert np.isclose(res.merit, test_merit, rtol=0.2)
 
     def test_compute_statistics_computes_mfit(self):
-
         assert hasattr(self.optres, "mfit") is False
         self.optres._compute_statistics(self.lpost)
 
         assert hasattr(self.optres, "mfit")
 
     def test_compute_model(self):
-
         self.optres._compute_model(self.lpost)
 
         assert hasattr(self.optres, "mfit"), (
@@ -299,7 +296,6 @@ class TestOptimizationResults(object):
         assert np.allclose(self.optres.mfit, mfit_test)
 
     def test_compute_statistics_computes_all_statistics(self):
-
         self.optres._compute_statistics(self.lpost)
 
         assert hasattr(self.optres, "merit")
@@ -345,7 +341,6 @@ class TestOptimizationResults(object):
 
     @pytest.mark.skipif("comp_hessian")
     def test_compute_covariance_without_comp_hessian(self):
-
         self.optres._compute_covariance(self.lpost, None)
         assert self.optres.cov is None
         assert self.optres.err is None
@@ -383,7 +378,6 @@ if can_sample:
 
     class SamplingResultsDummy(SamplingResults):
         def __init__(self, sampler, ci_min=0.05, ci_max=0.95, log=None):
-
             if log is None:
                 self.log = logging.getLogger("Fitting summary")
                 self.log.setLevel(logging.DEBUG)
@@ -503,7 +497,6 @@ def logger():
 class TestPSDParEst(object):
     @classmethod
     def setup_class(cls):
-
         m = 1
         nfreq = 100
         freq = np.linspace(0, 10.0, nfreq + 1)[1:]
@@ -691,7 +684,6 @@ class TestPSDParEst(object):
         assert np.absolute(delta_deviance) < 1.5e-4
 
     def test_simulate_lrts_works(self):
-
         m = 1
         nfreq = 100
         freq = np.linspace(1, 10, nfreq)
@@ -788,7 +780,6 @@ class TestPSDParEst(object):
         assert np.allclose(ps.power, sim_data.power)
 
     def test_generate_model_breaks_with_wrong_input(self):
-
         pe = PSDParEst(self.ps)
 
         with pytest.raises(AssertionError):
@@ -822,7 +813,6 @@ class TestPSDParEst(object):
             pval = pe.calibrate_lrt(self.lpost, [1, 2, 3, 4], self.lpost, [1, 2, 3])
 
     def test_calibrate_lrt_works_as_expected(self):
-
         m = 1
         df = 0.01
         freq = np.arange(df, 5 + df, df)
@@ -924,7 +914,6 @@ class TestPSDParEst(object):
         assert pval > 0.001
 
     def test_find_highest_outlier_works_as_expected(self):
-
         mp_ind = 5
         max_power = 1000.0
 
@@ -944,7 +933,6 @@ class TestPSDParEst(object):
         assert max_ind == mp_ind
 
     def test_compute_highest_outlier_works(self):
-
         mp_ind = 5
         max_power = 1000.0
 

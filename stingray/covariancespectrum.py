@@ -101,7 +101,6 @@ class Covariancespectrum(object):
     """
 
     def __init__(self, data, dt=None, band_interest=None, ref_band_interest=None, std=None):
-
         self.dt = dt
         self.std = std
 
@@ -232,7 +231,6 @@ class Covariancespectrum(object):
             lc_all = Lightcurve.make_lightcurve(toa, self.dt, tstart=self.tstart, tseg=self.tseg)
 
         else:
-
             lc_all = []
             for i, b in enumerate(self.band_interest):
                 elow = b[0]
@@ -278,7 +276,6 @@ class Covariancespectrum(object):
 
         lc_all = []
         for i, b in enumerate(self.band_interest):
-
             # initialize empty counts array
             counts = np.zeros_like(self.lcs[0].counts)
             for j in range(bounds_idx[0], bounds_idx[1], 1):
@@ -517,7 +514,6 @@ class AveragedCovariancespectrum(Covariancespectrum):
     def __init__(
         self, data, segment_size, dt=None, band_interest=None, ref_band_interest=None, std=None
     ):
-
         self.segment_size = segment_size
 
         Covariancespectrum.__init__(

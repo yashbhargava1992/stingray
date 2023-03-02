@@ -251,7 +251,6 @@ class TestChunks(object):
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
 
     def test_analyze_lc_chunks_fvar_fracstep(self):
-
         start, stop, res = self.lc.analyze_lc_chunks(20, fvar_fun, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         fvar, fvar_err = res
@@ -532,7 +531,6 @@ class TestLightcurve(object):
         _counts = [2, 2, 2, 2, 2]
 
         with pytest.raises(ValueError):
-
             lc1 = Lightcurve(self.times, self.counts)
             lc2 = Lightcurve(_times, _counts)
 
@@ -923,7 +921,6 @@ class TestLightcurve(object):
         assert np.allclose(slc[1].counts, test_counts[4:])
 
     def test_sort(self):
-
         _times = [2, 1, 3, 4]
         _counts = [40, 10, 20, 5]
         _counts_err = [4, 1, 2, 0.5]
@@ -1444,7 +1441,6 @@ class TestLightcurveRebin(object):
 class TestBexvar(object):
     @classmethod
     def setup_class(cls):
-
         fname_data = os.path.join(datadir, "LightCurve_bexvar.fits")
         lightcurve = Table.read(fname_data, hdu="RATE", format="fits")
         band = 0
@@ -1461,7 +1457,6 @@ class TestBexvar(object):
 
     @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_bexvar(self):
-
         # create lightcurve
         lc = Lightcurve(
             time=self.time,
@@ -1482,7 +1477,6 @@ class TestBexvar(object):
 
     @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_bexvar_with_dt_as_array(self):
-
         # create lightcurve with ``dt`` as an array
         lc = Lightcurve(
             time=self.time,
@@ -1508,7 +1502,6 @@ class TestBexvar(object):
 class TestArraydt(object):
     @classmethod
     def setup_class(cls):
-
         cls.times = np.array([1, 3, 4, 7])
         # setup dt as an array
         cls.dt = np.array([1, 2, 1, 3])
@@ -1556,9 +1549,7 @@ class TestArraydt(object):
         )
 
     def test_warning_when_dt_is_array(self):
-
         with pytest.warns(UserWarning) as record:
-
             _ = Lightcurve(time=self.times, counts=self.counts, dt=self.dt)
 
         assert any(

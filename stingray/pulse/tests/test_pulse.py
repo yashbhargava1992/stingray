@@ -26,7 +26,6 @@ class TestAll(object):
     @pytest.mark.remote_data
     @pytest.mark.skipif("not HAS_PINT")
     def test_pint_installed_correctly(self):
-
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=ResourceWarning)
 

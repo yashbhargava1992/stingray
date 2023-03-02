@@ -139,7 +139,6 @@ class Multitaper(Powerspectrum):
         low_bias=True,
         lombscargle=False,
     ):
-
         if lc is not None:
             warnings.warn(
                 "The lc keyword is now deprecated. Use data " "instead", DeprecationWarning
@@ -267,7 +266,6 @@ class Multitaper(Powerspectrum):
             self.unnorm_power = self.multitaper_norm_power * lc.n * 2
 
         else:
-
             self.freq, self.multitaper_norm_power = self._fourier_multitaper(
                 lc, NW=NW, adaptive=adaptive, jackknife=jackknife, low_bias=low_bias
             )
@@ -783,7 +781,6 @@ class Multitaper(Powerspectrum):
         freq_multitaper_ls = rfftfreq(n=lc.n, d=lc.dt)[1:-1]  # Avoiding zero
 
         for values in dpss_data_interpolated:
-
             psd = LombScargle(lc.time, values).power(
                 frequency=freq_multitaper_ls, normalization="psd"
             )

@@ -1882,7 +1882,6 @@ class AveragedCrossspectrum(Crossspectrum):
         legacy=False,
         skip_checks=False,
     ):
-
         self._type = None
         # for backwards compatibility
         if data1 is None:
@@ -2242,7 +2241,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
         # chop light curves into segments
         if isinstance(lc1, Lightcurve) and isinstance(lc2, Lightcurve):
-
             if self.type == "crossspectrum":
                 cs_all, nphots1_all, nphots2_all = self._make_segment_spectrum(
                     lc1, lc2, self.segment_size

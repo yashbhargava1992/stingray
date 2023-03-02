@@ -251,7 +251,6 @@ class GaussianLogLikelihood(LogLikelihood):
     """
 
     def __init__(self, x, y, yerr, model):
-
         self.x = x
         self.y = y
         self.yerr = yerr
@@ -342,7 +341,6 @@ class PoissonLogLikelihood(LogLikelihood):
     """
 
     def __init__(self, x, y, model):
-
         self.x = x
         self.y = y
         self.model = model
@@ -433,7 +431,6 @@ class PSDLogLikelihood(LogLikelihood):
     """
 
     def __init__(self, freq, power, model, m=1):
-
         LogLikelihood.__init__(self, freq, power, model)
 
         self.m = m
@@ -570,7 +567,6 @@ class LaplaceLogLikelihood(LogLikelihood):
         mean_model = self.model(self.x)
 
         with warnings.catch_warnings(record=True) as out:
-
             loglike = np.sum(-np.log(2.0 * self.yerr) - (np.abs(self.y - mean_model) / self.yerr))
 
         loglike = assign_if_not_finite(loglike, logmin)
@@ -634,7 +630,6 @@ class Posterior(object):
     """
 
     def __init__(self, x, y, model, **kwargs):
-
         self.x = x
         self.y = y
 
@@ -800,7 +795,6 @@ class PoissonPosterior(Posterior):
     """
 
     def __init__(self, x, y, model, priors=None):
-
         self.x = x
         self.y = y
 
@@ -845,7 +839,6 @@ class GaussianPosterior(Posterior):
     """
 
     def __init__(self, x, y, yerr, model, priors=None):
-
         self.loglikelihood = GaussianLogLikelihood(x, y, yerr, model)
 
         Posterior.__init__(self, x, y, model)
@@ -889,7 +882,6 @@ class LaplacePosterior(Posterior):
     """
 
     def __init__(self, x, y, yerr, model, priors=None):
-
         self.loglikelihood = LaplaceLogLikelihood(x, y, yerr, model)
 
         Posterior.__init__(self, x, y, model)

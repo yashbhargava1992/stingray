@@ -789,7 +789,6 @@ def _pavnosigfun(power, nspec):
     pn = power * nspec
 
     while m >= 0:
-
         s = 0.0
         for i in range(int(m) - 1):
             s += np.log(float(m - i))

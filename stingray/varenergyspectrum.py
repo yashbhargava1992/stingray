@@ -497,7 +497,6 @@ class RmsSpectrum(VarEnergySpectrum):
         events2=None,
         norm="frac",
     ):
-
         self.norm = norm
         VarEnergySpectrum.__init__(
             self,
@@ -512,7 +511,6 @@ class RmsSpectrum(VarEnergySpectrum):
         )
 
     def _spectrum_function(self):
-
         # Get the frequency bins to be averaged in the final results.
         good = self._get_good_frequency_bins()
         n_ave_bin = np.count_nonzero(good)
@@ -644,7 +642,6 @@ class ExcessVarianceSpectrum(VarEnergySpectrum):
         segment_size=None,
         normalization="fvar",
     ):
-
         self.normalization = normalization
         accepted_normalizations = ["fvar", "none"]
         if normalization not in accepted_normalizations:
@@ -710,7 +707,6 @@ class CountSpectrum(VarEnergySpectrum):
     """
 
     def __init__(self, events, energy_spec, use_pi=False):
-
         VarEnergySpectrum.__init__(
             self,
             events,
@@ -796,7 +792,6 @@ class LagSpectrum(VarEnergySpectrum):
         segment_size=None,
         events2=None,
     ):
-
         VarEnergySpectrum.__init__(
             self,
             events,
@@ -963,7 +958,6 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         norm="frac",
         return_complex=True,
     ):
-
         self.norm = norm
         VarEnergySpectrum.__init__(
             self,

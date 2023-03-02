@@ -114,7 +114,6 @@ class TestMultitaper(object):
 
     @pytest.mark.parametrize("lightcurve", ["lc", "lc_gauss"])
     def test_make_multitaper_var(self, lightcurve):
-
         if getattr(self, lightcurve).err_dist == "poisson":
             mtp = Multitaper(getattr(self, lightcurve))
             assert mtp.err_dist == "poisson"
@@ -302,7 +301,6 @@ class TestMultitaper(object):
 
     @pytest.mark.parametrize("norm", ["frac", "leahy", "abs", "none"])
     def test_multitaper_lombscargle_consistency(self, norm):
-
         mtp = Multitaper(self.lc, adaptive=False, norm=norm)
         mtp_ls = Multitaper(self.lc, lombscargle=True, adaptive=False, norm=norm)
 

@@ -263,7 +263,6 @@ def bexvar(time, time_del, src_counts, bg_counts=None, bg_ratio=None, frac_exp=N
     for xi, ci, bci, bgareai, rate_conversion in zip(
         time, src_counts, bg_counts, bg_area, rate_conversion
     ):
-
         pdf = _estimate_source_cr_marginalised(log_src_crs_grid, ci, bci, bgareai, rate_conversion)
         src_posteriors.append(pdf)
 

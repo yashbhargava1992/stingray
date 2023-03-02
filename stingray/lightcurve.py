@@ -227,7 +227,6 @@ class Lightcurve(StingrayTimeseries):
         header=None,
         **other_kw,
     ):
-
         StingrayTimeseries.__init__(self)
 
         if other_kw != {}:
@@ -1081,7 +1080,6 @@ class Lightcurve(StingrayTimeseries):
             second_lc = self
 
         if len(np.intersect1d(self.time, other.time) > 0):
-
             utils.simon(
                 "The two light curves have overlapping time ranges. "
                 "In the common time range, the resulting count will "
@@ -1114,7 +1112,6 @@ class Lightcurve(StingrayTimeseries):
                 counts_err[time] = first_lc.counts_err[i]
 
             for i, time in enumerate(second_lc.time):
-
                 if counts.get(time) is not None:  # Common time
                     counts[time] = (counts[time] + second_lc.counts[i]) / 2
                     counts_err[time] = np.sqrt(
@@ -1135,7 +1132,6 @@ class Lightcurve(StingrayTimeseries):
             del [counts, counts_err]
 
         else:
-
             new_time = np.concatenate([first_lc.time, second_lc.time])
             new_counts = np.concatenate([first_lc.counts, second_lc.counts])
             new_counts_err = np.concatenate([first_lc.counts_err, second_lc.counts_err])
@@ -1647,7 +1643,6 @@ class Lightcurve(StingrayTimeseries):
 
     @staticmethod
     def _from_astropy_object(ts, err_dist="poisson", skip_checks=True):
-
         if hasattr(ts, "time"):
             time = ts.time
         else:

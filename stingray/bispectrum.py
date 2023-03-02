@@ -116,7 +116,6 @@ class Bispectrum(object):
     """
 
     def __init__(self, lc, maxlag=None, window=None, scale="biased"):
-
         # Function call to create Bispectrum Object
         self._make_bispetrum(lc, maxlag, window, scale)
 
@@ -333,7 +332,6 @@ class Bispectrum(object):
         self.bispec_phase = np.angle((self.bispec))
 
     def plot_cum3(self, axis=None, save=False, filename=None):
-
         """
         Plot the 3rd order cumulant as function of time lags using ``matplotlib``.
         Plot the ``cum3`` attribute on a graph with the ``lags`` attribute on x-axis and y-axis and
@@ -374,7 +372,6 @@ class Bispectrum(object):
         return plt
 
     def plot_mag(self, axis=None, save=False, filename=None):
-
         """
         Plot the magnitude of bispectrum as function of freq using ``matplotlib``.
         Plot the ``bispec_mag`` attribute on a graph with ``freq`` attribute on the x-axis and y-axis and
@@ -416,7 +413,6 @@ class Bispectrum(object):
         return plt
 
     def plot_phase(self, axis=None, save=False, filename=None):
-
         """
         Plot the phase of bispectrum as function of freq using ``matplotlib``.
         Plot the ``bispec_phase`` attribute on a graph with ``phase`` attribute on the x-axis and

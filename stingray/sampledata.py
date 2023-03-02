@@ -5,7 +5,6 @@ import stingray.lightcurve as lightcurve
 
 
 def sample_data():
-
     """
     Import data from .txt file and return a light curve object.
 

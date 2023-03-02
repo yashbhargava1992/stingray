@@ -300,7 +300,6 @@ class TestAveragedPowerspectrumEvents(object):
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("legacy", [True, False])
     def test_leahy_correct_for_multiple(self, legacy, use_common_mean):
-
         n = 10
         lc_all = []
         for i in range(n):
@@ -951,7 +950,6 @@ class TestAveragedPowerspectrum(object):
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("legacy", [True, False])
     def test_leahy_correct_for_multiple(self, legacy, use_common_mean):
-
         n = 10
         lc_all = []
         for i in range(n):
