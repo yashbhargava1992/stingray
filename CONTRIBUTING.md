@@ -84,7 +84,7 @@ Code Reviews are super-useful: another contributor can review the code, which me
 - **Style Guide:**
     - Follow the [PEP8 style guide](https://www.python.org/dev/peps/pep-0008/). Follow the existing coding style within the sub-package and avoid changes that are purely stylistic.
     - Indentation should be **ONLY** with **four spaces** no mixing of tabs-and-spaces.
-    - Maximum line length should be **79** characters unless doing so makes the code unreadable, ugly.
+    - Maximum line length should be **100** characters unless doing so makes the code unreadable, ugly.
     - Functions and methods should be lower-case only, and separated by a `_`  in case of multiple words eg. `my_new_method`.
     - Use verbose variable names (readability > economy). Only loop iteration variables are allowed to be a single letter.
     - Classes start with an upper-case letter and use CamelCase eg. `MyNewClass`.
@@ -94,7 +94,11 @@ Code Reviews are super-useful: another contributor can review the code, which me
 
     `flake8 astropy --count --select=E101,W191,W291,W292,W293,W391,E111,E112,E113,E30,E502,E722,E901,E902,E999,F822,F823`
 
-- **Code Formatters:** The use of automatic code formatters (e.g., Black) is strongly discouraged.
+- **Code Formatters:** We follow Astropy, enforcing this style guide using the black code formatter, see [The Black Code Style](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html) for details. Please run 
+    
+    `black -l 100 stingray`
+    
+    before each commit
 - **Imports:**
     - Absolute imports are to be used in general. The exception to this is relative imports of the form `from . import modulename`, this convention makes it clearer what code is from the current sub-module as opposed to from another. It is best to use when referring to files within the same sub-module.
     - The import `numpy as np`, `import scipy as sp`, `import matplotlib as mpl`, and `import matplotlib.pyplot as plt` naming conventions should be used wherever relevant. `from packagename import *` should never be used, except as a tool to flatten the namespace of a module.
