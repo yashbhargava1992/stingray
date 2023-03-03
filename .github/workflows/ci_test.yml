@@ -26,7 +26,9 @@ jobs:
           # we select only a few, in order to conserve resources. If you add
           # an additional environment, please include a comment to indicate
           # why it is useful.
-
+          - os: ubuntu-latest
+            python: '3.10'
+            tox_env: 'black'
           # Basic tests on the oldest & newest supported versions of Python,
           # recording coverage data for the latter.
           - os: ubuntu-latest
