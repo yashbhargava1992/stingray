@@ -2,6 +2,9 @@
 History
 *******
 
+Changelog
+=========
+
 .. include:: ../CHANGELOG.rst
 
 Previous projects merged to Stingray

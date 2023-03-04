@@ -12,6 +12,7 @@ build-backend = 'setuptools.build_meta'
     directory = "docs/changes/"
     issue_format = "`#{issue} <https://github.com/StingraySoftware/stingray/pull/{issue}>`__"
     title_format = "v{version} ({project_date})"
+    underlines = "-^"
 
     [[tool.towncrier.type]]
         directory = "breaking"
