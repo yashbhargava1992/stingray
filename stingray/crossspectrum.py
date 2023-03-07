@@ -1248,7 +1248,9 @@ class Crossspectrum(StingrayObject):
         else:
             raise AttributeError("Object has no attribute named 'time_lag' !")
 
-    def plot(self, labels=None, axis=None, title=None, marker="-", save=False, filename=None):
+    def plot(
+        self, labels=None, axis=None, title=None, marker="-", save=False, filename=None, ax=None
+    ):
         """
         Plot the amplitude of the cross spectrum vs. the frequency using ``matplotlib``.
 
@@ -1275,39 +1277,45 @@ class Crossspectrum(StingrayObject):
 
         filename : str
             File name of the image to save. Depends on the boolean ``save``.
+
+        ax : ``matplotlib.Axes`` object
+            An axes object to fill with the cross correlation plot.
         """
 
-        plt.figure("crossspectrum")
-        plt.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")
-        plt.plot(
-            self.freq, np.abs(self.power.real), marker, color="r", alpha=0.5, label="Real Part"
-        )
-        plt.plot(
+        if ax is None:
+            fig = plt.figure("crossspectrum")
+            ax = fig.add_subplot(1, 1, 1)
+
+        ax.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")
+        ax.plot(self.freq, np.abs(self.power.real), marker, color="r", alpha=0.5, label="Real Part")
+        ax.plot(
             self.freq, np.abs(self.power.imag), marker, color="g", alpha=0.5, label="Imaginary Part"
         )
 
         if labels is not None:
             try:
-                plt.xlabel(labels[0])
-                plt.ylabel(labels[1])
+                ax.set_xlabel(labels[0])
+                ax.set_ylabel(labels[1])
             except IndexError:
                 simon("``labels`` must have two labels for x and y axes.")
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
-        plt.legend(loc="best")
+        ax.legend(loc="best")
+
         if axis is not None:
-            plt.axis(axis)
+            ax.set_xlim(axis[0:2])
+            ax.set_ylim(axis[2:4])
 
         if title is not None:
-            plt.title(title)
+            ax.set_title(title)
 
         if save:
             if filename is None:
-                plt.savefig("spec.png")
+                plt.gcf().savefig("spec.png")
             else:
-                plt.savefig(filename)
-        else:
-            plt.show(block=False)
+                plt.gcf().savefig(filename)
+
+        return ax
 
     def classical_significances(self, threshold=1, trial_correction=False):
         """

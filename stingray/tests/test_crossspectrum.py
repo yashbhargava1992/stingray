@@ -815,6 +815,45 @@ class TestCrossspectrum(object):
             self.cs.plot(labels=["x"])
         assert np.any(["must have two labels" in r.message.args[0] for r in record])
 
+    def test_plot_axes(self):
+        plt.subplot(211)
+        plot2 = self.cs.plot(
+            ax=plt.subplot(212), labels=("frequency", "amplitude"), title="Crossspectrum_leahy"
+        )
+        assert plt.fignum_exists(1)
+        plt.close(1)
+
+    def test_plot_labels_and_fname_for_axes(self):
+        outfname = "blabla.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+
+        plt.subplot(211)
+        plot2 = self.cs.plot(
+            ax=plt.subplot(212),
+            labels=("frequency", "amplitude"),
+            title="Crossspectrum_leahy",
+            filename=outfname,
+            save=True,
+        )
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_plot_labels_and_fname_for_axes_default(self):
+        outfname = "spec.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+
+        plt.subplot(211)
+        plot2 = self.cs.plot(
+            ax=plt.subplot(212),
+            labels=("frequency", "amplitude"),
+            title="Crossspectrum_leahy",
+            save=True,
+        )
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
     def test_rebin_error(self):
         cs = Crossspectrum()
         with pytest.raises(ValueError):
