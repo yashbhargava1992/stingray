@@ -61,7 +61,8 @@ setup_cfg = dict(conf.items('metadata'))
 # directories to ignore when looking for source files.
 exclude_patterns += ['_templates',
                      'notebooks/README.rst',
-                     'notebooks/Debug']
+                     'notebooks/Debug',
+                     'changes']
 
 # This is added to the end of RST files - a good place to put substitutions to
 # be used globally.
