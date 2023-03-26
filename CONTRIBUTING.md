@@ -96,7 +96,7 @@ Code Reviews are super-useful: another contributor can review the code, which me
 
 - **Code Formatters:** We follow Astropy, enforcing this style guide using the black code formatter, see [The Black Code Style](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html) for details. Please run 
     
-    `black -l 100 stingray`
+    `black stingray`
     
     before each commit
 - **Imports:**
