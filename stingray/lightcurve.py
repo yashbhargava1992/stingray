@@ -1918,7 +1918,14 @@ class Lightcurve(StingrayTimeseries):
                 except AttributeError:
                     continue
         for attr in array_attrs:
-            if hasattr(self, "_" + attr) or attr in ["time", "counts", "counts_err", "_time", "_counts", "_counts_err"]:
+            if hasattr(self, "_" + attr) or attr in [
+                "time",
+                "counts",
+                "counts_err",
+                "_time",
+                "_counts",
+                "_counts_err",
+            ]:
                 continue
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 setattr(new_ev, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))

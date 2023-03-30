@@ -340,8 +340,8 @@ def normalize_leahy_from_variance(unnorm_power, variance, n_bin, unnorm_power_er
         The mean variance of the light curve bins
     n_bin : int
         The number of bins in the light curve
-    unnorm_power_err: optional, error on the powers 
-        
+    unnorm_power_err: optional, error on the powers
+
     Returns
     -------
     power : `np.array` of the same kind and shape as `unnorm_power`
@@ -370,8 +370,7 @@ def normalize_leahy_from_variance(unnorm_power, variance, n_bin, unnorm_power_er
     if np.all(unnorm_power_err == 0.0):
         return unnorm_power * 2.0 / (variance * n_bin)
     else:
-        return unnorm_power * 2.0 / (variance * n_bin), \
-            unnorm_power_err * 2.0 / (variance * n_bin)
+        return unnorm_power * 2.0 / (variance * n_bin), unnorm_power_err * 2.0 / (variance * n_bin)
 
 
 def normalize_leahy_poisson(unnorm_power, n_ph):
