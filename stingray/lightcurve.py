@@ -1921,7 +1921,6 @@ class Lightcurve(StingrayTimeseries):
             if hasattr(self, "_" + attr) or attr in ["time", "counts", "counts_err", "_time", "_counts", "_counts_err"]:
                 continue
             if hasattr(self, attr) and getattr(self, attr) is not None:
-                print(attr)
                 setattr(new_ev, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
         return new_ev
 
