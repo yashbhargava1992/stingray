@@ -382,6 +382,14 @@ class TestNorms(object):
         ratio = np.mean(leahyvar / leahy)
         assert np.isclose(ratio, 1, rtol=0.01)
 
+    def test_normalize_leahy_from_variance_with_errors(self):
+        """Test that the normalize_leahy_from_variance renormalize
+        the power and the errors on the power in the same way"""
+        leahyvar, leahyvar_err = normalize_leahy_from_variance(
+            self.pds, np.var(self.lc), self.N, self.pds
+        )
+        assert np.allclose(leahyvar, leahyvar_err, rtol=0.01)
+
     def test_abs_bksub(self):
         """Test that the abs rms normalization does not change with background-subtracted lcs"""
         ratio = normalize_abs(self.pds_bksub, self.dt, self.N) / normalize_abs(
