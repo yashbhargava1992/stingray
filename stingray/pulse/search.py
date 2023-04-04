@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 __all__ = ['epoch_folding_search', 'z_n_search', 'search_best_peaks',
-           'plot_profile', 'plot_phaseogram', 'phaseogram']
+           'plot_profile', 'plot_phaseogram', 'phaseogram', 'phase_dispersion_search']
 
 
 @jit(nopython=True)

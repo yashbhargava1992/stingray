@@ -15,6 +15,7 @@ from . import HAS_PINT, get_model, toa
 
 
 __all__ = ['pulse_phase', 'phase_exposure', 'fold_events', 'ef_profile_stat',
+           'pdm_profile_stat',
            'z_n', 'fftfit', 'get_TOA', 'z_n_binned_events', 'z_n_gauss',
            'z_n_events', 'htest', 'z_n_binned_events_all', 'z_n_gauss_all',
            'z_n_events_all', 'get_orbital_correction_from_ephemeris_file']
@@ -300,8 +301,15 @@ def fold_events(times, *frequency_derivatives, **opts):
             raise ValueError("Can only calculate PDM for binned light curves!" + \
                              "`weights` attribute must be set to fluxes!")
 
-        raw_profile, bins = np.histogram(phases, weights, statistic="std",
-                                         bins=np.linspace(0, 1, nbin + 1))
+        raw_profile, bins, bin_idx = scipy.stats.binned_statistic(phases, weights, statistic="std",
+                                                         bins=np.linspace(0, 1, nbin + 1))
+
+        # numpy.std uses the biased standard deviation estimator. Need to
+        # turn into variance and then correct for N
+        _, bincounts = np.unique(bin_idx, return_counts=True)
+        raw_profile = (raw_profile**2.) * bincounts
+        # dummy array for the error, which we don't have for the variance
+        raw_profile_err = np.zeros_like(raw_profile)
 
     else:
         raise ValueError("mode can only be `ef` for Epoch Folding or " + \
@@ -339,28 +347,31 @@ def ef_profile_stat(profile, err=None):
 
 
 
-def ef_profile_stat(profile, err=None):
-    """Calculate the epoch folding statistics \'a la Leahy et al. (1983).
+def pdm_profile_stat(profile, sample_var, nbins):
+    """Calculate the phase dispersion minimization 
+    statistic following Stellingwerf (1978)
 
     Parameters
     ----------
     profile : array
-        The pulse profile
+        The PDM pulse profile (variance as a function 
+        of phase)
 
-    Other Parameters
-    ----------------
-    err : float or array
-        The uncertainties on the pulse profile
+    sample_var : float
+        The total population variance of the sample
+
+    nbins : int
+        The number of time bins in the initial time 
+        series.
 
     Returns
     -------
     stat : float
         The epoch folding statistics
     """
-    mean = np.mean(profile)
-    if err is None:
-        err = np.sqrt(mean)
-    return np.sum((profile - mean) ** 2 / err ** 2)
+    s2 = np.sum(profile) / (nbins - len(profile))
+    stat = s2 / sample_var
+    return stat
 
 
 @functools.lru_cache(maxsize=128)
