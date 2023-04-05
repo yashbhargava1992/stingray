@@ -452,6 +452,114 @@ def fold_detection_level(nbin, epsilon=0.01, ntrial=1):
     return stats.chi2.isf(epsilon.astype(np.double), nbin - 1)
 
 
+def phase_dispersion_probability(stat, nsamples, nbin, ntrial=1):
+    """Calculate the probability of a peak in a phase dispersion 
+    minimization periodogram, due to noise.
+
+    Uses the beta-distribution from Czerny-Schwarzendorf (1997).
+
+    Parameters
+    ----------
+    stat : float
+        The value of the PDM inverse peak
+
+    nsamples : int
+        The number of samples in the time series
+
+    nbin : int
+        The number of bins in the profile
+
+    Other Parameters
+    ----------------
+    ntrial : int
+        The number of trials executed to find this profile
+
+    Returns
+    -------
+    p : float
+        The probability that the profile has been produced by noise
+    """
+    d2 = nsamples - nbin 
+    d1 = nbin - 1
+    
+    beta = scipy.stats.beta(d2/2., d1/2.)
+    p1 = beta.cdf(stat)
+
+    return p_multitrial_from_single_trial(p1, ntrial)
+
+def phase_dispersion_logprobability(stat, nsamples, nbin, ntrial=1):
+    """Calculate the log-probability of a peak in a phase dispersion 
+    minimization periodogram, due to noise.
+    
+    Uses the beta-distribution from Czerny-Schwarzendorf (1997).
+
+    Parameters
+    ----------
+    stat : float
+        The value of the PDM inverse peak
+
+    nsamples : int
+        The number of samples in the time series
+
+    nbin : int
+        The number of bins in the profile
+
+    Other Parameters
+    ----------------
+    ntrial : int
+        The number of trials executed to find this profile
+
+    Returns
+    -------
+    logp : float
+        The log-probability that the profile has been produced by noise
+    """
+    d2 = nsamples - nbin
+    d1 = nbin - 1
+    
+    beta = scipy.stats.beta(d2/2., d1/2.)
+    p1 = beta.logcdf(stat)
+    
+    return _logp_multitrial_from_single_logp(p1, ntrial)
+
+
+def phase_dispersion_detection_level(nsamples, nbin, epsilon=0.01, ntrial=1):
+    """Return the detection level for a phase dispersion minimization
+    periodogram..
+
+    Parameters
+    ----------
+    nsamples : int
+        The number of time bins in the light curve
+
+    nbin : int
+        The number of bins in the profile
+
+    epsilon : float, default 0.01
+        The fractional probability that the signal has been produced
+        by noise
+
+    Other Parameters
+    ----------------
+    ntrial : int
+        The number of trials executed to find this profile
+
+    Returns
+    -------
+    detlev : float
+        The epoch folding statistics corresponding to a probability
+        epsilon * 100 % that the signal has been produced by noise
+    """
+    epsilon = p_single_trial_from_p_multitrial(epsilon, ntrial)
+
+    d2 = nsamples - nbin
+    d1 = nbin - 1
+    
+    beta = scipy.stats.beta(d2/2., d1/2.)
+
+    return beta.ppf(epsilon.astype(np.double))
+
+
 def z2_n_probability(z2, n, ntrial=1, n_summed_spectra=1):
     """Calculate the probability of a certain folded profile, due to noise.
 

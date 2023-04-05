@@ -6,6 +6,7 @@ import functools
 from collections.abc import Iterable
 import warnings
 from scipy.optimize import minimize, basinhopping
+import scipy.stats
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -237,6 +238,12 @@ def fold_events(times, *frequency_derivatives, **opts):
         Correct each bin for exposure (use when the period of the pulsar is
         comparable to that of GTIs)
 
+    mode : str, ["ef", "pdm"], default "pdm"
+        Whether to calculate the epoch folding or phase dispersion 
+        minimization folded profile. For "ef", it calculates the (weighted)
+        sum of the data points in each phase bin, for "pdm", the variance 
+        in each phase bin
+
     Returns
     -------
     phase_bins : array of floats
@@ -248,6 +255,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     profile_err : array of floats
         The uncertainties on the pulse profile
     '''
+    mode = _default_value_if_no_key(opts, "mode", "ef")
     nbin = _default_value_if_no_key(opts, "nbin", 16)
     weights = _default_value_if_no_key(opts, "weights", 1)
     # If no key is passed, *or gti is None*, defaults to the 
@@ -293,21 +301,22 @@ def fold_events(times, *frequency_derivatives, **opts):
 
         else:
             expo_norm = 1
-            raw_profile /= expo_norm
-            raw_profile_err /= expo_norm
+            raw_profile = raw_profile / expo_norm
+            raw_profile_err = raw_profile_err / expo_norm
 
     elif mode == "pdm":
         if np.allclose(weights, 1.0):
             raise ValueError("Can only calculate PDM for binned light curves!" + \
                              "`weights` attribute must be set to fluxes!")
 
-        raw_profile, bins, bin_idx = scipy.stats.binned_statistic(phases, weights, statistic="std",
-                                                         bins=np.linspace(0, 1, nbin + 1))
+        raw_profile, bins, bin_idx = scipy.stats.binned_statistic(phases, weights, statistic=np.var,
+                                                                 bins=np.linspace(0, 1, nbin + 1))
 
-        # numpy.std uses the biased standard deviation estimator. Need to
-        # turn into variance and then correct for N
+        # I need the variance uncorrected for the number of data points in each 
+        # bin, so I need to find that first, and then multiply 
         _, bincounts = np.unique(bin_idx, return_counts=True)
-        raw_profile = (raw_profile**2.) * bincounts
+        raw_profile = raw_profile * bincounts
+
         # dummy array for the error, which we don't have for the variance
         raw_profile_err = np.zeros_like(raw_profile)
 
@@ -315,8 +324,6 @@ def fold_events(times, *frequency_derivatives, **opts):
         raise ValueError("mode can only be `ef` for Epoch Folding or " + \
                          "`pdm` for Phase Dispersion Minimization!")
 
-
-    # TODO: this is wrong. Need to extend this to non-1 weights
 
     return bins[:-1] + np.diff(bins) / 2, raw_profile, \
         raw_profile_err
