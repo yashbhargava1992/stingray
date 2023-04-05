@@ -12,6 +12,9 @@ __all__ = ['p_multitrial_from_single_trial',
            'fold_profile_probability',
            'fold_profile_logprobability',
            'fold_detection_level',
+           'phase_dispersion_probability',
+           'phase_dispersion_logprobability',
+           'phase_dispersion_detection_level',
            'pds_probability',
            'pds_detection_level',
            'z2_n_detection_level',
@@ -482,7 +485,7 @@ def phase_dispersion_probability(stat, nsamples, nbin, ntrial=1):
     d2 = nsamples - nbin 
     d1 = nbin - 1
     
-    beta = scipy.stats.beta(d2/2., d1/2.)
+    beta = stats.beta(d2/2., d1/2.)
     p1 = beta.cdf(stat)
 
     return p_multitrial_from_single_trial(p1, ntrial)
@@ -517,7 +520,7 @@ def phase_dispersion_logprobability(stat, nsamples, nbin, ntrial=1):
     d2 = nsamples - nbin
     d1 = nbin - 1
     
-    beta = scipy.stats.beta(d2/2., d1/2.)
+    beta = stats.beta(d2/2., d1/2.)
     p1 = beta.logcdf(stat)
     
     return _logp_multitrial_from_single_logp(p1, ntrial)
@@ -555,7 +558,7 @@ def phase_dispersion_detection_level(nsamples, nbin, epsilon=0.01, ntrial=1):
     d2 = nsamples - nbin
     d1 = nbin - 1
     
-    beta = scipy.stats.beta(d2/2., d1/2.)
+    beta = stats.beta(d2/2., d1/2.)
 
     return beta.ppf(epsilon.astype(np.double))
 
