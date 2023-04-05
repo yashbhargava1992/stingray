@@ -381,7 +381,7 @@ class TestNorms(object):
         leahy = 2 * self.pds / np.sum(self.lc)
         ratio = np.mean(leahyvar / leahy)
         assert np.isclose(ratio, 1, rtol=0.01)
-        
+
     def test_abs_bksub(self):
         """Test that the abs rms normalization does not change with background-subtracted lcs"""
         ratio = normalize_abs(self.pds_bksub, self.dt, self.N) / normalize_abs(
