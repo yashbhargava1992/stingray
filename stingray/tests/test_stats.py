@@ -33,6 +33,19 @@ def test_fold_detection_level():
         fold_detection_level(16, 0.01, ntrial=2),
         fold_detection_level(16, epsilon_corr))
 
+def test_fold_detection_level():
+    """Test pulse phase calculation, frequency only."""
+    nsamples = 10000
+    nbin = 32
+    beta_ppf = 0.9947853493529972
+    np.testing.assert_almost_equal(phase_dispersion_detection_level(nsamples, nbin),
+                                   beta_ppf)
+    epsilon_corr = p_single_trial_from_p_multitrial(0.01, 2)
+    np.testing.assert_almost_equal(
+        phase_dispersion_detection_level(nsamples, nbin, 0.01, ntrial=2),
+        phase_dispersion_detection_level(nsamples, nbin, epsilon_corr))
+
+
 
 def test_zn_detection_level():
     np.testing.assert_almost_equal(z2_n_detection_level(2),
@@ -48,6 +61,18 @@ def test_fold_probability(ntrial):
     np.testing.assert_almost_equal(fold_profile_probability(detlev, 16,
                                                             ntrial=ntrial),
                                    0.1)
+@pytest.mark.parametrize('ntrial', [1, 10, 100, 1000, 100000])
+def test_pdm_probability(ntrial):
+
+    nsamples = 10000
+    nbin = 32
+    detec_level = 0.01
+    detlev = phase_dispersion_detection_level(nsamples, nbin, epsilon=detec_level, 
+                                              ntrial=ntrial)
+    np.testing.assert_almost_equal(phase_dispersion_probability(detlev, nsamples,
+                                                                nbin,
+                                                                ntrial=ntrial),
+                                   detec_level)
 
 
 @pytest.mark.parametrize('ntrial', [1, 10, 100, 1000, 100000])
