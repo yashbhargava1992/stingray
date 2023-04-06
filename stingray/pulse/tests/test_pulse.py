@@ -1,6 +1,7 @@
 import numpy as np
 from stingray.pulse import fold_events, get_TOA, phase_exposure
-from stingray.pulse import profile_stat, z_n, pulse_phase
+from stingray.pulse import ef_profile_stat, z_n, pulse_phase
+from stingray.pulse import pdm_profile_stat
 from stingray.pulse import z_n, z_n_events, z_n_binned_events, z_n_gauss, htest
 from stingray.pulse import z_n_events_all, z_n_binned_events_all, z_n_gauss_all
 from stingray.pulse import get_orbital_correction_from_ephemeris_file
@@ -81,7 +82,15 @@ class TestAll(object):
     def test_stat(self):
         """Test pulse phase calculation, frequency only."""
         prof = np.array([2, 2, 2, 2])
-        np.testing.assert_array_almost_equal(profile_stat(prof), 0)
+        np.testing.assert_array_almost_equal(ef_profile_stat(prof), 0)
+
+    def test_pdm_stat(self):
+        """Test pulse phase calculation, frequency only."""
+        prof = np.array([1, 1, 1, 1, 1])
+        sample_var = 2.0
+        nsample = 10
+        np.testing.assert_array_almost_equal(pdm_profile_stat(prof, sample_var, nsample), 0.5)
+
 
     def test_zn(self):
         """Test pulse phase calculation, frequency only."""

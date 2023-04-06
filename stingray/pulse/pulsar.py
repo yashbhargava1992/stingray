@@ -301,8 +301,9 @@ def fold_events(times, *frequency_derivatives, **opts):
 
         else:
             expo_norm = 1
-            raw_profile = raw_profile / expo_norm
-            raw_profile_err = raw_profile_err / expo_norm
+
+        raw_profile = raw_profile / expo_norm
+        raw_profile_err = raw_profile_err / expo_norm
 
     elif mode == "pdm":
         if np.allclose(weights, 1.0):
@@ -354,7 +355,7 @@ def ef_profile_stat(profile, err=None):
 
 
 
-def pdm_profile_stat(profile, sample_var, nbins):
+def pdm_profile_stat(profile, sample_var, nsample):
     """Calculate the phase dispersion minimization 
     statistic following Stellingwerf (1978)
 
@@ -367,7 +368,7 @@ def pdm_profile_stat(profile, sample_var, nbins):
     sample_var : float
         The total population variance of the sample
 
-    nbins : int
+    nsample : int
         The number of time bins in the initial time 
         series.
 
@@ -376,7 +377,7 @@ def pdm_profile_stat(profile, sample_var, nbins):
     stat : float
         The epoch folding statistics
     """
-    s2 = np.sum(profile) / (nbins - len(profile))
+    s2 = np.sum(profile) / (nsample - len(profile))
     stat = s2 / sample_var
     return stat
 
