@@ -1,5 +1,35 @@
-Changelog
-=========
+v1.1.1 (2022-10-10)
+-------------------
+Bug fixes
+^^^^^^^^^
+- Fixed ``white_noise_offset`` in ``compute_rms`` to 2.0, as it should be
+- Fixed a bug that produced a crash when calculating the rms in spectra corrected through the FAD technique
+- Fixed a bug that eliminated the imaginary part from cross spectra corrected with the FAD
+- Fixed a bug that considered contiguous GTIs as non-continuous (due to very small differences between stop and start of the next GTI) by allowing a small tolerance
+
+`Full list of changes`__
+
+__ https://github.com/StingraySoftware/stingray/compare/v1.1...v1.1.1
+
+
+v1.1 (2022-10-02)
+-----------------
+Bug fixes
+^^^^^^^^^
+- IMPORTANT: Fixed sign of time lags, which were calculated using the interest band as the reference.
+- Fixed an issue when the fractional exposure in FITS light curves is slightly >1 (as sometimes happens in NICER data)
+
+New
+^^^
+- Implemented the ``bexvar`` variability estimation method for light curves.
+
+Improvements
+^^^^^^^^^^^^
+- A less confusing default value of segment_size in Z searches
+
+`Full list of changes`__
+
+__ https://github.com/StingraySoftware/stingray/compare/v1.0...v1.1
 
 v1.0 (2022-03-29)
 ---------------------

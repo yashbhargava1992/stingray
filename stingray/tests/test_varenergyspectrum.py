@@ -60,8 +60,12 @@ class TestExcVarEnergySpectrum(object):
     def test_invalid_norm(self):
         with pytest.raises(ValueError):
             _ = ExcessVarianceSpectrum(
-                self.test_ev1, [0.0, 100], (0.3, 12, 5, "lin"), bin_time=1, segment_size=100,
-                normalization="asdfghjkl"
+                self.test_ev1,
+                [0.0, 100],
+                (0.3, 12, 5, "lin"),
+                bin_time=1,
+                segment_size=100,
+                normalization="asdfghjkl",
             )
 
 
@@ -151,11 +155,10 @@ class TestVarEnergySpectrum(object):
 class TestCountSpectrum(object):
     @classmethod
     def setup_class(cls):
-
         cls.times = [0.1, 2, 4, 5.5]
         cls.energy = [3, 5, 2, 4]
 
-        cls.events = EventList(time=cls.times, energy=cls.energy, pi=cls.energy, gti=[[0, 6.]])
+        cls.events = EventList(time=cls.times, energy=cls.energy, pi=cls.energy, gti=[[0, 6.0]])
 
     @pytest.mark.parametrize("use_pi", [False, True])
     def test_counts(self, use_pi):
@@ -175,8 +178,9 @@ class TestRmsAndCovSpectrum(object):
         flux = data / 40
         times = np.arange(data.size) * cls.bin_time
         gti = np.asarray([[0, data.size * cls.bin_time]])
-        test_lc = Lightcurve(times, flux, err_dist="gauss", gti=gti,
-                             dt=cls.bin_time, skip_checks=True)
+        test_lc = Lightcurve(
+            times, flux, err_dist="gauss", gti=gti, dt=cls.bin_time, skip_checks=True
+        )
 
         cls.test_ev1, cls.test_ev2 = EventList(), EventList()
         cls.test_ev1.simulate_times(test_lc)
@@ -198,7 +202,7 @@ class TestRmsAndCovSpectrum(object):
             bin_time=self.bin_time / 2,
             segment_size=200,
             norm="abs",
-            events2=self.test_ev2_small
+            events2=self.test_ev2_small,
         )
         assert np.all(np.iscomplex(spec.spectrum))
 
@@ -223,7 +227,7 @@ class TestRmsAndCovSpectrum(object):
             ref_band=[[0.3, 12]],
             bin_time=self.bin_time / 2,
             segment_size=200,
-            events2=ev2
+            events2=ev2,
         )
         good = ~np.isnan(spec.spectrum)
         assert np.count_nonzero(good) == 1
@@ -270,7 +274,7 @@ class TestRmsAndCovSpectrum(object):
             energy_spec=(0.3, 12, 2, "lin"),
             bin_time=self.bin_time / 2,
             segment_size=100,
-            norm=norm
+            norm=norm,
         )
 
         covar_cross = CovarianceSpectrum(
@@ -280,7 +284,7 @@ class TestRmsAndCovSpectrum(object):
             bin_time=self.bin_time / 2,
             segment_size=100,
             norm=norm,
-            events2=self.test_ev2
+            events2=self.test_ev2,
         )
 
         cov = covar.spectrum
@@ -305,7 +309,7 @@ class TestRmsAndCovSpectrum(object):
             bin_time=self.bin_time / 2,
             segment_size=100,
             norm=norm,
-            events2=ev2
+            events2=ev2,
         )
         rmsspec = RmsSpectrum(
             self.test_ev1,
@@ -314,7 +318,7 @@ class TestRmsAndCovSpectrum(object):
             bin_time=self.bin_time / 2,
             segment_size=100,
             norm=norm,
-            events2=ev2
+            events2=ev2,
         )
 
         cov = covar.spectrum
@@ -354,39 +358,40 @@ class TestLagEnergySpectrum(object):
         from ..simulator import Simulator
 
         dt = 0.01
-        cls.time_lag = 5.
+        cls.time_lag = 5.0
         data = np.load(os.path.join(datadir, "sample_variable_lc.npy"))
         flux = data
         times = np.arange(data.size) * dt
-        maxfreq = 0.25 / cls.time_lag
+        maxfreq = 0.15 / cls.time_lag
         roll_amount = int(cls.time_lag // dt)
         good = slice(roll_amount, roll_amount + int(200 // dt))
 
+        # When rolling, a positive delay is introduced
         rolled_flux = np.array(np.roll(flux, roll_amount))
         times, flux, rolled_flux = times[good], flux[good], rolled_flux[good]
 
         length = times[-1] - times[0]
-        test_lc1 = Lightcurve(times, flux, err_dist="gauss", dt=dt, skip_checks=True)
-        test_lc2 = Lightcurve(test_lc1.time, rolled_flux, err_dist=test_lc1.err_dist, dt=dt)
-        test_ev1, test_ev2 = EventList(), EventList()
-        test_ev1.simulate_times(test_lc1)
-        test_ev2.simulate_times(test_lc2)
+        test_ref = Lightcurve(times, flux, err_dist="gauss", dt=dt, skip_checks=True)
+        test_sub = Lightcurve(test_ref.time, rolled_flux, err_dist=test_ref.err_dist, dt=dt)
+        test_ref_ev, test_sub_ev = EventList(), EventList()
+        test_ref_ev.simulate_times(test_ref)
+        test_sub_ev.simulate_times(test_sub)
 
-        test_ev1.energy = np.random.uniform(0.3, 9, len(test_ev1.time))
-        test_ev2.energy = np.random.uniform(9, 12, len(test_ev2.time))
+        test_sub_ev.energy = np.random.uniform(0.3, 9, len(test_sub_ev.time))
+        test_ref_ev.energy = np.random.uniform(9, 12, len(test_ref_ev.time))
 
         cls.lag = LagEnergySpectrum(
-            test_ev1,
-            freq_interval=[0, maxfreq],
+            test_sub_ev,
+            freq_interval=[maxfreq / 2, maxfreq],
             energy_spec=(0.3, 9, 1, "lin"),
             ref_band=[9, 12],
             bin_time=dt / 2,
             segment_size=length,
-            events2=test_ev2,
+            events2=test_ref_ev,
         )
 
         # Make single event list
-        test_ev = test_ev1.join(test_ev2)
+        test_ev = test_sub_ev.join(test_ref_ev)
 
         cls.lag_same = LagEnergySpectrum(
             test_ev,
@@ -420,7 +425,7 @@ class TestLagEnergySpectrum(object):
         assert np.all(np.isnan(lag.spectrum_error))
 
 
-class TestRoundTrip():
+class TestRoundTrip:
     @classmethod
     def setup_class(cls):
         tstart = 0.0
@@ -455,7 +460,7 @@ class TestRoundTrip():
         with pytest.raises(NotImplementedError):
             so.from_astropy_table(ts)
 
-    @pytest.mark.skipif('not _HAS_XARRAY')
+    @pytest.mark.skipif("not _HAS_XARRAY")
     def test_xarray_export(self):
         so = self.vespec
         ts = so.to_xarray()
@@ -463,7 +468,7 @@ class TestRoundTrip():
         with pytest.raises(NotImplementedError):
             so.from_xarray(ts)
 
-    @pytest.mark.skipif('not _HAS_PANDAS')
+    @pytest.mark.skipif("not _HAS_PANDAS")
     def test_pandas_export(self):
         so = self.vespec
         ts = so.to_pandas()
@@ -471,7 +476,7 @@ class TestRoundTrip():
         with pytest.raises(NotImplementedError):
             so.from_pandas(ts)
 
-    @pytest.mark.skipif('not _HAS_H5PY')
+    @pytest.mark.skipif("not _HAS_H5PY")
     def test_hdf_export(self):
         so = self.vespec
         so.write("dummy.hdf5")

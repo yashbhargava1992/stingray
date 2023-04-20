@@ -61,7 +61,8 @@ setup_cfg = dict(conf.items('metadata'))
 # directories to ignore when looking for source files.
 exclude_patterns += ['_templates',
                      'notebooks/README.rst',
-                     'notebooks/Debug']
+                     'notebooks/Debug',
+                     'changes']
 
 # This is added to the end of RST files - a good place to put substitutions to
 # be used globally.
@@ -105,6 +106,8 @@ release = package.__version__
 # a list of builtin themes. To override the custom theme, set this to the
 # name of a builtin theme or the name of a custom theme in html_theme_path.
 # html_theme = None
+html_static_path = ["_static"]
+html_css_files = ["css/custom.css"]
 
 html_theme_options = {
     'logotext1': 'Sting',  # white,  semi-bold
@@ -114,7 +117,8 @@ html_theme_options = {
 
 extensions += [
     'matplotlib.sphinxext.plot_directive', 'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon', 'nbsphinx'
+    'sphinx.ext.napoleon', 'nbsphinx', 
+    'IPython.sphinxext.ipython_console_highlighting'
 ]
 
 # Custom sidebar templates, maps document names to template names.
@@ -127,7 +131,7 @@ extensions += [
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-# html_favicon = ''
+html_favicon = "images/stingray_logo.ico"
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
