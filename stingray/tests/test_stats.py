@@ -227,6 +227,15 @@ class TestClassicalSignificances(object):
         p = fold_profile_probability(stat, nbin)
         assert np.allclose(logp, np.log(p))
 
+
+    @pytest.mark.parametrize("nbin", [8, 16, 23, 72])
+    def test_compare_pdm_logprob_with_prob(self, nbin):
+        nsamples = 10000
+        stat = np.random.uniform(5, 200, 5)
+        logp = phase_dispersion_logprobability(stat, nsamples, nbin)
+        p = phase_dispersion_probability(stat, nsamples, nbin)
+        assert np.allclose(logp, np.log(p))
+
     @pytest.mark.parametrize("n", [2, 16, 23, 72])
     def test_compare_z2n_logprob_with_prob(self, n):
         stat = np.random.uniform(5, 200, 5)
