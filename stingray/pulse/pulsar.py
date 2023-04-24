@@ -227,6 +227,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     ----------
     times : array of floats
         Photon arrival times, or, if `weights` is set,
+        time stamps of a light curve. 
 
     f, fdot, fddot... : float
         The frequency and any number of derivatives.
@@ -250,7 +251,7 @@ def fold_events(times, *frequency_derivatives, **opts):
         Correct each bin for exposure (use when the period of the pulsar is
         comparable to that of GTIs)
 
-    mode : str, ["ef", "pdm"], default "pdm"
+    mode : str, ["ef", "pdm"], default "ef"
         Whether to calculate the epoch folding or phase dispersion
         minimization folded profile. For "ef", it calculates the (weighted)
         sum of the data points in each phase bin, for "pdm", the variance

@@ -200,6 +200,34 @@ class TestAll(object):
         expected_err[-1] = 2  # Because of the change of exposure
         np.testing.assert_array_almost_equal(pe, expected_err)
 
+    def test_pulse_profile_pdm(self):
+        nbin = 16
+        dt = 1 / (2*nbin)
+        times = np.arange(0, 2 - dt, dt)
+        counts = np.random.normal(3, 0.5, size=len(times))
+        gti = np.array([[-0.5 * dt, 2 - dt]])
+        bins, profile, prof_err = fold_events(times, 1, nbin=nbin, weights=counts, 
+                                              mode="pdm")
+        assert np.all(prof_err == 0)
+
+    def test_mode_incorrect(self):
+        nbin = 16
+        dt = 1 / nbin
+        times = np.arange(0, 2 - dt, dt)
+        counts = np.random.normal(3, 0.5, size=len(times))
+        gti = np.array([[-0.5 * dt, 2 - dt]])
+
+        wrong_mode = "blarg"
+        with pytest.raises(ValueError) as excinfo:
+             fold_events(times, 1, nbin=nbin, weights=counts, mode=wrong_mode)
+
+    def test_pdm_fails_without_weights(self):
+        nbin = 16
+        dt = 1 / nbin
+        times = np.arange(0, 2 - dt, dt)
+        with pytest.raises(ValueError) as excinfo:
+             fold_events(times, 1, nbin=nbin, mode="pdm")
+
     def test_zn_2(self):
         with pytest.warns(DeprecationWarning) as record:
             np.testing.assert_almost_equal(z_n(np.arange(1), n=1, norm=1), 2)

@@ -33,7 +33,7 @@ def test_fold_detection_level():
     )
 
 
-def test_fold_detection_level():
+def test_pdm_detection_level():
     """Test pulse phase calculation, frequency only."""
     nsamples = 10000
     nbin = 32
