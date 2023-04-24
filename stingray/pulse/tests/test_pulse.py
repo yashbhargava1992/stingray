@@ -202,12 +202,11 @@ class TestAll(object):
 
     def test_pulse_profile_pdm(self):
         nbin = 16
-        dt = 1 / (2*nbin)
+        dt = 1 / (2 * nbin)
         times = np.arange(0, 2 - dt, dt)
         counts = np.random.normal(3, 0.5, size=len(times))
         gti = np.array([[-0.5 * dt, 2 - dt]])
-        bins, profile, prof_err = fold_events(times, 1, nbin=nbin, weights=counts, 
-                                              mode="pdm")
+        bins, profile, prof_err = fold_events(times, 1, nbin=nbin, weights=counts, mode="pdm")
         assert np.all(prof_err == 0)
 
     def test_mode_incorrect(self):
@@ -219,14 +218,14 @@ class TestAll(object):
 
         wrong_mode = "blarg"
         with pytest.raises(ValueError) as excinfo:
-             fold_events(times, 1, nbin=nbin, weights=counts, mode=wrong_mode)
+            fold_events(times, 1, nbin=nbin, weights=counts, mode=wrong_mode)
 
     def test_pdm_fails_without_weights(self):
         nbin = 16
         dt = 1 / nbin
         times = np.arange(0, 2 - dt, dt)
         with pytest.raises(ValueError) as excinfo:
-             fold_events(times, 1, nbin=nbin, mode="pdm")
+            fold_events(times, 1, nbin=nbin, mode="pdm")
 
     def test_zn_2(self):
         with pytest.warns(DeprecationWarning) as record:

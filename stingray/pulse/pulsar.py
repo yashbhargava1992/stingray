@@ -227,7 +227,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     ----------
     times : array of floats
         Photon arrival times, or, if `weights` is set,
-        time stamps of a light curve. 
+        time stamps of a light curve.
 
     f, fdot, fddot... : float
         The frequency and any number of derivatives.
