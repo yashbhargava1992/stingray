@@ -227,7 +227,6 @@ class TestClassicalSignificances(object):
         p = fold_profile_probability(stat, nbin)
         assert np.allclose(logp, np.log(p))
 
-
     @pytest.mark.parametrize("nbin", [8, 16, 23, 72])
     def test_compare_pdm_logprob_with_prob(self, nbin):
         nsamples = 10000
