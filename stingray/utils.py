@@ -149,6 +149,26 @@ __all__ = [
 ]
 
 
+@njit
+def is_sorted(array):
+    """Check if an array is sorted.
+
+    Parameters
+    ----------
+    array : iterable
+        The array to be checked
+
+    Returns
+    -------
+    is_sorted : bool
+        True if the array is sorted, False otherwise
+    """
+    for i in prange(len(array) - 1):
+        if array[i] > array[i + 1]:
+            return False
+    return True
+
+
 def _root_squared_mean(array):
     array = np.asarray(array)
     return np.sqrt(np.sum(array**2)) / array.size
