@@ -1,0 +1,1 @@
+Add is_sorted function, to test if an array is sorted.
