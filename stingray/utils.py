@@ -149,9 +149,38 @@ __all__ = [
 ]
 
 
-@njit
 def is_sorted(array):
     """Check if an array is sorted.
+
+    Checks if an array has extended precision before calling the
+    ``is_sorted`` numba-compiled function.
+
+    Parameters
+    ----------
+    array : iterable
+        The array to be checked
+
+    Returns
+    -------
+    is_sorted : bool
+        True if the array is sorted, False otherwise
+    """
+    # Test if array is an extended precision float
+
+    array = np.asarray(array)
+    if isinstance(array[0], np.longdouble) and not array.dtype == "float64":
+        array = array.astype(float)
+    return _is_sorted(array)
+
+
+@njit
+def _is_sorted(array):
+    """Check if an array is sorted.
+
+    .. note::
+        The array cannot have extended precision.
+        This function should always be wrapped into a function that
+        checks the type of the array and converts it to float if needed.
 
     Parameters
     ----------
