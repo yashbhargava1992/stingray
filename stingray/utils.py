@@ -169,20 +169,24 @@ def is_sorted(array):
     """
 
     array = np.asarray(array)
+    # If the array is empty or has only one element, it is sorted
     if array.size <= 1:
         return True
 
+    # If Numba is not installed, use numpy's implementation
+    if not HAS_NUMBA:
+        return np.all(np.diff(array) >= 0)
     # Test if value is compatible with Numba's type system
     try:
-        _is_sorted(array[:2])
+        _is_sorted_numba(array[:2])
     except NumbaValueError:
         array = array.astype(float)
 
-    return _is_sorted(array)
+    return _is_sorted_numba(array)
 
 
 @njit()
-def _is_sorted(array):
+def _is_sorted_numba(array):
     """Check if an array is sorted.
 
     .. note::
