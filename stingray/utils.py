@@ -46,8 +46,10 @@ try:
 
     HAS_NUMBA = True
     from numba import njit, prange, vectorize, float32, float64, int32, int64
+    from numba.core.errors import NumbaValueError
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
+    NumbaValueError = Exception
 
     class jit(object):
         def __init__(self, *args, **kwargs):
@@ -165,17 +167,21 @@ def is_sorted(array):
     is_sorted : bool
         True if the array is sorted, False otherwise
     """
-    # Test if array is an extended precision float
 
     array = np.asarray(array)
     if array.size <= 1:
         return True
-    if isinstance(array[0], np.longdouble) and not array.dtype == "float64":
+
+    # Test if value is compatible with Numba's type system
+    try:
+        _is_sorted(array[:2])
+    except NumbaValueError:
         array = array.astype(float)
+
     return _is_sorted(array)
 
 
-@njit
+@njit()
 def _is_sorted(array):
     """Check if an array is sorted.
 
