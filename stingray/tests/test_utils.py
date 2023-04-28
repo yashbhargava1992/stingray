@@ -398,5 +398,11 @@ def test_is_sorted(kind):
     input_array = kind([1, 2, 3, 4, 5])
     input_array_unsrt = kind([1, 2, 3, 5, 4])
 
-    assert utils.is_sorted(input_array) is True
-    assert utils.is_sorted(input_array_unsrt) is False
+    assert utils.is_sorted(input_array)
+    assert not utils.is_sorted(input_array_unsrt)
+
+
+def test_is_sorted_no_array():
+    input_array = 1.0
+
+    assert utils.is_sorted(input_array)

@@ -168,6 +168,8 @@ def is_sorted(array):
     # Test if array is an extended precision float
 
     array = np.asarray(array)
+    if array.size <= 1:
+        return True
     if isinstance(array[0], np.longdouble) and not array.dtype == "float64":
         array = array.astype(float)
     return _is_sorted(array)
