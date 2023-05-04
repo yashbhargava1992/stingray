@@ -34,6 +34,7 @@ from stingray.utils import (
     poisson_symmetrical_errors,
     simon,
     interpret_times,
+    is_sorted,
 )
 from stingray.io import lcurve_from_fits
 from stingray import bexvar
@@ -523,8 +524,7 @@ class Lightcurve(StingrayTimeseries):
             raise ValueError("There are inf or NaN values in " "your counts array!")
 
         logging.info("Checking if light curve is sorted.")
-        dt_array = np.diff(time)
-        unsorted = np.any(dt_array < 0)
+        unsorted = not is_sorted(time)
 
         if unsorted:
             logging.warning("The light curve is unsorted.")

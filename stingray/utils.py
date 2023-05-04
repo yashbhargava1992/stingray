@@ -46,8 +46,10 @@ try:
 
     HAS_NUMBA = True
     from numba import njit, prange, vectorize, float32, float64, int32, int64
+    from numba.core.errors import NumbaValueError
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
+    NumbaValueError = Exception
 
     class jit(object):
         def __init__(self, *args, **kwargs):
@@ -147,6 +149,65 @@ __all__ = [
     "find_nearest",
     "genDataPath",
 ]
+
+
+def is_sorted(array):
+    """Check if an array is sorted.
+
+    Checks if an array has extended precision before calling the
+    ``is_sorted`` numba-compiled function.
+
+    Parameters
+    ----------
+    array : iterable
+        The array to be checked
+
+    Returns
+    -------
+    is_sorted : bool
+        True if the array is sorted, False otherwise
+    """
+
+    array = np.asarray(array)
+    # If the array is empty or has only one element, it is sorted
+    if array.size <= 1:
+        return True
+
+    # If Numba is not installed, use numpy's implementation
+    if not HAS_NUMBA:
+        return np.all(np.diff(array) >= 0)
+    # Test if value is compatible with Numba's type system
+    try:
+        _is_sorted_numba(array[:2])
+    except NumbaValueError:
+        array = array.astype(float)
+
+    return _is_sorted_numba(array)
+
+
+@njit()
+def _is_sorted_numba(array):
+    """Check if an array is sorted.
+
+    .. note::
+        The array cannot have extended precision.
+        This function should always be wrapped into a function that
+        checks the type of the array and converts it to float if needed.
+
+    Parameters
+    ----------
+    array : iterable
+        The array to be checked
+
+    Returns
+    -------
+    is_sorted : bool
+        True if the array is sorted, False otherwise
+    """
+    for i in prange(len(array) - 1):
+        if array[i] > array[i + 1]:
+            return False
+    return True
 
 
 def _root_squared_mean(array):
