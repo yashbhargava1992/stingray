@@ -787,7 +787,7 @@ def _als(y, lam, p, niter=10):
     from scipy import sparse
 
     L = len(y)
-    
+
     indptr = np.arange(0, L - 1, dtype=np.int32) * 3
     indices = np.vstack(
         (np.arange(0, L - 2).T, np.arange(0, L - 2).T + 1, np.arange(0, L - 2).T + 2)
