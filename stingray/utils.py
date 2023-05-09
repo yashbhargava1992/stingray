@@ -788,12 +788,13 @@ def _als(y, lam, p, niter=10):
 
     L = len(y)
     
-    # use the sparse matrix construction to make the difference matrix.
-    indptr = np.arange(0,L-1,dtype=np.int32)*3
-    indices = np.vstack((np.arange(0,L-2).T, np.arange(0,L-2).T+1, np.arange(0,L-2).T+2)).T.flatten()
-    data = np.tile([1, -2, 1], L-2)
-    D = sparse.csc_matrix((data, indices, indptr), shape=(L, L-2))
-    
+    indptr = np.arange(0, L - 1, dtype=np.int32) * 3
+    indices = np.vstack(
+        (np.arange(0, L - 2).T, np.arange(0, L - 2).T + 1, np.arange(0, L - 2).T + 2)
+    ).T.flatten()
+    data = np.tile([1, -2, 1], L - 2)
+    D = sparse.csc_matrix((data, indices, indptr), shape=(L, L - 2))
+
     w = np.ones(L)
     for _ in range(niter):
         W = sparse.spdiags(w, 0, L, L)
