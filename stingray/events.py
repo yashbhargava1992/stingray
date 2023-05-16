@@ -563,7 +563,7 @@ class EventList(StingrayTimeseries):
             )
             fmt = format_
 
-        if fmt.lower() in ("hea", "ogip"):
+        if fmt is not None and fmt.lower() in ("hea", "ogip"):
             evtdata = load_events_and_gtis(filename, **kwargs)
 
             evt = EventList(
