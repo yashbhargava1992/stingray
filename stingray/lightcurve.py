@@ -1761,7 +1761,7 @@ class Lightcurve(StingrayTimeseries):
             plt.show(block=False)
 
     @classmethod
-    def read(cls, filename, fmt=None, format_=None, err_dist="gauss", skip_checks=False):
+    def read(cls, filename, fmt=None, err_dist="gauss", skip_checks=False):
         """
         Read a :class:`Lightcurve` object from file.
 
@@ -1804,12 +1804,6 @@ class Lightcurve(StingrayTimeseries):
         -------
         lc : :class:`Lightcurve` object
         """
-        if fmt is None and format_ is not None:
-            warnings.warn(
-                "The format_ keyword for read and write is deprecated. " "Use fmt instead",
-                DeprecationWarning,
-            )
-            fmt = format_
 
         if fmt is not None and fmt.lower() in ("hea", "ogip"):
             data = lcurve_from_fits(filename)

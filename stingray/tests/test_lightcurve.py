@@ -1095,13 +1095,6 @@ class TestLightcurve(object):
         assert np.isclose(lc.countrate[0], ctrate)
         assert np.isclose(lc.mjdref, 55197.00076601852)
 
-    def test_io_warns(self):
-        lc = Lightcurve(self.times, self.counts)
-        with pytest.warns(DeprecationWarning):
-            lc.write("lc.pickle", format_="pickle")
-        with pytest.warns(DeprecationWarning):
-            lc.read("lc.pickle", format_="pickle")
-
     @pytest.mark.skipif("not _HAS_YAML")
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
