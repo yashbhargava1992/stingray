@@ -149,9 +149,9 @@ def _check_isallfinite_numba(array):
 
     Examples
     --------
-    >>> check_isallfinite([1, 2, 3])
+    >>> _check_isallfinite_numba([1, 2, 3])
     True
-    >>> check_isallfinite([1, np.inf, 3])
+    >>> _check_isallfinite_numba([1, np.inf, 3])
     False
     """
     for a in array:
