@@ -35,38 +35,14 @@ from stingray.utils import (
     simon,
     interpret_times,
     is_sorted,
+    check_isallfinite,
 )
 from stingray.io import lcurve_from_fits
 from stingray import bexvar
-from stingray.base import HAS_NUMBA, njit, prange
 
 __all__ = ["Lightcurve"]
 
 valid_statistics = ["poisson", "gauss", None]
-
-
-@njit
-def _check_isallfinite_numba(array):
-    """Check if all elements of an array are finite.
-
-    This is faster than ``np.isfinite`` for large arrays, because it
-    exits at the first occurrence of a non-finite value.
-    """
-    for i in prange(len(array)):
-        if not np.isfinite(array[i]):
-            return False
-        return True
-
-
-def check_isallfinite(array):
-    """Check if all elements of an array are finite.
-
-    Calls ``_check_isallfinite_numba`` if numba is installed, otherwise
-    it uses ``np.isfinite``.
-    """
-    if HAS_NUMBA:
-        return _check_isallfinite_numba(array)
-    return np.all(np.isfinite(array))
 
 
 class Lightcurve(StingrayTimeseries):
