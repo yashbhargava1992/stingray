@@ -527,6 +527,8 @@ class Lightcurve(StingrayTimeseries):
         nonfinite = []
 
         for arr, name in zip([time, counts, err], ["time", "counts", "err"]):
+            if arr is None:
+                continue
             if not check_isallfinite(arr):
                 nonfinite_flag = True
                 if mask is None or (not check_isallfinite(arr[mask])):

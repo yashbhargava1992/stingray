@@ -147,10 +147,10 @@ def _check_isallfinite_numba(array):
     This is faster than ``np.isfinite`` for large arrays, because it
     exits at the first occurrence of a non-finite value.
     """
-    for i in prange(len(array)):
-        if not np.isfinite(array[i]):
+    for a in array:
+        if not np.isfinite(a):
             return False
-        return True
+    return True
 
 
 def check_isallfinite(array):
@@ -160,7 +160,12 @@ def check_isallfinite(array):
     it uses ``np.isfinite``.
     """
     if HAS_NUMBA:
-        return _check_isallfinite_numba(array)
+        # Numba is very picky about the type of the input array. If an exception
+        # occurs in the numba-compiled function, use the default Numpy implementation.
+        try:
+            return _check_isallfinite_numba(np.asarray(array))
+        except Exception:
+            pass
     return np.all(np.isfinite(array))
 
 
