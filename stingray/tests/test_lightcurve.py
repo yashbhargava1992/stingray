@@ -345,16 +345,23 @@ class TestLightcurve(object):
         counts = [2, 2, np.nan, 2, 2]
         counts_err = [1, 2, 3, np.nan, 2]
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Nonfinite values inside GTIs in counts"):
             lc = Lightcurve(times, counts)
 
         with pytest.raises(ValueError):
-            lc = Lightcurve(times, [2] * 5, err=counts_err)
+            lc = Lightcurve(
+                times, [2] * 5, err=counts_err, match="Nonfinite values inside GTIs in counts_err"
+            )
+
+        with pytest.warns(
+            UserWarning, match="There are non-finite points in the data, but they are outside GTIs."
+        ):
+            lc = Lightcurve(times, counts, gti=[[0.5, 2.5]])
 
         times[2] = np.inf
 
-        with pytest.raises(ValueError):
-            lc = Lightcurve(times, [2] * 5)
+        with pytest.raises(ValueError, match="Nonfinite values inside GTIs in time, counts"):
+            lc = Lightcurve(times, counts)
 
     def test_n(self):
         lc = Lightcurve(self.times, self.counts)

@@ -539,7 +539,7 @@ class Lightcurve(StingrayTimeseries):
             raise ValueError(f"Nonfinite values inside GTIs in {label}")
 
         if nonfinite_flag:
-            logging.warning("There are non-finite points in the data, but they are outside GTIs. ")
+            warnings.warn("There are non-finite points in the data, but they are outside GTIs. ")
 
         logging.info("Checking if light curve is sorted.")
         unsorted = not is_sorted(time)
