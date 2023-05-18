@@ -1779,7 +1779,9 @@ class Lightcurve(StingrayTimeseries):
             plt.show(block=False)
 
     @classmethod
-    def read(cls, filename, fmt=None, err_dist="gauss", skip_checks=False):
+    def read(
+        cls, filename, fmt=None, format_=None, err_dist="gauss", skip_checks=False, **fits_kwargs
+    ):
         """
         Read a :class:`Lightcurve` object from file.
 
@@ -1817,6 +1819,9 @@ class Lightcurve(StingrayTimeseries):
             error bars, if any.
         skip_checks : bool
             See :class:`Lightcurve` documentation
+        **fits_kwargs : additional keyword arguments
+            Any other arguments to be passed to `lcurve_from_fits` (only relevant
+            for hea/ogip formats)
 
         Returns
         -------
@@ -1824,7 +1829,7 @@ class Lightcurve(StingrayTimeseries):
         """
 
         if fmt is not None and fmt.lower() in ("hea", "ogip"):
-            data = lcurve_from_fits(filename)
+            data = lcurve_from_fits(filename, **fits_kwargs)
             data.update({"err_dist": err_dist, "skip_checks": skip_checks})
             return Lightcurve(**data)
 
