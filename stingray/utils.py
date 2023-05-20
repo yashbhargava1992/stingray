@@ -40,7 +40,6 @@ except ImportError:
 
 # If numba is installed, import jit. Otherwise, define an empty decorator with
 # the same name.
-HAS_NUMBA = False
 try:
     from numba import jit
 
@@ -49,36 +48,25 @@ try:
     from numba.core.errors import NumbaValueError
 except ImportError:
     warnings.warn("Numba not installed. Faking it")
+    HAS_NUMBA = False
     NumbaValueError = Exception
 
-    class jit(object):
-        def __init__(self, *args, **kwargs):
-            pass
+    def njit(f=None, *args, **kwargs):
+        def decorator(func, *a, **kw):
+            return func
 
-        def __call__(self, func):
-            def wrapped_f(*args, **kwargs):
-                return func(*args, **kwargs)
+        if callable(f):
+            return f
+        else:
+            return decorator
 
-            return wrapped_f
+    jit = njit
 
-    class njit(object):
-        def __init__(self, *args, **kwargs):
-            pass
+    def vectorize(*args, **kwargs):
+        def decorator(func, *a, **kw):
+            return np.vectorize(func)
 
-        def __call__(self, func):
-            def wrapped_f(*args, **kwargs):
-                return func(*args, **kwargs)
-
-            return wrapped_f
-
-    class vectorize(object):
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def __call__(self, func):
-            wrapped_f = np.vectorize(func)
-
-            return wrapped_f
+        return decorator
 
     def generic(x, y=None):
         return None
