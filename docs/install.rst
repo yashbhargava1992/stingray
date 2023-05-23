@@ -3,7 +3,6 @@ Dependencies
 A **minimal installation** of Stingray requires the following dependencies:
 
 + astropy>=4.0
-+ six
 + numpy>=1.17.0
 + scipy>=1.1.0
 + matplotlib>=3.0,!=3.4.0
@@ -43,10 +42,11 @@ For development work, you will need the following extra libraries:
 + jupyter
 + notebook
 + towncrier<22.12.0
++ black
 
 Which can be installed with the following command:
 
-    $ pip install pytest pytest-astropy jinja2<=3.0.0 docutils sphinx-astropy nbsphinx pandoc ipython jupyter notebook towncrier<22.12.0 tox
+    $ pip install pytest pytest-astropy jinja2<=3.0.0 docutils sphinx-astropy nbsphinx pandoc ipython jupyter notebook towncrier<22.12.0 tox black
 
 Downloading and Installing Stingray
 ===================================
