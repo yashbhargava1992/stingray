@@ -406,3 +406,24 @@ def test_is_sorted_no_array():
     input_array = 1.0
 
     assert utils.is_sorted(input_array)
+
+
+@utils.njit()
+def bla_1():
+    return
+
+
+@utils.njit
+def bla_2():
+    return
+
+
+@utils.vectorize(["float64(float64)"])
+def bla_3(j):
+    return j
+
+
+def test_numba_compiled_or_mocked():
+    bla_1()
+    bla_2()
+    bla_3(1.0)
