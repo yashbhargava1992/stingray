@@ -136,7 +136,53 @@ __all__ = [
     "nearest_power_of_two",
     "find_nearest",
     "genDataPath",
+    "check_isallfinite",
 ]
+
+
+@njit
+def _check_isallfinite_numba(array):
+    """Check if all elements of an array are finite.
+
+    This is faster than ``np.isfinite`` for large arrays, because it
+    exits at the first occurrence of a non-finite value.
+
+    Examples
+    --------
+    >>> _check_isallfinite_numba(np.array([1., 2., 3.]))
+    True
+    >>> _check_isallfinite_numba(np.array([1., np.inf, 3.]))
+    False
+    """
+    for a in array:
+        if not np.isfinite(a):
+            return False
+    return True
+
+
+def check_isallfinite(array):
+    """Check if all elements of an array are finite.
+
+    Calls ``_check_isallfinite_numba`` if numba is installed, otherwise
+    it uses ``np.isfinite``.
+
+    Examples
+    --------
+    >>> check_isallfinite([1, 2, 3])
+    True
+    >>> check_isallfinite([1, np.inf, 3])
+    False
+    >>> check_isallfinite([1, np.nan, 3])
+    False
+    """
+    if HAS_NUMBA:
+        # Numba is very picky about the type of the input array. If an exception
+        # occurs in the numba-compiled function, use the default Numpy implementation.
+        try:
+            return _check_isallfinite_numba(np.asarray(array))
+        except Exception:
+            pass
+    return np.all(np.isfinite(array))
 
 
 def is_sorted(array):
