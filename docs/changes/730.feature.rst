@@ -1,1 +1,0 @@
-Check if invalid data are inside GTIs, and warn or raise exception accordingly

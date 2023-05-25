@@ -1,1 +1,0 @@
-Avoid allocation of an unneeded square matrix to improve memory management in ``_als`` (fix Issue 724)

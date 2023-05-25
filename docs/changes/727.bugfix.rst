@@ -1,1 +1,0 @@
-Fix Issue #726 -- Loading events without fmt keyword crashes
