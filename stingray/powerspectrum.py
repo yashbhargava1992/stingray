@@ -210,6 +210,14 @@ class Powerspectrum(Crossspectrum):
         """
         minind = self.freq.searchsorted(min_freq)
         maxind = self.freq.searchsorted(max_freq)
+        min_freq = self.freq[minind]
+
+        # To avoid corner case of searchsorted, where maxind goes out of the array
+        if maxind >= len(self.freq) - 1:
+            max_freq = self.freq[maxind - 1]
+        else:
+            max_freq = self.freq[maxind]
+
         nphots = self.nphots
         # distinguish the rebinned and non-rebinned case
         if isinstance(self.m, Iterable):
@@ -249,8 +257,8 @@ class Powerspectrum(Crossspectrum):
                 )
             return rms_calculation(
                 self.unnorm_power[minind:maxind],
-                self.freq[minind],
-                self.freq[maxind],
+                min_freq,
+                max_freq,
                 self.nphots,
                 T,
                 M_freq,

@@ -524,6 +524,22 @@ class TestPowerspectrum(object):
         assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
         assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none"])
+    def test_fractional_rms_in_frac_norm_is_consistent_averaged_freq_range(self, norm):
+        time = np.arange(0, 400, 1) + 0.5
+
+        data = np.load(os.path.join(datadir, "sample_variable_lc.npy"))[:400] * 1000
+        poisson_counts = np.random.poisson(data)
+
+        lc = Lightcurve(time, counts=poisson_counts, dt=1, gti=[[0, 400]])
+        ps = AveragedPowerspectrum(lc, norm="leahy", segment_size=100, silent=True)
+        rms_ps_l, rms_err_l = ps.compute_rms(min_freq=ps.freq[5], max_freq=ps.freq[-5])
+
+        ps = AveragedPowerspectrum(lc, norm=norm, segment_size=100)
+        rms_ps, rms_err = ps.compute_rms(min_freq=ps.freq[5], max_freq=ps.freq[-5])
+        assert np.allclose(rms_ps, rms_ps_l, atol=0.01)
+        assert np.allclose(rms_err, rms_err_l, atol=0.01)
+
     def test_fractional_rms_in_frac_norm_is_consistent_averaged_old(self):
         with pytest.warns(DeprecationWarning, match="the option white_noise_offset"):
             time = np.arange(0, 400, 1) + 0.5
