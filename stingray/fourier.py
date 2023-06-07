@@ -1,15 +1,19 @@
 import copy
 import warnings
 from collections.abc import Iterable
+from typing import Optional
 
 import numpy as np
 from astropy.table import Table
+from astropy.timeseries.periodograms.lombscargle.implementations.utils import trig_sum
 
+from .events import EventList
 from .gti import (
     generate_indices_of_segment_boundaries_binned,
     generate_indices_of_segment_boundaries_unbinned,
 )
-from .utils import histogram, show_progress, sum_if_not_none_or_initialize, fft, fftfreq
+from .lightcurve import Lightcurve
+from .utils import fft, fftfreq, histogram, show_progress, sum_if_not_none_or_initialize
 
 
 def positive_fft_bins(n_bin, include_zero=False):
@@ -1985,3 +1989,89 @@ def avg_cs_from_events(
     if results is not None:
         results.meta["gti"] = gti
     return results
+
+
+def lsft_fast(lc: Lightcurve, w0, df, Nf):
+    # Work in Progress
+    y = lc.counts
+    t = lc.time
+    dy = lc.counts_err
+    weights = dy**-2.0
+    weights /= weights.sum()
+
+    Sh, Ch = trig_sum(t, weights * t, df=df, N=Nf, use_fft=True)
+    S2, C2 = trig_sum(t, weights, freq_factor=2, df=df, N=Nf, use_fft=True)
+
+
+def lsft_slow(
+    lc: Lightcurve,
+    ww: np.ndarray,
+    sign: Optional[int] = 1,
+    fullspec: Optional[bool] = False,
+):
+    """
+    Calculates the Lomb-Scargle Fourier transform of a light curve.
+
+    Parameters
+    ----------
+    lc : :class:`stingray.lightcurve.Lightcurve`
+        A light curve object.
+
+    freqs : numpy.ndarray
+        An array of frequencies at which the transform is sampled.
+
+    sign : int, optional, default: 1
+        The sign of the fourier transform. 1 implies positive sign and -1 implies negative sign.
+
+    fullspec : bool, optional, default: False
+        Return LSFT values for full frequency array (True) or just positive frequencies (False).
+
+    Returns
+    -------
+    ft_res : numpy.ndarray
+        An array of Fourier transformed data.
+    """
+    if sign not in [1, -1]:
+        raise ValueError("sign must be 1 or -1")
+
+    const1 = 1 / np.sqrt(2)
+    const2 = const1 * sign
+
+    xx = lc.counts
+    sum_xx = np.sum(xx)
+    t = lc.time
+
+    num_xt = len(xx)
+    num_ww = len(ww)
+
+    ft_real = ft_imag = np.zeros((num_ww))
+    ft_res = np.zeros((num_ww), dtype=np.complex128)
+    for i in range(num_ww):
+        if i == 0:
+            ft_real = sum_xx / np.sqrt(num_xt)
+            ft_imag = 0
+            phase_this = 0
+        else:
+            wrun = ww[i] * 2 * np.pi
+
+            csum = np.sum(np.cos(2.0 * wrun * t))
+            ssum = np.sum(np.sin(2.0 * wrun * t))
+
+            watan = np.arctan2(ssum, csum)
+            wtau = 0.5 * watan
+
+            sumr = np.sum(np.multiply(xx, np.cos(wrun * t - wtau)))
+            sumi = np.sum(np.multiply(xx, np.sin(wrun * t - wtau)))
+
+            scos2 = np.sum((np.power(np.cos(wrun * t - wtau), 2)))
+            ssin2 = np.sum((np.power(np.sin(wrun * t - wtau), 2)))
+
+            ft_real = np.multiply(const1, np.divide(sumr, np.sqrt(scos2)))
+            ft_imag = np.multiply(const2, np.divide(sumi, np.sqrt(ssin2)))
+            phase_this = wtau - wrun * t[0]
+        work = np.multiply(np.complex128(complex(ft_real, ft_imag)), np.exp(1j * phase_this))
+        ft_res[i] = work
+    if fullspec:
+        return ft_res
+    else:
+        return ft_res[ww > 0]
