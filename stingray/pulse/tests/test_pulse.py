@@ -4,7 +4,7 @@ from stingray.pulse import ef_profile_stat, z_n, pulse_phase
 from stingray.pulse import pdm_profile_stat
 from stingray.pulse import z_n, z_n_events, z_n_binned_events, z_n_gauss, htest
 from stingray.pulse import z_n_events_all, z_n_binned_events_all, z_n_gauss_all
-from stingray.pulse import get_orbital_correction_from_ephemeris_file
+from stingray.pulse import get_orbital_correction_from_ephemeris_file, p_to_f
 from stingray.pulse import HAS_PINT
 import pytest
 import os
@@ -14,6 +14,11 @@ import matplotlib.pyplot as plt
 
 def _template_fun(phase, ph0, amplitude, baseline=0):
     return baseline + amplitude * np.cos((phase - ph0) * 2 * np.pi)
+
+
+def test_p_to_f_warns():
+    with pytest.warns(UserWarning, match="Derivatives above third are not supported"):
+        assert np.allclose(p_to_f(1, 2, 3, 4, 32, 22), [1, -2, 5, -16, 0, 0])
 
 
 class TestAll(object):
