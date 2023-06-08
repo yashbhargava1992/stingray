@@ -681,9 +681,10 @@ class ParameterEstimation(object):
 
                 sampler.reset()
 
+                state = emcee.State(pos, prob, random_state=state)
                 # do the actual MCMC run
-                _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
 
+                _ = sampler.run_mcmc(initial_state=state, nsteps=niter)
         else:
             # initialize the sampler
             sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False])
@@ -692,9 +693,10 @@ class ParameterEstimation(object):
             pos, prob, state = sampler.run_mcmc(p0, burnin)
 
             sampler.reset()
+            state = emcee.State(pos, prob, random_state=state)
 
             # do the actual MCMC run
-            _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
+            _ = sampler.run_mcmc(initial_state=state, nsteps=niter)
 
         res = SamplingResults(sampler)
 
