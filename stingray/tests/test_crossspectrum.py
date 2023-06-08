@@ -970,11 +970,8 @@ class TestAveragedCrossspectrum(object):
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, tend]], dt=dt)
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
 
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns(UserWarning, match="The large_data option and the save_all"):
             self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, save_all=True)
-        assert np.any(
-            ["The large_data option and the save_all" in r.message.args[0] for r in record]
-        )
 
     @pytest.mark.parametrize("skip_checks", [True, False])
     def test_initialize_empty(self, skip_checks):
