@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.stats
 import os
+import warnings
 import logging
 
 from astropy.tests.helper import pytest
@@ -165,9 +166,12 @@ class TestParameterEstimation(object):
         pe = ParameterEstimation()
         if os.path.exists("test_corner.pdf"):
             os.unlink("test_corner.pdf")
-        sample_res = pe.sample(
-            self.lpost, [2.0], nwalkers=50, niter=10, burnin=50, print_results=True, plot=True
-        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            sample_res = pe.sample(
+                self.lpost, [2.0], nwalkers=50, niter=10, burnin=50, print_results=True, plot=True
+            )
 
         assert os.path.exists("test_corner.pdf")
         assert sample_res.acceptance > 0.25
@@ -179,7 +183,7 @@ class TestParameterEstimation(object):
     #        pe = ParameterEstimation()
     #        if os.path.exists("test_corner.pdf"):
     #            os.unlink("test_corner.pdf")
-    #        with catch_warnings(RuntimeWarning):
+    #        with pytest.warns(RuntimeWarning):
     #            sample_res = pe.sample(self.lpost, [2.0], nwalkers=50, niter=10,
     #                                   burnin=50, print_results=True, plot=True,
     #                                   pool=True)
@@ -448,7 +452,9 @@ if can_sample:
                 cls.nwalkers, len(res.p_opt), cls.lpost, args=[False]
             )
 
-            _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
 
         def test_can_sample_is_true(self):
             assert can_sample
@@ -894,19 +900,21 @@ class TestPSDParEst(object):
 
         pe = PSDParEst(ps)
 
-        pval = pe.calibrate_lrt(
-            lpost,
-            [2.0],
-            lpost2,
-            [2.0, 1.0, 2.0],
-            sample=None,
-            max_post=True,
-            nsim=10,
-            nwalkers=10,
-            burnin=10,
-            niter=10,
-            seed=100,
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            pval = pe.calibrate_lrt(
+                lpost,
+                [2.0],
+                lpost2,
+                [2.0, 1.0, 2.0],
+                sample=None,
+                max_post=True,
+                nsim=10,
+                nwalkers=10,
+                burnin=10,
+                niter=10,
+                seed=100,
+            )
 
         assert pval > 0.001
 
