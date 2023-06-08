@@ -761,8 +761,8 @@ class Crossspectrum(StingrayObject):
             Two light curves used for computing the cross spectrum.
         """
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
-            self.pds1 = Crossspectrum(lc1, lc1, norm=self.norm)
-            self.pds2 = Crossspectrum(lc2, lc2, norm=self.norm)
+            self.pds1 = Crossspectrum(lc1, lc1, norm=self.norm, legacy=True, skip_checks=True)
+            self.pds2 = Crossspectrum(lc2, lc2, norm=self.norm, legacy=True, skip_checks=True)
 
     def _make_crossspectrum(self, lc1, lc2, fullspec=False):
         """
@@ -2067,6 +2067,8 @@ class AveragedCrossspectrum(Crossspectrum):
                 fullspec=self.fullspec,
                 save_all=self.save_all,
                 silent=not self.show_progress,
+                legacy=True,
+                skip_checks=True,
             )
 
             self.pds2 = AveragedCrossspectrum(
@@ -2080,6 +2082,8 @@ class AveragedCrossspectrum(Crossspectrum):
                 fullspec=self.fullspec,
                 save_all=self.save_all,
                 silent=not self.show_progress,
+                legacy=True,
+                skip_checks=True,
             )
 
     def _make_segment_spectrum(self, lc1, lc2, segment_size, silent=False):
