@@ -8,7 +8,7 @@ np.seterr("warn")
 
 from scipy.special import gamma as scipy_gamma
 from scipy.special import gammaln as scipy_gammaln
-from astropy.modeling.fitting import _fitter_to_model_params
+from astropy.modeling.fitting import fitter_to_model_params
 from astropy.modeling import models
 
 from stingray import Lightcurve, Powerspectrum
@@ -288,7 +288,7 @@ class GaussianLogLikelihood(LogLikelihood):
         if np.size(pars) != self.npar:
             raise IncorrectParameterError("Input parameters must" + " match model parameters!")
 
-        _fitter_to_model_params(self.model, pars)
+        fitter_to_model_params(self.model, pars)
 
         mean_model = self.model(self.x)
 
@@ -376,7 +376,7 @@ class PoissonLogLikelihood(LogLikelihood):
         if np.size(pars) != self.npar:
             raise IncorrectParameterError("Input parameters must" + " match model parameters!")
 
-        _fitter_to_model_params(self.model, pars)
+        fitter_to_model_params(self.model, pars)
 
         mean_model = self.model(self.x)
 
@@ -466,7 +466,7 @@ class PSDLogLikelihood(LogLikelihood):
         if np.size(pars) != self.npar:
             raise IncorrectParameterError("Input parameters must" + " match model parameters!")
 
-        _fitter_to_model_params(self.model, pars)
+        fitter_to_model_params(self.model, pars)
 
         mean_model = self.model(self.x)
 
@@ -562,7 +562,7 @@ class LaplaceLogLikelihood(LogLikelihood):
         if np.size(pars) != self.npar:
             raise IncorrectParameterError("Input parameters must" + " match model parameters!")
 
-        _fitter_to_model_params(self.model, pars)
+        fitter_to_model_params(self.model, pars)
 
         mean_model = self.model(self.x)
 
