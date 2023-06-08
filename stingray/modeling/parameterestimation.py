@@ -1724,9 +1724,8 @@ class PSDParEst(ParameterEstimation):
 
             try:
                 res = parest_sim.fit(sim_lpost, t0, neg=True)
-                max_y_all[i], maxfreq, maxind = self._compute_highest_outlier(
-                    sim_lpost, res, nmax=1
-                )
+                max_y, maxfreq, maxind = self._compute_highest_outlier(sim_lpost, res, nmax=1)
+                max_y_all[i] = max_y[0]
             except RuntimeError:
                 logging.warning("Fitting unsuccessful! " "Skipping this simulation!")
                 continue
