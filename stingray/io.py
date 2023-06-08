@@ -213,7 +213,7 @@ def _case_insensitive_search_in_list(string, list_of_strings):
     return None
 
 
-def _get_additional_data(lctable, additional_columns):
+def _get_additional_data(lctable, additional_columns, warn_if_missing=True):
     """Get additional data from a FITS data table.
 
     Parameters
@@ -222,6 +222,11 @@ def _get_additional_data(lctable, additional_columns):
         Data table
     additional_columns: list of str
         List of column names to retrieve from the table
+
+    Other parameters
+    ----------------
+    warn_if_missing: bool, default True
+        Warn if a column is not found
 
     Returns
     -------
@@ -236,7 +241,8 @@ def _get_additional_data(lctable, additional_columns):
             if key is not None:
                 additional_data[a] = np.array(lctable.field(key))
             else:
-                warnings.warn("Column " + a + " not found")
+                if warn_if_missing:
+                    warnings.warn("Column " + a + " not found")
                 additional_data[a] = np.zeros(len(lctable))
 
     return additional_data
@@ -660,10 +666,11 @@ def load_events_and_gtis(
     if pi_col not in additional_columns:
         additional_columns.append(pi_col)
     # If data were already calibrated, use this!
-    if "energy" not in additional_columns:
-        additional_columns.append("energy")
-
     additional_data = _get_additional_data(datatable, additional_columns)
+    if "energy" not in additional_columns:
+        additional_data.update(_get_additional_data(datatable, ["energy"], warn_if_missing=False))
+    del additional_columns
+
     hdulist.close()
     # Sort event list
     if not is_sorted(ev_list):
