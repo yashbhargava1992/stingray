@@ -347,7 +347,7 @@ class TestLightcurve(object):
         with pytest.raises(ValueError, match="Nonfinite values inside GTIs in counts"):
             lc = Lightcurve(times, counts)
 
-        with pytest.raises(ValueError, match="Nonfinite values inside GTIs in counts_err"):
+        with pytest.raises(ValueError, match="Nonfinite values inside GTIs in err"):
             lc = Lightcurve(times, [2] * 5, err=counts_err)
 
         with pytest.warns(
@@ -690,12 +690,18 @@ class TestLightcurve(object):
         lc1 = Lightcurve(self.times + shift, self.counts, gti=self.gti + shift, mjdref=57000)
         lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
 
-        with pytest.warns(UserWarning, match="MJDref is different in the two light curves"):
-            with pytest.warns(
-                UserWarning, match="The two light curves have overlapping time ranges"
-            ):
-                newlc = lc1.join(lc2)
-                # The join operation *averages* the overlapping arrays
+        with pytest.warns(UserWarning) as record:
+            newlc = lc1.join(lc2)
+        assert np.any(
+            ["MJDref is different in the two light curves" in r.message.args[0] for r in record]
+        )
+        assert np.any(
+            [
+                "The two light curves have overlapping time ranges" in r.message.args[0]
+                for r in record
+            ]
+        )
+        # The join operation *averages* the overlapping arrays
         assert np.allclose(newlc.counts, lc1.counts)
 
     def test_sum_with_different_mjdref(self):
@@ -1481,15 +1487,19 @@ class TestBexvar(object):
     @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_bexvar_with_dt_as_array(self):
         # create lightcurve with ``dt`` as an array
-        lc = Lightcurve(
-            time=self.time,
-            counts=self.src_counts,
-            dt=self.time_delta,
-            gti=[[self.time[0], self.time[-1]]],
-            bg_counts=self.bg_counts,
-            bg_ratio=self.bg_ratio,
-            frac_exp=self.frac_exp,
-        )
+        with pytest.warns(
+            UserWarning,
+            match="Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable",
+        ):
+            lc = Lightcurve(
+                time=self.time,
+                counts=self.src_counts,
+                dt=self.time_delta,
+                gti=[[self.time[0], self.time[-1]]],
+                bg_counts=self.bg_counts,
+                bg_ratio=self.bg_ratio,
+                frac_exp=self.frac_exp,
+            )
 
         # provide time intervals externally to find bexvar
         log_cr_sigma_from_method = lc.bexvar()
@@ -1527,41 +1537,44 @@ class TestArraydt(object):
         bg_ratio = np.array([1, 1, 0.5, 1])
         frac_exp = np.array([1, 1, 1, 1])
         gti = np.array([[0.5, 4.5]])
-        lc = Lightcurve(
-            time=times,
-            counts=counts,
-            dt=dt,
-            err=counts_err,
-            gti=gti,
-            bg_counts=bg_counts,
-            bg_ratio=bg_ratio,
-            frac_exp=frac_exp,
-        )
+        with pytest.warns(
+            UserWarning,
+            match="Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable",
+        ):
+            lc = Lightcurve(
+                time=times,
+                counts=counts,
+                dt=dt,
+                err=counts_err,
+                gti=gti,
+                bg_counts=bg_counts,
+                bg_ratio=bg_ratio,
+                frac_exp=frac_exp,
+            )
 
         # demonstrate that we can create a Lightcurve object with dt being an array of floats
         # and without explicitly providing gtis.
 
-        lc = Lightcurve(
-            time=times,
-            counts=counts,
-            dt=dt,
-            err=counts_err,
-            bg_counts=bg_counts,
-            bg_ratio=bg_ratio,
-            frac_exp=frac_exp,
-        )
+        with pytest.warns(
+            UserWarning,
+            match="Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable",
+        ):
+            lc = Lightcurve(
+                time=times,
+                counts=counts,
+                dt=dt,
+                err=counts_err,
+                bg_counts=bg_counts,
+                bg_ratio=bg_ratio,
+                frac_exp=frac_exp,
+            )
 
     def test_warning_when_dt_is_array(self):
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns(
+            UserWarning,
+            match="Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable",
+        ):
             _ = Lightcurve(time=self.times, counts=self.counts, dt=self.dt)
-
-        assert any(
-            [
-                "Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable"
-                in r.message.args[0]
-                for r in record
-            ]
-        )
 
     def test_truncate_by_index_when_dt_is_array(self):
         """
