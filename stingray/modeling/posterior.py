@@ -8,7 +8,12 @@ np.seterr("warn")
 
 from scipy.special import gamma as scipy_gamma
 from scipy.special import gammaln as scipy_gammaln
-from astropy.modeling.fitting import fitter_to_model_params
+
+try:
+    from astropy.modeling.fitting import fitter_to_model_params
+except ImportError:
+    from astropy.modeling.fitting import _fitter_to_model_params as fitter_to_model_params
+
 from astropy.modeling import models
 
 from stingray import Lightcurve, Powerspectrum

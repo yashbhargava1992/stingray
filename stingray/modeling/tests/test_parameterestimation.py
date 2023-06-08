@@ -6,7 +6,11 @@ import logging
 
 from astropy.tests.helper import pytest
 from astropy.modeling import models
-from astropy.modeling.fitting import fitter_to_model_params
+
+try:
+    from astropy.modeling.fitting import fitter_to_model_params
+except ImportError:
+    from astropy.modeling.fitting import _fitter_to_model_params as fitter_to_model_params
 
 from stingray import Powerspectrum, AveragedPowerspectrum
 from stingray.modeling import ParameterEstimation, PSDParEst, OptimizationResults, SamplingResults

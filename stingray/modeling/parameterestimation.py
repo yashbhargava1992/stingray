@@ -38,8 +38,12 @@ try:
 except ImportError:
     comp_hessian = False
 
+try:
+    from astropy.modeling.fitting import fitter_to_model_params
+except ImportError:
+    from astropy.modeling.fitting import _fitter_to_model_params as fitter_to_model_params
+
 from astropy.modeling.fitting import (
-    fitter_to_model_params,
     _model_to_fit_params,
     _validate_model,
     _convert_input,
