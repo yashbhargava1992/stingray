@@ -900,14 +900,13 @@ def get_orbital_correction_from_ephemeris_file(
     from scipy.interpolate import interp1d
     from astropy import units
 
-    simon(
-        "Assuming events are already referred to the solar system " "barycenter (timescale is TDB)"
-    )
     if not HAS_PINT:
         raise ImportError(
             "You need the optional dependency PINT to use this "
             "functionality: github.com/nanograv/pint"
         )
+
+    simon("Assuming events are already referred to the solar system barycenter (timescale is TDB)")
 
     mjds = np.linspace(mjdstart, mjdstop, ntimes)
     toalist = _load_and_prepare_TOAs(mjds, ephem=ephem)

@@ -64,8 +64,7 @@ class TestAll(object):
 
         mjdstart, mjdstop = mjds[0] - 1, mjds[-1] + 1
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
+        with pytest.warns(UserWarning, match="Assuming events are already referred to "):
             correction_sec, correction_mjd, model = get_orbital_correction_from_ephemeris_file(
                 mjdstart, mjdstop, parfile, ntimes=1000, return_pint_model=True
             )
