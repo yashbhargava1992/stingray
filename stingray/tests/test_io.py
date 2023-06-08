@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 
 from astropy.tests.helper import pytest
+from astropy.utils.exceptions import AstropyUserWarning
 
 from ..io import split_numbers
 from ..io import ref_mjd
@@ -55,7 +56,7 @@ class TestIO(object):
         f = path / "xselect.mdb"
         f.write_text("MAXI:submkey       NONE\nMAXI:instkey       INSTRUME")
 
-        monkeypatch.setenv("HEADAS", tmp_path)
+        monkeypatch.setenv("HEADAS", str(tmp_path))
 
         info = read_mission_info()
         assert "NUSTAR" not in info
@@ -70,7 +71,8 @@ class TestIO(object):
     def test_event_file_read_and_automatic_sort(self):
         """Test event file reading."""
         fname = os.path.join(datadir, "monol_testA_calib.evt")
-        evdata = load_events_and_gtis(fname)
+        with pytest.warns(AstropyUserWarning, match="No extensions found with a"):
+            evdata = load_events_and_gtis(fname)
         fname_unsrt = os.path.join(datadir, "monol_testA_calib_unsrt.evt")
         with pytest.warns(UserWarning, match="not sorted. Sorting them for you"):
             evdata_unsrt = load_events_and_gtis(fname_unsrt)
@@ -91,7 +93,8 @@ class TestIO(object):
     def test_event_file_read_additional_energy_cal(self):
         """Test event file reading."""
         fname = os.path.join(datadir, "monol_testA_calib.evt")
-        vals = load_events_and_gtis(fname, additional_columns=["energy"])
+        with pytest.warns(AstropyUserWarning, match="No extensions found with a"):
+            vals = load_events_and_gtis(fname, additional_columns=["energy"])
         # These energies were calibrated with a different calibration than
         # returned from rough_calibration, on purpose! (notice the +1.)
         assert np.allclose(vals.energy_list, vals.pi_list * 0.04 + 1.6 + 1.0)
