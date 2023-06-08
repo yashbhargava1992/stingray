@@ -109,9 +109,14 @@ class TestCoherence(object):
         P2 = np.array([482751.0])
         P1noise = 495955
         P2noise = 494967
-
         coh = raw_coherence(C, P1, P2, P1noise, P2noise, 499, 1)
-        coh_sngl = raw_coherence(C[0], P1[0], P2[0], P1noise, P2noise, 499, 1)
+
+        # The warning is only raised when one gives a single value for power.
+        with pytest.warns(
+            UserWarning,
+            match="Negative numerator in raw_coherence calculation. Setting bias term to 0",
+        ):
+            coh_sngl = raw_coherence(C[0], P1[0], P2[0], P1noise, P2noise, 499, 1)
         assert np.allclose(coh, (C * np.conj(C)).real / (P1 * P2))
         assert np.isclose(coh_sngl, (C * np.conj(C)).real[0] / (P1[0] * P2[0]))
 

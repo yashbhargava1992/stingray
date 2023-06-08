@@ -91,7 +91,7 @@ def fake_qpo(
 class TestCCF(object):
     @classmethod
     def setup_class(cls):
-        total_length = 10000
+        total_length = 16000
         f_qpo = 1.5
         cls.dt = 1 / f_qpo / 40
         approx_Q = 10
@@ -154,8 +154,8 @@ class TestCCF(object):
         rebin_log_factor = 0.4
 
         acs = AveragedCrossspectrum(
-            lc1=ci_lc,
-            lc2=self.ref_lc,
+            data1=ci_lc,
+            data2=self.ref_lc,
             segment_size=self.n_seconds,
             norm="leahy",
             power_type="absolute",
