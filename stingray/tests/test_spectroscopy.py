@@ -17,6 +17,8 @@ from astropy.table import Table, Column
 
 from os import remove
 
+np.random.seed(123412525)
+
 
 def random_walk(n, step):
     """
@@ -181,10 +183,11 @@ class TestCCF(object):
         ref_ps_rebinned_rms = spec.compute_rms(
             ref_ps_rebinned, ref_ps_rebinned_result_model, criteria="optimal"
         )
+        print(ref_ps_rebinned_rms)
 
         # calculating normalized ccf
         ccf_norm = spec.ccf(filtered_acs_power, ref_ps_rebinned_rms, self.n_bins)
-
+        print(ccf_norm)
         # calculating ccf error
         meta = {
             "N_SEG": self.n_seg,
@@ -201,6 +204,7 @@ class TestCCF(object):
             ref_ps_rebinned_rms,
             filter_type="optimal",
         )
+        print(avg_seg_ccf)
 
         assert np.all(np.isclose(ccf_norm, avg_seg_ccf, atol=0.01))
         assert np.all(np.isclose(error_ccf, np.zeros(shape=error_ccf.shape), atol=0.01))
