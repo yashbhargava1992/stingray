@@ -4,7 +4,7 @@ import warnings
 
 from astropy.tests.helper import pytest
 from numpy.random import poisson, standard_cauchy
-from scipy.signal.ltisys import TransferFunction
+from scipy.signal import TransferFunction
 
 from stingray import Lightcurve
 from stingray.events import EventList
