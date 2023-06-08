@@ -1142,7 +1142,7 @@ class TestAveragedCrossspectrum(object):
         )
 
     def test_coherence(self):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             coh = self.cs.coherence()
 
             assert len(coh[0]) == 4999
@@ -1222,14 +1222,14 @@ class TestAveragedCrossspectrum(object):
                 assert np.all(getattr(cs1, attr) == getattr(new_cs, attr))
 
     def test_rebin(self):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             new_cs = self.cs.rebin(df=1.5)
         assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert new_cs.df == 1.5
         new_cs.time_lag()
 
     def test_rebin_factor(self):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             new_cs = self.cs.rebin(f=1.5)
         assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert new_cs.df == self.cs.df * 1.5
@@ -1237,7 +1237,7 @@ class TestAveragedCrossspectrum(object):
 
     def test_rebin_log(self):
         # For now, just verify that it doesn't crash
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             new_cs = self.cs.rebin_log(f=0.1)
         assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert type(new_cs) == type(self.cs)
@@ -1245,7 +1245,7 @@ class TestAveragedCrossspectrum(object):
 
     def test_rebin_log_returns_complex_values_and_errors(self):
         # For now, just verify that it doesn't crash
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             new_cs = self.cs.rebin_log(f=0.1)
         assert np.iscomplexobj(new_cs.power[0])
         assert np.iscomplexobj(new_cs.power_err[0])
@@ -1268,7 +1268,7 @@ class TestAveragedCrossspectrum(object):
                 dt=dt,
             )
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5, norm="none")
 
             time_lag, time_lag_err = cs.time_lag()
@@ -1282,7 +1282,7 @@ class TestAveragedCrossspectrum(object):
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             cs = AveragedCrossspectrum(
                 test_lc1, test_lc2, segment_size=10, norm="leahy", legacy=True
             )
@@ -1294,7 +1294,7 @@ class TestAveragedCrossspectrum(object):
         np.random.seed(62)
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10, norm="leahy")
         maxpower = np.max(cs.power)
         assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower / 2.0)))

@@ -141,7 +141,7 @@ class TestEvents(object):
 
     def test_simulate_energies_with_counts_not_set(self):
         ev = EventList()
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev.simulate_energies(self.spectrum)
 
     def test_compare_energy(self):
@@ -176,19 +176,19 @@ class TestEvents(object):
         """
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList()
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
         assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList(time=[1, 2, 3])
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
         assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList()
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
         assert ev_new.time == None
         assert ev_new.gti == None
@@ -197,12 +197,12 @@ class TestEvents(object):
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList([])
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
         assert np.allclose(ev_new.time, [1, 2, 3])
         ev = EventList([])
         ev_other = EventList(time=[1, 2, 3])
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
         assert np.allclose(ev_new.time, [1, 2, 3])
 
@@ -238,21 +238,21 @@ class TestEvents(object):
     def test_join_with_gti_none(self):
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5], gti=[[3.5, 5.5]])
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
 
         assert np.allclose(ev_new.gti, [[1, 3], [3.5, 5.5]])
 
         ev = EventList(time=[1, 2, 3], gti=[[0.5, 3.5]])
         ev_other = EventList(time=[4, 5])
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
 
         assert np.allclose(ev_new.gti, [[0.5, 3.5], [4, 5]])
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5])
-        with warnings.catch_warnings(record=True):
+        with pytest.warns(UserWarning):
             ev_new = ev.join(ev_other)
 
         assert ev_new.gti == None
