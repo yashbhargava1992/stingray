@@ -1425,7 +1425,7 @@ class TestRoundTrip:
             with pytest.raises(Exception) as excinfo:
                 so.write(fname, fmt=fmt)
                 assert h5py in str(excinfo.value)
-            return True
+            return
         so.write(fname, fmt=fmt)
         new_so = so.read(fname, fmt=fmt)
         os.unlink(fname)
