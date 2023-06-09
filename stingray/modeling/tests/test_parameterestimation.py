@@ -3,7 +3,7 @@ import scipy.stats
 import os
 import logging
 
-from astropy.tests.helper import pytest, catch_warnings
+from astropy.tests.helper import pytest
 from astropy.modeling import models
 from astropy.modeling.fitting import _fitter_to_model_params
 
@@ -165,10 +165,9 @@ class TestParameterEstimation(object):
         pe = ParameterEstimation()
         if os.path.exists("test_corner.pdf"):
             os.unlink("test_corner.pdf")
-        with catch_warnings(RuntimeWarning):
-            sample_res = pe.sample(
-                self.lpost, [2.0], nwalkers=50, niter=10, burnin=50, print_results=True, plot=True
-            )
+        sample_res = pe.sample(
+            self.lpost, [2.0], nwalkers=50, niter=10, burnin=50, print_results=True, plot=True
+        )
 
         assert os.path.exists("test_corner.pdf")
         assert sample_res.acceptance > 0.25
@@ -449,8 +448,7 @@ if can_sample:
                 cls.nwalkers, len(res.p_opt), cls.lpost, args=[False]
             )
 
-            with catch_warnings(RuntimeWarning):
-                _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
+            _, _, _ = cls.sampler.run_mcmc(p0, cls.niter)
 
         def test_can_sample_is_true(self):
             assert can_sample
@@ -896,20 +894,19 @@ class TestPSDParEst(object):
 
         pe = PSDParEst(ps)
 
-        with catch_warnings(RuntimeWarning):
-            pval = pe.calibrate_lrt(
-                lpost,
-                [2.0],
-                lpost2,
-                [2.0, 1.0, 2.0],
-                sample=None,
-                max_post=True,
-                nsim=10,
-                nwalkers=10,
-                burnin=10,
-                niter=10,
-                seed=100,
-            )
+        pval = pe.calibrate_lrt(
+            lpost,
+            [2.0],
+            lpost2,
+            [2.0, 1.0, 2.0],
+            sample=None,
+            max_post=True,
+            nsim=10,
+            nwalkers=10,
+            burnin=10,
+            niter=10,
+            seed=100,
+        )
 
         assert pval > 0.001
 
@@ -1057,17 +1054,16 @@ class TestPSDParEst(object):
 
         pe = PSDParEst(ps)
 
-        with catch_warnings(RuntimeWarning):
-            pval = pe.calibrate_highest_outlier(
-                lpost,
-                [2.0],
-                sample=None,
-                max_post=True,
-                seed=seed,
-                nsim=nsim,
-                niter=10,
-                nwalkers=20,
-                burnin=10,
-            )
+        pval = pe.calibrate_highest_outlier(
+            lpost,
+            [2.0],
+            sample=None,
+            max_post=True,
+            seed=seed,
+            nsim=nsim,
+            niter=10,
+            nwalkers=20,
+            burnin=10,
+        )
 
         assert pval > 0.001

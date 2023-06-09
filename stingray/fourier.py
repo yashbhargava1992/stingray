@@ -823,6 +823,12 @@ def rms_calculation(
     rms_squared = (
         np.sum((unnorm_powers - poisson_noise_unnrom) * 1 / T * K_freqs) * 2 * T / nphots**2
     )
+
+    if rms_squared < 0.0:
+        rms_err = np.sqrt(
+            np.var((unnorm_powers - poisson_noise_unnrom) * 1 / T * K_freqs) * 2 * T / nphots**2
+        )
+        return 0.0, rms_err
     rms = np.sqrt(rms_squared)
 
     rms_noise_squared = (
