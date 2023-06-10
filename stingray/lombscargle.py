@@ -2,17 +2,15 @@ import copy
 from typing import Optional, Union
 
 import numpy as np
-
+import numpy.typing as npt
 from astropy.timeseries.periodograms import LombScargle
 
-from stingray.crossspectrum import Crossspectrum
-from stingray.exceptions import StingrayError
-from stingray.utils import simon
-
-from .events import EventList  # Convert to relative nomenclature
-from .lightcurve import Lightcurve  # Convert to relative nomenclature
-
-from .fourier import lsft_slow, lsft_fast
+from .crossspectrum import Crossspectrum
+from .events import EventList
+from .exceptions import StingrayError
+from .fourier import lsft_fast, lsft_slow
+from .lightcurve import Lightcurve
+from .utils import simon
 
 
 # method default will change to fast after implementation of the fast algorithm
@@ -263,8 +261,8 @@ class LombScargleCrossspectrum(Crossspectrum):
         if lc1.n != lc2.n:
             raise StingrayError("Lightcurves do not have the same number of bins per segment.")
 
-        # if not np.isclose(lc1.dt, lc2.dt, rtol=0.1 * lc1.dt / lc1.tseg):
-        #     raise StingrayError("Lightcurves do not have the same time binning dt.")
+        if not np.isclose(lc1.dt, lc2.dt, rtol=0.1 * lc1.dt / lc1.tseg):
+            raise StingrayError("Lightcurves do not have the same time binning dt.")
 
         lc1.dt = lc2.dt
         self.dt = lc1.dt
@@ -290,14 +288,12 @@ class LombScargleCrossspectrum(Crossspectrum):
             )
 
         if self.__class__.__name__ == "LombScarglePowerspectrum":
-            print("ps")
             self.power_err = self.unnorm_power_err = self.power / np.sqrt(self.m)
         elif self.__class__.__name__ == "LombScargleCrossspectrum":
             simon(
                 "Errorbars on cross spectra are not thoroughly tested."
                 "Please report any inconsistencies."
             )
-            print("ls")
             self.unnorm_power_err = np.sqrt(2) / np.sqrt(self.m)
             self.unnorm_power_err /= np.divide(2, np.sqrt(np.abs(self.nphots1 * self.nphots2)))
             self.unnorm_power_err += np.zeros_like(self.unnorm_power)
@@ -389,8 +385,8 @@ class LombScargleCrossspectrum(Crossspectrum):
                 ww = ww2
 
         if method == "slow":
-            lsft1 = lsft_slow(lc1, ww, sign=1, fullspec=fullspec)
-            lsft2 = lsft_slow(lc2, ww, sign=-1, fullspec=fullspec)
+            lsft1 = lsft_slow(lc1.counts, lc1.time, ww, sign=1, fullspec=fullspec)
+            lsft2 = lsft_slow(lc2.counts, lc2.time, ww, sign=-1, fullspec=fullspec)
         # elif method == "fast":
         #     lsft1 = lsft_fast(lc1, ww, fullspec=fullspec)
         cross = np.multiply(lsft1, lsft2)

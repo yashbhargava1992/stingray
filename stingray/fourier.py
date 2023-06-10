@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import Optional
 
 import numpy as np
+import numpy.typing as npt
 from astropy.table import Table
 from astropy.timeseries.periodograms.lombscargle.implementations.utils import trig_sum
 
@@ -1991,11 +1992,8 @@ def avg_cs_from_events(
     return results
 
 
-def lsft_fast(lc: Lightcurve, w0, df, Nf):
+def lsft_fast(y, t, dy, w0, df, Nf):
     # Work in Progress
-    y = lc.counts
-    t = lc.time
-    dy = lc.counts_err
     weights = dy**-2.0
     weights /= weights.sum()
 
@@ -2004,8 +2002,9 @@ def lsft_fast(lc: Lightcurve, w0, df, Nf):
 
 
 def lsft_slow(
-    lc: Lightcurve,
-    ww: np.ndarray,
+    y: npt.ArrayLike,
+    t: npt.ArrayLike,
+    ww: npt.ArrayLike,
     sign: Optional[int] = 1,
     fullspec: Optional[bool] = False,
 ):
@@ -2014,8 +2013,11 @@ def lsft_slow(
 
     Parameters
     ----------
-    lc : :class:`stingray.lightcurve.Lightcurve`
-        A light curve object.
+    y : a `:class:numpy.array` of floats
+        Observations to be transformed.
+
+    y : `:class:numpy.array` of floats
+        Times of the observations
 
     freqs : numpy.ndarray
         An array of frequencies at which the transform is sampled.
@@ -2037,11 +2039,9 @@ def lsft_slow(
     const1 = 1 / np.sqrt(2)
     const2 = const1 * sign
 
-    xx = lc.counts
-    sum_xx = np.sum(xx)
-    t = lc.time
+    sum_xx = np.sum(y)
 
-    num_xt = len(xx)
+    num_xt = len(y)
     num_ww = len(ww)
 
     ft_real = ft_imag = np.zeros((num_ww))
@@ -2060,8 +2060,8 @@ def lsft_slow(
             watan = np.arctan2(ssum, csum)
             wtau = 0.5 * watan
 
-            sumr = np.sum(np.multiply(xx, np.cos(wrun * t - wtau)))
-            sumi = np.sum(np.multiply(xx, np.sin(wrun * t - wtau)))
+            sumr = np.sum(np.multiply(y, np.cos(wrun * t - wtau)))
+            sumi = np.sum(np.multiply(y, np.sin(wrun * t - wtau)))
 
             scos2 = np.sum((np.power(np.cos(wrun * t - wtau), 2)))
             ssin2 = np.sum((np.power(np.sin(wrun * t - wtau), 2)))
