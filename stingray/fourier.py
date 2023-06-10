@@ -8,12 +8,10 @@ import numpy.typing as npt
 from astropy.table import Table
 from astropy.timeseries.periodograms.lombscargle.implementations.utils import trig_sum
 
-from .events import EventList
 from .gti import (
     generate_indices_of_segment_boundaries_binned,
     generate_indices_of_segment_boundaries_unbinned,
 )
-from .lightcurve import Lightcurve
 from .utils import fft, fftfreq, histogram, show_progress, sum_if_not_none_or_initialize
 
 
