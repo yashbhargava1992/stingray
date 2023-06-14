@@ -78,21 +78,126 @@ def get_mean(mean_type, mean_params):
         mean = functools.partial(_exponential, mean_params=mean_params)
     elif mean_type == "constant":
         mean = functools.partial(_constant, mean_params=mean_params)
+    elif mean_type == "skew_gaussian":
+        mean = functools.partial(_skew_gaussian, mean_params=mean_params)
+    elif mean_type == "skew_exponential":
+        mean = functools.partial(_skew_exponential, mean_params=mean_params)
     return mean
 
 
 def _gaussian(t, mean_params):
+    """A gaussian flare shape.
+
+    Parameters
+    ----------
+    t:  jnp.ndarray
+        The time coordinates.
+    A:  jnp.int
+        Amplitude of the flare.
+    t0:
+        The location of the maximum.
+    sig1:
+        The width parameter for the gaussian.
+
+    Returns
+    -------
+    The y values for the gaussian flare.
+    """
     return mean_params["A"] * jnp.exp(
         -((t - mean_params["t0"]) ** 2) / (2 * (mean_params["sig"] ** 2))
     )
 
 
 def _exponential(t, mean_params):
+    """An exponential flare shape.
+
+    Parameters
+    ----------
+    t:  jnp.ndarray
+        The time coordinates.
+    A:  jnp.int
+        Amplitude of the flare.
+    t0:
+        The location of the maximum.
+    sig1:
+        The width parameter for the exponential.
+
+    Returns
+    -------
+    The y values for exponential flare.
+    """
     return mean_params["A"] * jnp.exp(-jnp.abs((t - mean_params["t0"])) / mean_params["sig"])
 
 
 def _constant(t, mean_params):
+    """A constant mean shape.
+
+    Parameters
+    ----------
+    t:  jnp.ndarray
+        The time coordinates.
+    A:  jnp.int
+        Constant amplitude of the flare.
+
+    Returns
+    -------
+    The constant value.
+    """
     return mean_params["A"] * jnp.ones_like(t)
+
+
+def _skew_gaussian(t, mean_params):
+    """A skew gaussian flare shape.
+
+    Parameters
+    ----------
+    t:  jnp.ndarray
+        The time coordinates.
+    A:  jnp.int
+        Amplitude of the flare.
+    t0:
+        The location of the maximum.
+    sig1:
+        The width parameter for the rising edge.
+    sig2:
+        The width parameter for the falling edge.
+
+    Returns
+    -------
+    The y values for skew gaussian flare.
+    """
+    return mean_params["A"] * jnp.where(
+        t > mean_params["t0"],
+        jnp.exp(-((t - mean_params["t0"]) ** 2) / (2 * (mean_params["sig2"] ** 2))),
+        jnp.exp(-((t - mean_params["t0"]) ** 2) / (2 * (mean_params["sig1"] ** 2))),
+    )
+
+
+def _skew_exponential(t, mean_params):
+    """A skew exponential flare shape.
+
+    Parameters
+    ----------
+    t:  jnp.ndarray
+        The time coordinates.
+    A:  jnp.int
+        Amplitude of the flare.
+    t0:
+        The location of the maximum.
+    sig1:
+        The width parameter for the rising edge.
+    sig2:
+        The width parameter for the falling edge.
+
+    Returns
+    -------
+    The y values for exponential flare.
+    """
+    return mean_params["A"] * jnp.where(
+        t > mean_params["t0"],
+        jnp.exp(-(t - mean_params["t0"]) / mean_params["sig2"]),
+        jnp.exp((t - mean_params["t0"]) / mean_params["sig1"]),
+    )
 
 
 class GP:
@@ -272,6 +377,49 @@ def get_prior(kernel_type, mean_type, **kwargs):
     if (kernel_type == "QPO_plus_RN") & ((mean_type == "gaussian") | (mean_type == "exponential")):
         return QPOprior_model
 
+    def skew_RNprior_model():
+        arn = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="arn")
+        crn = yield Prior(tfpd.Uniform(jnp.log(1 / kwargs["T"]), jnp.log(kwargs["f"])), name="crn")
+
+        A = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="A")
+        t0 = yield Prior(
+            tfpd.Uniform(
+                kwargs["Times"][0] - 0.1 * kwargs["T"], kwargs["Times"][-1] + 0.1 * kwargs["T"]
+            ),
+            name="t0",
+        )
+        sig1 = yield Prior(tfpd.Uniform(0.5 * 1 / kwargs["f"], 2 * kwargs["T"]), name="sig1")
+        sig2 = yield Prior(tfpd.Uniform(0.5 * 1 / kwargs["f"], 2 * kwargs["T"]), name="sig2")
+
+        return arn, crn, A, t0, sig1, sig2
+
+    if (kernel_type == "RN") & ((mean_type == "skew_gaussian") | (mean_type == "skew_exponential")):
+        return skew_RNprior_model
+
+    def skew_QPOprior_model():
+        arn = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="arn")
+        crn = yield Prior(tfpd.Uniform(jnp.log(1 / kwargs["T"]), jnp.log(kwargs["f"])), name="crn")
+        aqpo = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="aqpo")
+        cqpo = yield Prior(tfpd.Uniform(1 / 10 / kwargs["T"], jnp.log(kwargs["f"])), name="cqpo")
+        freq = yield Prior(tfpd.Uniform(2 / kwargs["T"], kwargs["f"] / 2), name="freq")
+
+        A = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="A")
+        t0 = yield Prior(
+            tfpd.Uniform(
+                kwargs["Times"][0] - 0.1 * kwargs["T"], kwargs["Times"][-1] + 0.1 * kwargs["T"]
+            ),
+            name="t0",
+        )
+        sig1 = yield Prior(tfpd.Uniform(0.5 * 1 / kwargs["f"], 2 * kwargs["T"]), name="sig1")
+        sig2 = yield Prior(tfpd.Uniform(0.5 * 1 / kwargs["f"], 2 * kwargs["T"]), name="sig2")
+
+        return arn, crn, aqpo, cqpo, freq, A, t0, sig1, sig2
+
+    if (kernel_type == "QPO_plus_RN") & (
+        (mean_type == "skew_gaussian") | (mean_type == "skew_exponential")
+    ):
+        return skew_QPOprior_model
+
 
 def get_likelihood(kernel_type, mean_type, **kwargs):
     """
@@ -320,7 +468,7 @@ def get_likelihood(kernel_type, mean_type, **kwargs):
             "sig": sig,
         }
 
-        kernel = get_kernel(kernel_type="RN", kernel_params=qpolikelihood_params)
+        kernel = get_kernel(kernel_type="QPO_plus_RN", kernel_params=qpolikelihood_params)
         mean = get_mean(mean_type=mean_type, mean_params=mean_params)
 
         gp = GaussianProcess(kernel, kwargs["Times"], mean=mean)
@@ -328,6 +476,63 @@ def get_likelihood(kernel_type, mean_type, **kwargs):
 
     if (kernel_type == "QPO_plus_RN") & ((mean_type == "gaussian") | (mean_type == "exponential")):
         return QPOlog_likelihood
+
+    @jit
+    def skew_RNlog_likelihood(arn, crn, A, t0, sig1, sig2):
+        rnlikelihood_params = {
+            "arn": arn,
+            "crn": crn,
+            "aqpo": 0.0,
+            "cqpo": 0.0,
+            "freq": 0.0,
+        }
+
+        mean_params = {
+            "A": A,
+            "t0": t0,
+            "sig1": sig1,
+            "sig2": sig2,
+        }
+
+        kernel = get_kernel(kernel_type="RN", kernel_params=rnlikelihood_params)
+
+        # This could be causing problems
+        mean = get_mean(mean_type=mean_type, mean_params=mean_params)
+
+        gp = GaussianProcess(kernel, kwargs["Times"], mean=mean)
+        return gp.log_probability(kwargs["counts"])
+
+    if (kernel_type == "RN") & ((mean_type == "gaussian") | (mean_type == "exponential")):
+        return skew_RNlog_likelihood
+
+    @jit
+    def skewQPOlog_likelihood(arn, crn, aqpo, cqpo, freq, A, t0, sig1, sig2):
+        qpolikelihood_params = {
+            "arn": arn,
+            "crn": crn,
+            "aqpo": aqpo,
+            "cqpo": cqpo,
+            "freq": freq,
+        }
+
+        mean_params = {
+            "A": A,
+            "t0": t0,
+            "sig1": sig1,
+            "sig2": sig2,
+        }
+
+        kernel = get_kernel(kernel_type="QPO_plus_RN", kernel_params=qpolikelihood_params)
+
+        mean = get_mean(mean_type=mean_type, mean_params=mean_params)
+
+        gp = GaussianProcess(kernel, kwargs["Times"], mean=mean)
+        return gp.log_probability(kwargs["counts"])
+
+    if (kernel_type == "QPO_plus_RN") & (
+        (mean_type == "skew_gaussian") | (mean_type == "skew_exponential")
+    ):
+        return skewQPOlog_likelihood
 
 
 class GPResult:
@@ -384,6 +589,7 @@ class GPResult:
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
         )
         self.Results = self.Exact_ns.to_results(State, Termination_reason)
+        print("Simulation Complete")
 
     def print_summary(self):
         """
@@ -397,11 +603,11 @@ class GPResult:
         """
         self.Exact_ns.plot_diagnostics(self.Results)
 
-    def corner_plot(self):
+    def plot_cornerplot(self):
         """
         Plots the corner plot for the sampled hyperparameters
         """
-        self.Exact_ns.plot_corner(self.Results)
+        self.Exact_ns.plot_cornerplot(self.Results)
 
     def get_parameters(self):
         """
