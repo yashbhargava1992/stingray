@@ -82,6 +82,8 @@ def get_mean(mean_type, mean_params):
         mean = functools.partial(_skew_gaussian, mean_params=mean_params)
     elif mean_type == "skew_exponential":
         mean = functools.partial(_skew_exponential, mean_params=mean_params)
+    elif mean_type == "fred":
+        mean = functools.partial(_fred, mean_params=mean_params)
     return mean
 
 
@@ -197,6 +199,39 @@ def _skew_exponential(t, mean_params):
         t > mean_params["t0"],
         jnp.exp(-(t - mean_params["t0"]) / mean_params["sig2"]),
         jnp.exp((t - mean_params["t0"]) / mean_params["sig1"]),
+    )
+
+
+def _fred(t, mean_params):
+    """A fast rise exponential decay (FRED) flare shape.
+
+    Parameters
+    ----------
+    t:  jnp.ndarray
+        The time coordinates.
+    A:  jnp.int
+        Amplitude of the flare.
+    t0:
+        The location of the maximum.
+    phi:
+        Symmetry parameter of the flare.
+    delta:
+        Offset parameter of the flare.
+
+    Returns
+    -------
+    The y values for exponential flare.
+    """
+    return (
+        mean_params["A"]
+        * jnp.exp(
+            -mean_params["phi"]
+            * (
+                (t + mean_params["delta"]) / mean_params["t0"]
+                + mean_params["t0"] / (t + mean_params["delta"])
+            )
+        )
+        * jnp.exp(2 * mean_params["phi"])
     )
 
 
@@ -420,6 +455,47 @@ def get_prior(kernel_type, mean_type, **kwargs):
     ):
         return skew_QPOprior_model
 
+    def fred_RNprior_model():
+        arn = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="arn")
+        crn = yield Prior(tfpd.Uniform(jnp.log(1 / kwargs["T"]), jnp.log(kwargs["f"])), name="crn")
+
+        A = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="A")
+        t0 = yield Prior(
+            tfpd.Uniform(
+                kwargs["Times"][0] - 0.1 * kwargs["T"], kwargs["Times"][-1] + 0.1 * kwargs["T"]
+            ),
+            name="t0",
+        )
+        phi = yield Prior(tfpd.Uniform(2 * jnp.exp(-2), 2 * jnp.exp(4)), name="phi")
+        delta = yield Prior(tfpd.Uniform(0, kwargs["Times"][-1] / 2), name="delta")
+
+        return arn, crn, A, t0, phi, delta
+
+    if (kernel_type == "RN") & (mean_type == "fred"):
+        return fred_RNprior_model
+
+    def fred_QPOprior_model():
+        arn = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="arn")
+        crn = yield Prior(tfpd.Uniform(jnp.log(1 / kwargs["T"]), jnp.log(kwargs["f"])), name="crn")
+        aqpo = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="aqpo")
+        cqpo = yield Prior(tfpd.Uniform(1 / 10 / kwargs["T"], jnp.log(kwargs["f"])), name="cqpo")
+        freq = yield Prior(tfpd.Uniform(2 / kwargs["T"], kwargs["f"] / 2), name="freq")
+
+        A = yield Prior(tfpd.Uniform(0.1 * kwargs["span"], 2 * kwargs["span"]), name="A")
+        t0 = yield Prior(
+            tfpd.Uniform(
+                kwargs["Times"][0] - 0.1 * kwargs["T"], kwargs["Times"][-1] + 0.1 * kwargs["T"]
+            ),
+            name="t0",
+        )
+        phi = yield Prior(tfpd.Uniform(2 * jnp.exp(-2), 2 * jnp.exp(4)), name="phi")
+        delta = yield Prior(tfpd.Uniform(0, kwargs["Times"][-1] / 2), name="delta")
+
+        return arn, crn, aqpo, cqpo, freq, A, t0, phi, delta
+
+    if (kernel_type == "QPO_plus_RN") & (mean_type == "fred"):
+        return fred_QPOprior_model
+
 
 def get_likelihood(kernel_type, mean_type, **kwargs):
     """
@@ -533,6 +609,63 @@ def get_likelihood(kernel_type, mean_type, **kwargs):
         (mean_type == "skew_gaussian") | (mean_type == "skew_exponential")
     ):
         return skewQPOlog_likelihood
+
+    @jit
+    def fred_RNlog_likelihood(arn, crn, A, t0, phi, delta):
+        rnlikelihood_params = {
+            "arn": arn,
+            "crn": crn,
+            "aqpo": 0.0,
+            "cqpo": 0.0,
+            "freq": 0.0,
+        }
+
+        mean_params = {
+            "A": A,
+            "t0": t0,
+            "phi": phi,
+            "delta": delta,
+        }
+
+        kernel = get_kernel(kernel_type="RN", kernel_params=rnlikelihood_params)
+
+        # This could be causing problems
+        mean = get_mean(mean_type=mean_type, mean_params=mean_params)
+
+        # gp = GaussianProcess(kernel, kwargs["Times"], mean=mean)
+        gp = GaussianProcess(kernel, kwargs["Times"], mean_value=mean(kwargs["Times"]))
+        return gp.log_probability(kwargs["counts"])
+
+    if (kernel_type == "RN") & (mean_type == "fred"):
+        return fred_RNlog_likelihood
+
+    @jit
+    def fredQPOlog_likelihood(arn, crn, aqpo, cqpo, freq, A, t0, phi, delta):
+        qpolikelihood_params = {
+            "arn": arn,
+            "crn": crn,
+            "aqpo": aqpo,
+            "cqpo": cqpo,
+            "freq": freq,
+        }
+
+        mean_params = {
+            "A": A,
+            "t0": t0,
+            "phi": phi,
+            "delta": delta,
+        }
+
+        kernel = get_kernel(kernel_type="QPO_plus_RN", kernel_params=qpolikelihood_params)
+
+        mean = get_mean(mean_type=mean_type, mean_params=mean_params)
+
+        # gp = GaussianProcess(kernel, kwargs["Times"], mean=mean)
+        gp = GaussianProcess(kernel, kwargs["Times"], mean_value=mean(kwargs["Times"]))
+        return gp.log_probability(kwargs["counts"])
+
+    if (kernel_type == "QPO_plus_RN") & (mean_type == "fred"):
+        return fredQPOlog_likelihood
 
 
 class GPResult:
