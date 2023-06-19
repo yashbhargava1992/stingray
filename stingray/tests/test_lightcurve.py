@@ -312,9 +312,8 @@ class TestLightcurve(object):
             "transforms. Please make the input time evenly sampled."
         )
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning, match=warn_str):
             _ = Lightcurve(times, counts, err_dist="poisson")
-            assert np.any([str(wi.message) == warn_str for wi in w])
 
     def test_unrecognize_err_dist_warning(self):
         """
@@ -348,10 +347,8 @@ class TestLightcurve(object):
         with pytest.raises(ValueError, match="Nonfinite values inside GTIs in counts"):
             lc = Lightcurve(times, counts)
 
-        with pytest.raises(ValueError):
-            lc = Lightcurve(
-                times, [2] * 5, err=counts_err, match="Nonfinite values inside GTIs in counts_err"
-            )
+        with pytest.raises(ValueError, match="Nonfinite values inside GTIs in err"):
+            lc = Lightcurve(times, [2] * 5, err=counts_err)
 
         with pytest.warns(
             UserWarning, match="There are non-finite points in the data, but they are outside GTIs."
@@ -548,9 +545,8 @@ class TestLightcurve(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2, err_dist="gauss")
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning, match="ightcurves have different statistics"):
             lc = lc1 + lc2
-            assert np.any(["ightcurves have different statistics" in str(wi.message) for wi in w])
 
     def test_add_with_same_gtis(self):
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
@@ -594,7 +590,7 @@ class TestLightcurve(object):
             lc1 = Lightcurve(self.times, self.counts)
             lc2 = Lightcurve(_times, _counts)
 
-            lc = lc1 - lc2
+            _ = lc1 - lc2
 
     def test_sub_with_different_err_dist(self):
         lc1 = Lightcurve(self.times, self.counts)
@@ -602,9 +598,8 @@ class TestLightcurve(object):
             warnings.simplefilter("ignore", category=UserWarning)
 
             lc2 = Lightcurve(self.times, self.counts, err=self.counts / 2, err_dist="gauss")
-        with warnings.catch_warnings(record=True) as w:
-            lc = lc1 - lc2
-            assert np.any(["ightcurves have different statistics" in str(wi.message) for wi in w])
+        with pytest.warns(UserWarning, match="ightcurves have different statistics") as w:
+            _ = lc1 - lc2
 
     def test_subtraction(self):
         _counts = [3, 4, 5, 6]
@@ -687,25 +682,27 @@ class TestLightcurve(object):
         lc1 = Lightcurve(self.times, self.counts)
         lc2 = Lightcurve(_times, _counts)
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning, match="different bin widths") as w:
             lc1.join(lc2)
-            assert np.any(["different bin widths" in str(wi.message) for wi in w])
 
     def test_join_with_different_mjdref(self):
         shift = 86400.0  # day
         lc1 = Lightcurve(self.times + shift, self.counts, gti=self.gti + shift, mjdref=57000)
         lc2 = Lightcurve(self.times, self.counts, gti=self.gti, mjdref=57001)
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as record:
             newlc = lc1.join(lc2)
-            # The join operation *averages* the overlapping arrays
-            assert np.allclose(newlc.counts, lc1.counts)
-            assert np.any(
-                ["MJDref is different in the two light curves" in str(wi.message) for wi in w]
-            )
-            assert np.any(
-                ["The two light curves have overlapping time ranges" in str(wi.message) for wi in w]
-            )
+        assert np.any(
+            ["MJDref is different in the two light curves" in r.message.args[0] for r in record]
+        )
+        assert np.any(
+            [
+                "The two light curves have overlapping time ranges" in r.message.args[0]
+                for r in record
+            ]
+        )
+        # The join operation *averages* the overlapping arrays
+        assert np.allclose(newlc.counts, lc1.counts)
 
     def test_sum_with_different_mjdref(self):
         shift = 86400.0  # day
@@ -747,9 +744,8 @@ class TestLightcurve(object):
         lc1 = Lightcurve(self.times, self.counts)
         lc2 = Lightcurve(_times, _counts)
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning, match="overlapping time ranges"):
             lc = lc1.join(lc2)
-            assert np.any(["overlapping time ranges" in str(wi.message) for wi in w])
 
         assert len(lc.counts) == len(lc.time) == 6
         assert np.allclose(lc.counts, np.array([2, 2, 3, 3, 4, 4]))
@@ -777,10 +773,9 @@ class TestLightcurve(object):
             warnings.simplefilter("ignore", category=UserWarning)
             lc2 = Lightcurve(_times, _counts, err_dist="gauss")
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning, match="We are setting the errors to zero."):
             lc3 = lc1.join(lc2)
-            assert "We are setting the errors to zero." in str(w[1].message)
-            assert np.allclose(lc3.counts_err, np.zeros_like(lc3.time))
+        assert np.allclose(lc3.counts_err, np.zeros_like(lc3.time))
 
     def test_truncate_by_index(self):
         lc = Lightcurve(
@@ -1049,13 +1044,12 @@ class TestLightcurve(object):
         lc = Lightcurve(self.times, self.counts)
 
         with pytest.raises(TypeError):
-            with warnings.catch_warnings(record=True) as w:
+            with pytest.warns(UserWarning, match="must be either a list or tuple") as w:
                 lc.plot(labels=123)
-                assert np.any(["must be either a list or tuple" in str(wi.message) for wi in w])
 
     def test_plot_labels_index_error(self):
         lc = Lightcurve(self.times, self.counts)
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             lc.plot(labels=("x"))
 
             assert np.any(["must have two labels" in str(wi.message) for wi in w])
@@ -1378,15 +1372,8 @@ class TestLightcurveRebin(object):
         counts = np.random.normal(100, input_stdev, len(times)) + 0.001 * times
         gti = [[-0.005, 4.005]]
         lc = Lightcurve(times, counts, gti=gti)
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns(UserWarning, match="Too few bins to perform baseline offset correction"):
             lc.baseline(10000, 0.01, offset_correction=True)
-
-        assert np.any(
-            [
-                "Too few bins to perform baseline offset correction" in r.message.args[0]
-                for r in record
-            ]
-        )
 
     def test_change_mjdref(self):
         lc_new = self.lc.change_mjdref(57000)
@@ -1500,15 +1487,19 @@ class TestBexvar(object):
     @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_bexvar_with_dt_as_array(self):
         # create lightcurve with ``dt`` as an array
-        lc = Lightcurve(
-            time=self.time,
-            counts=self.src_counts,
-            dt=self.time_delta,
-            gti=[[self.time[0], self.time[-1]]],
-            bg_counts=self.bg_counts,
-            bg_ratio=self.bg_ratio,
-            frac_exp=self.frac_exp,
-        )
+        with pytest.warns(
+            UserWarning,
+            match="Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable",
+        ):
+            lc = Lightcurve(
+                time=self.time,
+                counts=self.src_counts,
+                dt=self.time_delta,
+                gti=[[self.time[0], self.time[-1]]],
+                bg_counts=self.bg_counts,
+                bg_ratio=self.bg_ratio,
+                frac_exp=self.frac_exp,
+            )
 
         # provide time intervals externally to find bexvar
         log_cr_sigma_from_method = lc.bexvar()
@@ -1546,41 +1537,44 @@ class TestArraydt(object):
         bg_ratio = np.array([1, 1, 0.5, 1])
         frac_exp = np.array([1, 1, 1, 1])
         gti = np.array([[0.5, 4.5]])
-        lc = Lightcurve(
-            time=times,
-            counts=counts,
-            dt=dt,
-            err=counts_err,
-            gti=gti,
-            bg_counts=bg_counts,
-            bg_ratio=bg_ratio,
-            frac_exp=frac_exp,
-        )
+        with pytest.warns(
+            UserWarning,
+            match="Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable",
+        ):
+            lc = Lightcurve(
+                time=times,
+                counts=counts,
+                dt=dt,
+                err=counts_err,
+                gti=gti,
+                bg_counts=bg_counts,
+                bg_ratio=bg_ratio,
+                frac_exp=frac_exp,
+            )
 
         # demonstrate that we can create a Lightcurve object with dt being an array of floats
         # and without explicitly providing gtis.
 
-        lc = Lightcurve(
-            time=times,
-            counts=counts,
-            dt=dt,
-            err=counts_err,
-            bg_counts=bg_counts,
-            bg_ratio=bg_ratio,
-            frac_exp=frac_exp,
-        )
+        with pytest.warns(
+            UserWarning,
+            match="Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable",
+        ):
+            lc = Lightcurve(
+                time=times,
+                counts=counts,
+                dt=dt,
+                err=counts_err,
+                bg_counts=bg_counts,
+                bg_ratio=bg_ratio,
+                frac_exp=frac_exp,
+            )
 
     def test_warning_when_dt_is_array(self):
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns(
+            UserWarning,
+            match="Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable",
+        ):
             _ = Lightcurve(time=self.times, counts=self.counts, dt=self.dt)
-
-        assert any(
-            [
-                "Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable"
-                in r.message.args[0]
-                for r in record
-            ]
-        )
 
     def test_truncate_by_index_when_dt_is_array(self):
         """

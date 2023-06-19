@@ -41,6 +41,12 @@ curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
 
 
+def clear_all_figs():
+    fign = plt.get_fignums()
+    for fig in fign:
+        plt.close(fig)
+
+
 def avg_cdf_two_spectra(x):
     prefac = 0.25
 
@@ -568,14 +574,15 @@ class TestNormalization(object):
 
     def test_failure_when_normalization_not_recognized(self):
         with pytest.raises(ValueError):
-            power = normalize_crossspectrum(
-                self.cs.power,
-                self.lc1.tseg,
-                self.lc1.n,
-                self.cs.nphots1,
-                self.cs.nphots2,
-                norm="wrong",
-            )
+            with pytest.warns(DeprecationWarning):
+                power = normalize_crossspectrum(
+                    self.cs.power,
+                    self.lc1.tseg,
+                    self.lc1.n,
+                    self.cs.nphots1,
+                    self.cs.nphots2,
+                    norm="wrong",
+                )
         self.cs.norm = "asdgfasdfa"
         self.cs_norm.norm = "adfafaf"
         with pytest.raises(ValueError):
@@ -673,8 +680,15 @@ class TestCrossspectrum(object):
         counts = np.array([1] * 10001)
         time = np.linspace(0.0, 1.0001, 10001)
         lc_ = Lightcurve(time, counts)
-        with pytest.raises(StingrayError):
-            cs = Crossspectrum(self.lc1, lc_, legacy=True)
+        with pytest.warns(UserWarning, match="Lightcurves do not have same tseg"):
+            with pytest.raises(
+                AssertionError, match="No GTIs are equal to or longer than segment_size"
+            ):
+                Crossspectrum(self.lc1, lc_)
+            with pytest.raises(
+                StingrayError, match="Light curves do not have same number of time bins"
+            ):
+                Crossspectrum(self.lc1, lc_, legacy=True)
 
     def test_make_crossspectrum_diff_lc_stat(self):
         lc_ = copy.deepcopy(self.lc1)
@@ -789,11 +803,13 @@ class TestCrossspectrum(object):
             lag = obj.time_lag()
 
     def test_plot_simple(self):
+        clear_all_figs()
         self.cs.plot()
         assert plt.fignum_exists("crossspectrum")
         plt.close("crossspectrum")
 
     def test_plot_labels_and_fname(self):
+        clear_all_figs()
         outfname = "blabla.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
@@ -803,6 +819,7 @@ class TestCrossspectrum(object):
         os.unlink(outfname)
 
     def test_plot_labels_and_fname_default(self):
+        clear_all_figs()
         outfname = "spec.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
@@ -811,11 +828,13 @@ class TestCrossspectrum(object):
         os.unlink(outfname)
 
     def test_plot_single_label(self):
+        clear_all_figs()
         with pytest.warns(UserWarning) as record:
             self.cs.plot(labels=["x"])
         assert np.any(["must have two labels" in r.message.args[0] for r in record])
 
     def test_plot_axes(self):
+        clear_all_figs()
         plt.subplot(211)
         plot2 = self.cs.plot(
             ax=plt.subplot(212), labels=("frequency", "amplitude"), title="Crossspectrum_leahy"
@@ -824,6 +843,7 @@ class TestCrossspectrum(object):
         plt.close(1)
 
     def test_plot_labels_and_fname_for_axes(self):
+        clear_all_figs()
         outfname = "blabla.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
@@ -840,6 +860,7 @@ class TestCrossspectrum(object):
         os.unlink(outfname)
 
     def test_plot_labels_and_fname_for_axes_default(self):
+        clear_all_figs()
         outfname = "spec.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
@@ -906,7 +927,8 @@ class TestCrossspectrum(object):
         assert len(pval[0]) == len(cs_log.power)
 
     def test_pvals_is_numpy_array(self):
-        cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
+        with pytest.warns(UserWarning, match="Lightcurves do not have same tseg. This means"):
+            cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
         # change the powers so that just one exceeds the threshold
         cs.power = np.zeros_like(cs.power) + 2.0
 
@@ -922,7 +944,8 @@ class TestCrossspectrum(object):
 
     @pytest.mark.parametrize("legacy", [True, False])
     def test_fullspec(self, legacy):
-        csT = Crossspectrum(self.lc1, self.lc2, fullspec=True, legacy=legacy)
+        with pytest.warns(UserWarning, match="Lightcurves do not have same tseg. "):
+            csT = Crossspectrum(self.lc1, self.lc2, fullspec=True, legacy=legacy)
         assert csT.fullspec == True
         assert self.cs.fullspec == False
         assert csT.n == self.cs.n
@@ -947,11 +970,8 @@ class TestAveragedCrossspectrum(object):
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, tend]], dt=dt)
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
 
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns(UserWarning, match="The large_data option and the save_all"):
             self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, save_all=True)
-        assert np.any(
-            ["The large_data option and the save_all" in r.message.args[0] for r in record]
-        )
 
     @pytest.mark.parametrize("skip_checks", [True, False])
     def test_initialize_empty(self, skip_checks):
@@ -1142,7 +1162,7 @@ class TestAveragedCrossspectrum(object):
         )
 
     def test_coherence(self):
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             coh = self.cs.coherence()
 
             assert len(coh[0]) == 4999
@@ -1222,31 +1242,27 @@ class TestAveragedCrossspectrum(object):
                 assert np.all(getattr(cs1, attr) == getattr(new_cs, attr))
 
     def test_rebin(self):
-        with warnings.catch_warnings(record=True) as w:
-            new_cs = self.cs.rebin(df=1.5)
+        new_cs = self.cs.rebin(df=1.5)
         assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert new_cs.df == 1.5
         new_cs.time_lag()
 
     def test_rebin_factor(self):
-        with warnings.catch_warnings(record=True) as w:
-            new_cs = self.cs.rebin(f=1.5)
+        new_cs = self.cs.rebin(f=1.5)
         assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert new_cs.df == self.cs.df * 1.5
         new_cs.time_lag()
 
     def test_rebin_log(self):
         # For now, just verify that it doesn't crash
-        with warnings.catch_warnings(record=True) as w:
-            new_cs = self.cs.rebin_log(f=0.1)
+        new_cs = self.cs.rebin_log(f=0.1)
         assert hasattr(new_cs, "dt") and new_cs.dt is not None
         assert type(new_cs) == type(self.cs)
         new_cs.time_lag()
 
     def test_rebin_log_returns_complex_values_and_errors(self):
         # For now, just verify that it doesn't crash
-        with warnings.catch_warnings(record=True) as w:
-            new_cs = self.cs.rebin_log(f=0.1)
+        new_cs = self.cs.rebin_log(f=0.1)
         assert np.iscomplexobj(new_cs.power[0])
         assert np.iscomplexobj(new_cs.power_err[0])
 
@@ -1268,7 +1284,7 @@ class TestAveragedCrossspectrum(object):
                 dt=dt,
             )
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5, norm="none")
 
             time_lag, time_lag_err = cs.time_lag()
@@ -1282,7 +1298,7 @@ class TestAveragedCrossspectrum(object):
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
 
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             cs = AveragedCrossspectrum(
                 test_lc1, test_lc2, segment_size=10, norm="leahy", legacy=True
             )
@@ -1294,7 +1310,7 @@ class TestAveragedCrossspectrum(object):
         np.random.seed(62)
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
-        with warnings.catch_warnings(record=True) as w:
+        with pytest.warns(UserWarning) as w:
             cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10, norm="leahy")
         maxpower = np.max(cs.power)
         assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower / 2.0)))
@@ -1409,7 +1425,7 @@ class TestRoundTrip:
             with pytest.raises(Exception) as excinfo:
                 so.write(fname, fmt=fmt)
                 assert h5py in str(excinfo.value)
-            return True
+            return
         so.write(fname, fmt=fmt)
         new_so = so.read(fname, fmt=fmt)
         os.unlink(fname)

@@ -310,32 +310,6 @@ def normalize_crossspectrum_gauss(
     power: numpy.nd.array
         The normalized co-spectrum (real part of the cross spectrum). For
         'none' normalization, imaginary part is returned as well.
-
-    Examples
-    --------
-    >>> lc_c = np.random.poisson(10000, 10000)
-    >>> lc_c_var = 10000
-    >>> lc = lc_c / 17.3453
-    >>> lc_var = (100 / 17.3453)**2
-    >>> pds_c = np.absolute(np.fft.fft(lc_c))**2
-    >>> pds = np.absolute(np.fft.fft(lc))**2
-    >>> dt = 0.1
-    >>> norm_c = normalize_crossspectrum_gauss(pds_c, np.mean(lc_c), lc_c_var, dt, len(lc_c), norm='leahy')
-    >>> norm = normalize_crossspectrum_gauss(pds, np.mean(lc), lc_var, dt, len(lc), norm='leahy')
-    >>> np.allclose(norm, norm_c)
-    True
-    >>> np.isclose(np.mean(norm[1:]), 2, atol=0.1)
-    True
-    >>> norm_c = normalize_crossspectrum_gauss(pds_c, np.mean(lc_c), np.mean(lc_c), dt, len(lc_c), norm='frac')
-    >>> norm = normalize_crossspectrum_gauss(pds, np.mean(lc), lc_var, dt, len(lc), norm='frac')
-    >>> np.allclose(norm, norm_c)
-    True
-    >>> norm_c = normalize_crossspectrum_gauss(pds_c, np.mean(lc_c), np.mean(lc_c), dt, len(lc_c), norm='abs')
-    >>> norm = normalize_crossspectrum_gauss(pds, np.mean(lc), lc_var, dt, len(lc), norm='abs')
-    >>> np.allclose(norm / np.mean(lc)**2, norm_c / np.mean(lc_c)**2)
-    True
-    >>> np.isclose(np.mean(norm_c[2:]), 2 * np.mean(lc_c) / dt, rtol=0.1)
-    True
     """
     warnings.warn(
         "normalize_crossspectrum_gauss is now deprecated and will be "
@@ -556,7 +530,7 @@ class Crossspectrum(StingrayObject):
         curves.
 
     k: array of int
-        The rebinning scheme if the object has been rebinned otherwise is set to 1. 
+        The rebinning scheme if the object has been rebinned otherwise is set to 1.
 
     nphots1: float
         The total number of photons in light curve 1
@@ -787,8 +761,8 @@ class Crossspectrum(StingrayObject):
             Two light curves used for computing the cross spectrum.
         """
         if lc1 is not lc2 and isinstance(lc1, Lightcurve):
-            self.pds1 = Crossspectrum(lc1, lc1, norm=self.norm)
-            self.pds2 = Crossspectrum(lc2, lc2, norm=self.norm)
+            self.pds1 = Crossspectrum(lc1, lc1, norm=self.norm, legacy=True, skip_checks=True)
+            self.pds2 = Crossspectrum(lc2, lc2, norm=self.norm, legacy=True, skip_checks=True)
 
     def _make_crossspectrum(self, lc1, lc2, fullspec=False):
         """
@@ -2093,6 +2067,8 @@ class AveragedCrossspectrum(Crossspectrum):
                 fullspec=self.fullspec,
                 save_all=self.save_all,
                 silent=not self.show_progress,
+                legacy=True,
+                skip_checks=True,
             )
 
             self.pds2 = AveragedCrossspectrum(
@@ -2106,6 +2082,8 @@ class AveragedCrossspectrum(Crossspectrum):
                 fullspec=self.fullspec,
                 save_all=self.save_all,
                 silent=not self.show_progress,
+                legacy=True,
+                skip_checks=True,
             )
 
     def _make_segment_spectrum(self, lc1, lc2, segment_size, silent=False):

@@ -84,7 +84,7 @@ def positive_fft_bins(n_bin, include_zero=False):
 
 
 def poisson_level(norm="frac", meanrate=None, n_ph=None, backrate=0):
-    """
+    r"""
     Poisson (white)-noise level in a periodogram of pure counting noise.
 
     For Leahy normalization, this is:
@@ -177,7 +177,7 @@ def poisson_level(norm="frac", meanrate=None, n_ph=None, backrate=0):
 
 
 def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
-    """
+    r"""
     Fractional rms normalization.
 
     ..math::
@@ -265,7 +265,7 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
 
 
 def normalize_abs(unnorm_power, dt, n_bin):
-    """
+    r"""
     Absolute rms normalization.
 
     .. math::
@@ -317,7 +317,7 @@ def normalize_abs(unnorm_power, dt, n_bin):
 
 
 def normalize_leahy_from_variance(unnorm_power, variance, n_bin):
-    """
+    r"""
     Leahy+83 normalization, from the variance of the lc.
 
     .. math::

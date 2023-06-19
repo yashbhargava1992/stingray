@@ -271,7 +271,8 @@ class TestGTI(object):
             a, b = bin_intervals_from_gtis([[1000, 1400]], 128, [500, 501])
 
     def test_gti_length(self):
-        assert gti_len([[0, 5], [6, 7]]) == 6
+        with pytest.warns(DeprecationWarning, match="This function is deprecated"):
+            assert gti_len([[0, 5], [6, 7]]) == 6
 
     def test_check_gtis_shape(self):
         with pytest.raises(TypeError):

@@ -38,8 +38,12 @@ try:
 except ImportError:
     comp_hessian = False
 
+try:
+    from astropy.modeling.fitting import fitter_to_model_params
+except ImportError:
+    from astropy.modeling.fitting import _fitter_to_model_params as fitter_to_model_params
+
 from astropy.modeling.fitting import (
-    _fitter_to_model_params,
     _model_to_fit_params,
     _validate_model,
     _convert_input,
@@ -205,7 +209,7 @@ class OptimizationResults(object):
             The object containing the function that is being optimized
             in the regression
         """
-        _fitter_to_model_params(lpost.model, self.p_opt)
+        fitter_to_model_params(lpost.model, self.p_opt)
 
         self.mfit = lpost.model(lpost.x)
 
@@ -681,9 +685,10 @@ class ParameterEstimation(object):
 
                 sampler.reset()
 
+                state = emcee.State(pos, prob, random_state=state)
                 # do the actual MCMC run
-                _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
 
+                _ = sampler.run_mcmc(initial_state=state, nsteps=niter)
         else:
             # initialize the sampler
             sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, args=[False])
@@ -692,9 +697,10 @@ class ParameterEstimation(object):
             pos, prob, state = sampler.run_mcmc(p0, burnin)
 
             sampler.reset()
+            state = emcee.State(pos, prob, random_state=state)
 
             # do the actual MCMC run
-            _, _, _ = sampler.run_mcmc(pos, niter, rstate0=state)
+            _ = sampler.run_mcmc(initial_state=state, nsteps=niter)
 
         res = SamplingResults(sampler)
 
@@ -738,7 +744,7 @@ class ParameterEstimation(object):
         m = lpost.model
 
         # reset the parameters
-        _fitter_to_model_params(m, pars)
+        fitter_to_model_params(m, pars)
 
         # make a model spectrum
         model_data = lpost.model(lpost.x)
@@ -1718,9 +1724,8 @@ class PSDParEst(ParameterEstimation):
 
             try:
                 res = parest_sim.fit(sim_lpost, t0, neg=True)
-                max_y_all[i], maxfreq, maxind = self._compute_highest_outlier(
-                    sim_lpost, res, nmax=1
-                )
+                max_y, maxfreq, maxind = self._compute_highest_outlier(sim_lpost, res, nmax=1)
+                max_y_all[i] = max_y[0]
             except RuntimeError:
                 logging.warning("Fitting unsuccessful! " "Skipping this simulation!")
                 continue

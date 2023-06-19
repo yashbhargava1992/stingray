@@ -329,14 +329,15 @@ class TestRetrieveSpec(object):
     @pytest.mark.skipif("not HAS_ZARR")
     def test_retrieve_ev_chunk_data(self):
         maxidx = 10**5
-        ev = retrieveData(
-            data_type="EventList",
-            dir_path=self.ev_path,
-            chunk_data=True,
-            chunk_size=maxidx,
-            offset=0,
-            raw=False,
-        )
+        with pytest.warns(UserWarning, match="GTI management is tricky when partially loading"):
+            ev = retrieveData(
+                data_type="EventList",
+                dir_path=self.ev_path,
+                chunk_data=True,
+                chunk_size=maxidx,
+                offset=0,
+                raw=False,
+            )
 
         gti = np.asarray([[self.ev.time[0], self.ev.time[-1]]])
 
@@ -363,14 +364,15 @@ class TestRetrieveSpec(object):
     def test_retrieve_ev_offset_data(self):
         maxidx = 10**5
         offset = 100
-        ev = retrieveData(
-            data_type="EventList",
-            dir_path=self.ev_path,
-            chunk_data=True,
-            chunk_size=maxidx,
-            offset=offset,
-            raw=False,
-        )
+        with pytest.warns(UserWarning, match="GTI management is tricky when partially loading"):
+            ev = retrieveData(
+                data_type="EventList",
+                dir_path=self.ev_path,
+                chunk_data=True,
+                chunk_size=maxidx,
+                offset=offset,
+                raw=False,
+            )
 
         gti = np.asarray([[self.ev.time[0], self.ev.time[-1]]])
 
@@ -432,7 +434,7 @@ class TestChunkPS(object):
     def test_invalid_data_to_pds(self):
         with pytest.raises(ValueError) as excinfo:
             AveragedPowerspectrum(
-                [self.lc1, self.lc1], segment_size=2048, large_data=True, silent=True
+                [self.lc1, self.lc1], segment_size=2048, large_data=True, legacy=True, silent=True
             )
         assert "Invalid input data type: list" in str(excinfo.value)
 
@@ -447,6 +449,7 @@ class TestChunkPS(object):
                 dt=0.01,
                 segment_size=5,
                 large_data=True,
+                legacy=True,
                 silent=True,
             )
 
@@ -458,6 +461,7 @@ class TestChunkPS(object):
                 [self.lc2, self.lc2],
                 segment_size=4096,
                 large_data=True,
+                legacy=True,
                 silent=True,
             )
         assert "Invalid input data type: list" in str(excinfo.value)
@@ -465,7 +469,7 @@ class TestChunkPS(object):
     @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_pds(self):
         ps_normal = AveragedPowerspectrum(self.lc1, segment_size=8192, silent=True, norm="leahy")
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns(UserWarning, match="The large_data option "):
             ps_large = AveragedPowerspectrum(
                 self.lc1,
                 segment_size=8192,
@@ -473,7 +477,6 @@ class TestChunkPS(object):
                 silent=True,
                 norm="leahy",
             )
-        assert np.any(["The large_data option " in r.message.args[0] for r in record])
 
         attrs = [
             "freq",
@@ -511,29 +514,26 @@ class TestChunkPS(object):
 
     @pytest.mark.skipif("HAS_ZARR")
     def test_calc_cpds_zarr_not_installed(self):
-        with pytest.raises(ImportError) as excinfo:
+        with pytest.raises(ImportError, match="The large_data option requires zarr") as excinfo:
             AveragedCrossspectrum(
                 self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True, legacy=True
             )
-        assert "The large_data option requires zarr" in str(excinfo.value)
 
     @pytest.mark.skipif("HAS_ZARR")
     def test_calc_pds_zarr_not_installed(self):
-        with pytest.raises(ImportError) as excinfo:
-            AveragedPowerspectrum(self.lc1, segment_size=8192, large_data=True, silent=True)
-        assert "The large_data option requires zarr" in str(excinfo.value)
+        with pytest.raises(ImportError, match="The large_data option requires zarr") as excinfo:
+            AveragedPowerspectrum(
+                self.lc1, segment_size=8192, large_data=True, silent=True, legacy=True
+            )
 
     @pytest.mark.skipif("not HAS_ZARR")
     def test_calc_cpds(self):
         cs_normal = AveragedCrossspectrum(
             self.lc1, self.lc2, segment_size=8192, silent=True, legacy=True
         )
-        with pytest.warns(UserWarning) as record:
+        with pytest.warns(UserWarning, match="The large_data option and the save_all") as record:
             cs_large = AveragedCrossspectrum(
                 self.lc1, self.lc2, segment_size=8192, large_data=True, silent=True
-            )
-            assert np.any(
-                ["The large_data option and the save_all" in r.message.args[0] for r in record]
             )
 
         attrs = [

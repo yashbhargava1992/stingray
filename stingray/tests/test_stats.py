@@ -94,8 +94,8 @@ class TestClassicalSignificances(object):
     def test_power_is_not_infinite2(self):
         power = -np.inf
         nspec = 1
-        with pytest.warns(DeprecationWarning):
-            with pytest.raises(ValueError):
+        with pytest.raises(ValueError):
+            with pytest.warns(DeprecationWarning):
                 classical_pvalue(power, nspec)
 
     def test_power_is_non_nan(self):
@@ -123,7 +123,8 @@ class TestClassicalSignificances(object):
         power = 2.0
         nspec = -np.inf
         with pytest.raises(ValueError):
-            classical_pvalue(power, nspec)
+            with pytest.warns(DeprecationWarning):
+                classical_pvalue(power, nspec)
 
     def test_nspec_is_not_nan(self):
         power = 2.0

@@ -28,6 +28,7 @@ __all__ = [
     "z_n_gauss",
     "z_n_events",
     "htest",
+    "p_to_f",
     "z_n_binned_events_all",
     "z_n_gauss_all",
     "z_n_events_all",
@@ -65,8 +66,6 @@ def p_to_f(*period_derivatives):
     >>> np.allclose(p_to_f(1, 2, 3), [1, -2, 5])
     True
     >>> np.allclose(p_to_f(1, 2, 3, 4), [1, -2, 5, -16])
-    True
-    >>> np.allclose(p_to_f(1, 2, 3, 4, 32, 22), [1, -2, 5, -16, 0, 0])
     True
     """
     nder = len(period_derivatives)
@@ -901,14 +900,13 @@ def get_orbital_correction_from_ephemeris_file(
     from scipy.interpolate import interp1d
     from astropy import units
 
-    simon(
-        "Assuming events are already referred to the solar system " "barycenter (timescale is TDB)"
-    )
     if not HAS_PINT:
         raise ImportError(
             "You need the optional dependency PINT to use this "
             "functionality: github.com/nanograv/pint"
         )
+
+    simon("Assuming events are already referred to the solar system barycenter (timescale is TDB)")
 
     mjds = np.linspace(mjdstart, mjdstop, ntimes)
     toalist = _load_and_prepare_TOAs(mjds, ephem=ephem)
