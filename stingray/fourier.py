@@ -1990,22 +1990,100 @@ def avg_cs_from_events(
     return results
 
 
-def lsft_fast(y, t, dy, w0, df, Nf):
-    # Work in Progress
-    weights = dy**-2.0
-    weights /= weights.sum()
+def lsft_fast(
+    y: npt.ArrayLike,
+    t: npt.ArrayLike,
+    freqs: npt.ArrayLike,
+    sign: Optional[int] = 1,
+    fullspec: Optional[bool] = False,
+    oversampling: Optional[int] = 5,
+):
+    """
+    Calculates the Lomb-Scargle Fourier transform of a light curve.
 
-    Sh, Ch = trig_sum(t, weights * t, df=df, N=Nf, use_fft=True)
-    S2, C2 = trig_sum(t, weights, freq_factor=2, df=df, N=Nf, use_fft=True)
+    Parameters
+    ----------
+    y : a :class:`numpy.array` of floats
+        Observations to be transformed.
+
+    t : :class:`numpy.array` of floats
+        Times of the observations
+
+    freqs : :class:`numpy.array`
+        An array of frequencies at which the transform is sampled.
+
+    sign : int, optional, default: 1
+        The sign of the fourier transform. 1 implies positive sign and -1 implies negative sign.
+
+    fullspec : bool, optional, default: False
+        Return LSFT values for full frequency array (True) or just positive frequencies (False).
+
+    oversampling : float, optional, default: 5
+        Interpolation Oversampling Factor
+
+    Returns
+    -------
+    ft_res : numpy.ndarray
+        An array of Fourier transformed data.
+    """
+    if sign not in [1, -1]:
+        raise ValueError("sign must be 1 or -1")
+
+    freqs = np.sort(freqs)
+
+    f0, df, N = freqs[0], freqs[1] - freqs[0], len(freqs)
+
+    Sh, Ch = trig_sum(
+        t,
+        y,
+        df,
+        N,
+        f0,
+        oversampling=oversampling,
+    )
+    S2, C2 = trig_sum(
+        t,
+        np.ones_like(y),
+        df,
+        N,
+        f0,
+        freq_factor=2,
+        oversampling=oversampling,
+    )
+
+    tan_2wtau = S2 / C2
+
+    S2w = tan_2wtau / np.sqrt(1 + tan_2wtau**2)
+    C2w = 1 / np.sqrt(1 + tan_2wtau**2)
+
+    Cw = np.sqrt(0.5) * np.sqrt(1 + C2w)
+    Sw = np.sqrt(0.5) * np.sign(S2w) * np.sqrt(1 - S2w)
+
+    YC = Ch * Cw + Sh * Sw
+    YS = Sh * Cw - Ch * Sw
+    CC = 0.5 * (N + C2 * C2w + S2 * S2w)
+    SS = 0.5 * (N - C2 * C2w + S2 * S2w)
+
+    ft_res = (YC**2 / CC) + 1j * (YS**2 / SS)
+
+    ft_res *= np.exp(-1j * freqs * 2 * np.pi)
+
+    if sign == -1:
+        ft_res = np.conjugate(ft_res)
+
+    if fullspec:
+        return ft_res
+    else:
+        return ft_res[freqs > 0]
 
 
 def lsft_slow(
     y: npt.ArrayLike,
     t: npt.ArrayLike,
-    ww: npt.ArrayLike,
+    freqs: npt.ArrayLike,
     sign: Optional[int] = 1,
     fullspec: Optional[bool] = False,
-):
+):  
     """
     Calculates the Lomb-Scargle Fourier transform of a light curve.
 
@@ -2014,7 +2092,7 @@ def lsft_slow(
     y : a `:class:numpy.array` of floats
         Observations to be transformed.
 
-    y : `:class:numpy.array` of floats
+    t : `:class:numpy.array` of floats
         Times of the observations
 
     freqs : numpy.ndarray
@@ -2040,7 +2118,7 @@ def lsft_slow(
     sum_xx = np.sum(y)
 
     num_xt = len(y)
-    num_ww = len(ww)
+    num_ww = len(freqs)
 
     ft_real = ft_imag = np.zeros((num_ww))
     ft_res = np.zeros((num_ww), dtype=np.complex128)
@@ -2050,7 +2128,7 @@ def lsft_slow(
             ft_imag = 0
             phase_this = 0
         else:
-            wrun = ww[i] * 2 * np.pi
+            wrun = freqs[i] * 2 * np.pi
 
             csum = np.sum(np.cos(2.0 * wrun * t))
             ssum = np.sum(np.sin(2.0 * wrun * t))
@@ -2072,4 +2150,4 @@ def lsft_slow(
     if fullspec:
         return ft_res
     else:
-        return ft_res[ww > 0]
+        return ft_res[freqs > 0]
