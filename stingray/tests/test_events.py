@@ -256,39 +256,41 @@ class TestEvents(object):
 
     def test_non_overlapping_join(self):
         """Join two overlapping event lists."""
-        ev = EventList(time=[1, 1, 2, 3, 4], energy=[3, 4, 7, 4, 3], gti=[[1, 2], [3, 4]])
-        ev_other = EventList(time=[5, 6, 6, 7, 10], energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
+        ev = EventList(time=[1, 1.1, 2, 3, 4], energy=[3, 4, 7, 4, 3], gti=[[1, 2], [3, 4]])
+        ev_other = EventList(time=[5, 6, 6.1, 7, 10], energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
         with pytest.warns(UserWarning, match="GTIs in these two event lists do not overlap"):
             ev_new = ev.join(ev_other)
 
-        assert (ev_new.time == np.array([1, 1, 2, 3, 4, 5, 6, 6, 7, 10])).all()
+        assert (ev_new.time == np.array([1, 1.1, 2, 3, 4, 5, 6, 6.1, 7, 10])).all()
         assert (ev_new.energy == np.array([3, 4, 7, 4, 3, 4, 3, 8, 1, 2])).all()
         assert (ev_new.gti == np.array([[1, 2], [3, 4], [6, 7]])).all()
 
     def test_overlapping_join(self):
         """Join two non-overlapping event lists."""
-        ev = EventList(time=[1, 1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]])
-        ev_other = EventList(time=[5, 7, 6, 6, 10], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]])
+        ev = EventList(time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]])
+        ev_other = EventList(
+            time=[5.1, 7, 6.1, 6.11, 10.1], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]]
+        )
         ev_new = ev.join(ev_other)
 
-        assert (ev_new.time == np.array([1, 1, 5, 5, 6, 6, 6, 7, 10, 10])).all()
+        assert (ev_new.time == np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1])).all()
         assert (ev_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert (ev_new.gti == np.array([[5, 6]])).all()
 
     def test_overlapping_join_change_mjdref(self):
         """Join two non-overlapping event lists."""
         ev = EventList(
-            time=[1, 1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]], mjdref=57001
+            time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]], mjdref=57001
         )
         ev_other = EventList(
-            time=np.asarray([5, 7, 6, 6, 10]) + 86400,
+            time=np.asarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
             energy=[2, 3, 8, 1, 2],
             gti=np.asarray([[5, 7], [8, 10]]) + 86400,
             mjdref=57000,
         )
         ev_new = ev.join(ev_other)
 
-        assert np.allclose(ev_new.time, np.array([1, 1, 5, 5, 6, 6, 6, 7, 10, 10]))
+        assert np.allclose(ev_new.time, np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1]))
         assert (ev_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert np.allclose(ev_new.gti, np.array([[5, 6]]))
 
