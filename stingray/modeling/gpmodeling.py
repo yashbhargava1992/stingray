@@ -174,10 +174,19 @@ def _skew_gaussian(t, mean_params):
     -------
     The y values for skew gaussian flare.
     """
-    return mean_params["A"] * jnp.where(
-        t > mean_params["t0"],
-        jnp.exp(-((t - mean_params["t0"]) ** 2) / (2 * (mean_params["sig2"] ** 2))),
-        jnp.exp(-((t - mean_params["t0"]) ** 2) / (2 * (mean_params["sig1"] ** 2))),
+    A = jnp.atleast_1d(mean_params["A"])[:, jnp.newaxis]
+    t0 = jnp.atleast_1d(mean_params["t0"])[:, jnp.newaxis]
+    sig1 = jnp.atleast_1d(mean_params["sig1"])[:, jnp.newaxis]
+    sig2 = jnp.atleast_1d(mean_params["sig2"])[:, jnp.newaxis]
+
+    return jnp.sum(
+        A
+        * jnp.where(
+            t > t0,
+            jnp.exp(-((t - t0) ** 2) / (2 * (sig2**2))),
+            jnp.exp(-((t - t0) ** 2) / (2 * (sig1**2))),
+        ),
+        axis=0,
     )
 
 
@@ -201,10 +210,19 @@ def _skew_exponential(t, mean_params):
     -------
     The y values for exponential flare.
     """
-    return mean_params["A"] * jnp.where(
-        t > mean_params["t0"],
-        jnp.exp(-(t - mean_params["t0"]) / mean_params["sig2"]),
-        jnp.exp((t - mean_params["t0"]) / mean_params["sig1"]),
+    A = jnp.atleast_1d(mean_params["A"])[:, jnp.newaxis]
+    t0 = jnp.atleast_1d(mean_params["t0"])[:, jnp.newaxis]
+    sig1 = jnp.atleast_1d(mean_params["sig1"])[:, jnp.newaxis]
+    sig2 = jnp.atleast_1d(mean_params["sig2"])[:, jnp.newaxis]
+
+    return jnp.sum(
+        A
+        * jnp.where(
+            t > t0,
+            jnp.exp(-(t - t0) / (2 * (sig2**2))),
+            jnp.exp((t - t0) / (2 * (sig1**2))),
+        ),
+        axis=0,
     )
 
 
@@ -228,16 +246,13 @@ def _fred(t, mean_params):
     -------
     The y values for exponential flare.
     """
-    return (
-        mean_params["A"]
-        * jnp.exp(
-            -mean_params["phi"]
-            * (
-                (t + mean_params["delta"]) / mean_params["t0"]
-                + mean_params["t0"] / (t + mean_params["delta"])
-            )
-        )
-        * jnp.exp(2 * mean_params["phi"])
+    A = jnp.atleast_1d(mean_params["A"])[:, jnp.newaxis]
+    t0 = jnp.atleast_1d(mean_params["t0"])[:, jnp.newaxis]
+    phi = jnp.atleast_1d(mean_params["phi"])[:, jnp.newaxis]
+    delta = jnp.atleast_1d(mean_params["delta"])[:, jnp.newaxis]
+
+    return jnp.sum(
+        A * jnp.exp(-phi * ((t + delta) / t0 + t0 / (t + delta))) * jnp.exp(2 * phi), axis=0
     )
 
 
