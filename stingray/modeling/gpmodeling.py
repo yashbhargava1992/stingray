@@ -105,9 +105,11 @@ def _gaussian(t, mean_params):
     -------
     The y values for the gaussian flare.
     """
-    return mean_params["A"] * jnp.exp(
-        -((t - mean_params["t0"]) ** 2) / (2 * (mean_params["sig"] ** 2))
-    )
+    A = jnp.atleast_1d(mean_params["A"])[:, jnp.newaxis]
+    t0 = jnp.atleast_1d(mean_params["t0"])[:, jnp.newaxis]
+    sig = jnp.atleast_1d(mean_params["sig"])[:, jnp.newaxis]
+
+    return jnp.sum(A * jnp.exp(-((t - t0) ** 2) / (2 * (sig**2))), axis=0)
 
 
 def _exponential(t, mean_params):
@@ -128,7 +130,11 @@ def _exponential(t, mean_params):
     -------
     The y values for exponential flare.
     """
-    return mean_params["A"] * jnp.exp(-jnp.abs((t - mean_params["t0"])) / mean_params["sig"])
+    A = jnp.atleast_1d(mean_params["A"])[:, jnp.newaxis]
+    t0 = jnp.atleast_1d(mean_params["t0"])[:, jnp.newaxis]
+    sig = jnp.atleast_1d(mean_params["sig"])[:, jnp.newaxis]
+
+    return jnp.sum(A * jnp.exp(-jnp.abs(t - t0) / (2 * (sig**2))), axis=0)
 
 
 def _constant(t, mean_params):
