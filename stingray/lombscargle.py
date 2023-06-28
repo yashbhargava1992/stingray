@@ -69,7 +69,7 @@ class LombScargleCrossspectrum(Crossspectrum):
 
     Attributes
     ----------
-    freq: numpy.ndarray
+    freqs: numpy.ndarray
         The array of mid-bin frequencies that the Fourier transform samples
 
     power: numpy.ndarray
@@ -165,6 +165,8 @@ class LombScargleCrossspectrum(Crossspectrum):
 
         self.min_freq = min_freq
         self.max_freq = max_freq
+        self.method = method
+        self.oversampling = oversampling
         self._make_crossspectrum(
             self.lc1, self.lc2, fullspec, method=method, oversampling=oversampling
         )
@@ -182,17 +184,17 @@ class LombScargleCrossspectrum(Crossspectrum):
 
     def initial_checks(
         self,
-        data1=None,
-        data2=None,
-        norm=None,
-        power_type=None,
-        dt=None,
-        min_freq=0,
-        max_freq=None,
-        fullspec=False,
-        df=None,
-        method="fast",
-        oversampling=5,
+        data1,
+        data2,
+        norm,
+        power_type,
+        dt,
+        min_freq,
+        max_freq,
+        fullspec,
+        df,
+        method,
+        oversampling,
     ):
         if not isinstance(norm, str):
             raise TypeError("norm must be a string")
@@ -220,8 +222,8 @@ class LombScargleCrossspectrum(Crossspectrum):
         if not isinstance(oversampling, int):
             raise TypeError("oversampling must be an integer")
 
-        if not isinstance(df, float) and df is not None:
-            raise TypeError("df must be a float")
+        # if not isinstance(df, float) and df is not None:
+        #     raise TypeError("df must be a float")
 
         if not isinstance(fullspec, bool):
             raise TypeError("fullspec must be a boolean")
@@ -234,7 +236,7 @@ class LombScargleCrossspectrum(Crossspectrum):
 
         return True
 
-    def _make_crossspectrum(self, lc1, lc2, fullspec=False, method="fast", oversampling=5):
+    def _make_crossspectrum(self, lc1, lc2, fullspec, method, oversampling):
         """
         Auxiliary method computing the normalized cross spectrum from two
         light curves. This includes checking for the presence of and
@@ -296,7 +298,7 @@ class LombScargleCrossspectrum(Crossspectrum):
 
         self.m = 1
 
-        self.freq, self.unnorm_power = self._ls_cross(
+        self.freqs, self.unnorm_power = self._ls_cross(
             self.lc1,
             self.lc2,
             fullspec=fullspec,
@@ -344,6 +346,8 @@ class LombScargleCrossspectrum(Crossspectrum):
                 min_freq=self.min_freq,
                 max_freq=self.max_freq,
                 df=self.df,
+                method=self.method,
+                oversampling=self.oversampling,
             )
             self.pds2 = LombScargleCrossspectrum(
                 lc2,
@@ -355,9 +359,11 @@ class LombScargleCrossspectrum(Crossspectrum):
                 min_freq=self.min_freq,
                 max_freq=self.max_freq,
                 df=self.df,
+                method=self.method,
+                oversampling=self.oversampling,
             )
 
-    def _ls_cross(self, lc1, lc2, ww=None, fullspec=False, method="fast", oversampling=5):
+    def _ls_cross(self, lc1, lc2, freqs=None, fullspec=False, method="fast", oversampling=5):
         """
         Lomb-Scargle Fourier transform the two light curves, then compute the cross spectrum.
         Computed as CS = lc1 x lc2* (where lc2 is the one that gets
@@ -384,15 +390,15 @@ class LombScargleCrossspectrum(Crossspectrum):
 
         Returns
         -------
-        freq: numpy.ndarray
+        freqs: numpy.ndarray
             The frequency grid at which the LSFT was evaluated
 
         cross: numpy.ndarray
             The cross spectrum value at each frequency.
 
         """
-        if not ww:
-            ww = (
+        if not freqs:
+            freqs = (
                 LombScargle(
                     lc1.time,
                     lc1.counts,
@@ -401,7 +407,7 @@ class LombScargleCrossspectrum(Crossspectrum):
                     normalization="psd",
                 ).autofrequency(minimum_frequency=self.min_freq, maximum_frequency=self.max_freq),
             )[0]
-            ww2 = (
+            freqs2 = (
                 LombScargle(
                     lc2.time,
                     lc2.counts,
@@ -410,33 +416,36 @@ class LombScargleCrossspectrum(Crossspectrum):
                     normalization="psd",
                 ).autofrequency(minimum_frequency=self.min_freq, maximum_frequency=self.max_freq),
             )[0]
-            if max(ww2) > max(ww):
-                ww = ww2
+            if max(freqs2) > max(freqs):
+                freqs = freqs2
 
         if method == "slow":
-            lsft1 = lsft_slow(lc1.counts, lc1.time, ww, sign=1, fullspec=fullspec)
-            lsft2 = lsft_slow(lc2.counts, lc2.time, ww, sign=-1, fullspec=fullspec)
+            lsft1 = lsft_slow(lc1.counts, lc1.time, freqs, sign=1, fullspec=fullspec)
+            lsft2 = lsft_slow(lc2.counts, lc2.time, freqs, sign=-1, fullspec=fullspec)
         elif method == "fast":
             lsft1 = lsft_fast(
-                lc1.counts, lc1.time, ww, fullspec=fullspec, oversampling=oversampling
+                lc1.counts,
+                lc1.time,
+                freqs,
+                fullspec=fullspec,
+                oversampling=oversampling,
             )
             lsft2 = lsft_fast(
                 lc2.counts,
                 lc2.time,
-                ww,
+                freqs,
                 fullspec=fullspec,
                 sign=-1,
                 oversampling=oversampling,
             )
         cross = np.multiply(lsft1, lsft2)
-        freq = ww
         if not fullspec:
-            freq = freq[freq > 0]
-            cross = cross[freq > 0]
-        return freq, cross
+            freqs = freqs[freqs > 0]
+            cross = cross[freqs > 0]
+        return freqs, cross
 
     def _initialize_empty(self):
-        self.freq = None
+        self.freqs = None
         self.power = None
         self.power_err = None
         self.unnorm_power = None
@@ -464,7 +473,7 @@ class LombScargleCrossspectrum(Crossspectrum):
         if self.__class__ == LombScargleCrossspectrum:
             ph_lag = self.phase_lag()
 
-            return ph_lag / (2 * np.pi * self.freq)
+            return ph_lag / (2 * np.pi * self.freqs)
         else:
             raise AttributeError("Object has no attribute named 'time_lag' !")
 
@@ -522,7 +531,7 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
     norm: {"leahy" | "frac" | "abs" | "none" }
         The normalization of the power spectrum.
 
-    freq: numpy.ndarray
+    freqs: numpy.ndarray
         The array of mid-bin frequencies that the Fourier transform samples.
 
     power: numpy.ndarray
@@ -566,7 +575,7 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
     ):
         self._type = None
         data1 = copy.deepcopy(data)
-        data2 = copy.deepcopy(data1)
+        data2 = copy.deepcopy(data)
         good_input = data is not None
         if not skip_checks:
             good_input = self.initial_checks(
