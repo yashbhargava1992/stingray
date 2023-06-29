@@ -5,7 +5,7 @@ import tensorflow_probability.substrates.jax as tfp
 import matplotlib.pyplot as plt
 
 from tinygp import GaussianProcess, kernels
-from stingray.modeling.gpmodeling import get_kernel, get_mean, GP
+from stingray.modeling.gpmodeling import get_kernel, get_mean, get_gp_params
 
 
 class Testget_kernel(object):
@@ -107,3 +107,85 @@ class Testget_mean(object):
             2 * 4.0
         ) + 4.0 * jnp.exp(-5.0 * ((self.t + 0.4) / 0.7 + 0.7 / (self.t + 0.4))) * jnp.exp(2 * 5.0)
         assert (get_mean("fred", self.fred_mean_params)(self.t) == result_fred).all()
+
+    class Testget_gp_params(object):
+        def setup_class(self):
+            pass
+
+        def test_get_gp_params_rn(self):
+            assert get_gp_params("RN", "gaussian") == ["arn", "crn", "A", "t0", "sig"]
+            assert get_gp_params("RN", "constant") == ["arn", "crn", "A"]
+            assert get_gp_params("RN", "skew_gaussian") == ["arn", "crn", "A", "t0", "sig1", "sig2"]
+            assert get_gp_params("RN", "skew_exponential") == [
+                "arn",
+                "crn",
+                "A",
+                "t0",
+                "sig1",
+                "sig2",
+            ]
+            assert get_gp_params("RN", "exponential") == ["arn", "crn", "A", "t0", "sig"]
+            assert get_gp_params("RN", "fred") == ["arn", "crn", "A", "t0", "delta", "phi"]
+
+        def test_get_gp_params_qpo_plus_rn(self):
+            assert get_gp_params("QPO_plus_RN", "gaussian") == [
+                "arn",
+                "crn",
+                "aqpo",
+                "cqpo",
+                "freq",
+                "A",
+                "t0",
+                "sig",
+            ]
+            assert get_gp_params("QPO_plus_RN", "constant") == [
+                "arn",
+                "crn",
+                "aqpo",
+                "cqpo",
+                "freq",
+                "A",
+            ]
+            assert get_gp_params("QPO_plus_RN", "skew_gaussian") == [
+                "arn",
+                "crn",
+                "aqpo",
+                "cqpo",
+                "freq",
+                "A",
+                "t0",
+                "sig1",
+                "sig2",
+            ]
+            assert get_gp_params("QPO_plus_RN", "skew_exponential") == [
+                "arn",
+                "crn",
+                "aqpo",
+                "cqpo",
+                "freq",
+                "A",
+                "t0",
+                "sig1",
+                "sig2",
+            ]
+            assert get_gp_params("QPO_plus_RN", "exponential") == [
+                "arn",
+                "crn",
+                "aqpo",
+                "cqpo",
+                "freq",
+                "A",
+                "t0",
+                "sig",
+            ]
+            assert get_gp_params("QPO_plus_RN", "fred") == [
+                "arn",
+                "crn",
+                "aqpo",
+                "cqpo",
+                "freq",
+                "A",
+                "t0",
+                "delta",
+                "phi",
+            ]
