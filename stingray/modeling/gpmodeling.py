@@ -15,13 +15,14 @@ from jaxns import TerminationCondition
 
 # from jaxns import analytic_log_evidence
 from jaxns import Prior, Model
+from jaxns.utils import resample
 
 jax.config.update("jax_enable_x64", True)
 
 tfpd = tfp.distributions
 tfpb = tfp.bijectors
 
-__all__ = ["GP"]
+__all__ = ["GPResult"]
 
 
 def get_kernel(kernel_type, kernel_params):
@@ -349,37 +350,23 @@ def get_likelihood(params_list, kernel_type, mean_type, **kwargs):
     return likelihood_model
 
 
-class GP:
+class GPResult:
     """
-    Makes a GP object which takes in a Stingray.Lightcurve and fits a Gaussian
-    Process on the lightcurve data, for the given kernel.
+    Makes a GPResult object which takes in a Stingray.Lightcurve and samples parameters of a model
+    (Gaussian Process) based on the given prior and log_likelihood function.
 
     Parameters
     ----------
     lc: Stingray.Lightcurve object
-        The lightcurve on which the gaussian process, is to be fitted
-
-    Model_type: string tuple
-        Has two strings with the first being the name of the kernel type
-        and the secound being the mean type
-
-    Model_parameter: dict, default = None
-        Dictionary conatining the parameters for the mean and kernel
-        The keys should be accourding to the selected kernel and mean
-        coressponding to the Model_type
-        By default, it takes a value None, and the kernel and mean are
-        then bulit using the pre-set parameters.
+        The lightcurve on which the bayesian inference is to be done
 
     Other Parameters
     ----------------
-    kernel: class: `TinyGp.kernel` object
-        The tinygp kernel for the GP
+    time : class: np.array
+        The array containing the times of the lightcurve
 
-    mean: class: `TinyGp.mean` object
-        The tinygp mean for the GP
-
-    maingp: class: `TinyGp.GaussianProcess` object
-        The tinygp gaussian process made on the lightcurve
+    counts : class: np.array
+        The array containing the photon counts of the lightcurve
 
     """
 
@@ -387,77 +374,7 @@ class GP:
         self.lc = Lc
         self.time = Lc.time
         self.counts = Lc.counts
-
-    def fit(self, kernel=None, mean=None, **kwargs):
-        self.kernel = kernel
-        self.mean = mean
-        self.maingp = GaussianProcess(
-            self.kernel, self.time, mean_value=self.mean(self.time), diag=kwargs["diag"]
-        )
-
-    def get_logprob(self):
-        """
-        Returns the logprobability of the lightcurves counts for the
-        given kernel for the Gaussian Process
-        """
-        cond = self.maingp.condition(self.lc.counts)
-        return cond.log_probability
-
-    def plot_kernel(self):
-        """
-        Plots the kernel of the Gaussian Process
-        """
-        X = self.lc.time
-        Y = self.kernel(X, np.array([0.0]))
-        plt.plot(X, Y)
-        plt.xlabel("distance")
-        plt.ylabel("Value")
-        plt.title("Kernel Function")
-
-    def plot_originalgp(self, sample_no=1, seed=0):
-        """
-        Plots samples obtained from the gaussian process for the kernel
-
-        Parameters
-        ----------
-        sample_no: int , default = 1
-            Number of GP samples to be taken
-
-        """
-        X_test = self.lc.time
-        _, ax = plt.subplots(1, 1, figsize=(10, 3))
-        y_samp = self.maingp.sample(jax.random.PRNGKey(seed), shape=(sample_no,))
-        ax.plot(X_test, y_samp[0], "C0", lw=0.5, alpha=0.5, label="samples")
-        ax.plot(X_test, y_samp[1:].T, "C0", lw=0.5, alpha=0.5)
-        ax.set_xlabel("time")
-        ax.set_ylabel("counts")
-        ax.legend(loc="best")
-
-    def plot_gp(self, sample_no=1, seed=0):
-        """
-        Plots gaussian process, conditioned on the lightcurve
-        Also, plots the lightcurve along with it
-
-        Parameters
-        ----------
-        sample_no: int , default = 1
-            Number of GP samples to be taken
-
-        """
-        X_test = self.lc.time
-
-        _, ax = plt.subplots(1, 1, figsize=(10, 3))
-        _, cond_gp = self.maingp.condition(self.lc.counts, X_test)
-        mu = cond_gp.mean
-        # std = np.sqrt(cond_gp.variance)
-
-        ax.plot(self.lc.time, self.lc.counts, lw=2, color="blue", label="Lightcurve")
-        ax.plot(X_test, mu, "C1", label="Gaussian Process")
-        y_samp = cond_gp.sample(jax.random.PRNGKey(seed), shape=(sample_no,))
-        ax.plot(X_test, y_samp[0], "C0", lw=0.5, alpha=0.5)
-        ax.set_xlabel("time")
-        ax.set_ylabel("counts")
-        ax.legend(loc="best")
+        self.Result = None
 
     def sample(self, prior_model=None, likelihood_model=None, **kwargs):
         """
@@ -493,6 +410,12 @@ class GP:
         self.Results = self.Exact_ns.to_results(State, Termination_reason)
         print("Simulation Complete")
 
+    def get_evidence(self):
+        """
+        Returns the log evidence of the model
+        """
+        return self.Results.log_Z_mean
+
     def print_summary(self):
         """
         Prints a summary table for the model parameters
@@ -511,24 +434,109 @@ class GP:
         """
         self.Exact_ns.plot_cornerplot(self.Results)
 
-    def get_parameters(self):
+    def get_parameters_names(self):
+        """
+        Returns the names of the parameters
+        """
+        return sorted(self.Results.samples.keys())
+
+    def get_max_posterior_parameters(self):
         """
         Returns the optimal parameters for the model based on the NUTS sampling
         """
+        max_post_idx = jnp.argmax(self.Results.log_posterior_density)
+        map_points = jax.tree_map(lambda x: x[max_post_idx], self.Results.samples)
+
+        return map_points
+
+    def get_max_likelihood_parameters(self):
+        """
+        Retruns the maximum likelihood parameters
+        """
+        max_like_idx = jnp.argmax(self.Results.log_L_samples)
+        max_like_points = jax.tree_map(lambda x: x[max_like_idx], self.Results.samples)
+
+        return max_like_points
+
+    def posterior_plot(self, name: str, n=0):
+        """
+        Plots the posterior histogram for the given parameter
+        """
+        nsamples = self.Results.total_num_samples
+        samples = self.Results.samples[name].reshape((nsamples, -1))[:, n]
+        plt.hist(
+            samples, bins="auto", density=True, alpha=1.0, label=name, fc="None", edgecolor="black"
+        )
+        mean1 = jnp.mean(self.Results.samples[name])
+        std1 = jnp.std(self.Results.samples[name])
+        plt.axvline(mean1, color="red", linestyle="dashed", label="mean")
+        plt.axvline(mean1 + std1, color="green", linestyle="dotted")
+        plt.axvline(mean1 - std1, linestyle="dotted", color="green")
+        plt.legend()
+        plt.plot()
 
         pass
 
-    def plot_posterior(self, X_test):
+    def weighted_posterior_plot(self, name: str, n=0, rkey=random.PRNGKey(1234)):
         """
-        Plots posterior gaussian process, conditioned on the lightcurve
-        Also, plots the lightcurve along with it
-
-        Parameters
-        ----------
-        X_test: jnp.array
-            Array over which the Gaussian process values are to be obtained
-            Can be made default with lc.times as default
-
+        Returns the weighted posterior histogram for the given parameter
         """
+        nsamples = self.Results.total_num_samples
+        log_p = self.Results.log_dp_mean
+        samples = self.Results.samples[name].reshape((nsamples, -1))[:, n]
+
+        weights = jnp.where(jnp.isfinite(samples), jnp.exp(log_p), 0.0)
+        log_weights = jnp.where(jnp.isfinite(samples), log_p, -jnp.inf)
+        samples_resampled = resample(
+            rkey, samples, log_weights, S=max(10, int(self.Results.ESS)), replace=True
+        )
+
+        nbins = max(10, int(jnp.sqrt(self.Results.ESS)) + 1)
+        binsx = jnp.linspace(*jnp.percentile(samples_resampled, jnp.asarray([0, 100])), 2 * nbins)
+
+        plt.hist(
+            np.asarray(samples_resampled),
+            bins=binsx,
+            density=True,
+            alpha=1.0,
+            label=name,
+            fc="None",
+            edgecolor="black",
+        )
+        sample_mean = jnp.average(samples, weights=weights)
+        sample_std = jnp.sqrt(jnp.average((samples - sample_mean) ** 2, weights=weights))
+        plt.axvline(sample_mean, color="red", linestyle="dashed", label="mean")
+        plt.axvline(sample_mean + sample_std, color="green", linestyle="dotted")
+        plt.axvline(sample_mean - sample_std, linestyle="dotted", color="green")
+        plt.legend()
+        plt.plot()
+
+    def corner_plot(self, param1: str, param2: str, n1=0, n2=0, rkey=random.PRNGKey(1234)):
+        """
+        Plots the corner plot for the given parameters
+        """
+        nsamples = self.Results.total_num_samples
+        log_p = self.Results.log_dp_mean
+        samples1 = self.Results.samples[param1].reshape((nsamples, -1))[:, n1]
+        samples2 = self.Results.samples[param2].reshape((nsamples, -1))[:, n2]
+
+        log_weights = jnp.where(jnp.isfinite(samples2), log_p, -jnp.inf)
+        nbins = max(10, int(jnp.sqrt(self.Results.ESS)) + 1)
+
+        samples_resampled = resample(
+            rkey,
+            jnp.stack([samples1, samples2], axis=-1),
+            log_weights,
+            S=max(10, int(self.Results.ESS)),
+            replace=True,
+        )
+        plt.hist2d(
+            samples_resampled[:, 1],
+            samples_resampled[:, 0],
+            bins=(nbins, nbins),
+            density=True,
+            cmap="GnBu",
+        )
+        plt.plot()
 
         pass
