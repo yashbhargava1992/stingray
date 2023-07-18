@@ -1,26 +1,41 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import jax
-import jax.numpy as jnp
 import functools
-import tensorflow_probability.substrates.jax as tfp
-
-from jax import jit, random
-
-from tinygp import GaussianProcess, kernels
 from stingray import Lightcurve
 
-from jaxns import ExactNestedSampler
-from jaxns import TerminationCondition
+try:
+    import jax
+except ImportError:
+    raise ImportError("Jax not installed")
 
-# from jaxns import analytic_log_evidence
-from jaxns import Prior, Model
-from jaxns.utils import resample
+import jax.numpy as jnp
+from jax import jit, random
 
 jax.config.update("jax_enable_x64", True)
 
-tfpd = tfp.distributions
-tfpb = tfp.bijectors
+try:
+    from tinygp import GaussianProcess, kernels
+
+    can_make_gp = True
+except ImportError:
+    can_make_gp = False
+
+try:
+    from jaxns import ExactNestedSampler, TerminationCondition, Prior, Model
+    from jaxns.utils import resample
+
+    can_sample = True
+except ImportError:
+    can_sample = False
+try:
+    import tensorflow_probability.substrates.jax as tfp
+
+    tfpd = tfp.distributions
+    tfpb = tfp.bijectors
+    tfp_available = True
+except ImportError:
+    tfp_available = False
+
 
 __all__ = ["GPResult"]
 
@@ -41,6 +56,9 @@ def get_kernel(kernel_type, kernel_params):
         Should contain the parameters for the selected kernel
 
     """
+    if not can_make_gp:
+        raise ImportError("Tinygp is required to make kernels")
+
     if kernel_type == "QPO_plus_RN":
         kernel = kernels.quasisep.Exp(
             scale=1 / kernel_params["crn"], sigma=(kernel_params["arn"]) ** 0.5
@@ -303,6 +321,11 @@ def get_prior(params_list, prior_dict):
     Non Windowed arguments
 
     """
+    if not can_sample:
+        raise ImportError("Jaxns not installed. Cannot make jaxns specific prior.")
+
+    if not tfp_available:
+        raise ImportError("Tensorflow probability required to make priors.")
 
     def prior_model():
         prior_list = []
@@ -336,6 +359,8 @@ def get_likelihood(params_list, kernel_type, mean_type, **kwargs):
         The type of mean to be used in the model.
 
     """
+    if not can_make_gp:
+        raise ImportError("Tinygp is required to make the GP model.")
 
     @jit
     def likelihood_model(*args):
@@ -396,6 +421,8 @@ class GPResult:
             The results of the nested sampling process
 
         """
+        if not can_sample:
+            raise ImportError("Jaxns not installed! Can't sample!")
 
         self.prior_model = prior_model
         self.likelihood_model = likelihood_model
