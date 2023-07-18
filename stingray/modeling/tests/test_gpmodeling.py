@@ -1,11 +1,22 @@
 import jax
 import jax.numpy as jnp
+from jax import random
+
+jax.config.update("jax_enable_x64", True)
+
 import numpy as np
-import tensorflow_probability.substrates.jax as tfp
 import matplotlib.pyplot as plt
 
 from tinygp import GaussianProcess, kernels
 from stingray.modeling.gpmodeling import get_kernel, get_mean, get_gp_params
+from stingray.modeling.gpmodeling import get_prior, get_likelihood, GPResult
+from stingray import Lightcurve
+
+import tensorflow_probability.substrates.jax as tfp
+
+tfpd = tfp.distributions
+
+from jaxns import ExactNestedSampler, TerminationCondition, Prior, Model
 
 
 class Testget_kernel(object):
@@ -189,3 +200,67 @@ class Testget_mean(object):
                 "delta",
                 "phi",
             ]
+
+
+class TestGPResult(object):
+    def setup_class(self):
+        self.Times = np.linspace(0, 1, 64)
+        kernel_params = {
+            "arn": jnp.exp(1.5),
+            "crn": jnp.exp(1.0),
+        }
+        mean_params = {"A": jnp.array([3.0]), "t0": jnp.array([0.2]), "sig": jnp.array([0.2])}
+        kernel = get_kernel("RN", kernel_params)
+        mean = get_mean("gaussian", mean_params)
+
+        gp = GaussianProcess(kernel=kernel, X=self.Times, mean_value=mean(self.Times))
+        self.counts = gp.sample(key=jax.random.PRNGKey(6))
+
+        lc = Lightcurve(time=self.Times, counts=self.counts, dt=self.Times[1] - self.Times[0])
+
+        self.params_list = get_gp_params(kernel_type="RN", mean_type="gaussian")
+
+        T = self.Times[-1] - self.Times[0]
+        f = 1 / (self.Times[1] - self.Times[0])
+        span = jnp.max(self.counts) - jnp.min(self.counts)
+
+        # The prior dictionary, with suitable tfpd prior distributions
+        prior_dict = {
+            "A": tfpd.Uniform(low=0.1 * span, high=2 * span),
+            "t0": tfpd.Uniform(low=self.Times[0] - 0.1 * T, high=self.Times[-1] + 0.1 * T),
+            "sig": tfpd.Uniform(low=0.5 * 1 / f, high=2 * T),
+            "arn": tfpd.Uniform(low=0.1 * span, high=2 * span),
+            "crn": tfpd.Uniform(low=jnp.log(1 / T), high=jnp.log(f)),
+        }
+
+        prior_model = get_prior(self.params_list, prior_dict)
+        likelihood_model = get_likelihood(
+            self.params_list,
+            kernel_type="RN",
+            mean_type="gaussian",
+            Times=self.Times,
+            counts=self.counts,
+        )
+
+        NSmodel = Model(prior_model=prior_model, log_likelihood=likelihood_model)
+        NSmodel.sanity_check(random.PRNGKey(10), S=100)
+
+        Exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=1e4)
+        Termination_reason, State = Exact_ns(
+            random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
+        )
+        self.Results = Exact_ns.to_results(State, Termination_reason)
+
+        self.gpresult = GPResult(lc)
+        self.gpresult.sample(prior_model=prior_model, likelihood_model=likelihood_model)
+
+    def test_sample(self):
+        for key in self.params_list:
+            assert (self.Results.samples[key]).all() == (self.gpresult.Results.samples[key]).all()
+
+    def test_get_evidence(self):
+        assert self.Results.log_Z_mean == self.gpresult.Results.log_Z_mean
+
+    def plot_diagnostics(self):
+        self.gpresult.plot_diagnostics()
+        assert plt.fignum_exists(1)
