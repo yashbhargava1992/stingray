@@ -1,11 +1,12 @@
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+
 import jax
 import jax.numpy as jnp
 from jax import random
 
 jax.config.update("jax_enable_x64", True)
-
-import numpy as np
-import matplotlib.pyplot as plt
 
 from tinygp import GaussianProcess, kernels
 from stingray.modeling.gpmodeling import get_kernel, get_mean, get_gp_params
@@ -17,6 +18,12 @@ import tensorflow_probability.substrates.jax as tfp
 tfpd = tfp.distributions
 
 from jaxns import ExactNestedSampler, TerminationCondition, Prior, Model
+
+
+def clear_all_figs():
+    fign = plt.get_fignums()
+    for fig in fign:
+        plt.close(fig)
 
 
 class Testget_kernel(object):
@@ -271,3 +278,83 @@ class TestGPResult(object):
 
     def test_get_parameters_names(self):
         assert sorted(self.params_list) == self.gpresult.get_parameters_names()
+
+    def test_print_summary(self):
+        self.gpresult.print_summary()
+        assert True
+
+    def test_max_posterior_parameters(self):
+        for key in self.params_list:
+            assert key in self.gpresult.get_max_posterior_parameters()
+
+    def test_max_likelihood_parameters(self):
+        for key in self.params_list:
+            assert key in self.gpresult.get_max_likelihood_parameters()
+
+    def test_posterior_plot(self):
+        self.gpresult.posterior_plot("A")
+        assert plt.fignum_exists(1)
+
+    def test_posterior_plot_labels_and_fname_default(self):
+        clear_all_figs()
+        outfname = "A_Posterior_plot.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+        self.gpresult.posterior_plot("A", save=True)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_posterior_plot_labels_and_fname(self):
+        clear_all_figs()
+        outfname = "blabla.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+        self.gpresult.posterior_plot("A", axis=[0, 14, 0, 0.5], save=True, filename=outfname)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_weighted_posterior_plot(self):
+        self.gpresult.weighted_posterior_plot("A")
+        assert plt.fignum_exists(1)
+
+    def test_weighted_posterior_plot_labels_and_fname_default(self):
+        clear_all_figs()
+        outfname = "A_Weighted_Posterior_plot.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+        self.gpresult.weighted_posterior_plot("A", save=True)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_weighted_posterior_plot_labels_and_fname(self):
+        clear_all_figs()
+        outfname = "blabla.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+        self.gpresult.weighted_posterior_plot(
+            "A", axis=[0, 14, 0, 0.5], save=True, filename=outfname
+        )
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_corner_plot(self):
+        self.gpresult.corner_plot("A", "t0")
+        assert plt.fignum_exists(1)
+
+    def test_corner_plot_labels_and_fname_default(self):
+        clear_all_figs()
+        outfname = "A_t0_Corner_plot.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+        self.gpresult.corner_plot("A", "t0", save=True)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
+
+    def test_corner_plot_labels_and_fname(self):
+        clear_all_figs()
+        outfname = "blabla.png"
+        if os.path.exists(outfname):
+            os.unlink(outfname)
+        self.gpresult.corner_plot("A", "t0", axis=[0, 0.5, 0, 5], save=True, filename=outfname)
+        assert os.path.exists(outfname)
+        os.unlink(outfname)
