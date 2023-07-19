@@ -43,7 +43,7 @@ __all__ = ["GPResult"]
 def get_kernel(kernel_type, kernel_params):
     """
     Function for producing the kernel for the Gaussian Process.
-    Returns the selected Tinygp kernel
+    Returns the selected Tinygp kernel for the given parameters.
 
     Parameters
     ----------
@@ -275,14 +275,38 @@ def _fred(t, mean_params):
     )
 
 
-def get_kernel_params(kernel_type):
+def _get_kernel_params(kernel_type):
+    """
+    Generates a list of the parameters for the kernel for the GP model based on the kernel type.
+
+    Parameters
+    ----------
+    kernel_type: string
+        The type of kernel to be used for the Gaussian Process model
+
+    Returns
+    -------
+        A list of the parameters for the kernel for the GP model
+    """
     if kernel_type == "RN":
         return ["arn", "crn"]
     elif kernel_type == "QPO_plus_RN":
         return ["arn", "crn", "aqpo", "cqpo", "freq"]
 
 
-def get_mean_params(mean_type):
+def _get_mean_params(mean_type):
+    """
+    Generates a list of the parameters for the mean for the GP model based on the mean type.
+
+    Parameters
+    ----------
+    mean_type: string
+        The type of mean to be used for the Gaussian Process model
+
+    Returns
+    -------
+        A list of the parameters for the mean for the GP model
+    """
     if (mean_type == "gaussian") or (mean_type == "exponential"):
         return ["A", "t0", "sig"]
     elif mean_type == "constant":
@@ -294,15 +318,39 @@ def get_mean_params(mean_type):
 
 
 def get_gp_params(kernel_type, mean_type):
-    kernel_params = get_kernel_params(kernel_type)
-    mean_params = get_mean_params(mean_type)
+    """
+    Generates a list of the parameters for the GP model based on the kernel and mean type.
+    To be used to set the order of the parameters for `get_prior` and `get_likelihood` functions.
+
+    Parameters
+    ----------
+    kernel_type: string
+        The type of kernel to be used for the Gaussian Process model
+
+    mean_type: string
+        The type of mean to be used for the Gaussian Process model
+
+    Returns
+    -------
+        A list of the parameters for the GP model
+
+    Examples
+    --------
+    >>> get_gp_params("QPO_plus_RN", "gaussian")
+    ['arn', 'crn', 'aqpo', 'cqpo', 'freq', 'A', 't0', 'sig']
+    """
+    kernel_params = _get_kernel_params(kernel_type)
+    mean_params = _get_mean_params(mean_type)
     kernel_params.extend(mean_params)
     return kernel_params
 
 
 def get_prior(params_list, prior_dict):
     """
-    A prior generator function based on given values
+    A prior generator function based on given values.
+    Makes a jaxns specific prior function based on the given prior dictionary.
+    Jaxns requires the parameters of the prior function and log_likelihood function to
+    be in the same order. This order is made according to the params_list.
 
     Parameters
     ----------
@@ -311,14 +359,35 @@ def get_prior(params_list, prior_dict):
 
     prior_dict:
         A dictionary of the priors of parameters to be used.
+        These parameters should be from tensorflow_probability distributions / Priors from jaxns
+        or special priors from jaxns.
+        **Note**: If jaxns priors are used, then the name given to them should be the same as
+        the corresponding name in the params_list.
 
     Returns
     -------
-    The Prior function.
+    The Prior generator function.
     The arguments of the prior function are in the order of
-    Kernel arguments (RN arguments, QPO arguments),
-    Mean arguments
-    Non Windowed arguments
+        Kernel arguments (RN arguments, QPO arguments),
+        Mean arguments
+        Miscellaneous arguments
+
+    Examples
+    --------
+    A prior function for a Red Noise kernel and a Gaussian mean function
+    Obain the parameters list
+    >>> params_list = get_gp_params("RN", "gaussian")
+
+    Make a prior dictionary using tensorflow_probability distributions
+    >>> prior_dict = {
+    ...    "A": tfpd.Uniform(low = 1e-1, high = 2e+2),
+    ...    "t0": tfpd.Uniform(low = 0.0 - 0.1, high = 1 + 0.1),
+    ...    "sig": tfpd.Uniform(low = 0.5 * 1 / 20, high = 2 ),
+    ...    "arn": tfpd.Uniform(low = 0.1 , high = 2 ),
+    ...    "crn": tfpd.Uniform(low = jnp.log(1 /5), high = jnp.log(20)),
+    ... }
+
+    >>> prior_model = get_prior(params_list, prior_dict)
 
     """
     if not can_sample:
@@ -342,7 +411,11 @@ def get_prior(params_list, prior_dict):
 
 def get_likelihood(params_list, kernel_type, mean_type, **kwargs):
     """
-    A likelihood generator function based on given values
+    A log likelihood generator function based on given values.
+    Makes a jaxns specific log likelihood function which takes in the
+    parameters in the order of the parameters list, and calculates the
+    log likelihood of the data given the parameters, and the model
+    (kernel, mean) of the GP model.
 
     Parameters
     ----------
@@ -357,6 +430,19 @@ def get_likelihood(params_list, kernel_type, mean_type, **kwargs):
 
     mean_type:
         The type of mean to be used in the model.
+
+    **kwargs:
+        The keyword arguments to be used in the log likelihood function.
+        **Note**: The keyword arguments Times and counts are necessary for
+        calculating the log likelihood.
+        Times: np.array or jnp.array
+            The time array of the lightcurve
+        counts: np.array or jnp.array
+            The photon counts array of the lightcurve
+
+    Returns
+    -------
+    The jaxns specific log likelihood function.
 
     """
     if not can_make_gp:
@@ -502,8 +588,6 @@ class GPResult:
         plt.legend()
         plt.plot()
 
-        pass
-
     def weighted_posterior_plot(self, name: str, n=0, rkey=random.PRNGKey(1234)):
         """
         Returns the weighted posterior histogram for the given parameter
@@ -565,5 +649,3 @@ class GPResult:
             cmap="GnBu",
         )
         plt.plot()
-
-        pass
