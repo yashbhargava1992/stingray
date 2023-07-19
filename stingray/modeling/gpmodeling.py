@@ -571,9 +571,37 @@ class GPResult:
 
         return max_like_points
 
-    def posterior_plot(self, name: str, n=0):
+    def posterior_plot(self, name: str, n=0, axis=None, save=False, filename=None):
         """
         Plots the posterior histogram for the given parameter
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter.
+            Should be from the names of the parameter list used or from the names of parameters
+            used in the prior_function
+
+        n : int, default 0
+            The index of the parameter to be plotted.
+            For multivariate parameters, the index of the specific parameter to be plotted.
+
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of ``matplotlib`` figure. For example
+            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
+            acceptable argument for ``matplotlib.pyplot.axis()`` method.
+
+        save : bool, optionalm, default ``False``
+            If ``True``, save the figure with specified filename.
+
+        filename : str
+            File name and path of the image to save. Depends on the boolean ``save``.
+
+        Returns
+        -------
+        plt : ``matplotlib.pyplot`` object
+            Reference to plot, call ``show()`` to display it
+
         """
         nsamples = self.Results.total_num_samples
         samples = self.Results.samples[name].reshape((nsamples, -1))[:, n]
@@ -585,12 +613,56 @@ class GPResult:
         plt.axvline(mean1, color="red", linestyle="dashed", label="mean")
         plt.axvline(mean1 + std1, color="green", linestyle="dotted")
         plt.axvline(mean1 - std1, linestyle="dotted", color="green")
+        plt.title("Posterior Histogram of " + str(name))
+        plt.xlabel(name)
+        plt.ylabel("Probability Density")
         plt.legend()
-        plt.plot()
 
-    def weighted_posterior_plot(self, name: str, n=0, rkey=random.PRNGKey(1234)):
+        if axis is not None:
+            plt.axis(axis)
+
+        if save:
+            if filename is None:
+                plt.savefig(str(name) + "_Posterior_plot.png")
+            else:
+                plt.savefig(filename)
+        return plt
+
+    def weighted_posterior_plot(
+        self, name: str, n=0, rkey=random.PRNGKey(1234), axis=None, save=False, filename=None
+    ):
         """
         Returns the weighted posterior histogram for the given parameter
+
+        Parameters
+        ----------
+        name : str
+            Name of the parameter.
+            Should be from the names of the parameter list used or from the names of parameters
+            used in the prior_function
+
+        n : int, default 0
+            The index of the parameter to be plotted.
+            For multivariate parameters, the index of the specific parameter to be plotted.
+
+        key: jax.random.PRNGKey, default ``random.PRNGKey(1234)``
+            Random key for the weighted sampling
+
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of ``matplotlib`` figure. For example
+            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
+            acceptable argument for ``matplotlib.pyplot.axis()`` method.
+
+        save : bool, optionalm, default ``False``
+            If ``True``, save the figure with specified filename.
+
+        filename : str
+            File name and path of the image to save. Depends on the boolean ``save``.
+
+        Returns
+        -------
+        plt : ``matplotlib.pyplot`` object
+            Reference to plot, call ``show()`` to display it
         """
         nsamples = self.Results.total_num_samples
         log_p = self.Results.log_dp_mean
@@ -619,12 +691,72 @@ class GPResult:
         plt.axvline(sample_mean, color="red", linestyle="dashed", label="mean")
         plt.axvline(sample_mean + sample_std, color="green", linestyle="dotted")
         plt.axvline(sample_mean - sample_std, linestyle="dotted", color="green")
+        plt.title("Weighted Posterior Histogram of " + str(name))
+        plt.xlabel(name)
+        plt.ylabel("Probability Density")
         plt.legend()
-        plt.plot()
+        if axis is not None:
+            plt.axis(axis)
 
-    def corner_plot(self, param1: str, param2: str, n1=0, n2=0, rkey=random.PRNGKey(1234)):
+        if save:
+            if filename is None:
+                plt.savefig(str(name) + "_Weighted_Posterior_plot.png")
+            else:
+                plt.savefig(filename)
+        return plt
+
+    def corner_plot(
+        self,
+        param1: str,
+        param2: str,
+        n1=0,
+        n2=0,
+        rkey=random.PRNGKey(1234),
+        axis=None,
+        save=False,
+        filename=None,
+    ):
         """
-        Plots the corner plot for the given parameters
+        Plots the corner plot between two given parameters
+
+        Parameters
+        ----------
+        param1 : str
+            Name of the first parameter.
+            Should be from the names of the parameter list used or from the names of parameters
+            used in the prior_function
+
+        param2 : str
+            Name of the second parameter.
+            Should be from the names of the parameter list used or from the names of parameters
+            used in the prior_function
+
+        n1 : int, default 0
+            The index of the first parameter to be plotted.
+            For multivariate parameters, the index of the specific parameter to be plotted.
+
+        n2 : int, default 0
+            The index of the second parameter to be plotted.
+            For multivariate parameters, the index of the specific parameter to be plotted.
+
+        key: jax.random.PRNGKey, default ``random.PRNGKey(1234)``
+            Random key for the shuffling the weights
+
+        axis : list, tuple, string, default ``None``
+            Parameter to set axis properties of ``matplotlib`` figure. For example
+            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
+            acceptable argument for ``matplotlib.pyplot.axis()`` method.
+
+        save : bool, optionalm, default ``False``
+            If ``True``, save the figure with specified filename.
+
+        filename : str
+            File name and path of the image to save. Depends on the boolean ``save``.
+
+        Returns
+        -------
+        plt : ``matplotlib.pyplot`` object
+            Reference to plot, call ``show()`` to display it
         """
         nsamples = self.Results.total_num_samples
         log_p = self.Results.log_dp_mean
@@ -648,4 +780,17 @@ class GPResult:
             density=True,
             cmap="GnBu",
         )
-        plt.plot()
+        plt.title("Corner Plot of " + str(param1) + " and " + str(param2))
+        plt.xlabel(param2)
+        plt.ylabel(param1)
+        plt.colorbar()
+        if axis is not None:
+            plt.axis(axis)
+
+        if save:
+            if filename is None:
+                plt.savefig(str(param1) + "_" + str(param2) + "_Corner_plot.png")
+            else:
+                plt.savefig(filename)
+
+        return plt
