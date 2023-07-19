@@ -259,8 +259,15 @@ class TestGPResult(object):
             assert (self.Results.samples[key]).all() == (self.gpresult.Results.samples[key]).all()
 
     def test_get_evidence(self):
-        assert self.Results.log_Z_mean == self.gpresult.Results.log_Z_mean
+        assert self.Results.log_Z_mean == self.gpresult.get_evidence()
 
-    def plot_diagnostics(self):
+    def test_plot_diagnostics(self):
         self.gpresult.plot_diagnostics()
         assert plt.fignum_exists(1)
+
+    def test_plot_cornerplot(self):
+        self.gpresult.plot_cornerplot()
+        assert plt.fignum_exists(1)
+
+    def test_get_parameters_names(self):
+        assert sorted(self.params_list) == self.gpresult.get_parameters_names()
