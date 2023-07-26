@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 import functools
@@ -6,12 +7,15 @@ from stingray import Lightcurve
 try:
     import jax
 except ImportError:
+    pytest.skip(allow_module_level=True)
+
+try:
+    import jax.numpy as jnp
+    from jax import jit, random
+
+    jax.config.update("jax_enable_x64", True)
+except ImportError:
     raise ImportError("Jax not installed")
-
-import jax.numpy as jnp
-from jax import jit, random
-
-jax.config.update("jax_enable_x64", True)
 
 try:
     from tinygp import GaussianProcess, kernels
@@ -376,6 +380,11 @@ def get_prior(params_list, prior_dict):
     --------
     A prior function for a Red Noise kernel and a Gaussian mean function
     Obain the parameters list
+    >>> if not can_sample:
+    ...     pytest.skip("Jaxns not installed. Cannot make jaxns specific prior.")
+    >>> if not tfp_available:
+    ...     pytest.skip("Tensorflow probability required to make priors.")
+
     >>> params_list = get_gp_params("RN", "gaussian")
 
     Make a prior dictionary using tensorflow_probability distributions
