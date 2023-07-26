@@ -1,23 +1,43 @@
 import os
+import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 
-import jax
-import jax.numpy as jnp
-from jax import random
+try:
+    import jax
+    import jax.numpy as jnp
+    from jax import random
 
-jax.config.update("jax_enable_x64", True)
+    jax.config.update("jax_enable_x64", True)
+except ImportError:
+    pytest.skip(allow_module_level=True)
 
-from tinygp import GaussianProcess, kernels
+_HAS_TINYGP = True
+_HAS_TFP = True
+_HAS_JAXNS = True
+
+try:
+    import tinygp
+    from tinygp import GaussianProcess, kernels
+except ImportError:
+    _HAS_TINYGP = False
+
 from stingray.modeling.gpmodeling import get_kernel, get_mean, get_gp_params
 from stingray.modeling.gpmodeling import get_prior, get_likelihood, GPResult
 from stingray import Lightcurve
 
-import tensorflow_probability.substrates.jax as tfp
+try:
+    import tensorflow_probability.substrates.jax as tfp
 
-tfpd = tfp.distributions
+    tfpd = tfp.distributions
+except ImportError:
+    _HAS_TFP = False
 
-from jaxns import ExactNestedSampler, TerminationCondition, Prior, Model
+try:
+    import jaxns
+    from jaxns import ExactNestedSampler, TerminationCondition, Prior, Model
+except ImportError:
+    _HAS_JAXNS = False
 
 
 def clear_all_figs():
@@ -26,6 +46,7 @@ def clear_all_figs():
         plt.close(fig)
 
 
+@pytest.mark.skipif(not _HAS_TINYGP, reason="tinygp not installed")
 class Testget_kernel(object):
     def setup_class(self):
         self.x = np.linspace(0, 1, 5)
@@ -126,89 +147,93 @@ class Testget_mean(object):
         ) + 4.0 * jnp.exp(-5.0 * ((self.t + 0.4) / 0.7 + 0.7 / (self.t + 0.4))) * jnp.exp(2 * 5.0)
         assert (get_mean("fred", self.fred_mean_params)(self.t) == result_fred).all()
 
-    class Testget_gp_params(object):
-        def setup_class(self):
-            pass
 
-        def test_get_gp_params_rn(self):
-            assert get_gp_params("RN", "gaussian") == ["arn", "crn", "A", "t0", "sig"]
-            assert get_gp_params("RN", "constant") == ["arn", "crn", "A"]
-            assert get_gp_params("RN", "skew_gaussian") == ["arn", "crn", "A", "t0", "sig1", "sig2"]
-            assert get_gp_params("RN", "skew_exponential") == [
-                "arn",
-                "crn",
-                "A",
-                "t0",
-                "sig1",
-                "sig2",
-            ]
-            assert get_gp_params("RN", "exponential") == ["arn", "crn", "A", "t0", "sig"]
-            assert get_gp_params("RN", "fred") == ["arn", "crn", "A", "t0", "delta", "phi"]
+class Testget_gp_params(object):
+    def setup_class(self):
+        pass
 
-        def test_get_gp_params_qpo_plus_rn(self):
-            assert get_gp_params("QPO_plus_RN", "gaussian") == [
-                "arn",
-                "crn",
-                "aqpo",
-                "cqpo",
-                "freq",
-                "A",
-                "t0",
-                "sig",
-            ]
-            assert get_gp_params("QPO_plus_RN", "constant") == [
-                "arn",
-                "crn",
-                "aqpo",
-                "cqpo",
-                "freq",
-                "A",
-            ]
-            assert get_gp_params("QPO_plus_RN", "skew_gaussian") == [
-                "arn",
-                "crn",
-                "aqpo",
-                "cqpo",
-                "freq",
-                "A",
-                "t0",
-                "sig1",
-                "sig2",
-            ]
-            assert get_gp_params("QPO_plus_RN", "skew_exponential") == [
-                "arn",
-                "crn",
-                "aqpo",
-                "cqpo",
-                "freq",
-                "A",
-                "t0",
-                "sig1",
-                "sig2",
-            ]
-            assert get_gp_params("QPO_plus_RN", "exponential") == [
-                "arn",
-                "crn",
-                "aqpo",
-                "cqpo",
-                "freq",
-                "A",
-                "t0",
-                "sig",
-            ]
-            assert get_gp_params("QPO_plus_RN", "fred") == [
-                "arn",
-                "crn",
-                "aqpo",
-                "cqpo",
-                "freq",
-                "A",
-                "t0",
-                "delta",
-                "phi",
-            ]
+    def test_get_gp_params_rn(self):
+        assert get_gp_params("RN", "gaussian") == ["arn", "crn", "A", "t0", "sig"]
+        assert get_gp_params("RN", "constant") == ["arn", "crn", "A"]
+        assert get_gp_params("RN", "skew_gaussian") == ["arn", "crn", "A", "t0", "sig1", "sig2"]
+        assert get_gp_params("RN", "skew_exponential") == [
+            "arn",
+            "crn",
+            "A",
+            "t0",
+            "sig1",
+            "sig2",
+        ]
+        assert get_gp_params("RN", "exponential") == ["arn", "crn", "A", "t0", "sig"]
+        assert get_gp_params("RN", "fred") == ["arn", "crn", "A", "t0", "delta", "phi"]
+
+    def test_get_gp_params_qpo_plus_rn(self):
+        assert get_gp_params("QPO_plus_RN", "gaussian") == [
+            "arn",
+            "crn",
+            "aqpo",
+            "cqpo",
+            "freq",
+            "A",
+            "t0",
+            "sig",
+        ]
+        assert get_gp_params("QPO_plus_RN", "constant") == [
+            "arn",
+            "crn",
+            "aqpo",
+            "cqpo",
+            "freq",
+            "A",
+        ]
+        assert get_gp_params("QPO_plus_RN", "skew_gaussian") == [
+            "arn",
+            "crn",
+            "aqpo",
+            "cqpo",
+            "freq",
+            "A",
+            "t0",
+            "sig1",
+            "sig2",
+        ]
+        assert get_gp_params("QPO_plus_RN", "skew_exponential") == [
+            "arn",
+            "crn",
+            "aqpo",
+            "cqpo",
+            "freq",
+            "A",
+            "t0",
+            "sig1",
+            "sig2",
+        ]
+        assert get_gp_params("QPO_plus_RN", "exponential") == [
+            "arn",
+            "crn",
+            "aqpo",
+            "cqpo",
+            "freq",
+            "A",
+            "t0",
+            "sig",
+        ]
+        assert get_gp_params("QPO_plus_RN", "fred") == [
+            "arn",
+            "crn",
+            "aqpo",
+            "cqpo",
+            "freq",
+            "A",
+            "t0",
+            "delta",
+            "phi",
+        ]
 
 
+@pytest.mark.skipif(
+    not (_HAS_TINYGP and _HAS_TFP and _HAS_JAXNS), reason="tinygp, tfp or jaxns not installed"
+)
 class TestGPResult(object):
     def setup_class(self):
         self.Times = np.linspace(0, 1, 64)
