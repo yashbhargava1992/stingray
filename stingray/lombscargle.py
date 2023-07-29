@@ -30,10 +30,10 @@ class LombScargleCrossspectrum(Crossspectrum):
     data2: :class:`stingray.lightcurve.Lightcurve` or :class:`stingray.events.EventList`, optional, default ``None``
         The dataset for the second, or "reference", band.
 
-    norm: {``frac``, ``abs``, ``leahy``, ``none``}, default ``none``
-        The normalization of the (real part of the) cross spectrum.
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}, string, optional, default ``none``
+        The normalization of the cross spectrum.
 
-    power_type: string, optional, default ``real``
+    power_type: {``real``, ``absolute``, ``all`}, string, optional, default ``real``
         Parameter to choose among complete, real part and magnitude of the cross spectrum.
 
     fullspec: boolean, optional, default ``False``
@@ -69,7 +69,7 @@ class LombScargleCrossspectrum(Crossspectrum):
 
     Attributes
     ----------
-    freqs: numpy.ndarray
+    freq: numpy.ndarray
         The array of mid-bin frequencies that the Fourier transform samples
 
     power: numpy.ndarray
@@ -101,6 +101,13 @@ class LombScargleCrossspectrum(Crossspectrum):
     nphots2: float
         The total number of photons in light curve 2
 
+    References
+    ----------
+    .. [1] Scargle, J. D. , "Studies in astronomical time series analysis. III - Fourier
+        transforms, autocorrelation functions, and cross-correlation
+        functions of unevenly spaced data". ApJ 1:343, p874-887, 1989
+    .. [2] Press W.H. and Rybicki, G.B, "Fast algorithm for spectral analysis
+        of unevenly sampled data". ApJ 1:338, p277, 1989
     """
 
     def __init__(
@@ -120,6 +127,23 @@ class LombScargleCrossspectrum(Crossspectrum):
     ):
         self._type = None
         good_input = data1 is not None and data2 is not None
+        if data1 is None and data2 is None:
+            if not skip_checks:
+                good_input = self.initial_checks(
+                    data1=data1,
+                    data2=data2,
+                    norm=norm,
+                    power_type=power_type,
+                    dt=dt,
+                    fullspec=fullspec,
+                    min_freq=min_freq,
+                    max_freq=max_freq,
+                    df=df,
+                    method=method,
+                    oversampling=oversampling,
+                )
+            self._initialize_empty()
+            return
         if not skip_checks:
             good_input = self.initial_checks(
                 data1=data1,
@@ -134,7 +158,6 @@ class LombScargleCrossspectrum(Crossspectrum):
                 method=method,
                 oversampling=oversampling,
             )
-
         if dt is None:
             if isinstance(data1, Lightcurve):
                 dt = data1.dt
@@ -208,10 +231,12 @@ class LombScargleCrossspectrum(Crossspectrum):
         if power_type not in ["all", "absolute", "real"]:
             raise ValueError("power_type must be one of ['all','absolute','real']")
 
-        if data1 is None or data2 is None:
+        if np.logical_xor(data1 is None, data2 is None):
             raise ValueError("You can't do a cross spectrum with just one lightcurve")
+
         if min_freq < 0:
             raise ValueError("min_freq must be non-negative")
+
         if max_freq is not None:
             if max_freq < min_freq or max_freq < 0:
                 raise ValueError("max_freq must be non-negative and greater than min_freq")
@@ -222,17 +247,40 @@ class LombScargleCrossspectrum(Crossspectrum):
         if not isinstance(oversampling, int):
             raise TypeError("oversampling must be an integer")
 
-        # if not isinstance(df, float) and df is not None:
-        #     raise TypeError("df must be a float")
-
         if not isinstance(fullspec, bool):
             raise TypeError("fullspec must be a boolean")
 
-        if type(data1) not in [EventList, Lightcurve] or type(data2) not in [
-            EventList,
-            Lightcurve,
-        ]:
-            raise TypeError("One of the arguments is not of type eventlist or lightcurve")
+        if np.logical_xor(
+            not (isinstance(data1, EventList) or isinstance(data1, Lightcurve) or data1 is None),
+            not (isinstance(data2, EventList) or isinstance(data2, Lightcurve) or data2 is None),
+        ):
+            raise TypeError("One of the arguments is not of type Eventlist or Lightcurve or None")
+
+        if not (
+            isinstance(data1, EventList) or isinstance(data1, Lightcurve) or data1 is None
+        ) and (
+            not (isinstance(data2, EventList) or isinstance(data2, Lightcurve) or data2 is None),
+        ):
+            raise TypeError("Both the events are not of type Eventlist or Lightcurve or None")
+
+        if type(data1) == type(data2):
+            if isinstance(data1, Lightcurve):
+                if len(data1.time) != len(data2.time):
+                    raise ValueError("data1 and data2 must have the same length")
+            if isinstance(data1, EventList):
+                lc1 = data1.to_lc()
+                lc2 = data2.to_lc()
+                if len(lc1.time) != len(lc2.time):
+                    raise ValueError("data1 and data2 must have the same length")
+        else:
+            if isinstance(data1, EventList):
+                lc1 = data1.to_lc()
+                if len(lc1.time) != len(data2.time):
+                    raise ValueError("data1 and data2 must have the same length")
+            elif isinstance(data2, EventList):
+                lc2 = data2.to_lc()
+                if len(lc2.time) != len(data1.time):
+                    raise ValueError("data1 and data2 must have the same length")
 
         return True
 
@@ -298,7 +346,7 @@ class LombScargleCrossspectrum(Crossspectrum):
 
         self.m = 1
 
-        self.freqs, self.unnorm_power = self._ls_cross(
+        self.freq, self.unnorm_power = self._ls_cross(
             self.lc1,
             self.lc2,
             fullspec=fullspec,
@@ -309,8 +357,8 @@ class LombScargleCrossspectrum(Crossspectrum):
         self.power = self._normalize_crossspectrum(self.unnorm_power)
         if lc1.err_dist.lower() != lc2.err_dist.lower():
             simon(
-                "Your lightcurves have different statistics.",
-                "The errors in the Crossspectrum will be incorrect.",
+                "Your lightcurves have different statistics."
+                "The errors in the Crossspectrum will be incorrect."
             )
 
         elif lc1.err_dist.lower() != "poisson":
@@ -363,7 +411,7 @@ class LombScargleCrossspectrum(Crossspectrum):
                 oversampling=self.oversampling,
             )
 
-    def _ls_cross(self, lc1, lc2, freqs=None, fullspec=False, method="fast", oversampling=5):
+    def _ls_cross(self, lc1, lc2, freq=None, fullspec=False, method="fast", oversampling=5):
         """
         Lomb-Scargle Fourier transform the two light curves, then compute the cross spectrum.
         Computed as CS = lc1 x lc2* (where lc2 is the one that gets
@@ -390,15 +438,15 @@ class LombScargleCrossspectrum(Crossspectrum):
 
         Returns
         -------
-        freqs: numpy.ndarray
+        freq: numpy.ndarray
             The frequency grid at which the LSFT was evaluated
 
         cross: numpy.ndarray
             The cross spectrum value at each frequency.
 
         """
-        if not freqs:
-            freqs = (
+        if not freq:
+            freq = (
                 LombScargle(
                     lc1.time,
                     lc1.counts,
@@ -416,36 +464,36 @@ class LombScargleCrossspectrum(Crossspectrum):
                     normalization="psd",
                 ).autofrequency(minimum_frequency=self.min_freq, maximum_frequency=self.max_freq),
             )[0]
-            if max(freqs2) > max(freqs):
-                freqs = freqs2
+            if max(freqs2) > max(freq):
+                freq = freqs2
 
         if method == "slow":
-            lsft1 = lsft_slow(lc1.counts, lc1.time, freqs, sign=1, fullspec=fullspec)
-            lsft2 = lsft_slow(lc2.counts, lc2.time, freqs, sign=-1, fullspec=fullspec)
+            lsft1 = lsft_slow(lc1.counts, lc1.time, freq, sign=-1, fullspec=fullspec)
+            lsft2 = lsft_slow(lc2.counts, lc2.time, freq, sign=1, fullspec=fullspec)
         elif method == "fast":
             lsft1 = lsft_fast(
                 lc1.counts,
                 lc1.time,
-                freqs,
+                freq,
+                sign=-1,
                 fullspec=fullspec,
                 oversampling=oversampling,
             )
             lsft2 = lsft_fast(
                 lc2.counts,
                 lc2.time,
-                freqs,
+                freq,
                 fullspec=fullspec,
-                sign=-1,
                 oversampling=oversampling,
             )
         cross = np.multiply(lsft1, lsft2)
         if not fullspec:
-            freqs = freqs[freqs > 0]
-            cross = cross[freqs > 0]
-        return freqs, cross
+            freq = freq[freq > 0]
+            cross = cross[freq > 0]
+        return freq, cross
 
     def _initialize_empty(self):
-        self.freqs = None
+        self.freq = None
         self.power = None
         self.power_err = None
         self.unnorm_power = None
@@ -458,6 +506,13 @@ class LombScargleCrossspectrum(Crossspectrum):
         self.n = None
         self.fullspec = None
         self.k = 1
+        self.err_dist = None
+        self.method = None
+        self.meancounts1 = None
+        self.meancounts2 = None
+        self.oversampling = None
+        self.variance1 = None
+        self.variance2 = None
         return
 
     def time_lag(self):
@@ -473,7 +528,7 @@ class LombScargleCrossspectrum(Crossspectrum):
         if self.__class__ == LombScargleCrossspectrum:
             ph_lag = self.phase_lag()
 
-            return ph_lag / (2 * np.pi * self.freqs)
+            return ph_lag / (2 * np.pi * self.freq)
         else:
             raise AttributeError("Object has no attribute named 'time_lag' !")
 
@@ -494,9 +549,14 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
     data: :class:`stingray.lightcurve.Lightcurve` or :class:`stingray.events.EventList` object, optional, default ``None``
         The light curve data to be Fourier-transformed.
 
-    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
-        The normaliation of the power spectrum to be used. Options are
-        "leahy", "frac", "abs" and "none", default is "frac".
+    norm: {``frac``, ``abs``, ``leahy``, ``none``}, string, optional, default ``none``
+        The normalization of the cross spectrum.
+
+    power_type: {``real``, ``absolute``, ``all`}, string, optional, default ``real``
+        Parameter to choose among complete, real part and magnitude of the cross spectrum.
+
+    fullspec: boolean, optional, default ``False``
+        If False, keep only the positive frequencies, or if True, keep all of them .
 
     Other Parameters
     ----------------
@@ -528,10 +588,7 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
 
     Attributes
     ----------
-    norm: {"leahy" | "frac" | "abs" | "none" }
-        The normalization of the power spectrum.
-
-    freqs: numpy.ndarray
+    freq: numpy.ndarray
         The array of mid-bin frequencies that the Fourier transform samples.
 
     power: numpy.ndarray
@@ -562,8 +619,8 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
     def __init__(
         self,
         data: Optional[Union[Lightcurve, EventList]] = None,
-        norm: Optional[str] = "none",
-        power_type: Optional[str] = "real",
+        norm: Optional[str] = "frac",
+        power_type: Optional[str] = "all",
         dt: Optional[float] = None,
         fullspec: Optional[bool] = False,
         skip_checks: Optional[bool] = False,

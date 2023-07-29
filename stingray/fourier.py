@@ -2030,64 +2030,69 @@ def lsft_fast(
         raise ValueError("sign must be 1 or -1")
 
     # Constants initialization
-    const1 = np.sqrt(0.5)
-    const2 = const1 * sign
-
     sum_xx = np.sum(y)
-
     num_xt = len(y)
     num_ww = len(freqs)
+    const1 = np.sqrt(0.5) * np.sqrt(num_ww)
+    const2 = const1
 
     # Arrays initialization
     ft_real = ft_imag = np.zeros((num_ww))
-    ft_res = np.zeros((num_ww), dtype=np.complex128)
     f0, df, N = freqs[0], freqs[1] - freqs[0], len(freqs)
 
     # Sum (y_i * cos(wt - wtau))
-    sumr, sumi = trig_sum(t, y, df, N, f0, oversampling=oversampling)
+    Sh, Ch = trig_sum(t, y, df, N, f0, oversampling=oversampling)
 
     # Summation of (cos(wt - wtau))^2 and (sin(wt - wtau))^2
-    s2cos, c2cos = trig_sum(
-        t, np.ones_like(y) / len(y), df, N, f0, freq_factor=2, oversampling=oversampling
+    _, scos2x = trig_sum(
+        t,
+        np.ones_like(y) / len(y),
+        df,
+        N,
+        f0,
+        freq_factor=2,
+        oversampling=oversampling,
     )
     # cos^2(x) = (1 + cos(2x))/2
     # sin^2(x) = (1 - cos(2x))/2
-    scos2, ssin2 = np.abs(1 + c2cos) / 2, np.abs(1 - s2cos) / 2
-
-    freqs_new = f0 + df * np.arange(N)
-
-    fft_freqs = np.fft.ifft(freqs_new, N)
+    C2, S2 = (1 + scos2x) / 2, (1 - scos2x) / 2
+    # Angular Frequency
+    w = freqs * 2 * np.pi
 
     # Summation of cos(2wt) and sin(2wt)
-    csum, ssum = fft_freqs.real, fft_freqs.imag
+    csum, ssum = trig_sum(
+        t, np.ones_like(y) / len(y), df, N, f0, freq_factor=2, oversampling=oversampling
+    )
+
+    wtau = 0.5 * np.arctan2(ssum, csum)
+
+    coswtau = np.cos(wtau)
+    sinwtau = np.sin(wtau)
+
+    sumr = Ch * coswtau + Sh * sinwtau
+    sumi = Sh * coswtau - Ch * sinwtau
+
+    cos2wtau = np.cos(2 * wtau)
+    sin2wtau = np.sin(2 * wtau)
+
+    scos2 = 0.5 * (N + C2 * cos2wtau + S2 * sin2wtau)
+    ssin2 = 0.5 * (N - C2 * cos2wtau - S2 * sin2wtau)
+
+    # Calculating the real and imaginary components of the Fourier transform
+    ft_real = const1 * sumr / np.sqrt(scos2)
+    ft_imag = const2 * sumi / np.sqrt(ssin2)
 
     # Looping through all the frequencies
-    for i in range(num_ww):
-        if i == 0:
-            ft_real = sum_xx / np.sqrt(num_xt)
-            ft_imag = 0
-            phase_this = 0
-        else:
-            # Angular Frequency
-            wrun = freqs[i] * 2 * np.pi
+    ft_real[0] = sum_xx / np.sqrt(num_xt)
+    ft_imag[0] = 0
 
-            # arctan(ssum / csum)
-            watan = np.arctan2(ssum[i], csum[i])
-            wtau = 0.5 * watan
+    # Resultant fourier transform for current angular frequency
+    ft_res = np.complex128(ft_real + (1j * ft_imag)) * np.exp(-1j * w * t[0])
 
-            # Calculating the real and imaginary components of the Fourier transform
-            ft_real = const1 * (sumr[i] / np.sqrt(scos2[i]))
-            ft_imag = const2 * (sumi[i] / np.sqrt(ssin2[i]))
+    if sign == -1:
+        ft_res = np.conjugate(ft_res)
 
-            # Phase of current angular frequency
-            phase_this = wtau - wrun * t[0]
-        # Resultant fourier transform for current angular frequency
-        ft_res[i] = np.multiply(np.complex128(complex(ft_real, ft_imag)), np.exp(1j * phase_this))
-
-    if fullspec:
-        return ft_res
-    else:
-        return ft_res[freqs > 0]
+    return ft_res if fullspec else ft_res[freqs > 0]
 
 
 def lsft_slow(
@@ -2122,58 +2127,43 @@ def lsft_slow(
     ft_res : numpy.ndarray
         An array of Fourier transformed data.
     """
-    if sign not in [1, -1]:
+    if sign not in (1, -1):
         raise ValueError("sign must be 1 or -1")
 
     # Constants initialization
-    const1 = np.sqrt(0.5)
-    const2 = const1 * sign
+    const1 = np.sqrt(0.5) * np.sqrt(len(y))
+    const2 = const1
 
-    sum_xx = np.sum(y)
+    ft_real = np.zeros_like(freqs)
+    ft_imag = np.zeros_like(freqs)
+    ft_res = np.zeros_like(freqs, dtype=np.complex128)
 
-    num_xt = len(y)
-    num_ww = len(freqs)
-
-    # Arrays initialization
-    ft_real = ft_imag = np.zeros((num_ww))
-    ft_res = np.zeros((num_ww), dtype=np.complex128)
-
-    # Looping through all the frequencies
-    for i in range(num_ww):
+    for i, freq in enumerate(freqs):
+        wrun = freq * 2 * np.pi
         if i == 0:
-            ft_real = sum_xx / np.sqrt(num_xt)
-            ft_imag = 0
-            phase_this = 0
+            ft_real[i] = sum(y) / np.sqrt(len(y))
+            ft_imag[i] = 0
         else:
-            # Angular Frequency
-            wrun = freqs[i] * 2 * np.pi
-
-            # Summation of cos(2wt) and sin(2wt)
             csum = np.sum(np.cos(2.0 * wrun * t))
             ssum = np.sum(np.sin(2.0 * wrun * t))
 
-            # arctan(ssum / csum)
             watan = np.arctan2(ssum, csum)
             wtau = 0.5 * watan
 
-            # Sum (y_i * cos(wt - wtau))
-            sumr = np.sum(np.multiply(y, np.cos(wrun * t - wtau)))
-            sumi = np.sum(np.multiply(y, np.sin(wrun * t - wtau)))
+            cos_wt_wtau = np.cos(wrun * t - wtau)
+            sin_wt_wtau = np.sin(wrun * t - wtau)
 
-            # Summation of (cos(wt - wtau))^2 and (sin(wt - wtau))^2
-            scos2 = np.sum((np.power(np.cos(wrun * t - wtau), 2)))
-            ssin2 = np.sum((np.power(np.sin(wrun * t - wtau), 2)))
+            sumr = np.sum(y * cos_wt_wtau)
+            sumi = np.sum(y * sin_wt_wtau)
 
-            # Calculating the real and imaginary components of the Fourier transform
-            ft_real = np.multiply(const1, np.divide(sumr, np.sqrt(scos2)))
-            ft_imag = np.multiply(const2, np.divide(sumi, np.sqrt(ssin2)))
+            scos2 = np.sum(np.power(cos_wt_wtau, 2))
+            ssin2 = np.sum(np.power(sin_wt_wtau, 2))
 
-            # Phase of current angular frequency
-            phase_this = wtau - wrun * t[0]
-        # Resultant fourier transform for current angular frequency
-        ft_res[i] = np.multiply(np.complex128(complex(ft_real, ft_imag)), np.exp(1j * phase_this))
+            ft_real[i] = const1 * sumr / np.sqrt(scos2)
+            ft_imag[i] = const2 * sumi / np.sqrt(ssin2)
 
-    if fullspec:
-        return ft_res
-    else:
-        return ft_res[freqs > 0]
+        ft_res[i] = np.complex128(ft_real[i] + (1j * ft_imag[i])) * np.exp(-1j * wrun * t[0])
+    if sign == -1:
+        ft_res = np.conjugate(ft_res)
+
+    return ft_res if fullspec else ft_res[freqs > 0]
