@@ -161,6 +161,148 @@ class TestEvents(object):
         assert np.all(np.abs(lc_prob - fluxes_prob) < 3 * np.sqrt(fluxes_prob))
         assert np.all((ev.energy >= 0.5) & (ev.energy < 6.5))
 
+    @pytest.mark.skipif("not (_HAS_YAML)")
+    def test_io_with_ascii(self):
+        ev = EventList(self.time)
+        ev.write("ascii_ev.ecsv", fmt="ascii")
+        ev = ev.read("ascii_ev.ecsv", fmt="ascii")
+        print(ev.time, self.time)
+        assert np.allclose(ev.time, self.time)
+        os.remove("ascii_ev.ecsv")
+
+    def test_io_with_pickle(self):
+        ev = EventList(self.time, mjdref=54000)
+        ev.write("ev.pickle", fmt="pickle")
+        ev = ev.read("ev.pickle", fmt="pickle")
+        assert np.allclose(ev.time, self.time)
+        os.remove("ev.pickle")
+
+    @pytest.mark.skipif("not _H5PY_INSTALLED")
+    def test_io_with_hdf5_auto(self):
+        ev = EventList(time=self.time, mjdref=54000)
+        ev.write("ev.hdf5")
+
+        ev = ev.read("ev.hdf5")
+        assert np.allclose(ev.time, self.time)
+        os.remove("ev.hdf5")
+
+    @pytest.mark.skipif("not _H5PY_INSTALLED")
+    def test_io_with_hdf5(self):
+        ev = EventList(time=self.time, mjdref=54000)
+        ev.write("ev.hdf5", fmt="hdf5")
+
+        ev = ev.read("ev.hdf5", fmt="hdf5")
+        assert np.allclose(ev.time, self.time)
+        os.remove("ev.hdf5")
+
+    def test_io_with_fits(self):
+        ev = EventList(time=self.time, mjdref=54000)
+        ev.write("ev.fits", fmt="fits")
+        ev = ev.read("ev.fits", fmt="fits")
+        assert np.allclose(ev.time, self.time)
+        os.remove("ev.fits")
+
+    def test_fits_with_standard_file(self):
+        """Test that fits works with a standard event list
+        file.
+        """
+        fname = os.path.join(datadir, "monol_testA.evt")
+        ev = EventList()
+        ev = ev.read(fname, fmt="hea")
+        assert np.isclose(ev.mjdref, 55197.00076601852)
+
+    def test_fits_with_additional(self):
+        """Test that fits works with a standard event list
+        file.
+        """
+        fname = os.path.join(datadir, "xmm_test.fits")
+        ev = EventList()
+        with pytest.warns(UserWarning, match="HDU EVENTS not found"):
+            ev = ev.read(fname, fmt="hea", additional_columns=["PRIOR"])
+        assert hasattr(ev, "prior")
+
+    def test_timeseries_empty_evts(self):
+        N = len(self.time)
+        ev = EventList()
+        ts = ev.to_astropy_timeseries()
+        assert len(ts.columns) == 0
+
+    def test_timeseries_roundtrip(self):
+        N = len(self.time)
+        ev = EventList(
+            time=self.time,
+            gti=self.gti,
+            energy=np.zeros(N),
+            pi=np.ones(N),
+            mission="BUBU",
+            instr="BABA",
+            mjdref=53467.0,
+        )
+        ts = ev.to_astropy_timeseries()
+        new_ev = ev.from_astropy_timeseries(ts)
+        for attr in ["time", "energy", "pi", "gti"]:
+            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
+        for attr in ["mission", "instr", "mjdref"]:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
+
+    def test_table_roundtrip(self):
+        N = len(self.time)
+        ev = EventList(
+            time=self.time,
+            gti=self.gti,
+            energy=np.zeros(N),
+            pi=np.ones(N),
+            mission="BUBU",
+            instr="BABA",
+            mjdref=53467.0,
+        )
+        ts = ev.to_astropy_table()
+        new_ev = ev.from_astropy_table(ts)
+        for attr in ["time", "energy", "pi", "gti"]:
+            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
+        for attr in ["mission", "instr", "mjdref"]:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
+
+    @pytest.mark.skipif("not _HAS_XARRAY")
+    def test_xarray_roundtrip(self):
+        N = len(self.time)
+        ev = EventList(
+            time=self.time,
+            gti=self.gti,
+            energy=np.zeros(N),
+            pi=np.ones(N),
+            mission="BUBU",
+            instr="BABA",
+            mjdref=53467.0,
+        )
+        ts = ev.to_xarray()
+        new_ev = ev.from_xarray(ts)
+        for attr in ["time", "energy", "pi", "gti"]:
+            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
+        for attr in ["mission", "instr", "mjdref"]:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
+
+    @pytest.mark.skipif("not _HAS_PANDAS")
+    def test_pandas_roundtrip(self):
+        N = len(self.time)
+        ev = EventList(
+            time=self.time,
+            gti=self.gti,
+            energy=np.zeros(N),
+            pi=np.ones(N),
+            mission="BUBU",
+            instr="BABA",
+            mjdref=53467.0,
+        )
+        ts = ev.to_pandas()
+        new_ev = ev.from_pandas(ts)
+        for attr in ["time", "energy", "pi", "gti"]:
+            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
+        for attr in ["mission", "instr", "mjdref"]:
+            assert getattr(ev, attr) == getattr(new_ev, attr)
+
+
+class TestJoinEvents:
     def test_join_without_times_simulated(self):
         """Test if exception is raised when join method is
         called before first simulating times.
@@ -322,142 +464,22 @@ class TestEvents(object):
         assert (ev_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
         assert np.allclose(ev_new.gti, np.array([[5, 6]]))
 
-    @pytest.mark.skipif("not (_HAS_YAML)")
-    def test_io_with_ascii(self):
-        ev = EventList(self.time)
-        ev.write("ascii_ev.ecsv", fmt="ascii")
-        ev = ev.read("ascii_ev.ecsv", fmt="ascii")
-        print(ev.time, self.time)
-        assert np.allclose(ev.time, self.time)
-        os.remove("ascii_ev.ecsv")
+    def test_multiple_join(self):
+        """Test if multiple event lists can be joined."""
+        ev = EventList(time=[1, 2, 4], instr="a", mission=1)
+        ev_other = EventList(time=[3, 5, 7], instr="b", mission=2)
+        ev_other2 = EventList(time=[6, 8, 9], instr="c", mission=3)
 
-    def test_io_with_pickle(self):
-        ev = EventList(self.time, mjdref=54000)
-        ev.write("ev.pickle", fmt="pickle")
-        ev = ev.read("ev.pickle", fmt="pickle")
-        assert np.allclose(ev.time, self.time)
-        os.remove("ev.pickle")
+        ev.pibiri = [1, 1, 1]
+        ev_other.pibiri = [2, 2, 2]
+        ev_other2.pibiri = [3, 3, 3]
 
-    @pytest.mark.skipif("not _H5PY_INSTALLED")
-    def test_io_with_hdf5_auto(self):
-        ev = EventList(time=self.time, mjdref=54000)
-        ev.write("ev.hdf5")
-
-        ev = ev.read("ev.hdf5")
-        assert np.allclose(ev.time, self.time)
-        os.remove("ev.hdf5")
-
-    @pytest.mark.skipif("not _H5PY_INSTALLED")
-    def test_io_with_hdf5(self):
-        ev = EventList(time=self.time, mjdref=54000)
-        ev.write("ev.hdf5", fmt="hdf5")
-
-        ev = ev.read("ev.hdf5", fmt="hdf5")
-        assert np.allclose(ev.time, self.time)
-        os.remove("ev.hdf5")
-
-    def test_io_with_fits(self):
-        ev = EventList(time=self.time, mjdref=54000)
-        ev.write("ev.fits", fmt="fits")
-        ev = ev.read("ev.fits", fmt="fits")
-        assert np.allclose(ev.time, self.time)
-        os.remove("ev.fits")
-
-    def test_fits_with_standard_file(self):
-        """Test that fits works with a standard event list
-        file.
-        """
-        fname = os.path.join(datadir, "monol_testA.evt")
-        ev = EventList()
-        ev = ev.read(fname, fmt="hea")
-        assert np.isclose(ev.mjdref, 55197.00076601852)
-
-    def test_fits_with_additional(self):
-        """Test that fits works with a standard event list
-        file.
-        """
-        fname = os.path.join(datadir, "xmm_test.fits")
-        ev = EventList()
-        with pytest.warns(UserWarning, match="HDU EVENTS not found"):
-            ev = ev.read(fname, fmt="hea", additional_columns=["PRIOR"])
-        assert hasattr(ev, "prior")
-
-    def test_timeseries_empty_evts(self):
-        N = len(self.time)
-        ev = EventList()
-        ts = ev.to_astropy_timeseries()
-        assert len(ts.columns) == 0
-
-    def test_timeseries_roundtrip(self):
-        N = len(self.time)
-        ev = EventList(
-            time=self.time,
-            gti=self.gti,
-            energy=np.zeros(N),
-            pi=np.ones(N),
-            mission="BUBU",
-            instr="BABA",
-            mjdref=53467.0,
-        )
-        ts = ev.to_astropy_timeseries()
-        new_ev = ev.from_astropy_timeseries(ts)
-        for attr in ["time", "energy", "pi", "gti"]:
-            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
-        for attr in ["mission", "instr", "mjdref"]:
-            assert getattr(ev, attr) == getattr(new_ev, attr)
-
-    def test_table_roundtrip(self):
-        N = len(self.time)
-        ev = EventList(
-            time=self.time,
-            gti=self.gti,
-            energy=np.zeros(N),
-            pi=np.ones(N),
-            mission="BUBU",
-            instr="BABA",
-            mjdref=53467.0,
-        )
-        ts = ev.to_astropy_table()
-        new_ev = ev.from_astropy_table(ts)
-        for attr in ["time", "energy", "pi", "gti"]:
-            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
-        for attr in ["mission", "instr", "mjdref"]:
-            assert getattr(ev, attr) == getattr(new_ev, attr)
-
-    @pytest.mark.skipif("not _HAS_XARRAY")
-    def test_xarray_roundtrip(self):
-        N = len(self.time)
-        ev = EventList(
-            time=self.time,
-            gti=self.gti,
-            energy=np.zeros(N),
-            pi=np.ones(N),
-            mission="BUBU",
-            instr="BABA",
-            mjdref=53467.0,
-        )
-        ts = ev.to_xarray()
-        new_ev = ev.from_xarray(ts)
-        for attr in ["time", "energy", "pi", "gti"]:
-            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
-        for attr in ["mission", "instr", "mjdref"]:
-            assert getattr(ev, attr) == getattr(new_ev, attr)
-
-    @pytest.mark.skipif("not _HAS_PANDAS")
-    def test_pandas_roundtrip(self):
-        N = len(self.time)
-        ev = EventList(
-            time=self.time,
-            gti=self.gti,
-            energy=np.zeros(N),
-            pi=np.ones(N),
-            mission="BUBU",
-            instr="BABA",
-            mjdref=53467.0,
-        )
-        ts = ev.to_pandas()
-        new_ev = ev.from_pandas(ts)
-        for attr in ["time", "energy", "pi", "gti"]:
-            assert np.allclose(getattr(ev, attr), getattr(new_ev, attr))
-        for attr in ["mission", "instr", "mjdref"]:
-            assert getattr(ev, attr) == getattr(new_ev, attr)
+        with pytest.warns(
+            UserWarning,
+            match="Attribute (instr|mission) is different in the event lists being merged.",
+        ):
+            ev_new = ev.join([ev_other, ev_other2])
+        assert np.allclose(ev_new.time, [1, 2, 3, 4, 5, 6, 7, 8, 9])
+        assert np.allclose(ev_new.pibiri, [1, 1, 2, 1, 2, 3, 2, 3, 3])
+        assert ev_new.instr == "a,b,c"
+        assert ev_new.mission == (1, 2, 3)

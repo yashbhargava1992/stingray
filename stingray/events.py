@@ -432,8 +432,10 @@ class EventList(StingrayTimeseries):
 
         Parameters
         ----------
-        other : :class:`EventList` object
+        other : :class:`EventList` object or class:`list` of :class:`EventList` objects
             The other :class:`EventList` object which is supposed to be joined with.
+            If other is a list, it is assumed to be a list of :class:`EventList` objects
+            and they are all joined, one by one.
 
         Returns
         -------
@@ -443,67 +445,82 @@ class EventList(StingrayTimeseries):
 
         ev_new = EventList()
 
-        if self.dt != other.dt:
-            simon("The time resolution is different." " Using the rougher by default")
-            ev_new.dt = np.max([self.dt, other.dt])
+        if isinstance(other, EventList):
+            others = [other]
+        else:
+            others = other
 
-        if self.time is None and other.time is None:
-            return ev_new
+        # First of all, check if there are empty event lists
+        for obj in others:
+            if getattr(obj, "time", None) is None or np.size(obj.time) == 0:
+                warnings.warning("One of the event lists you are concatenating is empty.")
+                others.remove(obj)
 
         if self.time is None:
-            simon("One of the event lists you are concatenating is empty.")
-            self.time = np.asarray([])
+            self.time = []
 
-        elif other.time is None:
-            simon("One of the event lists you are concatenating is empty.")
-            other.time = np.asarray([])
+        for other in others:
+            # Tolerance for MJDREF:1 microsecond
+            if not np.isclose(self.mjdref, other.mjdref, atol=1e-6 / 86400):
+                other = other.change_mjdref(self.mjdref)
 
-        # Tolerance for MJDREF:1 microsecond
-        if not np.isclose(self.mjdref, other.mjdref, atol=1e-6 / 86400):
-            other = other.change_mjdref(self.mjdref)
+        all_objs = [self] + others
+        dts = list(set([getattr(obj, "dt", None) for obj in all_objs]))
+        if len(dts) != 1:
+            warnings.warning("The time resolution is different. Using the rougher by default")
 
-        ev_new.time = np.concatenate([self.time, other.time])
+            ev_new.dt = np.max(dts)
+
+        ev_new.time = np.concatenate([getattr(obj, "time", np.array([])) for obj in all_objs])
         order = np.argsort(ev_new.time)
         ev_new.time = ev_new.time[order]
-        ev_new.energy = None
-        ev_new.pi = None
 
-        for attr in set(self.array_attrs() + other.array_attrs()):
-            self_attr = getattr(self, attr, None)
-            other_attr = getattr(other, attr, None)
-            if self_attr is None and other_attr is None:
-                setattr(ev_new, attr, None)
-            elif self_attr is None or other_attr is None:
-                self_attr = assign_value_if_none(self_attr, np.zeros_like(self.time))
-                other_attr = assign_value_if_none(other_attr, np.zeros_like(other.time))
+        def _get_set_from_many_lists(lists):
+            all_vals = []
+            for l in lists:
+                all_vals += l
+            return set(all_vals)
 
-            new_attr = np.concatenate([self_attr, other_attr])[order]
+        for attr in _get_set_from_many_lists([obj.array_attrs() for obj in all_objs]):
+            # if it's here, it means that it's an array attr in at least one object.
+            # So, everywhere it's None, it needs to be set to 0s of the same length as time
+            new_attr_values = []
+            for obj in all_objs:
+                other_attr = getattr(other, attr, None)
+                if getattr(obj, attr, None) is None:
+                    new_attr_values.append(np.zeros_like(obj.time))
+                else:
+                    new_attr_values.append(getattr(obj, attr))
+
+            new_attr = np.concatenate(new_attr_values)[order]
             setattr(ev_new, attr, new_attr)
 
-        if self.gti is None and other.gti is not None and len(self.time) > 0:
-            self.gti = assign_value_if_none(
-                self.gti, np.asarray([[self.time[0] - self.dt / 2, self.time[-1] + self.dt / 2]])
-            )
-        if other.gti is None and self.gti is not None and len(other.time) > 0:
-            other.gti = assign_value_if_none(
-                other.gti,
-                np.asarray([[other.time[0] - other.dt / 2, other.time[-1] + other.dt / 2]]),
-            )
-
-        if (self.gti is None) and (other.gti is None):
+        if np.all([obj.gti is None for obj in all_objs]):
             ev_new.gti = None
+        else:
+            all_gti_lists = []
 
-        elif (self.gti is not None) and (other.gti is not None):
-            if check_separate(self.gti, other.gti):
-                ev_new.gti = append_gtis(self.gti, other.gti)
-                simon(
-                    "GTIs in these two event lists do not overlap at all."
-                    "Merging instead of returning an overlap."
-                )
-            else:
-                ev_new.gti = cross_gtis([self.gti, other.gti])
+            for obj in all_objs:
+                if obj.gti is None and len(obj.time) > 0:
+                    obj.gti = assign_value_if_none(
+                        obj.gti,
+                        np.asarray([[obj.time[0] - obj.dt / 2, obj.time[-1] + obj.dt / 2]]),
+                    )
+                if obj.gti is not None:
+                    all_gti_lists.append(obj.gti)
 
-        all_meta_attrs = set(self.meta_attrs() + other.meta_attrs())
+            new_gtis = all_gti_lists[0]
+            for gti in all_gti_lists[1:]:
+                if check_separate(new_gtis, gti):
+                    new_gtis = append_gtis(new_gtis, gti)
+                    logging.info(
+                        "GTIs in these two event lists do not overlap at all."
+                        "Merging instead of returning an overlap."
+                    )
+                else:
+                    new_gtis = cross_gtis([new_gtis, gti])
+
+        all_meta_attrs = _get_set_from_many_lists([obj.meta_attrs() for obj in all_objs])
         # The attributes being treated separately are removed from the standard treatment
         # When energy, pi etc. are None, they might appear in the meta_attrs, so we
         # also add them to the list of attributes to be removed if present.
@@ -515,22 +532,25 @@ class EventList(StingrayTimeseries):
 
         logging.info("The header attribute will be removed from the output event list.")
 
-        def safe_concatenate(a, b):
+        def _safe_concatenate(a, b):
             if isinstance(a, str) and isinstance(b, str):
                 return a + "," + b
             else:
+                if isinstance(a, tuple):
+                    return a + (b,)
                 return (a, b)
 
         for attr in all_meta_attrs:
             self_attr = getattr(self, attr, None)
-            other_attr = getattr(other, attr, None)
-            if self_attr != other_attr:
-                warnings.warn(
-                    "Attribute " + attr + " is different in the event lists being merged."
-                )
-                setattr(ev_new, attr, safe_concatenate(self_attr, other_attr))
-            else:
-                setattr(ev_new, attr, self_attr)
+            new_val = self_attr
+            for other in others:
+                other_attr = getattr(other, attr, None)
+                if self_attr != other_attr:
+                    warnings.warn(
+                        "Attribute " + attr + " is different in the event lists being merged."
+                    )
+                    new_val = _safe_concatenate(new_val, other_attr)
+            setattr(ev_new, attr, new_val)
 
         ev_new.mjdref = self.mjdref
 

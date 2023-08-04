@@ -907,7 +907,7 @@ def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False, offset
 
 
 def excess_variance(lc, normalization="fvar"):
-    """Calculate the excess variance.
+    r"""Calculate the excess variance.
 
     Vaughan et al. 2003, MNRAS 345, 1271 give three measurements of source
     intrinsic variance: if a light curve has a total variance of :math:`S^2`,
