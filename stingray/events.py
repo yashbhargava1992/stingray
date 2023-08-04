@@ -5,6 +5,7 @@ Definition of :class:`EventList`.
 """
 
 import copy
+import logging
 import pickle
 import warnings
 from collections.abc import Iterable
@@ -502,11 +503,34 @@ class EventList(StingrayTimeseries):
             else:
                 ev_new.gti = cross_gtis([self.gti, other.gti])
 
-        for attr in ["mission", "instr"]:
-            if getattr(self, attr) != getattr(other, attr):
-                setattr(ev_new, attr, getattr(self, attr) + "," + getattr(other, attr))
+        all_meta_attrs = set(self.meta_attrs() + other.meta_attrs())
+        # The attributes being treated separately are removed from the standard treatment
+        # When energy, pi etc. are None, they might appear in the meta_attrs, so we
+        # also add them to the list of attributes to be removed if present.
+        to_remove = ["gti", "header", "ncounts", "dt"] + ev_new.array_attrs()
+
+        for attrs in to_remove:
+            if attrs in all_meta_attrs:
+                all_meta_attrs.remove(attrs)
+
+        logging.info("The header attribute will be removed from the output event list.")
+
+        def safe_concatenate(a, b):
+            if isinstance(a, str) and isinstance(b, str):
+                return a + "," + b
             else:
-                setattr(ev_new, attr, getattr(self, attr))
+                return (a, b)
+
+        for attr in all_meta_attrs:
+            self_attr = getattr(self, attr, None)
+            other_attr = getattr(other, attr, None)
+            if self_attr != other_attr:
+                warnings.warn(
+                    "Attribute " + attr + " is different in the event lists being merged."
+                )
+                setattr(ev_new, attr, safe_concatenate(self_attr, other_attr))
+            else:
+                setattr(ev_new, attr, self_attr)
 
         ev_new.mjdref = self.mjdref
 

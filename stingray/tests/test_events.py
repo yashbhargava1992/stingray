@@ -215,9 +215,27 @@ class TestEvents(object):
     def test_join_different_instr(self):
         ev = EventList(time=[10, 20, 30], instr="fpma")
         ev_other = EventList(time=[40, 50, 60], instr="fpmb")
-        ev_new = ev.join(ev_other)
+        with pytest.warns(
+            UserWarning, match="Attribute instr is different in the event lists being merged."
+        ):
+            ev_new = ev.join(ev_other)
 
         assert ev_new.instr == "fpma,fpmb"
+
+    def test_join_different_meta_attribute(self):
+        ev = EventList(time=[10, 20, 30], instr="fpma")
+        ev_other = EventList(time=[40, 50, 60], instr="fpmb")
+        ev_other.bubu = "settete"
+        ev.whatstheanswer = 42
+
+        with pytest.warns(
+            UserWarning,
+            match="Attribute (bubu|whatstheanswer) is different in the event lists being merged.",
+        ):
+            ev_new = ev.join(ev_other)
+
+        assert ev_new.bubu == (None, "settete")
+        assert ev_new.whatstheanswer == (42, None)
 
     def test_join_without_energy(self):
         ev = EventList(time=[1, 2, 3], energy=[3, 3, 3])
