@@ -462,26 +462,20 @@ class EventList(StingrayTimeseries):
         ev_new.time = np.concatenate([self.time, other.time])
         order = np.argsort(ev_new.time)
         ev_new.time = ev_new.time[order]
+        ev_new.energy = None
+        ev_new.pi = None
 
-        if (self.pi is None) and (other.pi is None):
-            ev_new.pi = None
-        elif (self.pi is None) or (other.pi is None):
-            self.pi = assign_value_if_none(self.pi, np.zeros_like(self.time))
-            other.pi = assign_value_if_none(other.pi, np.zeros_like(other.time))
+        for attr in set(self.array_attrs() + other.array_attrs()):
+            self_attr = getattr(self, attr, None)
+            other_attr = getattr(other, attr, None)
+            if self_attr is None and other_attr is None:
+                setattr(ev_new, attr, None)
+            elif self_attr is None or other_attr is None:
+                self_attr = assign_value_if_none(self_attr, np.zeros_like(self.time))
+                other_attr = assign_value_if_none(other_attr, np.zeros_like(other.time))
 
-        if (self.pi is not None) and (other.pi is not None):
-            ev_new.pi = np.concatenate([self.pi, other.pi])
-            ev_new.pi = ev_new.pi[order]
-
-        if (self.energy is None) and (other.energy is None):
-            ev_new.energy = None
-        elif (self.energy is None) or (other.energy is None):
-            self.energy = assign_value_if_none(self.energy, np.zeros_like(self.time))
-            other.energy = assign_value_if_none(other.energy, np.zeros_like(other.time))
-
-        if (self.energy is not None) and (other.energy is not None):
-            ev_new.energy = np.concatenate([self.energy, other.energy])
-            ev_new.energy = ev_new.energy[order]
+            new_attr = np.concatenate([self_attr, other_attr])[order]
+            setattr(ev_new, attr, new_attr)
 
         if self.gti is None and other.gti is not None and len(self.time) > 0:
             self.gti = assign_value_if_none(

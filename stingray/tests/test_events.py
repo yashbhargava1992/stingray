@@ -233,6 +233,16 @@ class TestEvents(object):
 
         assert np.allclose(ev_new.pi, [3, 3, 3, 0, 0])
 
+    def test_join_with_arbitrary_attribute(self):
+        ev = EventList(time=[1, 2, 3])
+        ev_other = EventList(time=[4, 5])
+        ev.u = [3, 3, 3]
+        ev_other.q = [1, 2]
+        ev_new = ev.join(ev_other)
+
+        assert np.allclose(ev_new.q, [0, 0, 0, 1, 2])
+        assert np.allclose(ev_new.u, [3, 3, 3, 0, 0])
+
     def test_join_with_gti_none(self):
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5], gti=[[3.5, 5.5]])
