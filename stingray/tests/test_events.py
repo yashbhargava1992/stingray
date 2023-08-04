@@ -310,7 +310,10 @@ class TestJoinEvents:
         ev = EventList()
         ev_other = EventList()
 
-        assert ev.join(ev_other).time is None
+        with pytest.warns(
+            UserWarning, match="One of the event lists you are concatenating is empty"
+        ):
+            assert ev.join(ev_other).time is None
 
     def test_join_empty_lists(self):
         """Test if an empty event list can be concatenated
@@ -324,13 +327,13 @@ class TestJoinEvents:
 
         ev = EventList()
         ev_other = EventList(time=[1, 2, 3])
-        with pytest.warns(UserWarning, match="One of the event lists you are concatenating"):
-            ev_new = ev.join(ev_other)
+        ev_new = ev.join(ev_other)
         assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList()
-        ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning, match="One of the event lists you are concatenating"):
+            ev_new = ev.join(ev_other)
         assert ev_new.time == None
         assert ev_new.gti == None
         assert ev_new.pi == None
@@ -338,7 +341,8 @@ class TestJoinEvents:
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList([])
-        ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning, match="One of the event lists you are concatenating"):
+            ev_new = ev.join(ev_other)
         assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList([])
@@ -458,7 +462,8 @@ class TestJoinEvents:
             gti=np.asarray([[5, 7], [8, 10]]) + 86400,
             mjdref=57000,
         )
-        ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning, match="Attribute mjdref is different"):
+            ev_new = ev.join(ev_other)
 
         assert np.allclose(ev_new.time, np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1]))
         assert (ev_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()

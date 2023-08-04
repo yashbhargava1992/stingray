@@ -453,45 +453,60 @@ class EventList(StingrayTimeseries):
         # First of all, check if there are empty event lists
         for obj in others:
             if getattr(obj, "time", None) is None or np.size(obj.time) == 0:
-                warnings.warning("One of the event lists you are concatenating is empty.")
+                warnings.warn("One of the event lists you are concatenating is empty.")
                 others.remove(obj)
 
-        if self.time is None:
-            self.time = []
+        if len(others) == 0:
+            return copy.deepcopy(self)
 
-        for other in others:
+        for i, other in enumerate(others):
             # Tolerance for MJDREF:1 microsecond
             if not np.isclose(self.mjdref, other.mjdref, atol=1e-6 / 86400):
-                other = other.change_mjdref(self.mjdref)
+                warnings.warn("Attribute mjdref is different in the event lists being merged.")
+                others[i] = other.change_mjdref(self.mjdref)
 
         all_objs = [self] + others
+
         dts = list(set([getattr(obj, "dt", None) for obj in all_objs]))
         if len(dts) != 1:
-            warnings.warning("The time resolution is different. Using the rougher by default")
+            warnings.warn("The time resolution is different. Using the rougher by default")
 
             ev_new.dt = np.max(dts)
 
-        ev_new.time = np.concatenate([getattr(obj, "time", np.array([])) for obj in all_objs])
+        all_time_arrays = [obj.time for obj in all_objs if obj.time is not None]
+
+        ev_new.time = np.concatenate(all_time_arrays)
         order = np.argsort(ev_new.time)
         ev_new.time = ev_new.time[order]
 
         def _get_set_from_many_lists(lists):
+            """Make a single set out of many lists."""
             all_vals = []
             for l in lists:
                 all_vals += l
             return set(all_vals)
 
-        for attr in _get_set_from_many_lists([obj.array_attrs() for obj in all_objs]):
+        def _get_all_array_attrs(objs):
+            """Get all array attributes from the event lists being merged. Do not include time."""
+            all_attrs = []
+            for obj in objs:
+                if obj.time is not None and len(obj.time) > 0:
+                    all_attrs += obj.array_attrs()
+
+            all_attrs = list(set(all_attrs))
+            if "time" in all_attrs:
+                all_attrs.remove("time")
+            return all_attrs
+
+        for attr in _get_all_array_attrs(all_objs):
             # if it's here, it means that it's an array attr in at least one object.
             # So, everywhere it's None, it needs to be set to 0s of the same length as time
             new_attr_values = []
             for obj in all_objs:
-                other_attr = getattr(other, attr, None)
                 if getattr(obj, attr, None) is None:
                     new_attr_values.append(np.zeros_like(obj.time))
                 else:
                     new_attr_values.append(getattr(obj, attr))
-
             new_attr = np.concatenate(new_attr_values)[order]
             setattr(ev_new, attr, new_attr)
 
@@ -513,12 +528,13 @@ class EventList(StingrayTimeseries):
             for gti in all_gti_lists[1:]:
                 if check_separate(new_gtis, gti):
                     new_gtis = append_gtis(new_gtis, gti)
-                    logging.info(
+                    warnings.warn(
                         "GTIs in these two event lists do not overlap at all."
                         "Merging instead of returning an overlap."
                     )
                 else:
                     new_gtis = cross_gtis([new_gtis, gti])
+            ev_new.gti = new_gtis
 
         all_meta_attrs = _get_set_from_many_lists([obj.meta_attrs() for obj in all_objs])
         # The attributes being treated separately are removed from the standard treatment
