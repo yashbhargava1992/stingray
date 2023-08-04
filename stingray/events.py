@@ -424,8 +424,10 @@ class EventList(StingrayTimeseries):
         GTIs are crossed if the event lists are over a common time interval,
         and appended otherwise.
 
-        ``pi`` and ``pha`` remain ``None`` if they are ``None`` in both. Otherwise, 0 is used
-        as a default value for the :class:`EventList` where they were None.
+        Standard attributes such as ``pi`` and ``energy`` remain ``None`` if they are ``None``
+        in both. Otherwise, 0 is used as a default value for the :class:`EventList` where they
+        were None. Arbitrary attributes (e.g., Stokes parameters in polarimetric data) are
+        created and concatenated using the same convention.
 
         Parameters
         ----------
