@@ -426,15 +426,21 @@ class EventList(StingrayTimeseries):
         and appended otherwise.
 
         Standard attributes such as ``pi`` and ``energy`` remain ``None`` if they are ``None``
-        in both. Otherwise, 0 is used as a default value for the :class:`EventList` where they
-        were None. Arbitrary attributes (e.g., Stokes parameters in polarimetric data) are
-        created and concatenated using the same convention.
+        in both. Otherwise, ``np.nan`` is used as a default value for the :class:`EventList` where
+        they were None. Arbitrary attributes (e.g., Stokes parameters in polarimetric data) are
+        created and joined using the same convention.
+
+        Multiple checks are done on the joined event lists. If the time array of the event list
+        being joined is empty, it is ignored. If the time resolution is different, the final
+        event list will have the rougher time resolution. If the MJDREF is different, the time
+        reference will be changed to the one of the first event list. An empty event list will
+        be ignored.
 
         Parameters
         ----------
         other : :class:`EventList` object or class:`list` of :class:`EventList` objects
             The other :class:`EventList` object which is supposed to be joined with.
-            If other is a list, it is assumed to be a list of :class:`EventList` objects
+            If ``other`` is a list, it is assumed to be a list of :class:`EventList` objects
             and they are all joined, one by one.
 
         Returns
