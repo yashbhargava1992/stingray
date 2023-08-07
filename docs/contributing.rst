@@ -135,7 +135,7 @@ Compatibility and Dependencies
       Library <https://docs.python.org/3/library/index.html>`__,
       `astropy <https://docs.astropy.org/en/stable/>`__>=4.0,
       `numpy <https://numpy.org/doc/stable/>`__>=1.17.0,
-      `scipy <https://www.scipy.org/docs.html>`__>=1.1,
+      `scipy <https://docs.scipy.org/doc/scipy/>`__>=1.1,
       `matplotlib <https://matplotlib.org/contents.html>`__>=3.0
    -  Additional dependencies are allowed for sub-modules or in function
       calls, but they must be noted in the package documentation and
