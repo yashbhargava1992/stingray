@@ -353,10 +353,11 @@ class TestJoinEvents:
     def test_join_different_dt(self):
         ev = EventList(time=[10, 20, 30], dt=1)
         ev_other = EventList(time=[40, 50, 60], dt=3)
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning, match="The time resolution is different."):
             ev_new = ev.join(ev_other)
 
         assert ev_new.dt == 3
+        assert np.allclose(ev_new.time, [10, 20, 30, 40, 50, 60])
 
     def test_join_different_instr(self):
         ev = EventList(time=[10, 20, 30], instr="fpma")
@@ -369,19 +370,22 @@ class TestJoinEvents:
         assert ev_new.instr == "fpma,fpmb"
 
     def test_join_different_meta_attribute(self):
-        ev = EventList(time=[10, 20, 30], instr="fpma")
-        ev_other = EventList(time=[40, 50, 60], instr="fpmb")
+        ev = EventList(time=[10, 20, 30])
+        ev_other = EventList(time=[40, 50, 60])
         ev_other.bubu = "settete"
         ev.whatstheanswer = 42
+        ev.unmovimentopara = "arriba"
+        ev_other.unmovimentopara = "abajo"
 
         with pytest.warns(
             UserWarning,
-            match="Attribute (bubu|whatstheanswer) is different in the event lists being merged.",
+            match="Attribute (bubu|whatstheanswer|unmovimentopara) is different in the event lists being merged.",
         ):
             ev_new = ev.join(ev_other)
 
         assert ev_new.bubu == (None, "settete")
         assert ev_new.whatstheanswer == (42, None)
+        assert ev_new.unmovimentopara == "arriba,abajo"
 
     def test_join_without_energy(self):
         ev = EventList(time=[1, 2, 3], energy=[3, 3, 3])
