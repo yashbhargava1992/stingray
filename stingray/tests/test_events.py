@@ -386,26 +386,35 @@ class TestJoinEvents:
     def test_join_without_energy(self):
         ev = EventList(time=[1, 2, 3], energy=[3, 3, 3])
         ev_other = EventList(time=[4, 5])
-        ev_new = ev.join(ev_other)
+        with pytest.warns(
+            UserWarning, match="The energy array is empty in one of the event lists being merged."
+        ):
+            ev_new = ev.join(ev_other)
 
-        assert np.allclose(ev_new.energy, [3, 3, 3, 0, 0])
+        assert np.allclose(ev_new.energy, [3, 3, 3, np.nan, np.nan], equal_nan=True)
 
     def test_join_without_pi(self):
         ev = EventList(time=[1, 2, 3], pi=[3, 3, 3])
         ev_other = EventList(time=[4, 5])
-        ev_new = ev.join(ev_other)
+        with pytest.warns(
+            UserWarning, match="The pi array is empty in one of the event lists being merged."
+        ):
+            ev_new = ev.join(ev_other)
 
-        assert np.allclose(ev_new.pi, [3, 3, 3, 0, 0])
+        assert np.allclose(ev_new.pi, [3, 3, 3, np.nan, np.nan], equal_nan=True)
 
     def test_join_with_arbitrary_attribute(self):
         ev = EventList(time=[1, 2, 4])
         ev_other = EventList(time=[3, 5])
         ev.u = [3, 3, 3]
         ev_other.q = [1, 2]
-        ev_new = ev.join(ev_other)
+        with pytest.warns(
+            UserWarning, match="The (u|q) array is empty in one of the event lists being merged."
+        ):
+            ev_new = ev.join(ev_other)
 
-        assert np.allclose(ev_new.q, [0, 0, 1, 0, 2])
-        assert np.allclose(ev_new.u, [3, 3, 0, 3, 0])
+        assert np.allclose(ev_new.q, [np.nan, np.nan, 1, np.nan, 2], equal_nan=True)
+        assert np.allclose(ev_new.u, [3, 3, np.nan, 3, np.nan], equal_nan=True)
 
     def test_join_with_gti_none(self):
         ev = EventList(time=[1, 2, 3])

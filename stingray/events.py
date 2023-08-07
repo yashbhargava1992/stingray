@@ -504,7 +504,10 @@ class EventList(StingrayTimeseries):
             new_attr_values = []
             for obj in all_objs:
                 if getattr(obj, attr, None) is None:
-                    new_attr_values.append(np.zeros_like(obj.time))
+                    warnings.warn(
+                        f"The {attr} array is empty in one of the event lists being merged. Setting it to NaN for the affected events"
+                    )
+                    new_attr_values.append(np.zeros_like(obj.time) + np.nan)
                 else:
                     new_attr_values.append(getattr(obj, attr))
             new_attr = np.concatenate(new_attr_values)[order]
