@@ -54,7 +54,7 @@ Contributions from everyone, experienced and inexperienced, are welcome!
 If you don’t know where to start, look at the `Open
 Issues <https://github.com/StingraySoftware/stingray/issues>`__ and/or
 get involved in our `Slack
-channel <http://slack-invite.timelabtechnologies.com/>`__. This code is
+channel <https://join.slack.com/t/stingraysoftware/shared_invite/zt-49kv4kba-mD1Y~s~rlrOOmvqM7mZugQ>`__. This code is
 written in Python 3.8+, but in general we will follow the Astropy/ Numpy
 minimum Python versions. Tests run at each commit during Pull Requests,
 so it is easy to single out points in the code that break this
