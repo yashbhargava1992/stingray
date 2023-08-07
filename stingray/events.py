@@ -453,7 +453,7 @@ class EventList(StingrayTimeseries):
         # First of all, check if there are empty event lists
         for obj in others:
             if getattr(obj, "time", None) is None or np.size(obj.time) == 0:
-                warnings.warn("One of the event lists you are concatenating is empty.")
+                warnings.warn("One of the event lists you are joining is empty.")
                 others.remove(obj)
 
         if len(others) == 0:

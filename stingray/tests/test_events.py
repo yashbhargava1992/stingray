@@ -310,9 +310,7 @@ class TestJoinEvents:
         ev = EventList()
         ev_other = EventList()
 
-        with pytest.warns(
-            UserWarning, match="One of the event lists you are concatenating is empty"
-        ):
+        with pytest.warns(UserWarning, match="One of the event lists you are joining is empty"):
             assert ev.join(ev_other).time is None
 
     def test_join_empty_lists(self):
@@ -321,7 +319,7 @@ class TestJoinEvents:
         """
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList()
-        with pytest.warns(UserWarning, match="One of the event lists you are concatenating"):
+        with pytest.warns(UserWarning, match="One of the event lists you are joining"):
             ev_new = ev.join(ev_other)
         assert np.allclose(ev_new.time, [1, 2, 3])
 
@@ -332,7 +330,7 @@ class TestJoinEvents:
 
         ev = EventList()
         ev_other = EventList()
-        with pytest.warns(UserWarning, match="One of the event lists you are concatenating"):
+        with pytest.warns(UserWarning, match="One of the event lists you are joining"):
             ev_new = ev.join(ev_other)
         assert ev_new.time == None
         assert ev_new.gti == None
@@ -341,7 +339,7 @@ class TestJoinEvents:
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList([])
-        with pytest.warns(UserWarning, match="One of the event lists you are concatenating"):
+        with pytest.warns(UserWarning, match="One of the event lists you are joining"):
             ev_new = ev.join(ev_other)
         assert np.allclose(ev_new.time, [1, 2, 3])
 
