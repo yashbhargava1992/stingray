@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 import functools
@@ -6,16 +5,13 @@ from stingray import Lightcurve
 
 try:
     import jax
-except ImportError:
-    pytest.skip(allow_module_level=True)
-
-try:
     import jax.numpy as jnp
     from jax import jit, random
 
     jax.config.update("jax_enable_x64", True)
+    jax_avail = True
 except ImportError:
-    raise ImportError("Jax not installed")
+    jax_avail = False
 
 try:
     from tinygp import GaussianProcess, kernels
@@ -60,6 +56,9 @@ def get_kernel(kernel_type, kernel_params):
         Should contain the parameters for the selected kernel
 
     """
+    if not jax_avail:
+        raise ImportError("Jax is required")
+
     if not can_make_gp:
         raise ImportError("Tinygp is required to make kernels")
 
@@ -95,6 +94,9 @@ def get_mean(mean_type, mean_params):
         Should contain the parameters for the selected mean
 
     """
+    if not jax_avail:
+        raise ImportError("Jax is required")
+
     if mean_type == "gaussian":
         mean = functools.partial(_gaussian, mean_params=mean_params)
     elif mean_type == "exponential":
@@ -340,7 +342,7 @@ def get_gp_params(kernel_type, mean_type):
 
     Examples
     --------
-    >>> get_gp_params("QPO_plus_RN", "gaussian")
+    get_gp_params("QPO_plus_RN", "gaussian")
     ['arn', 'crn', 'aqpo', 'cqpo', 'freq', 'A', 't0', 'sig']
     """
     kernel_params = _get_kernel_params(kernel_type)
@@ -380,25 +382,28 @@ def get_prior(params_list, prior_dict):
     --------
     A prior function for a Red Noise kernel and a Gaussian mean function
     Obain the parameters list
-    >>> if not can_sample:
-    ...     pytest.skip("Jaxns not installed. Cannot make jaxns specific prior.")
-    >>> if not tfp_available:
-    ...     pytest.skip("Tensorflow probability required to make priors.")
+    if not can_sample:
+        pytest.skip("Jaxns not installed. Cannot make jaxns specific prior.")
+    if not tfp_available:
+        pytest.skip("Tensorflow probability required to make priors.")
 
-    >>> params_list = get_gp_params("RN", "gaussian")
+    params_list = get_gp_params("RN", "gaussian")
 
     Make a prior dictionary using tensorflow_probability distributions
-    >>> prior_dict = {
-    ...    "A": tfpd.Uniform(low = 1e-1, high = 2e+2),
-    ...    "t0": tfpd.Uniform(low = 0.0 - 0.1, high = 1 + 0.1),
-    ...    "sig": tfpd.Uniform(low = 0.5 * 1 / 20, high = 2 ),
-    ...    "arn": tfpd.Uniform(low = 0.1 , high = 2 ),
-    ...    "crn": tfpd.Uniform(low = jnp.log(1 /5), high = jnp.log(20)),
-    ... }
+    prior_dict = {
+       "A": tfpd.Uniform(low = 1e-1, high = 2e+2),
+       "t0": tfpd.Uniform(low = 0.0 - 0.1, high = 1 + 0.1),
+       "sig": tfpd.Uniform(low = 0.5 * 1 / 20, high = 2 ),
+       "arn": tfpd.Uniform(low = 0.1 , high = 2 ),
+       "crn": tfpd.Uniform(low = jnp.log(1 /5), high = jnp.log(20)),
+    }
 
-    >>> prior_model = get_prior(params_list, prior_dict)
+    prior_model = get_prior(params_list, prior_dict)
 
     """
+    if not jax_avail:
+        raise ImportError("Jax is required")
+
     if not can_sample:
         raise ImportError("Jaxns not installed. Cannot make jaxns specific prior.")
 
@@ -454,6 +459,9 @@ def get_likelihood(params_list, kernel_type, mean_type, **kwargs):
     The jaxns specific log likelihood function.
 
     """
+    if not jax_avail:
+        raise ImportError("Jax is required")
+
     if not can_make_gp:
         raise ImportError("Tinygp is required to make the GP model.")
 
@@ -516,6 +524,9 @@ class GPResult:
             The results of the nested sampling process
 
         """
+        if not jax_avail:
+            raise ImportError("Jax is required")
+
         if not can_sample:
             raise ImportError("Jaxns not installed! Can't sample!")
 
@@ -600,7 +611,7 @@ class GPResult:
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
             acceptable argument for ``matplotlib.pyplot.axis()`` method.
 
-        save : bool, optionalm, default ``False``
+        save : bool, optional, default ``False``
             If ``True``, save the figure with specified filename.
 
         filename : str
@@ -638,7 +649,7 @@ class GPResult:
         return plt
 
     def weighted_posterior_plot(
-        self, name: str, n=0, rkey=random.PRNGKey(1234), axis=None, save=False, filename=None
+        self, name: str, n=0, rkey=None, axis=None, save=False, filename=None
     ):
         """
         Returns the weighted posterior histogram for the given parameter
@@ -673,6 +684,9 @@ class GPResult:
         plt : ``matplotlib.pyplot`` object
             Reference to plot, call ``show()`` to display it
         """
+        if rkey is None:
+            rkey = random.PRNGKey(1234)
+
         nsamples = self.Results.total_num_samples
         log_p = self.Results.log_dp_mean
         samples = self.Results.samples[name].reshape((nsamples, -1))[:, n]
@@ -720,7 +734,7 @@ class GPResult:
         param2: str,
         n1=0,
         n2=0,
-        rkey=random.PRNGKey(1234),
+        rkey=None,
         axis=None,
         save=False,
         filename=None,
@@ -767,6 +781,9 @@ class GPResult:
         plt : ``matplotlib.pyplot`` object
             Reference to plot, call ``show()`` to display it
         """
+        if rkey is None:
+            rkey = random.PRNGKey(1234)
+
         nsamples = self.Results.total_num_samples
         log_p = self.Results.log_dp_mean
         samples1 = self.Results.samples[param1].reshape((nsamples, -1))[:, n1]
