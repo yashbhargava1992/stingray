@@ -211,8 +211,8 @@ class Lightcurve(StingrayTimeseries):
 
     def __init__(
         self,
-        time,
-        counts,
+        time=None,
+        counts=None,
         err=None,
         input_counts=True,
         gti=None,
@@ -234,7 +234,33 @@ class Lightcurve(StingrayTimeseries):
         if other_kw != {}:
             warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
+        self._time = None
+        self._mask = None
+        self._counts = None
+        self._counts_err = None
+        self._countrate = None
+        self._countrate_err = None
+        self._meanrate = None
+        self._meancounts = None
+        self._bin_lo = None
+        self._bin_hi = None
+        self._n = None
+        self.mission = mission
+        self.instr = instr
+        self.header = header
+        self.dt = dt
+
+        self.input_counts = input_counts
+        self.low_memory = low_memory
+
+        self.mjdref = mjdref
+
+        if time is None or len(time) == 0:
+            warnings.warn("No time values passed to Lightcurve object!")
+            return
+
         time, mjdref = interpret_times(time, mjdref=mjdref)
+        self.mjdref = mjdref
 
         time = np.asarray(time)
         counts = np.asarray(counts)
@@ -246,10 +272,7 @@ class Lightcurve(StingrayTimeseries):
             time, counts, err = self.initial_optional_checks(time, counts, err, gti=gti)
 
         if time.size != counts.size:
-            raise StingrayError("time and counts array are not " "of the same length!")
-
-        if time.size <= 1:
-            raise StingrayError("A single or no data points can not create " "a lightcurve!")
+            raise StingrayError("time and counts array are not of the same length!")
 
         if err_dist.lower() not in valid_statistics:
             # err_dist set can be increased with other statistics
@@ -265,16 +288,20 @@ class Lightcurve(StingrayTimeseries):
                 "Sorry for the inconvenience."
             )
 
-        self.mjdref = mjdref
         self._time = time
 
-        if dt is None:
+        if dt is None and time.size > 1:
             logging.info(
                 "Computing the bin time ``dt``. This can take "
                 "time. If you know the bin time, please specify it"
                 " at light curve creation"
             )
             dt = np.median(np.diff(self._time))
+        elif time.size == 1:
+            warnings.warn(
+                "Only one time bin. Setting dt=1. Please specify dt if you want to use a different value"
+            )
+            dt = 1.0
 
         self.dt = dt
 
@@ -296,22 +323,6 @@ class Lightcurve(StingrayTimeseries):
         if gti is not None:
             self._gti = np.asarray(gti)
 
-        self._mask = None
-        self._counts = None
-        self._counts_err = None
-        self._countrate = None
-        self._countrate_err = None
-        self._meanrate = None
-        self._meancounts = None
-        self._bin_lo = None
-        self._bin_hi = None
-        self._n = None
-        self.mission = mission
-        self.instr = instr
-        self.header = header
-
-        self.input_counts = input_counts
-        self.low_memory = low_memory
         if input_counts:
             self._counts = np.asarray(counts)
             self._counts_err = err

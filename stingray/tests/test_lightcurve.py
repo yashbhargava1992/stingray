@@ -81,6 +81,13 @@ class TestProperties(object):
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
 
+    def test_empty_lightcurve(self):
+        with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
+            Lightcurve()
+
+        with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
+            Lightcurve([], [])
+
     @pytest.mark.skipif("not _IS_WINDOWS")
     def test_warn_on_windows(self):
         with pytest.warns(UserWarning) as record:
@@ -662,12 +669,6 @@ class TestLightcurve(object):
         assert np.allclose(lc[:].counts_err, np.array([2, 2, 2, 2]) / 10)
         assert lc[:].err_dist == lc.err_dist
 
-    def test_slicing_index_error(self):
-        lc = Lightcurve(self.times, self.counts)
-
-        with pytest.raises(StingrayError):
-            lc_new = lc[1:2]
-
     def test_index(self):
         lc = Lightcurve(self.times, self.counts)
 
@@ -915,7 +916,7 @@ class TestLightcurve(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             lc_test = Lightcurve(test_time, test_counts)
-        slc = lc_test.split(1.5)
+        slc = lc_test.split(1.5, min_points=2)
 
         assert np.allclose(slc[0].time, [1, 2, 3])
         assert np.allclose(slc[1].time, [9, 10, 11])
@@ -1136,7 +1137,8 @@ class TestLightcurve(object):
         lc = Lightcurve(
             times, counts, gti=gti, bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp
         )
-        list_of_lcs = lc.split_by_gti(min_points=0)
+        with pytest.warns(UserWarning, match="Only one time bin. Setting dt=1"):
+            list_of_lcs = lc.split_by_gti(min_points=0)
         assert len(list_of_lcs) == 3
 
         lc0 = list_of_lcs[0]
@@ -1150,7 +1152,7 @@ class TestLightcurve(object):
         assert np.allclose(lc1.counts, [3])
         assert np.allclose(lc0.gti, [[0.5, 4.5]])
         assert np.allclose(lc1.gti, [[5.5, 7.5]])
-        assert np.allclose(lc1.gti, [[8.5, 9.5]])
+        assert np.allclose(lc2.gti, [[8.5, 9.5]])
         # Check if new attributes are also splited accordingly
         assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
         assert np.allclose(lc1.bg_counts, [1, 2])
