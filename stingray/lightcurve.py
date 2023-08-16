@@ -1862,9 +1862,6 @@ class Lightcurve(StingrayTimeseries):
             start = start_bins[i]
             stop = stop_bins[i]
 
-            if np.isclose(stop - start, 1):
-                logging.warning("Segment with a single time bin! Ignoring this segment!")
-                continue
             if (stop - start) < min_points:
                 continue
 
