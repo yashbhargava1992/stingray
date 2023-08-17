@@ -77,6 +77,16 @@ def get_kernel(kernel_type, kernel_params):
             scale=1 / kernel_params["crn"], sigma=(kernel_params["arn"]) ** 0.5
         )
         return kernel
+    elif kernel_type == "QPO":
+        kernel = kernels.quasisep.Celerite(
+            a=kernel_params["aqpo"],
+            b=0.0,
+            c=kernel_params["cqpo"],
+            d=2 * jnp.pi * kernel_params["freq"],
+        )
+        return kernel
+    else:
+        raise ValueError("Kernel type not implemented")
 
 
 def get_mean(mean_type, mean_params):
@@ -109,6 +119,8 @@ def get_mean(mean_type, mean_params):
         mean = functools.partial(_skew_exponential, mean_params=mean_params)
     elif mean_type == "fred":
         mean = functools.partial(_fred, mean_params=mean_params)
+    else:
+        raise ValueError("Mean type not implemented")
     return mean
 
 

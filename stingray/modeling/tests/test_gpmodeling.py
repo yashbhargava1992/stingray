@@ -74,6 +74,22 @@ class Testget_kernel(object):
             kernel_rn(self.x, jnp.array([0.0])) == kernel_rn_test(self.x, jnp.array([0.0]))
         ).all()
 
+    def test_get_kernel_qpo(self):
+        kernel_qpo = kernels.quasisep.Celerite(
+            a=1,
+            b=0.0,
+            c=1,
+            d=2 * jnp.pi * 1,
+        )
+        kernel_qpo_test = get_kernel("QPO", self.kernel_params)
+        assert (
+            kernel_qpo(self.x, jnp.array([0.0])) == kernel_qpo_test(self.x, jnp.array([0.0]))
+        ).all()
+
+    def test_value_error(self):
+        with pytest.raises(ValueError, match="Kernel type not implemented"):
+            get_kernel("periodic", self.kernel_params)
+
 
 class Testget_mean(object):
     def setup_class(self):
@@ -146,6 +162,10 @@ class Testget_mean(object):
             2 * 4.0
         ) + 4.0 * jnp.exp(-5.0 * ((self.t + 0.4) / 0.7 + 0.7 / (self.t + 0.4))) * jnp.exp(2 * 5.0)
         assert (get_mean("fred", self.fred_mean_params)(self.t) == result_fred).all()
+
+    def test_value_error(self):
+        with pytest.raises(ValueError, match="Mean type not implemented"):
+            get_mean("polynomial", self.mean_params)
 
 
 class Testget_gp_params(object):
