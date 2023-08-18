@@ -109,7 +109,8 @@ to see what you’ve done, and why you did it:
       sphinx.
    6. Write tests that cover all code changes.
    7. If modifications require more than one commit, break changes into
-      smaller commits.
+      smaller commits. Commits involving just the docs might use ``skip ci`` in
+      their commit message to avoid running all the tests.
    8. Write a changelog entry in ``towncrier`` format (see below)
    9. Push the code on your remote(forked) repository.
 
