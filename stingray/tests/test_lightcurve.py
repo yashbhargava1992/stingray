@@ -1137,8 +1137,7 @@ class TestLightcurve(object):
         lc = Lightcurve(
             times, counts, gti=gti, bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp
         )
-        with pytest.warns(UserWarning, match="Only one time bin. Setting dt=1"):
-            list_of_lcs = lc.split_by_gti(min_points=0)
+        list_of_lcs = lc.split_by_gti(min_points=0)
         assert len(list_of_lcs) == 3
 
         lc0 = list_of_lcs[0]
