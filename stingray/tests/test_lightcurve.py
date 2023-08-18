@@ -88,6 +88,13 @@ class TestProperties(object):
         with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
             Lightcurve([], [])
 
+    def test_bad_counts_lightcurve(self):
+        with pytest.raises(StingrayError, match="Empty or invalid counts array. "):
+            Lightcurve([1])
+
+        with pytest.raises(StingrayError, match="Empty or invalid counts array. "):
+            Lightcurve([1], [3, 4])
+
     def test_single_time_no_dt_lightcurve(self):
         with pytest.warns(UserWarning, match="Only one time bin and no dt specified. "):
             lc = Lightcurve([1], [2])

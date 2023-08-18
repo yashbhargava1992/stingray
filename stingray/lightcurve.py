@@ -259,6 +259,12 @@ class Lightcurve(StingrayTimeseries):
             warnings.warn("No time values passed to Lightcurve object!")
             return
 
+        if counts is None or np.size(time) != np.size(counts):
+            raise StingrayError(
+                "Empty or invalid counts array. Time and counts array should have the same length."
+                "If you are providing event data, please use Lightcurve.make_lightcurve()"
+            )
+
         time, mjdref = interpret_times(time, mjdref=mjdref)
         self.mjdref = mjdref
 
@@ -270,9 +276,6 @@ class Lightcurve(StingrayTimeseries):
 
         if not skip_checks:
             time, counts, err = self.initial_optional_checks(time, counts, err, gti=gti)
-
-        if time.size != counts.size:
-            raise StingrayError("time and counts array are not of the same length!")
 
         if err_dist.lower() not in valid_statistics:
             # err_dist set can be increased with other statistics
