@@ -88,6 +88,15 @@ class TestProperties(object):
         with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
             Lightcurve([], [])
 
+    def test_single_time_no_dt_lightcurve(self):
+        with pytest.warns(UserWarning, match="Only one time bin and no dt specified. "):
+            lc = Lightcurve([1], [2])
+        assert lc.dt == 1
+
+    def test_single_time_with_dt_lightcurve(self):
+        lc = Lightcurve([1], [2], dt=5)
+        assert lc.dt == 5
+
     @pytest.mark.skipif("not _IS_WINDOWS")
     def test_warn_on_windows(self):
         with pytest.warns(UserWarning) as record:
