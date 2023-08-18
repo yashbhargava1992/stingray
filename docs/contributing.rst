@@ -54,7 +54,7 @@ Contributions from everyone, experienced and inexperienced, are welcome!
 If you don’t know where to start, look at the `Open
 Issues <https://github.com/StingraySoftware/stingray/issues>`__ and/or
 get involved in our `Slack
-channel <http://slack-invite.timelabtechnologies.com/>`__. This code is
+channel <https://join.slack.com/t/stingraysoftware/shared_invite/zt-49kv4kba-mD1Y~s~rlrOOmvqM7mZugQ>`__. This code is
 written in Python 3.8+, but in general we will follow the Astropy/ Numpy
 minimum Python versions. Tests run at each commit during Pull Requests,
 so it is easy to single out points in the code that break this
@@ -109,7 +109,8 @@ to see what you’ve done, and why you did it:
       sphinx.
    6. Write tests that cover all code changes.
    7. If modifications require more than one commit, break changes into
-      smaller commits.
+      smaller commits. Commits involving just the docs might use ``skip ci`` in
+      their commit message to avoid running all the tests.
    8. Write a changelog entry in ``towncrier`` format (see below)
    9. Push the code on your remote(forked) repository.
 
@@ -135,7 +136,7 @@ Compatibility and Dependencies
       Library <https://docs.python.org/3/library/index.html>`__,
       `astropy <https://docs.astropy.org/en/stable/>`__>=4.0,
       `numpy <https://numpy.org/doc/stable/>`__>=1.17.0,
-      `scipy <https://www.scipy.org/docs.html>`__>=1.1,
+      `scipy <https://docs.scipy.org/doc/scipy/>`__>=1.1,
       `matplotlib <https://matplotlib.org/contents.html>`__>=3.0
    -  Additional dependencies are allowed for sub-modules or in function
       calls, but they must be noted in the package documentation and

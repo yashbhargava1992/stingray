@@ -134,7 +134,7 @@ class OptimizationResults(object):
 
     References
     ----------
-    .. [#] http://ieeexplore.ieee.org/document/1100705/?reload=true
+    .. [#] https://doi.org/10.1109/TAC.1974.1100705
     .. [#] https://projecteuclid.org/euclid.aos/1176344136
 
     """
@@ -229,7 +229,7 @@ class OptimizationResults(object):
 
         References
         ----------
-        .. [#] http://ieeexplore.ieee.org/document/1100705/?reload=true
+        .. [#] https://doi.org/10.1109/TAC.1974.1100705
         .. [#] https://projecteuclid.org/euclid.aos/1176344136
 
         """

@@ -158,6 +158,9 @@ latex_documents = [('index', project + '.tex', project + u' Documentation',
 man_pages = [('index', project.lower(), project + u' Documentation', [author],
               1)]
 
+# Trust the links from doi.org, even if they might have Client errors or other minor issues
+linkcheck_ignore = [r"https://doi.org/"]
+
 # -- Options for the edit_on_github extension ---------------------------------
 
 if setup_cfg.get('edit_on_github').lower() == 'true':

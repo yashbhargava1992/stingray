@@ -27,7 +27,7 @@ that we can have a chance of keeping on top of things.
 Contributions from everyone, experienced and inexperienced, are welcome! If
 you don't know where to start, look at the
 [Open Issues](https://github.com/StingraySoftware/stingray/issues) and/or get
-involved in our [Slack channel](http://slack-invite.timelabtechnologies.com/).
+involved in our [Slack channel](https://join.slack.com/t/stingraysoftware/shared_invite/zt-49kv4kba-mD1Y~s~rlrOOmvqM7mZugQ).
 This code is written in Python 3.8+, but in general we will follow the Astropy/
 Numpy minimum Python versions. Tests run at each commit during Pull Requests,
 so it is easy to single out points in the code that break this compatibility.
@@ -78,7 +78,7 @@ Code Reviews are super-useful: another contributor can review the code, which me
 
 - **Compatibility:** All code must be compatible with **Python 3.8** **or later**, and with the **latest two major releases of Astropy**.
 - **Dependency Management:**
-    - The core package and affiliated packages should be importable with no dependencies other than the [Python Standard Library](https://docs.python.org/3/library/index.html), [astropy](https://docs.astropy.org/en/stable/)>=4.0, [numpy](https://numpy.org/doc/stable/)>=1.17.0, [scipy](https://www.scipy.org/docs.html)>=1.1, [matplotlib](https://matplotlib.org/contents.html)>=3.0
+    - The core package and affiliated packages should be importable with no dependencies other than the [Python Standard Library](https://docs.python.org/3/library/index.html), [astropy](https://docs.astropy.org/en/stable/)>=4.0, [numpy](https://numpy.org/doc/stable/)>=1.17.0, [scipy](https://docs.scipy.org/doc/scipy/)>=1.1, [matplotlib](https://matplotlib.org/contents.html)>=3.0
     - Additional dependencies are allowed for sub-modules or in function calls, but they must be noted in the package documentation and should only affect the relevant component. In functions and methods, the optional dependency should use a normal `import` statement, which will raise an `ImportError` if the dependency is not available.
 
 ### Coding Style and Conventions
