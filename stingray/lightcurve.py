@@ -297,9 +297,10 @@ class Lightcurve(StingrayTimeseries):
                 " at light curve creation"
             )
             dt = np.median(np.diff(self._time))
-        elif time.size == 1:
+        elif dt is None and time.size == 1:
             warnings.warn(
-                "Only one time bin. Setting dt=1. Please specify dt if you want to use a different value"
+                "Only one time bin and no dt specified. Setting dt=1. "
+                "Please specify dt if you want to use a different value"
             )
             dt = 1.0
 
@@ -1920,6 +1921,10 @@ class Lightcurve(StingrayTimeseries):
         array_attrs = self.array_attrs()
 
         self._mask = self._n = None
+        if isinstance(self.dt, Iterable):
+            new_dt = self.dt[mask]
+        else:
+            new_dt = self.dt
         if inplace:
             new_ev = self
             # If they don't exist, they get set
@@ -1931,10 +1936,19 @@ class Lightcurve(StingrayTimeseries):
             self._counts = self._counts[mask]
             if self._counts_err is not None:
                 self._counts_err = self._counts_err[mask]
+            new_ev.dt = new_dt
         else:
-            new_ev = Lightcurve(
-                time=self.time[mask], counts=self.counts[mask], skip_checks=True, gti=self.gti
-            )
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", message="Some functionalities of Stingray Lightcurve.*"
+                )
+                new_ev = Lightcurve(
+                    time=self.time[mask],
+                    counts=self.counts[mask],
+                    skip_checks=True,
+                    gti=self.gti,
+                    dt=new_dt,
+                )
             if self._counts_err is not None:
                 new_ev.counts_err = self.counts_err[mask]
             for attr in self.meta_attrs():
@@ -1947,6 +1961,7 @@ class Lightcurve(StingrayTimeseries):
                 "time",
                 "counts",
                 "counts_err",
+                "dt",
                 "_time",
                 "_counts",
                 "_counts_err",
