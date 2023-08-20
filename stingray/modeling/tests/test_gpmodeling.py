@@ -297,14 +297,16 @@ class TestGPResult(object):
         NSmodel = Model(prior_model=prior_model, log_likelihood=likelihood_model)
         NSmodel.sanity_check(random.PRNGKey(10), S=100)
 
-        Exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=1e4)
+        Exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=5e3)
         Termination_reason, State = Exact_ns(
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
         )
         self.Results = Exact_ns.to_results(State, Termination_reason)
 
         self.gpresult = GPResult(lc)
-        self.gpresult.sample(prior_model=prior_model, likelihood_model=likelihood_model)
+        self.gpresult.sample(
+            prior_model=prior_model, likelihood_model=likelihood_model, max_samples=5e3
+        )
 
     def test_sample(self):
         for key in self.params_list:

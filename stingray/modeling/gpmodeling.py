@@ -516,7 +516,7 @@ class GPResult:
         self.counts = Lc.counts
         self.Result = None
 
-    def sample(self, prior_model=None, likelihood_model=None, **kwargs):
+    def sample(self, prior_model=None, likelihood_model=None, max_samples=1e4):
         """
         Makes a Jaxns nested sampler over the Gaussian Process, given the
         prior and likelihood model
@@ -529,6 +529,9 @@ class GPResult:
         likelihood_model: jaxns.types.LikelihoodType object
             A likelihood fucntion which takes in the arguments of the prior
             model and returns the loglikelihood of the model
+
+        max_samples: int, default 1e4
+            The maximum number of samples to be taken by the nested sampler
 
         Returns
         ----------
@@ -548,7 +551,7 @@ class GPResult:
         NSmodel = Model(prior_model=self.prior_model, log_likelihood=self.likelihood_model)
         NSmodel.sanity_check(random.PRNGKey(10), S=100)
 
-        self.Exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=1e4)
+        self.Exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=max_samples)
         Termination_reason, State = self.Exact_ns(
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
         )
