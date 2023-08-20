@@ -173,81 +173,65 @@ class Testget_gp_params(object):
         pass
 
     def test_get_gp_params_rn(self):
-        assert get_gp_params("RN", "gaussian") == ["arn", "crn", "A", "t0", "sig"]
-        assert get_gp_params("RN", "constant") == ["arn", "crn", "A"]
-        assert get_gp_params("RN", "skew_gaussian") == ["arn", "crn", "A", "t0", "sig1", "sig2"]
+        assert get_gp_params("RN", "gaussian") == ["log_arn", "log_crn", "log_A", "t0", "log_sig"]
+        assert get_gp_params("RN", "constant") == ["log_arn", "log_crn", "log_A"]
+        assert get_gp_params("RN", "skew_gaussian") == [
+            "log_arn",
+            "log_crn",
+            "log_A",
+            "t0",
+            "log_sig1",
+            "log_sig2",
+        ]
         assert get_gp_params("RN", "skew_exponential") == [
-            "arn",
-            "crn",
-            "A",
+            "log_arn",
+            "log_crn",
+            "log_A",
             "t0",
-            "sig1",
-            "sig2",
+            "log_sig1",
+            "log_sig2",
         ]
-        assert get_gp_params("RN", "exponential") == ["arn", "crn", "A", "t0", "sig"]
-        assert get_gp_params("RN", "fred") == ["arn", "crn", "A", "t0", "delta", "phi"]
-
-    def test_get_gp_params_qpo_plus_rn(self):
-        assert get_gp_params("QPO_plus_RN", "gaussian") == [
-            "arn",
-            "crn",
-            "aqpo",
-            "cqpo",
-            "freq",
-            "A",
+        assert get_gp_params("RN", "exponential") == [
+            "log_arn",
+            "log_crn",
+            "log_A",
             "t0",
-            "sig",
+            "log_sig",
         ]
-        assert get_gp_params("QPO_plus_RN", "constant") == [
-            "arn",
-            "crn",
-            "aqpo",
-            "cqpo",
-            "freq",
-            "A",
-        ]
-        assert get_gp_params("QPO_plus_RN", "skew_gaussian") == [
-            "arn",
-            "crn",
-            "aqpo",
-            "cqpo",
-            "freq",
-            "A",
-            "t0",
-            "sig1",
-            "sig2",
-        ]
-        assert get_gp_params("QPO_plus_RN", "skew_exponential") == [
-            "arn",
-            "crn",
-            "aqpo",
-            "cqpo",
-            "freq",
-            "A",
-            "t0",
-            "sig1",
-            "sig2",
-        ]
-        assert get_gp_params("QPO_plus_RN", "exponential") == [
-            "arn",
-            "crn",
-            "aqpo",
-            "cqpo",
-            "freq",
-            "A",
-            "t0",
-            "sig",
-        ]
-        assert get_gp_params("QPO_plus_RN", "fred") == [
-            "arn",
-            "crn",
-            "aqpo",
-            "cqpo",
-            "freq",
-            "A",
+        assert get_gp_params("RN", "fred") == [
+            "log_arn",
+            "log_crn",
+            "log_A",
             "t0",
             "delta",
             "phi",
+        ]
+
+    def test_get_gp_params_qpo_plus_rn(self):
+        assert get_gp_params("QPO_plus_RN", "gaussian") == [
+            "log_arn",
+            "log_crn",
+            "log_aqpo",
+            "log_cqpo",
+            "log_freq",
+            "log_A",
+            "t0",
+            "log_sig",
+        ]
+        with pytest.raises(ValueError, match="Mean type not implemented"):
+            get_gp_params("QPO_plus_RN", "notimplemented")
+
+        with pytest.raises(ValueError, match="Kernel type not implemented"):
+            get_gp_params("notimplemented", "gaussian")
+
+    def test_get_qpo(self):
+        assert get_gp_params("QPO", "gaussian") == [
+            "log_aqpo",
+            "log_cqpo",
+            "log_freq",
+            "log_A",
+            "t0",
+            "log_sig",
         ]
 
 
@@ -278,11 +262,11 @@ class TestGPResult(object):
 
         # The prior dictionary, with suitable tfpd prior distributions
         prior_dict = {
-            "A": tfpd.Uniform(low=0.1 * span, high=2 * span),
+            "log_A": tfpd.Uniform(low=jnp.log(0.1 * span), high=jnp.log(2 * span)),
             "t0": tfpd.Uniform(low=self.Times[0] - 0.1 * T, high=self.Times[-1] + 0.1 * T),
-            "sig": tfpd.Uniform(low=0.5 * 1 / f, high=2 * T),
-            "arn": tfpd.Uniform(low=0.1 * span, high=2 * span),
-            "crn": tfpd.Uniform(low=jnp.log(1 / T), high=jnp.log(f)),
+            "log_sig": tfpd.Uniform(low=jnp.log(0.5 * 1 / f), high=jnp.log(2 * T)),
+            "log_arn": tfpd.Uniform(low=jnp.log(0.1 * span), high=jnp.log(2 * span)),
+            "log_crn": tfpd.Uniform(low=jnp.log(1 / T), high=jnp.log(f)),
         }
 
         prior_model = get_prior(self.params_list, prior_dict)
@@ -339,15 +323,15 @@ class TestGPResult(object):
             assert key in self.gpresult.get_max_likelihood_parameters()
 
     def test_posterior_plot(self):
-        self.gpresult.posterior_plot("A")
+        self.gpresult.posterior_plot("log_A")
         assert plt.fignum_exists(1)
 
     def test_posterior_plot_labels_and_fname_default(self):
         clear_all_figs()
-        outfname = "A_Posterior_plot.png"
+        outfname = "log_A_Posterior_plot.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
-        self.gpresult.posterior_plot("A", save=True)
+        self.gpresult.posterior_plot("log_A", save=True)
         assert os.path.exists(outfname)
         os.unlink(outfname)
 
@@ -356,20 +340,20 @@ class TestGPResult(object):
         outfname = "blabla.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
-        self.gpresult.posterior_plot("A", axis=[0, 14, 0, 0.5], save=True, filename=outfname)
+        self.gpresult.posterior_plot("log_A", axis=[0, 14, 0, 0.5], save=True, filename=outfname)
         assert os.path.exists(outfname)
         os.unlink(outfname)
 
     def test_weighted_posterior_plot(self):
-        self.gpresult.weighted_posterior_plot("A")
+        self.gpresult.weighted_posterior_plot("log_A")
         assert plt.fignum_exists(1)
 
     def test_weighted_posterior_plot_labels_and_fname_default(self):
         clear_all_figs()
-        outfname = "A_Weighted_Posterior_plot.png"
+        outfname = "log_A_Weighted_Posterior_plot.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
-        self.gpresult.weighted_posterior_plot("A", save=True)
+        self.gpresult.weighted_posterior_plot("log_A", save=True)
         assert os.path.exists(outfname)
         os.unlink(outfname)
 
@@ -379,21 +363,21 @@ class TestGPResult(object):
         if os.path.exists(outfname):
             os.unlink(outfname)
         self.gpresult.weighted_posterior_plot(
-            "A", axis=[0, 14, 0, 0.5], save=True, filename=outfname
+            "log_A", axis=[0, 14, 0, 0.5], save=True, filename=outfname
         )
         assert os.path.exists(outfname)
         os.unlink(outfname)
 
     def test_corner_plot(self):
-        self.gpresult.corner_plot("A", "t0")
+        self.gpresult.corner_plot("log_A", "t0")
         assert plt.fignum_exists(1)
 
     def test_corner_plot_labels_and_fname_default(self):
         clear_all_figs()
-        outfname = "A_t0_Corner_plot.png"
+        outfname = "log_A_t0_Corner_plot.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
-        self.gpresult.corner_plot("A", "t0", save=True)
+        self.gpresult.corner_plot("log_A", "t0", save=True)
         assert os.path.exists(outfname)
         os.unlink(outfname)
 
@@ -402,6 +386,6 @@ class TestGPResult(object):
         outfname = "blabla.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
-        self.gpresult.corner_plot("A", "t0", axis=[0, 0.5, 0, 5], save=True, filename=outfname)
+        self.gpresult.corner_plot("log_A", "t0", axis=[0, 0.5, 0, 5], save=True, filename=outfname)
         assert os.path.exists(outfname)
         os.unlink(outfname)
