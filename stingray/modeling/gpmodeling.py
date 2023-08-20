@@ -301,15 +301,20 @@ def _get_kernel_params(kernel_type):
     ----------
     kernel_type: string
         The type of kernel to be used for the Gaussian Process model
+        The parameters in log scale have a prefix of "log_"
 
     Returns
     -------
         A list of the parameters for the kernel for the GP model
     """
     if kernel_type == "RN":
-        return ["arn", "crn"]
+        return ["log_arn", "log_crn"]
     elif kernel_type == "QPO_plus_RN":
-        return ["arn", "crn", "aqpo", "cqpo", "freq"]
+        return ["log_arn", "log_crn", "log_aqpo", "log_cqpo", "log_freq"]
+    elif kernel_type == "QPO":
+        return ["log_aqpo", "log_cqpo", "log_freq"]
+    else:
+        raise ValueError("Kernel type not implemented")
 
 
 def _get_mean_params(mean_type):
@@ -320,19 +325,22 @@ def _get_mean_params(mean_type):
     ----------
     mean_type: string
         The type of mean to be used for the Gaussian Process model
+        The parameters in log scale have a prefix of "log_"
 
     Returns
     -------
         A list of the parameters for the mean for the GP model
     """
     if (mean_type == "gaussian") or (mean_type == "exponential"):
-        return ["A", "t0", "sig"]
+        return ["log_A", "t0", "log_sig"]
     elif mean_type == "constant":
-        return ["A"]
+        return ["log_A"]
     elif (mean_type == "skew_gaussian") or (mean_type == "skew_exponential"):
-        return ["A", "t0", "sig1", "sig2"]
+        return ["log_A", "t0", "log_sig1", "log_sig2"]
     elif mean_type == "fred":
-        return ["A", "t0", "delta", "phi"]
+        return ["log_A", "t0", "delta", "phi"]
+    else:
+        raise ValueError("Mean type not implemented")
 
 
 def get_gp_params(kernel_type, mean_type):
@@ -355,7 +363,7 @@ def get_gp_params(kernel_type, mean_type):
     Examples
     --------
     get_gp_params("QPO_plus_RN", "gaussian")
-    ['arn', 'crn', 'aqpo', 'cqpo', 'freq', 'A', 't0', 'sig']
+    ['log_arn', 'log_crn', 'log_aqpo', 'log_cqpo', 'log_freq', 'log_A', 't0', 'log_sig']
     """
     kernel_params = _get_kernel_params(kernel_type)
     mean_params = _get_mean_params(mean_type)
@@ -381,6 +389,7 @@ def get_prior(params_list, prior_dict):
         or special priors from jaxns.
         **Note**: If jaxns priors are used, then the name given to them should be the same as
         the corresponding name in the params_list.
+        Also, if a parameter is to be used in the log scale, it should have a prefix of "log_"
 
     Returns
     -------
@@ -403,11 +412,11 @@ def get_prior(params_list, prior_dict):
 
     Make a prior dictionary using tensorflow_probability distributions
     prior_dict = {
-       "A": tfpd.Uniform(low = 1e-1, high = 2e+2),
+       "log_A": tfpd.Uniform(low = jnp.log(1e-1), high = jnp.log(2e+2)),
        "t0": tfpd.Uniform(low = 0.0 - 0.1, high = 1 + 0.1),
-       "sig": tfpd.Uniform(low = 0.5 * 1 / 20, high = 2 ),
-       "arn": tfpd.Uniform(low = 0.1 , high = 2 ),
-       "crn": tfpd.Uniform(low = jnp.log(1 /5), high = jnp.log(20)),
+       "log_sig": tfpd.Uniform(low = jnp.log(0.5 * 1 / 20), high = jnp.log(2) ),
+       "log_arn": tfpd.Uniform(low = jnp.log(0.1) , high = jnp.log(2) ),
+       "log_crn": tfpd.Uniform(low = jnp.log(1 /5), high = jnp.log(20)),
     }
 
     prior_model = get_prior(params_list, prior_dict)
@@ -441,7 +450,8 @@ def get_likelihood(params_list, kernel_type, mean_type, **kwargs):
     Makes a jaxns specific log likelihood function which takes in the
     parameters in the order of the parameters list, and calculates the
     log likelihood of the data given the parameters, and the model
-    (kernel, mean) of the GP model.
+    (kernel, mean) of the GP model. **Note** Any parameters with a prefix
+    of "log_" are taken to be in the log scale.
 
     Parameters
     ----------
@@ -481,7 +491,10 @@ def get_likelihood(params_list, kernel_type, mean_type, **kwargs):
     def likelihood_model(*args):
         dict = {}
         for i, params in enumerate(params_list):
-            dict[params] = args[i]
+            if params[0:4] == "log_":
+                dict[params[4:]] = jnp.exp(args[i])
+            else:
+                dict[params] = args[i]
         kernel = get_kernel(kernel_type=kernel_type, kernel_params=dict)
         mean = get_mean(mean_type=mean_type, mean_params=dict)
         gp = GaussianProcess(kernel, kwargs["Times"], mean_value=mean(kwargs["Times"]))
