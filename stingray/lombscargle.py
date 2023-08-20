@@ -8,7 +8,7 @@ from astropy.timeseries.periodograms import LombScargle
 from .crossspectrum import Crossspectrum
 from .events import EventList
 from .exceptions import StingrayError
-from .fourier import lsft_fast, lsft_slow
+from .fourier import lsft_fast, lsft_slow, impose_symmetry_lsft
 from .lightcurve import Lightcurve
 from .utils import simon
 
@@ -33,7 +33,7 @@ class LombScargleCrossspectrum(Crossspectrum):
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, string, optional, default ``none``
         The normalization of the cross spectrum.
 
-    power_type: {``real``, ``absolute``, ``all`}, string, optional, default ``real``
+    power_type: {``real``, ``absolute``, ``all`}, string, optional, default ``all``
         Parameter to choose among complete, real part and magnitude of the cross spectrum.
 
     fullspec: boolean, optional, default ``False``
@@ -115,7 +115,7 @@ class LombScargleCrossspectrum(Crossspectrum):
         data1: Optional[Union[EventList, Lightcurve]] = None,
         data2: Optional[Union[EventList, Lightcurve]] = None,
         norm: Optional[str] = "none",
-        power_type: Optional[str] = "real",
+        power_type: Optional[str] = "all",
         dt: Optional[float] = None,
         fullspec: Optional[bool] = False,
         skip_checks: bool = False,
@@ -453,7 +453,9 @@ class LombScargleCrossspectrum(Crossspectrum):
                     fit_mean=False,
                     center_data=False,
                     normalization="psd",
-                ).autofrequency(minimum_frequency=self.min_freq, maximum_frequency=self.max_freq),
+                ).autofrequency(
+                    minimum_frequency=max(self.min_freq, 0), maximum_frequency=self.max_freq
+                ),
             )[0]
             freqs2 = (
                 LombScargle(
@@ -462,34 +464,43 @@ class LombScargleCrossspectrum(Crossspectrum):
                     fit_mean=False,
                     center_data=False,
                     normalization="psd",
-                ).autofrequency(minimum_frequency=self.min_freq, maximum_frequency=self.max_freq),
+                ).autofrequency(
+                    minimum_frequency=max(self.min_freq, 0), maximum_frequency=self.max_freq
+                ),
             )[0]
             if max(freqs2) > max(freq):
                 freq = freqs2
 
         if method == "slow":
-            lsft1 = lsft_slow(lc1.counts, lc1.time, freq, sign=-1, fullspec=fullspec)
-            lsft2 = lsft_slow(lc2.counts, lc2.time, freq, sign=1, fullspec=fullspec)
+            lsft1 = lsft_slow(lc1.counts, lc1.time, freq)
+            lsft2 = lsft_slow(lc2.counts, lc2.time, freq)
         elif method == "fast":
             lsft1 = lsft_fast(
                 lc1.counts,
                 lc1.time,
                 freq,
-                sign=-1,
-                fullspec=fullspec,
                 oversampling=oversampling,
             )
             lsft2 = lsft_fast(
                 lc2.counts,
                 lc2.time,
                 freq,
-                fullspec=fullspec,
                 oversampling=oversampling,
             )
-        cross = np.multiply(lsft1, lsft2)
-        if not fullspec:
-            freq = freq[freq > 0]
-            cross = cross[freq > 0]
+        if fullspec:
+            lsft1, _ = impose_symmetry_lsft(
+                lsft1,
+                np.sum((lc1.counts)),
+                lc1.n,
+                freq,
+            )
+            lsft2, freq = impose_symmetry_lsft(
+                lsft2,
+                np.sum(lc2.counts),
+                lc2.n,
+                freq,
+            )
+        cross = np.multiply(lsft1, np.conjugate(lsft2))
         return freq, cross
 
     def _initialize_empty(self):
@@ -515,22 +526,51 @@ class LombScargleCrossspectrum(Crossspectrum):
         self.variance2 = None
         return
 
+    def phase_lag(self):
+        """Not applicable for unevenly sampled data"""
+        raise AttributeError(
+            "Object has no attribute named 'phase_lag' ! Not applicable for unevenly sampled data"
+        )
+
     def time_lag(self):
-        r"""Calculate the fourier time lag of the cross spectrum.
-        The time lag is calculated by taking the phase lag :math:`\phi` and
+        """Not applicable for unevenly sampled data"""
+        raise AttributeError(
+            "Object has no attribute named 'time_lag' ! Not applicable for unevenly sampled data"
+        )
 
-        ..math::
+    def classical_significances(self, threshold=1, trial_correction=False):
+        """Not applicable for unevenly sampled data"""
+        raise AttributeError(
+            "Object has no attribute named 'classical_significances' ! Not applicable for unevenly sampled data"
+        )
 
-            \tau = \frac{\phi}{\two pi \nu}
+    def from_time_array():
+        """Not applicable for unevenly sampled data"""
+        raise AttributeError(
+            "Object has no attribute named 'from_time_array' ! Not applicable for unevenly sampled data"
+        )
 
-        where :math:`\nu` is the center of the frequency bins.
-        """
-        if self.__class__ == LombScargleCrossspectrum:
-            ph_lag = self.phase_lag()
+    def from_events():
+        """Not applicable for unevenly sampled data"""
+        raise AttributeError(
+            "Object has no attribute named 'from_events' ! Not applicable for unevenly sampled data"
+        )
 
-            return ph_lag / (2 * np.pi * self.freq)
-        else:
-            raise AttributeError("Object has no attribute named 'time_lag' !")
+    def from_lightcurve():
+        """Not applicable for unevenly sampled data"""
+        raise AttributeError(
+            "Object has no attribute named 'from_lightcurve' ! Not applicable for unevenly sampled data"
+        )
+
+    def from_lc_iterable():
+        """Not applicable for unevenly sampled data"""
+        raise AttributeError(
+            "Object has no attribute named 'from_lc_iterable' ! Not applicable for unevenly sampled data"
+        )
+
+    def _initialize_from_any_input():
+        """Not required for unevenly sampled data"""
+        raise AttributeError("Object has no attribute named '_initialize_from_any_input' !")
 
 
 class LombScarglePowerspectrum(LombScargleCrossspectrum):
@@ -552,7 +592,7 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, string, optional, default ``none``
         The normalization of the cross spectrum.
 
-    power_type: {``real``, ``absolute``, ``all`}, string, optional, default ``real``
+    power_type: {``real``, ``absolute``, ``all`}, string, optional, default ``all``
         Parameter to choose among complete, real part and magnitude of the cross spectrum.
 
     fullspec: boolean, optional, default ``False``
