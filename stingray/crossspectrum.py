@@ -1261,10 +1261,8 @@ class Crossspectrum(StingrayObject):
             ax = fig.add_subplot(1, 1, 1)
 
         ax.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")
-        ax.plot(self.freq, np.abs(self.power.real), marker, color="r", alpha=0.5, label="Real Part")
-        ax.plot(
-            self.freq, np.abs(self.power.imag), marker, color="g", alpha=0.5, label="Imaginary Part"
-        )
+        ax.plot(self.freq, self.power.real, marker, color="r", alpha=0.5, label="Real Part")
+        ax.plot(self.freq, self.power.imag, marker, color="g", alpha=0.5, label="Imaginary Part")
 
         if labels is not None:
             try:
