@@ -572,9 +572,8 @@ def test_lsft_slow_fast():
     lsftfast = lsft_fast(y, t, freqs, sign=1, oversampling=10)
     assert np.argmax(lsftslow) == np.argmax(lsftfast)
     assert round(freqs[np.argmax(lsftslow)], 1) == round(freqs[np.argmax(lsftfast)], 1) == 3.0
-    assert np.all(
-        np.all((lsftslow * np.conjugate(lsftslow)).imag == 0)
-        & np.all((lsftfast * np.conjugate(lsftfast)).imag == 0)
+    assert np.allclose((lsftslow * np.conjugate(lsftslow)).imag, [0]) & np.allclose(
+        (lsftfast * np.conjugate(lsftfast)).imag, 0
     )
 
 

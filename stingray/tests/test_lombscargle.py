@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 
 class TestLombScargleCrossspectrum:
     def setup_class(self):
-        sim = Simulator(0.0001, 10000, 100, 1, random_state=42, tstart=0)
+        sim = Simulator(0.0001, 100, 100, 1, random_state=42, tstart=0)
         lc1 = sim.simulate(0)
         lc2 = sim.simulate(0)
         self.rate1 = lc1.countrate
@@ -99,7 +99,7 @@ class TestLombScargleCrossspectrum:
             lscs = LombScargleCrossspectrum(self.lc1, self.lc2, max_freq=1, min_freq=3)
 
     def test_make_crossspectrum_diff_lc_counts_shape(self):
-        lc_ = Simulator(0.0001, 10423, 100, 1, random_state=42, tstart=0).simulate(0)
+        lc_ = Simulator(0.0001, 103, 100, 1, random_state=42, tstart=0).simulate(0)
         with pytest.raises(ValueError):
             lscs = LombScargleCrossspectrum(self.lc1, lc_)
 
@@ -111,8 +111,108 @@ class TestLombScargleCrossspectrum:
         assert np.any(["different statistics" in r.message.args[0] for r in record])
 
     def test_make_crossspectrum_diff_dt(self):
-        lc_ = Simulator(0.0002, 10000, 100, 1, random_state=42, tstart=0).simulate(0)
+        lc_ = Simulator(0.0002, 100, 100, 1, random_state=42, tstart=0).simulate(0)
         with pytest.raises(
             StingrayError, match="Lightcurves do not have the same time binning dt."
         ):
             lscs = LombScargleCrossspectrum(self.lc1, lc_)
+
+    @pytest.mark.parametrize("power_type", ["real", "absolute", "all"])
+    def test_power_type(self, power_type):
+        lscs = LombScargleCrossspectrum(self.lc1, self.lc2, power_type=power_type)
+        assert lscs.power_type == power_type
+
+    @pytest.mark.parametrize("method", ["fft", "randommethod"])
+    def test_init_with_invalid_method(self, method):
+        with pytest.raises(ValueError):
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2, method=method)
+
+    def test_with_invalid_fullspec(self):
+        with pytest.raises(TypeError):
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2, fullspec=1)
+
+    def test_with_invalid_oversampling(self):
+        with pytest.raises(TypeError):
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2, oversampling="invalid")
+
+    def test_invalid_mixed_data(self):
+        data2 = EventList(self.lc2.time[3:], np.ones_like(self.lc2.time[3:]))
+        with pytest.raises(ValueError):
+            lscs = LombScargleCrossspectrum(self.lc1, data2)
+        with pytest.raises(ValueError):
+            lscs = LombScargleCrossspectrum(data2, self.lc1)
+
+    def test_diff_mjdref(self):
+        lc3 = copy.deepcopy(self.lc1)
+        lc3.mjdref += 1
+        with pytest.raises(ValueError):
+            lscs = LombScargleCrossspectrum(self.lc1, lc3)
+
+    def test_fullspec(self):
+        lscs = LombScargleCrossspectrum(self.lc1, self.lc2, fullspec=True)
+        assert lscs.fullspec
+
+    @pytest.mark.parametrize("method", ["slow", "fast"])
+    def test_valid_method(self, method):
+        lscs = LombScargleCrossspectrum(self.lc1, self.lc2, method=method)
+        assert lscs.method == method
+
+    @pytest.mark.parametrize(
+        "func",
+        [
+            "phase_lag",
+            "time_lag",
+            "classical_significances",
+            "from_time_array",
+            "from_events",
+            "from_lightcurve",
+            "from_lc_iterable",
+            "_initialize_from_any_input ",
+        ],
+    )
+    def test_raise_on_invalid_function(self, func):
+        with pytest.raises(AttributeError):
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2).func()
+
+
+class TestLombScarglePowerspectrum:
+    def setup_class(self):
+        sim = Simulator(0.0001, 100, 100, 1, random_state=42, tstart=0)
+        lc = sim.simulate(0)
+        self.rate = lc.countrate
+        low, high = lc.time.min(), lc.time.max()
+        s1 = lc.counts
+        t = lc.time
+        t_new = t.copy()
+        t_new[1:-1] = t[1:-1] + (np.random.rand(len(t) - 2) / (high - low))
+        s_new = interp1d(t, s1, fill_value="extrapolate")(t_new)
+        self.lc = Lightcurve(t, s_new, dt=lc.dt)
+
+    @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
+    def test_normalize_powerspectrum(self, norm):
+        lps = LombScarglePowerspectrum(self.lc, norm=norm)
+        assert lps.norm == norm
+
+    @pytest.mark.parametrize("skip_checks", [True, False])
+    def test_init_empty(self, skip_checks):
+        ps = LombScarglePowerspectrum(skip_checks=skip_checks)
+        assert ps.freq is None
+        assert ps.power is None
+        assert ps.power_err is None
+        assert ps.df is None
+        assert ps.m == 1
+
+    def test_make_empty_powerspectrum(self):
+        ps = LombScarglePowerspectrum()
+        assert ps.freq is None
+        assert ps.power is None
+        assert ps.power_err is None
+        assert ps.df is None
+        assert ps.m == 1
+        assert ps.nphots1 is None
+        assert ps.nphots2 is None
+        assert ps.method is None
+
+    def test_ps_real(self):
+        ps = LombScarglePowerspectrum(self.lc)
+        assert np.allclose(ps.power.imag, [0])

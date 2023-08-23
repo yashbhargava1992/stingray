@@ -158,10 +158,16 @@ class LombScargleCrossspectrum(Crossspectrum):
                 method=method,
                 oversampling=oversampling,
             )
+
+        if not good_input:
+            self._initialize_empty()
+            return
         if dt is None:
-            if isinstance(data1, Lightcurve):
+            if isinstance(data1, Lightcurve) or isinstance(data2, EventList):
                 dt = data1.dt
-            elif isinstance(data1, EventList):
+            elif isinstance(data2, Lightcurve) or isinstance(data2, EventList):
+                dt = data2.dt
+            if dt is None:
                 raise ValueError("dt must be provided for EventLists")
         self.dt = dt
         norm = norm.lower()
@@ -264,22 +270,16 @@ class LombScargleCrossspectrum(Crossspectrum):
             raise TypeError("Both the events are not of type Eventlist or Lightcurve or None")
 
         if type(data1) == type(data2):
-            if isinstance(data1, Lightcurve):
+            if data1 is not None:
                 if len(data1.time) != len(data2.time):
                     raise ValueError("data1 and data2 must have the same length")
-            if isinstance(data1, EventList):
-                lc1 = data1.to_lc()
-                lc2 = data2.to_lc()
-                if len(lc1.time) != len(lc2.time):
-                    raise ValueError("data1 and data2 must have the same length")
         else:
-            if isinstance(data1, EventList):
-                lc1 = data1.to_lc()
-                if len(lc1.time) != len(data2.time):
-                    raise ValueError("data1 and data2 must have the same length")
-            elif isinstance(data2, EventList):
-                lc2 = data2.to_lc()
-                if len(lc2.time) != len(data1.time):
+            if data1 is None or data2 is None:
+                return False
+            if (isinstance(data1, EventList) or isinstance(data2, EventList)) and (
+                isinstance(data1, Lightcurve) or isinstance(data2, Lightcurve)
+            ):
+                if len(data1.time) != len(data2.time):
                     raise ValueError("data1 and data2 must have the same length")
 
         return True
@@ -307,14 +307,14 @@ class LombScargleCrossspectrum(Crossspectrum):
             and Rybicki O(n*log(n))
 
         """
-        if not isinstance(lc1, Lightcurve):
-            raise TypeError("lc1 must be a lightcurve.Lightcurve object")
-
-        if not isinstance(lc2, Lightcurve):
-            raise TypeError("lc2 must be a lightcurve.Lightcurve object")
-
         if self.lc2.mjdref != self.lc1.mjdref:
             raise ValueError("MJDref is different in the two light curves")
+
+        if lc1.n != lc2.n:
+            raise StingrayError("Lightcurves do not have the same number of bins per segment.")
+
+        if not np.isclose(lc1.dt, lc2.dt, rtol=0.1 * lc1.dt / lc1.tseg):
+            raise StingrayError("Lightcurves do not have the same time binning dt.")
 
         self.meancounts1 = lc1.meancounts
         self.meancounts2 = lc2.meancounts
@@ -331,12 +331,6 @@ class LombScargleCrossspectrum(Crossspectrum):
         else:
             self.variance2 = np.mean(lc2.meancounts) ** 2
             self.err_dist = "gauss"
-
-        if lc1.n != lc2.n:
-            raise StingrayError("Lightcurves do not have the same number of bins per segment.")
-
-        if not np.isclose(lc1.dt, lc2.dt, rtol=0.1 * lc1.dt / lc1.tseg):
-            raise StingrayError("Lightcurves do not have the same time binning dt.")
 
         lc1.dt = lc2.dt
         self.dt = lc1.dt
@@ -378,8 +372,6 @@ class LombScargleCrossspectrum(Crossspectrum):
             self.unnorm_power_err /= np.divide(2, np.sqrt(np.abs(self.nphots1 * self.nphots2)))
             self.unnorm_power_err += np.zeros_like(self.unnorm_power)
             self.power_err = self._normalize_crossspectrum(self.unnorm_power_err)
-        else:
-            self.power_err = np.zeros(len(self.power))
 
     def _make_auxil_pds(self, lc1, lc2):
         __doc__ = super()._make_auxil_pds.__doc__
@@ -653,30 +645,6 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
         self._type = None
         data1 = copy.deepcopy(data)
         data2 = copy.deepcopy(data)
-        good_input = data is not None
-        if not skip_checks:
-            good_input = self.initial_checks(
-                data1=data1,
-                data2=data2,
-                norm=norm,
-                power_type=power_type,
-                dt=dt,
-                fullspec=fullspec,
-                min_freq=min_freq,
-                max_freq=max_freq,
-                df=df,
-                method=method,
-                oversampling=oversampling,
-            )
-            if type(data) not in [EventList, Lightcurve, None]:
-                good_input = False
-        self.dt = dt
-        norm = norm.lower()
-        self.norm = norm
-        self.df = df
-
-        if not good_input:
-            return self._initialize_empty()
 
         LombScargleCrossspectrum.__init__(
             self,
