@@ -475,31 +475,11 @@ class LombScargleCrossspectrum(Crossspectrum):
             lsft1 = lsft_slow(lc1.counts, lc1.time, freq)
             lsft2 = lsft_slow(lc2.counts, lc2.time, freq)
         elif method == "fast":
-            lsft1 = lsft_fast(
-                lc1.counts,
-                lc1.time,
-                freq,
-                oversampling=oversampling,
-            )
-            lsft2 = lsft_fast(
-                lc2.counts,
-                lc2.time,
-                freq,
-                oversampling=oversampling,
-            )
+            lsft1 = lsft_fast(lc1.counts, lc1.time, freq, oversampling=oversampling)
+            lsft2 = lsft_fast(lc2.counts, lc2.time, freq, oversampling=oversampling)
         if fullspec:
-            lsft1, _ = impose_symmetry_lsft(
-                lsft1,
-                np.sum((lc1.counts)),
-                lc1.n,
-                freq,
-            )
-            lsft2, freq = impose_symmetry_lsft(
-                lsft2,
-                np.sum(lc2.counts),
-                lc2.n,
-                freq,
-            )
+            lsft1, _ = impose_symmetry_lsft(lsft1, np.sum((lc1.counts)), lc1.n, freq)
+            lsft2, freq = impose_symmetry_lsft(lsft2, np.sum(lc2.counts), lc2.n, freq)
         cross = np.multiply(lsft1, np.conjugate(lsft2))
         return freq, cross
 
@@ -590,10 +570,10 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
         The light curve data to be Fourier-transformed.
 
     norm: {``frac``, ``abs``, ``leahy``, ``none``}, string, optional, default ``none``
-        The normalization of the cross spectrum.
+        The normalization of the power spectrum.
 
     power_type: {``real``, ``absolute``, ``all`}, string, optional, default ``all``
-        Parameter to choose among complete, real part and magnitude of the cross spectrum.
+        Parameter to choose among complete, real part and magnitude of the power spectrum.
 
     fullspec: boolean, optional, default ``False``
         If False, keep only the positive frequencies, or if True, keep all of them .

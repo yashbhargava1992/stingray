@@ -2189,11 +2189,6 @@ def impose_symmetry_lsft(
     freqs_new : np.array
         The new frequencies
     """
-    zero_present = np.amy(freqs == 0)
-    if not zero_present:
-        ft_res_new = np.concatenate([np.conjugate(np.flip(ft_res)), 0, ft_res])
-        freqs_new = np.concatenate([-np.flip(freqs), 0, freqs])
-    else:
-        ft_res_new = np.concatenate([np.conjugate(np.flip(ft_res))[1:], ft_res])
-        freqs_new = np.concatenate([-np.flip(freqs)[1:], freqs])
+    ft_res_new = np.concatenate([np.conjugate(np.flip(ft_res)), [0.0], ft_res])
+    freqs_new = np.concatenate([np.flip(-freqs), [0.0], freqs])
     return ft_res_new, freqs_new

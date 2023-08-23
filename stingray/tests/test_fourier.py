@@ -556,3 +556,45 @@ class TestNorms(object):
         noise_notnorm = poisson_level("none", self.meanrate, self.nph)
 
         assert np.isclose(noise_notnorm, unnorm_noise)
+
+
+def test_lsft_slow_fast():
+    np.random.seed(0)
+    rand = np.random.default_rng(42)
+    n = 1000
+    t = np.sort(rand.random(n)) * np.sqrt(n)
+    y = np.sin(2 * np.pi * 3.0 * t)
+    sub = np.min(y)
+    y -= sub
+    freqs = np.fft.fftfreq(n, np.median(np.diff(t, 1)))
+    freqs = freqs[freqs >= 0]
+    lsftslow = lsft_slow(y, t, freqs, sign=1)
+    lsftfast = lsft_fast(y, t, freqs, sign=1, oversampling=10)
+    assert np.argmax(lsftslow) == np.argmax(lsftfast)
+    assert round(freqs[np.argmax(lsftslow)], 1) == round(freqs[np.argmax(lsftfast)], 1) == 3.0
+    assert np.all(
+        np.all((lsftslow * np.conjugate(lsftslow)).imag == 0)
+        & np.all((lsftfast * np.conjugate(lsftfast)).imag == 0)
+    )
+
+
+def test_impose_symmetry_lsft():
+    np.random.seed(0)
+    rand = np.random.default_rng(42)
+    n = 1000
+    t = np.sort(rand.random(n)) * np.sqrt(n)
+    y = np.sin(2 * np.pi * 3.0 * t)
+    sub = np.min(y)
+    y -= sub
+    freqs = np.fft.fftfreq(n, np.median(np.diff(t, 1)))
+    freqs = freqs[freqs >= 0]
+    lsftslow = lsft_slow(y, t, freqs, sign=1)
+    lsftfast = lsft_fast(y, t, freqs, sign=1, oversampling=5)
+    imp_sym_slow, freqs_new_slow = impose_symmetry_lsft(lsftslow, 0, n, freqs)
+    imp_sym_fast, freqs_new_fast = impose_symmetry_lsft(lsftfast, 0, n, freqs)
+    assert imp_sym_slow.shape == imp_sym_fast.shape == freqs_new_fast.shape == freqs_new_slow.shape
+    assert np.all((imp_sym_slow.real) == np.flip(imp_sym_slow.real))
+    assert np.all((imp_sym_slow.imag) == -np.flip(imp_sym_slow.imag))
+    assert np.all((imp_sym_fast.real) == np.flip(imp_sym_fast.real))
+    assert np.all((imp_sym_fast.imag) == (-np.flip(imp_sym_fast.imag)))
+    assert np.all(freqs_new_slow == freqs_new_fast)

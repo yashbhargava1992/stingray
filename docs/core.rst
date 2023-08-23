@@ -85,3 +85,20 @@ Multi-taper Periodogram
    :maxdepth: 2
 
    notebooks/Multitaper/multitaper_example.ipynb
+
+
+Lomb Scargle Crossspectrum
+--------------------------
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/LombScargle/LombScargleCrossspectrum_tutorial.ipynb
+
+
+Lomb Scargle Powerspectrum
+--------------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   notebooks/LombScargle/LombScarglePowerspectrum_tutorial.ipynb
