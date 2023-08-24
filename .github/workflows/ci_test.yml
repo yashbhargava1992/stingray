@@ -22,7 +22,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: check if message contain keywords ace scopeid
+      - name: check if message contain keywords doc skip-tests
         id: check_commit
         run: |
           message=$(git log -1 --pretty=format:'%s')
