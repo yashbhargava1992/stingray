@@ -14,7 +14,31 @@ env:
   TOXARGS: '-v'
 
 jobs:
+
+  check_commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: check if message contain keywords ace scopeid
+        id: check_commit
+        run: |
+          message=$(git log -1 --pretty=format:'%s')
+          re="\[(doc|skip-tests).*\]"
+          if [[ $message =~ $re ]]; then
+            echo "::set-output name=match::true"
+            echo "$message -> Match is true"
+          else
+            echo "$message -> Match is false"
+          fi
+    outputs:
+      match: ${{ steps.check_commit.outputs.match }}
+
   ci-tests:
+    needs: check_commit
+    if: ${{ needs.check_commit.outputs.match != 'true' }}
     name: ${{ matrix.os }}, ${{ matrix.tox_env }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -85,6 +109,7 @@ jobs:
       run: sudo apt-get -y install graphviz pandoc
     - name: Print Python, pip, setuptools, and tox versions
       run: |
+        echo Running $(git show -1 --format=%s)
         python -c "import sys; print(f'Python {sys.version}')"
         python -c "import pip; print(f'pip {pip.__version__}')"
         python -c "import setuptools; print(f'setuptools {setuptools.__version__}')"
