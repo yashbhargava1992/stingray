@@ -81,6 +81,29 @@ class TestProperties(object):
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
 
+    def test_empty_lightcurve(self):
+        with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
+            Lightcurve()
+
+        with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
+            Lightcurve([], [])
+
+    def test_bad_counts_lightcurve(self):
+        with pytest.raises(StingrayError, match="Empty or invalid counts array. "):
+            Lightcurve([1])
+
+        with pytest.raises(StingrayError, match="Empty or invalid counts array. "):
+            Lightcurve([1], [3, 4])
+
+    def test_single_time_no_dt_lightcurve(self):
+        with pytest.warns(UserWarning, match="Only one time bin and no dt specified. "):
+            lc = Lightcurve([1], [2])
+        assert lc.dt == 1
+
+    def test_single_time_with_dt_lightcurve(self):
+        lc = Lightcurve([1], [2], dt=5)
+        assert lc.dt == 5
+
     @pytest.mark.skipif("not _IS_WINDOWS")
     def test_warn_on_windows(self):
         with pytest.warns(UserWarning) as record:
@@ -662,12 +685,6 @@ class TestLightcurve(object):
         assert np.allclose(lc[:].counts_err, np.array([2, 2, 2, 2]) / 10)
         assert lc[:].err_dist == lc.err_dist
 
-    def test_slicing_index_error(self):
-        lc = Lightcurve(self.times, self.counts)
-
-        with pytest.raises(StingrayError):
-            lc_new = lc[1:2]
-
     def test_index(self):
         lc = Lightcurve(self.times, self.counts)
 
@@ -915,7 +932,7 @@ class TestLightcurve(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             lc_test = Lightcurve(test_time, test_counts)
-        slc = lc_test.split(1.5)
+        slc = lc_test.split(1.5, min_points=2)
 
         assert np.allclose(slc[0].time, [1, 2, 3])
         assert np.allclose(slc[1].time, [9, 10, 11])
@@ -1126,25 +1143,31 @@ class TestLightcurve(object):
         os.remove("lc.hdf5")
 
     def test_split_lc_by_gtis(self):
-        times = [1, 2, 3, 4, 5, 6, 7, 8]
-        counts = [1, 1, 1, 1, 2, 3, 3, 2]
-        bg_counts = [0, 0, 0, 1, 0, 1, 2, 0]
-        bg_ratio = [0.1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1]
-        frac_exp = [1, 0.5, 1, 1, 1, 0.5, 0.5, 1]
-        gti = [[0.5, 4.5], [5.5, 7.5]]
+        times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        counts = [1, 1, 1, 1, 2, 3, 3, 2, 3, 3]
+        bg_counts = [0, 0, 0, 1, 0, 1, 2, 0, 0, 1]
+        bg_ratio = [0.1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1, 0.1, 0.2]
+        frac_exp = [1, 0.5, 1, 1, 1, 0.5, 0.5, 1, 1, 1]
+        gti = [[0.5, 4.5], [5.5, 7.5], [8.5, 9.5]]
 
         lc = Lightcurve(
             times, counts, gti=gti, bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp
         )
-        list_of_lcs = lc.split_by_gti()
+        list_of_lcs = lc.split_by_gti(min_points=0)
+        assert len(list_of_lcs) == 3
+
         lc0 = list_of_lcs[0]
         lc1 = list_of_lcs[1]
+        lc2 = list_of_lcs[2]
         assert np.allclose(lc0.time, [1, 2, 3, 4])
         assert np.allclose(lc1.time, [6, 7])
+        assert np.allclose(lc2.time, [9])
         assert np.allclose(lc0.counts, [1, 1, 1, 1])
         assert np.allclose(lc1.counts, [3, 3])
+        assert np.allclose(lc1.counts, [3])
         assert np.allclose(lc0.gti, [[0.5, 4.5]])
         assert np.allclose(lc1.gti, [[5.5, 7.5]])
+        assert np.allclose(lc2.gti, [[8.5, 9.5]])
         # Check if new attributes are also splited accordingly
         assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
         assert np.allclose(lc1.bg_counts, [1, 2])
@@ -1161,6 +1184,7 @@ class TestLightcurve(object):
 
         lc = Lightcurve(times, counts, gti=gti)
         list_of_lcs = lc.split_by_gti(min_points=min_points)
+        assert len(list_of_lcs) == 2
         lc0 = list_of_lcs[0]
         lc1 = list_of_lcs[1]
         assert np.allclose(lc0.time, [1, 2, 3])

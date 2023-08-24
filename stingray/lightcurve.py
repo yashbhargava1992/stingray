@@ -211,8 +211,8 @@ class Lightcurve(StingrayTimeseries):
 
     def __init__(
         self,
-        time,
-        counts,
+        time=None,
+        counts=None,
         err=None,
         input_counts=True,
         gti=None,
@@ -234,7 +234,39 @@ class Lightcurve(StingrayTimeseries):
         if other_kw != {}:
             warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
+        self._time = None
+        self._mask = None
+        self._counts = None
+        self._counts_err = None
+        self._countrate = None
+        self._countrate_err = None
+        self._meanrate = None
+        self._meancounts = None
+        self._bin_lo = None
+        self._bin_hi = None
+        self._n = None
+        self.mission = mission
+        self.instr = instr
+        self.header = header
+        self.dt = dt
+
+        self.input_counts = input_counts
+        self.low_memory = low_memory
+
+        self.mjdref = mjdref
+
+        if time is None or len(time) == 0:
+            warnings.warn("No time values passed to Lightcurve object!")
+            return
+
+        if counts is None or np.size(time) != np.size(counts):
+            raise StingrayError(
+                "Empty or invalid counts array. Time and counts array should have the same length."
+                "If you are providing event data, please use Lightcurve.make_lightcurve()"
+            )
+
         time, mjdref = interpret_times(time, mjdref=mjdref)
+        self.mjdref = mjdref
 
         time = np.asarray(time)
         counts = np.asarray(counts)
@@ -244,12 +276,6 @@ class Lightcurve(StingrayTimeseries):
 
         if not skip_checks:
             time, counts, err = self.initial_optional_checks(time, counts, err, gti=gti)
-
-        if time.size != counts.size:
-            raise StingrayError("time and counts array are not " "of the same length!")
-
-        if time.size <= 1:
-            raise StingrayError("A single or no data points can not create " "a lightcurve!")
 
         if err_dist.lower() not in valid_statistics:
             # err_dist set can be increased with other statistics
@@ -265,16 +291,21 @@ class Lightcurve(StingrayTimeseries):
                 "Sorry for the inconvenience."
             )
 
-        self.mjdref = mjdref
         self._time = time
 
-        if dt is None:
+        if dt is None and time.size > 1:
             logging.info(
                 "Computing the bin time ``dt``. This can take "
                 "time. If you know the bin time, please specify it"
                 " at light curve creation"
             )
             dt = np.median(np.diff(self._time))
+        elif dt is None and time.size == 1:
+            warnings.warn(
+                "Only one time bin and no dt specified. Setting dt=1. "
+                "Please specify dt if you want to use a different value"
+            )
+            dt = 1.0
 
         self.dt = dt
 
@@ -296,22 +327,6 @@ class Lightcurve(StingrayTimeseries):
         if gti is not None:
             self._gti = np.asarray(gti)
 
-        self._mask = None
-        self._counts = None
-        self._counts_err = None
-        self._countrate = None
-        self._countrate_err = None
-        self._meanrate = None
-        self._meancounts = None
-        self._bin_lo = None
-        self._bin_hi = None
-        self._n = None
-        self.mission = mission
-        self.instr = instr
-        self.header = header
-
-        self.input_counts = input_counts
-        self.low_memory = low_memory
         if input_counts:
             self._counts = np.asarray(counts)
             self._counts_err = err
@@ -1862,9 +1877,6 @@ class Lightcurve(StingrayTimeseries):
             start = start_bins[i]
             stop = stop_bins[i]
 
-            if np.isclose(stop - start, 1):
-                logging.warning("Segment with a single time bin! Ignoring this segment!")
-                continue
             if (stop - start) < min_points:
                 continue
 
@@ -1912,6 +1924,10 @@ class Lightcurve(StingrayTimeseries):
         array_attrs = self.array_attrs()
 
         self._mask = self._n = None
+        if isinstance(self.dt, Iterable):
+            new_dt = self.dt[mask]
+        else:
+            new_dt = self.dt
         if inplace:
             new_ev = self
             # If they don't exist, they get set
@@ -1923,10 +1939,19 @@ class Lightcurve(StingrayTimeseries):
             self._counts = self._counts[mask]
             if self._counts_err is not None:
                 self._counts_err = self._counts_err[mask]
+            new_ev.dt = new_dt
         else:
-            new_ev = Lightcurve(
-                time=self.time[mask], counts=self.counts[mask], skip_checks=True, gti=self.gti
-            )
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", message="Some functionalities of Stingray Lightcurve.*"
+                )
+                new_ev = Lightcurve(
+                    time=self.time[mask],
+                    counts=self.counts[mask],
+                    skip_checks=True,
+                    gti=self.gti,
+                    dt=new_dt,
+                )
             if self._counts_err is not None:
                 new_ev.counts_err = self.counts_err[mask]
             for attr in self.meta_attrs():
@@ -1939,6 +1964,7 @@ class Lightcurve(StingrayTimeseries):
                 "time",
                 "counts",
                 "counts_err",
+                "dt",
                 "_time",
                 "_counts",
                 "_counts_err",
