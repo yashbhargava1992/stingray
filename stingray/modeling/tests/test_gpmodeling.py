@@ -23,7 +23,7 @@ except ImportError:
     _HAS_TINYGP = False
 
 from stingray.modeling.gpmodeling import get_kernel, get_mean, get_gp_params
-from stingray.modeling.gpmodeling import get_prior, get_likelihood, GPResult
+from stingray.modeling.gpmodeling import get_prior, get_log_likelihood, GPResult
 from stingray import Lightcurve
 
 try:
@@ -270,7 +270,7 @@ class TestGPResult(object):
         }
 
         prior_model = get_prior(self.params_list, prior_dict)
-        likelihood_model = get_likelihood(
+        likelihood_model = get_log_likelihood(
             self.params_list,
             kernel_type="RN",
             mean_type="gaussian",
@@ -368,24 +368,26 @@ class TestGPResult(object):
         assert os.path.exists(outfname)
         os.unlink(outfname)
 
-    def test_corner_plot(self):
-        self.gpresult.corner_plot("log_A", "t0")
+    def test_comparison_plot(self):
+        self.gpresult.comparison_plot("log_A", "t0")
         assert plt.fignum_exists(1)
 
-    def test_corner_plot_labels_and_fname_default(self):
+    def test_comparison_plot_labels_and_fname_default(self):
         clear_all_figs()
-        outfname = "log_A_t0_Corner_plot.png"
+        outfname = "log_A_t0_Comparison_plot.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
-        self.gpresult.corner_plot("log_A", "t0", save=True)
+        self.gpresult.comparison_plot("log_A", "t0", save=True)
         assert os.path.exists(outfname)
         os.unlink(outfname)
 
-    def test_corner_plot_labels_and_fname(self):
+    def test_comparison_plot_labels_and_fname(self):
         clear_all_figs()
         outfname = "blabla.png"
         if os.path.exists(outfname):
             os.unlink(outfname)
-        self.gpresult.corner_plot("log_A", "t0", axis=[0, 0.5, 0, 5], save=True, filename=outfname)
+        self.gpresult.comparison_plot(
+            "log_A", "t0", axis=[0, 0.5, 0, 5], save=True, filename=outfname
+        )
         assert os.path.exists(outfname)
         os.unlink(outfname)
