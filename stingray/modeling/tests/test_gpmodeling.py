@@ -274,7 +274,7 @@ class TestGPResult(object):
             self.params_list,
             kernel_type="RN",
             mean_type="gaussian",
-            Times=self.Times,
+            times=self.Times,
             counts=self.counts,
         )
 
@@ -294,7 +294,7 @@ class TestGPResult(object):
 
     def test_sample(self):
         for key in self.params_list:
-            assert (self.Results.samples[key]).all() == (self.gpresult.Results.samples[key]).all()
+            assert (self.Results.samples[key]).all() == (self.gpresult.results.samples[key]).all()
 
     def test_get_evidence(self):
         assert self.Results.log_Z_mean == self.gpresult.get_evidence()
