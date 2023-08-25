@@ -49,7 +49,8 @@ def get_kernel(kernel_type, kernel_params):
     ----------
     kernel_type: string
         The type of kernel to be used for the Gaussian Process
-        To be selected from the kernels already implemented
+        To be selected from the kernels already implemented:
+        ["RN", "QPO", "QPO_plus_RN"]
 
     kernel_params: dict
         Dictionary containing the parameters for the kernel
@@ -97,7 +98,9 @@ def get_mean(mean_type, mean_params):
     ----------
     mean_type: string
         The type of mean to be used for the Gaussian Process
-        To be selected from the mean functions already implemented
+        To be selected from the mean functions already implemented:
+        ["gaussian", "exponential", "constant", "skew_gaussian",
+         "skew_exponential", "fred"]
 
     mean_params: dict
         Dictionary containing the parameters for the mean
@@ -216,7 +219,7 @@ def _skew_gaussian(t, mean_params):
     sig1 = jnp.atleast_1d(mean_params["sig1"])[:, jnp.newaxis]
     sig2 = jnp.atleast_1d(mean_params["sig2"])[:, jnp.newaxis]
 
-    return jnp.sum(
+    y = jnp.sum(
         A
         * jnp.where(
             t > t0,
@@ -225,6 +228,7 @@ def _skew_gaussian(t, mean_params):
         ),
         axis=0,
     )
+    return y
 
 
 def _skew_exponential(t, mean_params):
@@ -252,7 +256,7 @@ def _skew_exponential(t, mean_params):
     sig1 = jnp.atleast_1d(mean_params["sig1"])[:, jnp.newaxis]
     sig2 = jnp.atleast_1d(mean_params["sig2"])[:, jnp.newaxis]
 
-    return jnp.sum(
+    y = jnp.sum(
         A
         * jnp.where(
             t > t0,
@@ -261,6 +265,7 @@ def _skew_exponential(t, mean_params):
         ),
         axis=0,
     )
+    return y
 
 
 def _fred(t, mean_params):
@@ -351,10 +356,13 @@ def get_gp_params(kernel_type, mean_type):
     Parameters
     ----------
     kernel_type: string
-        The type of kernel to be used for the Gaussian Process model
+        The type of kernel to be used for the Gaussian Process model:
+        ["RN", "QPO", "QPO_plus_RN"]
 
     mean_type: string
-        The type of mean to be used for the Gaussian Process model
+        The type of mean to be used for the Gaussian Process model:
+        ["gaussian", "exponential", "constant", "skew_gaussian",
+         "skew_exponential", "fred"]
 
     Returns
     -------
@@ -402,15 +410,11 @@ def get_prior(params_list, prior_dict):
     Examples
     --------
     A prior function for a Red Noise kernel and a Gaussian mean function
-    Obain the parameters list
-    if not can_sample:
-        pytest.skip("Jaxns not installed. Cannot make jaxns specific prior.")
-    if not tfp_available:
-        pytest.skip("Tensorflow probability required to make priors.")
 
+    # Obtain the parameters list
     params_list = get_gp_params("RN", "gaussian")
 
-    Make a prior dictionary using tensorflow_probability distributions
+    # Make a prior dictionary using tensorflow_probability distributions
     prior_dict = {
        "log_A": tfpd.Uniform(low = jnp.log(1e-1), high = jnp.log(2e+2)),
        "t0": tfpd.Uniform(low = 0.0 - 0.1, high = 1 + 0.1),
@@ -444,7 +448,7 @@ def get_prior(params_list, prior_dict):
     return prior_model
 
 
-def get_log_likelihood(params_list, kernel_type, mean_type, **kwargs):
+def get_log_likelihood(params_list, kernel_type, mean_type, times, counts, **kwargs):
     """
     A log likelihood generator function based on given values.
     Makes a jaxns specific log likelihood function which takes in the
@@ -462,23 +466,23 @@ def get_log_likelihood(params_list, kernel_type, mean_type, **kwargs):
         A dictionary of the priors of parameters to be used.
 
     kernel_type:
-        The type of kernel to be used in the model.
+        The type of kernel to be used in the model:
+        ["RN", "QPO", "QPO_plus_RN"]
 
     mean_type:
-        The type of mean to be used in the model.
+        The type of mean to be used in the model:
+        ["gaussian", "exponential", "constant", "skew_gaussian",
+         "skew_exponential", "fred"]
 
-    **kwargs:
-        The keyword arguments to be used in the log likelihood function.
-        **Note**: The keyword arguments Times and counts are necessary for
-        calculating the log likelihood.
-        Times: np.array or jnp.array
-            The time array of the lightcurve
-        counts: np.array or jnp.array
-            The photon counts array of the lightcurve
+    times: np.array or jnp.array
+        The time array of the lightcurve
+
+    counts: np.array or jnp.array
+        The photon counts array of the lightcurve
 
     Returns
     -------
-    The jaxns specific log likelihood function.
+    The Jaxns specific log likelihood function.
 
     """
     if not jax_avail:
@@ -497,8 +501,8 @@ def get_log_likelihood(params_list, kernel_type, mean_type, **kwargs):
                 dict[params] = args[i]
         kernel = get_kernel(kernel_type=kernel_type, kernel_params=dict)
         mean = get_mean(mean_type=mean_type, mean_params=dict)
-        gp = GaussianProcess(kernel, kwargs["Times"], mean_value=mean(kwargs["Times"]))
-        return gp.log_probability(kwargs["counts"])
+        gp = GaussianProcess(kernel, times, mean_value=mean(times))
+        return gp.log_probability(counts)
 
     return likelihood_model
 
@@ -513,21 +517,13 @@ class GPResult:
     lc: Stingray.Lightcurve object
         The lightcurve on which the bayesian inference is to be done
 
-    Other Parameters
-    ----------------
-    time : class: np.array
-        The array containing the times of the lightcurve
-
-    counts : class: np.array
-        The array containing the photon counts of the lightcurve
-
     """
 
-    def __init__(self, Lc: Lightcurve) -> None:
-        self.lc = Lc
-        self.time = Lc.time
-        self.counts = Lc.counts
-        self.Result = None
+    def __init__(self, lc: Lightcurve) -> None:
+        self.lc = lc
+        self.time = lc.time
+        self.counts = lc.counts
+        self.result = None
 
     def sample(self, prior_model=None, likelihood_model=None, max_samples=1e4):
         """
@@ -537,18 +533,23 @@ class GPResult:
         Parameters
         ----------
         prior_model: jaxns.prior.PriorModelType object
-            A prior generator object
+            A prior generator object.
+            Can be made using the get_prior function or can use your own jaxns
+            compatible prior function.
 
         likelihood_model: jaxns.types.LikelihoodType object
             A likelihood fucntion which takes in the arguments of the prior
-            model and returns the loglikelihood of the model
+            model and returns the loglikelihood of the model.
+            Can be made using the get_log_likelihood function or can use your own
+            log_likelihood function with same order of arguments as the prior_model.
+
 
         max_samples: int, default 1e4
             The maximum number of samples to be taken by the nested sampler
 
         Returns
         ----------
-        Results: jaxns.results.NestedSamplerResults object
+        results: jaxns.results.NestedSamplerResults object
             The results of the nested sampling process
 
         """
@@ -564,49 +565,49 @@ class GPResult:
         NSmodel = Model(prior_model=self.prior_model, log_likelihood=self.log_likelihood_model)
         NSmodel.sanity_check(random.PRNGKey(10), S=100)
 
-        self.Exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=max_samples)
-        Termination_reason, State = self.Exact_ns(
+        self.exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=max_samples)
+        termination_reason, State = self.exact_ns(
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
         )
-        self.Results = self.Exact_ns.to_results(State, Termination_reason)
+        self.results = self.exact_ns.to_results(State, termination_reason)
         print("Simulation Complete")
 
     def get_evidence(self):
         """
         Returns the log evidence of the model
         """
-        return self.Results.log_Z_mean
+        return self.results.log_Z_mean
 
     def print_summary(self):
         """
         Prints a summary table for the model parameters
         """
-        self.Exact_ns.summary(self.Results)
+        self.exact_ns.summary(self.results)
 
     def plot_diagnostics(self):
         """
         Plots the diagnostic plots for the sampling process
         """
-        self.Exact_ns.plot_diagnostics(self.Results)
+        self.exact_ns.plot_diagnostics(self.results)
 
     def plot_cornerplot(self):
         """
         Plots the corner plot for the sampled hyperparameters
         """
-        self.Exact_ns.plot_cornerplot(self.Results)
+        self.exact_ns.plot_cornerplot(self.results)
 
     def get_parameters_names(self):
         """
         Returns the names of the parameters
         """
-        return sorted(self.Results.samples.keys())
+        return sorted(self.results.samples.keys())
 
     def get_max_posterior_parameters(self):
         """
         Returns the optimal parameters for the model based on the NUTS sampling
         """
-        max_post_idx = jnp.argmax(self.Results.log_posterior_density)
-        map_points = jax.tree_map(lambda x: x[max_post_idx], self.Results.samples)
+        max_post_idx = jnp.argmax(self.results.log_posterior_density)
+        map_points = jax.tree_map(lambda x: x[max_post_idx], self.results.samples)
 
         return map_points
 
@@ -614,8 +615,8 @@ class GPResult:
         """
         Retruns the maximum likelihood parameters
         """
-        max_like_idx = jnp.argmax(self.Results.log_L_samples)
-        max_like_points = jax.tree_map(lambda x: x[max_like_idx], self.Results.samples)
+        max_like_idx = jnp.argmax(self.results.log_L_samples)
+        max_like_points = jax.tree_map(lambda x: x[max_like_idx], self.results.samples)
 
         return max_like_points
 
@@ -631,7 +632,7 @@ class GPResult:
             used in the prior_function
 
         n : int, default 0
-            The index of the parameter to be plotted.
+            The index of the parameter to be plotted (for multi component parameters).
             For multivariate parameters, the index of the specific parameter to be plotted.
 
         axis : list, tuple, string, default ``None``
@@ -651,13 +652,13 @@ class GPResult:
             Reference to plot, call ``show()`` to display it
 
         """
-        nsamples = self.Results.total_num_samples
-        samples = self.Results.samples[name].reshape((nsamples, -1))[:, n]
+        nsamples = self.results.total_num_samples
+        samples = self.results.samples[name].reshape((nsamples, -1))[:, n]
         plt.hist(
             samples, bins="auto", density=True, alpha=1.0, label=name, fc="None", edgecolor="black"
         )
-        mean1 = jnp.mean(self.Results.samples[name])
-        std1 = jnp.std(self.Results.samples[name])
+        mean1 = jnp.mean(self.results.samples[name])
+        std1 = jnp.std(self.results.samples[name])
         plt.axvline(mean1, color="red", linestyle="dashed", label="mean")
         plt.axvline(mean1 + std1, color="green", linestyle="dotted")
         plt.axvline(mean1 - std1, linestyle="dotted", color="green")
@@ -690,7 +691,7 @@ class GPResult:
             used in the prior_function
 
         n : int, default 0
-            The index of the parameter to be plotted.
+            The index of the parameter to be plotted (for multi component parameters).
             For multivariate parameters, the index of the specific parameter to be plotted.
 
         key: jax.random.PRNGKey, default ``random.PRNGKey(1234)``
@@ -715,17 +716,17 @@ class GPResult:
         if rkey is None:
             rkey = random.PRNGKey(1234)
 
-        nsamples = self.Results.total_num_samples
-        log_p = self.Results.log_dp_mean
-        samples = self.Results.samples[name].reshape((nsamples, -1))[:, n]
+        nsamples = self.results.total_num_samples
+        log_p = self.results.log_dp_mean
+        samples = self.results.samples[name].reshape((nsamples, -1))[:, n]
 
         weights = jnp.where(jnp.isfinite(samples), jnp.exp(log_p), 0.0)
         log_weights = jnp.where(jnp.isfinite(samples), log_p, -jnp.inf)
         samples_resampled = resample(
-            rkey, samples, log_weights, S=max(10, int(self.Results.ESS)), replace=True
+            rkey, samples, log_weights, S=max(10, int(self.results.ESS)), replace=True
         )
 
-        nbins = max(10, int(jnp.sqrt(self.Results.ESS)) + 1)
+        nbins = max(10, int(jnp.sqrt(self.results.ESS)) + 1)
         binsx = jnp.linspace(*jnp.percentile(samples_resampled, jnp.asarray([0, 100])), 2 * nbins)
 
         plt.hist(
@@ -783,11 +784,11 @@ class GPResult:
             used in the prior_function
 
         n1 : int, default 0
-            The index of the first parameter to be plotted.
+            The index of the first parameter to be plotted (for multi component parameters).
             For multivariate parameters, the index of the specific parameter to be plotted.
 
         n2 : int, default 0
-            The index of the second parameter to be plotted.
+            The index of the second parameter to be plotted (for multi component parameters).
             For multivariate parameters, the index of the specific parameter to be plotted.
 
         key: jax.random.PRNGKey, default ``random.PRNGKey(1234)``
@@ -812,19 +813,19 @@ class GPResult:
         if rkey is None:
             rkey = random.PRNGKey(1234)
 
-        nsamples = self.Results.total_num_samples
-        log_p = self.Results.log_dp_mean
-        samples1 = self.Results.samples[param1].reshape((nsamples, -1))[:, n1]
-        samples2 = self.Results.samples[param2].reshape((nsamples, -1))[:, n2]
+        nsamples = self.results.total_num_samples
+        log_p = self.results.log_dp_mean
+        samples1 = self.results.samples[param1].reshape((nsamples, -1))[:, n1]
+        samples2 = self.results.samples[param2].reshape((nsamples, -1))[:, n2]
 
         log_weights = jnp.where(jnp.isfinite(samples2), log_p, -jnp.inf)
-        nbins = max(10, int(jnp.sqrt(self.Results.ESS)) + 1)
+        nbins = max(10, int(jnp.sqrt(self.results.ESS)) + 1)
 
         samples_resampled = resample(
             rkey,
             jnp.stack([samples1, samples2], axis=-1),
             log_weights,
-            S=max(10, int(self.Results.ESS)),
+            S=max(10, int(self.results.ESS)),
             replace=True,
         )
         plt.hist2d(
