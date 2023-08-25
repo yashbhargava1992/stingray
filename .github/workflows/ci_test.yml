@@ -22,6 +22,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
+# Found this solution at 
+# https://monadical.com/posts/filters-github-actions.html#Case-2-Pull-request
       - name: check if message contain keywords doc skip-tests
         id: check_commit
         run: |
