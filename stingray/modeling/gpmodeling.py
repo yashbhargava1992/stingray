@@ -444,7 +444,7 @@ def get_prior(params_list, prior_dict):
     return prior_model
 
 
-def get_likelihood(params_list, kernel_type, mean_type, **kwargs):
+def get_log_likelihood(params_list, kernel_type, mean_type, **kwargs):
     """
     A log likelihood generator function based on given values.
     Makes a jaxns specific log likelihood function which takes in the
@@ -559,9 +559,9 @@ class GPResult:
             raise ImportError("Jaxns not installed! Can't sample!")
 
         self.prior_model = prior_model
-        self.likelihood_model = likelihood_model
+        self.log_likelihood_model = likelihood_model
 
-        NSmodel = Model(prior_model=self.prior_model, log_likelihood=self.likelihood_model)
+        NSmodel = Model(prior_model=self.prior_model, log_likelihood=self.log_likelihood_model)
         NSmodel.sanity_check(random.PRNGKey(10), S=100)
 
         self.Exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=max_samples)
@@ -756,7 +756,7 @@ class GPResult:
                 plt.savefig(filename)
         return plt
 
-    def corner_plot(
+    def comparison_plot(
         self,
         param1: str,
         param2: str,
@@ -768,7 +768,7 @@ class GPResult:
         filename=None,
     ):
         """
-        Plots the corner plot between two given parameters
+        Plots the comparison plot between two given parameters
 
         Parameters
         ----------
@@ -834,7 +834,7 @@ class GPResult:
             density=True,
             cmap="GnBu",
         )
-        plt.title("Corner Plot of " + str(param1) + " and " + str(param2))
+        plt.title("Comparison Plot of " + str(param1) + " and " + str(param2))
         plt.xlabel(param2)
         plt.ylabel(param1)
         plt.colorbar()
@@ -843,7 +843,7 @@ class GPResult:
 
         if save:
             if filename is None:
-                plt.savefig(str(param1) + "_" + str(param2) + "_Corner_plot.png")
+                plt.savefig(str(param1) + "_" + str(param2) + "_Comparison_plot.png")
             else:
                 plt.savefig(filename)
 
