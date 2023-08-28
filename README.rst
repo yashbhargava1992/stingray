@@ -73,8 +73,8 @@ The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ 
    :target: https://github.com/StingraySoftware/stingray/actions/
 .. |Docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
    :target: https://docs.stingray.science/
-.. |Slack| image:: https://slack.stingray.science/badge.svg
-   :target: http://slack.stingray.science
+.. |Slack| image:: https://img.shields.io/badge/Join%20Our%20Community-Slack-blue
+   :target: https://join.slack.com/t/stingraysoftware/shared_invite/zt-49kv4kba-mD1Y~s~rlrOOmvqM7mZugQ
 .. |Coverage Status Master| image:: https://codecov.io/gh/StingraySoftware/stingray/branch/master/graph/badge.svg?token=FjWeFfhU9F
    :target: https://codecov.io/gh/StingraySoftware/stingray
 .. |GitHub release| image:: https://img.shields.io/github/v/release/StingraySoftware/stingray
