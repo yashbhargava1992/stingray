@@ -16,19 +16,25 @@ env:
 jobs:
 
   check_commit:
+    # Check the commit message for the presence of keywords that indicate
+    # that the CI tests should be skipped, in favor of running doc builds only.
+    # Messages like [docs only], [docs-only], or [skip-tests] will skip
+    # Only the CI part of the workflow, not the doc build.
+    # [skip ci], [ci skip] etc. are instead handled by GitHub itself and will skip
+    # the entire workflow.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-# Found this solution at 
+# Found this solution at
 # https://monadical.com/posts/filters-github-actions.html#Case-2-Pull-request
-      - name: check if message contain keywords doc skip-tests
+      - name: check if message indicates that tests should be skipped
         id: check_commit
         run: |
-          message=$(git log -1 --pretty=format:'%s')
-          re="\[(doc|skip-tests).*\]"
+          message=$(git log -1 --pretty=format:'%B')
+          re="\[(docs.only|skip-tests).*\]"
           if [[ $message =~ $re ]]; then
             echo "::set-output name=match::true"
             echo "$message -> Match is true"
