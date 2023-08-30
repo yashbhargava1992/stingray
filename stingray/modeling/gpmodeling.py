@@ -113,13 +113,13 @@ def get_mean(mean_type, mean_params):
     Examples
     --------
     Unimodal Gaussian Mean Function:
-        mean_params = {"A": 3.0, "t0": 0.2,  "sig1": 0.1, "sig2": 0.4}
+        mean_params = {"A": 3.0, "t0": 0.2,  "sig": 0.1}
         mean = get_mean("gaussian", mean_params)
 
-    Multimodal Gaussian Mean Function:
+    Multimodal Skew Gaussian Mean Function:
         mean_params = {"A": jnp.array([3.0, 4.0]), "t0": jnp.array([0.2, 1]),
                       "sig1": jnp.array([0.1, 0.4]), "sig2": jnp.array([0.4, 0.1])}
-        mean = get_mean("gaussian", mean_params)
+        mean = get_mean("skew_gaussian", mean_params)
 
     """
     if not jax_avail:
@@ -338,9 +338,11 @@ def _fred(t, params):
     phi = jnp.atleast_1d(params["phi"])[:, jnp.newaxis]
     delta = jnp.atleast_1d(params["delta"])[:, jnp.newaxis]
 
-    return jnp.sum(
+    y = jnp.sum(
         A * jnp.exp(-phi * ((t + delta) / t0 + t0 / (t + delta))) * jnp.exp(2 * phi), axis=0
     )
+
+    return y
 
 
 def _get_kernel_params(kernel_type):
@@ -485,8 +487,10 @@ def get_prior(params_list, prior_dict):
         for i in params_list:
             if isinstance(prior_dict[i], tfpd.Distribution):
                 parameter = yield Prior(prior_dict[i], name=i)
-            else:
+            elif isinstance(prior_dict[i], Prior):
                 parameter = yield prior_dict[i]
+            else:
+                raise ValueError("Prior should be a tfpd distribution or a jaxns prior.")
             prior_list.append(parameter)
         return tuple(prior_list)
 
@@ -607,10 +611,10 @@ class GPResult:
         self.prior_model = prior_model
         self.log_likelihood_model = likelihood_model
 
-        NSmodel = Model(prior_model=self.prior_model, log_likelihood=self.log_likelihood_model)
-        NSmodel.sanity_check(random.PRNGKey(10), S=100)
+        nsmodel = Model(prior_model=self.prior_model, log_likelihood=self.log_likelihood_model)
+        nsmodel.sanity_check(random.PRNGKey(10), S=100)
 
-        self.exact_ns = ExactNestedSampler(NSmodel, num_live_points=500, max_samples=max_samples)
+        self.exact_ns = ExactNestedSampler(nsmodel, num_live_points=500, max_samples=max_samples)
         termination_reason, State = self.exact_ns(
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
         )
