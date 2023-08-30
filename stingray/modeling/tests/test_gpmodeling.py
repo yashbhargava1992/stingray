@@ -262,7 +262,9 @@ class TestGPResult(object):
 
         # The prior dictionary, with suitable tfpd prior distributions
         prior_dict = {
-            "log_A": tfpd.Uniform(low=jnp.log(0.1 * span), high=jnp.log(2 * span)),
+            "log_A": Prior(
+                tfpd.Uniform(low=jnp.log(0.1 * span), high=jnp.log(2 * span)), name="log_A"
+            ),
             "t0": tfpd.Uniform(low=self.Times[0] - 0.1 * T, high=self.Times[-1] + 0.1 * T),
             "log_sig": tfpd.Uniform(low=jnp.log(0.5 * 1 / f), high=jnp.log(2 * T)),
             "log_arn": tfpd.Uniform(low=jnp.log(0.1 * span), high=jnp.log(2 * span)),
