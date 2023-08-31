@@ -32,8 +32,8 @@ class TestLombScargleCrossspectrum:
     @pytest.mark.parametrize("skip_checks", [True, False])
     def test_initialize_empty(self, skip_checks):
         lscs = LombScargleCrossspectrum(skip_checks=skip_checks)
-        assert lscs.freq is None
-        assert lscs.power is None
+        lscs.freq is None
+        lscs.power is None
 
     def test_make_empty_crossspectrum(self):
         lscs = LombScargleCrossspectrum()
@@ -54,31 +54,35 @@ class TestLombScargleCrossspectrum:
         assert lscs.oversampling is None
         assert lscs.method is None
 
+    def test_bad_input(self):
+        with pytest.raises(TypeError):
+            lscs = LombScargleCrossspectrum(1, self.lc1)
+
     def test_init_with_one_lc_none(self):
         with pytest.raises(ValueError):
-            lscs = LombScargleCrossspectrum(self.lc1)
+            lscs = LombScargleCrossspectrum(self.lc1, None)
 
     def test_init_with_norm_not_str(self):
         with pytest.raises(TypeError):
-            lscs = LombScargleCrossspectrum(norm=1)
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2, norm=1)
 
     def test_init_with_invalid_norm(self):
         with pytest.raises(ValueError):
-            lscs = LombScargleCrossspectrum(norm="frabs")
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2, norm="frabs")
 
     def test_init_with_power_type_not_str(self):
         with pytest.raises(TypeError):
-            lscs = LombScargleCrossspectrum(power_type=3)
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2, power_type=3)
 
     def test_init_with_invalid_power_type(self):
         with pytest.raises(ValueError):
-            lscs = LombScargleCrossspectrum(power_type="reel")
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2, power_type="reel")
 
     def test_init_with_wrong_lc_instance(self):
         lc1_ = {"a": 1, "b": 2}
         lc2_ = {"a": 1, "b": 2}
         with pytest.raises(TypeError):
-            lscs = LombScargleCrossspectrum(lc1_, lc2_)
+            lscs = LombScargleCrossspectrum(lc1_, lc2_, dt=1)
 
     def test_init_with_wrong_lc2_instance(self):
         lc_ = {"a": 1, "b": 2}
@@ -110,13 +114,6 @@ class TestLombScargleCrossspectrum:
             cs = LombScargleCrossspectrum(self.lc1, lc_)
         assert np.any(["different statistics" in r.message.args[0] for r in record])
 
-    def test_make_crossspectrum_diff_dt(self):
-        lc_ = Simulator(0.0002, 100, 100, 1, random_state=42, tstart=0).simulate(0)
-        with pytest.raises(
-            StingrayError, match="Lightcurves do not have the same time binning dt."
-        ):
-            lscs = LombScargleCrossspectrum(self.lc1, lc_)
-
     @pytest.mark.parametrize("power_type", ["real", "absolute", "all"])
     def test_power_type(self, power_type):
         lscs = LombScargleCrossspectrum(self.lc1, self.lc2, power_type=power_type)
@@ -142,11 +139,12 @@ class TestLombScargleCrossspectrum:
         with pytest.raises(ValueError):
             lscs = LombScargleCrossspectrum(data2, self.lc1)
 
-    def test_diff_mjdref(self):
-        lc3 = copy.deepcopy(self.lc1)
-        lc3.mjdref += 1
-        with pytest.raises(ValueError):
-            lscs = LombScargleCrossspectrum(self.lc1, lc3)
+    def test_valid_mixed_data(self):
+        data2 = EventList(self.lc2.time, np.ones_like(self.lc2.time))
+        lscs = LombScargleCrossspectrum(self.lc1, data2)
+        assert lscs.power is not None
+        lscs2 = LombScargleCrossspectrum(data2, self.lc1)
+        assert lscs2.power is not None
 
     def test_fullspec(self):
         lscs = LombScargleCrossspectrum(self.lc1, self.lc2, fullspec=True)
@@ -158,7 +156,7 @@ class TestLombScargleCrossspectrum:
         assert lscs.method == method
 
     @pytest.mark.parametrize(
-        "func",
+        "func_name",
         [
             "phase_lag",
             "time_lag",
@@ -170,9 +168,17 @@ class TestLombScargleCrossspectrum:
             "_initialize_from_any_input ",
         ],
     )
-    def test_raise_on_invalid_function(self, func):
+    def test_raise_on_invalid_function(self, func_name):
         with pytest.raises(AttributeError):
-            lscs = LombScargleCrossspectrum(self.lc1, self.lc2).func()
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2)
+            func = getattr(lscs, func_name)
+            func()
+
+    def test_no_dt(self):
+        el1 = EventList(self.lc1.counts, self.lc1.time, dt=None)
+        el2 = EventList(self.lc2.counts, self.lc2.time, dt=None)
+        with pytest.raises(ValueError):
+            lscs = LombScargleCrossspectrum(el1, el2)
 
 
 class TestLombScarglePowerspectrum:

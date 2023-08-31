@@ -126,24 +126,19 @@ class LombScargleCrossspectrum(Crossspectrum):
         oversampling: int = 5,
     ):
         self._type = None
-        good_input = data1 is not None and data2 is not None
+
         if data1 is None and data2 is None:
-            if not skip_checks:
-                good_input = self.initial_checks(
-                    data1=data1,
-                    data2=data2,
-                    norm=norm,
-                    power_type=power_type,
-                    dt=dt,
-                    fullspec=fullspec,
-                    min_freq=min_freq,
-                    max_freq=max_freq,
-                    df=df,
-                    method=method,
-                    oversampling=oversampling,
-                )
             self._initialize_empty()
             return
+
+        if dt is None:
+            if isinstance(data1, Lightcurve) or isinstance(data2, EventList):
+                dt = data1.dt
+            elif isinstance(data2, Lightcurve) or isinstance(data2, EventList):
+                dt = data2.dt
+            if dt is None:
+                raise ValueError("dt must be provided for EventLists")
+
         if not skip_checks:
             good_input = self.initial_checks(
                 data1=data1,
@@ -159,23 +154,15 @@ class LombScargleCrossspectrum(Crossspectrum):
                 oversampling=oversampling,
             )
 
-        if not good_input:
-            self._initialize_empty()
-            return
-        if dt is None:
-            if isinstance(data1, Lightcurve) or isinstance(data2, EventList):
-                dt = data1.dt
-            elif isinstance(data2, Lightcurve) or isinstance(data2, EventList):
-                dt = data2.dt
-            if dt is None:
-                raise ValueError("dt must be provided for EventLists")
+            if not good_input:
+                self._initialize_empty()
+                return
+
         self.dt = dt
         norm = norm.lower()
         self.norm = norm
         self.k = 1
         self.df = df
-        if not good_input:
-            return self._initialize_empty()
 
         if isinstance(data1, EventList):
             self.lc1 = data1.to_lc(self.dt)
@@ -199,7 +186,7 @@ class LombScargleCrossspectrum(Crossspectrum):
         self._make_crossspectrum(
             self.lc1, self.lc2, fullspec, method=method, oversampling=oversampling
         )
-        if self.power_type == "abs":
+        if self.power_type == "absolute":
             self.power = np.abs(self.power)
             self.power_err = np.abs(self.power_err)
             self.unnorm_power = np.abs(self.unnorm_power)
@@ -307,15 +294,6 @@ class LombScargleCrossspectrum(Crossspectrum):
             and Rybicki O(n*log(n))
 
         """
-        if self.lc2.mjdref != self.lc1.mjdref:
-            raise ValueError("MJDref is different in the two light curves")
-
-        if lc1.n != lc2.n:
-            raise StingrayError("Lightcurves do not have the same number of bins per segment.")
-
-        if not np.isclose(lc1.dt, lc2.dt, rtol=0.1 * lc1.dt / lc1.tseg):
-            raise StingrayError("Lightcurves do not have the same time binning dt.")
-
         self.meancounts1 = lc1.meancounts
         self.meancounts2 = lc2.meancounts
 
@@ -510,37 +488,37 @@ class LombScargleCrossspectrum(Crossspectrum):
             "Object has no attribute named 'time_lag' ! Not applicable for unevenly sampled data"
         )
 
-    def classical_significances(self, threshold=1, trial_correction=False):
+    def classical_significances(self):
         """Not applicable for unevenly sampled data"""
         raise AttributeError(
             "Object has no attribute named 'classical_significances' ! Not applicable for unevenly sampled data"
         )
 
-    def from_time_array():
+    def from_time_array(self):
         """Not applicable for unevenly sampled data"""
         raise AttributeError(
             "Object has no attribute named 'from_time_array' ! Not applicable for unevenly sampled data"
         )
 
-    def from_events():
+    def from_events(self):
         """Not applicable for unevenly sampled data"""
         raise AttributeError(
             "Object has no attribute named 'from_events' ! Not applicable for unevenly sampled data"
         )
 
-    def from_lightcurve():
+    def from_lightcurve(self):
         """Not applicable for unevenly sampled data"""
         raise AttributeError(
             "Object has no attribute named 'from_lightcurve' ! Not applicable for unevenly sampled data"
         )
 
-    def from_lc_iterable():
+    def from_lc_iterable(self):
         """Not applicable for unevenly sampled data"""
         raise AttributeError(
             "Object has no attribute named 'from_lc_iterable' ! Not applicable for unevenly sampled data"
         )
 
-    def _initialize_from_any_input():
+    def _initialize_from_any_input(self):
         """Not required for unevenly sampled data"""
         raise AttributeError("Object has no attribute named '_initialize_from_any_input' !")
 
