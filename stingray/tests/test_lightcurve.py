@@ -814,6 +814,8 @@ class TestLightcurve(object):
         assert np.allclose(lc1.frac_exp, np.array([1, 1, 1]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 1.5)
         assert lc1.mjdref == lc.mjdref
+        assert lc1.tstart == 1.5
+        assert lc1.tseg == 3
 
         lc2 = lc.truncate(stop=2)
         assert np.allclose(lc2.time, np.array([1, 2]))
@@ -823,6 +825,9 @@ class TestLightcurve(object):
         assert np.allclose(lc2.frac_exp, np.array([1, 1]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
         assert lc2.mjdref == lc.mjdref
+
+        assert lc2.tstart == lc.tstart
+        assert lc2.tseg == 2
 
     def test_truncate_by_time_stop_less_than_start(self):
         lc = Lightcurve(self.times, self.counts)
@@ -843,12 +848,16 @@ class TestLightcurve(object):
         assert np.allclose(lc1.counts, np.array([2, 2, 2, 2]))
         np.testing.assert_almost_equal(lc1.gti[0][0], 0.5)
         assert lc1.mjdref == lc.mjdref
+        assert lc1.tstart == 0.5
+        assert lc1.tseg == 4.0
 
         lc2 = lc.truncate(stop=3, method="time")
         assert np.allclose(lc2.time, np.array([1, 2]))
         assert np.allclose(lc2.counts, np.array([2, 2]))
         np.testing.assert_almost_equal(lc2.gti[-1][-1], 2.5)
         assert lc2.mjdref == lc.mjdref
+        assert lc2.tstart == 0.5
+        assert lc2.tseg == 2
 
     def test_split_with_two_segments(self):
         test_time = np.array([1, 2, 3, 6, 7, 8])
