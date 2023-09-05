@@ -2143,21 +2143,33 @@ def lsft_slow(
             ft_imag = 0
             phase_this = 0
         else:
+            # Calculation of \omega \tau (II.5) --
             csum = np.sum(np.cos(2.0 * wrun * t))
             ssum = np.sum(np.sin(2.0 * wrun * t))
 
             watan = np.arctan2(ssum, csum)
             wtau = 0.5 * watan
+            # --
+            # In the following, instead of t'_n we are using \omega t'_n = \omega t - \omega\tau
 
+            # Terms of kind X_n * cos or sin (II.1) --
             sumr = np.sum(y_ * np.cos(wrun * t - wtau))
             sumi = np.sum(y_ * np.sin(wrun * t - wtau))
+            # --
 
+            # A and B before the square root and inversion in (II.3) --
             scos2 = np.sum(np.power(np.cos(wrun * t - wtau), 2))
             ssin2 = np.sum(np.power(np.sin(wrun * t - wtau), 2))
+            ## --
 
+            # const2 is const1 times the sign.
+            # It's the F0 in II.2 without the phase factor
+            # The sign decides whether we are calculating the direct or inverse transform
             ft_real = const1 * sumr / np.sqrt(scos2)
             ft_imag = const2 * sumi / np.sqrt(ssin2)
+
             phase_this = wtau - wrun * t[0]
+
         ft_res[i] = np.complex128(ft_real + (1j * ft_imag)) * np.exp(-1j * phase_this)
     return ft_res
 
