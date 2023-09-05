@@ -615,10 +615,10 @@ class GPResult:
         nsmodel.sanity_check(random.PRNGKey(10), S=100)
 
         self.exact_ns = ExactNestedSampler(nsmodel, num_live_points=500, max_samples=max_samples)
-        termination_reason, State = self.exact_ns(
+        termination_reason, state = self.exact_ns(
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
         )
-        self.results = self.exact_ns.to_results(State, termination_reason)
+        self.results = self.exact_ns.to_results(state, termination_reason)
         print("Simulation Complete")
 
     def get_evidence(self):
