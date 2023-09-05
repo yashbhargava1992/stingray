@@ -558,6 +558,24 @@ class TestNorms(object):
         assert np.isclose(noise_notnorm, unnorm_noise)
 
 
+@pytest.mark.parametrize("phlag", [0.05, 0.1, 0.2, 0.4])
+def test_lag(phlag):
+    freq=1.1123232252
+    def func(time, phase=0):
+        return 2 + np.sin(2 * np.pi * (time * freq - phase))
+    time = np.sort(np.random.uniform(0, 100, 3000))
+    ft0 = lsft_slow(func(time, 0), time, np.array([freq]))
+    ft1 = lsft_slow(func(time, phlag), time, np.array([freq]))
+    measured_lag = (np.angle(ft0) - np.angle(ft1)) / 2 / np.pi
+    while measured_lag > 0.5:
+        measured_lag -= 0.5
+    while measured_lag <= -0.5:
+        measured_lag += 0.5
+        
+    print(measured_lag)
+    assert np.isclose((np.angle(ft1) - np.angle(ft0)) / 2 / np.pi, phlag, atol=0.01)
+
+
 def test_lsft_slow_fast():
     np.random.seed(0)
     rand = np.random.default_rng(42)
