@@ -476,17 +476,9 @@ class LombScargleCrossspectrum(Crossspectrum):
         self.variance2 = None
         return
 
-    def phase_lag(self):
-        """Not applicable for unevenly sampled data"""
-        raise AttributeError(
-            "Object has no attribute named 'phase_lag' ! Not applicable for unevenly sampled data"
-        )
-
     def time_lag(self):
-        """Not applicable for unevenly sampled data"""
-        raise AttributeError(
-            "Object has no attribute named 'time_lag' ! Not applicable for unevenly sampled data"
-        )
+        super().__doc__
+        return self.phase_lag() / (2 * np.pi * self.freq)
 
     def classical_significances(self):
         """Not applicable for unevenly sampled data"""

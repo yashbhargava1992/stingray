@@ -2121,17 +2121,17 @@ def lsft_slow(
     ft_res : numpy.ndarray
         An array of Fourier transformed data.
     """
-    y_ = copy.deepcopy(y) - np.mean(y)
-    freqs = freqs[freqs >= 0]
+    y_ = y - np.mean(y)
+    freqs = np.asarray(freqs[np.asarray(freqs) >= 0])
 
     ft_real = np.zeros_like(freqs)
     ft_imag = np.zeros_like(freqs)
     ft_res = np.zeros_like(freqs, dtype=np.complex128)
 
-    num_y = len(y_)
-    num_freqs = len(freqs)
+    num_y = y_.shape[0]
+    num_freqs = freqs.shape[0]
     sum_y = np.sum(y_)
-    const1 = np.sqrt(0.5) * np.sqrt(num_y)
+    const1 = np.sqrt(0.5 * num_y)
     const2 = const1 * np.sign(sign)
     ft_real = ft_imag = np.zeros(num_freqs)
     ft_res = np.zeros(num_freqs, dtype=np.complex128)

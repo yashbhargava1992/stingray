@@ -158,8 +158,6 @@ class TestLombScargleCrossspectrum:
     @pytest.mark.parametrize(
         "func_name",
         [
-            "phase_lag",
-            "time_lag",
             "classical_significances",
             "from_time_array",
             "from_events",
