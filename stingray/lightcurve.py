@@ -1243,9 +1243,12 @@ class Lightcurve(StingrayTimeseries):
             raise ValueError("Unknown method type " + method + ".")
 
         if method.lower() == "index":
-            return self._truncate_by_index(start, stop)
+            new_lc = self._truncate_by_index(start, stop)
         else:
-            return self._truncate_by_time(start, stop)
+            new_lc = self._truncate_by_time(start, stop)
+        new_lc.tstart = new_lc.gti[0, 0]
+        new_lc.tseg = new_lc.gti[-1, 1] - new_lc.gti[0, 0]
+        return new_lc
 
     def _truncate_by_index(self, start, stop):
         """Private method for truncation using index values."""
