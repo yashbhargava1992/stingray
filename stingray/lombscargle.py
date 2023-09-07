@@ -261,8 +261,6 @@ class LombScargleCrossspectrum(Crossspectrum):
                 if len(data1.time) != len(data2.time):
                     raise ValueError("data1 and data2 must have the same length")
         else:
-            if data1 is None or data2 is None:
-                return False
             if (isinstance(data1, EventList) or isinstance(data2, EventList)) and (
                 isinstance(data1, Lightcurve) or isinstance(data2, Lightcurve)
             ):

@@ -559,7 +559,7 @@ class TestNorms(object):
 
 
 @pytest.mark.parametrize("phlag", [0.05, 0.1, 0.2, 0.4])
-def test_lag(phlag):
+def test_lags(phlag):
     freq = 1.1123232252
 
     def func(time, phase=0):

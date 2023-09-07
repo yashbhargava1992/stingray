@@ -61,6 +61,8 @@ class TestLombScargleCrossspectrum:
     def test_init_with_one_lc_none(self):
         with pytest.raises(ValueError):
             lscs = LombScargleCrossspectrum(self.lc1, None)
+        with pytest.raises(ValueError):
+            lscs = LombScargleCrossspectrum(None, self.lc1)
 
     def test_init_with_norm_not_str(self):
         with pytest.raises(TypeError):
@@ -163,7 +165,7 @@ class TestLombScargleCrossspectrum:
             "from_events",
             "from_lightcurve",
             "from_lc_iterable",
-            "_initialize_from_any_input ",
+            "_initialize_from_any_input",
         ],
     )
     def test_raise_on_invalid_function(self, func_name):
