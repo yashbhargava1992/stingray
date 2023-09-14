@@ -29,6 +29,7 @@ class DummyStingrayObj(StingrayObject):
 
     def __init__(self, dummy=None):
         self.guefus = dummy
+        self._mask = None
         # StingrayObject.__init__(self)
 
 
@@ -48,22 +49,18 @@ class BadStingrayObj(StingrayObject):
 
 
 def _check_equal(so, new_so):
-    for attr in ["time", "guefus", "pardulas", "panesapa"]:
-        if not hasattr(so, attr):
-            assert not hasattr(new_so, attr)
-            continue
+    for attr in set(so.array_attrs() + new_so.array_attrs()):
         so_attr = at if (at := getattr(so, attr)) is not None else []
         new_so_attr = at if (at := getattr(new_so, attr)) is not None else []
-
         assert np.allclose(so_attr, new_so_attr)
 
-    for attr in ["mjdref", "pirichitus", "parafritus"]:
-        if not hasattr(so, attr):
-            assert not hasattr(new_so, attr)
-            continue
+    for attr in set(so.meta_attrs() + new_so.meta_attrs()):
         so_attr = getattr(so, attr)
         new_so_attr = getattr(new_so, attr)
-        assert so_attr == new_so_attr
+        if isinstance(so_attr, np.ndarray):
+            assert np.allclose(so_attr, new_so_attr)
+        else:
+            assert so_attr == new_so_attr
 
 
 class TestStingrayObject:
@@ -180,6 +177,96 @@ class TestStingrayObject:
 
 
 class TestStingrayTimeseries:
+    @classmethod
+    def setup_class(cls):
+        cls.time = np.arange(0, 10, 1)
+        cls.arr = cls.time + 2
+        sting_obj = StingrayTimeseries(
+            time=cls.time,
+            mjdref=59777.000,
+            array_attrs=dict(guefus=cls.arr),
+            parafritus="bonus!",
+            panesapa=np.asarray([[41, 25], [98, 3]]),
+            gti=np.asarray([[-0.5, 10.5]]),
+        )
+        cls.sting_obj = sting_obj
+
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_apply_gti(self, inplace):
+        so = copy.deepcopy(self.sting_obj)
+        so.gti = np.asarray([[-0.1, 2.1]])
+        so2 = so.apply_gtis()
+        if inplace:
+            assert so2 is so
+
+        assert np.allclose(so2.time, [0, 1, 2])
+        assert np.allclose(so2.guefus, [2, 3, 4])
+        assert np.allclose(so2.gti, [[-0.1, 2.1]])
+        assert np.allclose(so2.mjdref, 59777.000)
+
+    def test_split_ts_by_gtis(self):
+        times = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        counts = [1, 1, 1, 1, 2, 3, 3, 2, 3, 3]
+        bg_counts = [0, 0, 0, 1, 0, 1, 2, 0, 0, 1]
+        bg_ratio = [0.1, 0.1, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1, 0.1, 0.2]
+        frac_exp = [1, 0.5, 1, 1, 1, 0.5, 0.5, 1, 1, 1]
+        gti = [[0.5, 4.5], [5.5, 7.5], [8.5, 9.5]]
+
+        ts = StingrayTimeseries(
+            times,
+            array_attrs=dict(
+                counts=counts, bg_counts=bg_counts, bg_ratio=bg_ratio, frac_exp=frac_exp
+            ),
+            gti=gti,
+        )
+        list_of_tss = ts.split_by_gti(min_points=0)
+        assert len(list_of_tss) == 3
+
+        ts0 = list_of_tss[0]
+        ts1 = list_of_tss[1]
+        ts2 = list_of_tss[2]
+        assert np.allclose(ts0.time, [1, 2, 3, 4])
+        assert np.allclose(ts1.time, [6, 7])
+        assert np.allclose(ts2.time, [9])
+        assert np.allclose(ts0.counts, [1, 1, 1, 1])
+        assert np.allclose(ts1.counts, [3, 3])
+        assert np.allclose(ts1.counts, [3])
+        assert np.allclose(ts0.gti, [[0.5, 4.5]])
+        assert np.allclose(ts1.gti, [[5.5, 7.5]])
+        assert np.allclose(ts2.gti, [[8.5, 9.5]])
+        # Check if new attributes are also splited accordingly
+        assert np.allclose(ts0.bg_counts, [0, 0, 0, 1])
+        assert np.allclose(ts1.bg_counts, [1, 2])
+        assert np.allclose(ts0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
+        assert np.allclose(ts1.bg_ratio, [0.2, 0.2])
+        assert np.allclose(ts0.frac_exp, [1, 0.5, 1, 1])
+        assert np.allclose(ts1.frac_exp, [0.5, 0.5])
+
+    def test_astropy_roundtrip(self):
+        so = copy.deepcopy(self.sting_obj)
+        ts = so.to_astropy_table()
+        new_so = StingrayTimeseries.from_astropy_table(ts)
+        _check_equal(so, new_so)
+
+    def test_astropy_ts_roundtrip(self):
+        so = copy.deepcopy(self.sting_obj)
+        ts = so.to_astropy_timeseries()
+        new_so = StingrayTimeseries.from_astropy_timeseries(ts)
+        _check_equal(so, new_so)
+
+    def test_shift_time(self):
+        new_so = self.sting_obj.shift(1)
+        assert np.allclose(new_so.time - 1, self.sting_obj.time)
+        assert np.allclose(new_so.gti - 1, self.sting_obj.gti)
+
+    def test_change_mjdref(self):
+        new_so = self.sting_obj.change_mjdref(59776.5)
+        assert new_so.mjdref == 59776.5
+        assert np.allclose(new_so.time - 43200, self.sting_obj.time)
+        assert np.allclose(new_so.gti - 43200, self.sting_obj.gti)
+
+
+class TestStingrayTimeseriesSubclass:
     @classmethod
     def setup_class(cls):
         cls.arr = [4, 5, 2]

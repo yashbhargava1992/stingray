@@ -405,6 +405,176 @@ class StingrayObject(object):
 
 
 class StingrayTimeseries(StingrayObject):
+    main_array_attr = "time"
+
+    def __init__(
+        self,
+        time: TTime = None,
+        array_attrs: dict = {},
+        mjdref: TTime = 0,
+        notes: str = "",
+        gti: npt.ArrayLike = None,
+        high_precision: bool = False,
+        ephem: str = None,
+        timeref: str = None,
+        timesys: str = None,
+        **other_kw,
+    ):
+        StingrayObject.__init__(self)
+
+        self.notes = notes
+        self.mjdref = mjdref
+        self.gti = np.asarray(gti) if gti is not None else None
+        self.ephem = ephem
+        self.timeref = timeref
+        self.timesys = timesys
+        self._mask = None
+        self.dt = other_kw.pop("dt", 0)
+
+        if time is not None:
+            time, mjdref = interpret_times(time, mjdref)
+            if not high_precision:
+                self.time = np.asarray(time)
+            else:
+                self.time = np.asarray(time, dtype=np.longdouble)
+            self.ncounts = self.time.size
+        else:
+            self.time = None
+
+        for kw in other_kw:
+            setattr(self, kw, other_kw[kw])
+        for kw in array_attrs:
+            new_arr = np.asarray(array_attrs[kw])
+            if self.time.size != new_arr.size:
+                raise ValueError(f"Lengths of time and {kw} must be equal.")
+            setattr(self, kw, new_arr)
+
+    def apply_mask(self, mask: npt.ArrayLike, inplace: bool = False, filtered_attrs: list = None):
+        """Apply a mask to all array attributes of the time series
+
+        Parameters
+        ----------
+        mask : array of ``bool``
+            The mask. Has to be of the same length as ``self.time``
+
+        Other parameters
+        ----------------
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
+        filtered_attrs : list of str or None
+            Array attributes to be filtered. Defaults to all array attributes if ``None``.
+            The other array attributes will be discarded from the time series to avoid
+            inconsistencies. Time is always included.
+
+        Examples
+        --------
+        >>> ts = StingrayTimeseries(time=[0, 1, 2], array_attrs={"counts": [2, 3, 4]}, mission="nustar")
+        >>> ts.bubuattr = [222, 111, 333]  # Add another array attr
+        >>> newts0 = ts.apply_mask([True, True, False], inplace=False);
+        >>> newts1 = ts.apply_mask([True, True, False], inplace=True);
+        >>> newts0.mission == "nustar"
+        True
+        >>> np.altslose(newts0.time, [0, 1])
+        True
+        >>> np.altslose(newts0.bubuattr, [222, 111])
+        True
+        >>> np.altslose(newts1.time, [0, 1])
+        True
+        >>> ts is newts1
+        True
+        """
+        all_attrs = self.array_attrs()
+        if filtered_attrs is None:
+            filtered_attrs = all_attrs
+        if "time" not in filtered_attrs:
+            filtered_attrs.append("time")
+
+        if inplace:
+            new_ts = self
+            # Eliminate all unfiltered attributes
+            for attr in all_attrs:
+                if attr not in filtered_attrs:
+                    setattr(new_ts, attr, None)
+        else:
+            new_ts = type(self)()
+            for attr in self.meta_attrs():
+                try:
+                    setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
+                except AttributeError:
+                    continue
+
+        for attr in filtered_attrs:
+            setattr(new_ts, attr, copy.deepcopy(np.asarray(getattr(self, attr)[mask])))
+        return new_ts
+
+    def apply_gtis(self, inplace: bool = True):
+        """
+        Apply GTIs to a light curve. Filters the ``time``, ``counts``,
+        ``countrate``, ``counts_err`` and ``countrate_err`` arrays for all bins
+        that fall into Good Time Intervals and recalculates mean countrate
+        and the number of bins.
+
+        If the data already have
+
+        Parameters
+        ----------
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
+
+        """
+        # I import here to avoid the risk of circular imports
+        from .gti import check_gtis, create_gti_mask
+
+        check_gtis(self.gti)
+
+        # This will automatically be recreated from GTIs once I set it to None
+        good = create_gti_mask(self.time, self.gti, dt=self.dt)
+        newts = self.apply_mask(good, inplace=inplace)
+        return newts
+
+    def split_by_gti(self, gti=None, min_points=2):
+        """
+        Split the current :class:`StingrayTimeseries` object into a list of
+        :class:`StingrayTimeseries` objects, one for each continuous GTI segment
+        as defined in the ``gti`` attribute.
+
+        Parameters
+        ----------
+        min_points : int, default 1
+            The minimum number of data points in each light curve. Light
+            curves with fewer data points will be ignored.
+
+        Returns
+        -------
+        list_of_tss : list
+            A list of :class:`Lightcurve` objects, one for each GTI segment
+        """
+        from .gti import gti_border_bins, create_gti_mask
+
+        if gti is None:
+            gti = self.gti
+
+        list_of_tss = []
+
+        start_bins, stop_bins = gti_border_bins(gti, self.time, self.dt)
+        for i in range(len(start_bins)):
+            start = start_bins[i]
+            stop = stop_bins[i]
+
+            if (stop - start) < min_points:
+                continue
+
+            new_gti = np.array([gti[i]])
+            mask = create_gti_mask(self.time, new_gti)
+
+            # Note: GTIs are consistent with default in this case!
+            new_ts = self.apply_mask(mask)
+            new_ts.gti = new_gti
+
+            list_of_tss.append(new_ts)
+
+        return list_of_tss
+
     def to_astropy_timeseries(self) -> TimeSeries:
         """Save the ``StingrayTimeseries`` to an ``Astropy`` timeseries.
 
@@ -472,19 +642,20 @@ class StingrayTimeseries(StingrayObject):
         if "mjdref" in ts.meta:
             mjdref = ts.meta["mjdref"]
 
+        new_cls = cls()
         time, mjdref = interpret_times(time, mjdref)
-        cls.time = np.asarray(time)  # type: ignore
+        new_cls.time = np.asarray(time)  # type: ignore
 
         array_attrs = ts.colnames
         for key, val in ts.meta.items():
-            setattr(cls, key, val)
+            setattr(new_cls, key, val)
 
         for attr in array_attrs:
             if attr == "time":
                 continue
-            setattr(cls, attr, ts[attr])
+            setattr(new_cls, attr, np.asarray(ts[attr]))
 
-        return cls
+        return new_cls
 
     def change_mjdref(self, new_mjdref: float) -> StingrayTimeseries:
         """Change the MJD reference time (MJDREF) of the time series
@@ -499,7 +670,7 @@ class StingrayTimeseries(StingrayObject):
 
         Returns
         -------
-        new_lc : :class:`StingrayTimeseries` object
+        new_ts : :class:`StingrayTimeseries` object
             The new time series, shifted by MJDREF
         """
         time_shift = (self.mjdref - new_mjdref) * 86400  # type: ignore

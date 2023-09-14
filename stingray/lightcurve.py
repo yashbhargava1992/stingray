@@ -1854,47 +1854,6 @@ class Lightcurve(StingrayTimeseries):
 
         return super().read(filename=filename, fmt=fmt)
 
-    def split_by_gti(self, gti=None, min_points=2):
-        """
-        Split the current :class:`Lightcurve` object into a list of :class:`Lightcurve` objects, one
-        for each continuous GTI segment as defined in the ``gti`` attribute.
-
-        Parameters
-        ----------
-        min_points : int, default 1
-            The minimum number of data points in each light curve. Light
-            curves with fewer data points will be ignored.
-
-        Returns
-        -------
-        list_of_lcs : list
-            A list of :class:`Lightcurve` objects, one for each GTI segment
-        """
-
-        if gti is None:
-            gti = self.gti
-
-        list_of_lcs = []
-
-        start_bins, stop_bins = gti_border_bins(gti, self.time, self.dt)
-        for i in range(len(start_bins)):
-            start = start_bins[i]
-            stop = stop_bins[i]
-
-            if (stop - start) < min_points:
-                continue
-
-            new_gti = np.array([gti[i]])
-            mask = create_gti_mask(self.time, new_gti)
-
-            # Note: GTIs are consistent with default in this case!
-            new_lc = self.apply_mask(mask)
-            new_lc.gti = new_gti
-
-            list_of_lcs.append(new_lc)
-
-        return list_of_lcs
-
     def apply_mask(self, mask, inplace=False):
         """Apply a mask to all array attributes of the event list
 
