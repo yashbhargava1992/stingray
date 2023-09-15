@@ -256,7 +256,7 @@ class Powerspectrum(Crossspectrum):
             )
 
     def _rms_error(self, powers):
-        """
+        r"""
         Compute the error on the fractional rms amplitude using error
         propagation.
         Note: this uses the actual measured powers, which is not
@@ -373,7 +373,7 @@ class Powerspectrum(Crossspectrum):
         return pvals
 
     def modulation_upper_limit(self, fmin=None, fmax=None, c=0.95):
-        """
+        r"""
         Upper limit on a sinusoidal modulation.
 
         To understand the meaning of this amplitude: if the modulation is
