@@ -229,11 +229,6 @@ class Lightcurve(StingrayTimeseries):
         header=None,
         **other_kw,
     ):
-        StingrayTimeseries.__init__(self)
-
-        if other_kw != {}:
-            warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
-
         self._time = None
         self._mask = None
         self._counts = None
@@ -245,6 +240,11 @@ class Lightcurve(StingrayTimeseries):
         self._bin_lo = None
         self._bin_hi = None
         self._n = None
+        StingrayTimeseries.__init__(self)
+
+        if other_kw != {}:
+            warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
+
         self.mission = mission
         self.instr = instr
         self.header = header
@@ -362,10 +362,17 @@ class Lightcurve(StingrayTimeseries):
 
     @time.setter
     def time(self, value):
-        value = np.asarray(value)
-        if not value.shape == self.time.shape:
-            raise ValueError("Can only assign new times of the same shape as " "the original array")
-        self._time = value
+        if value is None:
+            self._time = None
+            for attr in self.internal_array_attrs():
+                setattr(self, attr, None)
+        else:
+            value = np.asarray(value)
+            if not value.shape == self.time.shape:
+                raise ValueError(
+                    "Can only assign new times of the same shape as " "the original array"
+                )
+            self._time = value
         self._bin_lo = None
         self._bin_hi = None
 
@@ -594,7 +601,7 @@ class Lightcurve(StingrayTimeseries):
                 "Only use with LombScargleCrossspectrum, LombScarglePowerspectrum and QPO using GPResult"
             )
 
-    def _operation_with_other_lc(self, other, operation):
+    def _operation_with_other_obj(self, other, operation):
         """
         Helper method to codify an operation of one light curve with another (e.g. add, subtract, ...).
         Takes into account the GTIs correctly, and returns a new :class:`Lightcurve` object.
@@ -689,7 +696,7 @@ class Lightcurve(StingrayTimeseries):
         True
         """
 
-        return self._operation_with_other_lc(other, np.add)
+        return self._operation_with_other_obj(other, np.add)
 
     def __sub__(self, other):
         """
@@ -718,7 +725,7 @@ class Lightcurve(StingrayTimeseries):
         True
         """
 
-        return self._operation_with_other_lc(other, np.subtract)
+        return self._operation_with_other_obj(other, np.subtract)
 
     def __neg__(self):
         """
@@ -749,24 +756,6 @@ class Lightcurve(StingrayTimeseries):
         )
 
         return lc_new
-
-    def __len__(self):
-        """
-        Return the number of time bins of a light curve.
-
-        This method implements overrides the ``len`` function for a :class:`Lightcurve`
-        object and returns the length of the ``time`` array (which should be equal to the
-        length of the ``counts`` and ``countrate`` arrays).
-
-        Examples
-        --------
-        >>> time = [1, 2, 3]
-        >>> count = [100, 200, 300]
-        >>> lc = Lightcurve(time, count, dt=1)
-        >>> len(lc)
-        3
-        """
-        return self.n
 
     def __getitem__(self, index):
         """
@@ -827,28 +816,6 @@ class Lightcurve(StingrayTimeseries):
             return lc
         else:
             raise IndexError("The index must be either an integer or a slice " "object !")
-
-    def __eq__(self, other_lc):
-        """
-        Compares two :class:`Lightcurve` objects.
-
-        Light curves are equal only if their counts as well as times at which those counts occur equal.
-
-        Examples
-        --------
-        >>> time = [1, 2, 3]
-        >>> count1 = [100, 200, 300]
-        >>> count2 = [100, 200, 300]
-        >>> lc1 = Lightcurve(time, count1, dt=1)
-        >>> lc2 = Lightcurve(time, count2, dt=1)
-        >>> lc1 == lc2
-        True
-        """
-        if not isinstance(other_lc, Lightcurve):
-            raise ValueError("Lightcurve can only be compared with a Lightcurve Object")
-        if np.allclose(self.time, other_lc.time) and np.allclose(self.counts, other_lc.counts):
-            return True
-        return False
 
     def baseline(self, lam, p, niter=10, offset_correction=False):
         """Calculate the baseline of the light curve, accounting for GTIs.
