@@ -1100,7 +1100,9 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes
         yield cts
 
 
-def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, silent=False):
+def avg_pds_from_iterable(
+    flux_iterable, dt, norm="frac", use_common_mean=True, silent=False, return_subcs=False
+):
     """
     Calculate the average periodogram from an iterable of light curves
 
@@ -1126,6 +1128,8 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
         per-segment basis.
     silent : bool, default False
         Silence the progress bars
+    return_subcs : bool, default False
+        Return all sub spectra from each light curve chunk
 
     Returns
     -------
@@ -1161,6 +1165,10 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
 
     sum_of_photons = 0
     common_variance = None
+    if return_subcs:
+        subcs = []
+        unnorm_subcs = []
+
     for flux in local_show_progress(flux_iterable):
         if flux is None or np.all(flux == 0):
             continue
@@ -1216,6 +1224,10 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
         cross = sum_if_not_none_or_initialize(cross, cs_seg)
         unnorm_cross = sum_if_not_none_or_initialize(unnorm_cross, unnorm_power)
 
+        if return_subcs:
+            subcs.append(cs_seg)
+            unnorm_subcs.append(unnorm_power)
+
         n_ave += 1
 
     # If there were no good intervals, return None
@@ -1238,9 +1250,13 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
 
     # Final normalization (If not done already!)
     if use_common_mean:
-        cross = normalize_periodograms(
-            unnorm_cross, dt, n_bin, common_mean, n_ph=n_ph, norm=norm, variance=common_variance
+        factor = normalize_periodograms(
+            1, dt, n_bin, common_mean, n_ph=n_ph, norm=norm, variance=common_variance
         )
+        cross = unnorm_cross * factor
+        if return_subcs:
+            for i in range(len(subcs)):
+                subcs[i] *= factor
 
     results = Table()
     results["freq"] = freq
@@ -1259,6 +1275,9 @@ def avg_pds_from_iterable(flux_iterable, dt, norm="frac", use_common_mean=True, 
             "segment_size": dt * n_bin,
         }
     )
+    if return_subcs:
+        results.meta["subcs"] = subcs
+        results.meta["unnorm_subcs"] = unnorm_subcs
 
     return results
 
@@ -1428,6 +1447,7 @@ def avg_cs_from_iterables(
     fullspec=False,
     power_type="all",
     return_auxil=False,
+    return_subcs=False,
 ):
     """Calculate the average cross spectrum from an iterable of light curves
 
@@ -1462,6 +1482,8 @@ def avg_cs_from_iterables(
         the real part
     return_auxil : bool, default False
         Return the auxiliary unnormalized PDSs from the two separate channels
+    return_subcs : bool, default False
+        Return all sub spectra from each light curve chunk
 
     Returns
     -------
@@ -1505,6 +1527,10 @@ def avg_cs_from_iterables(
 
     sum_of_photons1 = sum_of_photons2 = 0
     common_variance1 = common_variance2 = common_variance = None
+
+    if return_subcs:
+        subcs = []
+        unnorm_subcs = []
 
     for flux1, flux2 in local_show_progress(zip(flux_iterable1, flux_iterable2)):
         if flux1 is None or flux2 is None or np.all(flux1 == 0) or np.all(flux2 == 0):
@@ -1590,26 +1616,31 @@ def avg_cs_from_iterables(
                 power_type=power_type,
                 variance=variance,
             )
-            p1_seg = normalize_periodograms(
-                unnorm_pd1,
-                dt,
-                n_bin,
-                mean1,
-                n_ph=n_ph1,
-                norm=norm,
-                power_type=power_type,
-                variance=variance1,
-            )
-            p2_seg = normalize_periodograms(
-                unnorm_pd2,
-                dt,
-                n_bin,
-                mean2,
-                n_ph=n_ph2,
-                norm=norm,
-                power_type=power_type,
-                variance=variance2,
-            )
+            if return_auxil:
+                p1_seg = normalize_periodograms(
+                    unnorm_pd1,
+                    dt,
+                    n_bin,
+                    mean1,
+                    n_ph=n_ph1,
+                    norm=norm,
+                    power_type=power_type,
+                    variance=variance1,
+                )
+                p2_seg = normalize_periodograms(
+                    unnorm_pd2,
+                    dt,
+                    n_bin,
+                    mean2,
+                    n_ph=n_ph2,
+                    norm=norm,
+                    power_type=power_type,
+                    variance=variance2,
+                )
+
+        if return_subcs:
+            subcs.append(cs_seg)
+            unnorm_subcs.append(unnorm_power)
 
         # Initialize or accumulate final averaged spectra
         cross = sum_if_not_none_or_initialize(cross, cs_seg)
@@ -1653,8 +1684,8 @@ def avg_cs_from_iterables(
     # Finally, normalize the cross spectrum (only if not already done on an
     # interval-to-interval basis)
     if use_common_mean:
-        cross = normalize_periodograms(
-            unnorm_cross,
+        factor = normalize_periodograms(
+            1,
             dt,
             n_bin,
             common_mean,
@@ -1663,6 +1694,12 @@ def avg_cs_from_iterables(
             variance=common_variance,
             power_type=power_type,
         )
+        cross = unnorm_cross * factor
+
+        if return_subcs:
+            for i in range(len(subcs)):
+                subcs[i] *= factor
+
         if return_auxil:
             pds1 = normalize_periodograms(
                 unnorm_pds1,
@@ -1722,6 +1759,10 @@ def avg_cs_from_iterables(
         results["unnorm_pds1"] = unnorm_pds1
         results["unnorm_pds2"] = unnorm_pds2
 
+    if return_subcs:
+        results["cs_all"] = np.array(subcs)
+        results["unnorm_cs_all"] = np.array(unnorm_subcs)
+
     return results
 
 
@@ -1735,6 +1776,7 @@ def avg_pds_from_events(
     silent=False,
     fluxes=None,
     errors=None,
+    return_subcs=False,
 ):
     """
     Calculate the average periodogram from a list of event times or a light
@@ -1774,6 +1816,8 @@ def avg_pds_from_events(
         Array of counts per bin or fluxes
     errors : float `np.array`, default None
         Array of errors on the fluxes above
+    return_subcs : bool, default False
+        Return all sub spectra from each light curve chunk
 
     Returns
     -------
@@ -1797,7 +1841,12 @@ def avg_pds_from_events(
         times, gti, segment_size, n_bin, fluxes=fluxes, errors=errors
     )
     cross = avg_pds_from_iterable(
-        flux_iterable, dt, norm=norm, use_common_mean=use_common_mean, silent=silent
+        flux_iterable,
+        dt,
+        norm=norm,
+        use_common_mean=use_common_mean,
+        silent=silent,
+        return_subcs=return_subcs,
     )
     if cross is not None:
         cross.meta["gti"] = gti
@@ -1820,6 +1869,7 @@ def avg_cs_from_events(
     errors1=None,
     errors2=None,
     return_auxil=False,
+    return_subcs=False,
 ):
     """
     Calculate the average cross spectrum from a list of event times or a light
@@ -1870,6 +1920,8 @@ def avg_cs_from_events(
         Array of errors on the fluxes on channel 1
     errors2 : float `np.array`, default None
         Array of errors on the fluxes on channel 2
+    return_subcs : bool, default False
+        Return all sub spectra from each light curve chunk
 
     Returns
     -------
@@ -1904,6 +1956,7 @@ def avg_cs_from_events(
         and power_type == "all"
         and not fullspec
         and not return_auxil
+        and not return_subcs
     ):
         results = avg_cs_from_iterables_quick(flux_iterable1, flux_iterable2, dt, norm=norm)
 
