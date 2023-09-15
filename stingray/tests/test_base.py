@@ -244,6 +244,22 @@ class TestStingrayTimeseries:
         assert ts is newts1
         assert ts is not newts0
 
+    def test_what_is_array_and_what_is_not(self):
+        """Test that array_attrs are not confused with other attributes.
+
+        In particular, time, gti and panesapa have the same length. Verify that panesapa is considered
+        an array attribute, but not gti."""
+        ts = StingrayTimeseries(
+            [0, 3],
+            gti=[[0.5, 1.5], [2.5, 3.5]],
+            array_attrs=dict(panesapa=np.asarray([[41, 25], [98, 3]])),
+            dt=1,
+        )
+        array_attrs = ts.array_attrs()
+        assert "panesapa" in array_attrs
+        assert "gti" not in array_attrs
+        assert "time" not in array_attrs
+
     def test_operations(self):
         time = [5, 10, 15]
         count1 = [300, 100, 400]

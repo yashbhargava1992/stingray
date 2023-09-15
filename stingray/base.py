@@ -49,6 +49,8 @@ class StingrayObject(object):
     columns of the table/dataframe, otherwise as metadata.
     """
 
+    not_array_attr: list = []
+
     def __init__(cls, *args, **kwargs) -> None:
         if not hasattr(cls, "main_array_attr"):
             raise RuntimeError(
@@ -71,8 +73,11 @@ class StingrayObject(object):
             for attr in dir(self)
             if (
                 isinstance(getattr(self, attr), Iterable)
-                and np.shape(getattr(self, attr)) == np.shape(main_attr)
+                and not attr == self.main_array_attr
+                and not attr in self.not_array_attr
+                and not isinstance(getattr(self, attr), str)
                 and not attr.startswith("_")
+                and np.shape(getattr(self, attr))[0] == np.shape(main_attr)[0]
             )
         ]
 
@@ -92,8 +97,9 @@ class StingrayObject(object):
             for attr in dir(self)
             if (
                 isinstance(getattr(self, attr), Iterable)
-                and np.shape(getattr(self, attr)) == np.shape(main_attr)
+                and not isinstance(getattr(self, attr), str)
                 and attr.startswith("_")
+                and np.shape(getattr(self, attr))[0] == np.shape(main_attr)[0]
             )
         ]
 
@@ -103,7 +109,7 @@ class StingrayObject(object):
         By array attributes, we mean the ones with a different size and shape
         than ``main_array_attr`` (e.g. ``time`` in ``EventList``)
         """
-        array_attrs = self.array_attrs()
+        array_attrs = self.array_attrs() + [self.main_array_attr]
         return [
             attr
             for attr in dir(self)
@@ -153,7 +159,6 @@ class StingrayObject(object):
 
     def _default_operated_attrs(self):
         operated_attrs = [attr for attr in self.array_attrs() if not attr.endswith("_err")]
-        operated_attrs.remove(self.main_array_attr)
         return operated_attrs
 
     def _default_error_attrs(self):
@@ -177,7 +182,7 @@ class StingrayObject(object):
         (``mjdref``, ``gti``, etc.) are saved into the ``meta`` dictionary.
         """
         data = {}
-        array_attrs = self.array_attrs()
+        array_attrs = self.array_attrs() + [self.main_array_attr]
 
         for attr in array_attrs:
             data[attr] = np.asarray(getattr(self, attr))
@@ -234,7 +239,7 @@ class StingrayObject(object):
         from xarray import Dataset
 
         data = {}
-        array_attrs = self.array_attrs()
+        array_attrs = self.array_attrs() + [self.main_array_attr]
 
         for attr in array_attrs:
             data[attr] = np.asarray(getattr(self, attr))
@@ -292,7 +297,7 @@ class StingrayObject(object):
         from pandas import DataFrame
 
         data = {}
-        array_attrs = self.array_attrs()
+        array_attrs = self.array_attrs() + [self.main_array_attr]
 
         for attr in array_attrs:
             data[attr] = np.asarray(getattr(self, attr))
@@ -492,7 +497,7 @@ class StingrayObject(object):
         if filtered_attrs is None:
             filtered_attrs = all_attrs
         if self.main_array_attr not in filtered_attrs:
-            filtered_attrs.append(self.main_array_attrs)
+            filtered_attrs.append(self.main_array_attr)
 
         if inplace:
             new_ts = self
@@ -691,7 +696,7 @@ class StingrayObject(object):
         for attr in self.meta_attrs():
             setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
 
-        for attr in self.array_attrs():
+        for attr in self.array_attrs() + [self.main_array_attr]:
             setattr(new_ts, attr, getattr(self, attr)[start:stop:step])
 
         return new_ts
@@ -699,6 +704,7 @@ class StingrayObject(object):
 
 class StingrayTimeseries(StingrayObject):
     main_array_attr = "time"
+    not_array_attr = "gti"
 
     def __init__(
         self,
@@ -730,7 +736,6 @@ class StingrayTimeseries(StingrayObject):
                 self.time = np.asarray(time)
             else:
                 self.time = np.asarray(time, dtype=np.longdouble)
-            self.ncounts = self.time.size
         else:
             self.time = None
 
@@ -738,20 +743,12 @@ class StingrayTimeseries(StingrayObject):
             setattr(self, kw, other_kw[kw])
         for kw in array_attrs:
             new_arr = np.asarray(array_attrs[kw])
-            if self.time.size != new_arr.size:
+            if self.time.shape[0] != new_arr.shape[0]:
                 raise ValueError(f"Lengths of time and {kw} must be equal.")
             setattr(self, kw, new_arr)
 
-    @property
-    def gti(self):
-        if self._gti is None:
-            self._gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
-        return self._gti
-
-    @gti.setter
-    def gti(self, value):
-        value = np.asarray(value) if value is not None else None
-        self._gti = value
+        if gti is None and self.time is not None and np.size(self.time) > 0:
+            self.gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
 
     def apply_gtis(self, new_gti=None, inplace: bool = True):
         """

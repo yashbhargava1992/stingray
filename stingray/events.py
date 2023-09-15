@@ -558,7 +558,7 @@ class EventList(StingrayTimeseries):
             all_gti_lists = []
 
             for obj in all_objs:
-                if obj.gti is None and len(obj.time) > 0:
+                if obj.gti is None and obj.time is not None and len(obj.time) > 0:
                     obj.gti = assign_value_if_none(
                         obj.gti,
                         np.asarray([[obj.time[0] - obj.dt / 2, obj.time[-1] + obj.dt / 2]]),
@@ -749,7 +749,7 @@ class EventList(StingrayTimeseries):
         >>> evt is newev1
         True
         """
-        array_attrs = self.array_attrs()
+        array_attrs = self.array_attrs() + ["time"]
 
         if inplace:
             new_ev = self

@@ -396,9 +396,11 @@ class Lightcurve(StingrayTimeseries):
 
     @property
     def n(self):
-        if self._n is None:
-            self._n = self.counts.shape[0]
-        return self._n
+        return self.time.shape[0]
+
+    @n.setter
+    def n(self, value):
+        pass
 
     @property
     def meanrate(self):
