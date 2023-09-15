@@ -53,6 +53,10 @@ class TestAveragedPowerspectrumEvents(object):
 
         cls.leahy_pds_sng = Powerspectrum(cls.lc, dt=cls.dt, norm="leahy")
 
+    def test_save_all(self):
+        cs = AveragedPowerspectrum(self.lc, dt=self.dt, segment_size=1, save_all=True)
+        assert hasattr(cs, "cs_all")
+
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_common_mean_gives_comparable_scatter(self, norm):
         acs = AveragedPowerspectrum(
@@ -1045,6 +1049,7 @@ class TestDynamicalPowerspectrum(object):
         rebin_time = np.array([2.0, 6.0, 10.0])
         rebin_dps = np.array([[0.7962963, 1.16402116, 0.28571429]])
         dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
+        print(dps.dyn_ps)
         new_dps = dps.rebin_time(dt_new=dt_new)
         assert np.allclose(new_dps.time, rebin_time)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
