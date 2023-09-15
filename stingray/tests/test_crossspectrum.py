@@ -892,8 +892,7 @@ class TestCrossspectrum(object):
         assert len(pval[0]) == len(cs_log.power)
 
     def test_pvals_is_numpy_array(self):
-        with pytest.warns(UserWarning, match="Lightcurves do not have same tseg. This means"):
-            cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
+        cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
         # change the powers so that just one exceeds the threshold
         cs.power = np.zeros_like(cs.power) + 2.0
 
@@ -908,8 +907,7 @@ class TestCrossspectrum(object):
         assert pval.shape[0] == 2
 
     def test_fullspec(self):
-        with pytest.warns(UserWarning, match="Lightcurves do not have same tseg. "):
-            csT = Crossspectrum(self.lc1, self.lc2, fullspec=True)
+        csT = Crossspectrum(self.lc1, self.lc2, fullspec=True)
         assert csT.fullspec == True
         assert self.cs.fullspec == False
         assert csT.n == self.cs.n
@@ -934,8 +932,7 @@ class TestAveragedCrossspectrum(object):
         self.lc1 = Lightcurve(time, counts1, gti=[[tstart, tend]], dt=dt)
         self.lc2 = Lightcurve(time, counts2, gti=[[tstart, tend]], dt=dt)
 
-        with pytest.warns(UserWarning, match="The large_data option and the save_all"):
-            self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, save_all=True)
+        self.cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, save_all=True)
 
     @pytest.mark.parametrize("skip_checks", [True, False])
     def test_initialize_empty(self, skip_checks):
@@ -943,11 +940,7 @@ class TestAveragedCrossspectrum(object):
         assert cs.freq is None
 
     def test_save_all(self):
-        with pytest.warns(UserWarning) as record:
-            cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, save_all=True)
-        assert np.any(
-            ["The large_data option and the save_all" in r.message.args[0] for r in record]
-        )
+        cs = AveragedCrossspectrum(self.lc1, self.lc2, segment_size=1, save_all=True)
         assert hasattr(self.cs, "cs_all")
 
     def test_lc_keyword_deprecation(self):
@@ -972,18 +965,6 @@ class TestAveragedCrossspectrum(object):
     def test_no_segment_size(self):
         with pytest.raises(ValueError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2)
-
-    def test_invalid_type_attribute_with_multiple_lcs(self):
-        with pytest.warns(UserWarning) as record:
-            acs_test = AveragedCrossspectrum(
-                [self.lc1, self.lc2], [self.lc2, self.lc1], segment_size=1
-            )
-        acs_test.type = "invalid_type"
-        with pytest.raises(ValueError) as excinfo:
-            assert AveragedCrossspectrum._make_crossspectrum(
-                acs_test, [self.lc1, self.lc2], [self.lc2, self.lc1]
-            )
-        assert "Type of spectrum not recognized" in str(excinfo.value)
 
     def test_different_dt(self):
         time1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]

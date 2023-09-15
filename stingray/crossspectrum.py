@@ -551,6 +551,7 @@ class Crossspectrum(StingrayObject):
         dt=None,
         fullspec=False,
         skip_checks=False,
+        save_all=False,
     ):
         self._type = None
         # for backwards compatibility
@@ -583,7 +584,14 @@ class Crossspectrum(StingrayObject):
 
         if data1 is not None and data2 is not None:
             return self._initialize_from_any_input(
-                data1, data2, dt=dt, norm=norm, power_type=power_type, fullspec=fullspec, gti=gti
+                data1,
+                data2,
+                dt=dt,
+                norm=norm,
+                power_type=power_type,
+                fullspec=fullspec,
+                gti=gti,
+                save_all=save_all,
             )
         raise ValueError("You need to specify two valid input datasets!")
 
@@ -781,7 +789,9 @@ class Crossspectrum(StingrayObject):
         if hasattr(self, "cs_all"):
             cs_all = []
             for c in self.cs_all:
-                cs_all.append(c.rebin(df=df, f=f, method=method))
+                cs_all.append(
+                    rebin_data(self.freq, c, dx_new=df, yerr=None, method=method, dx=self.df)[1]
+                )
             bin_cs.cs_all = cs_all
         if hasattr(self, "pds1"):
             bin_cs.pds1 = self.pds1.rebin(df=df, f=f, method=method)
@@ -971,8 +981,9 @@ class Crossspectrum(StingrayObject):
 
         if hasattr(self, "cs_all"):
             cs_all = []
+
             for c in self.cs_all:
-                cs_all.append(c.rebin_log(f))
+                cs_all.append(rebin_data_log(self.freq, c, f, dx=self.df)[1])
             new_spec.cs_all = cs_all
 
         return new_spec
@@ -1416,6 +1427,9 @@ class Crossspectrum(StingrayObject):
             input object GTIs! If you're getting errors regarding your GTIs,
             don't  use this and only give GTIs to the input objects before
             making the cross spectrum.
+        save_all : bool, default False
+            If True, save the cross spectrum of each segment in the ``cs_all``
+            attribute of the output :class:`Crossspectrum` object.
         """
 
         return crossspectrum_from_lc_iterable(
@@ -1443,6 +1457,7 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         gti=None,
         use_common_mean=True,
+        save_all=False,
     ):
         """Initialize the class, trying to understand the input types.
 
@@ -1463,6 +1478,7 @@ class Crossspectrum(StingrayObject):
                 fullspec=fullspec,
                 use_common_mean=use_common_mean,
                 gti=gti,
+                save_all=save_all,
             )
         elif isinstance(data1, Lightcurve):
             spec = crossspectrum_from_lightcurve(
@@ -1475,6 +1491,7 @@ class Crossspectrum(StingrayObject):
                 fullspec=fullspec,
                 use_common_mean=use_common_mean,
                 gti=gti,
+                save_all=save_all,
             )
             spec.lc1 = data1
             spec.lc2 = data2
@@ -1492,6 +1509,7 @@ class Crossspectrum(StingrayObject):
                 fullspec=fullspec,
                 gti=gti,
                 use_common_mean=use_common_mean,
+                save_all=save_all,
             )
         else:  # pragma: no cover
             raise TypeError(f"Bad inputs to Crosssspectrum: {type(data1)}")
@@ -1650,7 +1668,6 @@ class AveragedCrossspectrum(Crossspectrum):
         lc2=None,
         dt=None,
         fullspec=False,
-        large_data=False,
         save_all=False,
         use_common_mean=True,
         skip_checks=False,
@@ -1662,8 +1679,8 @@ class AveragedCrossspectrum(Crossspectrum):
         if data2 is None:
             data2 = lc2
 
-        good_input = True
-        if not skip_checks:
+        good_input = data1 is not None and data2 is not None
+        if good_input and not skip_checks:
             good_input = self.initial_checks(
                 data1=data1,
                 data2=data2,
@@ -1698,12 +1715,6 @@ class AveragedCrossspectrum(Crossspectrum):
             data1 = list(data1)
             data2 = list(data2)
 
-        # The large_data option requires the legacy interface.
-        if save_all:
-            raise ValueError(
-                "The save_all options are only" "available with the legacy interface (legacy=True)."
-            )
-
         if data1 is not None and data2 is not None:
             return self._initialize_from_any_input(
                 data1,
@@ -1716,6 +1727,7 @@ class AveragedCrossspectrum(Crossspectrum):
                 silent=silent,
                 fullspec=fullspec,
                 use_common_mean=use_common_mean,
+                save_all=save_all,
             )
 
         else:
@@ -1851,6 +1863,7 @@ def crossspectrum_from_time_array(
     silent=False,
     fullspec=False,
     use_common_mean=True,
+    save_all=False,
 ):
     """Calculate AveragedCrossspectrum from two arrays of event times.
 
@@ -1909,6 +1922,7 @@ def crossspectrum_from_time_array(
         silent=silent,
         power_type=power_type,
         return_auxil=True,
+        return_subcs=save_all,
     )
 
     return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
@@ -1925,6 +1939,7 @@ def crossspectrum_from_events(
     fullspec=False,
     use_common_mean=True,
     gti=None,
+    save_all=False,
 ):
     """Calculate AveragedCrossspectrum from two event lists
 
@@ -1983,6 +1998,7 @@ def crossspectrum_from_events(
         silent=silent,
         fullspec=fullspec,
         use_common_mean=use_common_mean,
+        save_all=save_all,
     )
 
 
@@ -1996,6 +2012,7 @@ def crossspectrum_from_lightcurve(
     fullspec=False,
     use_common_mean=True,
     gti=None,
+    save_all=False,
 ):
     """Calculate AveragedCrossspectrum from two light curves
 
@@ -2030,6 +2047,10 @@ def crossspectrum_from_lightcurve(
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
         objects
+    save_all : bool, default False
+        Save all intermediate spectra used for the final average. Use with care.
+        This is likely to fill up your RAM on medium-sized datasets, and to
+        slow down the computation when rebinning.
 
     Returns
     -------
@@ -2063,6 +2084,7 @@ def crossspectrum_from_lightcurve(
         errors1=err1,
         errors2=err2,
         return_auxil=True,
+        return_subcs=save_all,
     )
 
     return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
@@ -2079,6 +2101,7 @@ def crossspectrum_from_lc_iterable(
     fullspec=False,
     use_common_mean=True,
     gti=None,
+    save_all=False,
 ):
     """Calculate AveragedCrossspectrum from two light curves
 
@@ -2160,6 +2183,7 @@ def crossspectrum_from_lc_iterable(
         fullspec=fullspec,
         power_type=power_type,
         return_auxil=True,
+        return_subcs=save_all,
     )
     return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
 
@@ -2208,6 +2232,10 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
     cs.pds2.unnorm_power = np.array(table["unnorm_pds2"])
 
     cs.pds1.type = cs.pds2.type = "powerspectrum"
+
+    if "cs_all" in table.meta:
+        cs.cs_all = np.array(table.meta["cs_all"])
+        cs.unnorm_cs_all = np.array(table.meta["unnorm_cs_all"])
 
     for attr, val in table.meta.items():
         setattr(cs, attr, val)
