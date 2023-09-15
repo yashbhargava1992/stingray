@@ -122,10 +122,7 @@ class Powerspectrum(Crossspectrum):
         if not good_input:
             return self._initialize_empty()
 
-        if data is not None:
-            return self._initialize_from_any_input(data, dt=dt, norm=norm)
-
-        raise ValueError("No valid data provided!")
+        return self._initialize_from_any_input(data, dt=dt, norm=norm)
 
     def rebin(self, df=None, f=None, method="mean"):
         """
@@ -874,17 +871,15 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             )
             data = list(data)
 
-        if data is not None:
-            return self._initialize_from_any_input(
-                data,
-                dt=dt,
-                segment_size=segment_size,
-                norm=norm,
-                silent=silent,
-                use_common_mean=use_common_mean,
-                save_all=save_all,
-            )
-        raise ValueError("No valid input data!")
+        return self._initialize_from_any_input(
+            data,
+            dt=dt,
+            segment_size=segment_size,
+            norm=norm,
+            silent=silent,
+            use_common_mean=use_common_mean,
+            save_all=save_all,
+        )
 
     def initial_checks(self, *args, **kwargs):
         return AveragedCrossspectrum.initial_checks(self, *args, **kwargs)

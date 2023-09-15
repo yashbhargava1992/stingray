@@ -582,18 +582,16 @@ class Crossspectrum(StingrayObject):
         if not good_input:
             return self._initialize_empty()
 
-        if data1 is not None and data2 is not None:
-            return self._initialize_from_any_input(
-                data1,
-                data2,
-                dt=dt,
-                norm=norm,
-                power_type=power_type,
-                fullspec=fullspec,
-                gti=gti,
-                save_all=save_all,
-            )
-        raise ValueError("You need to specify two valid input datasets!")
+        return self._initialize_from_any_input(
+            data1,
+            data2,
+            dt=dt,
+            norm=norm,
+            power_type=power_type,
+            fullspec=fullspec,
+            gti=gti,
+            save_all=save_all,
+        )
 
     def initial_checks(
         self,
@@ -1715,23 +1713,19 @@ class AveragedCrossspectrum(Crossspectrum):
             data1 = list(data1)
             data2 = list(data2)
 
-        if data1 is not None and data2 is not None:
-            return self._initialize_from_any_input(
-                data1,
-                data2,
-                dt=dt,
-                segment_size=segment_size,
-                gti=gti,
-                norm=norm,
-                power_type=power_type,
-                silent=silent,
-                fullspec=fullspec,
-                use_common_mean=use_common_mean,
-                save_all=save_all,
-            )
-
-        else:
-            raise ValueError("You must specify two valid input datasets")
+        return self._initialize_from_any_input(
+            data1,
+            data2,
+            dt=dt,
+            segment_size=segment_size,
+            gti=gti,
+            norm=norm,
+            power_type=power_type,
+            silent=silent,
+            fullspec=fullspec,
+            use_common_mean=use_common_mean,
+            save_all=save_all,
+        )
 
     def initial_checks(self, data1, segment_size=None, **kwargs):
         """
