@@ -252,7 +252,6 @@ class TestAveragedCrossspectrumEvents(object):
             dt=self.dt,
             norm="none",
             silent=True,
-            legacy=legacy,
         )
         power1 = lccs.power.real
         power2 = self.acs.power.real
@@ -908,7 +907,6 @@ class TestCrossspectrum(object):
         assert isinstance(pval, np.ndarray)
         assert pval.shape[0] == 2
 
-    @pytest.mark.parametrize("legacy", [True, False])
     def test_fullspec(self):
         with pytest.warns(UserWarning, match="Lightcurves do not have same tseg. "):
             csT = Crossspectrum(self.lc1, self.lc2, fullspec=True)
