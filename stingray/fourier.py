@@ -1768,8 +1768,8 @@ def avg_cs_from_iterables(
         results["unnorm_pds2"] = unnorm_pds2
 
     if return_subcs:
-        results.meta["cs_all"] = np.array(subcs)
-        results.meta["unnorm_cs_all"] = np.array(unnorm_subcs)
+        results.meta["subcs"] = np.array(subcs)
+        results.meta["unnorm_subcs"] = np.array(unnorm_subcs)
 
     return results
 

@@ -2233,9 +2233,9 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
 
     cs.pds1.type = cs.pds2.type = "powerspectrum"
 
-    if "cs_all" in table.meta:
-        cs.cs_all = np.array(table.meta["cs_all"])
-        cs.unnorm_cs_all = np.array(table.meta["unnorm_cs_all"])
+    if "subcs" in table.meta:
+        cs.cs_all = np.array(table.meta["subcs"])
+        cs.unnorm_cs_all = np.array(table.meta["unnorm_subcs"])
 
     for attr, val in table.meta.items():
         setattr(cs, attr, val)
