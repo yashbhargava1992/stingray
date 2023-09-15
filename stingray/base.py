@@ -24,6 +24,11 @@ if TYPE_CHECKING:
     Tso = TypeVar("Tso", bound="StingrayObject")
 
 
+def sqsum(array1, array2):
+    """Return the square root of the sum of the squares of two arrays."""
+    return np.sqrt(np.add(np.square(array1), np.square(array2)))
+
+
 class StingrayObject(object):
     """This base class defines some general-purpose utilities.
 
@@ -38,7 +43,7 @@ class StingrayObject(object):
     the operations above, with no additional effort.
 
     ``main_array_attr`` is, e.g. ``time`` for :class:`EventList` and
-    :class:`Lightcurve`, ``freq`` for :class:`Crossspectrum`, ``energy`` for
+    :class:`StingrayTimeseries`, ``freq`` for :class:`Crossspectrum`, ``energy`` for
     :class:`VarEnergySpectrum`, and so on. It is the array with wich all other
     attributes are compared: if they are of the same shape, they get saved as
     columns of the table/dataframe, otherwise as metadata.
@@ -67,6 +72,7 @@ class StingrayObject(object):
             if (
                 isinstance(getattr(self, attr), Iterable)
                 and np.shape(getattr(self, attr)) == np.shape(main_attr)
+                and not attr.startswith("_")
             )
         ]
 
@@ -87,10 +93,50 @@ class StingrayObject(object):
                 # self.attribute is not callable, and assigning its value to
                 # the variable attr_value for further checks
                 and not callable(attr_value := getattr(self, attr))
-                # a way to avoid EventLists, Lightcurves, etc.
+                # a way to avoid EventLists, StingrayTimeseriess, etc.
                 and not hasattr(attr_value, "meta_attrs")
             )
         ]
+
+    def __eq__(self, other_ts):
+        """
+        Compares two :class:`StingrayTimeseries` objects.
+
+        Light curves are equal only if their counts as well as times at which those counts occur equal.
+
+        Examples
+        --------
+        >>> time = [1, 2, 3]
+        >>> count1 = [100, 200, 300]
+        >>> count2 = [100, 200, 300]
+        >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), dt=1)
+        >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), dt=1)
+        >>> ts1 == ts2
+        True
+        """
+        if not isinstance(other_ts, type(self)):
+            raise ValueError(f"{type(self)} can only be compared with a {type(self)} Object")
+
+        for attr in self.meta_attrs():
+            if isinstance(getattr(self, attr), np.ndarray):
+                if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
+                    return False
+            else:
+                if not getattr(self, attr) == getattr(other_ts, attr):
+                    return False
+        for attr in self.array_attrs():
+            if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
+                return False
+
+        return True
+
+    def _default_operated_attrs(self):
+        operated_attrs = [attr for attr in self.array_attrs() if not attr.endswith("_err")]
+        operated_attrs.remove(self.main_array_attr)
+        return operated_attrs
+
+    def _default_error_attrs(self):
+        return [attr for attr in self.array_attrs() if attr.endswith("_err")]
 
     def get_meta_dict(self) -> dict:
         """Give a dictionary with all non-None meta attrs of the object."""
@@ -403,6 +449,232 @@ class StingrayObject(object):
         except TypeError:
             ts.write(filename, format=fmt, overwrite=True)
 
+    def apply_mask(self, mask: npt.ArrayLike, inplace: bool = False, filtered_attrs: list = None):
+        """Apply a mask to all array attributes of the time series
+
+        Parameters
+        ----------
+        mask : array of ``bool``
+            The mask. Has to be of the same length as ``self.time``
+
+        Other parameters
+        ----------------
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
+        filtered_attrs : list of str or None
+            Array attributes to be filtered. Defaults to all array attributes if ``None``.
+            The other array attributes will be discarded from the time series to avoid
+            inconsistencies. Time is always included.
+
+        """
+        all_attrs = self.array_attrs()
+        if filtered_attrs is None:
+            filtered_attrs = all_attrs
+        if self.main_array_attr not in filtered_attrs:
+            filtered_attrs.append(self.main_array_attrs)
+
+        if inplace:
+            new_ts = self
+            # Eliminate all unfiltered attributes
+            for attr in all_attrs:
+                if attr not in filtered_attrs:
+                    setattr(new_ts, attr, None)
+        else:
+            new_ts = type(self)()
+            for attr in self.meta_attrs():
+                try:
+                    setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
+                except AttributeError:
+                    continue
+
+        for attr in filtered_attrs:
+            setattr(new_ts, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
+        return new_ts
+
+    def _operation_with_other_obj(
+        self, other, operation, operated_attrs=None, error_attrs=None, error_operation=None
+    ):
+        """
+        Helper method to codify an operation of one light curve with another (e.g. add, subtract, ...).
+        Takes into account the GTIs correctly, and returns a new :class:`StingrayTimeseries` object.
+
+        Parameters
+        ----------
+        other : :class:`StingrayTimeseries` object
+            A second light curve object
+
+        operation : function
+            An operation between the :class:`StingrayTimeseries` object calling this method, and
+            ``other``, operating on all the specified array attributes.
+
+        Other parameters
+        ----------------
+        operated_attrs : list of str or None
+            Array attributes to be operated on. Defaults to all array attributes not ending in
+            ``_err``.
+            The other array attributes will be discarded from the time series to avoid
+            inconsistencies.
+
+        error_attrs : list of str or None
+            Array attributes to be operated on with ``error_operation``. Defaults to all array attributes
+            ending with ``_err``.
+
+        error_operation : function
+            An operation between the :class:`StingrayTimeseries` object calling this method, and
+            ``other``, operating on all the specified array attributes. Defaults to the sum of squares.
+
+        Returns
+        -------
+        lc_new : StingrayTimeseries object
+            The new light curve calculated in ``operation``
+        """
+
+        if operated_attrs is None:
+            operated_attrs = self._default_operated_attrs()
+
+        if error_attrs is None:
+            error_attrs = self._default_error_attrs()
+
+        if not isinstance(other, type(self)):
+            raise TypeError(
+                f"{type(self)} objects can only be operated with other {type(self)} objects."
+            )
+
+        this_time = getattr(self, self.main_array_attr)
+        # ValueError is raised by Numpy while asserting np.equal over arrays
+        # with different dimensions.
+        try:
+            assert np.array_equal(this_time, getattr(other, self.main_array_attr))
+        except (ValueError, AssertionError):
+            raise ValueError(
+                f"The values of {self.main_array_attr} are different in the two {type(self)} objects."
+            )
+
+        lc_new = type(self)()
+        setattr(lc_new, self.main_array_attr, this_time)
+        for attr in self.meta_attrs():
+            setattr(lc_new, attr, copy.deepcopy(getattr(self, attr)))
+
+        for attr in operated_attrs:
+            setattr(
+                lc_new,
+                attr,
+                operation(getattr(self, attr), getattr(other, attr)),
+            )
+
+        for attr in error_attrs:
+            setattr(
+                lc_new,
+                attr,
+                error_operation(getattr(self, attr), getattr(other, attr)),
+            )
+
+        return lc_new
+
+    def __add__(self, other):
+        """
+        Add the array values of two time series element by element, assuming they
+        have the same time array.
+
+        This magic method adds two :class:`TimeSeries` objects having the same time
+        array such that the corresponding array arrays get summed up.
+
+        GTIs are crossed, so that only common intervals are saved.
+        """
+
+        return self._operation_with_other_obj(
+            other,
+            np.add,
+            error_operation=sqsum,
+        )
+
+    def __sub__(self, other):
+        """
+        Subtract the counts/flux of one light curve from the counts/flux of another
+        light curve element by element, assuming the ``time`` arrays of the light curves
+        match exactly.
+
+        This magic method adds two :class:`StingrayTimeSeries` objects having the same
+        ``time`` array and subtracts the ``counts`` of one :class:`StingrayTimeseries` with
+        that of another, while also updating ``countrate``, ``counts_err`` and ``countrate_err``
+        correctly.
+
+        GTIs are crossed, so that only common intervals are saved.
+        """
+
+        return self._operation_with_other_obj(
+            other,
+            np.subtract,
+            error_operation=sqsum,
+        )
+
+    def __neg__(self):
+        """
+        Implement the behavior of negation of the light curve objects.
+        Error attrs are left alone.
+
+        The negation operator ``-`` is supposed to invert the sign of the count
+        values of a light curve object.
+
+        """
+
+        lc_new = copy.deepcopy(self)
+        for attr in self._default_operated_attrs():
+            setattr(lc_new, attr, -np.asarray(getattr(self, attr)))
+
+        return lc_new
+
+    def __len__(self):
+        """
+        Return the number of time bins of a light curve.
+
+        This method implements overrides the ``len`` function for a :class:`StingrayTimeseries`
+        object and returns the length of the ``time`` array (which should be equal to the
+        length of the ``counts`` and ``countrate`` arrays).
+        """
+        return np.size(getattr(self, self.main_array_attr))
+
+    def __getitem__(self, index):
+        """
+        Return the corresponding count value at the index or a new :class:`StingrayTimeseries`
+        object upon slicing.
+
+        This method adds functionality to retrieve the count value at
+        a particular index. This also can be used for slicing and generating
+        a new :class:`StingrayTimeseries` object. GTIs are recalculated based on the new light
+        curve segment
+
+        If the slice object is of kind ``start:stop:step``, GTIs are also sliced,
+        and rewritten as ``zip(time - self.dt /2, time + self.dt / 2)``
+
+        Parameters
+        ----------
+        index : int or slice instance
+            Index value of the time array or a slice object.
+
+        """
+        from .utils import assign_value_if_none
+
+        if isinstance(index, (int, np.integer)):
+            start = index
+            stop = index + 1
+            step = 1
+        elif isinstance(index, slice):
+            start = assign_value_if_none(index.start, 0)
+            stop = assign_value_if_none(index.stop, len(self))
+            step = assign_value_if_none(index.step, 1)
+        else:
+            raise IndexError("The index must be either an integer or a slice " "object !")
+
+        new_ts = type(self)()
+        for attr in self.meta_attrs():
+            setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
+
+        for attr in self.array_attrs():
+            setattr(new_ts, attr, getattr(self, attr)[start:stop:step])
+
+        return new_ts
+
 
 class StingrayTimeseries(StingrayObject):
     main_array_attr = "time"
@@ -424,7 +696,7 @@ class StingrayTimeseries(StingrayObject):
 
         self.notes = notes
         self.mjdref = mjdref
-        self.gti = np.asarray(gti) if gti is not None else None
+        self.gti = gti
         self.ephem = ephem
         self.timeref = timeref
         self.timesys = timesys
@@ -449,65 +721,18 @@ class StingrayTimeseries(StingrayObject):
                 raise ValueError(f"Lengths of time and {kw} must be equal.")
             setattr(self, kw, new_arr)
 
-    def apply_mask(self, mask: npt.ArrayLike, inplace: bool = False, filtered_attrs: list = None):
-        """Apply a mask to all array attributes of the time series
+    @property
+    def gti(self):
+        if self._gti is None:
+            self._gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
+        return self._gti
 
-        Parameters
-        ----------
-        mask : array of ``bool``
-            The mask. Has to be of the same length as ``self.time``
+    @gti.setter
+    def gti(self, value):
+        value = np.asarray(value) if value is not None else None
+        self._gti = value
 
-        Other parameters
-        ----------------
-        inplace : bool
-            If True, overwrite the current light curve. Otherwise, return a new one.
-        filtered_attrs : list of str or None
-            Array attributes to be filtered. Defaults to all array attributes if ``None``.
-            The other array attributes will be discarded from the time series to avoid
-            inconsistencies. Time is always included.
-
-        Examples
-        --------
-        >>> ts = StingrayTimeseries(time=[0, 1, 2], array_attrs={"counts": [2, 3, 4]}, mission="nustar")
-        >>> ts.bubuattr = [222, 111, 333]  # Add another array attr
-        >>> newts0 = ts.apply_mask([True, True, False], inplace=False);
-        >>> newts1 = ts.apply_mask([True, True, False], inplace=True);
-        >>> newts0.mission == "nustar"
-        True
-        >>> np.altslose(newts0.time, [0, 1])
-        True
-        >>> np.altslose(newts0.bubuattr, [222, 111])
-        True
-        >>> np.altslose(newts1.time, [0, 1])
-        True
-        >>> ts is newts1
-        True
-        """
-        all_attrs = self.array_attrs()
-        if filtered_attrs is None:
-            filtered_attrs = all_attrs
-        if "time" not in filtered_attrs:
-            filtered_attrs.append("time")
-
-        if inplace:
-            new_ts = self
-            # Eliminate all unfiltered attributes
-            for attr in all_attrs:
-                if attr not in filtered_attrs:
-                    setattr(new_ts, attr, None)
-        else:
-            new_ts = type(self)()
-            for attr in self.meta_attrs():
-                try:
-                    setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
-                except AttributeError:
-                    continue
-
-        for attr in filtered_attrs:
-            setattr(new_ts, attr, copy.deepcopy(np.asarray(getattr(self, attr)[mask])))
-        return new_ts
-
-    def apply_gtis(self, inplace: bool = True):
+    def apply_gtis(self, new_gti=None, inplace: bool = True):
         """
         Apply GTIs to a light curve. Filters the ``time``, ``counts``,
         ``countrate``, ``counts_err`` and ``countrate_err`` arrays for all bins
@@ -525,11 +750,17 @@ class StingrayTimeseries(StingrayObject):
         # I import here to avoid the risk of circular imports
         from .gti import check_gtis, create_gti_mask
 
-        check_gtis(self.gti)
+        if new_gti is None:
+            new_gti = self.gti
+
+        check_gtis(new_gti)
 
         # This will automatically be recreated from GTIs once I set it to None
-        good = create_gti_mask(self.time, self.gti, dt=self.dt)
+        good = create_gti_mask(self.time, new_gti, dt=self.dt)
         newts = self.apply_mask(good, inplace=inplace)
+        # Important, otherwise addition/subtraction ops will go into an infinite loop
+        if inplace:
+            newts.gti = new_gti
         return newts
 
     def split_by_gti(self, gti=None, min_points=2):
@@ -547,7 +778,7 @@ class StingrayTimeseries(StingrayObject):
         Returns
         -------
         list_of_tss : list
-            A list of :class:`Lightcurve` objects, one for each GTI segment
+            A list of :class:`StingrayTimeseries` objects, one for each GTI segment
         """
         from .gti import gti_border_bins, create_gti_mask
 
@@ -686,7 +917,7 @@ class StingrayTimeseries(StingrayObject):
         ----------
         time_shift: float
             The time interval by which the light curve will be shifted (in
-            the same units as the time array in :class:`Lightcurve`
+            the same units as the time array in :class:`StingrayTimeseries`
 
         Returns
         -------
@@ -700,6 +931,171 @@ class StingrayTimeseries(StingrayObject):
             ts.gti = np.asarray(ts.gti) + time_shift  # type: ignore
 
         return ts
+
+    def _operation_with_other_obj(
+        self, other, operation, operated_attrs=None, error_attrs=None, error_operation=None
+    ):
+        """
+        Helper method to codify an operation of one light curve with another (e.g. add, subtract, ...).
+        Takes into account the GTIs correctly, and returns a new :class:`StingrayTimeseries` object.
+
+        Parameters
+        ----------
+        other : :class:`StingrayTimeseries` object
+            A second light curve object
+
+        operation : function
+            An operation between the :class:`StingrayTimeseries` object calling this method, and
+            ``other``, operating on all the specified array attributes.
+
+        Other parameters
+        ----------------
+        operated_attrs : list of str or None
+            Array attributes to be operated on. Defaults to all array attributes not ending in
+            ``_err``.
+            The other array attributes will be discarded from the time series to avoid
+            inconsistencies.
+
+        error_attrs : list of str or None
+            Array attributes to be operated on with ``error_operation``. Defaults to all array attributes
+            ending with ``_err``.
+
+        error_operation : function
+            An operation between the :class:`StingrayTimeseries` object calling this method, and
+            ``other``, operating on all the specified array attributes. Defaults to the sum of squares.
+
+        Returns
+        -------
+        lc_new : StingrayTimeseries object
+            The new light curve calculated in ``operation``
+        """
+
+        if self.mjdref != other.mjdref:
+            warnings.warn("MJDref is different in the two light curves")
+            other = other.change_mjdref(self.mjdref)
+
+        if not np.array_equal(self.gti, other.gti):
+            from .gti import cross_two_gtis
+
+            common_gti = cross_two_gtis(self.gti, other.gti)
+            masked_self = self.apply_gtis(common_gti)
+            masked_other = other.apply_gtis(common_gti)
+            return masked_self._operation_with_other_obj(
+                masked_other,
+                operation,
+                operated_attrs=operated_attrs,
+                error_attrs=error_attrs,
+                error_operation=error_operation,
+            )
+
+        return super()._operation_with_other_obj(
+            other,
+            operation,
+            operated_attrs=operated_attrs,
+            error_attrs=error_attrs,
+            error_operation=error_operation,
+        )
+        return lc_new
+
+    def __add__(self, other):
+        """
+        Add the array values of two time series element by element, assuming they
+        have the same time array.
+
+        This magic method adds two :class:`TimeSeries` objects having the same time
+        array such that the corresponding array arrays get summed up.
+
+        GTIs are crossed, so that only common intervals are saved.
+
+        Examples
+        --------
+        >>> time = [5, 10, 15]
+        >>> count1 = [300, 100, 400]
+        >>> count2 = [600, 1200, 800]
+        >>> gti1 = [[0, 20]]
+        >>> gti2 = [[0, 25]]
+        >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=5)
+        >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=5)
+        >>> lc = ts1 + ts2
+        >>> np.allclose(lc.counts, [ 900, 1300, 1200])
+        True
+        """
+
+        return super().__add__(other)
+
+    def __sub__(self, other):
+        """
+        Subtract the counts/flux of one light curve from the counts/flux of another
+        light curve element by element, assuming the ``time`` arrays of the light curves
+        match exactly.
+
+        This magic method adds two :class:`StingrayTimeSeries` objects having the same
+        ``time`` array and subtracts the ``counts`` of one :class:`StingrayTimeseries` with
+        that of another, while also updating ``countrate``, ``counts_err`` and ``countrate_err``
+        correctly.
+
+        GTIs are crossed, so that only common intervals are saved.
+
+        Examples
+        --------
+        >>> time = [10, 20, 30]
+        >>> count1 = [600, 1200, 800]
+        >>> count2 = [300, 100, 400]
+        >>> gti1 = [[0, 35]]
+        >>> gti2 = [[5, 40]]
+        >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=10)
+        >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=10)
+        >>> lc = ts1 - ts2
+        >>> np.allclose(lc.counts, [ 300, 1100,  400])
+        True
+        """
+
+        return super().__sub__(other)
+
+    def __getitem__(self, index):
+        """
+        Return the corresponding count value at the index or a new :class:`StingrayTimeseries`
+        object upon slicing.
+
+        This method adds functionality to retrieve the count value at
+        a particular index. This also can be used for slicing and generating
+        a new :class:`StingrayTimeseries` object. GTIs are recalculated based on the new light
+        curve segment
+
+        If the slice object is of kind ``start:stop:step``, GTIs are also sliced,
+        and rewritten as ``zip(time - self.dt /2, time + self.dt / 2)``
+
+        Parameters
+        ----------
+        index : int or slice instance
+            Index value of the time array or a slice object.
+
+        Examples
+        --------
+        >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
+        >>> lc = StingrayTimeseries(time, array_attrs=dict(counts=count), dt=1)
+        >>> np.allclose(lc[2].counts, [33])
+        True
+        >>> np.allclose(lc[:2].counts, [11, 22])
+        True
+        """
+        from .utils import assign_value_if_none
+        from .gti import cross_two_gtis
+
+        new_ts = super().__getitem__(index)
+        step = 1
+        if isinstance(index, slice):
+            step = assign_value_if_none(index.step, 1)
+
+        new_gti = np.asarray([[new_ts.time[0] - 0.5 * self.dt, new_ts.time[-1] + 0.5 * self.dt]])
+        if step > 1:
+            new_gt1 = np.array(list(zip(new_ts.time - self.dt / 2, new_ts.time + self.dt / 2)))
+            new_gti = cross_two_gtis(new_gti, new_gt1)
+        new_gti = cross_two_gtis(self.gti, new_gti)
+
+        new_ts.gti = new_gti
+        return new_ts
 
 
 def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, float]:

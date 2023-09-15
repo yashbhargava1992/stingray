@@ -48,21 +48,6 @@ class BadStingrayObj(StingrayObject):
         StingrayObject.__init__(self)
 
 
-def _check_equal(so, new_so):
-    for attr in set(so.array_attrs() + new_so.array_attrs()):
-        so_attr = at if (at := getattr(so, attr)) is not None else []
-        new_so_attr = at if (at := getattr(new_so, attr)) is not None else []
-        assert np.allclose(so_attr, new_so_attr)
-
-    for attr in set(so.meta_attrs() + new_so.meta_attrs()):
-        so_attr = getattr(so, attr)
-        new_so_attr = getattr(new_so, attr)
-        if isinstance(so_attr, np.ndarray):
-            assert np.allclose(so_attr, new_so_attr)
-        else:
-            assert so_attr == new_so_attr
-
-
 class TestStingrayObject:
     @classmethod
     def setup_class(cls):
@@ -81,6 +66,58 @@ class TestStingrayObject:
         with pytest.raises(RuntimeError):
             BadStingrayObj(self.arr)
 
+    def test_apply_mask(self):
+        ts = copy.deepcopy(self.sting_obj)
+        newts0 = ts.apply_mask([True, True, False], inplace=False)
+        newts1 = ts.apply_mask([True, True, False], inplace=True)
+        assert newts0.parafritus == "bonus!"
+        assert newts1.parafritus == "bonus!"
+        for obj in [newts1, newts0]:
+            assert obj.parafritus == "bonus!"
+            assert np.array_equal(obj.guefus, [4, 5])
+            assert np.array_equal(obj.panesapa, ts.panesapa)
+            assert np.array_equal(obj.pardulas, [3.0 + 1.0j, 2.0j])
+        assert ts is newts1
+        assert ts is not newts0
+
+    def test_operations(self):
+        guefus = [5, 10, 15]
+        count1 = [300, 100, 400]
+        count2 = [600, 1200, 800]
+        ts1 = DummyStingrayObj(guefus)
+        ts2 = DummyStingrayObj(guefus)
+        ts1.counts = count1
+        ts2.counts = count2
+        lc = ts1 + ts2  # Test __add__
+        assert np.allclose(lc.counts, [900, 1300, 1200])
+        assert np.array_equal(lc.guefus, guefus)
+        lc = ts1 - ts2  # Test __sub__
+        assert np.allclose(lc.counts, [-300, -1100, -400])
+        assert np.array_equal(lc.guefus, guefus)
+        lc = -ts2 + ts1  # Test __neg__
+        assert np.allclose(lc.counts, [-300, -1100, -400])
+        assert np.array_equal(lc.guefus, guefus)
+
+    def test_len(self):
+        assert len(self.sting_obj) == 3
+
+    def test_slice(self):
+        ts1 = self.sting_obj
+        ts_filt = ts1[1]
+        assert np.array_equal(ts_filt.guefus, [5])
+        assert ts_filt.parafritus == "bonus!"
+        assert np.array_equal(ts_filt.panesapa, ts1.panesapa)
+        assert np.array_equal(ts_filt.pardulas, [2.0j])
+
+        ts_filt = ts1[:2]
+        assert np.array_equal(ts_filt.guefus, [4, 5])
+        assert ts_filt.parafritus == "bonus!"
+        assert np.array_equal(ts_filt.panesapa, ts1.panesapa)
+        assert np.array_equal(ts_filt.pardulas, [3.0 + 1.0j, 2.0j])
+
+        with pytest.raises(IndexError, match="The index must be either an integer or a slice"):
+            ts1[1.0]
+
     def test_side_effects(self):
         so = copy.deepcopy(self.sting_obj)
         assert np.allclose(so.guefus, [4, 5, 2])
@@ -97,7 +134,7 @@ class TestStingrayObject:
         so.stingattr = DummyStingrayObj([3, 4, 5])
         ts = so.to_astropy_table()
         new_so = DummyStingrayObj.from_astropy_table(ts)
-        _check_equal(so, new_so)
+        assert so == new_so
         assert not hasattr(new_so, "stingattr")
 
     @pytest.mark.skipif("not _HAS_XARRAY")
@@ -108,7 +145,7 @@ class TestStingrayObject:
         ts = so.to_xarray()
         new_so = DummyStingrayObj.from_xarray(ts)
 
-        _check_equal(so, new_so)
+        assert so == new_so
 
     @pytest.mark.skipif("not _HAS_PANDAS")
     def test_pandas_roundtrip(self):
@@ -118,7 +155,7 @@ class TestStingrayObject:
         ts = so.to_pandas()
         new_so = DummyStingrayObj.from_pandas(ts)
 
-        _check_equal(so, new_so)
+        assert so == new_so
 
     def test_astropy_roundtrip_empty(self):
         # Set an attribute to a DummyStingrayObj. It will *not* be saved
@@ -150,7 +187,7 @@ class TestStingrayObject:
         new_so = so.read("dummy.hdf5")
         os.unlink("dummy.hdf5")
 
-        _check_equal(so, new_so)
+        assert so == new_so
 
     def test_file_roundtrip_fits(self):
         so = copy.deepcopy(self.sting_obj)
@@ -162,7 +199,7 @@ class TestStingrayObject:
         # panesapa is invalid for FITS header and got lost
         assert not hasattr(new_so, "panesapa")
         new_so.panesapa = so.panesapa
-        _check_equal(so, new_so)
+        assert so == new_so
 
     @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv"])
     def test_file_roundtrip(self, fmt):
@@ -173,7 +210,7 @@ class TestStingrayObject:
         new_so = DummyStingrayObj.read(f"dummy.{fmt}", fmt=fmt)
         os.unlink(f"dummy.{fmt}")
 
-        _check_equal(so, new_so)
+        assert so == new_so
 
 
 class TestStingrayTimeseries:
@@ -190,6 +227,69 @@ class TestStingrayTimeseries:
             gti=np.asarray([[-0.5, 10.5]]),
         )
         cls.sting_obj = sting_obj
+
+    def test_apply_mask(self):
+        ts = copy.deepcopy(self.sting_obj)
+        mask = [True, True] + 8 * [False]
+        newts0 = ts.apply_mask(mask, inplace=False)
+        newts1 = ts.apply_mask(mask, inplace=True)
+        for obj in [newts1, newts0]:
+            for attr in ["parafritus", "mjdref"]:
+                assert getattr(obj, attr) == getattr(ts, attr)
+            for attr in ["panesapa", "gti"]:
+                assert np.array_equal(getattr(obj, attr), getattr(ts, attr))
+
+            assert np.array_equal(obj.guefus, [2, 3])
+            assert np.array_equal(obj.time, [0, 1])
+        assert ts is newts1
+        assert ts is not newts0
+
+    def test_operations(self):
+        time = [5, 10, 15]
+        count1 = [300, 100, 400]
+        count2 = [600, 1200, 800]
+        ts1 = StingrayTimeseries(time=time)
+        ts2 = StingrayTimeseries(time=time)
+        ts1.counts = count1
+        ts2.counts = count2
+        lc = ts1 + ts2  # Test __add__
+        assert np.allclose(lc.counts, [900, 1300, 1200])
+        assert np.array_equal(lc.time, time)
+        lc = ts1 - ts2  # Test __sub__
+        assert np.allclose(lc.counts, [-300, -1100, -400])
+        assert np.array_equal(lc.time, time)
+        lc = -ts2 + ts1  # Test __neg__
+        assert np.allclose(lc.counts, [-300, -1100, -400])
+        assert np.array_equal(lc.time, time)
+
+    def test_sub_with_gti(self):
+        time = [10, 20, 30]
+        count1 = [600, 1200, 800]
+        count2 = [300, 100, 400]
+        gti1 = [[0, 35]]
+        gti2 = [[5, 40]]
+        ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=10)
+        ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=10)
+        lc = ts1 - ts2
+        assert np.allclose(lc.counts, [300, 1100, 400])
+
+    def test_len(self):
+        assert len(self.sting_obj) == 10
+
+    def test_slice(self):
+        ts1 = self.sting_obj
+        ts_filt = ts1[1]
+        assert np.array_equal(ts_filt.guefus, [3])
+        assert ts_filt.parafritus == "bonus!"
+        assert np.array_equal(ts_filt.panesapa, ts1.panesapa)
+
+        ts_filt = ts1[:2]
+        assert np.array_equal(ts_filt.guefus, [2, 3])
+        assert ts_filt.parafritus == "bonus!"
+        assert np.array_equal(ts_filt.panesapa, ts1.panesapa)
+
+        with pytest.raises(IndexError, match="The index must be either an integer or a slice"):
+            ts1[1.0]
 
     @pytest.mark.parametrize("inplace", [True, False])
     def test_apply_gti(self, inplace):
@@ -246,13 +346,13 @@ class TestStingrayTimeseries:
         so = copy.deepcopy(self.sting_obj)
         ts = so.to_astropy_table()
         new_so = StingrayTimeseries.from_astropy_table(ts)
-        _check_equal(so, new_so)
+        assert so == new_so
 
     def test_astropy_ts_roundtrip(self):
         so = copy.deepcopy(self.sting_obj)
         ts = so.to_astropy_timeseries()
         new_so = StingrayTimeseries.from_astropy_timeseries(ts)
-        _check_equal(so, new_so)
+        assert so == new_so
 
     def test_shift_time(self):
         new_so = self.sting_obj.shift(1)
@@ -283,13 +383,13 @@ class TestStingrayTimeseriesSubclass:
         # Set an attribute to a DummyStingrayObj. It will *not* be saved
         ts = so.to_astropy_table()
         new_so = DummyStingrayTs.from_astropy_table(ts)
-        _check_equal(so, new_so)
+        assert so == new_so
 
     def test_astropy_ts_roundtrip(self):
         so = copy.deepcopy(self.sting_obj)
         ts = so.to_astropy_timeseries()
         new_so = DummyStingrayTs.from_astropy_timeseries(ts)
-        _check_equal(so, new_so)
+        assert so == new_so
 
     def test_shift_time(self):
         new_so = self.sting_obj.shift(1)
