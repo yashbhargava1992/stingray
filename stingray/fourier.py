@@ -1684,8 +1684,8 @@ def avg_cs_from_iterables(
     # Finally, normalize the cross spectrum (only if not already done on an
     # interval-to-interval basis)
     if use_common_mean:
-        factor = normalize_periodograms(
-            1,
+        cross = normalize_periodograms(
+            unnorm_cross,
             dt,
             n_bin,
             common_mean,
@@ -1694,11 +1694,19 @@ def avg_cs_from_iterables(
             variance=common_variance,
             power_type=power_type,
         )
-        cross = unnorm_cross * factor
 
         if return_subcs:
             for i in range(len(subcs)):
-                subcs[i] *= factor
+                subcs[i] = normalize_periodograms(
+                    unnorm_subcs[i],
+                    dt,
+                    n_bin,
+                    common_mean,
+                    n_ph=n_ph,
+                    norm=norm,
+                    variance=common_variance,
+                    power_type=power_type,
+                )
 
         if return_auxil:
             pds1 = normalize_periodograms(
@@ -1760,8 +1768,8 @@ def avg_cs_from_iterables(
         results["unnorm_pds2"] = unnorm_pds2
 
     if return_subcs:
-        results["cs_all"] = np.array(subcs)
-        results["unnorm_cs_all"] = np.array(unnorm_subcs)
+        results.meta["cs_all"] = np.array(subcs)
+        results.meta["unnorm_cs_all"] = np.array(unnorm_subcs)
 
     return results
 
@@ -1971,7 +1979,9 @@ def avg_cs_from_events(
             fullspec=fullspec,
             power_type=power_type,
             return_auxil=return_auxil,
+            return_subcs=return_subcs,
         )
+
     if results is not None:
         results.meta["gti"] = gti
     return results
