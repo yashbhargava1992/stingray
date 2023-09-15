@@ -22,4 +22,3 @@ if not _ASTROPY_SETUP_:
     from stingray.stats import *
     from stingray.bispectrum import *
     from stingray.varenergyspectrum import *
-    from stingray.largememory import *

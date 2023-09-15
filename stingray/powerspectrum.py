@@ -10,9 +10,7 @@ import scipy.stats
 import stingray.utils as utils
 from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
 from stingray.gti import bin_intervals_from_gtis, check_gtis
-from stingray.largememory import createChunkedSpectra, saveData, HAS_ZARR
 from stingray.stats import pds_probability, amplitude_upper_limit
-from stingray.utils import genDataPath
 
 from .events import EventList
 from .gti import cross_two_gtis
@@ -770,10 +768,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     dt: float
         The time resolution of the light curve. Only needed when constructing
         light curves in the case where data is of :class:EventList.
-
-    large_data : bool, default False
-        Use only for data larger than 10**7 data points!! Uses zarr and dask
-        for computation.
 
     save_all : bool, default False
         Save all intermediate PDSs used for the final average. Use with care.

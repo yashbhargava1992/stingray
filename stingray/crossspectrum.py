@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 
 from stingray.exceptions import StingrayError
 from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
-from stingray.largememory import createChunkedSpectra, saveData, HAS_ZARR
-from stingray.utils import genDataPath, rebin_data, rebin_data_log, simon
+from stingray.utils import rebin_data, rebin_data_log, simon
 
 from .base import StingrayObject
 from .events import EventList
@@ -1580,10 +1579,6 @@ class AveragedCrossspectrum(Crossspectrum):
     fullspec: boolean, optional, default ``False``
         If True, return the full array of frequencies, otherwise return just the
         positive frequencies.
-
-    large_data : bool, default False
-        Use only for input *light curves* larger than :math:`10^7` data points.
-        Uses zarr and dask for computation.
 
     save_all : bool, default False
         Save all intermediate PDSs used for the final average. Use with care.
