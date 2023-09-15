@@ -76,6 +76,27 @@ class StingrayObject(object):
             )
         ]
 
+    def internal_array_attrs(self) -> list[str]:
+        """List the names of the array attributes of the Stingray Object.
+
+        By array attributes, we mean the ones with the same size and shape as
+        ``main_array_attr`` (e.g. ``time`` in ``EventList``)
+        """
+
+        main_attr = getattr(self, getattr(self, "main_array_attr"))
+        if main_attr is None:
+            return []
+
+        return [
+            attr
+            for attr in dir(self)
+            if (
+                isinstance(getattr(self, attr), Iterable)
+                and np.shape(getattr(self, attr)) == np.shape(main_attr)
+                and attr.startswith("_")
+            )
+        ]
+
     def meta_attrs(self) -> list[str]:
         """List the names of the meta attributes of the Stingray Object.
 
