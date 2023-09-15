@@ -100,16 +100,9 @@ class Powerspectrum(Crossspectrum):
     nphots: float
         The total number of photons in the light curve.
 
-    legacy: bool
-        Use the legacy machinery of ``AveragedPowerspectrum``. This might be
-        useful to compare with old results, and is also needed to use light
-        curve lists as an input, to conserve the spectra of each segment, or
-        to use the large_data option.
     """
 
-    def __init__(
-        self, data=None, norm="frac", gti=None, dt=None, lc=None, skip_checks=False, legacy=False
-    ):
+    def __init__(self, data=None, norm="frac", gti=None, dt=None, lc=None, skip_checks=False):
         self._type = None
         if lc is not None:
             warnings.warn(
@@ -131,14 +124,10 @@ class Powerspectrum(Crossspectrum):
         if not good_input:
             return self._initialize_empty()
 
-        if not legacy and data is not None:
+        if not data is not None:
             return self._initialize_from_any_input(data, dt=dt, norm=norm)
 
-        Crossspectrum.__init__(
-            self, data1=data, data2=data, norm=norm, gti=gti, dt=dt, skip_checks=True, legacy=legacy
-        )
-        self.nphots = self.nphots1
-        self.dt = dt
+        raise ValueError("No valid data provided!")
 
     def rebin(self, df=None, f=None, method="mean"):
         """
@@ -827,11 +816,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     nphots: float
         The total number of photons in the light curve.
 
-    legacy: bool
-        Use the legacy machinery of ``AveragedPowerspectrum``. This might be
-        useful to compare with old results, and is also needed to use light
-        curve lists as an input, to conserve the spectra of each segment, or to
-        use the large_data option.
     """
 
     def __init__(
@@ -847,7 +831,6 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         save_all=False,
         skip_checks=False,
         use_common_mean=True,
-        legacy=False,
     ):
         self._type = None
         if lc is not None:
@@ -894,15 +877,14 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
             data = list(data)
 
         # The large_data option requires the legacy interface.
-        if (large_data or save_all) and not legacy:
+        if save_all:
             warnings.warn(
-                "The large_data option and the save_all options are"
+                "The save_all options are"
                 " only available with the legacy interface"
                 " (legacy=True)."
             )
-            legacy = True
 
-        if not legacy and data is not None:
+        if data is not None:
             return self._initialize_from_any_input(
                 data,
                 dt=dt,
@@ -911,129 +893,10 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
                 silent=silent,
                 use_common_mean=use_common_mean,
             )
-
-        if large_data and data is not None:
-            if not HAS_ZARR:
-                raise ImportError("The large_data option requires zarr.")
-            chunks = None
-
-            if isinstance(data, EventList):
-                input_data = "EventList"
-            elif isinstance(data, Lightcurve):
-                input_data = "Lightcurve"
-                chunks = int(np.rint(segment_size // data.dt))
-                segment_size = chunks * data.dt
-            else:
-                raise ValueError(f"Invalid input data type: {type(data).__name__}")
-
-            dir_path = saveData(data, persist=False, chunks=chunks)
-
-            data_path = genDataPath(dir_path)
-            spec = createChunkedSpectra(
-                input_data,
-                "AveragedPowerspectrum",
-                data_path=data_path,
-                segment_size=segment_size,
-                norm=norm,
-                gti=gti,
-                power_type=None,
-                silent=silent,
-                dt=dt,
-            )
-            for key, val in spec.__dict__.items():
-                setattr(self, key, val)
-
-            return
-
-        if isinstance(data, EventList):
-            lengths = data.gti[:, 1] - data.gti[:, 0]
-            good = lengths >= segment_size
-            data.gti = data.gti[good]
-
-        Powerspectrum.__init__(self, data, norm, gti=gti, dt=dt, skip_checks=True, legacy=legacy)
-
-        return
+        raise ValueError("No valid input data!")
 
     def initial_checks(self, *args, **kwargs):
         return AveragedCrossspectrum.initial_checks(self, *args, **kwargs)
-
-    def _make_segment_spectrum(self, lc, segment_size, silent=False):
-        """
-        Split the light curves into segments of size ``segment_size``, and
-        calculate a power spectrum for each.
-
-        Parameters
-        ----------
-        lc  : :class:`stingray.Lightcurve` objects
-            The input light curve.
-
-        segment_size : ``numpy.float``
-            Size of each light curve segment to use for averaging.
-
-        Other parameters
-        ----------------
-        silent : bool, default False
-            Suppress progress bars.
-
-        Returns
-        -------
-        power_all : list of :class:`Powerspectrum` objects
-            A list of power spectra calculated independently from each light
-            curve segment.
-
-        nphots_all : ``numpy.ndarray``
-            List containing the number of photons for all segments calculated
-            from ``lc``.
-        """
-        if not isinstance(lc, Lightcurve):
-            raise TypeError("lc must be a Lightcurve object")
-
-        current_gtis = lc.gti
-
-        if self.gti is None:
-            self.gti = lc.gti
-        else:
-            if not np.allclose(lc.gti, self.gti):
-                self.gti = np.vstack([self.gti, lc.gti])
-
-        check_gtis(self.gti)
-
-        start_inds, end_inds = bin_intervals_from_gtis(
-            current_gtis, segment_size, lc.time, dt=lc.dt
-        )
-
-        power_all = []
-        nphots_all = []
-
-        local_show_progress = show_progress
-        if not self.show_progress or silent:
-
-            def local_show_progress(a):
-                return a
-
-        for start_ind, end_ind in local_show_progress(zip(start_inds, end_inds)):
-            time = lc.time[start_ind:end_ind]
-            counts = lc.counts[start_ind:end_ind]
-            counts_err = lc.counts_err[start_ind:end_ind]
-
-            if np.sum(counts) == 0:
-                warnings.warn("No counts in interval {}--{}s".format(time[0], time[-1]))
-                continue
-
-            lc_seg = Lightcurve(
-                time,
-                counts,
-                err=counts_err,
-                err_dist=lc.err_dist.lower(),
-                skip_checks=True,
-                dt=lc.dt,
-            )
-
-            power_seg = Powerspectrum(lc_seg, norm=self.norm)
-            power_all.append(power_seg)
-            nphots_all.append(np.sum(lc_seg.counts))
-
-        return power_all, nphots_all
 
 
 class DynamicalPowerspectrum(AveragedPowerspectrum):
