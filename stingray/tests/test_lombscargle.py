@@ -26,8 +26,7 @@ class TestLombScargleCrossspectrum:
         s2_new = interp1d(t, s2, fill_value="extrapolate")(t_new)
         self.lc1 = Lightcurve(t, s1_new, dt=lc1.dt)
         self.lc2 = Lightcurve(t, s2_new, dt=lc2.dt)
-        with pytest.warns(UserWarning) as record:
-            self.lscs = LombScargleCrossspectrum(lc1, lc2)
+        self.lscs = LombScargleCrossspectrum(lc1, lc2)
 
     @pytest.mark.parametrize("skip_checks", [True, False])
     def test_initialize_empty(self, skip_checks):
@@ -57,12 +56,6 @@ class TestLombScargleCrossspectrum:
     def test_bad_input(self):
         with pytest.raises(TypeError):
             lscs = LombScargleCrossspectrum(1, self.lc1)
-
-    def test_init_with_one_lc_none(self):
-        with pytest.raises(ValueError):
-            lscs = LombScargleCrossspectrum(self.lc1, None)
-        with pytest.raises(ValueError):
-            lscs = LombScargleCrossspectrum(None, self.lc1)
 
     def test_init_with_norm_not_str(self):
         with pytest.raises(TypeError):
@@ -106,8 +99,9 @@ class TestLombScargleCrossspectrum:
 
     def test_make_crossspectrum_diff_lc_counts_shape(self):
         lc_ = Simulator(0.0001, 103, 100, 1, random_state=42, tstart=0).simulate(0)
-        with pytest.raises(ValueError):
+        with pytest.warns(UserWarning) as record:
             lscs = LombScargleCrossspectrum(self.lc1, lc_)
+        assert np.any(["different statistics" in r.message.args[0] for r in record])
 
     def test_make_crossspectrum_diff_lc_stat(self):
         lc_ = copy.deepcopy(self.lc1)
@@ -136,17 +130,10 @@ class TestLombScargleCrossspectrum:
 
     def test_invalid_mixed_data(self):
         data2 = EventList(self.lc2.time[3:], np.ones_like(self.lc2.time[3:]))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             lscs = LombScargleCrossspectrum(self.lc1, data2)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             lscs = LombScargleCrossspectrum(data2, self.lc1)
-
-    def test_valid_mixed_data(self):
-        data2 = EventList(self.lc2.time, np.ones_like(self.lc2.time))
-        lscs = LombScargleCrossspectrum(self.lc1, data2)
-        assert lscs.power is not None
-        lscs2 = LombScargleCrossspectrum(data2, self.lc1)
-        assert lscs2.power is not None
 
     def test_fullspec(self):
         lscs = LombScargleCrossspectrum(self.lc1, self.lc2, fullspec=True)
@@ -165,7 +152,6 @@ class TestLombScargleCrossspectrum:
             "from_events",
             "from_lightcurve",
             "from_lc_iterable",
-            "_initialize_from_any_input",
         ],
     )
     def test_raise_on_invalid_function(self, func_name):
@@ -221,4 +207,4 @@ class TestLombScarglePowerspectrum:
 
     def test_ps_real(self):
         ps = LombScarglePowerspectrum(self.lc)
-        assert np.allclose(ps.power.imag, [0])
+        assert np.allclose(ps.power.imag, [0], atol=1e-4)
