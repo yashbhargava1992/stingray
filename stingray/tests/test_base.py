@@ -54,6 +54,7 @@ class TestStingrayObject:
         cls.arr = [4, 5, 2]
         sting_obj = DummyStingrayObj(cls.arr)
         sting_obj.pardulas = [3.0 + 1.0j, 2.0j, 1.0 + 0.0j]
+        sting_obj.sebadas = [[0, 1], [2, 3], [4, 5]]
         sting_obj.pirichitus = 4
         sting_obj.parafritus = "bonus!"
         sting_obj.panesapa = [[41, 25], [98, 3]]
@@ -144,7 +145,6 @@ class TestStingrayObject:
         so.guefus = np.random.randint(0, 4, 3)
         ts = so.to_xarray()
         new_so = DummyStingrayObj.from_xarray(ts)
-
         assert so == new_so
 
     @pytest.mark.skipif("not _HAS_PANDAS")
@@ -154,7 +154,8 @@ class TestStingrayObject:
         so.guefus = np.random.randint(0, 4, 3)
         ts = so.to_pandas()
         new_so = DummyStingrayObj.from_pandas(ts)
-
+        # assert not hasattr(new_so, "sebadas")
+        # new_so.sebadas = so.sebadas
         assert so == new_so
 
     def test_astropy_roundtrip_empty(self):

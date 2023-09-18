@@ -245,7 +245,7 @@ class StingrayObject(object):
             new_data = np.asarray(getattr(self, attr))
             ndim = len(np.shape(new_data))
             if ndim > 1:
-                new_data = ([attr + f"_{i}" for i in range(ndim)], new_data)
+                new_data = ([attr + f"_dim{i}" for i in range(ndim)], new_data)
             data[attr] = new_data
 
         ts = Dataset(data)
@@ -274,19 +274,20 @@ class StingrayObject(object):
             # return an empty object
             return cls
 
-        array_attrs = ts.coords
-
         # Set the main attribute first
         mainarray = np.array(ts[cls.main_array_attr])  # type: ignore
         setattr(cls, cls.main_array_attr, mainarray)  # type: ignore
 
-        for attr in array_attrs:
-            if attr == cls.main_array_attr:  # type: ignore
-                continue
-            setattr(cls, attr, np.array(ts[attr]))
+        all_array_attrs = []
+        for array_attrs in [ts.coords, ts.data_vars]:
+            for attr in array_attrs:
+                all_array_attrs.append(attr)
+                if attr == cls.main_array_attr:  # type: ignore
+                    continue
+                setattr(cls, attr, np.array(ts[attr]))
 
         for key, val in ts.attrs.items():
-            if key not in array_attrs:
+            if key not in all_array_attrs:
                 setattr(cls, key, val)
 
         return cls
@@ -299,12 +300,19 @@ class StingrayObject(object):
         (``mjdref``, ``gti``, etc.) are saved into the ``ds.attrs`` dictionary.
         """
         from pandas import DataFrame
+        from .utils import make_nd_into_arrays
 
         data = {}
         array_attrs = self.array_attrs() + [self.main_array_attr]
 
         for attr in array_attrs:
-            data[attr] = np.asarray(getattr(self, attr))
+            values = np.asarray(getattr(self, attr))
+            ndim = len(np.shape(values))
+            if ndim > 1:
+                local_data = make_nd_into_arrays(values, attr)
+            else:
+                local_data = {attr: values}
+            data.update(local_data)
 
         ts = DataFrame(data)
 
@@ -327,6 +335,9 @@ class StingrayObject(object):
         ``time``, ``pi``, etc. for ``EventList``)
 
         """
+        import re
+        from .utils import make_1d_arrays_into_nd
+
         cls = cls()
 
         if len(ts) == 0:
@@ -339,10 +350,16 @@ class StingrayObject(object):
         mainarray = np.array(ts[cls.main_array_attr])  # type: ignore
         setattr(cls, cls.main_array_attr, mainarray)  # type: ignore
 
+        nd_attrs = []
         for attr in array_attrs:
             if attr == cls.main_array_attr:  # type: ignore
                 continue
+            if "_dim" in attr:
+                nd_attrs.append(re.sub("_dim[0-9].*", "", attr))
+
             setattr(cls, attr, np.array(ts[attr]))
+        for attr in list(set(nd_attrs)):
+            setattr(cls, attr, make_1d_arrays_into_nd(ts, attr))
 
         for key, val in ts.attrs.items():
             if key not in array_attrs:
@@ -469,7 +486,7 @@ class StingrayObject(object):
         ts = self.to_astropy_table()
         if fmt is None or "ascii" in fmt:
             for col in ts.colnames:
-                if np.iscomplex(ts[col][0]):
+                if np.iscomplex(ts[col].flatten()[0]):
                     ts[f"{col}.real"] = ts[col].real
                     ts[f"{col}.imag"] = ts[col].imag
                     ts.remove_column(col)
