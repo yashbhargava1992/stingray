@@ -43,7 +43,7 @@ class StingrayObject(object):
     the operations above, with no additional effort.
 
     ``main_array_attr`` is, e.g. ``time`` for :class:`EventList` and
-    :class:`StingrayTimeseries`, ``freq`` for :class:`Crossspectrum`, ``energy`` for
+    :class:`Lightcurve`, ``freq`` for :class:`Crossspectrum`, ``energy`` for
     :class:`VarEnergySpectrum`, and so on. It is the array with wich all other
     attributes are compared: if they are of the same shape, they get saved as
     columns of the table/dataframe, otherwise as metadata.
@@ -120,7 +120,7 @@ class StingrayObject(object):
                 # self.attribute is not callable, and assigning its value to
                 # the variable attr_value for further checks
                 and not callable(attr_value := getattr(self, attr))
-                # a way to avoid EventLists, StingrayTimeseriess, etc.
+                # a way to avoid EventLists, Lightcurves, etc.
                 and not hasattr(attr_value, "meta_attrs")
             )
         ]
@@ -129,7 +129,8 @@ class StingrayObject(object):
         """
         Compares two :class:`StingrayTimeseries` objects.
 
-        Light curves are equal only if their counts as well as times at which those counts occur equal.
+        All attributes containing are compared. In particular, all array attributes
+        and meta attributes are compared.
 
         Examples
         --------
@@ -507,7 +508,7 @@ class StingrayObject(object):
         Other parameters
         ----------------
         inplace : bool
-            If True, overwrite the current light curve. Otherwise, return a new one.
+            If True, overwrite the current time series. Otherwise, return a new one.
         filtered_attrs : list of str or None
             Array attributes to be filtered. Defaults to all array attributes if ``None``.
             The other array attributes will be discarded from the time series to avoid
@@ -542,13 +543,13 @@ class StingrayObject(object):
         self, other, operation, operated_attrs=None, error_attrs=None, error_operation=None
     ):
         """
-        Helper method to codify an operation of one light curve with another (e.g. add, subtract, ...).
+        Helper method to codify an operation of one time series with another (e.g. add, subtract, ...).
         Takes into account the GTIs correctly, and returns a new :class:`StingrayTimeseries` object.
 
         Parameters
         ----------
         other : :class:`StingrayTimeseries` object
-            A second light curve object
+            A second time series object
 
         operation : function
             An operation between the :class:`StingrayTimeseries` object calling this method, and
@@ -573,7 +574,7 @@ class StingrayObject(object):
         Returns
         -------
         lc_new : StingrayTimeseries object
-            The new light curve calculated in ``operation``
+            The new time series calculated in ``operation``
         """
 
         if operated_attrs is None:
@@ -620,11 +621,11 @@ class StingrayObject(object):
 
     def __add__(self, other):
         """
-        Add the array values of two time series element by element, assuming they
-        have the same time array.
+        Add the array values of two time series element by element, assuming the ``time`` arrays
+        of the time series match exactly.
 
-        This magic method adds two :class:`TimeSeries` objects having the same time
-        array such that the corresponding array arrays get summed up.
+        All array attrs ending with ``_err`` are treated as error bars and propagated with the
+        sum of squares.
 
         GTIs are crossed, so that only common intervals are saved.
         """
@@ -637,14 +638,12 @@ class StingrayObject(object):
 
     def __sub__(self, other):
         """
-        Subtract the counts/flux of one light curve from the counts/flux of another
-        light curve element by element, assuming the ``time`` arrays of the light curves
+        Subtract *all the array attrs* of one time series from the ones of another
+        time series element by element, assuming the ``time`` arrays of the time series
         match exactly.
 
-        This magic method adds two :class:`StingrayTimeSeries` objects having the same
-        ``time`` array and subtracts the ``counts`` of one :class:`StingrayTimeseries` with
-        that of another, while also updating ``countrate``, ``counts_err`` and ``countrate_err``
-        correctly.
+        All array attrs ending with ``_err`` are treated as error bars and propagated with the
+        sum of squares.
 
         GTIs are crossed, so that only common intervals are saved.
         """
@@ -657,11 +656,11 @@ class StingrayObject(object):
 
     def __neg__(self):
         """
-        Implement the behavior of negation of the light curve objects.
+        Implement the behavior of negation of the array attributes of a time series object.
         Error attrs are left alone.
 
         The negation operator ``-`` is supposed to invert the sign of the count
-        values of a light curve object.
+        values of a time series object.
 
         """
 
@@ -673,11 +672,11 @@ class StingrayObject(object):
 
     def __len__(self):
         """
-        Return the number of time bins of a light curve.
+        Return the number of time bins of a time series.
 
         This method implements overrides the ``len`` function for a :class:`StingrayTimeseries`
-        object and returns the length of the ``time`` array (which should be equal to the
-        length of the ``counts`` and ``countrate`` arrays).
+        object and returns the length of the array attributes (using the main array attribute
+        as probe).
         """
         return np.size(getattr(self, self.main_array_attr))
 
@@ -773,7 +772,7 @@ class StingrayTimeseries(StingrayObject):
 
     def apply_gtis(self, new_gti=None, inplace: bool = True):
         """
-        Apply GTIs to a light curve. Filters the ``time``, ``counts``,
+        Apply GTIs to a time series. Filters the ``time``, ``counts``,
         ``countrate``, ``counts_err`` and ``countrate_err`` arrays for all bins
         that fall into Good Time Intervals and recalculates mean countrate
         and the number of bins.
@@ -783,7 +782,7 @@ class StingrayTimeseries(StingrayObject):
         Parameters
         ----------
         inplace : bool
-            If True, overwrite the current light curve. Otherwise, return a new one.
+            If True, overwrite the current time series. Otherwise, return a new one.
 
         """
         # I import here to avoid the risk of circular imports
@@ -811,7 +810,7 @@ class StingrayTimeseries(StingrayObject):
         Parameters
         ----------
         min_points : int, default 1
-            The minimum number of data points in each light curve. Light
+            The minimum number of data points in each time series. Light
             curves with fewer data points will be ignored.
 
         Returns
@@ -955,7 +954,7 @@ class StingrayTimeseries(StingrayObject):
         Parameters
         ----------
         time_shift: float
-            The time interval by which the light curve will be shifted (in
+            The time interval by which the time series will be shifted (in
             the same units as the time array in :class:`StingrayTimeseries`
 
         Returns
@@ -975,13 +974,13 @@ class StingrayTimeseries(StingrayObject):
         self, other, operation, operated_attrs=None, error_attrs=None, error_operation=None
     ):
         """
-        Helper method to codify an operation of one light curve with another (e.g. add, subtract, ...).
+        Helper method to codify an operation of one time series with another (e.g. add, subtract, ...).
         Takes into account the GTIs correctly, and returns a new :class:`StingrayTimeseries` object.
 
         Parameters
         ----------
         other : :class:`StingrayTimeseries` object
-            A second light curve object
+            A second time series object
 
         operation : function
             An operation between the :class:`StingrayTimeseries` object calling this method, and
@@ -1006,11 +1005,11 @@ class StingrayTimeseries(StingrayObject):
         Returns
         -------
         lc_new : StingrayTimeseries object
-            The new light curve calculated in ``operation``
+            The new time series calculated in ``operation``
         """
 
         if self.mjdref != other.mjdref:
-            warnings.warn("MJDref is different in the two light curves")
+            warnings.warn("MJDref is different in the two time series")
             other = other.change_mjdref(self.mjdref)
 
         if not np.array_equal(self.gti, other.gti):
@@ -1064,8 +1063,8 @@ class StingrayTimeseries(StingrayObject):
 
     def __sub__(self, other):
         """
-        Subtract the counts/flux of one light curve from the counts/flux of another
-        light curve element by element, assuming the ``time`` arrays of the light curves
+        Subtract the counts/flux of one time series from the counts/flux of another
+        time series element by element, assuming the ``time`` arrays of the time series
         match exactly.
 
         This magic method adds two :class:`StingrayTimeSeries` objects having the same
