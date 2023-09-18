@@ -2419,6 +2419,7 @@ def crossspectrum_from_lightcurve(
         fullspec=fullspec,
         use_common_mean=use_common_mean,
         gti=gti,
+        save_all=save_all,
     )
 
 
@@ -2434,6 +2435,7 @@ def crossspectrum_from_timeseries(
     fullspec=False,
     use_common_mean=True,
     gti=None,
+    save_all=False,
 ):
     """Calculate AveragedCrossspectrum from two light curves
 
@@ -2472,6 +2474,10 @@ def crossspectrum_from_timeseries(
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
         objects
+    save_all : bool, default False
+        Save all intermediate spectra used for the final average. Use with care.
+        This is likely to fill up your RAM on medium-sized datasets, and to
+        slow down the computation when rebinning.
 
     Returns
     -------
