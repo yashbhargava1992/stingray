@@ -28,6 +28,11 @@ class TestLombScargleCrossspectrum:
         self.lc2 = Lightcurve(t, s2_new, dt=lc2.dt)
         self.lscs = LombScargleCrossspectrum(lc1, lc2)
 
+def test_eventlist(self):
+    ev1 = EventList.from_lc(self.lc1)
+    ev2 = EventList.from_lc(self.lc2)
+    ev_lscs = LombScargleCrossspectrum(ev1, ev2, dt=self.lc1.dt)
+    assert np.allclose(ev_lscs.power, self.lscs.power)
     @pytest.mark.parametrize("skip_checks", [True, False])
     def test_initialize_empty(self, skip_checks):
         lscs = LombScargleCrossspectrum(skip_checks=skip_checks)
