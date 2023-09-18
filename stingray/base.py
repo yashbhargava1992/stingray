@@ -242,7 +242,11 @@ class StingrayObject(object):
         array_attrs = self.array_attrs() + [self.main_array_attr]
 
         for attr in array_attrs:
-            data[attr] = np.asarray(getattr(self, attr))
+            new_data = np.asarray(getattr(self, attr))
+            ndim = len(np.shape(new_data))
+            if ndim > 1:
+                new_data = ([attr + f"_{i}" for i in range(ndim)], new_data)
+            data[attr] = new_data
 
         ts = Dataset(data)
 
