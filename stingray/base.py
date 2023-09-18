@@ -540,7 +540,13 @@ class StingrayObject(object):
         return new_ts
 
     def _operation_with_other_obj(
-        self, other, operation, operated_attrs=None, error_attrs=None, error_operation=None
+        self,
+        other,
+        operation,
+        operated_attrs=None,
+        error_attrs=None,
+        error_operation=None,
+        inplace=False,
     ):
         """
         Helper method to codify an operation of one time series with another (e.g. add, subtract, ...).
@@ -598,7 +604,10 @@ class StingrayObject(object):
                 f"The values of {self.main_array_attr} are different in the two {type(self)} objects."
             )
 
-        lc_new = type(self)()
+        if inplace:
+            lc_new = self
+        else:
+            lc_new = type(self)()
         setattr(lc_new, self.main_array_attr, this_time)
         for attr in self.meta_attrs():
             setattr(lc_new, attr, copy.deepcopy(getattr(self, attr)))
@@ -619,8 +628,49 @@ class StingrayObject(object):
 
         return lc_new
 
-    def __add__(self, other):
+    def add(
+        self, other, operated_attrs=None, error_attrs=None, error_operation=sqsum, inplace=False
+    ):
+        """Add the array values of two time series element by element, assuming the ``time`` arrays
+        of the time series match exactly.
+
+        All array attrs ending with ``_err`` are treated as error bars and propagated with the
+        sum of squares.
+
+        GTIs are crossed, so that only common intervals are saved.
+
+        Parameters
+        ----------
+        other : :class:`StingrayTimeseries` object
+            A second time series object
+
+        Other parameters
+        ----------------
+        operated_attrs : list of str or None
+            Array attributes to be operated on. Defaults to all array attributes not ending in
+            ``_err``.
+            The other array attributes will be discarded from the time series to avoid
+            inconsistencies.
+        error_attrs : list of str or None
+            Array attributes to be operated on with ``error_operation``. Defaults to all array attributes
+            ending with ``_err``.
+        error_operation : function
+            Function to be called to propagate the errors
+        inplace : bool
+            If True, overwrite the current time series. Otherwise, return a new one.
         """
+        return self._operation_with_other_obj(
+            other,
+            np.add,
+            operated_attrs=operated_attrs,
+            error_attrs=error_attrs,
+            error_operation=error_operation,
+            inplace=inplace,
+        )
+
+    def __add__(self, other):
+        """Operation that gets called with the ``+`` operator.
+
         Add the array values of two time series element by element, assuming the ``time`` arrays
         of the time series match exactly.
 
@@ -636,8 +686,70 @@ class StingrayObject(object):
             error_operation=sqsum,
         )
 
-    def __sub__(self, other):
+    def __iadd__(self, other):
+        """Operation that gets called with the ``+=`` operator.
+
+        Add the array values of two time series element by element, assuming the ``time`` arrays
+        of the time series match exactly.
+
+        All array attrs ending with ``_err`` are treated as error bars and propagated with the
+        sum of squares.
+
+        GTIs are crossed, so that only common intervals are saved.
         """
+
+        return self._operation_with_other_obj(
+            other,
+            np.add,
+            error_operation=sqsum,
+            inplace=True,
+        )
+
+    def sub(
+        self, other, operated_attrs=None, error_attrs=None, error_operation=sqsum, inplace=False
+    ):
+        """
+        Subtract *all the array attrs* of one time series from the ones of another
+        time series element by element, assuming the ``time`` arrays of the time series
+        match exactly.
+
+        All array attrs ending with ``_err`` are treated as error bars and propagated with the
+        sum of squares.
+
+        GTIs are crossed, so that only common intervals are saved.
+
+        Parameters
+        ----------
+        other : :class:`StingrayTimeseries` object
+            A second time series object
+
+        Other parameters
+        ----------------
+        operated_attrs : list of str or None
+            Array attributes to be operated on. Defaults to all array attributes not ending in
+            ``_err``.
+            The other array attributes will be discarded from the time series to avoid
+            inconsistencies.
+        error_attrs : list of str or None
+            Array attributes to be operated on with ``error_operation``. Defaults to all array attributes
+            ending with ``_err``.
+        error_operation : function
+            Function to be called to propagate the errors
+        inplace : bool
+            If True, overwrite the current time series. Otherwise, return a new one.
+        """
+        return self._operation_with_other_obj(
+            other,
+            np.subtract,
+            operated_attrs=operated_attrs,
+            error_attrs=error_attrs,
+            error_operation=error_operation,
+            inplace=inplace,
+        )
+
+    def __sub__(self, other):
+        """Operation that gets called with the ``-`` operator.
+
         Subtract *all the array attrs* of one time series from the ones of another
         time series element by element, assuming the ``time`` arrays of the time series
         match exactly.
@@ -652,6 +764,26 @@ class StingrayObject(object):
             other,
             np.subtract,
             error_operation=sqsum,
+        )
+
+    def __isub__(self, other):
+        """Operation that gets called with the ``-=`` operator.
+
+        Subtract *all the array attrs* of one time series from the ones of another
+        time series element by element, assuming the ``time`` arrays of the time series
+        match exactly.
+
+        All array attrs ending with ``_err`` are treated as error bars and propagated with the
+        sum of squares.
+
+        GTIs are crossed, so that only common intervals are saved.
+        """
+
+        return self._operation_with_other_obj(
+            other,
+            np.subtract,
+            error_operation=sqsum,
+            inplace=True,
         )
 
     def __neg__(self):
