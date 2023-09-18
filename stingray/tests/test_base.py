@@ -99,6 +99,66 @@ class TestStingrayObject:
         assert np.allclose(lc.counts, [-300, -1100, -400])
         assert np.array_equal(lc.guefus, guefus)
 
+    def test_inplace_add(self):
+        guefus = [5, 10, 15]
+        count1 = [300, 100, 400]
+        count2 = [600, 1200, 800]
+        ts1 = DummyStingrayObj(guefus)
+        ts2 = DummyStingrayObj(guefus)
+        ts1.counts = count1
+        ts2.counts = count2
+        lc = ts1 + ts2  # Test __add__
+        ts1 += ts2  # Test __iadd__
+        assert np.allclose(ts1.counts, [900, 1300, 1200])
+        assert np.array_equal(ts1.guefus, guefus)
+        assert lc == ts1
+
+    def test_inplace_sub(self):
+        guefus = [5, 10, 15]
+        count1 = [300, 100, 400]
+        count2 = [600, 1200, 800]
+        ts1 = DummyStingrayObj(guefus)
+        ts2 = DummyStingrayObj(guefus)
+        ts1.counts = count1
+        ts2.counts = count2
+        lc = ts1 - ts2  # Test __sub__
+        ts1 -= ts2  # Test __isub__
+        assert np.allclose(ts1.counts, [-300, -1100, -400])
+        assert np.array_equal(ts1.guefus, guefus)
+        assert lc == ts1
+
+    def test_inplace_add_with_method(self):
+        guefus = [5, 10, 15]
+        count1 = [300, 100, 400]
+        count2 = [600, 1200, 800]
+        ts1 = DummyStingrayObj(guefus)
+        ts2 = DummyStingrayObj(guefus)
+        ts1.counts = count1
+        ts2.counts = count2
+        lc = ts1.add(ts2)
+        assert lc is not ts1
+        lc_ip = ts2.add(ts1, inplace=True)
+        assert lc == lc_ip
+        assert lc_ip is ts2
+        assert np.allclose(lc.counts, [900, 1300, 1200])
+        assert np.array_equal(lc.guefus, guefus)
+
+    def test_inplace_sub_with_method(self):
+        guefus = [5, 10, 15]
+        count1 = [300, 100, 400]
+        count2 = [600, 1200, 800]
+        ts1 = DummyStingrayObj(guefus)
+        ts2 = DummyStingrayObj(guefus)
+        ts1.counts = count1
+        ts2.counts = count2
+        lc = ts1.sub(ts2)
+        assert lc is not ts1
+        lc_ip = ts2.sub(ts1, inplace=True)
+        assert lc == -lc_ip
+        assert lc_ip is ts2
+        assert np.allclose(lc.counts, [-300, -1100, -400])
+        assert np.array_equal(lc.guefus, guefus)
+
     def test_len(self):
         assert len(self.sting_obj) == 3
 
