@@ -313,11 +313,16 @@ class TestStingrayTimeseries:
         ts = StingrayTimeseries(
             [0, 3],
             gti=[[0.5, 1.5], [2.5, 3.5]],
-            array_attrs=dict(panesapa=np.asarray([[41, 25], [98, 3]])),
+            array_attrs=dict(
+                panesapa=np.asarray([[41, 25], [98, 3]]), _panesapa=np.asarray([[41, 25], [98, 3]])
+            ),
             dt=1,
         )
         array_attrs = ts.array_attrs()
+        internal_array_attrs = ts.internal_array_attrs()
         assert "panesapa" in array_attrs
+        assert "_panesapa" not in array_attrs
+        assert "_panesapa" in internal_array_attrs
         assert "gti" not in array_attrs
         assert "time" not in array_attrs
 
@@ -325,19 +330,26 @@ class TestStingrayTimeseries:
         time = [5, 10, 15]
         count1 = [300, 100, 400]
         count2 = [600, 1200, 800]
+
         ts1 = StingrayTimeseries(time=time)
         ts2 = StingrayTimeseries(time=time)
         ts1.counts = count1
         ts2.counts = count2
+        ts1.counts_err = np.zeros_like(count1) + 1
+        ts2.counts_err = np.zeros_like(count2) + 1
+
         lc = ts1 + ts2  # Test __add__
         assert np.allclose(lc.counts, [900, 1300, 1200])
         assert np.array_equal(lc.time, time)
+        assert np.allclose(lc.counts_err, np.sqrt(2))
         lc = ts1 - ts2  # Test __sub__
         assert np.allclose(lc.counts, [-300, -1100, -400])
         assert np.array_equal(lc.time, time)
+        assert np.allclose(lc.counts_err, np.sqrt(2))
         lc = -ts2 + ts1  # Test __neg__
         assert np.allclose(lc.counts, [-300, -1100, -400])
         assert np.array_equal(lc.time, time)
+        assert np.allclose(lc.counts_err, np.sqrt(2))
 
     def test_sub_with_gti(self):
         time = [10, 20, 30]

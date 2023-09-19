@@ -99,6 +99,7 @@ class StingrayObject(object):
                 isinstance(getattr(self, attr), Iterable)
                 and not isinstance(getattr(self, attr), str)
                 and attr.startswith("_")
+                and not attr.startswith("__")
                 and np.shape(getattr(self, attr))[0] == np.shape(main_attr)[0]
             )
         ]
