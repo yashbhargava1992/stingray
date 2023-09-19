@@ -606,7 +606,8 @@ class StingrayObject(object):
             assert np.array_equal(this_time, getattr(other, self.main_array_attr))
         except (ValueError, AssertionError):
             raise ValueError(
-                f"The values of {self.main_array_attr} are different in the two {type(self)} objects."
+                f"The values of {self.main_array_attr} are different in the two {type(self)} "
+                "objects."
             )
 
         if inplace:
