@@ -29,6 +29,17 @@ def sqsum(array1, array2):
     return np.sqrt(np.add(np.square(array1), np.square(array2)))
 
 
+def convert_table_attrs_to_lowercase(table: Table) -> Table:
+    """Convert the column names of an Astropy Table to lowercase."""
+    new_table = Table()
+    for col in table.colnames:
+        new_table[col.lower()] = table[col]
+    for key in table.meta.keys():
+        new_table.meta[key.lower()] = table.meta[key]
+
+    return new_table
+
+
 class StingrayObject(object):
     """This base class defines some general-purpose utilities.
 
@@ -127,20 +138,9 @@ class StingrayObject(object):
         ]
 
     def __eq__(self, other_ts):
-        """Compare two :class:`StingrayTimeseries` objects with ``==``.
+        """Compare two :class:`StingrayObject` instances with ``==``.
 
-        All attributes containing are compared. In particular, all array attributes
-        and meta attributes are compared.
-
-        Examples
-        --------
-        >>> time = [1, 2, 3]
-        >>> count1 = [100, 200, 300]
-        >>> count2 = [100, 200, 300]
-        >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), dt=1)
-        >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), dt=1)
-        >>> ts1 == ts2
-        True
+        All attributes (internal, array, meta) are compared.
         """
         if not isinstance(other_ts, type(self)):
             raise ValueError(f"{type(self)} can only be compared with a {type(self)} Object")
@@ -220,11 +220,14 @@ class StingrayObject(object):
         array_attrs = ts.colnames
 
         # Set the main attribute first
-        mainarray = np.array(ts[cls.main_array_attr])  # type: ignore
-        setattr(cls, cls.main_array_attr, mainarray)  # type: ignore
+        for attr in array_attrs:
+            if attr.lower() == cls.main_array_attr:  # type: ignore
+                mainarray = np.array(ts[attr])  # type: ignore
+                setattr(cls, cls.main_array_attr, mainarray)  # type: ignore
+                break
 
         for attr in array_attrs:
-            if attr == cls.main_array_attr:  # type: ignore
+            if attr.lower() == cls.main_array_attr:  # type: ignore
                 continue
             setattr(cls, attr.lower(), np.array(ts[attr]))
 
@@ -420,7 +423,7 @@ class StingrayObject(object):
         elif fmt.lower() == "ascii":
             fmt = "ascii.ecsv"
 
-        ts = Table.read(filename, format=fmt)
+        ts = convert_table_attrs_to_lowercase(Table.read(filename, format=fmt))
 
         # For specific formats, and in any case when the format is not
         # specified, make sure that complex values are treated correctly.
@@ -477,7 +480,6 @@ class StingrayObject(object):
             The file format to store the data in.
             Available options are ``pickle``, ``hdf5``, ``ascii``, ``fits``
         """
-
         if fmt is None:
             pass
         elif fmt.lower() == "pickle":
@@ -497,7 +499,11 @@ class StingrayObject(object):
 
         try:
             ts.write(filename, format=fmt, overwrite=True, serialize_meta=True)
-        except TypeError:
+        except TypeError as e:
+            warnings.warn(
+                f"{fmt} output does not serialize the metadata at the moment. "
+                "Some attributes will be lost."
+            )
             ts.write(filename, format=fmt, overwrite=True)
 
     def apply_mask(self, mask: npt.ArrayLike, inplace: bool = False, filtered_attrs: list = None):
@@ -900,6 +906,9 @@ class StingrayTimeseries(StingrayObject):
 
         if gti is None and self.time is not None and np.size(self.time) > 0:
             self.gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
+
+    def __eq__(self, other_ts):
+        return super().__eq__(other_ts)
 
     def apply_gtis(self, new_gti=None, inplace: bool = True):
         """
