@@ -5,6 +5,7 @@ from collections.abc import Iterable
 import pickle
 import warnings
 import copy
+import os
 
 import numpy as np
 from astropy.table import Table
@@ -22,6 +23,52 @@ if TYPE_CHECKING:
 
     TTime = Union[Time, TimeDelta, Quantity, npt.ArrayLike]
     Tso = TypeVar("Tso", bound="StingrayObject")
+
+try:
+    np.float128
+    HAS_128 = True
+except AttributeError:
+    HAS_128 = False
+
+
+def _can_save_longdouble(probe_file: str, fmt: str) -> bool:
+    """Check if a given file format can save tables with longdoubles."""
+    if not HAS_128:
+        # There are no known issues with saving longdoubles where numpy.float128 is not defined
+        return True
+
+    try:
+        Table({"a": np.arange(0, 3, 1.212314).astype(np.float128)}).write(
+            probe_file, format=fmt, overwrite=True
+        )
+        yes_it_can = True
+        os.unlink(probe_file)
+    except ValueError as e:
+        if "float128" not in str(e):  # pragma: no cover
+            raise
+        warnings.warn(
+            f"{fmt} output does not allow saving metadata at maximum precision. "
+            "Converting to lower precision"
+        )
+        yes_it_can = False
+    return yes_it_can
+
+
+def _can_serialize_meta(probe_file: str, fmt: str) -> bool:
+    try:
+        Table({"a": [3]}).write(probe_file, overwrite=True, format=fmt, serialize_meta=True)
+
+        os.unlink(probe_file)
+        yes_it_can = True
+    except TypeError as e:
+        if "serialize_meta" not in str(e):
+            raise
+        warnings.warn(
+            f"{fmt} output does not serialize the metadata at the moment. "
+            "Some attributes will be lost."
+        )
+        yes_it_can = False
+    return yes_it_can
 
 
 def sqsum(array1, array2):
@@ -146,12 +193,13 @@ class StingrayObject(object):
             raise ValueError(f"{type(self)} can only be compared with a {type(self)} Object")
 
         for attr in self.meta_attrs():
-            if isinstance(getattr(self, attr), np.ndarray):
-                if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
-                    return False
-            else:
+            if np.isscalar(getattr(self, attr)):
                 if not getattr(self, attr) == getattr(other_ts, attr):
                     return False
+            else:
+                if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
+                    return False
+
         for attr in self.array_attrs():
             if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
                 return False
@@ -178,7 +226,7 @@ class StingrayObject(object):
                 meta_dict[key] = val
         return meta_dict
 
-    def to_astropy_table(self) -> Table:
+    def to_astropy_table(self, no_longdouble=False) -> Table:
         """Create an Astropy Table from a ``StingrayObject``
 
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
@@ -189,11 +237,18 @@ class StingrayObject(object):
         array_attrs = self.array_attrs() + [self.main_array_attr]
 
         for attr in array_attrs:
-            data[attr] = np.asarray(getattr(self, attr))
+            vals = np.asarray(getattr(self, attr))
+            if no_longdouble:
+                vals = reduce_precision_if_extended(vals)
+            data[attr] = vals
 
         ts = Table(data)
+        meta_dict = self.get_meta_dict()
+        for attr in meta_dict.keys():
+            if no_longdouble:
+                meta_dict[attr] = reduce_precision_if_extended(meta_dict[attr])
 
-        ts.meta.update(self.get_meta_dict())
+        ts.meta.update(meta_dict)
 
         return ts
 
@@ -489,7 +544,15 @@ class StingrayObject(object):
         elif fmt.lower() == "ascii":
             fmt = "ascii.ecsv"
 
-        ts = self.to_astropy_table()
+        probe_file = "probe.bu.bu." + filename[-7:]
+
+        CAN_SAVE_LONGD = _can_save_longdouble(probe_file, fmt)
+        CAN_SERIALIZE_META = _can_serialize_meta(probe_file, fmt)
+
+        to_be_saved = self
+
+        ts = to_be_saved.to_astropy_table(no_longdouble=not CAN_SAVE_LONGD)
+
         if fmt is None or "ascii" in fmt:
             for col in ts.colnames:
                 if np.iscomplex(ts[col].flatten()[0]):
@@ -497,13 +560,9 @@ class StingrayObject(object):
                     ts[f"{col}.imag"] = ts[col].imag
                     ts.remove_column(col)
 
-        try:
+        if CAN_SERIALIZE_META:
             ts.write(filename, format=fmt, overwrite=True, serialize_meta=True)
-        except TypeError as e:
-            warnings.warn(
-                f"{fmt} output does not serialize the metadata at the moment. "
-                "Some attributes will be lost."
-            )
+        else:
             ts.write(filename, format=fmt, overwrite=True)
 
     def apply_mask(self, mask: npt.ArrayLike, inplace: bool = False, filtered_attrs: list = None):
@@ -1371,3 +1430,47 @@ def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, floa
             pass
 
     raise ValueError(f"Unknown time format: {type(time)}")
+
+
+def reduce_precision_if_extended(
+    x, probe_types=["float128", "float96", "float80", "longdouble"], destination=float
+):
+    """Reduce a number to a standard float if extended precision.
+
+    Ignore all non-float types.
+
+    Parameters
+    ----------
+    x : float
+        The number to be reduced
+
+    Returns
+    -------
+    x_red : same type of input
+        The input, only reduce to ``float`` precision if ``np.float128``
+
+    Examples
+    --------
+    >>> x = 1.0
+    >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
+    >>> val is x
+    True
+    >>> x = np.asanyarray(1.0).astype(int)
+    >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
+    >>> val is x
+    True
+    >>> x = np.asanyarray([1.0]).astype(int)
+    >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
+    >>> val is x
+    True
+    >>> x = np.asanyarray(1.0).astype(np.float64)
+    >>> reduce_precision_if_extended(x, probe_types=["float64"], destination=np.float32) is x
+    False
+    >>> x = np.asanyarray([1.0]).astype(np.float64)
+    >>> reduce_precision_if_extended(x, probe_types=["float64"], destination=np.float32) is x
+    False
+    """
+    if any([t in str(np.obj2sctype(x)) for t in probe_types]):
+        x_ret = x.astype(destination)
+        return x_ret
+    return x

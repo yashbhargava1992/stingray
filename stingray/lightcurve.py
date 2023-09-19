@@ -17,7 +17,7 @@ from astropy.table import Table
 from astropy.time import TimeDelta, Time
 from astropy import units as u
 
-from stingray.base import StingrayTimeseries
+from stingray.base import StingrayTimeseries, reduce_precision_if_extended
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.gti import (
@@ -1597,10 +1597,10 @@ class Lightcurve(StingrayTimeseries):
     def to_astropy_timeseries(self):
         return self._to_astropy_object(kind="timeseries")
 
-    def to_astropy_table(self):
-        return self._to_astropy_object(kind="table")
+    def to_astropy_table(self, **kwargs):
+        return self._to_astropy_object(kind="table", **kwargs)
 
-    def _to_astropy_object(self, kind="table"):
+    def _to_astropy_object(self, kind="table", no_longdouble=False):
         data = {}
 
         for attr in [
@@ -1612,15 +1612,22 @@ class Lightcurve(StingrayTimeseries):
             "_bin_hi",
         ]:
             if hasattr(self, attr) and getattr(self, attr) is not None:
-                data[attr.lstrip("_")] = np.asarray(getattr(self, attr))
+                vals = np.asarray(getattr(self, attr))
+                if no_longdouble:
+                    vals = reduce_precision_if_extended(vals)
+                data[attr.lstrip("_")] = vals
+
+        time_array = self.time
+        if no_longdouble:
+            time_array = reduce_precision_if_extended(time_array)
 
         if kind.lower() == "table":
-            data["time"] = self.time
+            data["time"] = time_array
             ts = Table(data)
         elif kind.lower() == "timeseries":
             from astropy.timeseries import TimeSeries
 
-            ts = TimeSeries(data=data, time=TimeDelta(self.time * u.s))
+            ts = TimeSeries(data=data, time=TimeDelta(time_array * u.s))
         else:  # pragma: no cover
             raise ValueError("Invalid kind (accepted: table or timeseries)")
 
@@ -1635,6 +1642,9 @@ class Lightcurve(StingrayTimeseries):
             "err_dist",
         ]:
             if hasattr(self, attr) and getattr(self, attr) is not None:
+                vals = getattr(self, attr)
+                if no_longdouble:
+                    vals = reduce_precision_if_extended(vals)
                 ts.meta[attr.lstrip("_")] = getattr(self, attr)
 
         return ts
