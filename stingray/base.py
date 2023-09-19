@@ -74,7 +74,7 @@ class StingrayObject(object):
             if (
                 isinstance(getattr(self, attr), Iterable)
                 and not attr == self.main_array_attr
-                and not attr in self.not_array_attr
+                and attr not in self.not_array_attr
                 and not isinstance(getattr(self, attr), str)
                 and not attr.startswith("_")
                 and np.shape(getattr(self, attr))[0] == np.shape(main_attr)[0]
@@ -549,8 +549,8 @@ class StingrayObject(object):
         inplace=False,
     ):
         """
-        Helper method to codify an operation of one time series with another (e.g. add, subtract, ...).
-        Takes into account the GTIs correctly, and returns a new :class:`StingrayTimeseries` object.
+        Helper method to codify an operation of one time series with another (e.g. add, subtract).
+        Takes into account the GTIs, and returns a new :class:`StingrayTimeseries` object.
 
         Parameters
         ----------
@@ -570,12 +570,11 @@ class StingrayObject(object):
             inconsistencies.
 
         error_attrs : list of str or None
-            Array attributes to be operated on with ``error_operation``. Defaults to all array attributes
-            ending with ``_err``.
+            Array attributes to be operated on with ``error_operation``. Defaults to all array
+            attributes ending with ``_err``.
 
         error_operation : function
-            An operation between the :class:`StingrayTimeseries` object calling this method, and
-            ``other``, operating on all the specified array attributes. Defaults to the sum of squares.
+            The function used for error propagation. Defaults to the sum of squares.
 
         Returns
         -------
@@ -652,8 +651,8 @@ class StingrayObject(object):
             The other array attributes will be discarded from the time series to avoid
             inconsistencies.
         error_attrs : list of str or None
-            Array attributes to be operated on with ``error_operation``. Defaults to all array attributes
-            ending with ``_err``.
+            Array attributes to be operated on with ``error_operation``. Defaults to all array
+            attributes ending with ``_err``.
         error_operation : function
             Function to be called to propagate the errors
         inplace : bool
@@ -731,8 +730,8 @@ class StingrayObject(object):
             The other array attributes will be discarded from the time series to avoid
             inconsistencies.
         error_attrs : list of str or None
-            Array attributes to be operated on with ``error_operation``. Defaults to all array attributes
-            ending with ``_err``.
+            Array attributes to be operated on with ``error_operation``. Defaults to all array
+            attributes ending with ``_err``.
         error_operation : function
             Function to be called to propagate the errors
         inplace : bool
@@ -1106,7 +1105,7 @@ class StingrayTimeseries(StingrayObject):
         self, other, operation, operated_attrs=None, error_attrs=None, error_operation=None
     ):
         """
-        Helper method to codify an operation of one time series with another (e.g. add, subtract, ...).
+        Helper method to codify an operation of one time series with another (e.g. add, subtract).
         Takes into account the GTIs correctly, and returns a new :class:`StingrayTimeseries` object.
 
         Parameters
@@ -1127,12 +1126,11 @@ class StingrayTimeseries(StingrayObject):
             inconsistencies.
 
         error_attrs : list of str or None
-            Array attributes to be operated on with ``error_operation``. Defaults to all array attributes
-            ending with ``_err``.
+            Array attributes to be operated on with ``error_operation``. Defaults to all array
+            attributes ending with ``_err``.
 
         error_operation : function
-            An operation between the :class:`StingrayTimeseries` object calling this method, and
-            ``other``, operating on all the specified array attributes. Defaults to the sum of squares.
+            The function used for error propagation. Defaults to the sum of squares.
 
         Returns
         -------

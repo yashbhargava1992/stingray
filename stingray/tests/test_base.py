@@ -308,8 +308,8 @@ class TestStingrayTimeseries:
     def test_what_is_array_and_what_is_not(self):
         """Test that array_attrs are not confused with other attributes.
 
-        In particular, time, gti and panesapa have the same length. Verify that panesapa is considered
-        an array attribute, but not gti."""
+        In particular, time, gti and panesapa have the same length. Verify that panesapa
+        is considered an array attribute, but not gti."""
         ts = StingrayTimeseries(
             [0, 3],
             gti=[[0.5, 1.5], [2.5, 3.5]],
