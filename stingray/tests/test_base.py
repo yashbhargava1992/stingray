@@ -175,6 +175,18 @@ class TestStingrayObject:
         assert np.allclose(lc.counts, [-300, -1100, -400])
         assert np.array_equal(lc.guefus, guefus)
 
+    def test_failed_operations(self):
+        guefus = [5, 10, 15]
+        count1 = [300, 100, 400]
+        ts1 = DummyStingrayObj(guefus)
+        ts2 = DummyStingrayObj(np.array(guefus) + 1)
+        ts1.counts = np.array(count1)
+        ts2.counts = np.array(count1)
+        with pytest.raises(TypeError, match=".*objects can only be operated with other.*"):
+            ts1._operation_with_other_obj(float(3), np.add)
+        with pytest.raises(ValueError, match="The values of guefus are different"):
+            ts1 + ts2
+
     def test_len(self):
         assert len(self.sting_obj) == 3
 
@@ -270,7 +282,10 @@ class TestStingrayObject:
         so = copy.deepcopy(self.sting_obj)
         so.guefus = np.random.randint(0, 4, 3)
         so.panesapa = np.random.randint(5, 9, (6, 2))
-        so.write("dummy.fits")
+        with pytest.warns(
+            UserWarning, match=".* output does not serialize the metadata at the moment"
+        ):
+            so.write("dummy.fits")
         new_so = DummyStingrayObj.read("dummy.fits")
         os.unlink("dummy.fits")
         # panesapa is invalid for FITS header and got lost
@@ -278,8 +293,20 @@ class TestStingrayObject:
         new_so.panesapa = so.panesapa
         assert so == new_so
 
-    @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv"])
+    @pytest.mark.parametrize("fmt", ["ascii", "ascii.ecsv"])
     def test_file_roundtrip(self, fmt):
+        so = copy.deepcopy(self.sting_obj)
+        so.guefus = np.random.randint(0, 4, 3)
+        so.panesapa = np.random.randint(5, 9, (6, 2))
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            so.write(f"dummy.{fmt}", fmt=fmt)
+        new_so = DummyStingrayObj.read(f"dummy.{fmt}", fmt=fmt)
+        os.unlink(f"dummy.{fmt}")
+
+        assert so == new_so
+
+    def test_file_roundtrip_pickle(self):
+        fmt = "pickle"
         so = copy.deepcopy(self.sting_obj)
         so.guefus = np.random.randint(0, 4, 3)
         so.panesapa = np.random.randint(5, 9, (6, 2))
@@ -303,7 +330,17 @@ class TestStingrayTimeseries:
             panesapa=np.asarray([[41, 25], [98, 3]]),
             gti=np.asarray([[-0.5, 10.5]]),
         )
+        sting_obj_highp = StingrayTimeseries(
+            time=cls.time,
+            mjdref=59777.000,
+            array_attrs=dict(guefus=cls.arr),
+            parafritus="bonus!",
+            panesapa=np.asarray([[41, 25], [98, 3]]),
+            gti=np.asarray([[-0.5, 10.5]]),
+            high_precision=True,
+        )
         cls.sting_obj = sting_obj
+        cls.sting_obj_highp = sting_obj_highp
 
     def test_apply_mask(self):
         ts = copy.deepcopy(self.sting_obj)
@@ -482,25 +519,135 @@ class TestStingrayTimeseries:
         assert np.allclose(ts0.frac_exp, [1, 0.5, 1, 1])
         assert np.allclose(ts1.frac_exp, [0.5, 0.5])
 
-    def test_astropy_roundtrip(self):
-        so = copy.deepcopy(self.sting_obj)
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_astropy_roundtrip(self, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
         ts = so.to_astropy_table()
         new_so = StingrayTimeseries.from_astropy_table(ts)
         assert so == new_so
 
-    def test_astropy_ts_roundtrip(self):
-        so = copy.deepcopy(self.sting_obj)
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_astropy_ts_roundtrip(self, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
         ts = so.to_astropy_timeseries()
         new_so = StingrayTimeseries.from_astropy_timeseries(ts)
         assert so == new_so
 
-    def test_shift_time(self):
-        new_so = self.sting_obj.shift(1)
+    @pytest.mark.skipif("not _HAS_XARRAY")
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_xarray_roundtrip(self, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
+        so.guefus = np.random.randint(0, 4, 3)
+        ts = so.to_xarray()
+        new_so = StingrayTimeseries.from_xarray(ts)
+        assert so == new_so
+
+    @pytest.mark.skipif("not _HAS_PANDAS")
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_pandas_roundtrip(self, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
+        so.guefus = np.random.randint(0, 4, 3)
+        ts = so.to_pandas()
+        new_so = StingrayTimeseries.from_pandas(ts)
+        # assert not hasattr(new_so, "sebadas")
+        # new_so.sebadas = so.sebadas
+        assert so == new_so
+
+    @pytest.mark.skipif("not _HAS_H5PY")
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_hdf_roundtrip(self, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
+        so.write("dummy.hdf5")
+        new_so = so.read("dummy.hdf5")
+        os.unlink("dummy.hdf5")
+
+        assert so == new_so
+
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_file_roundtrip_fits(self, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
+        so.guefus = np.random.randint(0, 4, self.time.shape)
+        so.panesapa = np.random.randint(5, 9, (6, 2))
+        with pytest.warns(
+            UserWarning, match=".* output does not serialize the metadata at the moment"
+        ):
+            so.write("dummy.fits")
+        new_so = StingrayTimeseries.read("dummy.fits")
+        os.unlink("dummy.fits")
+        # panesapa is invalid for FITS header and got lost
+        assert not hasattr(new_so, "panesapa")
+        new_so.panesapa = so.panesapa
+        new_so.gti = so.gti
+        new_so == so
+
+    @pytest.mark.parametrize("fmt", ["ascii", "ascii.ecsv"])
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_file_roundtrip(self, fmt, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
+        so.guefus = np.random.randint(0, 4, 3)
+        so.panesapa = np.random.randint(5, 9, (6, 2))
+        with pytest.warns(
+            UserWarning, match=f".* output does not serialize the metadata at the moment"
+        ):
+            so.write(f"dummy.{fmt}", fmt=fmt)
+        new_so = StingrayTimeseries.read(f"dummy.{fmt}", fmt=fmt)
+        os.unlink(f"dummy.{fmt}")
+
+        assert so == new_so
+
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_file_roundtrip_pickle(self, highprec):
+        fmt = "pickle"
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
+        so.guefus = np.random.randint(0, 4, 3)
+        so.panesapa = np.random.randint(5, 9, (6, 2))
+        so.write(f"dummy.{fmt}", fmt=fmt)
+        new_so = StingrayTimeseries.read(f"dummy.{fmt}", fmt=fmt)
+        os.unlink(f"dummy.{fmt}")
+
+        assert so == new_so
+
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_shift_time(self, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
+        new_so = so.shift(1)
         assert np.allclose(new_so.time - 1, self.sting_obj.time)
         assert np.allclose(new_so.gti - 1, self.sting_obj.gti)
 
-    def test_change_mjdref(self):
-        new_so = self.sting_obj.change_mjdref(59776.5)
+    @pytest.mark.parametrize("highprec", [True, False])
+    def test_change_mjdref(self, highprec):
+        if highprec:
+            so = copy.deepcopy(self.sting_obj_highp)
+        else:
+            so = copy.deepcopy(self.sting_obj)
+        new_so = so.change_mjdref(59776.5)
         assert new_so.mjdref == 59776.5
         assert np.allclose(new_so.time - 43200, self.sting_obj.time)
         assert np.allclose(new_so.gti - 43200, self.sting_obj.gti)

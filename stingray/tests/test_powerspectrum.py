@@ -1174,12 +1174,23 @@ class TestRoundTrip:
 
         self._check_equal(so, new_so)
 
-    @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv", "fits"])
+    @pytest.mark.parametrize("fmt", ["pickle"])
     def test_file_roundtrip(self, fmt):
         so = self.cs
         fname = f"dummy.{fmt}"
         so.write(fname, fmt=fmt)
         new_so = so.read(fname, fmt=fmt)
         # os.unlink(fname)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.parametrize("fmt", ["ascii", "ascii.ecsv", "fits"])
+    def test_file_roundtrip_lossy(self, fmt):
+        so = self.cs
+        fname = f"dummy.{fmt}"
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            so.write(fname, fmt=fmt)
+        new_so = so.read(fname, fmt=fmt)
+        os.unlink(fname)
 
         self._check_equal(so, new_so)

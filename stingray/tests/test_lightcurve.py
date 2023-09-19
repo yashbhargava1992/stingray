@@ -1144,11 +1144,21 @@ class TestLightcurve(object):
     @pytest.mark.skipif("not _HAS_YAML")
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write("ascii_lc.ecsv", fmt="ascii")
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            lc.write("ascii_lc.ecsv", fmt="ascii")
         lc = lc.read("ascii_lc.ecsv", fmt="ascii")
         assert np.allclose(lc.time, self.times)
         assert np.allclose(lc.counts, self.counts)
         os.remove("ascii_lc.ecsv")
+
+    def test_io_with_fits(self):
+        lc = Lightcurve(self.times, self.counts)
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            lc.write("ascii_lc.fits", fmt="fits")
+        lc = lc.read("ascii_lc.fits", fmt="fits")
+        assert np.allclose(lc.time, self.times)
+        assert np.allclose(lc.counts, self.counts)
+        os.remove("ascii_lc.fits")
 
     def test_io_with_pickle(self):
         lc = Lightcurve(self.times, self.counts)

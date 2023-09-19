@@ -486,10 +486,11 @@ class TestRoundTrip:
         os.unlink("dummy.hdf5")
         self._check_equal(so, new_so)
 
-    @pytest.mark.parametrize("fmt", ["ascii.ecsv", "fits"])
+    @pytest.mark.parametrize("fmt", ["ascii.ecsv", "ascii", "fits"])
     def test_file_export(self, fmt):
         so = self.vespec
-        so.write("dummy", fmt=fmt)
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            so.write("dummy", fmt=fmt)
         new_so = Table.read("dummy", format=fmt)
         os.unlink("dummy")
         self._check_equal(so, new_so)

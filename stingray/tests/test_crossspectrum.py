@@ -1302,16 +1302,27 @@ class TestRoundTrip:
 
         self._check_equal(so, new_so)
 
-    @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv", "fits", "hdf5"])
+    @pytest.mark.parametrize("fmt", ["pickle", "hdf5"])
     def test_file_roundtrip(self, fmt):
         so = self.cs
         fname = f"dummy.{fmt}"
         if not _HAS_H5PY and fmt == "hdf5":
             with pytest.raises(Exception) as excinfo:
                 so.write(fname, fmt=fmt)
-                assert h5py in str(excinfo.value)
+                assert "h5py" in str(excinfo.value)
             return
         so.write(fname, fmt=fmt)
+        new_so = so.read(fname, fmt=fmt)
+        os.unlink(fname)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.parametrize("fmt", ["ascii", "ascii.ecsv", "fits"])
+    def test_file_roundtrip_lossy(self, fmt):
+        so = self.cs
+        fname = f"dummy.{fmt}"
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            so.write(fname, fmt=fmt)
         new_so = so.read(fname, fmt=fmt)
         os.unlink(fname)
 

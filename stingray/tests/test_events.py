@@ -164,7 +164,8 @@ class TestEvents(object):
     @pytest.mark.skipif("not (_HAS_YAML)")
     def test_io_with_ascii(self):
         ev = EventList(self.time)
-        ev.write("ascii_ev.ecsv", fmt="ascii")
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            ev.write("ascii_ev.ecsv", fmt="ascii")
         ev = ev.read("ascii_ev.ecsv", fmt="ascii")
         print(ev.time, self.time)
         assert np.allclose(ev.time, self.time)
@@ -197,7 +198,8 @@ class TestEvents(object):
 
     def test_io_with_fits(self):
         ev = EventList(time=self.time, mjdref=54000)
-        ev.write("ev.fits", fmt="fits")
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            ev.write("ev.fits", fmt="fits")
         ev = ev.read("ev.fits", fmt="fits")
         assert np.allclose(ev.time, self.time)
         os.remove("ev.fits")
