@@ -88,6 +88,17 @@ class TestEvents(object):
         assert np.allclose(lc.time, [0.5, 1.5, 2.5, 3.5])
         assert (lc.gti == self.gti).all()
 
+    def test_to_timeseries(self):
+        """Create a time series from event list."""
+        ev = EventList(self.time, gti=self.gti)
+        ev.bla = np.zeros_like(ev.time) + 2
+        lc = ev.to_lc(1)
+        ts = ev.to_timeseries(1)
+        assert np.allclose(ts.time, [0.5, 1.5, 2.5, 3.5])
+        assert (ts.gti == self.gti).all()
+        assert np.array_equal(ts.counts, lc.counts)
+        assert np.array_equal(ts.bla, ts.counts * 2)
+
     def test_from_lc(self):
         """Load event list from lightcurve"""
         lc = Lightcurve(time=[0.5, 1.5, 2.5], counts=[2, 1, 2])
@@ -167,7 +178,6 @@ class TestEvents(object):
         with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
             ev.write("ascii_ev.ecsv", fmt="ascii")
         ev = ev.read("ascii_ev.ecsv", fmt="ascii")
-        print(ev.time, self.time)
         assert np.allclose(ev.time, self.time)
         os.remove("ascii_ev.ecsv")
 

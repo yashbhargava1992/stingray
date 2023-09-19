@@ -246,13 +246,52 @@ class EventList(StingrayTimeseries):
         -------
         lc: :class:`stingray.Lightcurve` object
         """
-        if tstart is None and self.gti is not None:
-            tstart = self.gti[0][0]
-            tseg = self.gti[-1][1] - tstart
-
         return Lightcurve.make_lightcurve(
             self.time, dt, tstart=tstart, gti=self.gti, tseg=tseg, mjdref=self.mjdref
         )
+
+    def to_timeseries(self, dt, array_attrs=None):
+        """Convert the event list to a :class:`stingray.StingrayTimeseries` object.
+
+        The result will be something similar to a light curve, but with arbitrary
+        attributes corresponding to a weighted sum of each specified attribute of
+        the event list.
+
+        E.g. if the event list has a ``q`` attribute, the final time series will
+        have a ``q`` attribute, which is the sum of all ``q`` values in each time bin.
+
+        Parameters
+        ----------
+        dt: float
+            Binning time of the light curve
+
+        Other Parameters
+        ----------------
+        array_attrs: list of str
+            List of attributes to be converted to light curve arrays. If None,
+            all array attributes will be converted.
+
+        Returns
+        -------
+        lc: :class:`stingray.Lightcurve` object
+        """
+        if array_attrs is None:
+            array_attrs = self.array_attrs()
+
+        time_bins = np.arange(self.gti[0, 0], self.gti[-1, 1] + dt, dt)
+        times = time_bins[:-1] + (0.5 * dt)
+
+        counts = np.histogram(self.time, bins=time_bins)[0]
+
+        attr_dict = dict(counts=counts)
+
+        for attr in array_attrs:
+            if getattr(self, attr, None) is not None:
+                attr_dict[attr] = np.histogram(
+                    self.time, bins=time_bins, weights=getattr(self, attr)
+                )[0]
+        meta_attrs = dict((attr, getattr(self, attr)) for attr in self.meta_attrs())
+        return StingrayTimeseries(times, array_attrs=attr_dict, **meta_attrs)
 
     def to_lc_iter(self, dt, segment_size=None):
         """Convert event list to a generator of Lightcurves.
