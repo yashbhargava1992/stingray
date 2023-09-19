@@ -514,11 +514,11 @@ class StingrayObject(object):
             If True, overwrite the current time series. Otherwise, return a new one.
         filtered_attrs : list of str or None
             Array attributes to be filtered. Defaults to all array attributes if ``None``.
-            The other array attributes will be discarded from the time series to avoid
-            inconsistencies. Time is always included.
+            The other array attributes will be set to ``None``. The main array attr is always
+            included.
 
         """
-        all_attrs = self.array_attrs()
+        all_attrs = self.array_attrs() + [self.main_array_attr]
         if filtered_attrs is None:
             filtered_attrs = all_attrs
         if self.main_array_attr not in filtered_attrs:
@@ -526,20 +526,17 @@ class StingrayObject(object):
 
         if inplace:
             new_ts = self
-            # Eliminate all unfiltered attributes
-            for attr in all_attrs:
-                if attr not in filtered_attrs:
-                    setattr(new_ts, attr, None)
         else:
             new_ts = type(self)()
             for attr in self.meta_attrs():
-                try:
-                    setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
-                except AttributeError:
-                    continue
+                setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
 
-        for attr in filtered_attrs:
-            setattr(new_ts, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
+        for attr in all_attrs:
+            if attr not in filtered_attrs:
+                # Eliminate all unfiltered attributes
+                setattr(new_ts, attr, None)
+            else:
+                setattr(new_ts, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
         return new_ts
 
     def _operation_with_other_obj(

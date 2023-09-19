@@ -82,21 +82,21 @@ class TestStingrayObject:
         assert ts is newts1
         assert ts is not newts0
 
-    def test_partial_apply_mask(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_partial_apply_mask(self, inplace):
         ts = copy.deepcopy(self.sting_obj)
-        newts0 = ts.apply_mask([True, True, False], inplace=False, filtered_attrs=["pardulas"]])
-        newts1 = ts.apply_mask([True, True, False], inplace=True, filtered_attrs=["pardulas"]])
-        assert newts0.parafritus == "bonus!"
-        assert newts1.parafritus == "bonus!"
-        for obj in [newts1, newts0]:
-            assert obj.parafritus == "bonus!"
-            assert np.array_equal(obj.guefus, [4, 5])
-            assert np.array_equal(obj.panesapa, ts.panesapa)
-            assert np.array_equal(obj.pardulas, [3.0 + 1.0j, 2.0j])
-            assert np.array_equal(obj.sebadas, None)
+        obj = ts.apply_mask([True, True, False], inplace=inplace, filtered_attrs=["pardulas"])
+        assert obj.parafritus == "bonus!"
+        assert np.array_equal(obj.guefus, [4, 5])
+        assert np.array_equal(obj.panesapa, ts.panesapa)
+        assert np.array_equal(obj.pardulas, [3.0 + 1.0j, 2.0j])
+        assert obj.sebadas is None
 
-        assert ts is newts1
-        assert ts is not newts0
+        if inplace:
+            assert ts is obj
+        else:
+            assert ts is not obj
+
     def test_operations(self):
         guefus = [5, 10, 15]
         count1 = [300, 100, 400]
