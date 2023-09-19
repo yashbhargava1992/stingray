@@ -127,8 +127,7 @@ class StingrayObject(object):
         ]
 
     def __eq__(self, other_ts):
-        """
-        Compares two :class:`StingrayTimeseries` objects.
+        """Compare two :class:`StingrayTimeseries` objects with ``==``.
 
         All attributes containing are compared. In particular, all array attributes
         and meta attributes are compared.
@@ -154,6 +153,9 @@ class StingrayObject(object):
                 if not getattr(self, attr) == getattr(other_ts, attr):
                     return False
         for attr in self.array_attrs():
+            if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
+                return False
+        for attr in self.internal_array_attrs():
             if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
                 return False
 
