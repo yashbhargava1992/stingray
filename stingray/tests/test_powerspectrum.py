@@ -265,7 +265,6 @@ class TestAveragedPowerspectrumEvents(object):
             segment_size=self.segment_size,
             norm=norm,
             silent=True,
-            gti=lc.gti,
         )
         pds_ev = AveragedPowerspectrum.from_events(
             self.events,
