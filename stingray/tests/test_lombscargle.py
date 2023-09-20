@@ -1,17 +1,19 @@
+import copy
+
 import numpy as np
 import pytest
-import copy
-from stingray.lombscargle import LombScargleCrossspectrum, LombScarglePowerspectrum
-from stingray.lightcurve import Lightcurve
-from stingray.events import EventList
-from stingray.simulator import Simulator
-from stingray.exceptions import StingrayError
 from scipy.interpolate import interp1d
+
+from stingray.events import EventList
+from stingray.exceptions import StingrayError
+from stingray.lightcurve import Lightcurve
+from stingray.lombscargle import LombScargleCrossspectrum, LombScarglePowerspectrum
+from stingray.simulator import Simulator
 
 
 class TestLombScargleCrossspectrum:
     def setup_class(self):
-        sim = Simulator(0.0001, 100, 100, 1, random_state=42, tstart=0)
+        sim = Simulator(0.0001, 50, 100, 1, random_state=42, tstart=0)
         lc1 = sim.simulate(0)
         lc2 = sim.simulate(0)
         self.rate1 = lc1.countrate
@@ -20,6 +22,7 @@ class TestLombScargleCrossspectrum:
         s1 = lc1.counts
         s2 = lc2.counts
         t = lc1.time
+        self.time = lc1.time
         t_new = t.copy()
         t_new[1:-1] = t[1:-1] + (np.random.rand(len(t) - 2) / (high - low))
         s1_new = interp1d(t, s1, fill_value="extrapolate")(t_new)
@@ -28,11 +31,21 @@ class TestLombScargleCrossspectrum:
         self.lc2 = Lightcurve(t, s2_new, dt=lc2.dt)
         self.lscs = LombScargleCrossspectrum(lc1, lc2)
 
-def test_eventlist(self):
-    ev1 = EventList.from_lc(self.lc1)
-    ev2 = EventList.from_lc(self.lc2)
-    ev_lscs = LombScargleCrossspectrum(ev1, ev2, dt=self.lc1.dt)
-    assert np.allclose(ev_lscs.power, self.lscs.power)
+    def test_eventlist(self):
+        counts = np.random.poisson(10, 1000)
+        times = np.arange(0, 1000, 1)
+        lc1 = Lightcurve(times, counts, dt=1)
+        lc2 = Lightcurve(times, counts, dt=1)
+        ev1 = EventList.from_lc(lc1)
+        ev2 = EventList.from_lc(lc2)
+        ev_lscs = LombScargleCrossspectrum(ev1, ev2, dt=1)
+        lc_lscs = LombScargleCrossspectrum(lc1, lc2, dt=1)
+
+        assert np.argmax(lc_lscs) == np.argmax(ev_lscs)
+        assert np.all(ev_lscs.freq == lc_lscs.freq)
+        assert np.all(ev_lscs.power == lc_lscs.power)
+        assert ev_lscs.freq[np.argmax(ev_lscs.power)] == lc_lscs.freq[np.argmax(lc_lscs.power)] != 0
+
     @pytest.mark.parametrize("skip_checks", [True, False])
     def test_initialize_empty(self, skip_checks):
         lscs = LombScargleCrossspectrum(skip_checks=skip_checks)
@@ -61,6 +74,12 @@ def test_eventlist(self):
     def test_bad_input(self):
         with pytest.raises(TypeError):
             lscs = LombScargleCrossspectrum(1, self.lc1)
+        with pytest.raises(TypeError):
+            lscs = LombScargleCrossspectrum("smooth", "criminal")
+
+    def test_one_lightcurve(self):
+        with pytest.raises(ValueError):
+            lscs = LombScargleCrossspectrum(self.lc1, None)
 
     def test_init_with_norm_not_str(self):
         with pytest.raises(TypeError):
@@ -170,6 +189,27 @@ def test_eventlist(self):
         el2 = EventList(self.lc2.counts, self.lc2.time, dt=None)
         with pytest.raises(ValueError):
             lscs = LombScargleCrossspectrum(el1, el2)
+
+    @pytest.mark.parametrize("phase_lag", [0.05, 0.1, 0.2, 0.4])
+    def test_time_phase_lag(self, phase_lag):
+        freq = 1.112323232252
+
+        def func(time, phase=0):
+            return 2 + np.sin(2 * np.pi * (time * freq - phase))
+
+        time = np.sort(np.random.uniform(0, 100, 3000))
+
+        with pytest.warns(UserWarning):
+            lc1 = Lightcurve(time, func(time, 0))
+            lc2 = Lightcurve(time, func(time, phase_lag))
+
+        lscs = LombScargleCrossspectrum(lc1, lc2)
+        measured_time_lag = lscs.time_lag() * 2 * np.pi * lscs.freq[lscs.freq >= 0]
+        measured_phase_lag = lscs.phase_lag()
+        measured_time_lag[np.isnan(measured_time_lag)] = measured_phase_lag[
+            np.isnan(measured_time_lag)
+        ]
+        assert np.allclose(measured_phase_lag, measured_time_lag, atol=1e-1)
 
 
 class TestLombScarglePowerspectrum:

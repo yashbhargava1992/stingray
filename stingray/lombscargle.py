@@ -1,5 +1,6 @@
 import copy
 from typing import Optional, Union
+
 import numpy as np
 import numpy.typing as npt
 from astropy.timeseries.periodograms import LombScargle
@@ -7,7 +8,7 @@ from astropy.timeseries.periodograms import LombScargle
 from .crossspectrum import Crossspectrum
 from .events import EventList
 from .exceptions import StingrayError
-from .fourier import lsft_fast, lsft_slow, impose_symmetry_lsft
+from .fourier import impose_symmetry_lsft, lsft_fast, lsft_slow
 from .lightcurve import Lightcurve
 from .utils import simon
 
@@ -130,14 +131,11 @@ class LombScargleCrossspectrum(Crossspectrum):
             self._initialize_empty()
             return
 
-        good_input = True
         if dt is None:
             if isinstance(data1, Lightcurve) or isinstance(data2, EventList):
                 dt = data1.dt
-            elif isinstance(data2, Lightcurve) or isinstance(data2, EventList):
+            elif isinstance(data2, Lightcurve) or isinstance(data2, EventList) and dt is None:
                 dt = data2.dt
-            if dt is None:
-                raise ValueError("dt must be provided for EventLists")
 
         if not skip_checks:
             good_input = self.initial_checks(
@@ -153,10 +151,6 @@ class LombScargleCrossspectrum(Crossspectrum):
                 method=method,
                 oversampling=oversampling,
             )
-
-            if not good_input:
-                self._initialize_empty()
-                return
 
         if data1 is not None and data2 is not None:
             self._initialize_from_any_input(
@@ -199,11 +193,9 @@ class LombScargleCrossspectrum(Crossspectrum):
         if power_type not in ["all", "absolute", "real"]:
             raise ValueError("power_type must be one of ['all','absolute','real']")
 
-        if data1 is None and data2 is None:
-            if data1 is not None and data2 is not None:
+        if data1 is None or data2 is None:
+            if data1 is not None or data2 is not None:
                 raise ValueError("You can't do a cross spectrum with just one lightcurve")
-            else:
-                return False
 
         if min_freq < 0:
             raise ValueError("min_freq must be non-negative")
@@ -272,54 +264,19 @@ class LombScargleCrossspectrum(Crossspectrum):
         elif isinstance(data1, EventList):
             self.lc1 = data1.to_lc(dt)
             self.lc2 = data2.to_lc(dt)
-            spec = lscrossspectrum_from_events(
+            spec = lscrossspectrum_from_lightcurve(
                 self.lc1,
                 self.lc2,
-                dt,
-                power_type,
                 norm,
+                power_type,
                 fullspec,
                 min_freq,
                 max_freq,
                 method,
                 oversampling,
             )
-        else:
-            raise TypeError(f"Bad inputs to LombScargleCrossspectrum: {type(data1)}")
         for key, val in spec.__dict__.items():
             setattr(self, key, val)
-
-    def _make_auxil_pds(self, lc1, lc2):
-        __doc__ = super()._make_auxil_pds.__doc__
-        is_event = isinstance(lc1, EventList)
-        is_lc = isinstance(lc1, Lightcurve)
-        if self.type != "powerspectrum" and (lc1 is not lc2) and (is_event or is_lc):
-            self.pds1 = LombScargleCrossspectrum(
-                lc1,
-                lc1,
-                power_type=self.power_type,
-                norm=self.norm,
-                dt=self.dt,
-                fullspec=self.fullspec,
-                min_freq=self.min_freq,
-                max_freq=self.max_freq,
-                df=self.df,
-                method=self.method,
-                oversampling=self.oversampling,
-            )
-            self.pds2 = LombScargleCrossspectrum(
-                lc2,
-                lc2,
-                power_type=self.power_type,
-                norm=self.norm,
-                dt=self.dt,
-                fullspec=self.fullspec,
-                min_freq=self.min_freq,
-                max_freq=self.max_freq,
-                df=self.df,
-                method=self.method,
-                oversampling=self.oversampling,
-            )
 
     def _initialize_empty(self):
         self.freq = None
@@ -477,8 +434,6 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
         oversampling: Optional[int] = 5,
     ):
         self._type = None
-        data1 = copy.deepcopy(data)
-        data2 = copy.deepcopy(data)
         if data is None:
             return self._initialize_empty()
         good_input = True
@@ -496,8 +451,6 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
                 method,
                 oversampling,
             )
-        if not good_input:
-            return self._initialize_empty()
 
         self._initialize_from_any_input(
             data1=data,
@@ -613,34 +566,6 @@ def lscrossspectrum_from_lightcurve(
     return lscs
 
 
-def lscrossspectrum_from_events(
-    event1,
-    event2,
-    dt=None,
-    norm="none",
-    power_type="all",
-    fullspec=False,
-    min_freq=0,
-    max_freq=None,
-    method="fast",
-    oversampling=5,
-):
-    """Creates a Lomb Scargle Cross Spectrum from two event lists"""
-    lc1 = event1.to_lc(dt)
-    lc2 = event2.to_lc(dt)
-    return lscrossspectrum_from_lightcurve(
-        lc1,
-        lc2,
-        norm,
-        power_type,
-        fullspec,
-        min_freq,
-        max_freq,
-        method,
-        oversampling,
-    )
-
-
 def _ls_cross(
     lc1,
     lc2,
@@ -694,17 +619,6 @@ def _ls_cross(
                 normalization="psd",
             ).autofrequency(minimum_frequency=max(min_freq, 0), maximum_frequency=max_freq),
         )[0]
-        freqs2 = (
-            LombScargle(
-                lc2.time,
-                lc2.counts,
-                fit_mean=False,
-                center_data=False,
-                normalization="psd",
-            ).autofrequency(minimum_frequency=max(min_freq, 0), maximum_frequency=max_freq),
-        )[0]
-        if max(freqs2) > max(freq):
-            freq = freqs2
 
     if method == "slow":
         lsft1 = lsft_slow(lc1.counts, lc1.time, freq)

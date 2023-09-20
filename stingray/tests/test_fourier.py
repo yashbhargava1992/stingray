@@ -1,6 +1,8 @@
 import os
 from pickle import FALSE
+
 import pytest
+
 from stingray.fourier import *
 from stingray.utils import check_allclose_and_print
 
@@ -574,7 +576,6 @@ def test_lags(phlag):
     while measured_lag <= -0.5:
         measured_lag += 0.5
 
-    print(measured_lag)
     assert np.isclose((np.angle(ft1) - np.angle(ft0)) / 2 / np.pi, phlag, atol=0.02, rtol=0.02)
 
 

@@ -2160,7 +2160,6 @@ def lsft_slow(
             # A and B before the square root and inversion in (II.3) --
             scos2 = np.sum(np.power(np.cos(wrun * t - wtau), 2))
             ssin2 = np.sum(np.power(np.sin(wrun * t - wtau), 2))
-            ## --
 
             # const2 is const1 times the sign.
             # It's the F0 in II.2 without the phase factor
