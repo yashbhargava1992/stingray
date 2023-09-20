@@ -24,16 +24,16 @@ if TYPE_CHECKING:
     TTime = Union[Time, TimeDelta, Quantity, npt.ArrayLike]
     Tso = TypeVar("Tso", bound="StingrayObject")
 
+HAS_128 = True
 try:
     np.float128
-    HAS_128 = True
-except AttributeError:
+except AttributeError:  # pragma: no cover
     HAS_128 = False
 
 
 def _can_save_longdouble(probe_file: str, fmt: str) -> bool:
     """Check if a given file format can save tables with longdoubles."""
-    if not HAS_128:
+    if not HAS_128:  # pragma: no cover
         # There are no known issues with saving longdoubles where numpy.float128 is not defined
         return True
 
@@ -61,7 +61,7 @@ def _can_serialize_meta(probe_file: str, fmt: str) -> bool:
         os.unlink(probe_file)
         yes_it_can = True
     except TypeError as e:
-        if "serialize_meta" not in str(e):
+        if "serialize_meta" not in str(e):  # pragma: no cover
             raise
         warnings.warn(
             f"{fmt} output does not serialize the metadata at the moment. "
@@ -1126,7 +1126,7 @@ class StingrayTimeseries(StingrayObject):
 
         return new_cls
 
-    def change_mjdref(self, new_mjdref: float) -> StingrayTimeseries:
+    def change_mjdref(self, new_mjdref: float, inplace=False) -> StingrayTimeseries:
         """Change the MJD reference time (MJDREF) of the time series
 
         The times of the time series will be shifted in order to be referred to
@@ -1137,6 +1137,11 @@ class StingrayTimeseries(StingrayObject):
         new_mjdref : float
             New MJDREF
 
+        Other parameters
+        ----------------
+        inplace : bool
+            If True, overwrite the current time series. Otherwise, return a new one.
+
         Returns
         -------
         new_ts : :class:`StingrayTimeseries` object
@@ -1144,11 +1149,11 @@ class StingrayTimeseries(StingrayObject):
         """
         time_shift = (self.mjdref - new_mjdref) * 86400  # type: ignore
 
-        ts = self.shift(time_shift)
+        ts = self.shift(time_shift, inplace=inplace)
         ts.mjdref = new_mjdref  # type: ignore
         return ts
 
-    def shift(self, time_shift: float) -> StingrayTimeseries:
+    def shift(self, time_shift: float, inplace=False) -> StingrayTimeseries:
         """Shift the time and the GTIs by the same amount
 
         Parameters
@@ -1157,13 +1162,21 @@ class StingrayTimeseries(StingrayObject):
             The time interval by which the time series will be shifted (in
             the same units as the time array in :class:`StingrayTimeseries`
 
+        Other parameters
+        ----------------
+        inplace : bool
+            If True, overwrite the current time series. Otherwise, return a new one.
+
         Returns
         -------
         ts : ``StingrayTimeseries`` object
             The new time series shifted by ``time_shift``
 
         """
-        ts = copy.deepcopy(self)
+        if inplace:
+            ts = self
+        else:
+            ts = copy.deepcopy(self)
         ts.time = np.asarray(ts.time) + time_shift  # type: ignore
         if hasattr(ts, "gti"):
             ts.gti = np.asarray(ts.gti) + time_shift  # type: ignore
@@ -1232,7 +1245,6 @@ class StingrayTimeseries(StingrayObject):
             error_attrs=error_attrs,
             error_operation=error_operation,
         )
-        return lc_new
 
     def __add__(self, other):
         """
@@ -1299,8 +1311,8 @@ class StingrayTimeseries(StingrayObject):
         a new :class:`StingrayTimeseries` object. GTIs are recalculated based on the new light
         curve segment
 
-        If the slice object is of kind ``start:stop:step``, GTIs are also sliced,
-        and rewritten as ``zip(time - self.dt /2, time + self.dt / 2)``
+        If the slice object is of kind ``start:stop:step`` and ``dt`` is not 0, GTIs are also
+        sliced, by crossing with ``zip(time - self.dt /2, time + self.dt / 2)``
 
         Parameters
         ----------
@@ -1325,9 +1337,16 @@ class StingrayTimeseries(StingrayObject):
         if isinstance(index, slice):
             step = assign_value_if_none(index.step, 1)
 
-        new_gti = np.asarray([[new_ts.time[0] - 0.5 * self.dt, new_ts.time[-1] + 0.5 * self.dt]])
-        if step > 1:
-            new_gt1 = np.array(list(zip(new_ts.time - self.dt / 2, new_ts.time + self.dt / 2)))
+        dt = self.dt
+        if np.isscalar(dt):
+            delta_gti_start = delta_gti_stop = dt * 0.5
+        else:
+            delta_gti_start = new_ts.dt[0] * 0.5
+            delta_gti_stop = new_ts.dt[-1] * 0.5
+
+        new_gti = np.asarray([[new_ts.time[0] - delta_gti_start, new_ts.time[-1] + delta_gti_stop]])
+        if step > 1 and delta_gti_start > 0:
+            new_gt1 = np.array(list(zip(new_ts.time - new_ts.dt / 2, new_ts.time + new_ts.dt / 2)))
             new_gti = cross_two_gtis(new_gti, new_gt1)
         new_gti = cross_two_gtis(self.gti, new_gti)
 

@@ -439,6 +439,25 @@ class TestStingrayTimeseries:
         assert np.array_equal(lc.time, time)
         assert np.allclose(lc.counts_err, np.sqrt(2))
 
+    def test_operations_different_mjdref(self):
+        time = [5, 10, 15]
+        count1 = [300, 100, 400]
+        count2 = [600, 1200, 800]
+
+        ts1 = StingrayTimeseries(time=time, array_attrs=dict(counts=count1), mjdref=55000)
+        ts2 = StingrayTimeseries(time=time, array_attrs=dict(counts=count2), mjdref=55000)
+        ts2.change_mjdref(54000, inplace=True)
+        with pytest.warns(UserWarning, match="MJDref is different in the two time series"):
+            lc = ts1 + ts2  # Test __add__
+        assert np.allclose(lc.counts, [900, 1300, 1200])
+        assert np.array_equal(lc.time, time)
+        assert np.array_equal(lc.mjdref, ts1.mjdref)
+        with pytest.warns(UserWarning, match="MJDref is different in the two time series"):
+            lc = ts2 + ts1  # Test __add__ of the other curve. The mjdref will be the other one now
+        assert np.allclose(lc.counts, [900, 1300, 1200])
+        assert np.array_equal(lc.time, ts2.time)
+        assert np.array_equal(lc.mjdref, ts2.mjdref)
+
     def test_sub_with_gti(self):
         time = [10, 20, 30]
         count1 = [600, 1200, 800]
@@ -454,7 +473,8 @@ class TestStingrayTimeseries:
         assert len(self.sting_obj) == 10
 
     def test_slice(self):
-        ts1 = self.sting_obj
+        ts1 = copy.deepcopy(self.sting_obj)
+
         ts_filt = ts1[1]
         assert np.array_equal(ts_filt.guefus, [3])
         assert ts_filt.parafritus == "bonus!"
@@ -464,6 +484,21 @@ class TestStingrayTimeseries:
         assert np.array_equal(ts_filt.guefus, [2, 3])
         assert ts_filt.parafritus == "bonus!"
         assert np.array_equal(ts_filt.panesapa, ts1.panesapa)
+
+        ts_filt = ts1[0:3:2]
+        # If dt >0, gtis are also altered. Otherwise they're left alone
+        ts1.dt = 1
+        ts_filt_dt1 = ts1[0:3:2]
+        # Also try with array dt
+        ts1.dt = np.ones_like(ts1.time)
+        ts_filt_dtarr = ts1[0:3:2]
+        for ts_f in [ts_filt, ts_filt_dt1, ts_filt_dtarr]:
+            assert np.array_equal(ts_f.guefus, [2, 4])
+            assert ts_f.parafritus == "bonus!"
+            assert np.array_equal(ts_f.panesapa, ts1.panesapa)
+        assert np.allclose(ts_filt_dt1.gti, [[-0.5, 0.5], [1.5, 2.5]])
+        assert np.allclose(ts_filt_dtarr.gti, [[-0.5, 0.5], [1.5, 2.5]])
+        assert np.allclose(ts_filt.gti, [[0, 2.0]])
 
         with pytest.raises(IndexError, match="The index must be either an integer or a slice"):
             ts1[1.0]
