@@ -57,7 +57,9 @@ def simple_events_from_lc(lc):
     >>> np.allclose(ev.time, [0, 0, 1, 1, 1])
     True
     """
-    times = _from_lc_numba(lc.time, lc.counts, np.zeros(np.sum(lc.counts), dtype=float))
+    times = _from_lc_numba(
+        lc.time, lc.counts.astype(int), np.zeros(np.sum(lc.counts).astype(int), dtype=float)
+    )
     return EventList(time=times, gti=lc.gti)
 
 
