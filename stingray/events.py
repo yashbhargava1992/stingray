@@ -291,7 +291,9 @@ class EventList(StingrayTimeseries):
                     self.time, bins=time_bins, weights=getattr(self, attr)
                 )[0]
         meta_attrs = dict((attr, getattr(self, attr)) for attr in self.meta_attrs())
-        return StingrayTimeseries(times, array_attrs=attr_dict, **meta_attrs)
+        new_ts = StingrayTimeseries(times, array_attrs=attr_dict, **meta_attrs)
+        new_ts.dt = dt
+        return new_ts
 
     def to_lc_iter(self, dt, segment_size=None):
         """Convert event list to a generator of Lightcurves.
