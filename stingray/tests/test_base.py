@@ -342,6 +342,12 @@ class TestStingrayTimeseries:
         cls.sting_obj = sting_obj
         cls.sting_obj_highp = sting_obj_highp
 
+    def test_invalid_instantiation(self):
+        with pytest.raises(ValueError, match="Lengths of time and guefus must be equal"):
+            StingrayTimeseries(time=np.arange(10), array_attrs=dict(guefus=np.arange(11)))
+        with pytest.raises(ValueError, match="Lengths of time and guefus must be equal"):
+            StingrayTimeseries(time=np.arange(10), array_attrs=dict(guefus=np.zeros((5, 2))))
+
     def test_apply_mask(self):
         ts = copy.deepcopy(self.sting_obj)
         mask = [True, True] + 8 * [False]
