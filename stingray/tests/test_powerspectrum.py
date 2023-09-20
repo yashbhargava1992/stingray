@@ -53,6 +53,7 @@ class TestAveragedPowerspectrumEvents(object):
         gti = np.array([[tstart, tend]])
 
         cls.events = EventList(times, gti=gti)
+        cls.events.fake_weights = np.ones_like(cls.events.time)
 
         cls.lc = cls.events
         cls.leahy_pds = AveragedPowerspectrum(
@@ -243,6 +244,40 @@ class TestAveragedPowerspectrumEvents(object):
         )
         for attr in ["power", "freq", "m", "n", "nphots", "segment_size"]:
             assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
+
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
+    def test_from_timeseries_with_err_works(self, norm):
+        lc = self.events.to_timeseries(self.dt)
+        lc._counts_err = np.sqrt(lc.counts.mean()) + np.zeros_like(lc.counts)
+        pds = AveragedPowerspectrum.from_stingray_timeseries(
+            lc,
+            "counts",
+            "_counts_err",
+            segment_size=self.segment_size,
+            norm=norm,
+            silent=True,
+            gti=lc.gti,
+        )
+        pds_weight = AveragedPowerspectrum.from_stingray_timeseries(
+            lc,
+            "fake_weights",
+            "_counts_err",
+            segment_size=self.segment_size,
+            norm=norm,
+            silent=True,
+            gti=lc.gti,
+        )
+        pds_ev = AveragedPowerspectrum.from_events(
+            self.events,
+            segment_size=self.segment_size,
+            dt=self.dt,
+            norm=norm,
+            silent=True,
+            gti=self.events.gti,
+        )
+        for attr in ["power", "freq", "m", "n", "nphots", "segment_size"]:
+            assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
+            assert np.allclose(getattr(pds_weight, attr), getattr(pds_ev, attr))
 
     def test_init_without_segment(self):
         with pytest.raises(ValueError):

@@ -367,16 +367,33 @@ class TestAveragedCrossspectrumEvents(object):
         lc1.counts_err = np.sqrt(lc1.counts.mean()) + np.zeros_like(lc1.counts)
         lc2.counts_err = np.sqrt(lc2.counts.mean()) + np.zeros_like(lc2.counts)
         pds = AveragedCrossspectrum.from_stingray_timeseries(
-            lc1, lc2, "counts", "counts_err", segment_size=self.segment_size, norm=norm
+            lc1, lc2, "counts", "counts_err", segment_size=self.segment_size, norm=norm, silent=True
         )
         pds = AveragedCrossspectrum.from_stingray_timeseries(
-            lc1, lc2, "counts", "counts_err", segment_size=self.segment_size, norm=norm
+            lc1,
+            lc2,
+            "counts",
+            "counts_err",
+            segment_size=self.segment_size,
+            norm=norm,
+            silent=True,
         )
         pds_weight = AveragedCrossspectrum.from_stingray_timeseries(
-            lc1, lc2, "fake_weights", "counts_err", segment_size=self.segment_size, norm=norm
+            lc1,
+            lc2,
+            "fake_weights",
+            "counts_err",
+            segment_size=self.segment_size,
+            norm=norm,
+            silent=True,
         )
         pds_ev = AveragedCrossspectrum.from_events(
-            self.events1, self.events2, segment_size=self.segment_size, dt=self.dt, norm=norm
+            self.events1,
+            self.events2,
+            segment_size=self.segment_size,
+            dt=self.dt,
+            norm=norm,
+            silent=True,
         )
         for attr in ["power", "freq", "m", "n", "nphots1", "nphots2", "segment_size"]:
             assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
