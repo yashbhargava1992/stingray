@@ -1462,9 +1462,11 @@ class Crossspectrum(StingrayObject):
             don't  use this and only give GTIs to the input objects before
             making the cross spectrum.
         """
-        return crossspectrum_from_lightcurve(
+        return crossspectrum_from_timeseries(
             lc1,
             lc2,
+            flux_attr=flux_attr,
+            error_flux_attr=error_flux_attr,
             segment_size=segment_size,
             norm=norm,
             power_type=power_type,

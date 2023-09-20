@@ -175,6 +175,8 @@ class TestAveragedCrossspectrumEvents(object):
 
         self.events1 = EventList(times1, gti=gti)
         self.events2 = EventList(times2, gti=gti)
+        self.events1.fake_weights = np.ones_like(self.events1.time)
+        self.events2.fake_weights = np.ones_like(self.events2.time)
 
         self.cs = Crossspectrum(self.events1, self.events2, dt=self.dt, norm="none")
 
@@ -357,6 +359,28 @@ class TestAveragedCrossspectrumEvents(object):
         )
         for attr in ["power", "freq", "m", "n", "nphots1", "nphots2", "segment_size"]:
             assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
+
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
+    def test_from_timeseries_with_err_works(self, norm):
+        lc1 = self.events1.to_timeseries(self.dt)
+        lc2 = self.events2.to_timeseries(self.dt)
+        lc1.counts_err = np.sqrt(lc1.counts.mean()) + np.zeros_like(lc1.counts)
+        lc2.counts_err = np.sqrt(lc2.counts.mean()) + np.zeros_like(lc2.counts)
+        pds = AveragedCrossspectrum.from_stingray_timeseries(
+            lc1, lc2, "counts", "counts_err", segment_size=self.segment_size, norm=norm
+        )
+        pds = AveragedCrossspectrum.from_stingray_timeseries(
+            lc1, lc2, "counts", "counts_err", segment_size=self.segment_size, norm=norm
+        )
+        pds_weight = AveragedCrossspectrum.from_stingray_timeseries(
+            lc1, lc2, "fake_weights", "counts_err", segment_size=self.segment_size, norm=norm
+        )
+        pds_ev = AveragedCrossspectrum.from_events(
+            self.events1, self.events2, segment_size=self.segment_size, dt=self.dt, norm=norm
+        )
+        for attr in ["power", "freq", "m", "n", "nphots1", "nphots2", "segment_size"]:
+            assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
+            assert np.allclose(getattr(pds_weight, attr), getattr(pds_ev, attr))
 
     def test_it_works_with_events(self):
         lc1 = self.events1.to_lc(self.dt)
