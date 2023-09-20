@@ -150,6 +150,12 @@ class TestProperties(object):
         _ = lc.bin_lo
         assert lc._bin_lo is not None
 
+    def test_make_all_none(self):
+        lc = copy.deepcopy(self.lc)
+        lc.time = None
+        assert lc.counts is None
+        assert lc._counts is None
+
     def test_lightcurve_from_astropy_time(self):
         time = Time([57483, 57484], format="mjd")
         counts = np.array([2, 2])

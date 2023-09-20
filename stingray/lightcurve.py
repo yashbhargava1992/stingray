@@ -363,9 +363,10 @@ class Lightcurve(StingrayTimeseries):
     @time.setter
     def time(self, value):
         if value is None:
-            self._time = None
             for attr in self.internal_array_attrs():
                 setattr(self, attr, None)
+            self._time = None
+
         else:
             value = np.asarray(value)
             if not value.shape == self.time.shape:
@@ -417,7 +418,7 @@ class Lightcurve(StingrayTimeseries):
     @property
     def counts(self):
         counts = self._counts
-        if self._counts is None:
+        if self._counts is None and self._countrate is not None:
             counts = self._countrate * self.dt
             # If not in low-memory regime, cache the values
             if not self.low_memory or self.input_counts:
