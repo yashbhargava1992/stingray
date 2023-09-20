@@ -128,7 +128,7 @@ class StingrayObject(object):
 
         return [
             attr
-            for attr in dir(self)
+            for attr in self.data_attributes()
             if (
                 isinstance(getattr(self, attr), Iterable)
                 and not attr == self.main_array_attr
@@ -137,6 +137,16 @@ class StingrayObject(object):
                 and not attr.startswith("_")
                 and np.shape(getattr(self, attr))[0] == np.shape(main_attr)[0]
             )
+        ]
+
+    def data_attributes(self) -> list[str]:
+        """Weed out methods from the list of attributes"""
+        return [
+            attr
+            for attr in dir(self)
+            if not callable(value := getattr(self, attr))
+            and not attr.startswith("__")
+            and not isinstance(value, StingrayObject)
         ]
 
     def internal_array_attrs(self) -> list[str]:
@@ -150,17 +160,18 @@ class StingrayObject(object):
         if main_attr is None:
             return []
 
-        return [
-            attr
-            for attr in dir(self)
+        all_attrs = []
+        for attr in self.data_attributes():
             if (
-                isinstance(getattr(self, attr), Iterable)
-                and not isinstance(getattr(self, attr), str)
+                not np.isscalar(value := getattr(self, attr))
+                and value is not None
+                and not np.size(value) == 0
                 and attr.startswith("_")
-                and not attr.startswith("__")
-                and np.shape(getattr(self, attr))[0] == np.shape(main_attr)[0]
-            )
-        ]
+                and np.shape(value)[0] == np.shape(main_attr)[0]
+            ):
+                all_attrs.append(attr)
+
+        return all_attrs
 
     def meta_attrs(self) -> list[str]:
         """List the names of the meta attributes of the Stingray Object.
