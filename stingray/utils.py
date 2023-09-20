@@ -375,6 +375,10 @@ def make_1d_arrays_into_nd(data: dict, label: str) -> np.ndarray:
     >>> A_ret = make_1d_arrays_into_nd(data, "test")
     >>> np.array_equal(A, A_ret)
     True
+    >>> data = make_nd_into_arrays(a1, "test")
+    >>> A_ret = make_1d_arrays_into_nd(data, "test")
+    >>> np.array_equal(a1, A_ret)
+    True
     """
 
     if label in list(data.keys()):
