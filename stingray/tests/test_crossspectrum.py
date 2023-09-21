@@ -970,6 +970,12 @@ class TestAveragedCrossspectrum(object):
         assert cs.n is None
         assert cs.power_err is None
 
+    def test_make_empty_crossspectrum_only_one_valid_data(self):
+        with pytest.raises(
+            ValueError, match="You can't do a cross spectrum with just one light curve!"
+        ):
+            cs = AveragedCrossspectrum(data1=self.lc1)
+
     def test_no_segment_size(self):
         with pytest.raises(ValueError):
             cs = AveragedCrossspectrum(self.lc1, self.lc2)

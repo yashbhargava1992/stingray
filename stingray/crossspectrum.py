@@ -560,7 +560,9 @@ class Crossspectrum(StingrayObject):
         if data2 is None:
             data2 = lc2
 
-        good_input = data1 is not None and data2 is not None
+        empty = data1 is None and data2 is None
+        good_input = not empty
+
         if not skip_checks:
             good_input = self.initial_checks(
                 data1=data1,
@@ -579,7 +581,7 @@ class Crossspectrum(StingrayObject):
         self.norm = norm
         self.k = 1
 
-        if not good_input:
+        if empty or not good_input:
             return self._initialize_empty()
 
         return self._initialize_from_any_input(
@@ -1677,8 +1679,10 @@ class AveragedCrossspectrum(Crossspectrum):
         if data2 is None:
             data2 = lc2
 
-        good_input = data1 is not None and data2 is not None
-        if good_input and not skip_checks:
+        empty = data1 is None and data2 is None
+        good_input = not empty
+
+        if not skip_checks:
             good_input = self.initial_checks(
                 data1=data1,
                 data2=data2,
@@ -1698,7 +1702,7 @@ class AveragedCrossspectrum(Crossspectrum):
         self.segment_size = segment_size
         self.show_progress = not silent
 
-        if not good_input:
+        if empty or not good_input:
             return self._initialize_empty()
 
         if isinstance(data1, Generator):
