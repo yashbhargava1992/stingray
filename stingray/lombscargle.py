@@ -472,12 +472,12 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
 def lscrossspectrum_from_lightcurve(
     lc1,
     lc2,
-    norm="none",
-    power_type="all",
-    fullspec=False,
-    min_freq=0,
-    max_freq=None,
-    method="fast",
+    norm,
+    power_type,
+    fullspec,
+    min_freq,
+    max_freq,
+    method,
     oversampling=5,
 ):
     """Creates a Lomb Scargle Cross Spectrum from two light curves

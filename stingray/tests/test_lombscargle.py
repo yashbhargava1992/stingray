@@ -163,10 +163,16 @@ class TestLombScargleCrossspectrum:
         lscs = LombScargleCrossspectrum(self.lc1, self.lc2, fullspec=True)
         assert lscs.fullspec
 
-    @pytest.mark.parametrize("method", ["slow", "fast"])
-    def test_valid_method(self, method):
-        lscs = LombScargleCrossspectrum(self.lc1, self.lc2, method=method)
-        assert lscs.method == method
+    def test_valid_method(self):
+        lscs_s = LombScargleCrossspectrum(self.lc1, self.lc2, method="slow")
+        assert lscs_s.method == "slow"
+        lscs_f = LombScargleCrossspectrum(self.lc1, self.lc2, method="fast", oversampling=5)
+        assert lscs_f.method == "fast"
+        assert (
+            np.sum(np.isclose(lscs_f.unnorm_power, lscs_s.unnorm_power, rtol=0.1, atol=1))
+            / lscs_f.power.shape[0]
+            > 0.9
+        )
 
     @pytest.mark.parametrize(
         "func_name",
