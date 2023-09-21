@@ -683,6 +683,14 @@ class TestCrossspectrum(object):
             ):
                 Crossspectrum(self.lc1, lc_)
 
+    def test_make_crossspectrum_diff_lc_stat(self):
+        lc_ = copy.deepcopy(self.lc1)
+        lc_.err_dist = "gauss"
+
+        with pytest.warns(UserWarning) as record:
+            cs = Crossspectrum(self.lc1, lc_)
+        assert np.any(["different statistics" in r.message.args[0] for r in record])
+
     def test_make_crossspectrum_diff_dt(self):
         counts = np.array([1] * 10000)
         time = np.linspace(0.0, 2.0, 10000)
