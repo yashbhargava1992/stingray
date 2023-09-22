@@ -182,12 +182,19 @@ class TestFourier(object):
         out_ev = avg_pds_from_events(times, self.gti, self.segment_size, self.dt)
         assert out_ev is None
 
+    @pytest.mark.parametrize("return_subcs", [True, False])
     @pytest.mark.parametrize("return_auxil", [True, False])
-    def test_avg_cs_bad_input(self, return_auxil):
+    def test_avg_cs_bad_input(self, return_auxil, return_subcs):
         times1 = np.sort(np.random.uniform(0, 1000, 1))
         times2 = np.sort(np.random.uniform(0, 1000, 1))
         out_ev = avg_cs_from_events(
-            times1, times2, self.gti, self.segment_size, self.dt, return_auxil=return_auxil
+            times1,
+            times2,
+            self.gti,
+            self.segment_size,
+            self.dt,
+            return_auxil=return_auxil,
+            return_subcs=return_subcs,
         )
         assert out_ev is None
 
@@ -202,7 +209,7 @@ class TestFourier(object):
             use_common_mean=True,
             silent=True,
             fluxes=None,
-        )["power"]
+        )
         out = avg_pds_from_events(
             self.times,
             self.gti,
@@ -212,8 +219,8 @@ class TestFourier(object):
             use_common_mean=False,
             silent=True,
             fluxes=None,
-        )["power"]
-        assert np.isclose(out_comm.std(), out.std(), rtol=0.1)
+        )
+        assert np.isclose(out_comm["power"].std(), out["power"].std(), rtol=0.1)
 
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_avg_cs_use_common_mean_similar_stats(self, norm):
@@ -226,7 +233,8 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=True,
             silent=True,
-        )["power"]
+            return_subcs=True,
+        )
         out = avg_cs_from_events(
             self.times,
             self.times2,
@@ -236,8 +244,9 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=False,
             silent=True,
-        )["power"]
-        assert np.isclose(out_comm.std(), out.std(), rtol=0.1)
+            return_subcs=True,
+        )
+        assert np.isclose(out_comm["power"].std(), out["power"].std(), rtol=0.1)
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -251,6 +260,7 @@ class TestFourier(object):
             use_common_mean=use_common_mean,
             silent=True,
             fluxes=None,
+            return_subcs=True,
         )
         out_ct = avg_pds_from_events(
             self.bin_times,
@@ -261,6 +271,7 @@ class TestFourier(object):
             use_common_mean=use_common_mean,
             silent=True,
             fluxes=self.counts,
+            return_subcs=True,
         )
         compare_tables(out_ev, out_ct)
 
@@ -276,6 +287,7 @@ class TestFourier(object):
             use_common_mean=use_common_mean,
             silent=True,
             fluxes=None,
+            return_subcs=True,
         )
         out_ct = avg_pds_from_events(
             self.bin_times,
@@ -287,7 +299,10 @@ class TestFourier(object):
             silent=True,
             fluxes=self.counts,
             errors=self.errs,
+            return_subcs=True,
         )
+        assert "subcs" in out_ct.meta
+        assert "subcs" in out_ev.meta
         # The variance is not _supposed_ to be equal, when we specify errors
         if use_common_mean:
             compare_tables(out_ev, out_ct, rtol=0.01, discard=["variance"])
