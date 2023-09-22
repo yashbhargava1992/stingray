@@ -257,5 +257,8 @@ class TestLombScarglePowerspectrum:
         assert ps.method is None
 
     def test_ps_real(self):
-        ps = LombScarglePowerspectrum(self.lc)
-        assert np.allclose(ps.power.imag, [0], atol=1e-4)
+        counts = np.random.poisson(10, 1000)
+        times = np.arange(0, 1000, 1)
+        lc = Lightcurve(times, counts, dt=1)
+        ps = LombScarglePowerspectrum(lc)
+        assert np.allclose(ps.power.imag, np.zeros_like(ps.power.imag), atol=1e-4)
