@@ -100,8 +100,15 @@ jobs:
             use_remote_data: true
             experimental: false
 
+          # Development version of dependencies
+          - name: Linux, Py3.11 with dev versions of dependencies
+            os: ubuntu-latest
+            python: '3.11'
+            tox_env: 'py311-test-devdeps'
+            experimental: false
+
           # Test with all optional dependencies installed.
-          - name: Slow tests on Linux, Py3.11 and coverage
+          - name: Slow tests on Linux, Py3.11, all deps and coverage
             os: ubuntu-latest
             python: '3.11'
             tox_env: 'py311-test-alldeps-cov'
@@ -109,12 +116,14 @@ jobs:
             experimental: false
             slow: true
 
-          # Development version of dependencies
-          - name: Linux, Py3.11 with dev versions of dependencies
+          # Test with all optional dependencies installed.
+          - name: Slow tests on Linux, Py3.11, basic deps and coverage
             os: ubuntu-latest
             python: '3.11'
-            tox_env: 'py311-test-devdeps'
+            tox_env: 'py311-test-cov'
+            use_remote_data: true
             experimental: false
+            slow: true
 
     steps:
     - name: Check out repository
