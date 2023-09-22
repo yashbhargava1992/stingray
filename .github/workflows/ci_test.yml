@@ -47,6 +47,7 @@ jobs:
     if: ${{ needs.check_commit.outputs.match != 'true' }}
     name: ${{ matrix.os }}, ${{ matrix.tox_env }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
@@ -58,42 +59,43 @@ jobs:
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'black'
+            experimental: false
+
           # Basic tests on the oldest & newest supported versions of Python,
           # recording coverage data for the latter.
           - os: ubuntu-latest
             python: '3.8'
-            tox_env: 'py38-test'
+            tox_env: 'py38-test-astropy4-cov'
+            experimental: false
+
           - os: ubuntu-latest
             python: '3.10'
             tox_env: 'py310-test-cov'
+            experimental: false
 
           # Basic tests on alternative operating systems.
           - os: windows-latest
-            python: '3.10'
-            tox_env: 'py310-test'
+            python: '3.11'
+            tox_env: 'py311-test-cov'
+            experimental: false
+
           - os: macos-latest
-            python: '3.10'
-            tox_env: 'py310-test'
+            python: '3.11'
+            tox_env: 'py311-test'
+            experimental: false
 
           # Test with all optional dependencies installed.
           - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-alldeps-cov'
+            python: '3.11'
+            tox_env: 'py311-test-alldeps-cov'
             use_remote_data: true
-
-          # Test with the various supported releases of Astropy.
-          - os: ubuntu-latest
-            python: '3.8'
-            tox_env: 'py38-test-astropy4-cov'
-
-          - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-astropy5'
+            experimental: false
 
           # Development version of dependencies
           - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-devdeps'
+            python: '3.11'
+            tox_env: 'py311-test-devdeps'
+            experimental: false
 
     steps:
     - name: Check out repository
