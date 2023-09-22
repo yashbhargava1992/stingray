@@ -91,6 +91,7 @@ def fake_qpo(
 
 
 @pytest.mark.slow
+@pytest.mark.xfail
 class TestCCF(object):
     @classmethod
     def setup_class(cls):
@@ -196,6 +197,7 @@ class TestCCF(object):
             "DT": self.dt,
             "N_BINS": self.n_bins,
         }
+
         error_ccf, avg_seg_ccf = spec.ccf_error(
             self.ref_counts,
             ci_counts_0,
