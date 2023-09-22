@@ -3,7 +3,7 @@ import numpy as np
 import copy
 import warnings
 
-from astropy.tests.helper import pytest
+import pytest
 from astropy.io import fits
 from stingray import Lightcurve
 from stingray.events import EventList
@@ -202,6 +202,7 @@ class TestAveragedPowerspectrumEvents(object):
         power2 = self.leahy_pds.power.real
         assert np.allclose(power1, power2, rtol=0.01)
 
+    @pytest.mark.slow
     def test_from_time_array_works_with_memmap(self):
         with fits.open(os.path.join(datadir, "monol_testA.evt"), memmap=True) as hdul:
             times = hdul[1].data["TIME"]

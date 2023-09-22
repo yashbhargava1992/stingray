@@ -2,7 +2,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-from astropy.tests.helper import pytest
+import pytest
 from astropy.utils.exceptions import AstropyUserWarning
 
 from ..io import split_numbers

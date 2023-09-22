@@ -90,6 +90,7 @@ def fake_qpo(
     return phase, qpo_lc
 
 
+@pytest.mark.slow
 class TestCCF(object):
     @classmethod
     def setup_class(cls):

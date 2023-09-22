@@ -324,6 +324,7 @@ class TestAveragedCrossspectrumEvents(object):
         power2 = self.acs.power.real
         assert np.allclose(power1, power2, rtol=0.01)
 
+    @pytest.mark.slow
     def test_from_time_array_works_with_memmap(self):
         with fits.open(os.path.join(datadir, "monol_testA.evt"), memmap=True) as hdul:
             times1 = hdul[1].data["TIME"]
@@ -853,6 +854,7 @@ class TestCrossspectrum(object):
         with pytest.raises(ValueError):
             cs.rebin()
 
+    @pytest.mark.slow
     def test_classical_significances_runs(self):
         with pytest.warns(UserWarning) as record:
             cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
@@ -864,6 +866,7 @@ class TestCrossspectrum(object):
         with pytest.raises(ValueError):
             cs.classical_significances()
 
+    @pytest.mark.slow
     def test_classical_significances_threshold(self):
         with pytest.warns(UserWarning) as record:
             cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
@@ -880,6 +883,7 @@ class TestCrossspectrum(object):
         assert pval[0, 0] < threshold
         assert pval[1, 0] == index
 
+    @pytest.mark.slow
     def test_classical_significances_trial_correction(self):
         with pytest.warns(UserWarning) as record:
             cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
@@ -899,6 +903,7 @@ class TestCrossspectrum(object):
 
         assert len(pval[0]) == len(cs_log.power)
 
+    @pytest.mark.slow
     def test_pvals_is_numpy_array(self):
         cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
         # change the powers so that just one exceeds the threshold

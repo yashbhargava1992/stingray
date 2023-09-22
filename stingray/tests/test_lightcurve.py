@@ -1,7 +1,7 @@
 import os
 import copy
 import numpy as np
-from astropy.tests.helper import pytest
+import pytest
 import warnings
 import os
 import matplotlib.pyplot as plt
@@ -1499,6 +1499,7 @@ class TestLightcurveRebin(object):
         assert not lc1 == lc2
 
 
+@pytest.mark.slow
 class TestBexvar(object):
     @classmethod
     def setup_class(cls):

@@ -19,7 +19,7 @@ try:
     HAS_HDF5 = True
 except ImportError:
     HAS_HDF5 = False
-
+pytestmark = pytest.mark.slow
 # np.random.seed(2134791)
 
 
