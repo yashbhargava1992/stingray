@@ -138,7 +138,25 @@ __all__ = [
     "nearest_power_of_two",
     "find_nearest",
     "check_isallfinite",
+    "any_complex_in_array",
 ]
+
+
+@njit
+def any_complex_in_array(array):
+    """Check if any element of an array is complex.
+
+    Examples
+    --------
+    >>> any_complex_in_array(np.array([1, 2, 3]))
+    False
+    >>> any_complex_in_array(np.array([1, 2 + 1.j, 3]))
+    True
+    """
+    for a in array:
+        if np.iscomplex(a):
+            return True
+    return False
 
 
 @njit
