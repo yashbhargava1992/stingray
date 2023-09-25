@@ -1077,6 +1077,10 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes
     binned = fluxes is not None
     if binned:
         dt = np.median(np.diff(times[:100]))
+        cast_kind = float
+        fluxes = np.asarray(fluxes)
+        if np.iscomplexobj(fluxes):
+            cast_kind = complex
 
     fun = _which_segment_idx_fun(binned, dt)
 
@@ -1093,9 +1097,9 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes
             ).astype(float)
             cts = np.array(cts)
         else:
-            cts = fluxes[idx0:idx1].astype(float)
+            cts = fluxes[idx0:idx1].astype(cast_kind)
             if errors is not None:
-                cts = cts, errors[idx0:idx1]
+                cts = cts, errors[idx0:idx1].astype(cast_kind)
 
         yield cts
 

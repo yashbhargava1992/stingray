@@ -48,6 +48,23 @@ def test_norm():
     assert np.isclose(pdsfrac[good].mean(), pois_frac, rtol=0.01)
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.complex64, np.complex128])
+def test_flux_iterables(dtype):
+    times = np.arange(4)
+    fluxes = np.ones(4).astype(dtype)
+    errors = np.ones(4).astype(dtype) * np.sqrt(2)
+    gti = np.asarray([[-0.5, 3.5]])
+    iter = get_flux_iterable_from_segments(times, gti, 2, n_bin=None, fluxes=fluxes, errors=errors)
+    cast_kind = float
+    if np.iscomplexobj(fluxes):
+        cast_kind = complex
+    for it, er in iter:
+        assert np.allclose(it, 1, rtol=0.01)
+        assert np.allclose(er, np.sqrt(2), rtol=0.01)
+        assert isinstance(it[0], cast_kind)
+        assert isinstance(er[0], cast_kind)
+
+
 class TestCoherence(object):
     @classmethod
     def setup_class(cls):
