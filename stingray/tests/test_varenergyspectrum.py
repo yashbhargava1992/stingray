@@ -9,7 +9,7 @@ from stingray.varenergyspectrum import LagSpectrum, LagEnergySpectrum
 from stingray.varenergyspectrum import ExcessVarianceSpectrum
 from stingray.lightcurve import Lightcurve
 
-from astropy.tests.helper import pytest
+import pytest
 from astropy.table import Table
 
 _HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
@@ -166,6 +166,7 @@ class TestCountSpectrum(object):
         assert np.allclose(ctsspec.spectrum, 2)
 
 
+@pytest.mark.slow
 class TestRmsAndCovSpectrum(object):
     @classmethod
     def setup_class(cls):
@@ -352,6 +353,7 @@ class TestRmsAndCovSpectrum(object):
         assert np.all(np.isnan(rms.spectrum_error))
 
 
+@pytest.mark.slow
 class TestLagEnergySpectrum(object):
     @classmethod
     def setup_class(cls):

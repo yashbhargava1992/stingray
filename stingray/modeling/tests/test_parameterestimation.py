@@ -4,7 +4,7 @@ import os
 import warnings
 import logging
 
-from astropy.tests.helper import pytest
+import pytest
 from astropy.modeling import models
 
 try:
@@ -31,6 +31,8 @@ except ImportError:
     can_sample = False
 
 import matplotlib.pyplot as plt
+
+pytestmark = pytest.mark.slow
 
 
 class LogLikelihoodDummy(LogLikelihood):
