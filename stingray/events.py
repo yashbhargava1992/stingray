@@ -20,6 +20,7 @@ from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_bo
 from .io import load_events_and_gtis
 from .lightcurve import Lightcurve
 from .utils import assign_value_if_none, simon, interpret_times, njit
+from .utils import histogram
 
 __all__ = ["EventList"]
 
@@ -278,18 +279,22 @@ class EventList(StingrayTimeseries):
         if array_attrs is None:
             array_attrs = self.array_attrs()
 
-        time_bins = np.arange(self.gti[0, 0], self.gti[-1, 1] + dt, dt)
-        times = time_bins[:-1] + (0.5 * dt)
+        ranges = [self.gti[0, 0], self.gti[-1, 1]]
+        nbins = int((ranges[1] - ranges[0]) / dt)
+        ranges = [ranges[0], ranges[0] + nbins * dt]
+        times = np.arange(ranges[0] + dt * 0.5, ranges[1], dt)
 
-        counts = np.histogram(self.time, bins=time_bins)[0]
+        counts = histogram(self.time, ranges=ranges, bins=nbins)
 
         attr_dict = dict(counts=counts)
 
         for attr in array_attrs:
             if getattr(self, attr, None) is not None:
-                attr_dict[attr] = np.histogram(
-                    self.time, bins=time_bins, weights=getattr(self, attr)
-                )[0]
+                logging.info(f"Creating the {attr} array")
+
+                attr_dict[attr] = histogram(
+                    self.time, bins=nbins, weights=getattr(self, attr), ranges=ranges
+                )
         meta_attrs = dict((attr, getattr(self, attr)) for attr in self.meta_attrs())
         new_ts = StingrayTimeseries(times, array_attrs=attr_dict, **meta_attrs)
         new_ts.dt = dt
