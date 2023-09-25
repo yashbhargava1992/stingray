@@ -1028,7 +1028,9 @@ def get_average_ctrate(times, gti, segment_size, counts=None):
     return n_ph / (n_intvs * segment_size)
 
 
-def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes=None, errors=None):
+def get_flux_iterable_from_segments(
+    times, gti, segment_size, n_bin=None, dt=None, fluxes=None, errors=None
+):
     """
     Get fluxes from different segments of the observation.
 
@@ -1059,6 +1061,8 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes
         Array of fluxes.
     errors : float `np.array`, default None
         Array of error bars corresponding to the flux values above.
+    dt : float, default None
+        Time resolution of the light curve used to produce periodograms
 
     Yields
     ------
@@ -1073,11 +1077,11 @@ def get_flux_iterable_from_segments(times, gti, segment_size, n_bin=None, fluxes
             "At least one between fluxes (if light curve) and " "n_bin (if events) has to be set"
         )
 
-    dt = None
     binned = fluxes is not None
-    if binned:
+    cast_kind = float
+    if dt is None and binned:
         dt = np.median(np.diff(times[:100]))
-        cast_kind = float
+    if binned:
         fluxes = np.asarray(fluxes)
         if np.iscomplexobj(fluxes):
             cast_kind = complex
@@ -1846,11 +1850,13 @@ def avg_pds_from_events(
     """
     if segment_size is None:
         segment_size = gti.max() - gti.min()
-    n_bin = np.rint(segment_size / dt).astype(int)
-    dt = segment_size / n_bin
-
+    n_bin = int(segment_size / dt)
+    if fluxes is None:
+        dt = segment_size / n_bin
+    else:
+        segment_size = n_bin * dt
     flux_iterable = get_flux_iterable_from_segments(
-        times, gti, segment_size, n_bin, fluxes=fluxes, errors=errors
+        times, gti, segment_size, n_bin, dt=dt, fluxes=fluxes, errors=errors
     )
     cross = avg_pds_from_iterable(
         flux_iterable,
@@ -1948,15 +1954,18 @@ def avg_cs_from_events(
     """
     if segment_size is None:
         segment_size = gti.max() - gti.min()
-    n_bin = np.rint(segment_size / dt).astype(int)
+    n_bin = int(segment_size / dt)
     # adjust dt
-    dt = segment_size / n_bin
-
+    # dt = segment_size / n_bin
+    if fluxes1 is None and fluxes2 is None:
+        dt = segment_size / n_bin
+    else:
+        segment_size = n_bin * dt
     flux_iterable1 = get_flux_iterable_from_segments(
-        times1, gti, segment_size, n_bin, fluxes=fluxes1, errors=errors1
+        times1, gti, segment_size, n_bin, dt=dt, fluxes=fluxes1, errors=errors1
     )
     flux_iterable2 = get_flux_iterable_from_segments(
-        times2, gti, segment_size, n_bin, fluxes=fluxes2, errors=errors2
+        times2, gti, segment_size, n_bin, dt=dt, fluxes=fluxes2, errors=errors2
     )
 
     is_events = np.all([val is None for val in (fluxes1, fluxes2, errors1, errors2)])
