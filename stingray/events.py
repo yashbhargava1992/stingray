@@ -284,7 +284,7 @@ class EventList(StingrayTimeseries):
         ranges = [ranges[0], ranges[0] + nbins * dt]
         times = np.arange(ranges[0] + dt * 0.5, ranges[1], dt)
 
-        counts = histogram(self.time, ranges=ranges, bins=nbins)
+        counts = histogram(self.time, range=ranges, bins=nbins)
 
         attr_dict = dict(counts=counts)
 
@@ -293,7 +293,7 @@ class EventList(StingrayTimeseries):
                 logging.info(f"Creating the {attr} array")
 
                 attr_dict[attr] = histogram(
-                    self.time, bins=nbins, weights=getattr(self, attr), ranges=ranges
+                    self.time, bins=nbins, weights=getattr(self, attr), range=ranges
                 )
         meta_attrs = dict((attr, getattr(self, attr)) for attr in self.meta_attrs())
         new_ts = StingrayTimeseries(times, array_attrs=attr_dict, **meta_attrs)
