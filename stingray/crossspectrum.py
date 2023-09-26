@@ -1075,9 +1075,14 @@ class Crossspectrum(StingrayObject):
             fig = plt.figure("crossspectrum")
             ax = fig.add_subplot(1, 1, 1)
 
-        ax.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")
-        ax.plot(self.freq, self.power.real, marker, color="r", alpha=0.5, label="Real Part")
-        ax.plot(self.freq, self.power.imag, marker, color="g", alpha=0.5, label="Imaginary Part")
+        if np.any(np.iscomplex(self.power.imag)):
+            ax.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")
+            ax.plot(
+                self.freq, self.power.imag, marker, color="g", alpha=0.5, label="Imaginary Part"
+            )
+            ax.plot(self.freq, self.power.real, marker, color="r", alpha=0.5, label="Real Part")
+        else:
+            ax.plot(self.freq, np.abs(self.power), marker, color="b")
 
         if labels is not None:
             try:
@@ -1087,6 +1092,10 @@ class Crossspectrum(StingrayObject):
                 simon("``labels`` must have two labels for x and y axes.")
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
+        else:
+            ax.set_xlabel("Frequency (Hz)")
+            ax.set_ylabel(f"Power ({self.norm})")
+
         ax.legend(loc="best")
 
         if axis is not None:
