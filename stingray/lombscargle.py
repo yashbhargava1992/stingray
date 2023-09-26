@@ -13,6 +13,9 @@ from .lightcurve import Lightcurve
 from .utils import simon
 
 
+__all__ = ["LombScarglePowerspectrum", "LombScargleCrossspectrum"]
+
+
 class LombScargleCrossspectrum(Crossspectrum):
     main_array_attr = "freq"
     type = "crossspectrum"

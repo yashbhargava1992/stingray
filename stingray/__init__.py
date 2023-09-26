@@ -12,6 +12,7 @@ if not _ASTROPY_SETUP_:
     from stingray.events import *
     from stingray.lightcurve import *
     from stingray.utils import *
+    from stingray.lombscargle import *
     from stingray.powerspectrum import *
     from stingray.crossspectrum import *
     from stingray.multitaper import *
