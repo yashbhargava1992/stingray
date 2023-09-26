@@ -63,7 +63,7 @@ class LombScargleCrossspectrum(Crossspectrum):
         The method to be used by the Lomb-Scargle Fourier Transformation function. `fast`
         and `slow` are the allowed values. Default is `fast`. fast uses the optimized Press
         and Rybicki O(n*log(n))
-    
+
     oversampling : float, optional, default: 5
         Interpolation Oversampling Factor (for the fast algorithm)
 
@@ -371,7 +371,7 @@ class LombScarglePowerspectrum(LombScargleCrossspectrum):
     skip_checks: bool
         Skip initial checks, for speed or other reasons (you need to trust your
         inputs!).
-    
+
     min_freq : float
         Minimum frequency to take the Lomb-Scargle Fourier Transform
 
@@ -537,8 +537,8 @@ def lscrossspectrum_from_lightcurve(
     lscs.min_freq = min_freq
     lscs.max_freq = max_freq
     lscs.oversampling = oversampling
-    lscs.nphots1 = lc1.n
-    lscs.nphots2 = lc2.n
+    lscs.nphots1 = lc1.counts.sum()
+    lscs.nphots2 = lc2.counts.sum()
     lscs.dt = lc1.dt
     lscs.n = lc1.n
     lscs.method = method
