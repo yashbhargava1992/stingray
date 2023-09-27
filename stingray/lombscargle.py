@@ -261,12 +261,12 @@ class LombScargleCrossspectrum(Crossspectrum):
         if min_freq is not None and min_freq < 0:
             raise ValueError("min_freq must be non-negative")
 
-        if max_freq is not None and min_freq is not None:
-            if max_freq < min_freq:
-                raise ValueError("max_freq must be non-negative and greater than min_freq")
-
         if max_freq is not None and max_freq < 0:
-            raise ValueError("max_freq must be non-negative and greater than min_freq")
+            raise ValueError("max_freq must be non-negative")
+
+        if max_freq is not None and min_freq is not None:
+            if max_freq <= min_freq:
+                raise ValueError("max_freq must be greater than min_freq")
 
         if method not in ["fast", "slow"]:
             raise ValueError("method must be one of ['fast','slow']")

@@ -139,6 +139,10 @@ class TestLombScargleCrossspectrum:
         with pytest.raises(ValueError):
             lscs = LombScargleCrossspectrum(self.lc1, self.lc2, max_freq=1, min_freq=3)
 
+    def test_init_with_negative_max_freq(self):
+        with pytest.raises(ValueError):
+            lscs = LombScargleCrossspectrum(self.lc1, self.lc2, max_freq=-1)
+
     def test_make_crossspectrum_diff_lc_counts_shape(self):
         lc_ = Simulator(0.0001, 103, 100, 1, random_state=42, tstart=0).simulate(0)
         with pytest.warns(UserWarning) as record:
