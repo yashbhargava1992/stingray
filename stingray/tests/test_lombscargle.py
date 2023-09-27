@@ -8,7 +8,25 @@ from stingray.events import EventList
 from stingray.exceptions import StingrayError
 from stingray.lightcurve import Lightcurve
 from stingray.lombscargle import LombScargleCrossspectrum, LombScarglePowerspectrum
+from stingray.lombscargle import _autofrequency
 from stingray.simulator import Simulator
+
+
+def test_autofrequency():
+    freqs = _autofrequency(min_freq=0.1, max_freq=0.5, df=0.1)
+    assert np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
+    freqs = _autofrequency(min_freq=0.1, max_freq=0.5, length=10)
+    assert np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
+    freqs = _autofrequency(max_freq=0.5, df=0.2)
+    assert np.allclose(freqs, [0.1, 0.3, 0.5])
+    freqs = _autofrequency(min_freq=0.1, dt=1, length=10)
+    assert np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
+    with pytest.raises(ValueError, match="Either df or length must be specified."):
+        _autofrequency(min_freq=0.01, max_freq=0.5)
+    with pytest.raises(ValueError, match="Either max_freq or dt must be"):
+        _autofrequency(min_freq=0.01, df=1)
+    with pytest.warns(UserWarning, match="min_freq must be positive and >0."):
+        freqs = _autofrequency(min_freq=-0.1, max_freq=0.5, df=0.1)
 
 
 class TestLombScargleCrossspectrum:
