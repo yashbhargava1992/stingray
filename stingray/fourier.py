@@ -1,15 +1,18 @@
 import copy
 import warnings
 from collections.abc import Iterable
+from typing import Optional
 
 import numpy as np
+import numpy.typing as npt
 from astropy.table import Table
+from astropy.timeseries.periodograms.lombscargle.implementations.utils import trig_sum
 
 from .gti import (
     generate_indices_of_segment_boundaries_binned,
     generate_indices_of_segment_boundaries_unbinned,
 )
-from .utils import histogram, show_progress, sum_if_not_none_or_initialize, fft, fftfreq
+from .utils import fft, fftfreq, histogram, show_progress, sum_if_not_none_or_initialize
 
 
 def positive_fft_bins(n_bin, include_zero=False):
@@ -1998,3 +2001,218 @@ def avg_cs_from_events(
     if results is not None:
         results.meta["gti"] = gti
     return results
+
+
+def lsft_fast(
+    y: npt.ArrayLike,
+    t: npt.ArrayLike,
+    freqs: npt.ArrayLike,
+    sign: Optional[int] = 1,
+    oversampling: Optional[int] = 5,
+) -> npt.NDArray:
+    """
+    Calculates the Lomb-Scargle Fourier transform of a light curve.
+    Only considers non-negative frequencies.
+    Subtracts mean from data as it is required for the working of the algorithm.
+
+    Parameters
+    ----------
+    y : a :class:`numpy.array` of floats
+        Observations to be transformed.
+
+    t : :class:`numpy.array` of floats
+        Times of the observations
+
+    freqs : :class:`numpy.array`
+        An array of frequencies at which the transform is sampled.
+
+    sign : int, optional, default: 1
+        The sign of the fourier transform. 1 implies positive sign and -1 implies negative sign.
+
+    fullspec : bool, optional, default: False
+        Return LSFT values for full frequency array (True) or just positive frequencies (False).
+
+    oversampling : float, optional, default: 5
+        Interpolation Oversampling Factor
+
+    Returns
+    -------
+    ft_res : numpy.ndarray
+        An array of Fourier transformed data.
+    """
+    y_ = copy.deepcopy(y) - np.mean(y)
+    freqs = freqs[freqs >= 0]
+    # Constants initialization
+    sum_xx = np.sum(y_)
+    num_xt = len(y_)
+    num_ww = len(freqs)
+
+    # Arrays initialization
+    ft_real = ft_imag = np.zeros((num_ww))
+    f0, df, N = freqs[0], freqs[1] - freqs[0], len(freqs)
+
+    # Sum (y_i * cos(wt - wtau))
+    Sh, Ch = trig_sum(t, y_, df, N, f0, oversampling=oversampling)
+
+    # Angular Frequency
+    w = freqs * 2 * np.pi
+
+    # Summation of cos(2wt) and sin(2wt)
+    csum, ssum = trig_sum(
+        t, np.ones_like(y_) / len(y_), df, N, f0, freq_factor=2, oversampling=oversampling
+    )
+
+    wtau = 0.5 * np.arctan2(ssum, csum)
+
+    S2, C2 = trig_sum(
+        t,
+        np.ones_like(y_),
+        df,
+        N,
+        f0,
+        freq_factor=2,
+        oversampling=oversampling,
+    )
+
+    const = np.sqrt(0.5) * np.sqrt(num_ww)
+
+    coswtau = np.cos(wtau)
+    sinwtau = np.sin(wtau)
+
+    sumr = Ch * coswtau + Sh * sinwtau
+    sumi = Sh * coswtau - Ch * sinwtau
+
+    cos2wtau = np.cos(2 * wtau)
+    sin2wtau = np.sin(2 * wtau)
+
+    scos2 = 0.5 * (N + C2 * cos2wtau + S2 * sin2wtau)
+    ssin2 = 0.5 * (N - C2 * cos2wtau - S2 * sin2wtau)
+
+    ft_real = const * sumr / np.sqrt(scos2)
+    ft_imag = const * np.sign(sign) * sumi / np.sqrt(ssin2)
+
+    ft_real[freqs == 0] = sum_xx / np.sqrt(num_xt)
+    ft_imag[freqs == 0] = 0
+
+    phase = wtau - w * t[0]
+
+    ft_res = np.complex128(ft_real + (1j * ft_imag)) * np.exp(-1j * phase)
+
+    return ft_res
+
+
+def lsft_slow(
+    y: npt.ArrayLike,
+    t: npt.ArrayLike,
+    freqs: npt.ArrayLike,
+    sign: Optional[int] = 1,
+) -> npt.NDArray:
+    """
+    Calculates the Lomb-Scargle Fourier transform of a light curve.
+    Only considers non-negative frequencies.
+    Subtracts mean from data as it is required for the working of the algorithm.
+
+    Parameters
+    ----------
+    y : a `:class:numpy.array` of floats
+        Observations to be transformed.
+
+    t : `:class:numpy.array` of floats
+        Times of the observations
+
+    freqs : numpy.ndarray
+        An array of frequencies at which the transform is sampled.
+
+    sign : int, optional, default: 1
+        The sign of the fourier transform. 1 implies positive sign and -1 implies negative sign.
+
+    fullspec : bool, optional, default: False
+        Return LSFT values for full frequency array (True) or just positive frequencies (False).
+
+    Returns
+    -------
+    ft_res : numpy.ndarray
+        An array of Fourier transformed data.
+    """
+    y_ = y - np.mean(y)
+    freqs = np.asarray(freqs[np.asarray(freqs) >= 0])
+
+    ft_real = np.zeros_like(freqs)
+    ft_imag = np.zeros_like(freqs)
+    ft_res = np.zeros_like(freqs, dtype=np.complex128)
+
+    num_y = y_.shape[0]
+    num_freqs = freqs.shape[0]
+    sum_y = np.sum(y_)
+    const1 = np.sqrt(0.5 * num_y)
+    const2 = const1 * np.sign(sign)
+    ft_real = ft_imag = np.zeros(num_freqs)
+    ft_res = np.zeros(num_freqs, dtype=np.complex128)
+
+    for i in range(num_freqs):
+        wrun = freqs[i] * 2 * np.pi
+        if wrun == 0:
+            ft_real = sum_y / np.sqrt(num_y)
+            ft_imag = 0
+            phase_this = 0
+        else:
+            # Calculation of \omega \tau (II.5) --
+            csum = np.sum(np.cos(2.0 * wrun * t))
+            ssum = np.sum(np.sin(2.0 * wrun * t))
+
+            watan = np.arctan2(ssum, csum)
+            wtau = 0.5 * watan
+            # --
+            # In the following, instead of t'_n we are using \omega t'_n = \omega t - \omega\tau
+
+            # Terms of kind X_n * cos or sin (II.1) --
+            sumr = np.sum(y_ * np.cos(wrun * t - wtau))
+            sumi = np.sum(y_ * np.sin(wrun * t - wtau))
+            # --
+
+            # A and B before the square root and inversion in (II.3) --
+            scos2 = np.sum(np.power(np.cos(wrun * t - wtau), 2))
+            ssin2 = np.sum(np.power(np.sin(wrun * t - wtau), 2))
+
+            # const2 is const1 times the sign.
+            # It's the F0 in II.2 without the phase factor
+            # The sign decides whether we are calculating the direct or inverse transform
+            ft_real = const1 * sumr / np.sqrt(scos2)
+            ft_imag = const2 * sumi / np.sqrt(ssin2)
+
+            phase_this = wtau - wrun * t[0]
+
+        ft_res[i] = np.complex128(ft_real + (1j * ft_imag)) * np.exp(-1j * phase_this)
+    return ft_res
+
+
+def impose_symmetry_lsft(
+    ft_res: npt.ArrayLike,
+    sum_y: float,
+    len_y: int,
+    freqs: npt.ArrayLike,
+) -> npt.ArrayLike:
+    """
+    Impose symmetry on the input fourier transform.
+
+    Parameters
+    ----------
+    ft_res : np.array
+        The Fourier transform of the signal.
+    sum_y : float
+        The sum of the values of the signal.
+    len_y : int
+        The length of the signal.
+    freqs : np.array
+        An array of frequencies at which the transform is sampled.
+
+    Returns
+    -------
+    lsft_res : np.array
+        The Fourier transform of the signal with symmetry imposed.
+    freqs_new : np.array
+        The new frequencies
+    """
+    ft_res_new = np.concatenate([np.conjugate(np.flip(ft_res)), [0.0], ft_res])
+    freqs_new = np.concatenate([np.flip(-freqs), [0.0], freqs])
+    return ft_res_new, freqs_new

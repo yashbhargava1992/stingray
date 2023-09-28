@@ -591,6 +591,7 @@ class Lightcurve(StingrayTimeseries):
                 "Bin sizes in input time array aren't equal throughout! "
                 "This could cause problems with Fourier transforms. "
                 "Please make the input time evenly sampled."
+                "Only use with LombScargleCrossspectrum, LombScarglePowerspectrum and QPO using GPResult"
             )
 
     def _operation_with_other_lc(self, other, operation):
