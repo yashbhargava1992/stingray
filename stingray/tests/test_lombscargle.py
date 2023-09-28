@@ -59,7 +59,7 @@ class TestLombScargleCrossspectrum:
         ev_lscs = LombScargleCrossspectrum(ev1, ev2, dt=1)
         lc_lscs = LombScargleCrossspectrum(lc1, lc2, dt=1)
 
-        assert np.argmax(lc_lscs) == np.argmax(ev_lscs)
+        assert np.argmax(lc_lscs.power) == np.argmax(ev_lscs.power)
         assert np.all(ev_lscs.freq == lc_lscs.freq)
         assert np.all(ev_lscs.power == lc_lscs.power)
         assert ev_lscs.freq[np.argmax(ev_lscs.power)] == lc_lscs.freq[np.argmax(lc_lscs.power)] != 0
