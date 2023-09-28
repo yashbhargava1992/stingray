@@ -26,19 +26,33 @@ __all__ = ["EventList"]
 
 
 @njit
+def _int_sum_non_zero(array):
+    sum = 0
+    for a in array:
+        if a > 0:
+            sum += int(a)
+    return sum
+
+
+@njit
 def _from_lc_numba(times, counts, empty_times):
     last = 0
     for t, c in zip(times, counts):
+        if c <= 0:
+            continue
         val = c + last
         empty_times[last:val] = t
         last = val
-    return empty_times
+    # If c < 0 in some cases, some times will be empty
+    return empty_times[:val]
 
 
 def simple_events_from_lc(lc):
     """
     Create an :class:`EventList` from a :class:`stingray.Lightcurve` object. Note that all
     events in a given time bin will have the same time stamp.
+
+    Bins with negative counts will be ignored.
 
     Parameters
     ----------
@@ -53,14 +67,14 @@ def simple_events_from_lc(lc):
     Examples
     --------
     >>> from stingray import Lightcurve
-    >>> lc = Lightcurve([0, 1], [2, 3], dt=1)
+    >>> lc = Lightcurve([0, 1, 2], [2, 3, -1], dt=1)
     >>> ev = simple_events_from_lc(lc)
     >>> np.allclose(ev.time, [0, 0, 1, 1, 1])
     True
     """
-    times = _from_lc_numba(
-        lc.time, lc.counts.astype(int), np.zeros(np.sum(lc.counts).astype(int), dtype=float)
-    )
+    counts = lc.counts.astype(int)
+    allcounts = _int_sum_non_zero(counts)
+    times = _from_lc_numba(lc.time, counts, np.zeros(allcounts, dtype=float))
     return EventList(time=times, gti=lc.gti)
 
 
@@ -362,6 +376,8 @@ class EventList(StingrayTimeseries):
         """
         Create an :class:`EventList` from a :class:`stingray.Lightcurve` object. Note that all
         events in a given time bin will have the same time stamp.
+
+        Bins with negative counts will be ignored.
 
         Parameters
         ----------
