@@ -4,6 +4,7 @@ import copy
 import warnings
 
 import pytest
+import matplotlib.pyplot as plt
 from astropy.io import fits
 from stingray import Lightcurve
 from stingray.events import EventList
@@ -27,6 +28,13 @@ try:
     import h5py
 except ImportError:
     _HAS_H5PY = False
+
+
+def clear_all_figs():
+    fign = plt.get_fignums()
+    for fig in fign:
+        plt.close(fig)
+
 
 np.random.seed(20150907)
 curdir = os.path.abspath(os.path.dirname(__file__))
@@ -56,6 +64,12 @@ class TestAveragedPowerspectrumEvents(object):
     def test_save_all(self):
         cs = AveragedPowerspectrum(self.lc, dt=self.dt, segment_size=1, save_all=True)
         assert hasattr(cs, "cs_all")
+
+    def test_plot_simple(self):
+        clear_all_figs()
+        self.leahy_pds.plot()
+        assert plt.fignum_exists("crossspectrum")
+        plt.close("crossspectrum")
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_common_mean_gives_comparable_scatter(self, norm):
