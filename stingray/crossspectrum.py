@@ -1075,7 +1075,7 @@ class Crossspectrum(StingrayObject):
             fig = plt.figure("crossspectrum")
             ax = fig.add_subplot(1, 1, 1)
 
-        if np.any(np.iscomplex(self.power.imag)):
+        if np.any(np.iscomplex(self.power)):
             ax.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")
             ax.plot(
                 self.freq, self.power.imag, marker, color="g", alpha=0.5, label="Imaginary Part"
