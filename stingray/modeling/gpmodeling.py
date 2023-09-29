@@ -575,7 +575,8 @@ class GPResult:
         self.counts = lc.counts
         self.result = None
 
-    def sample(self, prior_model=None, likelihood_model=None, max_samples=1e4):
+    def sample(self, prior_model=None, likelihood_model=None, max_samples=1e4,
+               num_live_points=500):
         """
         Makes a Jaxns nested sampler over the Gaussian Process, given the
         prior and likelihood model
@@ -597,6 +598,9 @@ class GPResult:
         max_samples: int, default 1e4
             The maximum number of samples to be taken by the nested sampler
 
+        num_live_points : int, default 500
+            The number of live points to use in the nested sampling
+
         Returns
         ----------
         results: jaxns.results.NestedSamplerResults object
@@ -615,7 +619,7 @@ class GPResult:
         nsmodel = Model(prior_model=self.prior_model, log_likelihood=self.log_likelihood_model)
         nsmodel.sanity_check(random.PRNGKey(10), S=100)
 
-        self.exact_ns = ExactNestedSampler(nsmodel, num_live_points=500, max_samples=max_samples)
+        self.exact_ns = ExactNestedSampler(nsmodel, num_live_points=num_live_points, max_samples=max_samples)
         termination_reason, state = self.exact_ns(
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
         )
