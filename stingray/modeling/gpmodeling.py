@@ -37,7 +37,8 @@ except ImportError:
     tfp_available = False
 
 
-__all__ = ["GPResult"]
+__all__ = ["get_kernel", "get_mean", "get_prior", 
+           "get_log_likelihood", "GPResult", "get_gp_params"]
 
 
 def get_kernel(kernel_type, kernel_params):
@@ -542,14 +543,14 @@ def get_log_likelihood(params_list, kernel_type, mean_type, times, counts, **kwa
 
     @jit
     def likelihood_model(*args):
-        dict = {}
+        param_dict = {}
         for i, params in enumerate(params_list):
             if params[0:4] == "log_":
-                dict[params[4:]] = jnp.exp(args[i])
+                param_dict[params[4:]] = jnp.exp(args[i])
             else:
-                dict[params] = args[i]
-        kernel = get_kernel(kernel_type=kernel_type, kernel_params=dict)
-        mean = get_mean(mean_type=mean_type, mean_params=dict)
+                param_dict[params] = args[i]
+        kernel = get_kernel(kernel_type=kernel_type, kernel_params=param_dict)
+        mean = get_mean(mean_type=mean_type, mean_params=param_dict)
         gp = GaussianProcess(kernel, times, mean_value=mean(times))
         return gp.log_probability(counts)
 
