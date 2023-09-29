@@ -113,6 +113,20 @@ To install all required and recommended dependencies in a recent installation, y
 
     $ pip install astropy scipy matplotlib numpy h5py tqdm numba pint-pulsar emcee corner statsmodels pyfftw tbb
 
+For the Gaussian Process modeling in `stingray.modeling.gpmodeling`, you'll need the following extra packages
+
++ jax
++ jaxns
++ tensorflow
++ tensorflow-probability
++ tinygp
++ etils
++ typing_extensions
+
+Most of these are installed via ``pip``, but if you have an Nvidia GPU available, you'll want to take special care 
+following the installation instructions for jax and tensorflow(-probability) in order to enable GPU support and 
+take advantage of those speed-ups. 
+
 For development work, you will need the following extra libraries:
 
 + pytest
