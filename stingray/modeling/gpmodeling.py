@@ -620,6 +620,7 @@ class GPResult:
         nsmodel.sanity_check(random.PRNGKey(10), S=100)
 
         self.exact_ns = ExactNestedSampler(nsmodel, num_live_points=num_live_points, max_samples=max_samples)
+
         termination_reason, state = self.exact_ns(
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
         )
