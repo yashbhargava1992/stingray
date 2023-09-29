@@ -1806,179 +1806,180 @@ def histnd_numba_seq(tracks, bins, range, use_memmap=False, tmp=None):
     ...                       range=np.array([[0., 1.], [2., 3.], [4., 5.]]))
     >>> assert np.all(H == Hn)
     """
+    tracks = np.asarray(tracks)
     H = _allocate_array_or_memmap(bins, np.uint64, use_memmap=use_memmap, tmp=tmp)
     slice_int = np.zeros(len(bins), dtype=np.uint64)
 
     return _histnd_numba_seq(H, tracks, bins, range, slice_int)
 
 
-if HAS_NUMBA:
+def _wrap_histograms(numba_func, weight_numba_func, np_func, *args, **kwargs):
+    """Histogram wrapper.
 
-    def _wrap_histograms(func, weight_func, np_func, *args, **kwargs):
-        """Histogram wrapper.
+    Make sure that the histogram fails safely if numba is not available or does not work.
 
-        Make sure that the histogram fails safely if numba is not available or does not work.
+    In particular, if weights are complex, it will split them in real and imaginary part.
+    """
+    weights = kwargs.pop("weights", None)
+    use_memmap = kwargs.pop("use_memmap", False)
+    tmp = kwargs.pop("tmp", None)
 
-        In particular, if weights are complex, it will split them in real and imaginary part.
-        """
-        weights = kwargs.pop("weights", None)
-
-        if np.iscomplexobj(weights):
-            return (
-                _wrap_histograms(func, weight_func, np_func, *args, weights=weights.real, **kwargs)
-                + _wrap_histograms(
-                    func, weight_func, np_func, *args, weights=weights.imag, **kwargs
-                )
-                * 1.0j
+    if np.iscomplexobj(weights):
+        return (
+            _wrap_histograms(
+                numba_func,
+                weight_numba_func,
+                np_func,
+                *args,
+                weights=weights.real,
+                use_memmap=use_memmap,
+                tmp=tmp,
+                **kwargs,
             )
-
-        try:
-            if weights is None:
-                return func(*args, **kwargs)
-            if weight_func is None:
-                raise TypeError("Weights not supported for this histogram")
-            return weight_func(*args, weights=weights, **kwargs)
-        except (NumbaValueError, NumbaNotImplementedError, TypingError, TypeError):
-            warnings.warn(
-                "Cannot calculate the histogram with the numba implementation. "
-                "Trying standard numpy."
+            + _wrap_histograms(
+                numba_func,
+                weight_numba_func,
+                np_func,
+                *args,
+                weights=weights.imag,
+                use_memmap=use_memmap,
+                tmp=tmp,
+                **kwargs,
             )
-
-            return np_func(*args, weights=weights, **kwargs)[0]
-
-    def histogram3d(*args, **kwargs):
-        """Histogram implementation.
-
-        Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
-        of the histogram. Bonus: weights can be complex.
-
-        Examples
-        --------
-        >>> x = np.random.uniform(0., 1., 100)
-        >>> y = np.random.uniform(2., 3., 100)
-        >>> z = np.random.uniform(4., 5., 100)
-        >>> # 2d example
-        >>> H, _, _ = np.histogram2d(x, y, bins=np.array((5, 5)),
-        ...                          range=[(0., 1.), (2., 3.)])
-        >>> alldata = np.array([x, y])
-        >>> Hn = histogramnd(alldata, bins=np.array([5, 5]),
-        ...                  range=np.array([[0., 1.], [2., 3.]]))
-        >>> assert np.all(H == Hn)
-        >>> # 3d example
-        >>> H, _ = np.histogramdd((x, y, z), bins=np.array((5, 6, 7)),
-        ...                       range=[(0., 1.), (2., 3.), (4., 5)])
-        >>> alldata = np.array([x, y, z])
-        >>> Hn = histogram3d(alldata, bins=np.array((5, 6, 7)),
-        ...                  range=np.array([[0., 1.], [2., 3.], [4., 5.]]))
-        >>> assert np.all(H == Hn)
-        """
-
-        return _wrap_histograms(
-            hist3d_numba_seq, hist3d_numba_seq_weight, histogramdd_np, *args, **kwargs
+            * 1.0j
         )
 
-    def histogramnd(*args, **kwargs):
-        """Histogram implementation.
+    if not HAS_NUMBA:
+        return np_func(*args, weights=weights, **kwargs)[0]
 
-        Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
-        of the histogram. Bonus: weights can be complex.
-
-        Examples
-        --------
-        >>> x = np.random.uniform(0., 1., 100)
-        >>> y = np.random.uniform(2., 3., 100)
-        >>> z = np.random.uniform(4., 5., 100)
-        >>> # 2d example
-        >>> H, _, _ = np.histogram2d(x, y, bins=np.array((5, 5)),
-        ...                          range=[(0., 1.), (2., 3.)])
-        >>> alldata = np.array([x, y])
-        >>> Hn = histogramnd(alldata, bins=np.array([5, 5]),
-        ...                  range=np.array([[0., 1.], [2., 3.]]))
-        >>> assert np.all(H == Hn)
-        >>> # 3d example
-        >>> H, _ = np.histogramdd((x, y, z), bins=np.array((5, 6, 7)),
-        ...                       range=[(0., 1.), (2., 3.), (4., 5)])
-        >>> alldata = np.array([x, y, z])
-        >>> Hn = histogramnd(alldata, bins=np.array((5, 6, 7)),
-        ...                  range=np.array([[0., 1.], [2., 3.], [4., 5.]]))
-        >>> assert np.all(H == Hn)
-        """
-
-        return _wrap_histograms(histnd_numba_seq, None, histogramdd_np, *args, **kwargs)
-
-    def histogram2d(*args, **kwargs):
-        """Histogram implementation.
-
-        Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
-        of the histogram. Bonus: weights can be complex.
-
-        Examples
-        --------
-        >>> x = np.random.uniform(0., 1., 100)
-        >>> y = np.random.uniform(2., 3., 100)
-        >>> weight = np.random.uniform(0, 1, 100)
-        >>> H, xedges, yedges = np.histogram2d(x, y, bins=(5, 5),
-        ...                                    range=[(0., 1.), (2., 3.)],
-        ...                                    weights=weight)
-        >>> Hn = histogram2d(x, y, bins=(5, 5),
-        ...                  range=[[0., 1.], [2., 3.]],
-        ...                  weights=weight)
-        >>> assert np.array_equal(H, Hn)
-        >>> Hn1 = histogram2d(x, y, bins=(5, 5),
-        ...                   range=[[0., 1.], [2., 3.]],
-        ...                   weights=None)
-        >>> Hn2 = histogram2d(x, y, bins=(5, 5),
-        ...                   range=[[0., 1.], [2., 3.]])
-        >>> assert np.array_equal(Hn1, Hn2)
-        >>> Hn = histogram2d(x, y, bins=(5, 5),
-        ...                  range=[[0., 1.], [2., 3.]],
-        ...                  weights=weight + 1.j * weight)
-        >>> assert np.array_equal(Hn.real, Hn.imag)
-        >>> assert np.array_equal(H, Hn.real)
-        """
-        return _wrap_histograms(
-            hist2d_numba_seq, hist2d_numba_seq_weight, histogram2d_np, *args, **kwargs
+    try:
+        if weights is None:
+            return numba_func(*args, use_memmap=use_memmap, tmp=tmp, **kwargs)
+        if weight_numba_func is None:
+            raise TypeError("Weights not supported for this histogram")
+        return weight_numba_func(*args, weights=weights, use_memmap=use_memmap, tmp=tmp, **kwargs)
+    except (NumbaValueError, NumbaNotImplementedError, TypingError, TypeError):
+        warnings.warn(
+            "Cannot calculate the histogram with the numba implementation. "
+            "Trying standard numpy."
         )
 
-    def histogram(*args, **kwargs):
-        """Histogram implementation.
+        return np_func(*args, weights=weights, **kwargs)[0]
 
-        Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
-        of the histogram. Bonus: weights can be complex.
 
-        Examples
-        --------
-        >>> x = np.random.uniform(0., 1., 100)
-        >>> weights = np.random.uniform(0, 1, 100)
-        >>> H, xedges = np.histogram(x, bins=5, range=[0., 1.], weights=weights)
-        >>> Hn = histogram(x, weights=weights, bins=5, range=[0., 1.], tmp='out.npy',
-        ...                use_memmap=True)
-        >>> assert np.array_equal(H, Hn)
-        >>> Hn1 = histogram(x, weights=None, bins=5, range=[0., 1.])
-        >>> Hn2 = histogram(x, bins=5, range=[0., 1.])
-        >>> assert np.array_equal(Hn1, Hn2)
-        >>> Hn = histogram(x, weights=weights + weights * 2.j, bins=5, range=[0., 1.],
-        ...                tmp='out.npy', use_memmap=True)
-        >>> assert np.array_equal(Hn.real, Hn.imag / 2)
-        """
+def histogram3d(*args, **kwargs):
+    """Histogram implementation.
 
-        return _wrap_histograms(
-            hist1d_numba_seq, hist1d_numba_seq_weight, histogram_np, *args, **kwargs
-        )
+    Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
+    of the histogram. Bonus: weights can be complex.
 
-else:
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> y = np.random.uniform(2., 3., 100)
+    >>> z = np.random.uniform(4., 5., 100)
+    >>> # 3d example
+    >>> H, _ = np.histogramdd((x, y, z), bins=np.array((5, 6, 7)),
+    ...                       range=[(0., 1.), (2., 3.), (4., 5)])
+    >>> Hn = histogram3d((x, y, z), bins=np.array((5, 6, 7)),
+    ...                  range=[(0., 1.), (2., 3.), (4., 5)])
+    >>> assert np.all(H == Hn)
+    """
 
-    def histogramnd(*args, **kwargs):
-        return histogramdd_np(*args, **kwargs)[0]
+    return _wrap_histograms(
+        hist3d_numba_seq, hist3d_numba_seq_weight, histogramdd_np, *args, **kwargs
+    )
 
-    def histogram3d(*args, **kwargs):
-        return histogramdd_np(*args, **kwargs)[0]
 
-    def histogram2d(*args, **kwargs):
-        return histogram2d_np(*args, **kwargs)[0]
+def histogramnd(*args, **kwargs):
+    """Histogram implementation.
 
-    def histogram(*args, **kwargs):
-        return histogram_np(*args, **kwargs)[0]
+    Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
+    of the histogram. Bonus: weights can be complex.
+
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> y = np.random.uniform(2., 3., 100)
+    >>> z = np.random.uniform(4., 5., 100)
+    >>> # 2d example
+    >>> H, _, _ = np.histogram2d(x, y, bins=np.array((5, 5)),
+    ...                          range=[(0., 1.), (2., 3.)])
+    >>> Hn = histogramnd((x, y), bins=np.array([5, 5]),
+    ...                  range=np.array([[0., 1.], [2., 3.]]))
+    >>> assert np.all(H == Hn)
+    >>> # 3d example
+    >>> H, _ = np.histogramdd((x, y, z), bins=np.array((5, 6, 7)),
+    ...                       range=[(0., 1.), (2., 3.), (4., 5)])
+    >>> alldata = (x, y, z)
+    >>> Hn = histogramnd(alldata, bins=np.array((5, 6, 7)),
+    ...                  range=np.array([[0., 1.], [2., 3.], [4., 5.]]))
+    >>> assert np.all(H == Hn)
+    """
+
+    return _wrap_histograms(histnd_numba_seq, None, histogramdd_np, *args, **kwargs)
+
+
+def histogram2d(*args, **kwargs):
+    """Histogram implementation.
+
+    Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
+    of the histogram. Bonus: weights can be complex.
+
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> y = np.random.uniform(2., 3., 100)
+    >>> weight = np.random.uniform(0, 1, 100)
+    >>> H, xedges, yedges = np.histogram2d(x, y, bins=(5, 5),
+    ...                                    range=[(0., 1.), (2., 3.)],
+    ...                                    weights=weight)
+    >>> Hn = histogram2d(x, y, bins=(5, 5),
+    ...                  range=[[0., 1.], [2., 3.]],
+    ...                  weights=weight)
+    >>> assert np.array_equal(H, Hn)
+    >>> Hn1 = histogram2d(x, y, bins=(5, 5),
+    ...                   range=[[0., 1.], [2., 3.]],
+    ...                   weights=None)
+    >>> Hn2 = histogram2d(x, y, bins=(5, 5),
+    ...                   range=[[0., 1.], [2., 3.]])
+    >>> assert np.array_equal(Hn1, Hn2)
+    >>> Hn = histogram2d(x, y, bins=(5, 5),
+    ...                  range=[[0., 1.], [2., 3.]],
+    ...                  weights=weight + 1.j * weight)
+    >>> assert np.array_equal(Hn.real, Hn.imag)
+    >>> assert np.array_equal(H, Hn.real)
+    """
+    return _wrap_histograms(
+        hist2d_numba_seq, hist2d_numba_seq_weight, histogram2d_np, *args, **kwargs
+    )
+
+
+def histogram(*args, **kwargs):
+    """Histogram implementation.
+
+    Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
+    of the histogram. Bonus: weights can be complex.
+
+    Examples
+    --------
+    >>> x = np.random.uniform(0., 1., 100)
+    >>> weights = np.random.uniform(0, 1, 100)
+    >>> H, xedges = np.histogram(x, bins=5, range=[0., 1.], weights=weights)
+    >>> Hn = histogram(x, weights=weights, bins=5, range=[0., 1.], tmp='out.npy',
+    ...                use_memmap=True)
+    >>> assert np.array_equal(H, Hn)
+    >>> Hn1 = histogram(x, weights=None, bins=5, range=[0., 1.])
+    >>> Hn2 = histogram(x, bins=5, range=[0., 1.])
+    >>> assert np.array_equal(Hn1, Hn2)
+    >>> Hn = histogram(x, weights=weights + weights * 2.j, bins=5, range=[0., 1.],
+    ...                tmp='out.npy', use_memmap=True)
+    >>> assert np.array_equal(Hn.real, Hn.imag / 2)
+    """
+
+    return _wrap_histograms(
+        hist1d_numba_seq, hist1d_numba_seq_weight, histogram_np, *args, **kwargs
+    )
 
 
 def equal_count_energy_ranges(energies, n_ranges, emin=None, emax=None):
