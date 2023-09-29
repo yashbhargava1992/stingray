@@ -2,7 +2,7 @@ import numpy as np
 import copy
 import warnings
 
-from astropy.tests.helper import pytest
+import pytest
 from numpy.random import poisson, standard_cauchy
 from scipy.signal import TransferFunction
 
@@ -10,6 +10,7 @@ from stingray import Lightcurve
 from stingray.events import EventList
 from stingray import Multitaper, Powerspectrum
 
+pytestmark = pytest.mark.slow
 np.random.seed(1)
 
 

@@ -21,26 +21,35 @@ Features
 Current Capabilities
 --------------------
 
-Currently implemented functionality in this library comprises:
+1. Data handling and simulation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * loading event lists from fits files of a few missions (RXTE/PCA, NuSTAR/FPM, XMM-Newton/EPIC, NICER/XTI)
 * constructing light curves from event data, various operations on light curves (e.g. addition, subtraction, joining, and truncation)
-* Good Time Interval operations
-* power spectra in Leahy, rms normalization, absolute rms and no normalization
-* averaged power spectra
-* dynamical power spectra
-* maximum likelihood fitting of periodograms/parametric models
-* (averaged) cross spectra
-* coherence, time lags
-* cross correlation functions
-* RMS spectra and lags (time vs energy, time vs frequency); *needs testing*
-* covariance spectra; *needs testing*
-* bispectra; *needs testing*
-* (Bayesian) quasi-periodic oscillation searches
 * simulating a light curve with a given power spectrum
 * simulating a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
 * simulating an event list from a given light curve _and_ with a given energy spectrum
+* Good Time Interval operations
+
+2. Fourier methods
+~~~~~~~~~~~~~~~~~~
+* power spectra and cross spectra in Leahy, rms normalization, absolute rms and no normalization
+* averaged power spectra and cross spectra
+* dynamical power spectra and cross spectra
+* maximum likelihood fitting of periodograms/parametric models
+* (averaged) cross spectra
+* coherence, time lags
+* Variability-Energy spectra, like covariance spectra and lags *needs testing*
+* covariance spectra; *needs testing*
+* bispectra; *needs testing*
+* (Bayesian) quasi-periodic oscillation searches
+* Lomb-Scargle periodograms and cross spectra
+
+3. Other time series methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * pulsar searches with Epoch Folding, :math:`Z^2_n` test
+* Gaussian Processes for QPO studies
+* cross correlation functions
 
 Future Plans
 ------------
@@ -103,6 +112,20 @@ Some of the dependencies are available in ``conda``, the others via ``pip``.
 To install all required and recommended dependencies in a recent installation, you should be good running the following command:
 
     $ pip install astropy scipy matplotlib numpy h5py tqdm numba pint-pulsar emcee corner statsmodels pyfftw tbb
+
+For the Gaussian Process modeling in `stingray.modeling.gpmodeling`, you'll need the following extra packages
+
++ jax
++ jaxns
++ tensorflow
++ tensorflow-probability
++ tinygp
++ etils
++ typing_extensions
+
+Most of these are installed via ``pip``, but if you have an Nvidia GPU available, you'll want to take special care 
+following the installation instructions for jax and tensorflow(-probability) in order to enable GPU support and 
+take advantage of those speed-ups. 
 
 For development work, you will need the following extra libraries:
 

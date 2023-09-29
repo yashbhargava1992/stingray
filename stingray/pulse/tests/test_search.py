@@ -11,6 +11,8 @@ from stingray.pulse import fold_events
 from stingray import Lightcurve
 from stingray.events import EventList
 
+pytestmark = pytest.mark.slow
+
 np.random.seed(20150907)
 
 

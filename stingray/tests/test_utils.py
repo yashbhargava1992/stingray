@@ -1,4 +1,4 @@
-from astropy.tests.helper import pytest
+import pytest
 import numpy as np
 import stingray.utils as utils
 from scipy.stats import sem

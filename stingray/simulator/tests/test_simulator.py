@@ -3,7 +3,7 @@ import os
 import warnings
 
 from scipy.interpolate import interp1d
-from astropy.tests.helper import pytest
+import pytest
 import astropy.modeling.models
 from stingray import Lightcurve, Crossspectrum, sampledata, Powerspectrum
 from stingray.simulator import Simulator

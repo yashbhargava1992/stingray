@@ -19,9 +19,48 @@ from .filters import get_deadtime_mask
 from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_boundaries
 from .io import load_events_and_gtis
 from .lightcurve import Lightcurve
-from .utils import assign_value_if_none, simon, interpret_times
+from .utils import assign_value_if_none, simon, interpret_times, njit
 
 __all__ = ["EventList"]
+
+
+@njit
+def _from_lc_numba(times, counts, empty_times):
+    last = 0
+    for t, c in zip(times, counts):
+        val = c + last
+        empty_times[last:val] = t
+        last = val
+    return empty_times
+
+
+def simple_events_from_lc(lc):
+    """
+    Create an :class:`EventList` from a :class:`stingray.Lightcurve` object. Note that all
+    events in a given time bin will have the same time stamp.
+
+    Parameters
+    ----------
+    lc: :class:`stingray.Lightcurve` object
+        Light curve to use for creation of the event list.
+
+    Returns
+    -------
+    ev: :class:`EventList` object
+        The resulting list of photon arrival times generated from the light curve.
+
+    Examples
+    --------
+    >>> from stingray import Lightcurve
+    >>> lc = Lightcurve([0, 1], [2, 3], dt=1)
+    >>> ev = simple_events_from_lc(lc)
+    >>> np.allclose(ev.time, [0, 0, 1, 1, 1])
+    True
+    """
+    times = _from_lc_numba(
+        lc.time, lc.counts.astype(int), np.zeros(np.sum(lc.counts).astype(int), dtype=float)
+    )
+    return EventList(time=times, gti=lc.gti)
 
 
 class EventList(StingrayTimeseries):
@@ -288,13 +327,7 @@ class EventList(StingrayTimeseries):
         ev: :class:`EventList` object
             The resulting list of photon arrival times generated from the light curve.
         """
-
-        # Multiply times by number of counts
-        times = [[i] * int(j) for i, j in zip(lc.time, lc.counts)]
-        # Concatenate all lists
-        times = [i for j in times for i in j]
-
-        return EventList(time=times, gti=lc.gti)
+        return simple_events_from_lc(lc)
 
     def simulate_times(self, lc, use_spline=False, bin_time=None):
         """Simulate times from an input light curve.

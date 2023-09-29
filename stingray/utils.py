@@ -135,7 +135,6 @@ __all__ = [
     "standard_error",
     "nearest_power_of_two",
     "find_nearest",
-    "genDataPath",
     "check_isallfinite",
 ]
 
@@ -1196,42 +1195,6 @@ def find_nearest(array, value):
         return array[idx - 1], idx - 1
     else:
         return array[idx], idx
-
-
-def genDataPath(dir_path):
-    """Generates data path to chunks.
-
-    Parameters
-    ----------
-    dir_path: string
-        Path to zarr datastore + Top level directory name for data
-
-    Returns
-    -------
-    list
-        List of path's to datastore
-
-    Raises
-    ------
-    IOError
-        If directory does not exist
-    """
-    path_list = []
-    if os.path.isdir(dir_path):
-        if not (
-            os.path.isdir(os.path.join(dir_path, "main_data/"))
-            or os.path.join(dir_path, "meta_data/")
-        ):
-            raise IOError(("Directory does not exist."))
-
-        else:
-            path_list.append(os.path.join(dir_path, "main_data/"))
-            path_list.append(os.path.join(dir_path, "meta_data/"))
-
-            return path_list
-
-    else:
-        raise IOError(("Directory does not exist."))
 
 
 def check_iterables_close(iter0, iter1, **kwargs):

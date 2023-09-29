@@ -25,6 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
 
       # Found this solution at
       # https://monadical.com/posts/filters-github-actions.html#Case-2-Pull-request
@@ -45,8 +48,9 @@ jobs:
   ci-tests:
     needs: check_commit
     if: ${{ needs.check_commit.outputs.match != 'true' }}
-    name: ${{ matrix.os }}, ${{ matrix.tox_env }}
+    # name: ${{ matrix.os }}, ${{ matrix.tox_env }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
@@ -55,45 +59,71 @@ jobs:
           # we select only a few, in order to conserve resources. If you add
           # an additional environment, please include a comment to indicate
           # why it is useful.
-          - os: ubuntu-latest
+          - name: Black test
+            os: ubuntu-latest
             python: '3.10'
             tox_env: 'black'
+            experimental: false
+
           # Basic tests on the oldest & newest supported versions of Python,
           # recording coverage data for the latter.
-          - os: ubuntu-latest
-            python: '3.8'
-            tox_env: 'py38-test'
-          - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-cov'
-
-          # Basic tests on alternative operating systems.
-          - os: windows-latest
-            python: '3.10'
-            tox_env: 'py310-test'
-          - os: macos-latest
-            python: '3.10'
-            tox_env: 'py310-test'
-
-          # Test with all optional dependencies installed.
-          - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-alldeps-cov'
-            use_remote_data: true
-
-          # Test with the various supported releases of Astropy.
-          - os: ubuntu-latest
+          - name: Py3.8 with old Astropy version
+            os: ubuntu-latest
             python: '3.8'
             tox_env: 'py38-test-astropy4-cov'
+            experimental: false
 
-          - os: ubuntu-latest
+          - name: Linux, Py3.10 with coverage
+            os: ubuntu-latest
             python: '3.10'
-            tox_env: 'py310-test-astropy5'
+            tox_env: 'py310-test-cov'
+            experimental: false
+
+          # Basic tests on alternative operating systems.
+          - name: Windows, Py3.11 with coverage
+            os: windows-latest
+            python: '3.11'
+            tox_env: 'py311-test-cov'
+            experimental: false
+
+          - name: Mac OS, Py3.11
+            os: macos-latest
+            python: '3.11'
+            tox_env: 'py311-test'
+            experimental: false
+
+          # Test with all optional dependencies installed.
+          - name: Linux, Py3.11 all dependencies and coverage
+            os: ubuntu-latest
+            python: '3.11'
+            tox_env: 'py311-test-alldeps-cov'
+            use_remote_data: true
+            experimental: false
 
           # Development version of dependencies
-          - os: ubuntu-latest
-            python: '3.10'
-            tox_env: 'py310-test-devdeps'
+          - name: Linux, Py3.11 with dev versions of dependencies
+            os: ubuntu-latest
+            python: '3.11'
+            tox_env: 'py311-test-devdeps'
+            experimental: false
+
+          # Test with all optional dependencies installed.
+          - name: Slow tests on Linux, Py3.11, all deps and coverage
+            os: ubuntu-latest
+            python: '3.11'
+            tox_env: 'py311-test-alldeps-cov'
+            use_remote_data: true
+            experimental: false
+            slow: true
+
+          # Test with all optional dependencies installed.
+          - name: Slow tests on Linux, Py3.11, basic deps and coverage
+            os: ubuntu-latest
+            python: '3.11'
+            tox_env: 'py311-test-cov'
+            use_remote_data: true
+            experimental: false
+            slow: true
 
     steps:
     - name: Check out repository
@@ -119,14 +149,19 @@ jobs:
         python -c "import pip; print(f'pip {pip.__version__}')"
         python -c "import setuptools; print(f'setuptools {setuptools.__version__}')"
         python -c "import tox; print(f'tox {tox.__version__}')"
-    - name: Run tests
-      if: "! matrix.use_remote_data"
-      run: tox -e ${{ matrix.tox_env }}
-    - name: Run tests with remote data
-      if: "matrix.use_remote_data"
+    - name: Run quick tests
+      if: "(! matrix.use_remote_data) && (! matrix.slow)"
+      run: tox -e ${{ matrix.tox_env }} --
+    - name: Run quick tests with remote data
+      if: "matrix.use_remote_data && (! matrix.slow)"
       run: |
         pip install pytest-remotedata
         tox -e ${{ matrix.tox_env }} -- --remote-data=any
+    - name: Run slow tests with remote data
+      if: "matrix.use_remote_data && matrix.slow"
+      run: |
+        pip install pytest-remotedata
+        tox -e ${{ matrix.tox_env }} -- --remote-data=any -m slow --run-slow
     - name: Upload coverage to codecov
       if: "endsWith(matrix.tox_env, '-cov')"
       uses: codecov/codecov-action@v3

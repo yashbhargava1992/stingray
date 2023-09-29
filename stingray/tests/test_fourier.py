@@ -1,6 +1,8 @@
 import os
 from pickle import FALSE
+
 import pytest
+
 from stingray.fourier import *
 from stingray.utils import check_allclose_and_print
 
@@ -46,6 +48,48 @@ def test_norm():
 
     assert np.isclose(pdsabs[good].mean(), pois_abs, rtol=0.01)
     assert np.isclose(pdsfrac[good].mean(), pois_frac, rtol=0.01)
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64, np.complex64, np.complex128])
+def test_flux_iterables(dtype):
+    times = np.arange(4)
+    fluxes = np.ones(4).astype(dtype)
+    errors = np.ones(4).astype(dtype) * np.sqrt(2)
+    gti = np.asarray([[-0.5, 3.5]])
+    iter = get_flux_iterable_from_segments(times, gti, 2, n_bin=None, fluxes=fluxes, errors=errors)
+    cast_kind = float
+    if np.iscomplexobj(fluxes):
+        cast_kind = complex
+    for it, er in iter:
+        assert np.allclose(it, 1, rtol=0.01)
+        assert np.allclose(er, np.sqrt(2), rtol=0.01)
+        assert isinstance(it[0], cast_kind)
+        assert isinstance(er[0], cast_kind)
+
+
+def test_avg_pds_imperfect_lc_size():
+    times = np.arange(100)
+    fluxes = np.ones(100).astype(float)
+    gti = np.asarray([[-0.5, 99.5]])
+    segment_size = 5.99
+    dt = 1
+    res = avg_pds_from_events(times, gti, segment_size, dt, fluxes=fluxes)
+    assert res.meta["segment_size"] == 5
+    assert res.meta["dt"] == 1
+
+
+def test_avg_cs_imperfect_lc_size():
+    times1 = times2 = np.arange(100)
+    fluxes1 = np.ones(100).astype(float)
+    fluxes2 = np.ones(100).astype(float)
+    gti = np.asarray([[-0.5, 99.5]])
+    segment_size = 5.99
+    dt = 1
+    res = avg_cs_from_events(
+        times1, times2, gti, segment_size, dt, fluxes1=fluxes1, fluxes2=fluxes2
+    )
+    assert res.meta["segment_size"] == 5
+    assert res.meta["dt"] == 1
 
 
 class TestCoherence(object):
@@ -182,12 +226,19 @@ class TestFourier(object):
         out_ev = avg_pds_from_events(times, self.gti, self.segment_size, self.dt)
         assert out_ev is None
 
+    @pytest.mark.parametrize("return_subcs", [True, False])
     @pytest.mark.parametrize("return_auxil", [True, False])
-    def test_avg_cs_bad_input(self, return_auxil):
+    def test_avg_cs_bad_input(self, return_auxil, return_subcs):
         times1 = np.sort(np.random.uniform(0, 1000, 1))
         times2 = np.sort(np.random.uniform(0, 1000, 1))
         out_ev = avg_cs_from_events(
-            times1, times2, self.gti, self.segment_size, self.dt, return_auxil=return_auxil
+            times1,
+            times2,
+            self.gti,
+            self.segment_size,
+            self.dt,
+            return_auxil=return_auxil,
+            return_subcs=return_subcs,
         )
         assert out_ev is None
 
@@ -202,7 +253,7 @@ class TestFourier(object):
             use_common_mean=True,
             silent=True,
             fluxes=None,
-        )["power"]
+        )
         out = avg_pds_from_events(
             self.times,
             self.gti,
@@ -212,8 +263,8 @@ class TestFourier(object):
             use_common_mean=False,
             silent=True,
             fluxes=None,
-        )["power"]
-        assert np.isclose(out_comm.std(), out.std(), rtol=0.1)
+        )
+        assert np.isclose(out_comm["power"].std(), out["power"].std(), rtol=0.1)
 
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_avg_cs_use_common_mean_similar_stats(self, norm):
@@ -226,7 +277,8 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=True,
             silent=True,
-        )["power"]
+            return_subcs=True,
+        )
         out = avg_cs_from_events(
             self.times,
             self.times2,
@@ -236,8 +288,9 @@ class TestFourier(object):
             norm=norm,
             use_common_mean=False,
             silent=True,
-        )["power"]
-        assert np.isclose(out_comm.std(), out.std(), rtol=0.1)
+            return_subcs=True,
+        )
+        assert np.isclose(out_comm["power"].std(), out["power"].std(), rtol=0.1)
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -251,6 +304,7 @@ class TestFourier(object):
             use_common_mean=use_common_mean,
             silent=True,
             fluxes=None,
+            return_subcs=True,
         )
         out_ct = avg_pds_from_events(
             self.bin_times,
@@ -261,6 +315,7 @@ class TestFourier(object):
             use_common_mean=use_common_mean,
             silent=True,
             fluxes=self.counts,
+            return_subcs=True,
         )
         compare_tables(out_ev, out_ct)
 
@@ -276,6 +331,7 @@ class TestFourier(object):
             use_common_mean=use_common_mean,
             silent=True,
             fluxes=None,
+            return_subcs=True,
         )
         out_ct = avg_pds_from_events(
             self.bin_times,
@@ -287,7 +343,10 @@ class TestFourier(object):
             silent=True,
             fluxes=self.counts,
             errors=self.errs,
+            return_subcs=True,
         )
+        assert "subcs" in out_ct.meta
+        assert "subcs" in out_ev.meta
         # The variance is not _supposed_ to be equal, when we specify errors
         if use_common_mean:
             compare_tables(out_ev, out_ct, rtol=0.01, discard=["variance"])
@@ -541,3 +600,63 @@ class TestNorms(object):
         noise_notnorm = poisson_level("none", self.meanrate, self.nph)
 
         assert np.isclose(noise_notnorm, unnorm_noise)
+
+
+@pytest.mark.parametrize("phlag", [0.05, 0.1, 0.2, 0.4])
+def test_lags(phlag):
+    freq = 1.1123232252
+
+    def func(time, phase=0):
+        return 2 + np.sin(2 * np.pi * (time * freq - phase))
+
+    time = np.sort(np.random.uniform(0, 100, 3000))
+    ft0 = lsft_slow(func(time, 0), time, np.array([freq]))
+    ft1 = lsft_slow(func(time, phlag), time, np.array([freq]))
+    measured_lag = (np.angle(ft0) - np.angle(ft1)) / 2 / np.pi
+    while measured_lag > 0.5:
+        measured_lag -= 0.5
+    while measured_lag <= -0.5:
+        measured_lag += 0.5
+
+    assert np.isclose((np.angle(ft1) - np.angle(ft0)) / 2 / np.pi, phlag, atol=0.02, rtol=0.02)
+
+
+def test_lsft_slow_fast():
+    np.random.seed(0)
+    rand = np.random.default_rng(42)
+    n = 1000
+    t = np.sort(rand.random(n)) * np.sqrt(n)
+    y = np.sin(2 * np.pi * 3.0 * t)
+    sub = np.min(y)
+    y -= sub
+    freqs = np.fft.fftfreq(n, np.median(np.diff(t, 1)))
+    freqs = freqs[freqs >= 0]
+    lsftslow = lsft_slow(y, t, freqs, sign=1)
+    lsftfast = lsft_fast(y, t, freqs, sign=1, oversampling=10)
+    assert np.argmax(lsftslow) == np.argmax(lsftfast)
+    assert round(freqs[np.argmax(lsftslow)], 1) == round(freqs[np.argmax(lsftfast)], 1) == 3.0
+    assert np.allclose((lsftslow * np.conjugate(lsftslow)).imag, [0]) & np.allclose(
+        (lsftfast * np.conjugate(lsftfast)).imag, 0
+    )
+
+
+def test_impose_symmetry_lsft():
+    np.random.seed(0)
+    rand = np.random.default_rng(42)
+    n = 1000
+    t = np.sort(rand.random(n)) * np.sqrt(n)
+    y = np.sin(2 * np.pi * 3.0 * t)
+    sub = np.min(y)
+    y -= sub
+    freqs = np.fft.fftfreq(n, np.median(np.diff(t, 1)))
+    freqs = freqs[freqs >= 0]
+    lsftslow = lsft_slow(y, t, freqs, sign=1)
+    lsftfast = lsft_fast(y, t, freqs, sign=1, oversampling=5)
+    imp_sym_slow, freqs_new_slow = impose_symmetry_lsft(lsftslow, 0, n, freqs)
+    imp_sym_fast, freqs_new_fast = impose_symmetry_lsft(lsftfast, 0, n, freqs)
+    assert imp_sym_slow.shape == imp_sym_fast.shape == freqs_new_fast.shape == freqs_new_slow.shape
+    assert np.all((imp_sym_slow.real) == np.flip(imp_sym_slow.real))
+    assert np.all((imp_sym_slow.imag) == -np.flip(imp_sym_slow.imag))
+    assert np.all((imp_sym_fast.real) == np.flip(imp_sym_fast.real))
+    assert np.all((imp_sym_fast.imag) == (-np.flip(imp_sym_fast.imag)))
+    assert np.all(freqs_new_slow == freqs_new_fast)

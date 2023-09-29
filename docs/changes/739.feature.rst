@@ -2,7 +2,7 @@ This is a JAX implementation of the GP tool by `Hubener et al <https://arxiv.org
 for QPO detection and parameter analysis.
 
 This feature makes use of tinygp library for Gaussian Processes implementation, and jaxns for nested sampling,
-and is kept in the stingray.modeling.gpmodelling module.
+and is kept in the stingray.modeling.gpmodeling module.
 
 Main features of the module are:
 
