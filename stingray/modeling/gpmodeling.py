@@ -37,8 +37,7 @@ except ImportError:
     tfp_available = False
 
 
-__all__ = ["get_kernel", "get_mean", "get_prior", 
-           "get_log_likelihood", "GPResult", "get_gp_params"]
+__all__ = ["get_kernel", "get_mean", "get_prior", "get_log_likelihood", "GPResult", "get_gp_params"]
 
 
 def get_kernel(kernel_type, kernel_params):
@@ -575,8 +574,7 @@ class GPResult:
         self.counts = lc.counts
         self.result = None
 
-    def sample(self, prior_model=None, likelihood_model=None, max_samples=1e4,
-               num_live_points=500):
+    def sample(self, prior_model=None, likelihood_model=None, max_samples=1e4, num_live_points=500):
         """
         Makes a Jaxns nested sampler over the Gaussian Process, given the
         prior and likelihood model
@@ -619,7 +617,9 @@ class GPResult:
         nsmodel = Model(prior_model=self.prior_model, log_likelihood=self.log_likelihood_model)
         nsmodel.sanity_check(random.PRNGKey(10), S=100)
 
-        self.exact_ns = ExactNestedSampler(nsmodel, num_live_points=num_live_points, max_samples=max_samples)
+        self.exact_ns = ExactNestedSampler(
+            nsmodel, num_live_points=num_live_points, max_samples=max_samples
+        )
 
         termination_reason, state = self.exact_ns(
             random.PRNGKey(42), term_cond=TerminationCondition(live_evidence_frac=1e-4)
