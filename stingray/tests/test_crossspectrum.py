@@ -778,7 +778,8 @@ class TestCrossspectrum(object):
 
     def test_plot_simple(self):
         clear_all_figs()
-        self.cs.plot()
+        cs = Crossspectrum(self.lc1, self.lc1, power_type="all")
+        cs.plot()
         assert plt.fignum_exists("crossspectrum")
         plt.close("crossspectrum")
 
