@@ -869,7 +869,7 @@ class TestCrossspectrum(object):
     @pytest.mark.slow
     def test_classical_significances_threshold(self):
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
+            cs = Crossspectrum(self.lc1, self.lc2, norm="leahy", power_type="real")
 
         # change the powers so that just one exceeds the threshold
         cs.power = np.zeros_like(cs.power) + 2.0
@@ -886,7 +886,7 @@ class TestCrossspectrum(object):
     @pytest.mark.slow
     def test_classical_significances_trial_correction(self):
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
+            cs = Crossspectrum(self.lc1, self.lc2, norm="leahy", power_type="real")
         # change the powers so that just one exceeds the threshold
         cs.power = np.zeros_like(cs.power) + 2.0
         index = 1
@@ -897,7 +897,7 @@ class TestCrossspectrum(object):
 
     def test_classical_significances_with_logbinned_psd(self):
         with pytest.warns(UserWarning) as record:
-            cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
+            cs = Crossspectrum(self.lc1, self.lc2, norm="leahy", power_type="real")
         cs_log = cs.rebin_log()
         pval = cs_log.classical_significances(threshold=1.1, trial_correction=False)
 
@@ -905,7 +905,7 @@ class TestCrossspectrum(object):
 
     @pytest.mark.slow
     def test_pvals_is_numpy_array(self):
-        cs = Crossspectrum(self.lc1, self.lc2, norm="leahy")
+        cs = Crossspectrum(self.lc1, self.lc2, norm="leahy", power_type="real")
         # change the powers so that just one exceeds the threshold
         cs.power = np.zeros_like(cs.power) + 2.0
 

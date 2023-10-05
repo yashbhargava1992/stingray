@@ -547,7 +547,7 @@ class Crossspectrum(StingrayObject):
         gti=None,
         lc1=None,
         lc2=None,
-        power_type="real",
+        power_type="all",
         dt=None,
         fullspec=False,
         skip_checks=False,

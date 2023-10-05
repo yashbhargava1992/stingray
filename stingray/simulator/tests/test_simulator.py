@@ -39,7 +39,7 @@ class TestSimulator(object):
 
         lc1 = Lightcurve(time, s)
         lc2 = Lightcurve(time, output)
-        cross = Crossspectrum(lc1, lc2)
+        cross = Crossspectrum(lc2, lc1)
         cross = cross.rebin(0.0075)
 
         return np.angle(cross.power) / (2 * np.pi * cross.freq)
@@ -559,7 +559,7 @@ class TestSimulator(object):
             outputs.append(lc2)
 
         with pytest.warns(UserWarning, match="Your lightcurves have different statistics"):
-            cross = [Crossspectrum(lc, lc2).rebin(0.0075) for lc2 in outputs]
+            cross = [Crossspectrum(lc2, lc).rebin(0.0075) for lc2 in outputs]
         lags = [np.angle(c.power) / (2 * np.pi * c.freq) for c in cross]
 
         v_cutoffs = [1.0 / (2.0 * 5), 1.0 / (2.0 * 10)]
@@ -588,7 +588,7 @@ class TestSimulator(object):
             outputs.append(lc2)
 
         with pytest.warns(UserWarning, match="Your lightcurves have different statistics"):
-            cross = [Crossspectrum(lc, lc2).rebin(0.0075) for lc2 in outputs]
+            cross = [Crossspectrum(lc2, lc).rebin(0.0075) for lc2 in outputs]
         lags = [np.angle(c.power) / (2 * np.pi * c.freq) for c in cross]
 
         v_cutoff = 1.0 / (2.0 * 5)
