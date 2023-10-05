@@ -1075,33 +1075,43 @@ class Crossspectrum(StingrayObject):
             fig = plt.figure("crossspectrum")
             ax = fig.add_subplot(1, 1, 1)
 
+        ax2 = None
         if np.any(np.iscomplex(self.power)):
-            ax.plot(self.freq, np.abs(self.power), marker, color="b", label="Amplitude")
-            ax.plot(
-                self.freq, self.power.imag, marker, color="g", alpha=0.5, label="Imaginary Part"
+            ax.plot(self.freq, np.abs(self.power), marker, color="k", label="Amplitude")
+            ax2 = ax.twinx()
+
+            ax2.tick_params("y", colors="b")
+            ax2.plot(
+                self.freq, self.power.imag, marker, color="b", alpha=0.5, label="Imaginary Part"
             )
             ax.plot(self.freq, self.power.real, marker, color="r", alpha=0.5, label="Real Part")
         else:
             ax.plot(self.freq, np.abs(self.power), marker, color="b")
 
+        xlabel = "Frequency (Hz)"
+        ylabel = f"Power ({self.norm})"
+
         if labels is not None:
             try:
-                ax.set_xlabel(labels[0])
-                ax.set_ylabel(labels[1])
+                xlabel = labels[0]
+                ylabel = labels[1]
+
             except IndexError:
                 simon("``labels`` must have two labels for x and y axes.")
                 # Not raising here because in case of len(labels)==1, only
                 # x-axis will be labelled.
-        else:
-            ax.set_xlabel("Frequency (Hz)")
-            ax.set_ylabel(f"Power ({self.norm})")
 
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        if ax2 is not None:
+            ax2.set_ylabel(ylabel)
         ax.legend(loc="best")
 
         if axis is not None:
             ax.set_xlim(axis[0:2])
             ax.set_ylim(axis[2:4])
-
+            if ax2 is not None:
+                ax2.set_ylim(axis[2:4])
         if title is not None:
             ax.set_title(title)
 
