@@ -1078,15 +1078,23 @@ class Crossspectrum(StingrayObject):
         ax2 = None
         if np.any(np.iscomplex(self.power)):
             ax.plot(self.freq, np.abs(self.power), marker, color="k", label="Amplitude")
-            ax2 = ax.twinx()
 
+            ax2 = ax.twinx()
             ax2.tick_params("y", colors="b")
             ax2.plot(
                 self.freq, self.power.imag, marker, color="b", alpha=0.5, label="Imaginary Part"
             )
+
             ax.plot(self.freq, self.power.real, marker, color="r", alpha=0.5, label="Real Part")
+
+            lines, line_labels = ax.get_legend_handles_labels()
+            lines2, line_labels2 = ax2.get_legend_handles_labels()
+            lines = lines + lines2
+            line_labels = line_labels + line_labels2
+
         else:
             ax.plot(self.freq, np.abs(self.power), marker, color="b")
+            lines, line_labels = ax.get_legend_handles_labels()
 
         xlabel = "Frequency (Hz)"
         ylabel = f"Power ({self.norm})"
@@ -1102,10 +1110,13 @@ class Crossspectrum(StingrayObject):
                 # x-axis will be labelled.
 
         ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
         if ax2 is not None:
-            ax2.set_ylabel(ylabel)
-        ax.legend(loc="best")
+            ax.set_ylabel(ylabel + "-Real")
+            ax2.set_ylabel(ylabel + "-Imaginary")
+        else:
+            ax.set_ylabel(ylabel)
+
+        ax.legend(lines, line_labels, loc="best")
 
         if axis is not None:
             ax.set_xlim(axis[0:2])
