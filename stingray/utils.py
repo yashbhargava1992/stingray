@@ -1553,7 +1553,35 @@ def _hist1d_numba_seq_weight(H, tracks, weights, bins, ranges):
 
 
 def hist1d_numba_seq_weight(a, weights, bins, range, use_memmap=False, tmp=None):
-    """
+    """Numba-compiled 1-d histogram with weights.
+
+    Parameters
+    ----------
+    a : array-like
+        Input array, to be histogrammed
+    weights : array-like
+        Input weight of each of the input values ``a``
+    bins : integer
+        number of bins in the final histogram
+    range : [min, max]
+        Minimum and maximum value of the histogram
+
+    Other parameters
+    ----------------
+    use_memmap : bool
+        If ``True`` and the number of bins is above 10 million,
+        the histogram is created into a memory-mapped Numpy array
+    tmp : str
+        Temporary file name for the memory map (only relevant if
+        ``use_memmap`` is ``True``)
+
+    Returns
+    -------
+    histogram: array-like
+        Histogrammed values of a, in ``bins`` bins.
+
+    Adapted from https://iscinumpy.dev/post/histogram-speeds-in-python/
+
     Examples
     --------
     >>> if os.path.exists('out.npy'): os.unlink('out.npy')
@@ -1599,14 +1627,18 @@ def _hist2d_numba_seq_weight(H, tracks, weights, bins, ranges):
 
 
 def hist2d_numba_seq_weight(x, y, weights, bins, range, use_memmap=False, tmp=None):
-    """Numba-compiled 3d histogram
+    """Numba-compiled 2d histogram with weights
 
     From https://iscinumpy.dev/post/histogram-speeds-in-python/
 
     Parameters
     ----------
-    tracks : (array-like, array-like, array-like)
-        List of input arrays of identical length, to be histogrammed
+    x : array-like
+        List of input values in the x-direction
+    y : array-like
+        List of input values in the y-direction, of the same length of ``x``
+    weights : array-like
+        Input weight of each of the input values.
     bins : (int, int, int)
         shape of the final histogram
     range : [min, max]
