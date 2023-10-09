@@ -387,6 +387,12 @@ class StingrayObject(object):
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
         ``EventList``) are converted into columns, while meta attributes
         (``mjdref``, ``gti``, etc.) are saved into the ``ds.attrs`` dictionary.
+
+        Since pandas does not support n-D data, multi-dimensional arrays are
+        converted into columns before the conversion, with names ``<colname>_dimN_M_K`` etc.
+
+        See documentation of `make_nd_into_arrays` for details.
+
         """
         from pandas import DataFrame
         from .utils import make_nd_into_arrays
@@ -422,6 +428,11 @@ class StingrayObject(object):
         It is strongly advisable to define such attributes and columns
         using the standard attributes of the wanted StingrayObject (e.g.
         ``time``, ``pi``, etc. for ``EventList``)
+
+        Since pandas does not support n-D data, multi-dimensional arrays can be
+        specified as ``<colname>_dimN_M_K`` etc.
+
+        See documentation of `make_1d_arrays_into_nd` for details.
 
         """
         import re

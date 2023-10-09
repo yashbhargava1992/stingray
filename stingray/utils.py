@@ -161,6 +161,8 @@ def any_complex_in_array(array):
 def make_nd_into_arrays(array: np.ndarray, label: str) -> dict:
     """If an array is n-dimensional, make it into many 1-dimensional arrays.
 
+    Call additional dimensions, e.g. ``_dimN_M``. See examples below.
+
     Parameters
     ----------
     array : `np.ndarray`
@@ -236,6 +238,8 @@ def get_dimensions_from_list_of_column_labels(labels: list, label: str) -> list:
 
 def make_1d_arrays_into_nd(data: dict, label: str) -> np.ndarray:
     """Literally the opposite of make_nd_into_arrays.
+
+    Call additional dimensions, e.g. ``_dimN_M``
 
     Parameters
     ----------
