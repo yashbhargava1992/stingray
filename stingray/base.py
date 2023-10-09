@@ -32,7 +32,15 @@ except AttributeError:  # pragma: no cover
 
 
 def _can_save_longdouble(probe_file: str, fmt: str) -> bool:
-    """Check if a given file format can save tables with longdoubles."""
+    """Check if a given file format can save tables with longdoubles.
+
+    Try to save a table with a longdouble column, and if it doesn't work, catch the exception.
+    If the exception is related to longdouble, return False (otherwise just raise it, this
+    would mean there are larger problems that need to be solved). In this case, also warn that
+    probably part of the data will not be saved.
+
+    If no exception is raised, return True.
+    """
     if not HAS_128:  # pragma: no cover
         # There are no known issues with saving longdoubles where numpy.float128 is not defined
         return True
@@ -55,6 +63,14 @@ def _can_save_longdouble(probe_file: str, fmt: str) -> bool:
 
 
 def _can_serialize_meta(probe_file: str, fmt: str) -> bool:
+    """
+    Try to save a table with meta to be serialized, and if it doesn't work, catch the exception.
+    If the exception is related to serialization, return False (otherwise just raise it, this
+    would mean there are larger problems that need to be solved). In this case, also warn that
+    probably part of the data will not be saved.
+
+    If no exception is raised, return True.
+    """
     try:
         Table({"a": [3]}).write(probe_file, overwrite=True, format=fmt, serialize_meta=True)
 
