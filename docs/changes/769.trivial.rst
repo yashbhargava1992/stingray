@@ -1,1 +1,1 @@
-Create readthedocs configuration
+Use Readthedocs for documentation building
