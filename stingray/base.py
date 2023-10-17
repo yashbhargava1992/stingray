@@ -256,7 +256,17 @@ class StingrayObject(object):
         if not set(self_arr_attrs) == set(other_arr_attrs):
             return False
 
+        self_meta_attrs = self.meta_attrs()
+        other_meta_attrs = other_ts.meta_attrs()
+
+        if not set(self_meta_attrs) == set(other_meta_attrs):
+            return False
+
         for attr in self.meta_attrs():
+            # They are either both scalar or arrays
+            if np.isscalar(getattr(self, attr)) != np.isscalar(getattr(other_ts, attr)):
+                return False
+
             if np.isscalar(getattr(self, attr)):
                 if not getattr(self, attr, None) == getattr(other_ts, attr, None):
                     return False
@@ -299,7 +309,7 @@ class StingrayObject(object):
         (``mjdref``, ``gti``, etc.) are saved into the ``meta`` dictionary.
         """
         data = {}
-        array_attrs = self.array_attrs() + [self.main_array_attr]
+        array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
 
         for attr in array_attrs:
             vals = np.asarray(getattr(self, attr))
@@ -366,7 +376,7 @@ class StingrayObject(object):
         from xarray import Dataset
 
         data = {}
-        array_attrs = self.array_attrs() + [self.main_array_attr]
+        array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
 
         for attr in array_attrs:
             new_data = np.asarray(getattr(self, attr))
@@ -436,7 +446,7 @@ class StingrayObject(object):
         from .utils import make_nd_into_arrays
 
         data = {}
-        array_attrs = self.array_attrs() + [self.main_array_attr]
+        array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
 
         for attr in array_attrs:
             values = np.asarray(getattr(self, attr))

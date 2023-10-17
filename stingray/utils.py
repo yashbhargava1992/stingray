@@ -223,7 +223,7 @@ def get_dimensions_from_list_of_column_labels(labels: list, label: str) -> list:
     for key in labels:
         if label not in key:
             continue
-        match = re.search(label + r"_dim([0-9]+(_[0-9]+)*)", key)
+        match = re.search("^" + label + r"_dim([0-9]+(_[0-9]+)*)", key)
         if match is None:
             continue
         all_keys.append(key)
@@ -265,12 +265,12 @@ def make_1d_arrays_into_nd(data: dict, label: str) -> np.ndarray:
     ...               [[5, 6, 56], [7, 8, 78]],
     ...               [[9, 10, 910], [11, 12, 1112]],
     ...               [[13, 14, 1314], [15, 16, 1516]]])
-    >>> data = make_nd_into_arrays(A, "test")
-    >>> A_ret = make_1d_arrays_into_nd(data, "test")
+    >>> data = make_nd_into_arrays(A, "_test")
+    >>> A_ret = make_1d_arrays_into_nd(data, "_test")
     >>> np.array_equal(A, A_ret)
     True
-    >>> data = make_nd_into_arrays(a1, "test")
-    >>> A_ret = make_1d_arrays_into_nd(data, "test")
+    >>> data = make_nd_into_arrays(a1, "_test")
+    >>> A_ret = make_1d_arrays_into_nd(data, "_test")
     >>> np.array_equal(a1, A_ret)
     True
     """

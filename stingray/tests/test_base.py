@@ -51,10 +51,11 @@ class BadStingrayObj(StingrayObject):
 class TestStingrayObject:
     @classmethod
     def setup_class(cls):
-        cls.arr = [4, 5, 2]
+        cls.arr = np.asarray([4, 5, 2])
         sting_obj = DummyStingrayObj(cls.arr)
         sting_obj.pardulas = [3.0 + 1.0j, 2.0j, 1.0 + 0.0j]
         sting_obj.sebadas = [[0, 1], [2, 3], [4, 5]]
+        sting_obj._sebadas = [[0, 1], [2, 3], [4, 5]]
         sting_obj.pirichitus = 4
         sting_obj.parafritus = "bonus!"
         sting_obj.panesapa = [[41, 25], [98, 3]]
@@ -66,6 +67,57 @@ class TestStingrayObject:
     def test_instantiate_without_main_array_attr(self):
         with pytest.raises(RuntimeError):
             BadStingrayObj(self.arr)
+
+    def test_equality(self):
+        ts1 = copy.deepcopy(self.sting_obj)
+        ts2 = copy.deepcopy(self.sting_obj)
+        assert ts1 == ts2
+
+    def test_different_array_attributes(self):
+        ts1 = copy.deepcopy(self.sting_obj)
+        ts2 = copy.deepcopy(self.sting_obj)
+        # Add a meta attribute only to ts1. This will fail
+        ts1.blah = 2
+        assert ts1 != ts2
+
+        # Add a non-scalar meta attribute, but with the same name, to ts2.
+        ts2.blah = [2]
+        assert ts1 != ts2
+
+        # Get back to normal
+        del ts1.blah, ts2.blah
+        assert ts1 == ts2
+
+        # Add a non-scalar meta attribute to both, just slightly different
+        ts1.blah = [2]
+        ts2.blah = [3]
+        ts1 != ts2
+
+        # Get back to normal
+        del ts1.blah, ts2.blah
+        assert ts1 == ts2
+
+        # Add a meta attribute only to ts2. This will also fail
+        ts2.blah = 3
+        assert ts1 != ts2
+
+    def test_different_meta_attributes(self):
+        ts1 = copy.deepcopy(self.sting_obj)
+        ts2 = copy.deepcopy(self.sting_obj)
+        # Add an array attribute to ts1. This will fail
+        ts1.blah = ts1.guefus * 2
+        assert ts1 != ts2
+
+        # Get back to normal
+        del ts1.blah
+        assert ts1 == ts2
+        # Add an array attribute to ts2. This will fail
+        ts2.blah = ts1.guefus * 2
+        assert ts1 != ts2
+
+        # Get back to normal
+        del ts2.blah
+        assert ts1 == ts2
 
     def test_apply_mask(self):
         ts = copy.deepcopy(self.sting_obj)
