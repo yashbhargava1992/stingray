@@ -211,7 +211,7 @@ class StingrayObject(object):
         for attr in self.data_attributes():
             if (
                 not np.isscalar(value := getattr(self, attr))
-                and not isinstance(getattr(self.__class__, attr), property)
+                and not isinstance(getattr(self.__class__, attr, None), property)
                 and value is not None
                 and not np.size(value) == 0
                 and attr.startswith("_")
