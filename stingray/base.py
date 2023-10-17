@@ -41,15 +41,6 @@ __all__ = [
 ]
 
 
-def _next_color(ax):
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-    p = ax.plot(xlim, ylim)
-    color = p[0].get_color()
-    p[0].remove()
-    return color
-
-
 def _can_save_longdouble(probe_file: str, fmt: str) -> bool:
     """Check if a given file format can save tables with longdoubles.
 
@@ -1075,10 +1066,6 @@ class StingrayTimeseries(StingrayObject):
             return None
         return np.shape(np.asarray(getattr(self, self.main_array_attr)))[0]
 
-    @n.setter
-    def n(self, value):
-        pass
-
     def __eq__(self, other_ts):
         return super().__eq__(other_ts)
 
@@ -1515,7 +1502,7 @@ class StingrayTimeseries(StingrayObject):
         """
 
         if not isinstance(method, str):
-            raise TypeError("method key word argument is not " "a string !")
+            raise TypeError("The method keyword argument is not a string !")
 
         if method.lower() not in ["index", "time"]:
             raise ValueError("Unknown method type " + method + ".")
@@ -1616,6 +1603,10 @@ class StingrayTimeseries(StingrayObject):
         order = np.argsort(getattr(new_ts, self.main_array_attr))
         setattr(new_ts, mainattr, getattr(new_ts, mainattr)[order])
         for attr in self.array_attrs():
+            setattr(
+                new_ts, attr, np.concatenate([getattr(self, attr), getattr(other, attr)])[order]
+            )
+        for attr in self.internal_array_attrs():
             setattr(
                 new_ts, attr, np.concatenate([getattr(self, attr), getattr(other, attr)])[order]
             )
