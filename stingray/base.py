@@ -1649,16 +1649,17 @@ class StingrayTimeseries(StingrayObject):
             dt_new = f * self.dt
 
         if dt_new < self.dt:
-            raise ValueError("New time resolution must be larger than " "old time resolution!")
+            raise ValueError("The new time resolution must be larger than the old one!")
 
         gti_new = []
 
         new_ts = type(self)()
 
-        for attr in self.array_attrs():
+        for attr in self.array_attrs() + self.internal_array_attrs():
             bin_time, bin_counts, bin_err = [], [], []
             if attr.endswith("_err"):
                 continue
+            e_temp = None
             for g in self.gti:
                 if g[1] - g[0] < dt_new:
                     continue
@@ -1669,7 +1670,7 @@ class StingrayTimeseries(StingrayObject):
 
                     t_temp = self.time[start_ind:end_ind]
                     c_temp = getattr(self, attr)[start_ind:end_ind]
-                    e_temp = None
+
                     if hasattr(self, attr + "_err"):
                         e_temp = getattr(self, attr + "_err")[start_ind:end_ind]
 
