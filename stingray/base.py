@@ -195,8 +195,9 @@ class StingrayObject(object):
         ``main_array_attr`` (e.g. ``time`` in ``EventList``)
         """
 
-        main_attr = getattr(self, getattr(self, "main_array_attr"))
-        if main_attr is None:
+        main_attr = getattr(self, "main_array_attr")
+        main_attr_value = getattr(self, main_attr)
+        if main_attr_value is None:
             return []
 
         all_attrs = []
@@ -204,11 +205,12 @@ class StingrayObject(object):
             if (
                 not attr == "_" + self.main_array_attr  # e.g. _time in lightcurve
                 and not np.isscalar(value := getattr(self, attr))
+                and not np.asarray(value).dtype == "O"
                 and not isinstance(getattr(self.__class__, attr, None), property)
                 and value is not None
                 and not np.size(value) == 0
                 and attr.startswith("_")
-                and np.shape(value)[0] == np.shape(main_attr)[0]
+                and np.shape(value)[0] == np.shape(main_attr_value)[0]
             ):
                 all_attrs.append(attr)
 
