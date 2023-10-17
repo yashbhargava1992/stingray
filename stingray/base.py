@@ -31,6 +31,25 @@ except AttributeError:  # pragma: no cover
     HAS_128 = False
 
 
+__all__ = [
+    "sqsum",
+    "convert_table_attrs_to_lowercase",
+    "interpret_times",
+    "reduce_precision_if_extended",
+    "StingrayObject",
+    "StingrayTimeseries",
+]
+
+
+def _next_color(ax):
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    p = ax.plot(xlim, ylim)
+    color = p[0].get_color()
+    p[0].remove()
+    return color
+
+
 def _can_save_longdouble(probe_file: str, fmt: str) -> bool:
     """Check if a given file format can save tables with longdoubles.
 
@@ -146,23 +165,35 @@ class StingrayObject(object):
             attr
             for attr in self.data_attributes()
             if (
-                isinstance(getattr(self, attr), Iterable)
+                not attr.startswith("_")
+                and isinstance(getattr(self, attr), Iterable)
+                and not isinstance(getattr(self.__class__, attr, None), property)
                 and not attr == self.main_array_attr
                 and attr not in self.not_array_attr
                 and not isinstance(getattr(self, attr), str)
-                and not attr.startswith("_")
                 and np.shape(getattr(self, attr))[0] == np.shape(main_attr)[0]
             )
         ]
+
+    @property
+    def n(self):
+        return np.shape(getattr(self, self.main_array_attr))[0]
+
+    @n.setter
+    def n(self, value):
+        pass
 
     def data_attributes(self) -> list[str]:
         """Weed out methods from the list of attributes"""
         return [
             attr
             for attr in dir(self)
-            if not callable(value := getattr(self, attr))
-            and not attr.startswith("__")
-            and not isinstance(value, StingrayObject)
+            if (
+                not attr.startswith("__")
+                and not callable(value := getattr(self, attr))
+                and not isinstance(getattr(self.__class__, attr, None), property)
+                and not isinstance(value, StingrayObject)
+            )
         ]
 
     def internal_array_attrs(self) -> list[str]:
@@ -180,6 +211,7 @@ class StingrayObject(object):
         for attr in self.data_attributes():
             if (
                 not np.isscalar(value := getattr(self, attr))
+                and not isinstance(getattr(self.__class__, attr), property)
                 and value is not None
                 and not np.size(value) == 0
                 and attr.startswith("_")
@@ -206,6 +238,7 @@ class StingrayObject(object):
                 # self.attribute is not callable, and assigning its value to
                 # the variable attr_value for further checks
                 and not callable(attr_value := getattr(self, attr))
+                and not isinstance(getattr(self.__class__, attr, None), property)
                 # a way to avoid EventLists, Lightcurves, etc.
                 and not hasattr(attr_value, "meta_attrs")
             )
@@ -1390,6 +1423,376 @@ class StingrayTimeseries(StingrayObject):
 
         new_ts.gti = new_gti
         return new_ts
+
+    def truncate(self, start=0, stop=None, method="index"):
+        """
+        Truncate a :class:`StingrayTimeseries` object.
+
+        This method takes a ``start`` and a ``stop`` point (either as indices,
+        or as times in the same unit as those in the ``time`` attribute, and truncates
+        all bins before ``start`` and after ``stop``, then returns a new
+        :class:`StingrayTimeseries` object with the truncated time series.
+
+        Parameters
+        ----------
+        start : int, default 0
+            Index (or time stamp) of the starting point of the truncation. If no value is set
+            for the start point, then all points from the first element in the ``time`` array
+            are taken into account.
+
+        stop : int, default ``None``
+            Index (or time stamp) of the ending point (exclusive) of the truncation. If no
+            value of stop is set, then points including the last point in
+            the counts array are taken in count.
+
+        method : {``index`` | ``time``}, optional, default ``index``
+            Type of the start and stop values. If set to ``index`` then
+            the values are treated as indices of the counts array, or
+            if set to ``time``, the values are treated as actual time values.
+
+        Returns
+        -------
+        lc_new: :class:`StingrayTimeseries` object
+            The :class:`StingrayTimeseries` object with truncated time and arrays.
+
+        Examples
+        --------
+        >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+        >>> lc = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
+        >>> lc_new = lc.truncate(start=2, stop=8)
+        >>> np.allclose(lc_new.counts, [30, 40, 50, 60, 70, 80])
+        True
+        >>> lc_new.time
+        array([3, 4, 5, 6, 7, 8])
+        >>> # Truncation can also be done by time values
+        >>> lc_new = lc.truncate(start=6, method='time')
+        >>> lc_new.time
+        array([6, 7, 8, 9])
+        >>> np.allclose(lc_new.counts, [60, 70, 80, 90])
+        True
+        """
+
+        if not isinstance(method, str):
+            raise TypeError("method key word argument is not " "a string !")
+
+        if method.lower() not in ["index", "time"]:
+            raise ValueError("Unknown method type " + method + ".")
+
+        if method.lower() == "index":
+            new_lc = self._truncate_by_index(start, stop)
+        else:
+            new_lc = self._truncate_by_time(start, stop)
+        new_lc.tstart = new_lc.gti[0, 0]
+        new_lc.tseg = new_lc.gti[-1, 1] - new_lc.gti[0, 0]
+        return new_lc
+
+    def _truncate_by_index(self, start, stop):
+        """Private method for truncation using index values."""
+        from .gti import cross_two_gtis
+
+        new_lc = self.apply_mask(slice(start, stop))
+
+        dtstart = dtstop = new_lc.dt
+        if isinstance(self.dt, Iterable):
+            dtstart = self.dt[0]
+            dtstop = self.dt[-1]
+
+        gti = cross_two_gtis(
+            self.gti, np.asarray([[new_lc.time[0] - 0.5 * dtstart, new_lc.time[-1] + 0.5 * dtstop]])
+        )
+
+        new_lc.gti = gti
+
+        return new_lc
+
+    def _truncate_by_time(self, start, stop):
+        """Helper method for truncation using time values.
+
+        Parameters
+        ----------
+        start : float
+            start time for new light curve; all time bins before this time will be discarded
+
+        stop : float
+            stop time for new light curve; all time bins after this point will be discarded
+
+        Returns
+        -------
+            new_lc : Lightcurve
+                A new :class:`Lightcurve` object with the truncated time bins
+
+        """
+
+        if stop is not None:
+            if start > stop:
+                raise ValueError("start time must be less than stop time!")
+
+        if not start == 0:
+            start = self.time.searchsorted(start)
+
+        if stop is not None:
+            stop = self.time.searchsorted(stop)
+
+        return self._truncate_by_index(start, stop)
+
+    def concatenate(self, other):
+        """
+        Concatenate two :class:`StingrayTimeseries` objects.
+
+        This method concatenates two :class:`StingrayTimeseries` objects. GTIs are recalculated
+        based on the new light curve segment
+
+        Parameters
+        ----------
+        other : :class:`StingrayTimeseries` object
+            A second time series object
+
+        """
+        from .gti import check_separate
+
+        if not isinstance(other, type(self)):
+            raise TypeError(
+                f"{type(self)} objects can only be concatenated with other {type(self)} objects."
+            )
+
+        if not check_separate(self.gti, other.gti):
+            raise ValueError("GTIs are not separated.")
+
+        new_ts = type(self)()
+        for attr in self.meta_attrs():
+            setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
+
+        new_ts.gti = np.concatenate([self.gti, other.gti])
+        order = np.argsort(new_ts.gti[:, 0])
+        new_ts.gti = new_ts.gti[order]
+
+        mainattr = self.main_array_attr
+        setattr(
+            new_ts, mainattr, np.concatenate([getattr(self, mainattr), getattr(other, mainattr)])
+        )
+
+        order = np.argsort(getattr(new_ts, self.main_array_attr))
+        setattr(new_ts, mainattr, getattr(new_ts, mainattr)[order])
+        for attr in self.array_attrs():
+            setattr(
+                new_ts, attr, np.concatenate([getattr(self, attr), getattr(other, attr)])[order]
+            )
+
+        return new_ts
+
+    def rebin(self, dt_new=None, f=None, method="sum"):
+        """
+        Rebin the light curve to a new time resolution. While the new
+        resolution need not be an integer multiple of the previous time
+        resolution, be aware that if it is not, the last bin will be cut
+        off by the fraction left over by the integer division.
+
+        Parameters
+        ----------
+        dt_new: float
+            The new time resolution of the light curve. Must be larger than
+            the time resolution of the old light curve!
+
+        method: {``sum`` | ``mean`` | ``average``}, optional, default ``sum``
+            This keyword argument sets whether the counts in the new bins
+            should be summed or averaged.
+
+        Other Parameters
+        ----------------
+        f: float
+            the rebin factor. If specified, it substitutes ``dt_new`` with
+            ``f*self.dt``
+
+        Returns
+        -------
+        lc_new: :class:`Lightcurve` object
+            The :class:`Lightcurve` object with the new, binned light curve.
+        """
+        from .utils import rebin_data
+
+        if f is None and dt_new is None:
+            raise ValueError("You need to specify at least one between f and " "dt_new")
+        elif f is not None:
+            dt_new = f * self.dt
+
+        if dt_new < self.dt:
+            raise ValueError("New time resolution must be larger than " "old time resolution!")
+
+        gti_new = []
+
+        new_ts = type(self)()
+
+        for attr in self.array_attrs():
+            bin_time, bin_counts, bin_err = [], [], []
+            if attr.endswith("_err"):
+                continue
+            for g in self.gti:
+                if g[1] - g[0] < dt_new:
+                    continue
+                else:
+                    # find start and end of GTI segment in data
+                    start_ind = self.time.searchsorted(g[0])
+                    end_ind = self.time.searchsorted(g[1])
+
+                    t_temp = self.time[start_ind:end_ind]
+                    c_temp = getattr(self, attr)[start_ind:end_ind]
+                    e_temp = None
+                    if hasattr(self, attr + "_err"):
+                        e_temp = getattr(self, attr + "_err")[start_ind:end_ind]
+
+                    bin_t, bin_c, bin_e, _ = rebin_data(
+                        t_temp, c_temp, dt_new, yerr=e_temp, method=method
+                    )
+
+                    bin_time.extend(bin_t)
+                    bin_counts.extend(bin_c)
+                    bin_err.extend(bin_e)
+                    gti_new.append(g)
+            if new_ts.time is None:
+                new_ts.time = np.array(bin_time)
+            setattr(new_ts, attr, bin_counts)
+            if e_temp is not None:
+                setattr(new_ts, attr + "_err", bin_err)
+
+        if len(gti_new) == 0:
+            raise ValueError("No valid GTIs after rebin.")
+        new_ts.gti = np.asarray(gti_new)
+
+        for attr in self.meta_attrs():
+            if attr == "dt":
+                continue
+            setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
+        new_ts.dt = dt_new
+        return new_ts
+
+    def sort(self, reverse=False, inplace=False):
+        """
+        Sort a ``StingrayTimeseries`` object by time.
+
+        A ``StingrayTimeserie``s can be sorted in either increasing or decreasing order
+        using this method. The time array gets sorted and the counts array is
+        changed accordingly.
+
+        Parameters
+        ----------
+        reverse : boolean, default False
+            If True then the object is sorted in reverse order.
+        inplace : bool
+            If True, overwrite the current light curve. Otherwise, return a new one.
+
+        Examples
+        --------
+        >>> time = [2, 1, 3]
+        >>> count = [200, 100, 300]
+        >>> lc = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
+        >>> lc_new = lc.sort()
+        >>> lc_new.time
+        array([1, 2, 3])
+        >>> np.allclose(lc_new.counts, [100, 200, 300])
+        True
+
+        Returns
+        -------
+        lc_new: :class:`StingrayTimeseries` object
+            The :class:`StingrayTimeseries` object with sorted time and counts
+            arrays.
+        """
+
+        mask = np.argsort(self.time)
+        if reverse:
+            mask = mask[::-1]
+        return self.apply_mask(mask, inplace=inplace)
+
+    def plot(
+        self,
+        attr,
+        witherrors=False,
+        labels=None,
+        ax=None,
+        title=None,
+        marker="-",
+        save=False,
+        filename=None,
+        plot_btis=True,
+    ):
+        """
+        Plot the light curve using ``matplotlib``.
+
+        Plot the light curve object on a graph ``self.time`` on x-axis and
+        ``self.counts`` on y-axis with ``self.counts_err`` optionally
+        as error bars.
+
+        Parameters
+        ----------
+        attr: str
+            Attribute to plot.
+
+        Other parameters
+        ----------------
+        witherrors: boolean, default False
+            Whether to plot the Lightcurve with errorbars or not
+        labels : iterable, default ``None``
+            A list or tuple with ``xlabel`` and ``ylabel`` as strings. E.g.
+            if the attribute is ``'counts'``, the list of labels
+            could be ``['Time (s)', 'Counts (s^-1)']``
+        ax : ``matplotlib.pyplot.axis`` object
+            Axis to be used for plotting. Defaults to creating a new one.
+        title : str, default ``None``
+            The title of the plot.
+        marker : str, default '-'
+            Line style and color of the plot. Line styles and colors are
+            combined in a single format string, as in ``'bo'`` for blue
+            circles. See ``matplotlib.pyplot.plot`` for more options.
+        save : boolean, optional, default ``False``
+            If ``True``, save the figure with specified filename.
+        filename : str
+            File name of the image to save. Depends on the boolean ``save``.
+        plot_btis : bool
+            Plot the bad time intervals as red areas on the plot
+        """
+        import matplotlib.pyplot as plt
+        from .gti import get_btis
+
+        if ax is None:
+            plt.figure()
+            ax = plt.gca()
+
+        if labels is None:
+            labels = ["Time (s)"] + [attr]
+
+        ylabel = labels[1]
+        xlabel = labels[0]
+
+        ax.plot(self.time, getattr(self, attr), marker, ds="steps-mid", label=attr, zorder=10)
+
+        if witherrors and attr + "_err" in self.array_attrs():
+            ax.errorbar(
+                self.time,
+                getattr(self, attr),
+                yerr=getattr(self, attr + "_err"),
+                fmt="o",
+            )
+
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+
+        if title is not None:
+            ax.title(title)
+
+        if save:
+            if filename is None:
+                ax.figure.savefig("out.png")
+            else:
+                ax.figure.savefig(filename)
+
+        if plot_btis and self.gti is not None and len(self.gti) > 1:
+            tstart = min(self.time[0] - self.dt / 2, self.gti[0, 0])
+            tend = max(self.time[-1] + self.dt / 2, self.gti[-1, 1])
+            btis = get_btis(self.gti, tstart, tend)
+            for bti in btis:
+                plt.axvspan(bti[0], bti[1], alpha=0.5, color="r", zorder=10)
+        return ax
 
 
 def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, float]:

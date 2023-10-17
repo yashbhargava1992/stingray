@@ -1207,67 +1207,7 @@ class Lightcurve(StingrayTimeseries):
         True
         """
 
-        if not isinstance(method, str):
-            raise TypeError("method key word argument is not " "a string !")
-
-        if method.lower() not in ["index", "time"]:
-            raise ValueError("Unknown method type " + method + ".")
-
-        if method.lower() == "index":
-            new_lc = self._truncate_by_index(start, stop)
-        else:
-            new_lc = self._truncate_by_time(start, stop)
-        new_lc.tstart = new_lc.gti[0, 0]
-        new_lc.tseg = new_lc.gti[-1, 1] - new_lc.gti[0, 0]
-        return new_lc
-
-    def _truncate_by_index(self, start, stop):
-        """Private method for truncation using index values."""
-
-        new_lc = self.apply_mask(slice(start, stop))
-
-        dtstart = dtstop = new_lc.dt
-        if isinstance(self.dt, Iterable):
-            dtstart = self.dt[0]
-            dtstop = self.dt[-1]
-
-        gti = cross_two_gtis(
-            self.gti, np.asarray([[new_lc.time[0] - 0.5 * dtstart, new_lc.time[-1] + 0.5 * dtstop]])
-        )
-
-        new_lc.gti = gti
-
-        return new_lc
-
-    def _truncate_by_time(self, start, stop):
-        """Helper method for truncation using time values.
-
-        Parameters
-        ----------
-        start : float
-            start time for new light curve; all time bins before this time will be discarded
-
-        stop : float
-            stop time for new light curve; all time bins after this point will be discarded
-
-        Returns
-        -------
-            new_lc : Lightcurve
-                A new :class:`Lightcurve` object with the truncated time bins
-
-        """
-
-        if stop is not None:
-            if start > stop:
-                raise ValueError("start time must be less than stop time!")
-
-        if not start == 0:
-            start = self.time.searchsorted(start)
-
-        if stop is not None:
-            stop = self.time.searchsorted(stop)
-
-        return self._truncate_by_index(start, stop)
+        return super().truncate(start=start, stop=stop, method=method)
 
     def meta_attrs(self):
         """Extends StingrayObject.meta_attrs to the specifics of Lightcurve."""
