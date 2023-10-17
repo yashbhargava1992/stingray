@@ -175,14 +175,6 @@ class StingrayObject(object):
             )
         ]
 
-    @property
-    def n(self):
-        return np.shape(getattr(self, self.main_array_attr))[0]
-
-    @n.setter
-    def n(self, value):
-        pass
-
     def data_attributes(self) -> list[str]:
         """Weed out methods from the list of attributes"""
         return [
@@ -210,7 +202,8 @@ class StingrayObject(object):
         all_attrs = []
         for attr in self.data_attributes():
             if (
-                not np.isscalar(value := getattr(self, attr))
+                not attr == "_" + self.main_array_attr  # e.g. _time in lightcurve
+                and not np.isscalar(value := getattr(self, attr))
                 and not isinstance(getattr(self.__class__, attr, None), property)
                 and value is not None
                 and not np.size(value) == 0
@@ -228,7 +221,8 @@ class StingrayObject(object):
         than ``main_array_attr`` (e.g. ``time`` in ``EventList``)
         """
         array_attrs = self.array_attrs() + [self.main_array_attr]
-        return [
+
+        all_meta_attrs = [
             attr
             for attr in dir(self)
             if (
@@ -243,26 +237,37 @@ class StingrayObject(object):
                 and not hasattr(attr_value, "meta_attrs")
             )
         ]
+        if self.not_array_attr is not None and len(self.not_array_attr) >= 1:
+            all_meta_attrs += self.not_array_attr
+        return all_meta_attrs
 
     def __eq__(self, other_ts):
         """Compare two :class:`StingrayObject` instances with ``==``.
 
         All attributes (internal, array, meta) are compared.
         """
+
         if not isinstance(other_ts, type(self)):
             raise ValueError(f"{type(self)} can only be compared with a {type(self)} Object")
 
+        self_arr_attrs = self.array_attrs()
+        other_arr_attrs = other_ts.array_attrs()
+
+        if not set(self_arr_attrs) == set(other_arr_attrs):
+            return False
+
         for attr in self.meta_attrs():
             if np.isscalar(getattr(self, attr)):
-                if not getattr(self, attr) == getattr(other_ts, attr):
+                if not getattr(self, attr, None) == getattr(other_ts, attr, None):
                     return False
             else:
-                if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
+                if not np.array_equal(getattr(self, attr, None), getattr(other_ts, attr, None)):
                     return False
 
         for attr in self.array_attrs():
             if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
                 return False
+
         for attr in self.internal_array_attrs():
             if not np.array_equal(getattr(self, attr), getattr(other_ts, attr)):
                 return False
@@ -489,8 +494,9 @@ class StingrayObject(object):
                 continue
             if "_dim" in attr:
                 nd_attrs.append(re.sub("_dim[0-9].*", "", attr))
+            else:
+                setattr(cls, attr, np.array(ts[attr]))
 
-            setattr(cls, attr, np.array(ts[attr]))
         for attr in list(set(nd_attrs)):
             setattr(cls, attr, make_1d_arrays_into_nd(ts, attr))
 
@@ -654,11 +660,9 @@ class StingrayObject(object):
             included.
 
         """
-        all_attrs = self.array_attrs() + [self.main_array_attr]
+        all_attrs = self.internal_array_attrs() + self.array_attrs()
         if filtered_attrs is None:
             filtered_attrs = all_attrs
-        if self.main_array_attr not in filtered_attrs:
-            filtered_attrs.append(self.main_array_attr)
 
         if inplace:
             new_ts = self
@@ -666,6 +670,21 @@ class StingrayObject(object):
             new_ts = type(self)()
             for attr in self.meta_attrs():
                 setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
+
+        # If the main array attr is managed through an internal attr
+        # (e.g. lightcurve), set the internal attr instead.
+        if hasattr(self, "_" + self.main_array_attr):
+            setattr(
+                new_ts,
+                "_" + self.main_array_attr,
+                copy.deepcopy(np.asarray(getattr(self, self.main_array_attr))[mask]),
+            )
+        else:
+            setattr(
+                new_ts,
+                self.main_array_attr,
+                copy.deepcopy(np.asarray(getattr(self, self.main_array_attr))[mask]),
+            )
 
         for attr in all_attrs:
             if attr not in filtered_attrs:
@@ -992,7 +1011,7 @@ class StingrayObject(object):
 
 class StingrayTimeseries(StingrayObject):
     main_array_attr = "time"
-    not_array_attr = "gti"
+    not_array_attr = ["gti"]
 
     def __init__(
         self,
@@ -1037,6 +1056,16 @@ class StingrayTimeseries(StingrayObject):
 
         if gti is None and self.time is not None and np.size(self.time) > 0:
             self.gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
+
+    @property
+    def n(self):
+        if getattr(self, self.main_array_attr, None) is None:
+            return None
+        return np.shape(np.asarray(getattr(self, self.main_array_attr)))[0]
+
+    @n.setter
+    def n(self, value):
+        pass
 
     def __eq__(self, other_ts):
         return super().__eq__(other_ts)

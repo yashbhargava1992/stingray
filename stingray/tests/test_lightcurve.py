@@ -81,13 +81,6 @@ class TestProperties(object):
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
 
-    def test_empty_lightcurve(self):
-        with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
-            Lightcurve()
-
-        with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
-            Lightcurve([], [])
-
     def test_bad_counts_lightcurve(self):
         with pytest.raises(StingrayError, match="Empty or invalid counts array. "):
             Lightcurve([1])

@@ -256,7 +256,6 @@ class Lightcurve(StingrayTimeseries):
         self.mjdref = mjdref
 
         if time is None or len(time) == 0:
-            warnings.warn("No time values passed to Lightcurve object!")
             return
 
         if counts is None or np.size(time) != np.size(counts):
@@ -369,7 +368,9 @@ class Lightcurve(StingrayTimeseries):
 
         else:
             value = np.asarray(value)
-            if not value.shape == self.time.shape:
+            if self._time is None:
+                pass
+            elif not value.shape == self._time.shape:
                 raise ValueError(
                     "Can only assign new times of the same shape as " "the original array"
                 )
@@ -1209,24 +1210,6 @@ class Lightcurve(StingrayTimeseries):
 
         return super().truncate(start=start, stop=stop, method=method)
 
-    def meta_attrs(self):
-        """Extends StingrayObject.meta_attrs to the specifics of Lightcurve."""
-        attrs = super().meta_attrs()
-        sure_array = ["counts", "counts_err", "countrate", "countrate_err"]
-        for attr in sure_array:
-            if attr in attrs:
-                attrs.remove(attr)
-        return attrs
-
-    def array_attrs(self):
-        """Extends StingrayObject.array_attrs to the specifics of Lightcurve."""
-        attrs = super().array_attrs()
-        sure_array = ["counts", "counts_err", "countrate", "countrate_err"]
-        for attr in sure_array:
-            if attr not in attrs:
-                attrs.append(attr)
-        return attrs
-
     def split(self, min_gap, min_points=1):
         """
         For data with gaps, it can sometimes be useful to be able to split
@@ -1773,89 +1756,6 @@ class Lightcurve(StingrayTimeseries):
             return Lightcurve(**data)
 
         return super().read(filename=filename, fmt=fmt)
-
-    def apply_mask(self, mask, inplace=False):
-        """Apply a mask to all array attributes of the event list
-
-        Parameters
-        ----------
-        mask : array of ``bool``
-            The mask. Has to be of the same length as ``self.time``
-
-        Other parameters
-        ----------------
-        inplace : bool
-            If True, overwrite the current light curve. Otherwise, return a new one.
-
-        Examples
-        --------
-        >>> lc = Lightcurve(time=[0, 1, 2], counts=[2, 3, 4], mission="nustar")
-        >>> lc.bubuattr = [222, 111, 333]
-        >>> newlc0 = lc.apply_mask([True, True, False], inplace=False);
-        >>> newlc1 = lc.apply_mask([True, True, False], inplace=True);
-        >>> newlc0.mission == "nustar"
-        True
-        >>> np.allclose(newlc0.time, [0, 1])
-        True
-        >>> np.allclose(newlc0.bubuattr, [222, 111])
-        True
-        >>> np.allclose(newlc1.time, [0, 1])
-        True
-        >>> lc is newlc1
-        True
-        """
-        array_attrs = self.array_attrs()
-
-        self._mask = self._n = None
-        if isinstance(self.dt, Iterable):
-            new_dt = self.dt[mask]
-        else:
-            new_dt = self.dt
-        if inplace:
-            new_ev = self
-            # If they don't exist, they get set
-            self.counts, self.counts_err
-            # eliminate possible conflicts
-            self._countrate = self._countrate_err = None
-            # Set time, counts and errors
-            self._time = self._time[mask]
-            self._counts = self._counts[mask]
-            if self._counts_err is not None:
-                self._counts_err = self._counts_err[mask]
-            new_ev.dt = new_dt
-        else:
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    "ignore", message="Some functionalities of Stingray Lightcurve.*"
-                )
-                new_ev = Lightcurve(
-                    time=self.time[mask],
-                    counts=self.counts[mask],
-                    skip_checks=True,
-                    gti=self.gti,
-                    dt=new_dt,
-                )
-            if self._counts_err is not None:
-                new_ev.counts_err = self.counts_err[mask]
-            for attr in self.meta_attrs():
-                try:
-                    setattr(new_ev, attr, copy.deepcopy(getattr(self, attr)))
-                except AttributeError:
-                    continue
-        for attr in array_attrs:
-            if hasattr(self, "_" + attr) or attr in [
-                "time",
-                "counts",
-                "counts_err",
-                "dt",
-                "_time",
-                "_counts",
-                "_counts_err",
-            ]:
-                continue
-            if hasattr(self, attr) and getattr(self, attr) is not None:
-                setattr(new_ev, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
-        return new_ev
 
     def apply_gtis(self, inplace=True):
         """
