@@ -612,6 +612,116 @@ class TestStingrayTimeseries:
         assert np.allclose(ts0.frac_exp, [1, 0.5, 1, 1])
         assert np.allclose(ts1.frac_exp, [0.5, 0.5])
 
+    def test_truncate(self):
+        time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+        lc = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
+        lc_new = lc.truncate(start=2, stop=8, method="index")
+        assert np.allclose(lc_new.counts, [30, 40, 50, 60, 70, 80])
+        assert np.array_equal(lc_new.time, [3, 4, 5, 6, 7, 8])
+
+        # Truncation can also be done by time values
+        lc_new = lc.truncate(start=6, method="time")
+        assert np.array_equal(lc_new.time, [6, 7, 8, 9])
+        assert np.allclose(lc_new.counts, [60, 70, 80, 90])
+
+    def test_truncate_not_str(self):
+        with pytest.raises(TypeError, match="The method keyword argument"):
+            self.sting_obj.truncate(method=1)
+
+    def test_truncate_invalid(self):
+        with pytest.raises(ValueError, match="Unknown method type"):
+            self.sting_obj.truncate(method="ababalksdfja")
+
+    def test_concatenate(self):
+        time0 = [1, 2, 3, 4]
+        time1 = [5, 6, 7, 8, 9]
+        count0 = [10, 20, 30, 40]
+        count1 = [50, 60, 70, 80, 90]
+        gti0 = [[0.5, 4.5]]
+        gti1 = [[4.5, 9.5]]
+        lc0 = StingrayTimeseries(
+            time0, array_attrs={"counts": count0, "_bla": count0}, dt=1, gti=gti0
+        )
+        lc1 = StingrayTimeseries(
+            time1, array_attrs={"counts": count1, "_bla": count1}, dt=1, gti=gti1
+        )
+        lc = lc0.concatenate(lc1)
+        assert np.allclose(lc._bla, count0 + count1)
+        assert np.allclose(lc.counts, count0 + count1)
+        assert np.allclose(lc.time, time0 + time1)
+        assert np.allclose(lc.gti, [[0.5, 4.5], [4.5, 9.5]])
+
+    def test_concatenate_invalid(self):
+        with pytest.raises(TypeError, match="objects can only be concatenated with other"):
+            self.sting_obj.concatenate(1)
+
+    def test_concatenate_gtis_overlap(self):
+        time0 = [1, 2, 3, 4]
+        time1 = [5, 6, 7, 8, 9]
+        count0 = [10, 20, 30, 40]
+        count1 = [50, 60, 70, 80, 90]
+        gti0 = [[0.5, 4.5]]
+        gti1 = [[3.5, 9.5]]
+        lc0 = StingrayTimeseries(
+            time0, array_attrs={"counts": count0, "_bla": count0}, dt=1, gti=gti0
+        )
+        lc1 = StingrayTimeseries(
+            time1, array_attrs={"counts": count1, "_bla": count1}, dt=1, gti=gti1
+        )
+        with pytest.raises(ValueError, match="GTIs are not separated."):
+            lc0.concatenate(lc1)
+
+    def test_rebin(self):
+        time0 = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        count0 = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+        count0_err = [1] * 9
+        gti0 = [[0.5, 9.5]]
+        lc0 = StingrayTimeseries(
+            time0,
+            array_attrs={"counts": count0, "counts_err": count0_err, "_bla": count0},
+            dt=1,
+            gti=gti0,
+        )
+        # With new dt=2
+        lc1 = lc0.rebin(dt_new=2)
+        assert np.allclose(lc1.counts, [30, 70, 110, 150])
+        assert np.allclose(lc1.counts_err, [np.sqrt(2)] * 4)
+        assert np.allclose(lc1._bla, [30, 70, 110, 150])
+        assert np.allclose(lc1.time, [1.5, 3.5, 5.5, 7.5])
+        assert lc1.dt == 2
+        # With a factor of two. Should give the same result
+        lc1 = lc0.rebin(f=2)
+        assert np.allclose(lc1.counts, [30, 70, 110, 150])
+        assert np.allclose(lc1.counts_err, [np.sqrt(2)] * 4)
+        assert np.allclose(lc1._bla, [30, 70, 110, 150])
+        assert np.allclose(lc1.time, [1.5, 3.5, 5.5, 7.5])
+        assert lc1.dt == 2
+
+    def test_rebin_no_good_gtis(self):
+        time0 = [1, 2, 3, 4]
+        count0 = [10, 20, 30, 40]
+        gti0 = [[0.5, 4.5]]
+        lc0 = StingrayTimeseries(
+            time0,
+            array_attrs={"counts": count0},
+            dt=1,
+            gti=gti0,
+        )
+        with pytest.raises(ValueError, match="No valid GTIs after rebin."):
+            print(lc0.rebin(dt_new=5).counts)
+
+    def test_rebin_no_input(self):
+        with pytest.raises(ValueError, match="You need to specify at least one between f and"):
+            self.sting_obj.rebin()
+
+    def test_rebin_less_than_dt(self):
+        time0 = [1, 2, 3, 4]
+        count0 = [10, 20, 30, 40]
+        lc0 = StingrayTimeseries(time0, array_attrs={"counts": count0}, dt=1)
+        with pytest.raises(ValueError, match="The new time resolution must be larger than"):
+            lc0.rebin(dt_new=0.1)
+
     @pytest.mark.parametrize("highprec", [True, False])
     def test_astropy_roundtrip(self, highprec):
         if highprec:
