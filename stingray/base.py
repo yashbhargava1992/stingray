@@ -1788,7 +1788,7 @@ class StingrayTimeseries(StingrayObject):
         from .gti import get_btis
 
         if ax is None:
-            plt.figure()
+            plt.figure(attr)
             ax = plt.gca()
 
         if labels is None:
@@ -1811,7 +1811,7 @@ class StingrayTimeseries(StingrayObject):
         ax.set_xlabel(xlabel)
 
         if title is not None:
-            ax.title(title)
+            ax.set_title(title)
 
         if save:
             if filename is None:
