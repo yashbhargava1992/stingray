@@ -48,6 +48,8 @@ except ImportError:
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
 
+plt.close("all")
+
 
 def fvar_fun(lc):
     from stingray.utils import excess_variance
@@ -1078,11 +1080,13 @@ class TestLightcurve(object):
         assert_allclose(sr.counts_err, lc.flux_err)
 
     def test_plot_simple(self):
+        plt.close("all")
         lc = Lightcurve(self.times, self.counts)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             lc.plot()
         assert plt.fignum_exists(1)
+        plt.close("all")
 
     def test_plot_wrong_label_type(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1090,6 +1094,7 @@ class TestLightcurve(object):
         with pytest.raises(TypeError):
             with pytest.warns(UserWarning, match="must be either a list or tuple") as w:
                 lc.plot(labels=123)
+        plt.close("all")
 
     def test_plot_labels_index_error(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1097,18 +1102,21 @@ class TestLightcurve(object):
             lc.plot(labels=("x"))
 
             assert np.any(["must have two labels" in str(wi.message) for wi in w])
+        plt.close("all")
 
     def test_plot_default_filename(self):
         lc = Lightcurve(self.times, self.counts)
         lc.plot(save=True)
         assert os.path.isfile("out.png")
         os.unlink("out.png")
+        plt.close("all")
 
     def test_plot_custom_filename(self):
         lc = Lightcurve(self.times, self.counts)
         lc.plot(save=True, filename="lc.png")
         assert os.path.isfile("lc.png")
         os.unlink("lc.png")
+        plt.close("all")
 
     def test_plot_axis(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1116,6 +1124,7 @@ class TestLightcurve(object):
             warnings.simplefilter("ignore", category=UserWarning)
             lc.plot(axis=[0, 1, 0, 100])
         assert plt.fignum_exists(1)
+        plt.close("all")
 
     def test_plot_title(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1123,6 +1132,7 @@ class TestLightcurve(object):
             warnings.simplefilter("ignore", category=UserWarning)
             lc.plot(title="Test Lightcurve")
         assert plt.fignum_exists(1)
+        plt.close("all")
 
     def test_read_from_lcurve_1(self):
         fname = "lcurveA.fits"

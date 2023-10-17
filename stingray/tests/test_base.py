@@ -2,6 +2,7 @@ import os
 import copy
 import pytest
 import numpy as np
+import matplotlib.pyplot as plt
 from stingray.base import StingrayObject, StingrayTimeseries
 
 _HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
@@ -854,6 +855,34 @@ class TestStingrayTimeseries:
         assert new_so.mjdref == 59776.5
         assert np.allclose(new_so.time - 43200, self.sting_obj.time)
         assert np.allclose(new_so.gti - 43200, self.sting_obj.gti)
+
+    def test_plot_simple(self):
+        time0 = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        count0 = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+        count0_err = [1] * 9
+        gti0 = [[0.5, 9.5]]
+        lc0 = StingrayTimeseries(
+            time0,
+            array_attrs={"counts": count0, "counts_err": count0_err, "_bla": count0},
+            dt=1,
+            gti=gti0,
+        )
+        plt.close("all")
+        lc0.plot("counts", title="Counts", witherrors=True)
+        assert plt.fignum_exists("counts")
+        plt.close("all")
+
+    def test_plot_default_filename(self):
+        self.sting_obj.plot("guefus", save=True)
+        assert os.path.isfile("out.png")
+        os.unlink("out.png")
+        plt.close("all")
+
+    def test_plot_custom_filename(self):
+        self.sting_obj.plot("guefus", save=True, filename="lc.png")
+        assert os.path.isfile("lc.png")
+        os.unlink("lc.png")
+        plt.close("all")
 
 
 class TestStingrayTimeseriesSubclass:
