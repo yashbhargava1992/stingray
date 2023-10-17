@@ -556,9 +556,7 @@ class Powerspectrum(Crossspectrum):
         error_flux_attr=None,
         segment_size=None,
         norm="none",
-        power_type="all",
         silent=False,
-        fullspec=False,
         use_common_mean=True,
         gti=None,
     ):
