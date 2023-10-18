@@ -216,22 +216,12 @@ class StingrayObject(object):
         By array attributes, we mean the ones with a different size and shape
         than ``main_array_attr`` (e.g. ``time`` in ``EventList``)
         """
-        array_attrs = self.array_attrs() + [self.main_array_attr]
+        array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
 
         all_meta_attrs = [
             attr
-            for attr in dir(self)
-            if (
-                attr not in array_attrs
-                and not attr.startswith("_")
-                # Use new assignment expression (PEP 572). I'm testing that
-                # self.attribute is not callable, and assigning its value to
-                # the variable attr_value for further checks
-                and not callable(attr_value := getattr(self, attr))
-                and not isinstance(getattr(self.__class__, attr, None), property)
-                # a way to avoid EventLists, Lightcurves, etc.
-                and not hasattr(attr_value, "meta_attrs")
-            )
+            for attr in self.data_attributes()
+            if (attr not in array_attrs and not attr.startswith("_"))
         ]
         if self.not_array_attr is not None and len(self.not_array_attr) >= 1:
             all_meta_attrs += self.not_array_attr
@@ -1057,18 +1047,18 @@ class StingrayTimeseries(StingrayObject):
                 raise ValueError(f"Lengths of time and {kw} must be equal.")
             setattr(self, kw, new_arr)
 
-        if gti is None and self.time is not None and np.size(self.time) > 0:
-            self.gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
+        # if gti is None and self.time is not None and np.size(self.time) > 0:
+        #     self.gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
 
     def _set_times(self, time, high_precision=False):
-        if time is not None:
-            time, mjdref = interpret_times(time, self.mjdref)
-            if not high_precision:
-                self._time = np.asarray(time)
-            else:
-                self._time = np.asarray(time, dtype=np.longdouble)
-        else:
+        if time is None or np.size(time) == 0:
             self._time = None
+            return
+        time, _ = interpret_times(time, self.mjdref)
+        if not high_precision:
+            self._time = np.asarray(time)
+        else:
+            self._time = np.asarray(time, dtype=np.longdouble)
 
     def _check_value_size(self, value, attr_name, compare_to_attr):
         """Check if the size of a value is compatible with the size of another attribute.
@@ -1098,10 +1088,10 @@ class StingrayTimeseries(StingrayObject):
             raise ValueError(f"{attr_name} array must be at least 1D")
         # If the attribute we compare it with is the same and it is currently None, we assign it
         # This can happen, e.g. with the time array.
-        if attr_name == compare_to_attr and getattr(self, compare_to_attr) is None:
+        compare_with = getattr(self, compare_to_attr, None)
+        if attr_name == compare_to_attr and compare_with is None:
             return value
 
-        compare_with = getattr(self, compare_to_attr, None)
         # In the special case where the current value of the attribute being compared
         # is None, this also has to fail.
         if compare_with is None:
@@ -1128,12 +1118,20 @@ class StingrayTimeseries(StingrayObject):
 
     @property
     def gti(self):
-        if self._gti is None:
-            self._gti = np.asarray([[self.tstart, self.tstart + self.tseg]])
+        if self._gti is None and self._time is not None:
+            if isinstance(self.dt, Iterable):
+                dt0 = self.dt[0]
+                dt1 = self.dt[-1]
+            else:
+                dt0 = dt1 = self.dt
+            self._gti = np.asarray([[self._time[0] - dt0 / 2, self._time[-1] + dt1 / 2]])
         return self._gti
 
     @gti.setter
     def gti(self, value):
+        if value is None:
+            self._gti = None
+            return
         value = np.asarray(value)
         self._gti = value
         self._mask = None
@@ -1363,8 +1361,10 @@ class StingrayTimeseries(StingrayObject):
         else:
             ts = copy.deepcopy(self)
         ts.time = np.asarray(ts.time) + time_shift  # type: ignore
-        if hasattr(ts, "gti"):
-            ts.gti = np.asarray(ts.gti) + time_shift  # type: ignore
+        # Pay attention here: if the GTIs are created dynamically while we
+        # access the property,
+        if ts._gti is not None:
+            ts._gti = np.asarray(ts._gti) + time_shift  # type: ignore
 
         return ts
 
@@ -1983,6 +1983,9 @@ def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, floa
     ...
     ValueError: Unknown time format: ...
     """
+    if time is None:
+        return None, mjdref
+
     if isinstance(time, TimeDelta):
         out_times = time.to("s").value
         return out_times, mjdref
