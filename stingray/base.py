@@ -166,7 +166,12 @@ class StingrayObject(object):
         ]
 
     def data_attributes(self) -> list[str]:
-        """Weed out methods from the list of attributes"""
+        """Clean up the list of attributes, only giving out actual data.
+
+        This also includes properties (which usually set internal data arrays, so they would
+        duplicate the effort), methods, and attributes that are complicated to serialize such
+        as other `StingrayObject`s, or arrays of objects.
+        """
         return [
             attr
             for attr in dir(self)
