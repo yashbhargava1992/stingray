@@ -1720,12 +1720,6 @@ class StingrayTimeseries(StingrayObject):
         """
         from .gti import check_separate, cross_gtis, append_gtis
 
-        if gti_treatment == "infer":
-            warnings.warn(
-                "GTI treatment 'infer' is deprecated. Please choose carefully the "
-                "strategy to be used, depending on what you want to do with the data.",
-                DeprecationWarning,
-            )
         new_ts = type(self)()
 
         if not (

@@ -466,8 +466,7 @@ class TestJoinEvents:
         """Join two overlapping event lists."""
         ev = EventList(time=[1, 1.1, 2, 3, 4], energy=[3, 4, 7, 4, 3], gti=[[1, 2], [3, 4]])
         ev_other = EventList(time=[5, 6, 6.1, 7, 10], energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
-        with pytest.warns(DeprecationWarning, match="GTI treatment 'infer' is deprecated. "):
-            ev_new = ev.join(ev_other, gti_treatment="infer")
+        ev_new = ev.join(ev_other, gti_treatment="infer")
 
         assert (ev_new.time == np.array([1, 1.1, 2, 3, 4, 5, 6, 6.1, 7, 10])).all()
         assert (ev_new.energy == np.array([3, 4, 7, 4, 3, 4, 3, 8, 1, 2])).all()
@@ -479,8 +478,7 @@ class TestJoinEvents:
         ev_other = EventList(
             time=[5.1, 7, 6.1, 6.11, 10.1], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]]
         )
-        with pytest.warns(DeprecationWarning, match="GTI treatment 'infer' is deprecated. "):
-            ev_new = ev.join(ev_other, gti_treatment="infer")
+        ev_new = ev.join(ev_other, gti_treatment="infer")
 
         assert (ev_new.time == np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1])).all()
         assert (ev_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
