@@ -1,5 +1,6 @@
 import warnings
 import numpy as np
+import copy
 import os
 import pytest
 from astropy.time import Time
@@ -511,3 +512,67 @@ class TestJoinEvents:
         assert np.allclose(ev_new.pibiri, [1, 1, 2, 1, 2, 3, 2, 3, 3])
         assert ev_new.instr == "a,b,c"
         assert ev_new.mission == (1, 2, 3)
+
+
+class TestFilters(object):
+    @classmethod
+    def setup_class(cls):
+        events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
+        events = EventList(events, gti=[[0, 3.3]])
+        events.pi = np.array([1, 2, 2, 2, 2, 1, 1, 1, 2, 1])
+        events.energy = np.array([1, 2, 2, 2, 2, 1, 1, 1, 2, 1])
+        events.mjdref = 10
+        cls.events = events
+
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_apply_mask(self, inplace):
+        events = copy.deepcopy(self.events)
+        mask = [True, False, False, False, False, True, True, True, False, True]
+        filt_events = events.apply_mask(mask, inplace=inplace)
+        if inplace:
+            assert filt_events is events
+            assert np.allclose(events.pi, 1)
+        else:
+            assert filt_events is not events
+            assert not np.allclose(events.pi, 1)
+
+        expected = np.array([1, 2, 2.2, 3, 3.2])
+        assert np.allclose(filt_events.time, expected)
+        assert np.allclose(filt_events.pi, 1)
+        assert np.allclose(filt_events.energy, 1)
+
+    @pytest.mark.parametrize("inplace", [True, False])
+    @pytest.mark.parametrize("use_pi", [True, False])
+    def test_filter_energy_range(self, inplace, use_pi):
+        events = copy.deepcopy(self.events)
+
+        filt_events = events.filter_energy_range([0.5, 1.5], use_pi=use_pi, inplace=inplace)
+        if inplace:
+            assert filt_events is events
+            assert np.allclose(events.pi, 1)
+        else:
+            assert filt_events is not events
+            assert not np.allclose(events.pi, 1)
+
+        expected = np.array([1, 2, 2.2, 3, 3.2])
+        assert np.allclose(filt_events.time, expected)
+        assert np.allclose(filt_events.pi, 1)
+        assert np.allclose(filt_events.energy, 1)
+
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_apply_deadtime(self, inplace):
+        events = copy.deepcopy(self.events)
+        filt_events, _ = events.apply_deadtime(
+            0.11, inplace=inplace, verbose=False, return_all=True
+        )
+        if inplace:
+            assert filt_events is events
+            assert np.allclose(events.pi, 1)
+        else:
+            assert filt_events is not events
+            assert not np.allclose(events.pi, 1)
+
+        expected = np.array([1, 2, 2.2, 3, 3.2])
+        assert np.allclose(filt_events.time, expected)
+        assert np.allclose(filt_events.pi, 1)
+        assert np.allclose(filt_events.energy, 1)

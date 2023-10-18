@@ -776,50 +776,6 @@ class EventList(StingrayTimeseries):
 
         return self.apply_mask(mask, inplace=inplace)
 
-    def apply_mask(self, mask, inplace=False):
-        """Apply a mask to all array attributes of the event list
-
-        Parameters
-        ----------
-        mask : array of ``bool``
-            The mask. Has to be of the same length as ``self.time``
-
-        Other parameters
-        ----------------
-        inplace : bool
-            If True, overwrite the current event list. Otherwise, return a new one.
-
-        Examples
-        --------
-        >>> evt = EventList(time=[0, 1, 2], mission="nustar")
-        >>> evt.bubuattr = [222, 111, 333]
-        >>> newev0 = evt.apply_mask([True, True, False], inplace=False);
-        >>> newev1 = evt.apply_mask([True, True, False], inplace=True);
-        >>> newev0.mission == "nustar"
-        True
-        >>> np.allclose(newev0.time, [0, 1])
-        True
-        >>> np.allclose(newev0.bubuattr, [222, 111])
-        True
-        >>> np.allclose(newev1.time, [0, 1])
-        True
-        >>> evt is newev1
-        True
-        """
-        array_attrs = self.array_attrs() + ["time"]
-
-        if inplace:
-            new_ev = self
-        else:
-            new_ev = EventList()
-            for attr in self.meta_attrs():
-                setattr(new_ev, attr, copy.deepcopy(getattr(self, attr)))
-
-        for attr in array_attrs:
-            if hasattr(self, attr) and getattr(self, attr) is not None:
-                setattr(new_ev, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
-        return new_ev
-
     def apply_deadtime(self, deadtime, inplace=False, **kwargs):
         """Apply deadtime filter to this event list.
 
@@ -845,7 +801,7 @@ class EventList(StingrayTimeseries):
         Examples
         --------
         >>> events = np.array([1, 1.05, 1.07, 1.08, 1.1, 2, 2.2, 3, 3.1, 3.2])
-        >>> events = EventList(events)
+        >>> events = EventList(events, gti=[[0, 3.3]])
         >>> events.pi=np.array([1, 2, 2, 2, 2, 1, 1, 1, 2, 1])
         >>> events.energy=np.array([1, 2, 2, 2, 2, 1, 1, 1, 2, 1])
         >>> events.mjdref = 10
