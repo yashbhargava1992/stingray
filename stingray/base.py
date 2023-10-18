@@ -158,7 +158,6 @@ class StingrayObject(object):
             if (
                 not attr.startswith("_")
                 and isinstance(getattr(self, attr), Iterable)
-                and not isinstance(getattr(self.__class__, attr, None), property)
                 and not attr == self.main_array_attr
                 and attr not in self.not_array_attr
                 and not isinstance(getattr(self, attr), str)
@@ -173,9 +172,10 @@ class StingrayObject(object):
             for attr in dir(self)
             if (
                 not attr.startswith("__")
-                and not callable(value := getattr(self, attr))
                 and not isinstance(getattr(self.__class__, attr, None), property)
+                and not callable(value := getattr(self, attr))
                 and not isinstance(value, StingrayObject)
+                and not np.asarray(value).dtype == "O"
             )
         ]
 
@@ -196,8 +196,6 @@ class StingrayObject(object):
             if (
                 not attr == "_" + self.main_array_attr  # e.g. _time in lightcurve
                 and not np.isscalar(value := getattr(self, attr))
-                and not np.asarray(value).dtype == "O"
-                and not isinstance(getattr(self.__class__, attr, None), property)
                 and value is not None
                 and not np.size(value) == 0
                 and attr.startswith("_")
@@ -1013,8 +1011,12 @@ class StingrayObject(object):
 
 
 class StingrayTimeseries(StingrayObject):
-    main_array_attr = "time"
-    not_array_attr = ["gti"]
+    main_array_attr: str = "time"
+    not_array_attr: list = ["gti"]
+    _time: TTime = None
+    high_precision: bool = False
+    mjdref: TTime = 0
+    dt: float = 0
 
     def __init__(
         self,
@@ -1038,17 +1040,10 @@ class StingrayTimeseries(StingrayObject):
         self.timeref = timeref
         self.timesys = timesys
         self._mask = None
+        self.high_precision = high_precision
         self.dt = other_kw.pop("dt", 0)
 
-        if time is not None:
-            time, mjdref = interpret_times(time, mjdref)
-            if not high_precision:
-                self.time = np.asarray(time)
-            else:
-                self.time = np.asarray(time, dtype=np.longdouble)
-        else:
-            self.time = None
-
+        self._set_times(time, high_precision=high_precision)
         for kw in other_kw:
             setattr(self, kw, other_kw[kw])
         for kw in array_attrs:
@@ -1059,6 +1054,92 @@ class StingrayTimeseries(StingrayObject):
 
         if gti is None and self.time is not None and np.size(self.time) > 0:
             self.gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
+
+    def _set_times(self, time, high_precision=False):
+        if time is not None:
+            time, mjdref = interpret_times(time, self.mjdref)
+            if not high_precision:
+                self._time = np.asarray(time)
+            else:
+                self._time = np.asarray(time, dtype=np.longdouble)
+        else:
+            self._time = None
+
+    def _check_value_size(self, value, attr_name, compare_to_attr):
+        """Check if the size of a value is compatible with the size of another attribute.
+
+        Different cases are possible:
+
+        - If the value is None, we return None
+        - If the value is a scalar, we fail
+        - If the value is an array, we check if it has the correct shape by comparing it with
+          another attribute. In the special case where the attribute is the same, if it is None
+          we assign the new value. Otherwise, the first dimension of the value and the current
+          value of the attribute being compared with has to be the same.
+
+        Parameters
+        ----------
+        value : array-like or None
+            The value to check.
+        attr_name : str
+            The name of the attribute being checked.
+        compare_to_attr : str
+            The name of the attribute to compare with.
+        """
+        if value is None:
+            return None
+        value = np.asarray(value)
+        if len(value.shape) < 1:
+            raise ValueError(f"{attr_name} array must be at least 1D")
+        # If the attribute we compare it with is the same and it is currently None, we assign it
+        # This can happen, e.g. with the time array.
+        if attr_name == compare_to_attr and getattr(self, compare_to_attr) is None:
+            return value
+
+        compare_with = getattr(self, compare_to_attr, None)
+        # In the special case where the current value of the attribute being compared
+        # is None, this also has to fail.
+        if compare_with is None:
+            raise ValueError(
+                f"Can only assign new {attr_name} if the {compare_to_attr} array is not None"
+            )
+        if value.shape[0] != compare_with.shape[0]:
+            raise ValueError(
+                f"Can only assign new {attr_name} of the same shape as the {compare_to_attr} array"
+            )
+        return value
+
+    @property
+    def time(self):
+        return self._time
+
+    @time.setter
+    def time(self, value):
+        value = self._check_value_size(value, "time", "time")
+        if value is None:
+            for attr in self.internal_array_attrs():
+                setattr(self, attr, None)
+        self._set_times(value, high_precision=self.high_precision)
+
+    @property
+    def gti(self):
+        if self._gti is None:
+            self._gti = np.asarray([[self.tstart, self.tstart + self.tseg]])
+        return self._gti
+
+    @gti.setter
+    def gti(self, value):
+        value = np.asarray(value)
+        self._gti = value
+        self._mask = None
+
+    @property
+    def mask(self):
+        from .gti import create_gti_mask
+
+        if self._mask is None:
+            self._mask = create_gti_mask(self.time, self.gti, dt=self.dt)
+        return self._mask
 
     @property
     def n(self):
@@ -1607,6 +1688,11 @@ class StingrayTimeseries(StingrayObject):
                 new_ts, attr, np.concatenate([getattr(self, attr), getattr(other, attr)])[order]
             )
         for attr in self.internal_array_attrs():
+            # Most internal array attrs can be set dynamically by calling the relevant property.
+            # If it is None, let's try to initialize it.
+            other_val = getattr(other, attr)
+            if other_val is None:
+                getattr(other, attr.lstrip("_"), None)
             setattr(
                 new_ts, attr, np.concatenate([getattr(self, attr), getattr(other, attr)])[order]
             )

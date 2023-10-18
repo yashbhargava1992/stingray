@@ -361,48 +361,13 @@ class Lightcurve(StingrayTimeseries):
 
     @time.setter
     def time(self, value):
+        value = self._check_value_size(value, "time", "time")
         if value is None:
             for attr in self.internal_array_attrs():
                 setattr(self, attr, None)
-            self._time = None
-
-        else:
-            value = np.asarray(value)
-            if self._time is None:
-                pass
-            elif not value.shape == self._time.shape:
-                raise ValueError(
-                    "Can only assign new times of the same shape as " "the original array"
-                )
-            self._time = value
+        self._time = value
         self._bin_lo = None
         self._bin_hi = None
-
-    @property
-    def gti(self):
-        if self._gti is None:
-            self._gti = np.asarray([[self.tstart, self.tstart + self.tseg]])
-        return self._gti
-
-    @gti.setter
-    def gti(self, value):
-        value = np.asarray(value)
-        self._gti = value
-        self._mask = None
-
-    @property
-    def mask(self):
-        if self._mask is None:
-            self._mask = create_gti_mask(self.time, self.gti, dt=self.dt)
-        return self._mask
-
-    @property
-    def n(self):
-        return self.time.shape[0]
-
-    @n.setter
-    def n(self, value):
-        pass
 
     @property
     def meanrate(self):
@@ -429,11 +394,7 @@ class Lightcurve(StingrayTimeseries):
 
     @counts.setter
     def counts(self, value):
-        value = np.asarray(value)
-        if not value.shape == self.counts.shape:
-            raise ValueError(
-                "Can only assign new counts array of the same " "shape as the original array"
-            )
+        value = self._check_value_size(value, "counts", "time")
         self._counts = value
         self._countrate = None
         self._meancounts = None
@@ -461,18 +422,15 @@ class Lightcurve(StingrayTimeseries):
 
     @counts_err.setter
     def counts_err(self, value):
-        value = np.asarray(value)
-        if not value.shape == self.counts.shape:
-            raise ValueError(
-                "Can only assign new error array of the same " "shape as the original array"
-            )
+        value = self._check_value_size(value, "counts_err", "counts")
+
         self._counts_err = value
         self._countrate_err = None
 
     @property
     def countrate(self):
         countrate = self._countrate
-        if countrate is None:
+        if countrate is None and self._counts is not None:
             countrate = self._counts / self.dt
             # If not in low-memory regime, cache the values
             if not self.low_memory or not self.input_counts:
@@ -482,11 +440,8 @@ class Lightcurve(StingrayTimeseries):
 
     @countrate.setter
     def countrate(self, value):
-        value = np.asarray(value)
-        if not value.shape == self.countrate.shape:
-            raise ValueError(
-                "Can only assign new countrate array of the same " "shape as the original array"
-            )
+        value = self._check_value_size(value, "countrate", "time")
+
         self._countrate = value
         self._counts = None
         self._meancounts = None
@@ -511,11 +466,8 @@ class Lightcurve(StingrayTimeseries):
 
     @countrate_err.setter
     def countrate_err(self, value):
-        value = np.asarray(value)
-        if not value.shape == self.countrate.shape:
-            raise ValueError(
-                "Can only assign new error array of the same " "shape as the original array"
-            )
+        value = self._check_value_size(value, "countrate_err", "countrate")
+
         self._countrate_err = value
         self._counts_err = None
 

@@ -83,6 +83,17 @@ class TestProperties(object):
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
 
+    def test_empty_lightcurve(self):
+        lc0 = Lightcurve()
+        lc1 = Lightcurve([], [])
+        assert lc0.time is None
+        assert lc1.time is None
+
+    def test_add_data_to_empty_lightcurve(self):
+        lc0 = Lightcurve()
+        lc0.time = [1, 2, 3]
+        lc0.counts = [1, 2, 3]
+
     def test_bad_counts_lightcurve(self):
         with pytest.raises(StingrayError, match="Empty or invalid counts array. "):
             Lightcurve([1])
@@ -247,18 +258,36 @@ class TestProperties(object):
         # (because low_memory, and input_counts is now False)
         assert lc._counts_err is None
 
-    @pytest.mark.parametrize(
-        "property", "time,counts,counts_err," "countrate,countrate_err".split(",")
-    )
-    def test_assign_bad_shape_fails(self, property):
+    @pytest.mark.parametrize("attr", "time,counts,countrate".split(","))
+    def test_add_data_to_empty_lightcurve_wrong(self, attr):
+        lc0 = Lightcurve()
+        lc0.time = [1, 2, 3]
+        with pytest.raises(ValueError, match=f".*the same shape as the time array"):
+            setattr(lc0, attr, [1, 2, 3, 4])
+
+    @pytest.mark.parametrize("attr", "counts,countrate".split(","))
+    def test_add_err_data_to_empty_lightcurve_wrong_order(self, attr):
+        lc0 = Lightcurve()
+        lc0.time = [1, 2, 3]
+        with pytest.raises(ValueError, match=f"if the {attr} array is not None"):
+            setattr(lc0, attr + "_err", [1, 2, 3])
+
+    @pytest.mark.parametrize("attr", "counts,countrate".split(","))
+    def test_add_err_data_to_empty_lightcurve_wrong_size(self, attr):
+        lc0 = Lightcurve()
+        lc0.time = [1, 2, 3]
+        setattr(lc0, attr, [1, 2, 1])
+        with pytest.raises(ValueError, match=f"the same shape as the {attr} array"):
+            setattr(lc0, attr + "_err", [1, 2, 3, 4])
+
+    @pytest.mark.parametrize("attr", "time,counts,counts_err,countrate,countrate_err".split(","))
+    def test_assign_scalar_data(self, attr):
         lc = copy.deepcopy(self.lc)
         # Same shape passes
-        setattr(lc, property, np.zeros_like(lc.time))
+        setattr(lc, attr, np.zeros_like(lc.time))
         # Different shape doesn't
-        with pytest.raises(ValueError):
-            setattr(lc, property, 3)
-        with pytest.raises(ValueError):
-            setattr(lc, property, np.arange(2))
+        with pytest.raises(ValueError, match="at least 1D"):
+            setattr(lc, attr, 3)
 
 
 class TestChunks(object):
