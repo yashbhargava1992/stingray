@@ -966,6 +966,84 @@ def join_equal_gti_boundaries(gti, threshold=0.0):
     return np.asarray(ng)
 
 
+def merge_gtis(gti_list, gti_treatment):
+    """Merge a list of GTIs using the specified method.
+
+    Parameters
+    ----------
+    gti_list : list of 2-d float arrays
+        List of GTIs.
+
+    Other parameters
+    ----------------
+    gti_treatment : {"intersection", "union", "append", "infer", "none"}
+        Method to use to merge the GTIs. If "intersection", the GTIs are merged
+        using the intersection of the GTIs. If "union", the GTIs are merged
+        using the union of the GTIs. If "none", a single GTI with the minimum and
+        the maximum time stamps of all GTIs is returned. If "infer", the strategy
+        is decided based on the GTIs. If there are no overlaps, "union" is used,
+        otherwise "intersection" is used. If "append", the GTIs are simply appended
+        but they must be mutually exclusive.
+
+    Examples
+    --------
+    >>> gti1 = np.array([[1, 2], [3, 4], [5, 6]])
+    >>> gti2 = np.array([[1, 2]])
+    >>> gti3 = np.array([[4, 5]])
+    >>> gti = merge_gtis([gti1, gti2], "intersection")
+    >>> np.array_equal(gti, [[1, 2]])
+    True
+    >>> merge_gtis([gti1, gti2, gti3], "intersection") is None
+    True
+    >>> merge_gtis([gti2, gti3], "intersection") is None
+    True
+    >>> gti = merge_gtis([gti1, gti2], "infer")
+    >>> np.array_equal(gti, [[1, 2]])
+    True
+    >>> gti = merge_gtis([gti2, gti3], "infer")
+    >>> np.array_equal(gti, [[1, 2], [4, 5]])
+    True
+    """
+    all_gti_lists = []
+    global_min = np.inf
+    global_max = -np.inf
+    for gti in gti_list:
+        if gti is None or len(gti) == 0:
+            continue
+        all_gti_lists.append(gti)
+        global_min = min(global_min, np.min(gti))
+        global_max = max(global_max, np.max(gti))
+
+    if len(all_gti_lists) == 0:
+        return None
+
+    if gti_treatment == "none":
+        return np.asarray([[global_min, global_max]])
+
+    if len(all_gti_lists) == 1:
+        return all_gti_lists[0]
+
+    cross = cross_gtis(all_gti_lists)
+    if len(cross) == 0:
+        cross = None
+    if gti_treatment == "infer":
+        if cross is None:
+            gti_treatment = "union"
+        else:
+            gti_treatment = "intersection"
+
+    if gti_treatment == "intersection":
+        return cross
+
+    gti0 = all_gti_lists[0]
+    for gti in all_gti_lists[1:]:
+        if gti_treatment == "union":
+            gti0 = join_gtis(gti0, gti)
+        elif gti_treatment == "append":
+            gti0 = append_gtis(gti0, gti)
+    return gti0
+
+
 def append_gtis(gti0, gti1):
     """
     Union of two non-overlapping GTIs.

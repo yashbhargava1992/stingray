@@ -3,7 +3,7 @@ import pytest
 import os
 
 from stingray.gti import cross_gtis, append_gtis, load_gtis, get_btis, join_gtis
-from stingray.gti import check_separate, create_gti_mask, check_gtis
+from stingray.gti import check_separate, create_gti_mask, check_gtis, merge_gtis
 from stingray.gti import create_gti_from_condition, gti_len, gti_border_bins
 from stingray.gti import time_intervals_from_gtis, bin_intervals_from_gtis
 from stingray.gti import create_gti_mask_complete, join_equal_gti_boundaries
@@ -319,3 +319,54 @@ class TestGTI(object):
         )
         newg = join_equal_gti_boundaries(gti)
         assert np.allclose(newg, np.array([[1.16703354e08, 1.16703514e08]]))
+
+
+_ALL_METHODS = ["intersection", "union", "infer", "append"]
+
+
+class TestMergeGTIs(object):
+    @classmethod
+    def setup_class(cls):
+        cls.gti1 = np.array([[1, 2], [3, 4], [5, 6]])
+        cls.gti2 = np.array([[1, 2]])
+        cls.gti3 = np.array([[2, 3]])
+        cls.gti4 = np.array([[4, 5]])
+
+    @pytest.mark.parametrize("method", _ALL_METHODS)
+    def test_merge_gti_empty(self, method):
+        assert merge_gtis([], method) is None
+        assert merge_gtis([None], method) is None
+        assert merge_gtis([None, []], method) is None
+        assert merge_gtis([[]], method) is None
+
+    @pytest.mark.parametrize("method", _ALL_METHODS)
+    def test_merge_gti_single(self, method):
+        # all methods but `none` should just return the unaltered GTI
+        assert np.array_equal(merge_gtis([self.gti1], method), self.gti1)
+
+    def test_merge_gti_none(self):
+        assert np.array_equal(merge_gtis([self.gti1], "none"), [[1, 6]])
+        assert np.array_equal(merge_gtis([self.gti1, self.gti2], "none"), [[1, 6]])
+
+    def test_merge_gti_intersection(self):
+        gti = merge_gtis([self.gti1, self.gti2], "intersection")
+        assert np.array_equal(gti, [[1, 2]])
+        assert merge_gtis([self.gti1, self.gti2, self.gti3], "intersection") is None
+        assert merge_gtis([self.gti2, self.gti3], "intersection") is None
+
+    def test_merge_gti_union(self):
+        assert np.array_equal(merge_gtis([self.gti1, self.gti2], "union"), self.gti1)
+        assert np.array_equal(merge_gtis([self.gti1, self.gti3], "union"), [[1, 4], [5, 6]])
+
+    def test_merge_gti_append(self):
+        assert np.array_equal(merge_gtis([self.gti2, self.gti4], "append"), [[1, 2], [4, 5]])
+        assert np.array_equal(merge_gtis([self.gti2, self.gti3], "append"), [[1, 3]])
+        with pytest.raises(ValueError, match="In order to append, GTIs must be mutually"):
+            merge_gtis([self.gti1, self.gti3], "append")
+
+    def test_merge_gti_infer(self):
+        gti = merge_gtis([self.gti1, self.gti2], "infer")
+        assert np.array_equal(gti, [[1, 2]])
+
+        gti = merge_gtis([self.gti2, self.gti4], "infer")
+        assert np.array_equal(gti, [[1, 2], [4, 5]])
