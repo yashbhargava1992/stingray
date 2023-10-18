@@ -723,6 +723,30 @@ class TestStingrayTimeseries:
         with pytest.raises(ValueError, match="The new time resolution must be larger than"):
             lc0.rebin(dt_new=0.1)
 
+    def test_sort(self):
+        times = [2, 1, 3, 4]
+        blah = np.asarray([40, 10, 20, 5])
+        bleh = [4, 1, 2, 0.5]
+        mjdref = 57000
+
+        lc = StingrayTimeseries(
+            times, array_attrs={"blah": blah, "_bleh": bleh}, dt=1, mjdref=mjdref
+        )
+
+        lc_new = lc.sort()
+
+        assert np.allclose(lc_new._bleh, np.array([1, 4, 2, 0.5]))
+        assert np.allclose(lc_new.blah, np.array([10, 40, 20, 5]))
+        assert np.allclose(lc_new.time, np.array([1, 2, 3, 4]))
+        assert lc_new.mjdref == mjdref
+
+        lc_new = lc.sort(reverse=True)
+
+        assert np.allclose(lc_new._bleh, np.array([0.5, 2, 4, 1]))
+        assert np.allclose(lc_new.blah, np.array([5, 20, 40, 10]))
+        assert np.allclose(lc_new.time, np.array([4, 3, 2, 1]))
+        assert lc_new.mjdref == mjdref
+
     @pytest.mark.parametrize("highprec", [True, False])
     def test_astropy_roundtrip(self, highprec):
         if highprec:
@@ -860,7 +884,7 @@ class TestStingrayTimeseries:
         time0 = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         count0 = [10, 20, 30, 40, 50, 60, 70, 80, 90]
         count0_err = [1] * 9
-        gti0 = [[0.5, 9.5]]
+        gti0 = [[0.5, 3.5], [4.5, 9.5]]
         lc0 = StingrayTimeseries(
             time0,
             array_attrs={"counts": count0, "counts_err": count0_err, "_bla": count0},
