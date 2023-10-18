@@ -798,6 +798,8 @@ def cross_gtis(gti_list):
 
     for gti in gti_list[1:]:
         gti0 = cross_two_gtis(gti0, gti)
+        if len(gti0) == 0:
+            return []
 
     return gti0
 
@@ -968,6 +970,8 @@ def join_equal_gti_boundaries(gti, threshold=0.0):
 
 def merge_gtis(gti_list, gti_treatment):
     """Merge a list of GTIs using the specified method.
+
+    Invalid GTI lists (None or empty) are ignored.
 
     Parameters
     ----------

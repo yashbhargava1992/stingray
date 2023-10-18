@@ -45,7 +45,10 @@ class TestGTI(object):
         gti1 = np.array([[2, 3]])
         gti2 = np.array([[3, 4]])
         newgti = cross_gtis([gti1, gti2])
+        gti3 = np.array([[3, 5]])
+        assert len(newgti) == 0
 
+        newgti = cross_gtis([gti1, gti2, gti3])
         assert len(newgti) == 0
 
     def test_bti(self):
