@@ -6,6 +6,7 @@ import pickle
 import warnings
 import copy
 import os
+import logging
 
 import numpy as np
 from astropy.table import Table
@@ -157,8 +158,8 @@ class StingrayObject(object):
             for attr in self.data_attributes()
             if (
                 not attr.startswith("_")
-                and isinstance(getattr(self, attr), Iterable)
                 and not attr == self.main_array_attr
+                and isinstance(getattr(self, attr), Iterable)
                 and attr not in self.not_array_attr
                 and not isinstance(getattr(self, attr), str)
                 and np.shape(getattr(self, attr))[0] == np.shape(main_attr)[0]
@@ -177,6 +178,7 @@ class StingrayObject(object):
             for attr in dir(self)
             if (
                 not attr.startswith("__")
+                and not attr in ["main_array_attr", "not_array_attr"]
                 and not isinstance(getattr(self.__class__, attr, None), property)
                 and not callable(value := getattr(self, attr))
                 and not isinstance(value, StingrayObject)
@@ -200,6 +202,7 @@ class StingrayObject(object):
         for attr in self.data_attributes():
             if (
                 not attr == "_" + self.main_array_attr  # e.g. _time in lightcurve
+                and not attr in ["_" + a for a in self.not_array_attr]
                 and not np.isscalar(value := getattr(self, attr))
                 and value is not None
                 and not np.size(value) == 0
@@ -1271,8 +1274,8 @@ class StingrayTimeseries(StingrayObject):
 
         The timeseries has to define at least a column called time,
         the rest of columns will form the array attributes of the
-        new event list, while the attributes in table.meta will
-        form the new meta attributes of the event list.
+        new time series, while the attributes in table.meta will
+        form the new meta attributes of the time series.
 
         It is strongly advisable to define such attributes and columns
         using the standard attributes of EventList: time, pi, energy, gti etc.
@@ -1650,63 +1653,247 @@ class StingrayTimeseries(StingrayObject):
 
         return self._truncate_by_index(start, stop)
 
-    def concatenate(self, other):
+    def concatenate(self, other, check_gti=True):
         """
         Concatenate two :class:`StingrayTimeseries` objects.
 
-        This method concatenates two :class:`StingrayTimeseries` objects. GTIs are recalculated
-        based on the new light curve segment
+        This method concatenates two or more :class:`StingrayTimeseries` objects. GTIs are
+        recalculated by merging all the GTIs together. GTIs should not overlap at any point.
 
         Parameters
         ----------
-        other : :class:`StingrayTimeseries` object
-            A second time series object
+        other : :class:`StingrayTimeseries` object or list of :class:`StingrayTimeseries` objects
+            A second time series object, or a list of objects to be concatenated
 
+        Other parameters
+        ----------------
+        check_gti : bool
+            Check if the GTIs are overlapping or not. Default: True
+            If this is True and GTIs overlap, an error is raised.
         """
-        from .gti import check_separate
 
-        if not isinstance(other, type(self)):
-            raise TypeError(
-                f"{type(self)} objects can only be concatenated with other {type(self)} objects."
+        if check_gti:
+            treatment = "append"
+        else:
+            treatment = "none"
+        new_ts = self._join_timeseries(other, gti_treatment=treatment)
+        return new_ts
+
+    def _join_timeseries(self, others, gti_treatment="intersection", ignore_meta=[]):
+        """Helper method to join two or more :class:`StingrayTimeseries` objects.
+
+        This is a helper method that can be called by other user-facing methods, such as
+        :class:`EventList().join()`.
+
+        Standard attributes such as ``pi`` and ``energy`` remain ``None`` if they are ``None``
+        in both. Otherwise, ``np.nan`` is used as a default value for the missing values.
+        Arbitrary array attributes are created and joined using the same convention.
+
+        Multiple checks are done on the joined time series. If the time array of the series
+        being joined is empty, it is ignored. If the time resolution is different, the final
+        time series will have the rougher time resolution. If the MJDREF is different, the time
+        reference will be changed to the one of the first time series. An empty time series will
+        be ignored.
+
+        Parameters
+        ----------
+        other : :class:`EventList` object or class:`list` of :class:`EventList` objects
+            The other :class:`EventList` object which is supposed to be joined with.
+            If ``other`` is a list, it is assumed to be a list of :class:`EventList` objects
+            and they are all joined, one by one.
+
+        Other parameters
+        ----------------
+        gti_treatment : {"intersection", "union", "append", "infer", "none"}
+            Method to use to merge the GTIs. If "intersection", the GTIs are merged
+            using the intersection of the GTIs. If "union", the GTIs are merged
+            using the union of the GTIs. If "none", a single GTI with the minimum and
+            the maximum time stamps of all GTIs is returned. If "infer", the strategy
+            is decided based on the GTIs. If there are no overlaps, "union" is used,
+            otherwise "intersection" is used. If "append", the GTIs are simply appended
+            but they must be mutually exclusive.
+
+        Returns
+        -------
+        `ts_new` : :class:`StingrayTimeseries` object
+            The resulting :class:`StingrayTimeseries` object.
+        """
+        from .gti import check_separate, cross_gtis, append_gtis
+
+        if gti_treatment == "infer":
+            warnings.warn(
+                "GTI treatment 'infer' is deprecated. Please choose carefully the "
+                "strategy to be used, depending on what you want to do with the data.",
+                DeprecationWarning,
             )
-
-        if not check_separate(self.gti, other.gti):
-            raise ValueError("GTIs are not separated.")
-
-        if not np.isclose(self.mjdref, other.mjdref, atol=1e-6 / 86400):
-            warnings.warn("MJDref is different in the two time series")
-            other = other.change_mjdref(self.mjdref)
-
         new_ts = type(self)()
-        for attr in self.meta_attrs():
-            setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
 
-        new_ts.gti = np.concatenate([self.gti, other.gti])
-        order = np.argsort(new_ts.gti[:, 0])
-        new_ts.gti = new_ts.gti[order]
+        if not (
+            isinstance(others, Iterable)
+            and not isinstance(others, str)
+            and not isinstance(others, StingrayObject)
+        ):
+            others = [others]
+        else:
+            others = others
 
-        mainattr = self.main_array_attr
-        setattr(
-            new_ts, mainattr, np.concatenate([getattr(self, mainattr), getattr(other, mainattr)])
-        )
+        # First of all, check if there are empty objects
+        for obj in others:
+            if not isinstance(obj, type(self)):
+                raise TypeError(
+                    f"{type(self)} objects can only be concatenated with other {type(self)} objects."
+                )
+            if getattr(obj, "time", None) is None or np.size(obj.time) == 0:
+                warnings.warn("One of the time series you are joining is empty.")
+                others.remove(obj)
 
-        order = np.argsort(getattr(new_ts, self.main_array_attr))
-        setattr(new_ts, mainattr, getattr(new_ts, mainattr)[order])
-        for attr in self.array_attrs():
-            setattr(
-                new_ts, attr, np.concatenate([getattr(self, attr), getattr(other, attr)])[order]
+        if len(others) == 0:
+            return copy.deepcopy(self)
+
+        for i, other in enumerate(others):
+            # Tolerance for MJDREF:1 microsecond
+            if not np.isclose(self.mjdref, other.mjdref, atol=1e-6 / 86400):
+                warnings.warn("Attribute mjdref is different in the time series being merged.")
+                others[i] = other.change_mjdref(self.mjdref)
+
+        all_objs = [self] + others
+
+        from .gti import merge_gtis
+
+        # Check if none of the GTIs was already initialized.
+        all_gti = [obj._gti for obj in all_objs if obj._gti is not None]
+
+        if len(all_gti) == 0 or gti_treatment == "none":
+            new_gti = None
+        else:
+            # For this, initialize the GTIs
+            new_gti = merge_gtis([obj.gti for obj in all_objs], gti_treatment=gti_treatment)
+
+        all_time_arrays = [obj.time for obj in all_objs if obj.time is not None]
+
+        new_ts.time = np.concatenate(all_time_arrays)
+        order = np.argsort(new_ts.time)
+        new_ts.time = new_ts.time[order]
+
+        new_ts.gti = new_gti
+
+        dts = list(set([getattr(obj, "dt", None) for obj in all_objs]))
+        if len(dts) != 1:
+            warnings.warn("The time resolution is different. Transforming in array")
+
+            new_dt = np.concatenate([np.zeros_like(obj.time) + obj.dt for obj in all_objs])
+            new_ts.dt = new_dt[order]
+        else:
+            new_ts.dt = dts[0]
+
+        def _get_set_from_many_lists(lists):
+            """Make a single set out of many lists."""
+            all_vals = []
+            for l in lists:
+                all_vals += l
+            return set(all_vals)
+
+        def _get_all_array_attrs(objs):
+            """Get all array attributes from the time series being merged. Do not include time."""
+            return _get_set_from_many_lists(
+                [obj.array_attrs() + obj.internal_array_attrs() for obj in objs]
             )
-        for attr in self.internal_array_attrs():
-            # Most internal array attrs can be set dynamically by calling the relevant property.
-            # If it is None, let's try to initialize it.
-            other_val = getattr(other, attr)
-            if other_val is None:
-                getattr(other, attr.lstrip("_"), None)
-            setattr(
-                new_ts, attr, np.concatenate([getattr(self, attr), getattr(other, attr)])[order]
-            )
+
+        for attr in _get_all_array_attrs(all_objs):
+            # if it's here, it means that it's an array attr in at least one object.
+            # So, everywhere it's None, it needs to be set to 0s of the same length as time
+            new_attr_values = []
+            for obj in all_objs:
+                if getattr(obj, attr, None) is None:
+                    warnings.warn(
+                        f"The {attr} array is empty in one of the time series being merged. "
+                        "Setting it to NaN for the affected events"
+                    )
+                    new_attr_values.append(np.zeros_like(obj.time) + np.nan)
+                else:
+                    new_attr_values.append(getattr(obj, attr))
+
+            new_attr = np.concatenate(new_attr_values)[order]
+            setattr(new_ts, attr, new_attr)
+
+        all_meta_attrs = _get_set_from_many_lists([obj.meta_attrs() for obj in all_objs])
+        # The attributes being treated separately are removed from the standard treatment
+        # When energy, pi etc. are None, they might appear in the meta_attrs, so we
+        # also add them to the list of attributes to be removed if present.
+        to_remove = ["gti", "dt"] + new_ts.array_attrs()
+        for attrs in to_remove:
+            if attrs in all_meta_attrs:
+                all_meta_attrs.remove(attrs)
+
+        for attr in ignore_meta:
+            logging.info(f"The {attr} attribute will be removed from the output ")
+            if attrs in all_meta_attrs:
+                all_meta_attrs.remove(attr)
+
+        def _safe_concatenate(a, b):
+            if isinstance(a, str) and isinstance(b, str):
+                return a + "," + b
+            else:
+                if isinstance(a, tuple):
+                    return a + (b,)
+                return (a, b)
+
+        for attr in all_meta_attrs:
+            self_attr = getattr(self, attr, None)
+            new_val = self_attr
+            for other in others:
+                other_attr = getattr(other, attr, None)
+                if self_attr != other_attr:
+                    warnings.warn(
+                        "Attribute " + attr + " is different in the time series being merged."
+                    )
+                    new_val = _safe_concatenate(new_val, other_attr)
+            setattr(new_ts, attr, new_val)
+
+        new_ts.mjdref = self.mjdref
 
         return new_ts
+
+    def join(self, *args, **kwargs):
+        """
+        Join other :class:`StingrayTimeseries` objects with the current one.
+
+        If both are empty, an empty :class:`StingrayTimeseries` is returned.
+
+        Standard attributes such as ``pi`` and ``energy`` remain ``None`` if they are ``None``
+        in both. Otherwise, ``np.nan`` is used as a default value for the missing values.
+        Arbitrary array attributes are created and joined using the same convention.
+
+        Multiple checks are done on the joined time series. If the time array of the series
+        being joined is empty, it is ignored. If the time resolution is different, the final
+        time series will have the rougher time resolution. If the MJDREF is different, the time
+        reference will be changed to the one of the first time series. An empty time series will
+        be ignored.
+
+        Parameters
+        ----------
+        other : :class:`EventList` object or class:`list` of :class:`EventList` objects
+            The other :class:`EventList` object which is supposed to be joined with.
+            If ``other`` is a list, it is assumed to be a list of :class:`EventList` objects
+            and they are all joined, one by one.
+
+        Other parameters
+        ----------------
+        gti_treatment : {"intersection", "union", "append", "infer", "none"}
+            Method to use to merge the GTIs. If "intersection", the GTIs are merged
+            using the intersection of the GTIs. If "union", the GTIs are merged
+            using the union of the GTIs. If "none", a single GTI with the minimum and
+            the maximum time stamps of all GTIs is returned. If "infer", the strategy
+            is decided based on the GTIs. If there are no overlaps, "union" is used,
+            otherwise "intersection" is used. If "append", the GTIs are simply appended
+            but they must be mutually exclusive.
+
+        Returns
+        -------
+        `ts_new` : :class:`StingrayTimeseries` object
+            The resulting :class:`StingrayTimeseries` object.
+        """
+        return self._join_timeseries(*args, **kwargs)
 
     def rebin(self, dt_new=None, f=None, method="sum"):
         """

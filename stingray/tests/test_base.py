@@ -672,23 +672,29 @@ class TestStingrayTimeseries:
             self.sting_obj.truncate(method="ababalksdfja")
 
     def test_concatenate(self):
-        time0 = [1, 2, 3, 4]
-        time1 = [5, 6, 7, 8, 9]
-        count0 = [10, 20, 30, 40]
-        count1 = [50, 60, 70, 80, 90]
-        gti0 = [[0.5, 4.5]]
-        gti1 = [[4.5, 9.5]]
+        time0 = [1, 2, 3]
+        time1 = [5, 6, 7, 8]
+        time2 = [10]
+        count0 = [10, 20, 30]
+        count1 = [50, 60, 70, 80]
+        count2 = [100]
+        gti0 = [[0.5, 3.5]]
+        gti1 = [[4.5, 8.5]]
+        gti2 = [[9.5, 10.5]]
         lc0 = StingrayTimeseries(
             time0, array_attrs={"counts": count0, "_bla": count0}, dt=1, gti=gti0
         )
         lc1 = StingrayTimeseries(
             time1, array_attrs={"counts": count1, "_bla": count1}, dt=1, gti=gti1
         )
-        lc = lc0.concatenate(lc1)
-        assert np.allclose(lc._bla, count0 + count1)
-        assert np.allclose(lc.counts, count0 + count1)
-        assert np.allclose(lc.time, time0 + time1)
-        assert np.allclose(lc.gti, [[0.5, 4.5], [4.5, 9.5]])
+        lc2 = StingrayTimeseries(
+            time2, array_attrs={"counts": count2, "_bla": count2}, dt=1, gti=gti2
+        )
+        lc = lc0.concatenate([lc1, lc2])
+        assert np.allclose(lc._bla, count0 + count1 + count2)
+        assert np.allclose(lc.counts, count0 + count1 + count2)
+        assert np.allclose(lc.time, time0 + time1 + time2)
+        assert np.allclose(lc.gti, [[0.5, 3.5], [4.5, 8.5], [9.5, 10.5]])
 
     def test_concatenate_invalid(self):
         with pytest.raises(TypeError, match="objects can only be concatenated with other"):
@@ -707,16 +713,19 @@ class TestStingrayTimeseries:
         lc1 = StingrayTimeseries(
             time1, array_attrs={"counts": count1, "_bla": count1}, dt=1, gti=gti1
         )
-        with pytest.raises(ValueError, match="GTIs are not separated."):
+        with pytest.raises(ValueError, match="In order to append, GTIs must be mutually"):
             lc0.concatenate(lc1)
+
+        # Instead, this will work
+        lc0.concatenate(lc1, check_gti=False)
 
     def test_concatenate_diff_mjdref(self):
         time0 = [1, 2, 3, 4]
         time1 = [5, 6, 7, 8, 9]
         count0 = [10, 20, 30, 40]
         count1 = [50, 60, 70, 80, 90]
-        gti0 = [[0.5, 4.5]]
-        gti1 = [[3.5, 9.5]]
+        gti0 = [[0.5, 4.49]]
+        gti1 = [[4.51, 9.5]]
         lc0 = StingrayTimeseries(
             time0, array_attrs={"counts": count0, "_bla": count0}, dt=1, gti=gti0, mjdref=55000
         )
@@ -724,7 +733,7 @@ class TestStingrayTimeseries:
             time1, array_attrs={"counts": count1, "_bla": count1}, dt=1, gti=gti1, mjdref=55000
         )
         lc1.change_mjdref(50001, inplace=True)
-        with pytest.warns(UserWarning, match="MJDref is different"):
+        with pytest.warns(UserWarning, match="mjdref is different"):
             lc = lc0.concatenate(lc1)
         assert lc.mjdref == 55000
 
