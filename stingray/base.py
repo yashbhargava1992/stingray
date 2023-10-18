@@ -1112,7 +1112,7 @@ class StingrayTimeseries(StingrayObject):
     def time(self, value):
         value = self._check_value_size(value, "time", "time")
         if value is None:
-            for attr in self.internal_array_attrs():
+            for attr in self.internal_array_attrs() + self.array_attrs():
                 setattr(self, attr, None)
         self._set_times(value, high_precision=self.high_precision)
 
@@ -1147,7 +1147,7 @@ class StingrayTimeseries(StingrayObject):
     @property
     def n(self):
         if getattr(self, self.main_array_attr, None) is None:
-            return None
+            return 0
         return np.shape(np.asarray(getattr(self, self.main_array_attr)))[0]
 
     def __eq__(self, other_ts):
@@ -1673,6 +1673,10 @@ class StingrayTimeseries(StingrayObject):
         if not check_separate(self.gti, other.gti):
             raise ValueError("GTIs are not separated.")
 
+        if not np.isclose(self.mjdref, other.mjdref, atol=1e-6 / 86400):
+            warnings.warn("MJDref is different in the two time series")
+            other = other.change_mjdref(self.mjdref)
+
         new_ts = type(self)()
         for attr in self.meta_attrs():
             setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
@@ -1943,6 +1947,9 @@ def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, floa
     Examples
     --------
     >>> import astropy.units as u
+    >>> newt, mjdref = interpret_times(None)
+    >>> newt is None
+    True
     >>> time = Time(57483, format='mjd')
     >>> newt, mjdref = interpret_times(time)
     >>> newt == 0

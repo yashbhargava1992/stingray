@@ -452,6 +452,43 @@ class TestStingrayTimeseries:
         ts2._counts = np.array(count1)
         assert ts1 == ts2
 
+    def test_zero_out_timeseries(self):
+        time = [5, 10, 15]
+        count1 = [300, 100, 400]
+
+        ts1 = StingrayTimeseries(
+            time=time,
+            array_attrs=dict(counts=np.array(count1), _bla=np.array(count1)),
+            mjdref=55000,
+        )
+        # All has been set correctly
+        assert np.array_equal(ts1.counts, count1)
+        assert np.array_equal(ts1._bla, count1)
+
+        # Now zero out times and verify that everything else has been zeroed out
+        ts1.time = None
+        assert ts1.counts is None
+        assert ts1.time is None
+        assert ts1._bla is None
+
+    def test_n_property(self):
+        ts = StingrayTimeseries()
+        assert ts.n == 0
+
+        time = [5, 10, 15]
+        count1 = [300, 100, 400]
+
+        ts1 = StingrayTimeseries(
+            time=time,
+            array_attrs=dict(counts=np.array(count1)),
+            mjdref=55000,
+        )
+        # All has been set correctly
+        assert ts1.n == 3
+
+        ts1.time = None
+        assert ts1.n == 0
+
     def test_what_is_array_and_what_is_not(self):
         """Test that array_attrs are not confused with other attributes.
 
@@ -672,6 +709,24 @@ class TestStingrayTimeseries:
         )
         with pytest.raises(ValueError, match="GTIs are not separated."):
             lc0.concatenate(lc1)
+
+    def test_concatenate_diff_mjdref(self):
+        time0 = [1, 2, 3, 4]
+        time1 = [5, 6, 7, 8, 9]
+        count0 = [10, 20, 30, 40]
+        count1 = [50, 60, 70, 80, 90]
+        gti0 = [[0.5, 4.5]]
+        gti1 = [[3.5, 9.5]]
+        lc0 = StingrayTimeseries(
+            time0, array_attrs={"counts": count0, "_bla": count0}, dt=1, gti=gti0, mjdref=55000
+        )
+        lc1 = StingrayTimeseries(
+            time1, array_attrs={"counts": count1, "_bla": count1}, dt=1, gti=gti1, mjdref=55000
+        )
+        lc1.change_mjdref(50001, inplace=True)
+        with pytest.warns(UserWarning, match="MJDref is different"):
+            lc = lc0.concatenate(lc1)
+        assert lc.mjdref == 55000
 
     def test_rebin(self):
         time0 = [1, 2, 3, 4, 5, 6, 7, 8, 9]
