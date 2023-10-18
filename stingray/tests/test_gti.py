@@ -40,6 +40,14 @@ class TestGTI(object):
 
         assert np.allclose(newgti, gti1), "GTIs do not coincide!"
 
+    def test_crossgti4(self):
+        """A more complicated example of intersection of GTIs."""
+        gti1 = np.array([[2, 3]])
+        gti2 = np.array([[3, 4]])
+        newgti = cross_gtis([gti1, gti2])
+
+        assert len(newgti) == 0
+
     def test_bti(self):
         """Test the inversion of GTIs."""
         gti = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
