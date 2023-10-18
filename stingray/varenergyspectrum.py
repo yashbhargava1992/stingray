@@ -227,8 +227,8 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
 
         self._create_empty_spectrum()
 
-        if len(events.time) == 0:
-            simon("There are no events in your event list!" + "Can't make a spectrum!")
+        if events.time is None or len(events.time) == 0:
+            simon("There are no events in your event list! Can't make a spectrum!")
         else:
             self._spectrum_function()
 

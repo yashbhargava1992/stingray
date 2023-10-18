@@ -436,11 +436,11 @@ def create_gti_mask(
     new_gtis : ``Nx2`` array
         An array of new GTIs created by this function.
     """
-    gtis = np.array(gtis, dtype=np.longdouble)
-    if time.size == 0:
+    if time is None or np.size(time) == 0:
         raise ValueError("Passing an empty time array to create_gti_mask")
-    if gtis.size == 0:
+    if gtis is None or np.size(gtis) == 0:
         raise ValueError("Passing an empty GTI array to create_gti_mask")
+    gtis = np.array(gtis, dtype=np.longdouble)
 
     mask = np.zeros(len(time), dtype=bool)
 
