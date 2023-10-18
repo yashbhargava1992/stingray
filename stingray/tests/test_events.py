@@ -82,6 +82,17 @@ class TestEvents(object):
         with pytest.raises(ValueError):
             EventList(time=[1, 2, 3], energy=[10, 12])
 
+    def test_concatenate(self):
+        """Join two overlapping event lists."""
+        ev = EventList(time=[1, 1.1, 2, 3, 4], energy=[3, 4, 7, 4, 3], gti=[[1, 2], [3, 4]])
+        ev_other1 = EventList(time=[5, 6, 6.1], energy=[4, 3, 8], gti=[[6, 6.2]])
+        ev_other2 = EventList(time=[7, 10], energy=[1, 2], gti=[[6.5, 7]])
+        ev_new = ev.concatenate([ev_other1, ev_other2])
+
+        assert (ev_new.time == np.array([1, 1.1, 2, 3, 4, 5, 6, 6.1, 7, 10])).all()
+        assert (ev_new.energy == np.array([3, 4, 7, 4, 3, 4, 3, 8, 1, 2])).all()
+        assert (ev_new.gti == np.array([[1, 2], [3, 4], [6, 6.2], [6.5, 7]])).all()
+
     def test_to_lc(self):
         """Create a light curve from event list."""
         ev = EventList(self.time, gti=self.gti)
@@ -323,8 +334,8 @@ class TestJoinEvents:
         ev = EventList()
         ev_other = EventList()
 
-        with pytest.warns(UserWarning, match="One of the event lists you are joining is empty"):
-            assert ev.join(ev_other).time is None
+        with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
+            assert ev.join(ev_other, gti_treatment="union").time is None
 
     def test_join_empty_lists(self):
         """Test if an empty event list can be concatenated
@@ -332,19 +343,19 @@ class TestJoinEvents:
         """
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList()
-        with pytest.warns(UserWarning, match="One of the event lists you are joining"):
-            ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
+            ev_new = ev.join(ev_other, gti_treatment="union")
         assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList(time=[1, 2, 3])
-        ev_new = ev.join(ev_other)
+        ev_new = ev.join(ev_other, gti_treatment="union")
         assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList()
         ev_other = EventList()
-        with pytest.warns(UserWarning, match="One of the event lists you are joining"):
-            ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
+            ev_new = ev.join(ev_other, gti_treatment="union")
         assert ev_new.time == None
         assert ev_new.gti == None
         assert ev_new.pi == None
@@ -352,31 +363,32 @@ class TestJoinEvents:
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList([])
-        with pytest.warns(UserWarning, match="One of the event lists you are joining"):
-            ev_new = ev.join(ev_other)
+        with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
+            ev_new = ev.join(ev_other, gti_treatment="union")
         assert np.allclose(ev_new.time, [1, 2, 3])
 
         ev = EventList([])
         ev_other = EventList(time=[1, 2, 3])
-        ev_new = ev.join(ev_other)
+        ev_new = ev.join(ev_other, gti_treatment="union")
         assert np.allclose(ev_new.time, [1, 2, 3])
 
     def test_join_different_dt(self):
         ev = EventList(time=[10, 20, 30], dt=1)
         ev_other = EventList(time=[40, 50, 60], dt=3)
         with pytest.warns(UserWarning, match="The time resolution is different."):
-            ev_new = ev.join(ev_other)
+            ev_new = ev.join(ev_other, gti_treatment="union")
 
-        assert ev_new.dt == 3
+        assert np.array_equal(ev_new.dt, [1, 1, 1, 3, 3, 3])
         assert np.allclose(ev_new.time, [10, 20, 30, 40, 50, 60])
 
     def test_join_different_instr(self):
         ev = EventList(time=[10, 20, 30], instr="fpma")
         ev_other = EventList(time=[40, 50, 60], instr="fpmb")
         with pytest.warns(
-            UserWarning, match="Attribute instr is different in the event lists being merged."
+            UserWarning,
+            match="Attribute instr is different in the time series being merged.",
         ):
-            ev_new = ev.join(ev_other)
+            ev_new = ev.join(ev_other, gti_treatment="union")
 
         assert ev_new.instr == "fpma,fpmb"
 
@@ -390,9 +402,9 @@ class TestJoinEvents:
 
         with pytest.warns(
             UserWarning,
-            match="Attribute (bubu|whatstheanswer|unmovimentopara) is different in the event lists being merged.",
+            match="Attribute (bubu|whatstheanswer|unmovimentopara) is different in the time series being merged.",
         ):
-            ev_new = ev.join(ev_other)
+            ev_new = ev.join(ev_other, gti_treatment="union")
 
         assert ev_new.bubu == (None, "settete")
         assert ev_new.whatstheanswer == (42, None)
@@ -402,9 +414,9 @@ class TestJoinEvents:
         ev = EventList(time=[1, 2, 3], energy=[3, 3, 3])
         ev_other = EventList(time=[4, 5])
         with pytest.warns(
-            UserWarning, match="The energy array is empty in one of the event lists being merged."
+            UserWarning, match="The energy array is empty in one of the time series being merged."
         ):
-            ev_new = ev.join(ev_other)
+            ev_new = ev.join(ev_other, gti_treatment="union")
 
         assert np.allclose(ev_new.energy, [3, 3, 3, np.nan, np.nan], equal_nan=True)
 
@@ -412,9 +424,9 @@ class TestJoinEvents:
         ev = EventList(time=[1, 2, 3], pi=[3, 3, 3])
         ev_other = EventList(time=[4, 5])
         with pytest.warns(
-            UserWarning, match="The pi array is empty in one of the event lists being merged."
+            UserWarning, match="The pi array is empty in one of the time series being merged."
         ):
-            ev_new = ev.join(ev_other)
+            ev_new = ev.join(ev_other, gti_treatment="union")
 
         assert np.allclose(ev_new.pi, [3, 3, 3, np.nan, np.nan], equal_nan=True)
 
@@ -424,9 +436,9 @@ class TestJoinEvents:
         ev.u = [3, 3, 3]
         ev_other.q = [1, 2]
         with pytest.warns(
-            UserWarning, match="The (u|q) array is empty in one of the event lists being merged."
+            UserWarning, match="The (u|q) array is empty in one of the time series being merged."
         ):
-            ev_new = ev.join(ev_other)
+            ev_new = ev.join(ev_other, gti_treatment="union")
 
         assert np.allclose(ev_new.q, [np.nan, np.nan, 1, np.nan, 2], equal_nan=True)
         assert np.allclose(ev_new.u, [3, 3, np.nan, 3, np.nan], equal_nan=True)
@@ -434,42 +446,41 @@ class TestJoinEvents:
     def test_join_with_gti_none(self):
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5], gti=[[3.5, 5.5]])
-        with pytest.warns(UserWarning, match="GTIs in these two event lists do not overlap"):
-            ev_new = ev.join(ev_other)
+        ev_new = ev.join(ev_other, gti_treatment="union")
 
         assert np.allclose(ev_new.gti, [[1, 3], [3.5, 5.5]])
 
         ev = EventList(time=[1, 2, 3], gti=[[0.5, 3.5]])
         ev_other = EventList(time=[4, 5])
-        with pytest.warns(UserWarning, match="GTIs in these two event lists do not overlap"):
-            ev_new = ev.join(ev_other)
+        ev_new = ev.join(ev_other, gti_treatment="union")
 
         assert np.allclose(ev_new.gti, [[0.5, 3.5], [4, 5]])
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList(time=[4, 5])
-        ev_new = ev.join(ev_other)
+        ev_new = ev.join(ev_other, gti_treatment="union")
 
         assert ev_new._gti == None
 
-    def test_non_overlapping_join(self):
+    def test_non_overlapping_join_infer(self):
         """Join two overlapping event lists."""
         ev = EventList(time=[1, 1.1, 2, 3, 4], energy=[3, 4, 7, 4, 3], gti=[[1, 2], [3, 4]])
         ev_other = EventList(time=[5, 6, 6.1, 7, 10], energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
-        with pytest.warns(UserWarning, match="GTIs in these two event lists do not overlap"):
-            ev_new = ev.join(ev_other)
+        with pytest.warns(DeprecationWarning, match="GTI treatment 'infer' is deprecated. "):
+            ev_new = ev.join(ev_other, gti_treatment="infer")
 
         assert (ev_new.time == np.array([1, 1.1, 2, 3, 4, 5, 6, 6.1, 7, 10])).all()
         assert (ev_new.energy == np.array([3, 4, 7, 4, 3, 4, 3, 8, 1, 2])).all()
         assert (ev_new.gti == np.array([[1, 2], [3, 4], [6, 7]])).all()
 
-    def test_overlapping_join(self):
+    def test_overlapping_join_infer(self):
         """Join two non-overlapping event lists."""
         ev = EventList(time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]])
         ev_other = EventList(
             time=[5.1, 7, 6.1, 6.11, 10.1], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]]
         )
-        ev_new = ev.join(ev_other)
+        with pytest.warns(DeprecationWarning, match="GTI treatment 'infer' is deprecated. "):
+            ev_new = ev.join(ev_other, gti_treatment="infer")
 
         assert (ev_new.time == np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1])).all()
         assert (ev_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
@@ -487,7 +498,7 @@ class TestJoinEvents:
             mjdref=57000,
         )
         with pytest.warns(UserWarning, match="Attribute mjdref is different"):
-            ev_new = ev.join(ev_other)
+            ev_new = ev.join(ev_other, gti_treatment="intersection")
 
         assert np.allclose(ev_new.time, np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1]))
         assert (ev_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
@@ -505,9 +516,9 @@ class TestJoinEvents:
 
         with pytest.warns(
             UserWarning,
-            match="Attribute (instr|mission) is different in the event lists being merged.",
+            match="Attribute (instr|mission) is different in the time series being merged.",
         ):
-            ev_new = ev.join([ev_other, ev_other2])
+            ev_new = ev.join([ev_other, ev_other2], gti_treatment="union")
         assert np.allclose(ev_new.time, [1, 2, 3, 4, 5, 6, 7, 8, 9])
         assert np.allclose(ev_new.pibiri, [1, 1, 2, 1, 2, 3, 2, 3, 3])
         assert ev_new.instr == "a,b,c"

@@ -782,12 +782,13 @@ class TestLightcurve(object):
         gti1 = [[4.5, 9.5]]
         lc0 = Lightcurve(time0, counts=count0, err=np.asarray(count0) / 2, dt=1, gti=gti0)
         lc1 = Lightcurve(time1, counts=count1, dt=1, gti=gti1)
-        lc = lc0.concatenate(lc1)
+        with pytest.warns(UserWarning, match="The _counts_err array is empty in one of the"):
+            lc = lc0.concatenate(lc1)
         assert np.allclose(lc.counts, count0 + count1)
         # Errors have been defined inside
         assert len(lc.counts_err) == len(lc.counts)
         assert np.allclose(lc.time, time0 + time1)
-        assert np.allclose(lc.gti, [[0.5, 4.5], [4.5, 9.5]])
+        assert np.allclose(lc.gti, [[0.5, 9.5]])
 
     def test_join_disjoint_time_arrays(self):
         _times = [5, 6, 7, 8]
