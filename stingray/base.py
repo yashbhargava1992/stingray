@@ -170,7 +170,7 @@ class StingrayObject(object):
 
         This also includes properties (which usually set internal data arrays, so they would
         duplicate the effort), methods, and attributes that are complicated to serialize such
-        as other ``StingrayObject``s, or arrays of objects.
+        as other ``StingrayObject``, or arrays of objects.
         """
         return [
             attr
