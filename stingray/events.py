@@ -206,38 +206,32 @@ class EventList(StingrayTimeseries):
         timesys=None,
         **other_kw,
     ):
-        StingrayObject.__init__(self)
-
-        self.energy = None if energy is None else np.asarray(energy)
-        self.notes = notes
-        self.dt = dt
-        self.mjdref = mjdref
-        self.gti = np.asarray(gti) if gti is not None else None
-        self.pi = None if pi is None else np.asarray(pi)
-        self.ncounts = ncounts
-        self.mission = mission
-        self.instr = instr
-        self.detector_id = detector_id
-        self.header = header
-        self.ephem = ephem
-        self.timeref = timeref
-        self.timesys = timesys
+        StingrayTimeseries.__init__(
+            self,
+            time=time,
+            energy=None if energy is None else np.asarray(energy),
+            ncounts=ncounts,
+            mjdref=mjdref,
+            dt=dt,
+            notes=notes,
+            gti=np.asarray(gti) if gti is not None else None,
+            pi=None if pi is None else np.asarray(pi),
+            high_precision=high_precision,
+            mission=mission,
+            instr=instr,
+            header=header,
+            detector_id=detector_id,
+            ephem=ephem,
+            timeref=timeref,
+            timesys=timesys,
+            **other_kw,
+        )
 
         if other_kw != {}:
             warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
-        if time is not None:
-            time, mjdref = interpret_times(time, mjdref)
-            if not high_precision:
-                self.time = np.asarray(time)
-            else:
-                self.time = np.asarray(time, dtype=np.longdouble)
-            self.ncounts = self.time.size
-        else:
-            self.time = None
-
         if (self.time is not None) and (self.energy is not None):
-            if self.time.size != self.energy.size:
+            if np.size(self.time) != np.size(self.energy):
                 raise ValueError("Lengths of time and energy must be equal.")
 
     def to_lc(self, dt, tstart=None, tseg=None):
@@ -262,7 +256,7 @@ class EventList(StingrayTimeseries):
         lc: :class:`stingray.Lightcurve` object
         """
         return Lightcurve.make_lightcurve(
-            self.time, dt, tstart=tstart, gti=self.gti, tseg=tseg, mjdref=self.mjdref
+            self.time, dt, tstart=tstart, gti=self._gti, tseg=tseg, mjdref=self.mjdref
         )
 
     def to_timeseries(self, dt, array_attrs=None):
@@ -424,8 +418,9 @@ class EventList(StingrayTimeseries):
         if bin_time is not None:
             warnings.warn("Bin time will be ignored in simulate_times", DeprecationWarning)
 
-        self.time = simulate_times(lc, use_spline=use_spline)
-        self.gti = lc.gti
+        vals = simulate_times(lc, use_spline=use_spline)
+        self.time = vals
+        self._gti = lc.gti
         self.ncounts = len(self.time)
 
     def simulate_energies(self, spectrum, use_spline=False):
@@ -614,7 +609,7 @@ class EventList(StingrayTimeseries):
             new_attr = np.concatenate(new_attr_values)[order]
             setattr(ev_new, attr, new_attr)
 
-        if np.all([obj.gti is None for obj in all_objs]):
+        if np.all([obj._gti is None for obj in all_objs]):
             ev_new.gti = None
         else:
             all_gti_lists = []

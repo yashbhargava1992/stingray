@@ -449,7 +449,7 @@ class TestJoinEvents:
         ev_other = EventList(time=[4, 5])
         ev_new = ev.join(ev_other)
 
-        assert ev_new.gti == None
+        assert ev_new._gti == None
 
     def test_non_overlapping_join(self):
         """Join two overlapping event lists."""
