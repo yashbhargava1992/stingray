@@ -56,6 +56,10 @@ class TestEvents(object):
             _ = EventList(self.time, self.counts, gti=self.gti, bubu="settete")
         assert np.any(["Unrecognized keywords:" in r.message.args[0] for r in record])
 
+    def test_warn_wrong_keywords(self):
+        with pytest.warns(DeprecationWarning, match="The ncounts keyword does nothing"):
+            _ = EventList(self.time, self.counts, gti=self.gti, ncounts=10)
+
     def test_initiate_from_ndarray(self):
         times = np.sort(np.random.uniform(1e8, 1e8 + 1000, 101).astype(np.longdouble))
         ev = EventList(times, mjdref=54600)
@@ -143,34 +147,34 @@ class TestEvents(object):
 
     def test_simulate_energies(self):
         """Assign photon energies to an event list."""
-        ev = EventList(ncounts=100)
+        ev = EventList(np.arange(10))
         ev.simulate_energies(self.spectrum)
 
     def test_simulate_energies_with_1d_spectrum(self):
         """Test that simulate_energies() method raises index
         error exception is spectrum is 1-d.
         """
-        ev = EventList(ncounts=100)
+        ev = EventList(np.arange(10))
         with pytest.raises(IndexError):
             ev.simulate_energies(self.spectrum[0])
 
     def test_simulate_energies_with_wrong_spectrum_type(self):
         """Test that simulate_energies() method raises type error
-        exception when wrong sepctrum type is supplied.
+        exception when wrong spectrum type is supplied.
         """
-        ev = EventList(ncounts=100)
+        ev = EventList(np.arange(10))
         with pytest.raises(TypeError):
             ev.simulate_energies(1)
 
     def test_simulate_energies_with_counts_not_set(self):
         ev = EventList()
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning, match="empty event list"):
             ev.simulate_energies(self.spectrum)
 
     def test_compare_energy(self):
         """Compare the simulated energy distribution to actual distribution."""
         fluxes = np.array(self.spectrum[1])
-        ev = EventList(ncounts=1000)
+        ev = EventList(np.arange(1000))
         ev.simulate_energies(self.spectrum)
 
         # Note: I'm passing the edges: when the bin center is 1, the

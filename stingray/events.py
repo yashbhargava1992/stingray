@@ -103,7 +103,7 @@ class EventList(StingrayTimeseries):
         The MJD used as a reference for the time array.
 
     ncounts: int
-        Number of desired data points in event list.
+        Number of desired data points in event list. Deprecated
 
     gtis: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
         Good Time Intervals
@@ -206,11 +206,16 @@ class EventList(StingrayTimeseries):
         timesys=None,
         **other_kw,
     ):
+        if ncounts is not None:
+            warnings.warn(
+                "The ncounts keyword does nothing, and is maintained for backwards compatibility.",
+                DeprecationWarning,
+            )
+
         StingrayTimeseries.__init__(
             self,
             time=time,
             energy=None if energy is None else np.asarray(energy),
-            ncounts=ncounts,
             mjdref=mjdref,
             dt=dt,
             notes=notes,
@@ -233,6 +238,11 @@ class EventList(StingrayTimeseries):
         if (self.time is not None) and (self.energy is not None):
             if np.size(self.time) != np.size(self.energy):
                 raise ValueError("Lengths of time and energy must be equal.")
+
+    @property
+    def ncounts(self):
+        """Number of events in the event list."""
+        return self.n
 
     def to_lc(self, dt, tstart=None, tseg=None):
         """
@@ -421,7 +431,6 @@ class EventList(StingrayTimeseries):
         vals = simulate_times(lc, use_spline=use_spline)
         self.time = vals
         self._gti = lc.gti
-        self.ncounts = len(self.time)
 
     def simulate_energies(self, spectrum, use_spline=False):
         """
@@ -441,8 +450,8 @@ class EventList(StingrayTimeseries):
         """
         from .simulator.base import simulate_with_inverse_cdf
 
-        if self.ncounts is None:
-            simon("Either set time values or explicity provide counts.")
+        if self.ncounts is None or self.ncounts == 0:
+            simon("Simulating on an empty event list")
             return
 
         if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
