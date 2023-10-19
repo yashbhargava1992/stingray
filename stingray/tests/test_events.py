@@ -360,10 +360,10 @@ class TestJoinEvents:
         ev_other = EventList()
         with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
             ev_new = ev.join(ev_other, gti_treatment="union")
-        assert ev_new.time == None
-        assert ev_new.gti == None
-        assert ev_new.pi == None
-        assert ev_new.energy == None
+        assert ev_new.time is None
+        assert ev_new.gti is None
+        assert ev_new.pi is None
+        assert ev_new.energy is None
 
         ev = EventList(time=[1, 2, 3])
         ev_other = EventList([])
@@ -406,7 +406,10 @@ class TestJoinEvents:
 
         with pytest.warns(
             UserWarning,
-            match="Attribute (bubu|whatstheanswer|unmovimentopara) is different in the time series being merged.",
+            match=(
+                "Attribute (bubu|whatstheanswer|unmovimentopara) is different "
+                "in the time series being merged."
+            ),
         ):
             ev_new = ev.join(ev_other, gti_treatment="union")
 
@@ -464,7 +467,7 @@ class TestJoinEvents:
         ev_other = EventList(time=[4, 5])
         ev_new = ev.join(ev_other, gti_treatment="union")
 
-        assert ev_new._gti == None
+        assert ev_new._gti is None
 
     def test_non_overlapping_join_infer(self):
         """Join two overlapping event lists."""

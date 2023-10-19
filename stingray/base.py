@@ -178,7 +178,7 @@ class StingrayObject(object):
             for attr in dir(self)
             if (
                 not attr.startswith("__")
-                and not attr in ["main_array_attr", "not_array_attr"]
+                and attr not in ["main_array_attr", "not_array_attr"]
                 and not isinstance(getattr(self.__class__, attr, None), property)
                 and not callable(value := getattr(self, attr))
                 and not isinstance(value, StingrayObject)
@@ -202,7 +202,7 @@ class StingrayObject(object):
         for attr in self.data_attributes():
             if (
                 not attr == "_" + self.main_array_attr  # e.g. _time in lightcurve
-                and not attr in ["_" + a for a in self.not_array_attr]
+                and attr not in ["_" + a for a in self.not_array_attr]
                 and not np.isscalar(value := getattr(self, attr))
                 and value is not None
                 and not np.size(value) == 0
@@ -1735,7 +1735,7 @@ class StingrayTimeseries(StingrayObject):
         for obj in others:
             if not isinstance(obj, type(self)):
                 raise TypeError(
-                    f"{type(self)} objects can only be concatenated with other {type(self)} objects."
+                    f"{type(self)} objects can only be merged with other {type(self)} objects."
                 )
             if getattr(obj, "time", None) is None or np.size(obj.time) == 0:
                 warnings.warn("One of the time series you are joining is empty.")
@@ -1783,8 +1783,8 @@ class StingrayTimeseries(StingrayObject):
         def _get_set_from_many_lists(lists):
             """Make a single set out of many lists."""
             all_vals = []
-            for l in lists:
-                all_vals += l
+            for ls in lists:
+                all_vals += ls
             return set(all_vals)
 
         def _get_all_array_attrs(objs):
