@@ -1815,13 +1815,13 @@ class StingrayTimeseries(StingrayObject):
         # When energy, pi etc. are None, they might appear in the meta_attrs, so we
         # also add them to the list of attributes to be removed if present.
         to_remove = ["gti", "dt"] + new_ts.array_attrs()
-        for attrs in to_remove:
-            if attrs in all_meta_attrs:
-                all_meta_attrs.remove(attrs)
+        for attr in to_remove:
+            if attr in all_meta_attrs:
+                all_meta_attrs.remove(attr)
 
         for attr in ignore_meta:
             logging.info(f"The {attr} attribute will be removed from the output ")
-            if attrs in all_meta_attrs:
+            if attr in all_meta_attrs:
                 all_meta_attrs.remove(attr)
 
         def _safe_concatenate(a, b):

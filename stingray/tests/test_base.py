@@ -697,7 +697,7 @@ class TestStingrayTimeseries:
         assert np.allclose(lc.gti, [[0.5, 3.5], [4.5, 8.5], [9.5, 10.5]])
 
     def test_concatenate_invalid(self):
-        with pytest.raises(TypeError, match="objects can only be concatenated with other"):
+        with pytest.raises(TypeError, match="objects can only be merged with other"):
             self.sting_obj.concatenate(1)
 
     def test_concatenate_gtis_overlap(self):
@@ -1008,3 +1008,220 @@ class TestStingrayTimeseriesSubclass:
         assert new_so.mjdref == 59776.5
         assert np.allclose(new_so.time - 43200, self.sting_obj.time)
         assert np.allclose(new_so.gti - 43200, self.sting_obj.gti)
+
+
+class TestJoinEvents:
+    def test_join_without_times_simulated(self):
+        """Test if exception is raised when join method is
+        called before first simulating times.
+        """
+        ts = StingrayTimeseries()
+        ts_other = StingrayTimeseries()
+
+        with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
+            assert ts.join(ts_other, gti_treatment="union").time is None
+
+    def test_join_empty_lists(self):
+        """Test if an empty event list can be concatenated
+        with a non-empty event list.
+        """
+        ts = StingrayTimeseries(time=[1, 2, 3])
+        ts_other = StingrayTimeseries()
+        with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+        assert np.allclose(ts_new.time, [1, 2, 3])
+
+        ts = StingrayTimeseries()
+        ts_other = StingrayTimeseries(time=[1, 2, 3])
+        ts_new = ts.join(ts_other, gti_treatment="union")
+        assert np.allclose(ts_new.time, [1, 2, 3])
+
+        ts = StingrayTimeseries()
+        ts_other = StingrayTimeseries()
+        with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+        assert ts_new.time is None
+        assert ts_new.gti is None
+
+        ts = StingrayTimeseries(time=[1, 2, 3])
+        ts_other = StingrayTimeseries([])
+        with pytest.warns(UserWarning, match="One of the time series you are joining is empty."):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+        assert np.allclose(ts_new.time, [1, 2, 3])
+
+        ts = StingrayTimeseries([])
+        ts_other = StingrayTimeseries(time=[1, 2, 3])
+        ts_new = ts.join(ts_other, gti_treatment="union")
+        assert np.allclose(ts_new.time, [1, 2, 3])
+
+    def test_join_different_dt(self):
+        ts = StingrayTimeseries(time=[10, 20, 30], dt=1)
+        ts_other = StingrayTimeseries(time=[40, 50, 60], dt=3)
+        with pytest.warns(UserWarning, match="The time resolution is different."):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert np.array_equal(ts_new.dt, [1, 1, 1, 3, 3, 3])
+        assert np.allclose(ts_new.time, [10, 20, 30, 40, 50, 60])
+
+    def test_join_different_instr(self):
+        ts = StingrayTimeseries(time=[10, 20, 30], instr="fpma")
+        ts_other = StingrayTimeseries(time=[40, 50, 60], instr="fpmb")
+        with pytest.warns(
+            UserWarning,
+            match="Attribute instr is different in the time series being merged.",
+        ):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert ts_new.instr == "fpma,fpmb"
+
+    def test_join_different_meta_attribute(self):
+        ts = StingrayTimeseries(time=[10, 20, 30])
+        ts_other = StingrayTimeseries(time=[40, 50, 60])
+        ts_other.bubu = "settete"
+        ts.whatstheanswer = 42
+        ts.unmovimentopara = "arriba"
+        ts_other.unmovimentopara = "abajo"
+
+        with pytest.warns(
+            UserWarning,
+            match=(
+                "Attribute (bubu|whatstheanswer|unmovimentopara) is different "
+                "in the time series being merged."
+            ),
+        ):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert ts_new.bubu == (None, "settete")
+        assert ts_new.whatstheanswer == (42, None)
+        assert ts_new.unmovimentopara == "arriba,abajo"
+
+    def test_join_without_energy(self):
+        ts = StingrayTimeseries(time=[1, 2, 3], energy=[3, 3, 3])
+        ts_other = StingrayTimeseries(time=[4, 5])
+        with pytest.warns(
+            UserWarning, match="The energy array is empty in one of the time series being merged."
+        ):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert np.allclose(ts_new.energy, [3, 3, 3, np.nan, np.nan], equal_nan=True)
+
+    def test_join_without_pi(self):
+        ts = StingrayTimeseries(time=[1, 2, 3], pi=[3, 3, 3])
+        ts_other = StingrayTimeseries(time=[4, 5])
+        with pytest.warns(
+            UserWarning, match="The pi array is empty in one of the time series being merged."
+        ):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert np.allclose(ts_new.pi, [3, 3, 3, np.nan, np.nan], equal_nan=True)
+
+    def test_join_with_arbitrary_attribute(self):
+        ts = StingrayTimeseries(time=[1, 2, 4])
+        ts_other = StingrayTimeseries(time=[3, 5])
+        ts.u = [3, 3, 3]
+        ts_other.q = [1, 2]
+        with pytest.warns(
+            UserWarning, match="The (u|q) array is empty in one of the time series being merged."
+        ):
+            ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert np.allclose(ts_new.q, [np.nan, np.nan, 1, np.nan, 2], equal_nan=True)
+        assert np.allclose(ts_new.u, [3, 3, np.nan, 3, np.nan], equal_nan=True)
+
+    def test_join_with_gti_none(self):
+        ts = StingrayTimeseries(time=[1, 2, 3])
+        ts_other = StingrayTimeseries(time=[4, 5], gti=[[3.5, 5.5]])
+        ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert np.allclose(ts_new.gti, [[1, 3], [3.5, 5.5]])
+
+        ts = StingrayTimeseries(time=[1, 2, 3], gti=[[0.5, 3.5]])
+        ts_other = StingrayTimeseries(time=[4, 5])
+        ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert np.allclose(ts_new.gti, [[0.5, 3.5], [4, 5]])
+
+        ts = StingrayTimeseries(time=[1, 2, 3])
+        ts_other = StingrayTimeseries(time=[4, 5])
+        ts_new = ts.join(ts_other, gti_treatment="union")
+
+        assert ts_new._gti is None
+
+    def test_non_overlapping_join_infer(self):
+        """Join two overlapping event lists."""
+        ts = StingrayTimeseries(
+            time=[1, 1.1, 2, 3, 4], energy=[3, 4, 7, 4, 3], gti=[[1, 2], [3, 4]]
+        )
+        ts_other = StingrayTimeseries(time=[5, 6, 6.1, 7, 10], energy=[4, 3, 8, 1, 2], gti=[[6, 7]])
+        ts_new = ts.join(ts_other, gti_treatment="infer")
+
+        assert (ts_new.time == np.array([1, 1.1, 2, 3, 4, 5, 6, 6.1, 7, 10])).all()
+        assert (ts_new.energy == np.array([3, 4, 7, 4, 3, 4, 3, 8, 1, 2])).all()
+        assert (ts_new.gti == np.array([[1, 2], [3, 4], [6, 7]])).all()
+
+    def test_overlapping_join_infer(self):
+        """Join two non-overlapping event lists."""
+        ts = StingrayTimeseries(
+            time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]]
+        )
+        ts_other = StingrayTimeseries(
+            time=[5.1, 7, 6.1, 6.11, 10.1], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]]
+        )
+        ts_new = ts.join(ts_other, gti_treatment="infer")
+
+        assert (ts_new.time == np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1])).all()
+        assert (ts_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
+        assert (ts_new.gti == np.array([[5, 6]])).all()
+
+    def test_overlapping_join_change_mjdref(self):
+        """Join two non-overlapping event lists."""
+        ts = StingrayTimeseries(
+            time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]], mjdref=57001
+        )
+        ts_other = StingrayTimeseries(
+            time=np.asarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
+            energy=[2, 3, 8, 1, 2],
+            gti=np.asarray([[5, 7], [8, 10]]) + 86400,
+            mjdref=57000,
+        )
+        with pytest.warns(UserWarning, match="Attribute mjdref is different"):
+            ts_new = ts.join(ts_other, gti_treatment="intersection")
+
+        assert np.allclose(ts_new.time, np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1]))
+        assert (ts_new.energy == np.array([10, 6, 2, 2, 11, 8, 1, 3, 3, 2])).all()
+        assert np.allclose(ts_new.gti, np.array([[5, 6]]))
+
+    def test_multiple_join(self):
+        """Test if multiple event lists can be joined."""
+        ts = StingrayTimeseries(time=[1, 2, 4], instr="a", mission=1)
+        ts_other = StingrayTimeseries(time=[3, 5, 7], instr="b", mission=2)
+        ts_other2 = StingrayTimeseries(time=[6, 8, 9], instr="c", mission=3)
+
+        ts.pibiri = [1, 1, 1]
+        ts_other.pibiri = [2, 2, 2]
+        ts_other2.pibiri = [3, 3, 3]
+
+        with pytest.warns(
+            UserWarning,
+            match="Attribute (instr|mission) is different in the time series being merged.",
+        ):
+            ts_new = ts.join([ts_other, ts_other2], gti_treatment="union")
+        assert np.allclose(ts_new.time, [1, 2, 3, 4, 5, 6, 7, 8, 9])
+        assert np.allclose(ts_new.pibiri, [1, 1, 2, 1, 2, 3, 2, 3, 3])
+        assert ts_new.instr == "a,b,c"
+        assert ts_new.mission == (1, 2, 3)
+
+    def test_join_ignore_attr(self):
+        """Test if multiple event lists can be joined."""
+        ts = StingrayTimeseries(time=[1, 2, 4], instr="a", mission=1)
+        ts_other = StingrayTimeseries(time=[3, 5, 7], instr="b", mission=2)
+
+        with pytest.warns(
+            UserWarning,
+            match="Attribute mission is different in the time series being merged.",
+        ):
+            ts_new = ts.join([ts_other], gti_treatment="union", ignore_meta=["instr"])
+
+        assert np.allclose(ts_new.time, [1, 2, 3, 4, 5, 7])
+        assert not hasattr(ts_new, "instr")
+        assert ts_new.mission == (1, 2)
