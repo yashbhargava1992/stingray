@@ -1009,6 +1009,86 @@ class StingrayObject(object):
 
 
 class StingrayTimeseries(StingrayObject):
+    """Basic class for time series data.
+
+    This can be events, binned light curves, unevenly sampled light curves, etc. The only
+    requirement is that the data are associated with a time measurement.
+    We make a distinction between the *array* attributes, which have the same length of the
+    ``time`` array, and the *meta* attributes, which can be scalars or arrays of different
+    size. The array attributes can be multidimensional (e.g. a spectrum for each time bin),
+    but their first dimension (``array.shape[0]``) must have same length of the ``time`` array.
+
+    Array attributes are singled out automatically depending on their shape. All filtering
+    operations (e.g. ``apply_gtis``, ``rebin``, etc.) are applied to array attributes only.
+    For this reason, it is advisable to specify whether a given attribute should *not* be
+    considered as an array attribute by adding it to the ``not_array_attr`` list.
+
+    Parameters
+    ----------
+    time: iterable
+        A list or array of time stamps
+
+    Other Parameters
+    ----------------
+    array_attrs : dict
+        Array attributes to be set (e.g. ``{"flux": flux_array, "flux_err": flux_err_array}``).
+        In principle, they could be specified as simple keyword arguments. But this way, we
+        will run a check on the length of the arrays, and raise an error if they are not of a
+        shape compatible with the ``time`` array.
+
+    dt: float
+        The time resolution of the time series. Can be a scalar or an array attribute (useful
+        for non-uniformly sampled data or events from different instruments)
+
+    mjdref : float
+        The MJD used as a reference for the time array.
+
+    gtis: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
+        Good Time Intervals
+
+    high_precision : bool
+        Change the precision of self.time to float128. Useful while dealing with fast pulsars.
+
+    timeref : str
+        The time reference, as recorded in the FITS file (e.g. SOLARSYSTEM)
+
+    timesys : str
+        The time system, as recorded in the FITS file (e.g. TDB)
+
+    ephem : str
+        The JPL ephemeris used to barycenter the data, if any (e.g. DE430)
+
+    **other_kw :
+        Used internally. Any other keyword arguments will be set as attributes of the object.
+
+    Attributes
+    ----------
+    time: numpy.ndarray
+        The array of time stamps, in seconds from the reference
+        MJD defined in ``mjdref``
+
+    not_array_attr: list
+        List of attributes that are never to be considered as array attributes. For example, GTIs
+        are not array attributes.
+
+    ncounts: int
+        The number of data points in the time series
+
+    dt: float
+        The time resolution of the measurements. Can be a scalar or an array attribute (useful
+        for non-uniformly sampled data or events from different instruments)
+
+    mjdref : float
+        The MJD used as a reference for the time array.
+
+    gtis: ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
+        Good Time Intervals
+
+    high_precision : bool
+        Change the precision of self.time to float128. Useful while dealing with fast pulsars.
+
+    """
+
     main_array_attr: str = "time"
     not_array_attr: list = ["gti"]
     _time: TTime = None
