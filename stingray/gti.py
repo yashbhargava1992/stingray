@@ -968,7 +968,7 @@ def join_equal_gti_boundaries(gti, threshold=0.0):
     return np.asarray(ng)
 
 
-def merge_gtis(gti_list, gti_treatment):
+def merge_gtis(gti_list, strategy):
     """Merge a list of GTIs using the specified method.
 
     Invalid GTI lists (None or empty) are ignored.
@@ -980,7 +980,7 @@ def merge_gtis(gti_list, gti_treatment):
 
     Other parameters
     ----------------
-    gti_treatment : {"intersection", "union", "append", "infer", "none"}
+    strategy : {"intersection", "union", "append", "infer", "none"}
         Method to use to merge the GTIs. If "intersection", the GTIs are merged
         using the intersection of the GTIs. If "union", the GTIs are merged
         using the union of the GTIs. If "none", a single GTI with the minimum and
@@ -1021,7 +1021,7 @@ def merge_gtis(gti_list, gti_treatment):
     if len(all_gti_lists) == 0:
         return None
 
-    if gti_treatment == "none":
+    if strategy == "none":
         return np.asarray([[global_min, global_max]])
 
     if len(all_gti_lists) == 1:
@@ -1030,20 +1030,20 @@ def merge_gtis(gti_list, gti_treatment):
     cross = cross_gtis(all_gti_lists)
     if len(cross) == 0:
         cross = None
-    if gti_treatment == "infer":
+    if strategy == "infer":
         if cross is None:
-            gti_treatment = "union"
+            strategy = "union"
         else:
-            gti_treatment = "intersection"
+            strategy = "intersection"
 
-    if gti_treatment == "intersection":
+    if strategy == "intersection":
         return cross
 
     gti0 = all_gti_lists[0]
     for gti in all_gti_lists[1:]:
-        if gti_treatment == "union":
+        if strategy == "union":
             gti0 = join_gtis(gti0, gti)
-        elif gti_treatment == "append":
+        elif strategy == "append":
             gti0 = append_gtis(gti0, gti)
     return gti0
 

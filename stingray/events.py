@@ -515,7 +515,7 @@ class EventList(StingrayTimeseries):
         order = np.argsort(self.time)
         return self.apply_mask(order, inplace=inplace)
 
-    def join(self, other, gti_treatment="infer"):
+    def join(self, other, strategy="infer"):
         """
         Join two :class:`EventList` objects into one.
 
@@ -544,7 +544,7 @@ class EventList(StingrayTimeseries):
 
         Other parameters
         ----------------
-        gti_treatment : {"intersection", "union", "append", "infer", "none"}
+        strategy : {"intersection", "union", "append", "infer", "none"}
             Method to use to merge the GTIs. If "intersection", the GTIs are merged
             using the intersection of the GTIs. If "union", the GTIs are merged
             using the union of the GTIs. If "none", a single GTI with the minimum and
@@ -559,9 +559,7 @@ class EventList(StingrayTimeseries):
             The resulting :class:`EventList` object.
         """
 
-        return self._join_timeseries(
-            other, gti_treatment=gti_treatment, ignore_meta=["header", "ncounts"]
-        )
+        return self._join_timeseries(other, strategy=strategy, ignore_meta=["header", "ncounts"])
 
     @classmethod
     def read(cls, filename, fmt=None, **kwargs):

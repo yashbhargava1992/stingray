@@ -1756,10 +1756,10 @@ class StingrayTimeseries(StingrayObject):
             treatment = "append"
         else:
             treatment = "none"
-        new_ts = self._join_timeseries(other, gti_treatment=treatment)
+        new_ts = self._join_timeseries(other, strategy=treatment)
         return new_ts
 
-    def _join_timeseries(self, others, gti_treatment="intersection", ignore_meta=[]):
+    def _join_timeseries(self, others, strategy="intersection", ignore_meta=[]):
         """Helper method to join two or more :class:`StingrayTimeseries` objects.
 
         This is a helper method that can be called by other user-facing methods, such as
@@ -1784,7 +1784,7 @@ class StingrayTimeseries(StingrayObject):
 
         Other parameters
         ----------------
-        gti_treatment : {"intersection", "union", "append", "infer", "none"}
+        strategy : {"intersection", "union", "append", "infer", "none"}
             Method to use to merge the GTIs. If "intersection", the GTIs are merged
             using the intersection of the GTIs. If "union", the GTIs are merged
             using the union of the GTIs. If "none", a single GTI with the minimum and
@@ -1837,11 +1837,11 @@ class StingrayTimeseries(StingrayObject):
         # Check if none of the GTIs was already initialized.
         all_gti = [obj._gti for obj in all_objs if obj._gti is not None]
 
-        if len(all_gti) == 0 or gti_treatment == "none":
+        if len(all_gti) == 0 or strategy == "none":
             new_gti = None
         else:
             # For this, initialize the GTIs
-            new_gti = merge_gtis([obj.gti for obj in all_objs], gti_treatment=gti_treatment)
+            new_gti = merge_gtis([obj.gti for obj in all_objs], strategy=strategy)
 
         all_time_arrays = [obj.time for obj in all_objs if obj.time is not None]
 
@@ -1953,7 +1953,7 @@ class StingrayTimeseries(StingrayObject):
 
         Other parameters
         ----------------
-        gti_treatment : {"intersection", "union", "append", "infer", "none"}
+        strategy : {"intersection", "union", "append", "infer", "none"}
             Method to use to merge the GTIs. If "intersection", the GTIs are merged
             using the intersection of the GTIs. If "union", the GTIs are merged
             using the union of the GTIs. If "none", a single GTI with the minimum and
