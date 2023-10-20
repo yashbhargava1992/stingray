@@ -22,16 +22,16 @@ However, an equivalent widely-used package does not exist for X-ray timing: to d
 Stingray aims not only to fill that gap, but also to provide implementations of the most advanced spectral timing techniques available in the literature.
 The ultimate goal of this project is to provide the community with a package that eases the learning curve for the advanced spectral timing techniques with a correct statistical framework.
 
-More details of current and planned capabilities are available in the `Stingray documentation <https://docs.stingray.science/intro.html#features>`_.
+More details of current and planned capabilities are available in the `Stingray documentation <https://docs.stingray.science/en/latest/#features>`_.
 
 Installation and Testing
 ------------------------
 
 Stingray can be installed via `conda`, `pip`, or directly from the source repository itself.
-Our documentation provides `comprehensive installation instructions <https://docs.stingray.science/install.html>`_.
+Our documentation provides `comprehensive installation instructions <https://docs.stingray.science/en/latest/#installation>`_.
 
 After installation, it's a good idea to run the test suite.
-We use `py.test <https://pytest.org>`_ and `tox <https://tox.readthedocs.io>`_ for testing, and, again, our documentation provides `step-by-step instructions <https://docs.stingray.science/install.html#test-suite>`_.
+We use `py.test <https://pytest.org>`_ and `tox <https://tox.readthedocs.io>`_ for testing, and, again, our documentation provides `step-by-step instructions <https://docs.stingray.science/en/latest/#test-suite>`_.
 
 Documentation
 -------------
@@ -61,7 +61,7 @@ Citing Stingray
 ---------------
 
 If you find this package useful in your research, please provide appropriate acknowledgement and citation.
-`Our documentation <https://docs.stingray.science/citing.html>`_ gives further guidance, including links to appropriate papers and convenient BibTeX entries.
+`Our documentation <https://docs.stingray.science/en/latest/citing.html>`_ gives further guidance, including links to appropriate papers and convenient BibTeX entries.
 
 Copyright & Licensing
 ---------------------
