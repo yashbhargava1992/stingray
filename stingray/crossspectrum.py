@@ -2266,9 +2266,10 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
         cs.unnorm_cs_all = np.array(table.meta["unnorm_subcs"])
 
     for attr, val in table.meta.items():
-        setattr(cs, attr, val)
-        setattr(cs.pds1, attr, val)
-        setattr(cs.pds2, attr, val)
+        if not attr.endswith("subcs"):
+            setattr(cs, attr, val)
+            setattr(cs.pds1, attr, val)
+            setattr(cs.pds2, attr, val)
 
     cs.err_dist = "poisson"
     if cs.variance is not None:
