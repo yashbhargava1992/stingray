@@ -144,7 +144,7 @@ def coherence(lc1, lc2):
 
     References
     ----------
-    .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
+    .. [#] https://iopscience.iop.org/article/10.1086/310430
     """
 
     warnings.warn(
@@ -1002,7 +1002,7 @@ class Crossspectrum(StingrayObject):
 
         References
         ----------
-        .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
+        .. [#] https://iopscience.iop.org/article/10.1086/310430
         """
         # this computes the averaged power spectrum, but using the
         # cross spectrum code to avoid circular imports
@@ -1820,7 +1820,7 @@ class AveragedCrossspectrum(Crossspectrum):
 
         References
         ----------
-        .. [#] http://iopscience.iop.org/article/10.1086/310430/pdf
+        .. [#] https://iopscience.iop.org/article/10.1086/310430
         """
         if np.any(self.m < 50):
             simon(
