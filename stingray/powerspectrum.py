@@ -1082,7 +1082,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         Parameters
         ----------
         dt_new: float
-            The new time resolution of  the dynamical power spectrum.
+            The new time resolution of the dynamical power spectrum.
             Must be larger than the time resolution of the old dynamical power
             spectrum!
 
@@ -1099,14 +1099,14 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             New rebinned Dynamical Power Spectrum.
         """
         if dt_new < self.dt:
-            raise ValueError("New time resolution must be larger than " "old time resolution!")
+            raise ValueError("New time resolution must be larger than old time resolution!")
 
         new_dynspec_object = copy.deepcopy(self)
 
         dynspec_new = []
         for data in self.dyn_ps:
             time_new, bin_counts, bin_err, _ = utils.rebin_data(
-                self.time, data, dt_new, method=method
+                self.time, data, dt_new, method=method, dx=self.dt
             )
             dynspec_new.append(bin_counts)
 
