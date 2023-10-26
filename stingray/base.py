@@ -1082,8 +1082,8 @@ class StingrayTimeseries(StingrayObject):
     not_array_attr: list = ["gti"]
     _time: TTime = None
     high_precision: bool = False
-    mjdref: TTime = 0
-    dt: float = 0
+    mjdref: TTime = 0.0
+    dt: float = 0.0
 
     def __init__(
         self,
