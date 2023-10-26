@@ -950,19 +950,21 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
         if isinstance(lc, EventList) and dt is None:
             raise ValueError("To pass an input event lists, please specify dt")
+        elif isinstance(lc, Lightcurve):
+            dt = lc.dt
+            if segment_size < 2 * lc.dt:
+                raise ValueError("Length of the segment is too short to form a " "light curve!")
+            elif segment_size > lc.tseg:
+                raise ValueError(
+                    "Length of the segment is too long to create "
+                    "any segments of the light curve!"
+                )
 
-        if isinstance(lc, EventList):
-            lc = lc.to_lc(dt)
+        self.segment_size = segment_size
+        self.input_dt = dt
+        self.gti = gti
+        self.norm = norm
 
-        if segment_size < 2 * lc.dt:
-            raise ValueError("Length of the segment is too short to form a " "light curve!")
-        elif segment_size > lc.tseg:
-            raise ValueError(
-                "Length of the segment is too long to create " "any segments of the light curve!"
-            )
-        AveragedPowerspectrum.__init__(
-            self, data=lc, segment_size=segment_size, norm=norm, gti=gti, dt=dt
-        )
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
@@ -978,33 +980,25 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             power spectrum.
         """
         avg = AveragedPowerspectrum(
-            lc, segment_size=self.segment_size, norm=self.norm, gti=self.gti, save_all=True
+            lc,
+            dt=self.input_dt,
+            segment_size=self.segment_size,
+            norm=self.norm,
+            gti=self.gti,
+            save_all=True,
         )
         self.dyn_ps = np.array(avg.cs_all).T
 
         self.freq = avg.freq
         current_gti = avg.gti
 
-        start_inds, end_inds = bin_intervals_from_gtis(
-            current_gti, self.segment_size, lc.time, dt=lc.dt
-        )
+        from .gti import time_intervals_from_gtis
 
-        tstart = lc.time[start_inds]
-        tend = lc.time[end_inds]
+        tstart, tend = time_intervals_from_gtis(current_gti, self.segment_size)
 
         self.time = tstart + 0.5 * (tend - tstart)
-
-        # Assign length of lightcurve as time resolution if only one value
-        if len(self.time) > 1:
-            self.dt = self.time[1] - self.time[0]
-        else:
-            self.dt = lc.n
-
-        # Assign biggest freq. resolution if only one value
-        if len(self.freq) > 1:
-            self.df = self.freq[1] - self.freq[0]
-        else:
-            self.df = 1 / lc.n
+        self.df = self.freq[1] - self.freq[0]
+        self.dt = self.segment_size
 
     def rebin_frequency(self, df_new, method="sum"):
         """
