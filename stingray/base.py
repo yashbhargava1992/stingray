@@ -127,7 +127,7 @@ class StingrayObject(object):
     just by defining an attribute called ``main_array_attr``, be able to perform
     the operations above, with no additional effort.
 
-    ``main_array_attr`` is, e.g. ``time`` for :class:`EventList` and
+    ``main_array_attr`` is, e.g. ``time`` for :class:`StingrayTimeseries` and
     :class:`Lightcurve`, ``freq`` for :class:`Crossspectrum`, ``energy`` for
     :class:`VarEnergySpectrum`, and so on. It is the array with wich all other
     attributes are compared: if they are of the same shape, they get saved as
@@ -326,9 +326,6 @@ class StingrayObject(object):
         new object, while the attributes in ds.attrs will
         form the new meta attributes of the object.
 
-        It is strongly advisable to define such attributes and columns
-        using the standard attributes of the wanted StingrayObject (e.g.
-        ``time``, ``pi``, etc. for ``EventList``)
         """
         cls = cls()
 
@@ -389,10 +386,6 @@ class StingrayObject(object):
         The rest of columns will form the array attributes of the
         new object, while the attributes in ds.attrs will
         form the new meta attributes of the object.
-
-        It is strongly advisable to define such attributes and columns
-        using the standard attributes of the wanted StingrayObject (e.g.
-        ``time``, ``pi``, etc. for ``EventList``)
         """
         cls = cls()
 
@@ -461,10 +454,6 @@ class StingrayObject(object):
         The rest of columns will form the array attributes of the
         new object, while the attributes in ds.attrs will
         form the new meta attributes of the object.
-
-        It is strongly advisable to define such attributes and columns
-        using the standard attributes of the wanted StingrayObject (e.g.
-        ``time``, ``pi``, etc. for ``EventList``)
 
         Since pandas does not support n-D data, multi-dimensional arrays can be
         specified as ``<colname>_dimN_M_K`` etc.
@@ -1357,9 +1346,6 @@ class StingrayTimeseries(StingrayObject):
         new time series, while the attributes in table.meta will
         form the new meta attributes of the time series.
 
-        It is strongly advisable to define such attributes and columns
-        using the standard attributes of EventList: time, pi, energy, gti etc.
-
         Parameters
         ----------
         ts : `astropy.timeseries.TimeSeries`
@@ -1763,23 +1749,24 @@ class StingrayTimeseries(StingrayObject):
         """Helper method to join two or more :class:`StingrayTimeseries` objects.
 
         This is a helper method that can be called by other user-facing methods, such as
-        :class:`EventList().join()`.
+        :class:`StingrayTimeseries().join()`.
 
         Standard attributes such as ``pi`` and ``energy`` remain ``None`` if they are ``None``
         in both. Otherwise, ``np.nan`` is used as a default value for the missing values.
         Arbitrary array attributes are created and joined using the same convention.
 
         Multiple checks are done on the joined time series. If the time array of the series
-        being joined is empty, it is ignored. If the time resolution is different, the final
-        time series will have the rougher time resolution. If the MJDREF is different, the time
-        reference will be changed to the one of the first time series. An empty time series will
-        be ignored.
+        being joined is empty, it is ignored (and a copy of the original time series is returned
+        instead). If the time resolution is different, the final time series will associate
+        different time resolutions to different time bins.
+        If the MJDREF is different (including being 0), the time reference will be changed to
+        the one of the first time series. An empty time series will be ignored.
 
         Parameters
         ----------
-        other : :class:`EventList` object or class:`list` of :class:`EventList` objects
-            The other :class:`EventList` object which is supposed to be joined with.
-            If ``other`` is a list, it is assumed to be a list of :class:`EventList` objects
+        other : :class:`StingrayTimeseries` or class:`list` of :class:`StingrayTimeseries`
+            The other :class:`StingrayTimeseries` object which is supposed to be joined with.
+            If ``other`` is a list, it is assumed to be a list of :class:`StingrayTimeseries`
             and they are all joined, one by one.
 
         Other parameters
@@ -1946,9 +1933,9 @@ class StingrayTimeseries(StingrayObject):
 
         Parameters
         ----------
-        other : :class:`EventList` object or class:`list` of :class:`EventList` objects
-            The other :class:`EventList` object which is supposed to be joined with.
-            If ``other`` is a list, it is assumed to be a list of :class:`EventList` objects
+        other : :class:`StingrayTimeseries` or class:`list` of :class:`StingrayTimeseries`
+            The other :class:`StingrayTimeseries` object which is supposed to be joined with.
+            If ``other`` is a list, it is assumed to be a list of :class:`StingrayTimeseries`
             and they are all joined, one by one.
 
         Other parameters
