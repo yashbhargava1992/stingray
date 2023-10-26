@@ -952,13 +952,13 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             raise ValueError("To pass an input event lists, please specify dt")
         elif isinstance(lc, Lightcurve):
             dt = lc.dt
-            if segment_size < 2 * lc.dt:
-                raise ValueError("Length of the segment is too short to form a " "light curve!")
-            elif segment_size > lc.tseg:
+            if segment_size > lc.tseg:
                 raise ValueError(
                     "Length of the segment is too long to create "
                     "any segments of the light curve!"
                 )
+        if segment_size < 2 * dt:
+            raise ValueError("Length of the segment is too short to form a light curve!")
 
         self.segment_size = segment_size
         self.input_dt = dt
