@@ -988,7 +988,6 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             save_all=True,
         )
         self.dyn_ps = np.array(avg.cs_all).T
-
         self.freq = avg.freq
         current_gti = avg.gti
 
@@ -997,7 +996,10 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         tstart, tend = time_intervals_from_gtis(current_gti, self.segment_size)
 
         self.time = tstart + 0.5 * (tend - tstart)
-        self.df = self.freq[1] - self.freq[0]
+        if len(self.freq) < 2:
+            self.df = 1 / self.segment_size
+        else:
+            self.df = self.freq[1] - self.freq[0]
         self.dt = self.segment_size
 
     def rebin_frequency(self, df_new, method="sum"):
