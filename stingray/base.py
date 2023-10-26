@@ -721,7 +721,7 @@ class StingrayObject(object):
 
         Returns
         -------
-        lc_new : StingrayTimeseries object
+        ts_new : StingrayTimeseries object
             The new time series calculated in ``operation``
         """
 
@@ -748,28 +748,28 @@ class StingrayObject(object):
             )
 
         if inplace:
-            lc_new = self
+            ts_new = self
         else:
-            lc_new = type(self)()
-        setattr(lc_new, self.main_array_attr, this_time)
+            ts_new = type(self)()
+        setattr(ts_new, self.main_array_attr, this_time)
         for attr in self.meta_attrs():
-            setattr(lc_new, attr, copy.deepcopy(getattr(self, attr)))
+            setattr(ts_new, attr, copy.deepcopy(getattr(self, attr)))
 
         for attr in operated_attrs:
             setattr(
-                lc_new,
+                ts_new,
                 attr,
                 operation(getattr(self, attr), getattr(other, attr)),
             )
 
         for attr in error_attrs:
             setattr(
-                lc_new,
+                ts_new,
                 attr,
                 error_operation(getattr(self, attr), getattr(other, attr)),
             )
 
-        return lc_new
+        return ts_new
 
     def add(
         self, other, operated_attrs=None, error_attrs=None, error_operation=sqsum, inplace=False
@@ -939,11 +939,11 @@ class StingrayObject(object):
 
         """
 
-        lc_new = copy.deepcopy(self)
+        ts_new = copy.deepcopy(self)
         for attr in self._default_operated_attrs():
-            setattr(lc_new, attr, -np.asarray(getattr(self, attr)))
+            setattr(ts_new, attr, -np.asarray(getattr(self, attr)))
 
-        return lc_new
+        return ts_new
 
     def __len__(self):
         """
@@ -1470,7 +1470,7 @@ class StingrayTimeseries(StingrayObject):
 
         Returns
         -------
-        lc_new : StingrayTimeseries object
+        ts_new : StingrayTimeseries object
             The new time series calculated in ``operation``
         """
 
@@ -1519,8 +1519,8 @@ class StingrayTimeseries(StingrayObject):
         >>> gti2 = [[0, 25]]
         >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=5)
         >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=5)
-        >>> lc = ts1 + ts2
-        >>> np.allclose(lc.counts, [ 900, 1300, 1200])
+        >>> ts = ts1 + ts2
+        >>> np.allclose(ts.counts, [ 900, 1300, 1200])
         True
         """
 
@@ -1548,8 +1548,8 @@ class StingrayTimeseries(StingrayObject):
         >>> gti2 = [[5, 40]]
         >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=10)
         >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=10)
-        >>> lc = ts1 - ts2
-        >>> np.allclose(lc.counts, [ 300, 1100,  400])
+        >>> ts = ts1 - ts2
+        >>> np.allclose(ts.counts, [ 300, 1100,  400])
         True
         """
 
@@ -1577,10 +1577,10 @@ class StingrayTimeseries(StingrayObject):
         --------
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
-        >>> lc = StingrayTimeseries(time, array_attrs=dict(counts=count), dt=1)
-        >>> np.allclose(lc[2].counts, [33])
+        >>> ts = StingrayTimeseries(time, array_attrs=dict(counts=count), dt=1)
+        >>> np.allclose(ts[2].counts, [33])
         True
-        >>> np.allclose(lc[:2].counts, [11, 22])
+        >>> np.allclose(ts[:2].counts, [11, 22])
         True
         """
         from .utils import assign_value_if_none
@@ -1635,24 +1635,24 @@ class StingrayTimeseries(StingrayObject):
 
         Returns
         -------
-        lc_new: :class:`StingrayTimeseries` object
+        ts_new: :class:`StingrayTimeseries` object
             The :class:`StingrayTimeseries` object with truncated time and arrays.
 
         Examples
         --------
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
-        >>> lc = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
-        >>> lc_new = lc.truncate(start=2, stop=8)
-        >>> np.allclose(lc_new.counts, [30, 40, 50, 60, 70, 80])
+        >>> ts = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
+        >>> ts_new = ts.truncate(start=2, stop=8)
+        >>> np.allclose(ts_new.counts, [30, 40, 50, 60, 70, 80])
         True
-        >>> lc_new.time
+        >>> ts_new.time
         array([3, 4, 5, 6, 7, 8])
         >>> # Truncation can also be done by time values
-        >>> lc_new = lc.truncate(start=6, method='time')
-        >>> lc_new.time
+        >>> ts_new = ts.truncate(start=6, method='time')
+        >>> ts_new.time
         array([6, 7, 8, 9])
-        >>> np.allclose(lc_new.counts, [60, 70, 80, 90])
+        >>> np.allclose(ts_new.counts, [60, 70, 80, 90])
         True
         """
 
@@ -1663,31 +1663,31 @@ class StingrayTimeseries(StingrayObject):
             raise ValueError("Unknown method type " + method + ".")
 
         if method.lower() == "index":
-            new_lc = self._truncate_by_index(start, stop)
+            new_ts = self._truncate_by_index(start, stop)
         else:
-            new_lc = self._truncate_by_time(start, stop)
-        new_lc.tstart = new_lc.gti[0, 0]
-        new_lc.tseg = new_lc.gti[-1, 1] - new_lc.gti[0, 0]
-        return new_lc
+            new_ts = self._truncate_by_time(start, stop)
+        new_ts.tstart = new_ts.gti[0, 0]
+        new_ts.tseg = new_ts.gti[-1, 1] - new_ts.gti[0, 0]
+        return new_ts
 
     def _truncate_by_index(self, start, stop):
         """Private method for truncation using index values."""
         from .gti import cross_two_gtis
 
-        new_lc = self.apply_mask(slice(start, stop))
+        new_ts = self.apply_mask(slice(start, stop))
 
-        dtstart = dtstop = new_lc.dt
+        dtstart = dtstop = new_ts.dt
         if isinstance(self.dt, Iterable):
             dtstart = self.dt[0]
             dtstop = self.dt[-1]
 
         gti = cross_two_gtis(
-            self.gti, np.asarray([[new_lc.time[0] - 0.5 * dtstart, new_lc.time[-1] + 0.5 * dtstop]])
+            self.gti, np.asarray([[new_ts.time[0] - 0.5 * dtstart, new_ts.time[-1] + 0.5 * dtstop]])
         )
 
-        new_lc.gti = gti
+        new_ts.gti = gti
 
-        return new_lc
+        return new_ts
 
     def _truncate_by_time(self, start, stop):
         """Helper method for truncation using time values.
@@ -1695,15 +1695,15 @@ class StingrayTimeseries(StingrayObject):
         Parameters
         ----------
         start : float
-            start time for new light curve; all time bins before this time will be discarded
+            start time for new time series; all time bins before this time will be discarded
 
         stop : float
-            stop time for new light curve; all time bins after this point will be discarded
+            stop time for new time series; all time bins after this point will be discarded
 
         Returns
         -------
-            new_lc : Lightcurve
-                A new :class:`Lightcurve` object with the truncated time bins
+            new_ts : StingrayTimeseries
+                A new :class:`StingrayTimeseries` object with the truncated time bins
 
         """
 
@@ -1958,7 +1958,7 @@ class StingrayTimeseries(StingrayObject):
 
     def rebin(self, dt_new=None, f=None, method="sum"):
         """
-        Rebin the light curve to a new time resolution. While the new
+        Rebin the time series to a new time resolution. While the new
         resolution need not be an integer multiple of the previous time
         resolution, be aware that if it is not, the last bin will be cut
         off by the fraction left over by the integer division.
@@ -1966,8 +1966,8 @@ class StingrayTimeseries(StingrayObject):
         Parameters
         ----------
         dt_new: float
-            The new time resolution of the light curve. Must be larger than
-            the time resolution of the old light curve!
+            The new time resolution of the time series. Must be larger than
+            the time resolution of the old time series!
 
         method: {``sum`` | ``mean`` | ``average``}, optional, default ``sum``
             This keyword argument sets whether the counts in the new bins
@@ -1981,8 +1981,8 @@ class StingrayTimeseries(StingrayObject):
 
         Returns
         -------
-        lc_new: :class:`Lightcurve` object
-            The :class:`Lightcurve` object with the new, binned light curve.
+        ts_new: :class:`StingrayTimeseries` object
+            The :class:`StingrayTimeseries` object with the new, binned time series.
         """
         from .utils import rebin_data
 
@@ -2055,22 +2055,22 @@ class StingrayTimeseries(StingrayObject):
         reverse : boolean, default False
             If True then the object is sorted in reverse order.
         inplace : bool
-            If True, overwrite the current light curve. Otherwise, return a new one.
+            If True, overwrite the current time series. Otherwise, return a new one.
 
         Examples
         --------
         >>> time = [2, 1, 3]
         >>> count = [200, 100, 300]
-        >>> lc = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
-        >>> lc_new = lc.sort()
-        >>> lc_new.time
+        >>> ts = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
+        >>> ts_new = ts.sort()
+        >>> ts_new.time
         array([1, 2, 3])
-        >>> np.allclose(lc_new.counts, [100, 200, 300])
+        >>> np.allclose(ts_new.counts, [100, 200, 300])
         True
 
         Returns
         -------
-        lc_new: :class:`StingrayTimeseries` object
+        ts_new: :class:`StingrayTimeseries` object
             The :class:`StingrayTimeseries` object with sorted time and counts
             arrays.
         """
@@ -2093,9 +2093,9 @@ class StingrayTimeseries(StingrayObject):
         plot_btis=True,
     ):
         """
-        Plot the light curve using ``matplotlib``.
+        Plot the time series using ``matplotlib``.
 
-        Plot the light curve object on a graph ``self.time`` on x-axis and
+        Plot the time series object on a graph ``self.time`` on x-axis and
         ``self.counts`` on y-axis with ``self.counts_err`` optionally
         as error bars.
 
@@ -2107,7 +2107,7 @@ class StingrayTimeseries(StingrayObject):
         Other parameters
         ----------------
         witherrors: boolean, default False
-            Whether to plot the Lightcurve with errorbars or not
+            Whether to plot the StingrayTimeseries with errorbars or not
         labels : iterable, default ``None``
             A list or tuple with ``xlabel`` and ``ylabel`` as strings. E.g.
             if the attribute is ``'counts'``, the list of labels

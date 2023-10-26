@@ -1408,8 +1408,8 @@ class Crossspectrum(StingrayObject):
 
     @staticmethod
     def from_stingray_timeseries(
-        lc1,
-        lc2,
+        ts1,
+        ts2,
         flux_attr,
         error_flux_attr=None,
         segment_size=None,
@@ -1424,10 +1424,10 @@ class Crossspectrum(StingrayObject):
 
         Parameters
         ----------
-        lc1 : `stingray.Timeseries`
-            Light curve from channel 1
-        lc2 : `stingray.Timeseries`
-            Light curve from channel 2
+        ts1 : `stingray.Timeseries`
+            Time series from channel 1
+        ts2 : `stingray.Timeseries`
+            Time series from channel 2
         flux_attr : `str`
             What attribute of the time series will be used.
 
@@ -1463,8 +1463,8 @@ class Crossspectrum(StingrayObject):
             making the cross spectrum.
         """
         return crossspectrum_from_timeseries(
-            lc1,
-            lc2,
+            ts1,
+            ts2,
             flux_attr=flux_attr,
             error_flux_attr=error_flux_attr,
             segment_size=segment_size,
@@ -2426,8 +2426,8 @@ def crossspectrum_from_lightcurve(
 
 
 def crossspectrum_from_timeseries(
-    lc1,
-    lc2,
+    ts1,
+    ts2,
     flux_attr,
     error_flux_attr=None,
     segment_size=None,
@@ -2439,14 +2439,14 @@ def crossspectrum_from_timeseries(
     gti=None,
     save_all=False,
 ):
-    """Calculate AveragedCrossspectrum from two light curves
+    """Calculate AveragedCrossspectrum from two time series
 
     Parameters
     ----------
-    lc1 : `stingray.Lightcurve`
-        Light curve from channel 1
-    lc2 : `stingray.Lightcurve`
-        Light curve from channel 2
+    ts1 : `stingray.StingrayTimeseries`
+        Time series from channel 1
+    ts2 : `stingray.StingrayTimeseries`
+        Time series from channel 2
     flux_attr : `str`
         What attribute of the time series will be used.
 
@@ -2490,26 +2490,26 @@ def crossspectrum_from_timeseries(
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
     if gti is None:
-        gti = cross_two_gtis(lc1.gti, lc2.gti)
+        gti = cross_two_gtis(ts1.gti, ts2.gti)
 
     err1 = err2 = None
     if error_flux_attr is not None:
-        err1 = getattr(lc1, error_flux_attr)
-        err2 = getattr(lc2, error_flux_attr)
+        err1 = getattr(ts1, error_flux_attr)
+        err2 = getattr(ts2, error_flux_attr)
 
     results = avg_cs_from_events(
-        lc1.time,
-        lc2.time,
+        ts1.time,
+        ts2.time,
         gti,
         segment_size,
-        lc1.dt,
+        ts1.dt,
         norm=norm,
         use_common_mean=use_common_mean,
         fullspec=fullspec,
         silent=silent,
         power_type=power_type,
-        fluxes1=getattr(lc1, flux_attr),
-        fluxes2=getattr(lc2, flux_attr),
+        fluxes1=getattr(ts1, flux_attr),
+        fluxes2=getattr(ts2, flux_attr),
         errors1=err1,
         errors2=err2,
         return_auxil=True,

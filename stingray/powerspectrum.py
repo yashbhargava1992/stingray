@@ -560,7 +560,7 @@ class Powerspectrum(Crossspectrum):
         use_common_mean=True,
         gti=None,
     ):
-        """Calculate AveragedCrossspectrum from two light curves
+        """Calculate AveragedPowerspectrum from a time series.
 
         Parameters
         ----------
@@ -1270,7 +1270,7 @@ def powerspectrum_from_lightcurve(
 
 
 def powerspectrum_from_timeseries(
-    lc,
+    ts,
     flux_attr,
     error_flux_attr=None,
     segment_size=None,
@@ -1284,8 +1284,8 @@ def powerspectrum_from_timeseries(
 
     Parameters
     ----------
-    lc : `stingray.Lightcurve`
-        Input Light curve
+    ts : `stingray.StingrayTimeseries`
+        Input time series
     flux_attr : `str`
         What attribute of the time series will be used.
 
@@ -1327,21 +1327,21 @@ def powerspectrum_from_timeseries(
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
     if gti is None:
-        gti = lc.gti
+        gti = ts.gti
 
     err = None
     if error_flux_attr is not None:
-        err = getattr(lc, error_flux_attr)
+        err = getattr(ts, error_flux_attr)
 
     results = avg_pds_from_events(
-        lc.time,
+        ts.time,
         gti,
         segment_size,
-        lc.dt,
+        ts.dt,
         norm=norm,
         use_common_mean=use_common_mean,
         silent=silent,
-        fluxes=getattr(lc, flux_attr),
+        fluxes=getattr(ts, flux_attr),
         errors=err,
         return_subcs=save_all,
     )
