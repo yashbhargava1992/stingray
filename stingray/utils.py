@@ -483,12 +483,12 @@ def rebin_data(x, y, dx_new, yerr=None, method="sum", dx=None):
     else:
         yerr = np.asarray(yerr)
 
-    if not dx:
-        dx_old = np.diff(x)
-    elif np.size(dx) == 1:
-        dx_old = np.array([dx])
-    else:
+    if isinstance(dx, Iterable):
         dx_old = dx
+    elif dx is None or dx == 0:
+        dx_old = np.diff(x)
+    else:
+        dx_old = np.array([dx])
 
     if np.any(dx_new < dx_old):
         raise ValueError(

@@ -1995,7 +1995,7 @@ class StingrayTimeseries(StingrayObject):
         elif f is not None:
             dt_new = f * self.dt
 
-        if dt_new < self.dt:
+        if np.any(dt_new < np.asarray(self.dt)):
             raise ValueError("The new time resolution must be larger than the old one!")
 
         gti_new = []
@@ -2022,7 +2022,7 @@ class StingrayTimeseries(StingrayObject):
                         e_temp = getattr(self, attr + "_err")[start_ind:end_ind]
 
                     bin_t, bin_c, bin_e, _ = rebin_data(
-                        t_temp, c_temp, dt_new, yerr=e_temp, method=method
+                        t_temp, c_temp, dt_new, yerr=e_temp, method=method, dx=self.dt
                     )
 
                     bin_time.extend(bin_t)

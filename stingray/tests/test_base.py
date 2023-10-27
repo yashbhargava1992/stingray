@@ -774,6 +774,46 @@ class TestStingrayTimeseries:
         assert np.allclose(lc1.time, [1.5, 3.5, 5.5, 7.5])
         assert lc1.dt == 2
 
+    def test_rebin_irregular(self):
+        x0 = [-10]
+        x1 = np.linspace(0, 10, 11)
+        x2 = np.linspace(10.33, 20.0, 30)
+        x3 = np.linspace(21, 30, 10)
+        x = np.hstack([x0, x1, x2, x3])
+        dt = np.hstack(
+            [
+                [1],
+                [np.diff(x1).mean()] * x1.size,
+                [np.diff(x2).mean()] * x3.size,
+                [np.diff(x3).mean()] * x3.size,
+            ]
+        )
+
+        counts = 2.0
+        y = np.zeros_like(x) + counts
+
+        yerr = np.sqrt(y)
+        # Note: the first point of x is outside the GTIs
+        lc0 = StingrayTimeseries(
+            x,
+            array_attrs={"counts": y, "counts_err": yerr, "_bla": y},
+            dt=dt,
+            gti=[[x1[0] - 0.5 * dt[1], x3[-1] + 0.5 * dt[-1]]],
+        )
+
+        dx_new = 1.5
+        lc1 = lc0.rebin(dt_new=dx_new)
+        from stingray import utils
+
+        # Verifiy that the rebinning of irregular data is sampled correctly,
+        # Including all data but the first point, which is outsid GTIs
+        xbin, ybin, yerr_bin, step_size = utils.rebin_data(x[1:], y[1:], dx_new, yerr[1:])
+
+        assert np.allclose(lc1.time, xbin)
+        assert np.allclose(lc1.counts, ybin)
+        assert np.allclose(lc1._bla, ybin)
+        assert np.allclose(lc1.counts_err, yerr_bin)
+
     def test_rebin_no_good_gtis(self):
         time0 = [1, 2, 3, 4]
         count0 = [10, 20, 30, 40]
