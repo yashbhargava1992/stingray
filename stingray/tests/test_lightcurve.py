@@ -586,12 +586,12 @@ class TestLightcurve(object):
     def test_add_with_different_time_arrays(self):
         _times = [1.1, 2.1, 3.1, 4.1, 5.1]
         _counts = [2, 2, 2, 2, 2]
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
 
-        with pytest.raises(ValueError):
-            lc1 = Lightcurve(self.times, self.counts)
-            lc2 = Lightcurve(_times, _counts)
-
-            lc = lc1 + lc2
+        with pytest.warns(UserWarning, match="The good time intervals in the two time series"):
+            with pytest.raises(ValueError):
+                lc = lc1 + lc2
 
     def test_add_with_different_err_dist(self):
         lc1 = Lightcurve(self.times, self.counts)
@@ -611,16 +611,17 @@ class TestLightcurve(object):
         gti = [[0.0, 3.5]]
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
         lc2 = Lightcurve(self.times, self.counts, gti=gti)
-        lc = lc1 + lc2
+        with pytest.warns(UserWarning, match="The good time intervals in the two time series"):
+            lc = lc1 + lc2
         np.testing.assert_almost_equal(lc.gti, [[0.5, 3.5]])
 
     def test_add_with_unequal_time_arrays(self):
         _times = [1, 3, 5, 7]
 
-        with pytest.raises(ValueError):
-            lc1 = Lightcurve(self.times, self.counts)
-            lc2 = Lightcurve(_times, self.counts)
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, self.counts)
 
+        with pytest.raises(ValueError):
             lc = lc1 + lc2
 
     def test_add_with_equal_time_arrays(self):
@@ -639,11 +640,12 @@ class TestLightcurve(object):
         _times = [1.1, 2.1, 3.1, 4.1, 5.1]
         _counts = [2, 2, 2, 2, 2]
 
-        with pytest.raises(ValueError):
-            lc1 = Lightcurve(self.times, self.counts)
-            lc2 = Lightcurve(_times, _counts)
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
 
-            _ = lc1 - lc2
+        with pytest.warns(UserWarning, match="The good time intervals in the two time series"):
+            with pytest.raises(ValueError):
+                _ = lc1 - lc2
 
     def test_sub_with_different_err_dist(self):
         lc1 = Lightcurve(self.times, self.counts)

@@ -106,34 +106,36 @@ class TestStingrayObject:
         ts1 = copy.deepcopy(self.sting_obj)
         ts2 = copy.deepcopy(self.sting_obj)
         # Add an array attribute to ts1. This will fail
-        ts1.blah = ts1.guefus * 2
+        ts1.blah = ts1.guefus
         assert ts1 != ts2
 
         # Get back to normal
         del ts1.blah
         assert ts1 == ts2
         # Add an array attribute to ts2. This will fail
-        ts2.blah = ts1.guefus * 2
+        ts2.blah = ts1.guefus
         assert ts1 != ts2
 
         # Get back to normal
         del ts2.blah
         assert ts1 == ts2
 
-    def test_apply_mask(self):
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_apply_mask(self, inplace):
         ts = copy.deepcopy(self.sting_obj)
-        newts0 = ts.apply_mask([True, True, False], inplace=False)
-        newts1 = ts.apply_mask([True, True, False], inplace=True)
-        assert newts0.parafritus == "bonus!"
-        assert newts1.parafritus == "bonus!"
-        for obj in [newts1, newts0]:
-            assert obj.parafritus == "bonus!"
-            assert np.array_equal(obj.guefus, [4, 5])
-            assert np.array_equal(obj.panesapa, ts.panesapa)
-            assert np.array_equal(obj.pardulas, [3.0 + 1.0j, 2.0j])
-            assert np.array_equal(obj.sebadas, [[0, 1], [2, 3]])
-        assert ts is newts1
-        assert ts is not newts0
+        obj = ts.apply_mask([True, True, False], inplace=inplace)
+
+        assert obj.parafritus == "bonus!"
+        assert np.array_equal(obj.guefus, [4, 5])
+        assert np.array_equal(obj.panesapa, ts.panesapa)
+        assert np.array_equal(obj.pardulas, [3.0 + 1.0j, 2.0j])
+        assert np.array_equal(obj.sebadas, [[0, 1], [2, 3]])
+        if inplace:
+            # Only if masking in place, the final object will be the same as the starting one.
+            assert ts is obj
+        else:
+            # If not, the objects have to be different
+            assert ts is not obj
 
     @pytest.mark.parametrize("inplace", [True, False])
     def test_partial_apply_mask(self, inplace):
@@ -541,6 +543,11 @@ class TestStingrayTimeseries:
         count2 = [600, 1200, 800]
 
         ts1 = StingrayTimeseries(time=time, array_attrs=dict(counts=count1), mjdref=55000)
+        # Now I create a second time series, I make sure that the times are the same, but
+        # Then I change the mjdref. From now on, the time array will not have the same
+        # values as `ts1.time`. The sum operation will warn the user about this, but then
+        # change the mjdref of the second time series to match the first one, and the times
+        # will be aligned again.
         ts2 = StingrayTimeseries(time=time, array_attrs=dict(counts=count2), mjdref=55000)
         ts2.change_mjdref(54000, inplace=True)
         with pytest.warns(UserWarning, match="MJDref is different in the two time series"):
@@ -554,16 +561,20 @@ class TestStingrayTimeseries:
         assert np.array_equal(lc.time, ts2.time)
         assert np.array_equal(lc.mjdref, ts2.mjdref)
 
-    def test_sub_with_gti(self):
-        time = [10, 20, 30]
-        count1 = [600, 1200, 800]
-        count2 = [300, 100, 400]
+    def test_operation_with_diff_gti(self):
+        time = [10, 20, 30, 40]
+        count1 = [600, 1200, 800, 400]
+        count2 = [300, 100, 400, 100]
         gti1 = [[0, 35]]
         gti2 = [[5, 40]]
         ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=10)
         ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=10)
-        lc = ts1 - ts2
+        with pytest.warns(
+            UserWarning, match="The good time intervals in the two time series are different."
+        ):
+            lc = ts1 - ts2
         assert np.allclose(lc.counts, [300, 1100, 400])
+        assert np.allclose(lc.time, [10, 20, 30])
 
     def test_len(self):
         assert len(self.sting_obj) == 10
