@@ -1519,7 +1519,7 @@ class StingrayTimeseries(StingrayObject):
         >>> time = [5, 10, 15]
         >>> count1 = [300, 100, 400]
         >>> count2 = [600, 1200, 800]
-        >>> gti1 = [[0, 20]]
+        >>> gti1 = [[0, 25]]
         >>> gti2 = [[0, 25]]
         >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=5)
         >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=5)
@@ -1549,7 +1549,7 @@ class StingrayTimeseries(StingrayObject):
         >>> count1 = [600, 1200, 800]
         >>> count2 = [300, 100, 400]
         >>> gti1 = [[0, 35]]
-        >>> gti2 = [[5, 40]]
+        >>> gti2 = [[0, 35]]
         >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=10)
         >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=10)
         >>> ts = ts1 - ts2

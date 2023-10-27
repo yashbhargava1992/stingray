@@ -678,7 +678,7 @@ class Lightcurve(StingrayTimeseries):
         >>> count1 = [600, 1200, 800]
         >>> count2 = [300, 100, 400]
         >>> gti1 = [[0, 35]]
-        >>> gti2 = [[5, 40]]
+        >>> gti2 = [[0, 35]]
         >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=10)
         >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=10)
         >>> lc = lc1 - lc2
