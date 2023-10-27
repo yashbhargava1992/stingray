@@ -581,6 +581,11 @@ class Lightcurve(StingrayTimeseries):
             other = other.change_mjdref(self.mjdref)
 
         common_gti = cross_two_gtis(self.gti, other.gti)
+        if not np.array_equal(self.gti, common_gti):
+            warnings.warn(
+                "The good time intervals in the two time series are different. Data outside the "
+                "common GTIs will be discarded."
+            )
         mask_self = create_gti_mask(self.time, common_gti, dt=self.dt)
         mask_other = create_gti_mask(other.time, common_gti, dt=other.dt)
 

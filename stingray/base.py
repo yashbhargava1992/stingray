@@ -1481,6 +1481,10 @@ class StingrayTimeseries(StingrayObject):
         if not np.array_equal(self.gti, other.gti):
             from .gti import cross_two_gtis
 
+            warnings.warn(
+                "The good time intervals in the two time series are different. Data outside the "
+                "common GTIs will be discarded."
+            )
             common_gti = cross_two_gtis(self.gti, other.gti)
             masked_self = self.apply_gtis(common_gti)
             masked_other = other.apply_gtis(common_gti)
