@@ -51,6 +51,42 @@ class TestGTI(object):
         newgti = cross_gtis([gti1, gti2, gti3])
         assert len(newgti) == 0
 
+    def test_crossgti5(self):
+        """A more complicated example of intersection of GTIs."""
+        gti1 = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
+        gti2 = np.array([[0.5, 14]])
+        newgti0 = cross_gtis([gti1, gti2])
+        newgti1 = cross_gtis([gti2, gti1])
+
+        assert np.allclose(gti1, np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]]))
+        assert np.allclose(gti2, np.array([[0.5, 14]]))
+        for newgti in [newgti0, newgti1]:
+            assert np.allclose(newgti, gti1)
+
+    def test_crossgti6(self):
+        """A more complicated example of intersection of GTIs."""
+        gti1 = np.array([[1.5, 12.5]])
+        gti2 = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
+        newgti0 = cross_gtis([gti1, gti2])
+        newgti1 = cross_gtis([gti2, gti1])
+
+        for newgti in [newgti0, newgti1]:
+            assert np.allclose(
+                newgti, np.array([[1.5, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 12.5]])
+            )
+
+    def test_crossgti7(self):
+        """A more complicated example of intersection of GTIs."""
+        gti1 = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
+        gti2 = np.array([[0.5, 3], [4.5, 4.7], [10, 14]])
+        newgti0 = cross_gtis([gti1, gti2])
+        newgti1 = cross_gtis([gti2, gti1])
+
+        assert np.allclose(gti1, np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]]))
+        assert np.allclose(gti2, np.array([[0.5, 3], [4.5, 4.7], [10, 14]]))
+        for newgti in [newgti0, newgti1]:
+            assert np.allclose(newgti, np.array([[1, 2], [4.5, 4.7], [11, 11.2], [12.2, 13.2]]))
+
     def test_bti(self):
         """Test the inversion of GTIs."""
         gti = np.array([[1, 2], [4, 5], [7, 10], [11, 11.2], [12.2, 13.2]])
