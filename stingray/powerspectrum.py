@@ -13,11 +13,11 @@ from stingray.gti import bin_intervals_from_gtis, check_gtis
 from stingray.stats import pds_probability, amplitude_upper_limit
 
 from .events import EventList
-from .gti import cross_two_gtis
+from .gti import cross_two_gtis, time_intervals_from_gtis
+
 from .lightcurve import Lightcurve
 from .fourier import avg_pds_from_iterable, unnormalize_periodograms
 from .fourier import avg_pds_from_events
-from .fourier import fftfreq, fft
 from .fourier import get_flux_iterable_from_segments
 from .fourier import rms_calculation, poisson_level
 
@@ -991,15 +991,10 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         self.freq = avg.freq
         current_gti = avg.gti
 
-        from .gti import time_intervals_from_gtis
+        tstart, _ = time_intervals_from_gtis(current_gti, self.segment_size)
 
-        tstart, tend = time_intervals_from_gtis(current_gti, self.segment_size)
-
-        self.time = tstart + 0.5 * (tend - tstart)
-        if len(self.freq) < 2:
-            self.df = 1 / self.segment_size
-        else:
-            self.df = self.freq[1] - self.freq[0]
+        self.time = tstart + 0.5 * self.segment_size
+        self.df = avg.df
         self.dt = self.segment_size
 
     def rebin_frequency(self, df_new, method="sum"):
