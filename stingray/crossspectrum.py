@@ -15,6 +15,7 @@ from stingray.utils import rebin_data, rebin_data_log, simon
 
 from .base import StingrayObject
 from .events import EventList
+from .gti import cross_two_gtis, time_intervals_from_gtis
 from .lightcurve import Lightcurve
 from .utils import show_progress
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
@@ -28,6 +29,7 @@ from scipy.special import factorial
 __all__ = [
     "Crossspectrum",
     "AveragedCrossspectrum",
+    "DynamicalCrossspectrum",
     "cospectra_pvalue",
     "normalize_crossspectrum",
     "time_lag",
@@ -377,7 +379,7 @@ def cospectra_pvalue(power, nspec):
     the data.
 
     Important: the underlying assumption that make this calculation valid
-    is that the powers in the power spectrum follow a Laplace distribution,
+    is that the powers in the cross spectrum follow a Laplace distribution,
     and this requires that:
 
     1. the co-spectrum is normalized according to [Leahy 1983]_
@@ -403,7 +405,7 @@ def cospectra_pvalue(power, nspec):
         the signal-to-noise ratio, i.e. makes the statistical distributions
         of the noise narrower, such that a smaller power might be very
         significant in averaged spectra even though it would not be in a single
-        power spectrum.
+        cross spectrum.
 
     Returns
     -------
@@ -1878,6 +1880,236 @@ class AveragedCrossspectrum(Crossspectrum):
         lag_err = ph_lag_err / (2 * np.pi * self.freq)
 
         return lag, lag_err
+
+
+class DynamicalCrossspectrum(AveragedCrossspectrum):
+    type = "crossspectrum"
+    """
+    Create a dynamical cross spectrum, also often called a *spectrogram*.
+
+    This class will divide two :class:`Lightcurve` objects into segments of
+    length ``segment_size``, create a cross spectrum for each segment and store
+    all powers in a matrix as a function of both time (using the mid-point of
+    each segment) and frequency.
+
+    This is often used to trace changes in period of a (quasi-)periodic signal
+    over time.
+
+    Parameters
+    ----------
+    data1 : :class:`stingray.Lightcurve` or :class:`stingray.EventList` object
+        The time series or event list from the subject band, or channel, for which
+        the dynamical cross spectrum is to be calculated.
+
+    data2 : :class:`stingray.Lightcurve` or :class:`stingray.EventList` object
+        The time series or event list from the reference band, or channel, of the dynamical
+        cross spectrum.
+
+    segment_size : float, default 1
+         Length of the segment of light curve, default value is 1 (in whatever
+         units the ``time`` array in the :class:`Lightcurve`` object uses).
+
+    norm: {"leahy" | "frac" | "abs" | "none" }, optional, default "frac"
+        The normaliation of the periodogram to be used.
+
+    Other Parameters
+    ----------------
+    gti: 2-d float array
+        ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]`` -- Good Time intervals.
+        This choice overrides the GTIs in the single light curves. Use with
+        care, especially if these GTIs have overlaps with the input
+        object GTIs! If you're getting errors regarding your GTIs, don't
+        use this and only give GTIs to the input object before making
+        the cross spectrum.
+
+    Attributes
+    ----------
+    segment_size: float
+        The size of each segment to average. Note that if the total
+        duration of each input object in lc is not an integer multiple
+        of the ``segment_size``, then any fraction left-over at the end of the
+        time series will be lost.
+
+    dyn_ps : np.ndarray
+        The matrix of normalized squared absolute values of Fourier
+        amplitudes. The axis are given by the ``freq``
+        and ``time`` attributes.
+
+    norm: {``leahy`` | ``frac`` | ``abs`` | ``none``}
+        The normalization of the periodogram.
+
+    freq: numpy.ndarray
+        The array of mid-bin frequencies that the Fourier transform samples.
+
+    df: float
+        The frequency resolution.
+
+    dt: float
+        The time resolution.
+    """
+
+    def __init__(self, data1, data2, segment_size, norm="frac", gti=None, dt=None):
+        if isinstance(data1, EventList) and dt is None:
+            raise ValueError("To pass input event lists, please specify dt")
+        elif isinstance(data1, Lightcurve):
+            dt = data1.dt
+            if segment_size > data1.tseg:
+                raise ValueError(
+                    "Length of the segment is too long to create "
+                    "any segments of the light curve!"
+                )
+        if segment_size < 2 * dt:
+            raise ValueError("Length of the segment is too short to form a light curve!")
+
+        self.segment_size = segment_size
+        self.input_dt = dt
+        self.gti = gti
+        self.norm = norm
+
+        self._make_matrix(data1, data2)
+
+    def _make_matrix(self, data1, data2):
+        """
+        Create a matrix of powers for each time step and each frequency step.
+
+        Time increases with row index, frequency with column index.
+
+        Parameters
+        ----------
+        data1 : :class:`Lightcurve` or :class:`EventList`
+            The object providing the subject band/channel for the dynamical
+            cross spectrum.
+        data2 : :class:`Lightcurve` or :class:`EventList`
+            The object providing the reference band for the dynamical
+            cross spectrum.
+        """
+        avg = AveragedCrossspectrum(
+            data1,
+            data2,
+            dt=self.input_dt,
+            segment_size=self.segment_size,
+            norm=self.norm,
+            gti=self.gti,
+            save_all=True,
+        )
+        self.dyn_ps = np.array(avg.cs_all).T
+        self.freq = avg.freq
+        current_gti = avg.gti
+
+        tstart, _ = time_intervals_from_gtis(current_gti, self.segment_size)
+
+        self.time = tstart + 0.5 * self.segment_size
+        self.df = avg.df
+        self.dt = self.segment_size
+
+    def rebin_frequency(self, df_new, method="sum"):
+        """
+        Rebin the Dynamic Power Spectrum to a new frequency resolution.
+        Rebinning is an in-place operation, i.e. will replace the existing
+        ``dyn_ps`` attribute.
+
+        While the new resolution need not be an integer multiple of the
+        previous frequency resolution, be aware that if it is not, the last
+        bin will be cut off by the fraction left over by the integer division.
+
+        Parameters
+        ----------
+        df_new: float
+            The new frequency resolution of the dynamical power spectrum.
+            Must be larger than the frequency resolution of the old dynamical
+            power spectrum!
+
+        method: {"sum" | "mean" | "average"}, optional, default "sum"
+            This keyword argument sets whether the counts in the new bins
+            should be summed or averaged.
+        """
+        new_dynspec_object = copy.deepcopy(self)
+        dynspec_new = []
+        for data in self.dyn_ps.T:
+            freq_new, bin_counts, bin_err, _ = rebin_data(
+                self.freq, data, dx_new=df_new, method=method
+            )
+            dynspec_new.append(bin_counts)
+
+        new_dynspec_object.freq = freq_new
+        new_dynspec_object.dyn_ps = np.array(dynspec_new).T
+        new_dynspec_object.df = df_new
+        return new_dynspec_object
+
+    def rebin_time(self, dt_new, method="sum"):
+        """
+        Rebin the Dynamic Power Spectrum to a new time resolution.
+        While the new resolution need not be an integer multiple of the
+        previous time resolution, be aware that if it is not, the last bin
+        will be cut off by the fraction left over by the integer division.
+
+        Parameters
+        ----------
+        dt_new: float
+            The new time resolution of the dynamical power spectrum.
+            Must be larger than the time resolution of the old dynamical power
+            spectrum!
+
+        method: {"sum" | "mean" | "average"}, optional, default "sum"
+            This keyword argument sets whether the counts in the new bins
+            should be summed or averaged.
+
+        Returns
+        -------
+        time_new: numpy.ndarray
+            Time axis with new rebinned time resolution.
+
+        dynspec_new: numpy.ndarray
+            New rebinned Dynamical Power Spectrum.
+        """
+        if dt_new < self.dt:
+            raise ValueError("New time resolution must be larger than old time resolution!")
+
+        new_dynspec_object = copy.deepcopy(self)
+
+        dynspec_new = []
+        for data in self.dyn_ps:
+            time_new, bin_counts, _, _ = rebin_data(
+                self.time, data, dt_new, method=method, dx=self.dt
+            )
+            dynspec_new.append(bin_counts)
+
+        new_dynspec_object.time = time_new
+        new_dynspec_object.dyn_ps = np.array(dynspec_new)
+        new_dynspec_object.dt = dt_new
+        return new_dynspec_object
+
+    def trace_maximum(self, min_freq=None, max_freq=None):
+        """
+        Return the indices of the maximum powers in each segment
+        :class:`Powerspectrum` between specified frequencies.
+
+        Parameters
+        ----------
+        min_freq: float, default ``None``
+            The lower frequency bound.
+
+        max_freq: float, default ``None``
+            The upper frequency bound.
+
+        Returns
+        -------
+        max_positions : np.array
+            The array of indices of the maximum power in each segment having
+            frequency between ``min_freq`` and ``max_freq``.
+        """
+        if min_freq is None:
+            min_freq = np.min(self.freq)
+        if max_freq is None:
+            max_freq = np.max(self.freq)
+
+        max_positions = []
+        for ps in self.dyn_ps.T:
+            indices = np.logical_and(self.freq <= max_freq, min_freq <= self.freq)
+            max_power = np.max(ps[indices])
+            max_positions.append(np.where(ps == max_power)[0][0])
+
+        return np.array(max_positions)
 
 
 def crossspectrum_from_time_array(
