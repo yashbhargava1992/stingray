@@ -1925,7 +1925,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
     dt: float
         Compulsory for input :class:`stingray.EventList` data. The time resolution of the
-        lightcurve that is  created internally from the input event lists. Drives the
+        lightcurve that is created internally from the input event lists. Drives the
         Nyquist frequency.
 
     Attributes
@@ -2014,9 +2014,9 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         Rebinning is an in-place operation, i.e. will replace the existing
         ``dyn_ps`` attribute.
 
-        While the new resolution need not be an integer multiple of the
-        previous frequency resolution, be aware that if it is not, the last
-        bin will be cut off by the fraction left over by the integer division.
+        While the new resolution does not need to be an integer of the previous frequency
+        resolution, be aware that if this is the case, the last frequency bin will be cut
+        off by the fraction left over by the integer division
 
         Parameters
         ----------
@@ -2045,9 +2045,10 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
     def rebin_time(self, dt_new, method="sum"):
         """
         Rebin the Dynamic Power Spectrum to a new time resolution.
-        While the new resolution need not be an integer multiple of the
-        previous time resolution, be aware that if it is not, the last bin
-        will be cut off by the fraction left over by the integer division.
+
+        While the new resolution does not need to be an integer of the previous time
+        resolution, be aware that if this is the case, the last frequency bin will be cut
+        off by the fraction left over by the integer division
 
         Parameters
         ----------
@@ -2066,7 +2067,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             Time axis with new rebinned time resolution.
 
         dynspec_new: numpy.ndarray
-            New rebinned Dynamical Power Spectrum.
+            New rebinned Dynamical Cross Spectrum.
         """
         if dt_new < self.dt:
             raise ValueError("New time resolution must be larger than old time resolution!")
