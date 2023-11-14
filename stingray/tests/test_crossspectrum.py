@@ -1354,7 +1354,7 @@ class TestDynamicalCrossspectrum(object):
             # Without dt, it fails
             _ = DynamicalCrossspectrum(ev, ev, segment_size=10)
 
-        dps_ev = DynamicalCrossspectrum(ev, ev, segment_size=10, dt=self.lc.dt)
+        dps_ev = DynamicalCrossspectrum(ev, ev, segment_size=10, sample_time=self.lc.dt)
         assert np.allclose(dps.dyn_ps, dps_ev.dyn_ps)
 
     def test_with_long_seg_size(self):

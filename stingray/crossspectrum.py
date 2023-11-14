@@ -1923,7 +1923,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         use this and only give GTIs to the input object before making
         the cross spectrum.
 
-    dt: float
+    sample_time: float
         Compulsory for input :class:`stingray.EventList` data. The time resolution of the
         lightcurve that is created internally from the input event lists. Drives the
         Nyquist frequency.
@@ -1947,28 +1947,33 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
     freq: numpy.ndarray
         The array of mid-bin frequencies that the Fourier transform samples.
 
+    time: numpy.ndarray
+        The array of mid-point times of each interval used for the dynamical
+        power spectrum.
+
     df: float
         The frequency resolution.
 
     dt: float
-        The time resolution.
+        The time resolution of the dynamical spectrum. It is **not** the time resolution of the
+        input light curve.
     """
 
-    def __init__(self, data1, data2, segment_size, norm="frac", gti=None, dt=None):
-        if isinstance(data1, EventList) and dt is None:
-            raise ValueError("To pass input event lists, please specify dt")
+    def __init__(self, data1, data2, segment_size, norm="frac", gti=None, sample_time=None):
+        if isinstance(data1, EventList) and sample_time is None:
+            raise ValueError("To pass input event lists, please specify sample_time")
         elif isinstance(data1, Lightcurve):
-            dt = data1.dt
+            sample_time = data1.dt
             if segment_size > data1.tseg:
                 raise ValueError(
                     "Length of the segment is too long to create "
                     "any segments of the light curve!"
                 )
-        if segment_size < 2 * dt:
+        if segment_size < 2 * sample_time:
             raise ValueError("Length of the segment is too short to form a light curve!")
 
         self.segment_size = segment_size
-        self.input_dt = dt
+        self.sample_time = sample_time
         self.gti = gti
         self.norm = norm
 
@@ -1992,7 +1997,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         avg = AveragedCrossspectrum(
             data1,
             data2,
-            dt=self.input_dt,
+            dt=self.sample_time,
             segment_size=self.segment_size,
             norm=self.norm,
             gti=self.gti,

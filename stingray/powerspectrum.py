@@ -919,7 +919,7 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
         use this and only give GTIs to the input object before making
         the power spectrum.
 
-    dt: float
+    sample_time: float
         Compulsory for input :class:`stingray.EventList` data. The time resolution of the
         lightcurve that is created internally from the input event lists. Drives the
         Nyquist frequency.
@@ -950,21 +950,21 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
         The time resolution.
     """
 
-    def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
-        if isinstance(lc, EventList) and dt is None:
-            raise ValueError("To pass an input event lists, please specify dt")
+    def __init__(self, lc, segment_size, norm="frac", gti=None, sample_time=None):
+        if isinstance(lc, EventList) and sample_time is None:
+            raise ValueError("To pass an input event lists, please specify sample_time")
         elif isinstance(lc, Lightcurve):
-            dt = lc.dt
+            sample_time = lc.dt
             if segment_size > lc.tseg:
                 raise ValueError(
                     "Length of the segment is too long to create "
                     "any segments of the light curve!"
                 )
-        if segment_size < 2 * dt:
+        if segment_size < 2 * sample_time:
             raise ValueError("Length of the segment is too short to form a light curve!")
 
         self.segment_size = segment_size
-        self.input_dt = dt
+        self.sample_time = sample_time
         self.gti = gti
         self.norm = norm
 
@@ -984,7 +984,7 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
         """
         avg = AveragedPowerspectrum(
             lc,
-            dt=self.input_dt,
+            dt=self.sample_time,
             segment_size=self.segment_size,
             norm=self.norm,
             gti=self.gti,
