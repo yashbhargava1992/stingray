@@ -1899,11 +1899,12 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
     ----------
     data1 : :class:`stingray.Lightcurve` or :class:`stingray.EventList` object
         The time series or event list from the subject band, or channel, for which
-        the dynamical cross spectrum is to be calculated.
+        the dynamical cross spectrum is to be calculated. If :class:`stingray.EventList`, ``dt``
+        must be specified as well.
 
     data2 : :class:`stingray.Lightcurve` or :class:`stingray.EventList` object
         The time series or event list from the reference band, or channel, of the dynamical
-        cross spectrum.
+        cross spectrum. If :class:`stingray.EventList`, ``dt`` must be specified as well.
 
     segment_size : float, default 1
          Length of the segment of light curve, default value is 1 (in whatever
@@ -1921,6 +1922,11 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         object GTIs! If you're getting errors regarding your GTIs, don't
         use this and only give GTIs to the input object before making
         the cross spectrum.
+
+    dt: float
+        Compulsory for input :class:`stingray.EventList` data. The time resolution of the
+        lightcurve that is  created internally from the input event lists. Drives the
+        Nyquist frequency.
 
     Attributes
     ----------

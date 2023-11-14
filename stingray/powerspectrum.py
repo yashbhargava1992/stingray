@@ -900,7 +900,7 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
     ----------
     lc : :class:`stingray.Lightcurve` or :class:`stingray.EventList` object
         The time series or event list of which the dynamical power spectrum is
-        to be calculated.
+        to be calculated. If :class:`stingray.EventList`, ``dt`` must be specified as well.
 
     segment_size : float, default 1
          Length of the segment of light curve, default value is 1 (in whatever
@@ -918,6 +918,11 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
         object GTIs! If you're getting errors regarding your GTIs, don't
         use this and only give GTIs to the input object before making
         the power spectrum.
+
+    dt: float
+        Compulsory for input :class:`stingray.EventList` data. The time resolution of the
+        lightcurve that is created internally from the input event lists. Drives the
+        Nyquist frequency.
 
     Attributes
     ----------
