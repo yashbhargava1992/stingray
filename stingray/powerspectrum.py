@@ -943,6 +943,10 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
     freq: numpy.ndarray
         The array of mid-bin frequencies that the Fourier transform samples.
 
+    time: numpy.ndarray
+        The array of mid-point times of each interval used for the dynamical
+        power spectrum.
+
     df: float
         The frequency resolution.
 
