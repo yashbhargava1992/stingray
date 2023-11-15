@@ -1359,15 +1359,15 @@ class TestDynamicalCrossspectrum(object):
 
     def test_works_with_events_and_its_complex(self):
         lc = copy.deepcopy(self.lc)
-        lc.counts = np.floor(lc.counts)
+        lc.counts = np.random.poisson(10, size=lc.counts.size)
         ev1 = EventList()
         ev1.simulate_times(lc)
         ev2 = EventList()
         ev2.simulate_times(lc)
 
-        dps_ev = DynamicalCrossspectrum(ev1, ev1, segment_size=10, sample_time=self.lc.dt)
+        dps_ev = DynamicalCrossspectrum(ev1, ev2, segment_size=10, sample_time=self.lc.dt)
         assert np.iscomplexobj(dps_ev.dyn_ps)
-        assert np.any(dps_ev.dyn_ps.imag > np.dps_ev.dyn_ps.real)
+        assert np.any(dps_ev.dyn_ps.imag > dps_ev.dyn_ps.real)
         assert np.any(dps_ev.dyn_ps.imag < 0)
         assert np.any(dps_ev.dyn_ps.imag > 0)
 
