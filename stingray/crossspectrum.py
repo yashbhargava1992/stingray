@@ -2052,8 +2052,8 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         """
         Rebin the Dynamic Power Spectrum to a new time resolution.
 
-        Note: this is *not* the time resolution of the input light
-        curve! It is the integration time of each line of the dynamical power
+        Note: this is *not* changing the time resolution of the input light
+        curve! ``dt`` is the integration time of each line of the dynamical power
         spectrum (typically, an integer multiple of ``segment_size``).
 
         While the new resolution does not need to be an integer of the previous time
