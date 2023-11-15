@@ -1357,6 +1357,20 @@ class TestDynamicalCrossspectrum(object):
         dps_ev = DynamicalCrossspectrum(ev, ev, segment_size=10, sample_time=self.lc.dt)
         assert np.allclose(dps.dyn_ps, dps_ev.dyn_ps)
 
+    def test_works_with_events_and_its_complex(self):
+        lc = copy.deepcopy(self.lc)
+        lc.counts = np.floor(lc.counts)
+        ev1 = EventList()
+        ev1.simulate_times(lc)
+        ev2 = EventList()
+        ev2.simulate_times(lc)
+
+        dps_ev = DynamicalCrossspectrum(ev1, ev1, segment_size=10, sample_time=self.lc.dt)
+        assert np.iscomplexobj(dps_ev.dyn_ps)
+        assert np.any(dps_ev.dyn_ps.imag > np.dps_ev.dyn_ps.real)
+        assert np.any(dps_ev.dyn_ps.imag < 0)
+        assert np.any(dps_ev.dyn_ps.imag > 0)
+
     def test_with_long_seg_size(self):
         with pytest.raises(ValueError):
             dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=1000)
