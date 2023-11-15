@@ -2053,7 +2053,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         Rebin the Dynamic Power Spectrum to a new time resolution.
 
         While the new resolution does not need to be an integer of the previous time
-        resolution, be aware that if this is the case, the last frequency bin will be cut
+        resolution, be aware that if this is the case, the last time bin will be cut
         off by the fraction left over by the integer division
 
         Parameters
