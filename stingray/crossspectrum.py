@@ -1956,7 +1956,8 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
     dt: float
         The time resolution of the dynamical spectrum. It is **not** the time resolution of the
-        input light curve.
+        input light curve. It is the integration time of each line of the dynamical power
+        spectrum (typically, an integer multiple of ``segment_size``).
     """
 
     def __init__(self, data1, data2, segment_size, norm="frac", gti=None, sample_time=None):
@@ -2060,7 +2061,9 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         dt_new: float
             The new time resolution of the dynamical power spectrum.
             Must be larger than the time resolution of the old dynamical power
-            spectrum!
+            spectrum! Note: this is *not* the time resolution of the input light
+            curve! It is the integration time of each line of the dynamical power
+            spectrum (typically, an integer multiple of ``segment_size``).
 
         method: {"sum" | "mean" | "average"}, optional, default "sum"
             This keyword argument sets whether the counts in the new bins
