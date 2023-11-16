@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import scipy.special
 from astropy.io import fits
 from stingray import Lightcurve
-from stingray import Crossspectrum, AveragedCrossspectrum
+from stingray import Crossspectrum, AveragedCrossspectrum, DynamicalCrossspectrum
 from stingray.crossspectrum import cospectra_pvalue
 from stingray.crossspectrum import normalize_crossspectrum, normalize_crossspectrum_gauss
 from stingray.crossspectrum import coherence, time_lag
@@ -1316,3 +1316,181 @@ class TestRoundTrip:
         os.unlink(fname)
 
         self._check_equal(so, new_so)
+
+
+class TestDynamicalCrossspectrum(object):
+    def setup_class(cls):
+        # generate timestamps
+        timestamps = np.arange(0.005, 100.01, 0.01)
+        dt = 0.01
+        freq = 25 + 1.2 * np.sin(2 * np.pi * timestamps / 130)
+        # variability signal with drifiting frequency
+        vari = 25 * np.sin(2 * np.pi * freq * timestamps)
+        signal = vari + 50
+        # create a lightcurve
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+
+            lc = Lightcurve(timestamps, signal, err_dist="poisson", dt=dt, gti=[[0, 100]])
+
+        cls.lc = lc
+
+        # Simple lc to demonstrate rebinning of dyn ps
+        # Simple lc to demonstrate rebinning of dyn ps
+        test_times = np.arange(16)
+        test_counts = [2, 3, 1, 3, 1, 5, 2, 1, 4, 2, 2, 2, 3, 4, 1, 7]
+        cls.lc_test = Lightcurve(test_times, test_counts)
+
+    def test_with_short_seg_size(self):
+        with pytest.raises(ValueError):
+            dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=0)
+
+    def test_works_with_events(self):
+        lc = copy.deepcopy(self.lc)
+        lc.counts = np.floor(lc.counts)
+        ev = EventList.from_lc(lc)
+        dps = DynamicalCrossspectrum(lc, lc, segment_size=10)
+        with pytest.raises(ValueError):
+            # Without dt, it fails
+            _ = DynamicalCrossspectrum(ev, ev, segment_size=10)
+
+        dps_ev = DynamicalCrossspectrum(ev, ev, segment_size=10, sample_time=self.lc.dt)
+        assert np.allclose(dps.dyn_ps, dps_ev.dyn_ps)
+
+    def test_works_with_events_and_its_complex(self):
+        lc = copy.deepcopy(self.lc)
+        lc.counts = np.random.poisson(10, size=lc.counts.size)
+        ev1 = EventList()
+        ev1.simulate_times(lc)
+        ev2 = EventList()
+        ev2.simulate_times(lc)
+
+        dps_ev = DynamicalCrossspectrum(ev1, ev2, segment_size=10, sample_time=self.lc.dt)
+        assert np.iscomplexobj(dps_ev.dyn_ps)
+        assert np.any(dps_ev.dyn_ps.imag > dps_ev.dyn_ps.real)
+        assert np.any(dps_ev.dyn_ps.imag < 0)
+        assert np.any(dps_ev.dyn_ps.imag > 0)
+
+    def test_with_long_seg_size(self):
+        with pytest.raises(ValueError):
+            dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=1000)
+
+    def test_matrix(self):
+        dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=3)
+        nsegs = int(self.lc.tseg / dps.segment_size)
+        nfreq = int((1 / self.lc.dt) / (2 * (dps.freq[1] - dps.freq[0])) - (1 / self.lc.tseg))
+        assert dps.dyn_ps.shape == (nfreq, nsegs)
+
+    def test_trace_maximum_without_boundaries(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=3)
+        max_pos = dps.trace_maximum()
+
+        assert np.max(dps.freq[max_pos]) <= 1 / self.lc.dt
+        assert np.min(dps.freq[max_pos]) >= 1 / dps.segment_size
+
+    def test_trace_maximum_with_boundaries(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=3)
+        minfreq = 21
+        maxfreq = 24
+        max_pos = dps.trace_maximum(min_freq=minfreq, max_freq=maxfreq)
+
+        assert np.max(dps.freq[max_pos]) <= maxfreq
+        assert np.min(dps.freq[max_pos]) >= minfreq
+
+    def test_size_of_trace_maximum(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=3)
+        max_pos = dps.trace_maximum()
+        nsegs = int(self.lc.tseg / dps.segment_size)
+        assert len(max_pos) == nsegs
+
+    def test_rebin_small_dt(self):
+        segment_size = 3
+        dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
+        with pytest.raises(ValueError):
+            dps.rebin_time(dt_new=2.0)
+
+    def test_rebin_small_df(self):
+        segment_size = 3
+        dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=segment_size)
+        with pytest.raises(ValueError):
+            dps.rebin_frequency(df_new=dps.df / 2.0)
+
+    def test_rebin_time_default_method(self):
+        segment_size = 3
+        dt_new = 6.0
+        rebin_time = np.array([2.5, 8.5])
+        rebin_dps = np.array([[1.73611111, 0.81018519]])
+        dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
+        new_dps = dps.rebin_time(dt_new=dt_new)
+        assert np.allclose(new_dps.time, rebin_time)
+        assert np.allclose(new_dps.dyn_ps, rebin_dps)
+        assert np.isclose(new_dps.dt, dt_new)
+
+    def test_rebin_frequency_default_method(self):
+        segment_size = 50
+        df_new = 10.0
+        rebin_freq = np.array([5.01, 15.01, 25.01, 35.01])
+        rebin_dps = np.array(
+            [
+                [
+                    [1.71989342e-04, 6.42756881e-05],
+                    [7.54455204e-04, 2.14785049e-04],
+                    [6.24831554e00, 6.24984615e00],
+                    [6.71135792e-04, 7.42516599e-05],
+                ]
+            ]
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=segment_size)
+        new_dps = dps.rebin_frequency(df_new=df_new)
+        assert np.allclose(new_dps.freq, rebin_freq)
+        assert np.allclose(new_dps.dyn_ps, rebin_dps, atol=0.01)
+        assert np.isclose(new_dps.df, df_new)
+
+    @pytest.mark.parametrize("method", ["mean", "average"])
+    def test_rebin_time_mean_method(self, method):
+        segment_size = 3
+        dt_new = 6.0
+        rebin_time = np.array([2.5, 8.5])
+        rebin_dps = np.array([[1.73611111, 0.81018519]]) / 2
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
+        new_dps = dps.rebin_time(dt_new=dt_new, method=method)
+        assert np.allclose(new_dps.time, rebin_time)
+        assert np.allclose(new_dps.dyn_ps, rebin_dps)
+        assert np.isclose(new_dps.dt, dt_new)
+
+    @pytest.mark.parametrize("method", ["mean", "average"])
+    def test_rebin_frequency_mean_method(self, method):
+        segment_size = 50
+        df_new = 10.0
+        rebin_freq = np.array([5.01, 15.01, 25.01, 35.01])
+        rebin_dps = (
+            np.array(
+                [
+                    [
+                        [1.71989342e-04, 6.42756881e-05],
+                        [7.54455204e-04, 2.14785049e-04],
+                        [6.24831554e00, 6.24984615e00],
+                        [6.71135792e-04, 7.42516599e-05],
+                    ]
+                ]
+            )
+            / 500
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=segment_size)
+        new_dps = dps.rebin_frequency(df_new=df_new, method=method)
+        assert np.allclose(new_dps.freq, rebin_freq)
+        assert np.allclose(new_dps.dyn_ps, rebin_dps, atol=0.00001)
+        assert np.isclose(new_dps.df, df_new)

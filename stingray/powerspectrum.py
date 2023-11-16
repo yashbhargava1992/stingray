@@ -7,17 +7,15 @@ import scipy
 import scipy.optimize
 import scipy.stats
 
-import stingray.utils as utils
-from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum
-from stingray.gti import bin_intervals_from_gtis, check_gtis
+from stingray.crossspectrum import AveragedCrossspectrum, Crossspectrum, DynamicalCrossspectrum
 from stingray.stats import pds_probability, amplitude_upper_limit
 
 from .events import EventList
-from .gti import cross_two_gtis
+from .gti import cross_two_gtis, time_intervals_from_gtis
+
 from .lightcurve import Lightcurve
 from .fourier import avg_pds_from_iterable, unnormalize_periodograms
 from .fourier import avg_pds_from_events
-from .fourier import fftfreq, fft
 from .fourier import get_flux_iterable_from_segments
 from .fourier import rms_calculation, poisson_level
 
@@ -885,7 +883,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         return AveragedCrossspectrum.initial_checks(self, *args, **kwargs)
 
 
-class DynamicalPowerspectrum(AveragedPowerspectrum):
+class DynamicalPowerspectrum(DynamicalCrossspectrum):
     type = "powerspectrum"
     """
     Create a dynamical power spectrum, also often called a *spectrogram*.
@@ -902,7 +900,7 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     ----------
     lc : :class:`stingray.Lightcurve` or :class:`stingray.EventList` object
         The time series or event list of which the dynamical power spectrum is
-        to be calculated.
+        to be calculated. If :class:`stingray.EventList`, ``dt`` must be specified as well.
 
     segment_size : float, default 1
          Length of the segment of light curve, default value is 1 (in whatever
@@ -920,6 +918,11 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
         object GTIs! If you're getting errors regarding your GTIs, don't
         use this and only give GTIs to the input object before making
         the power spectrum.
+
+    sample_time: float
+        Compulsory for input :class:`stingray.EventList` data. The time resolution of the
+        lightcurve that is created internally from the input event lists. Drives the
+        Nyquist frequency.
 
     Attributes
     ----------
@@ -940,29 +943,37 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
     freq: numpy.ndarray
         The array of mid-bin frequencies that the Fourier transform samples.
 
+    time: numpy.ndarray
+        The array of mid-point times of each interval used for the dynamical
+        power spectrum.
+
     df: float
         The frequency resolution.
 
     dt: float
-        The time resolution.
+        The time resolution of the dynamical spectrum. It is **not** the time resolution of the
+        input light curve. It is the integration time of each line of the dynamical power
+        spectrum (typically, an integer multiple of ``segment_size``).
     """
 
-    def __init__(self, lc, segment_size, norm="frac", gti=None, dt=None):
-        if isinstance(lc, EventList) and dt is None:
-            raise ValueError("To pass an input event lists, please specify dt")
+    def __init__(self, lc, segment_size, norm="frac", gti=None, sample_time=None):
+        if isinstance(lc, EventList) and sample_time is None:
+            raise ValueError("To pass an input event lists, please specify sample_time")
+        elif isinstance(lc, Lightcurve):
+            sample_time = lc.dt
+            if segment_size > lc.tseg:
+                raise ValueError(
+                    "Length of the segment is too long to create "
+                    "any segments of the light curve!"
+                )
+        if segment_size < 2 * sample_time:
+            raise ValueError("Length of the segment is too short to form a light curve!")
 
-        if isinstance(lc, EventList):
-            lc = lc.to_lc(dt)
+        self.segment_size = segment_size
+        self.sample_time = sample_time
+        self.gti = gti
+        self.norm = norm
 
-        if segment_size < 2 * lc.dt:
-            raise ValueError("Length of the segment is too short to form a " "light curve!")
-        elif segment_size > lc.tseg:
-            raise ValueError(
-                "Length of the segment is too long to create " "any segments of the light curve!"
-            )
-        AveragedPowerspectrum.__init__(
-            self, data=lc, segment_size=segment_size, norm=norm, gti=gti, dt=dt
-        )
         self._make_matrix(lc)
 
     def _make_matrix(self, lc):
@@ -978,142 +989,22 @@ class DynamicalPowerspectrum(AveragedPowerspectrum):
             power spectrum.
         """
         avg = AveragedPowerspectrum(
-            lc, segment_size=self.segment_size, norm=self.norm, gti=self.gti, save_all=True
+            lc,
+            dt=self.sample_time,
+            segment_size=self.segment_size,
+            norm=self.norm,
+            gti=self.gti,
+            save_all=True,
         )
         self.dyn_ps = np.array(avg.cs_all).T
-
         self.freq = avg.freq
         current_gti = avg.gti
 
-        start_inds, end_inds = bin_intervals_from_gtis(
-            current_gti, self.segment_size, lc.time, dt=lc.dt
-        )
+        tstart, _ = time_intervals_from_gtis(current_gti, self.segment_size)
 
-        tstart = lc.time[start_inds]
-        tend = lc.time[end_inds]
-
-        self.time = tstart + 0.5 * (tend - tstart)
-
-        # Assign length of lightcurve as time resolution if only one value
-        if len(self.time) > 1:
-            self.dt = self.time[1] - self.time[0]
-        else:
-            self.dt = lc.n
-
-        # Assign biggest freq. resolution if only one value
-        if len(self.freq) > 1:
-            self.df = self.freq[1] - self.freq[0]
-        else:
-            self.df = 1 / lc.n
-
-    def rebin_frequency(self, df_new, method="sum"):
-        """
-        Rebin the Dynamic Power Spectrum to a new frequency resolution.
-        Rebinning is an in-place operation, i.e. will replace the existing
-        ``dyn_ps`` attribute.
-
-        While the new resolution need not be an integer multiple of the
-        previous frequency resolution, be aware that if it is not, the last
-        bin will be cut off by the fraction left over by the integer division.
-
-        Parameters
-        ----------
-        df_new: float
-            The new frequency resolution of the dynamical power spectrum.
-            Must be larger than the frequency resolution of the old dynamical
-            power spectrum!
-
-        method: {"sum" | "mean" | "average"}, optional, default "sum"
-            This keyword argument sets whether the counts in the new bins
-            should be summed or averaged.
-        """
-        new_dynspec_object = copy.deepcopy(self)
-        dynspec_new = []
-        for data in self.dyn_ps.T:
-            freq_new, bin_counts, bin_err, _ = utils.rebin_data(
-                self.freq, data, dx_new=df_new, method=method
-            )
-            dynspec_new.append(bin_counts)
-
-        new_dynspec_object.freq = freq_new
-        new_dynspec_object.dyn_ps = np.array(dynspec_new).T
-        new_dynspec_object.df = df_new
-        return new_dynspec_object
-
-    def trace_maximum(self, min_freq=None, max_freq=None):
-        """
-        Return the indices of the maximum powers in each segment
-        :class:`Powerspectrum` between specified frequencies.
-
-        Parameters
-        ----------
-        min_freq: float, default ``None``
-            The lower frequency bound.
-
-        max_freq: float, default ``None``
-            The upper frequency bound.
-
-        Returns
-        -------
-        max_positions : np.array
-            The array of indices of the maximum power in each segment having
-            frequency between ``min_freq`` and ``max_freq``.
-        """
-        if min_freq is None:
-            min_freq = np.min(self.freq)
-        if max_freq is None:
-            max_freq = np.max(self.freq)
-
-        max_positions = []
-        for ps in self.dyn_ps.T:
-            indices = np.logical_and(self.freq <= max_freq, min_freq <= self.freq)
-            max_power = np.max(ps[indices])
-            max_positions.append(np.where(ps == max_power)[0][0])
-
-        return np.array(max_positions)
-
-    def rebin_time(self, dt_new, method="sum"):
-        """
-        Rebin the Dynamic Power Spectrum to a new time resolution.
-        While the new resolution need not be an integer multiple of the
-        previous time resolution, be aware that if it is not, the last bin
-        will be cut off by the fraction left over by the integer division.
-
-        Parameters
-        ----------
-        dt_new: float
-            The new time resolution of  the dynamical power spectrum.
-            Must be larger than the time resolution of the old dynamical power
-            spectrum!
-
-        method: {"sum" | "mean" | "average"}, optional, default "sum"
-            This keyword argument sets whether the counts in the new bins
-            should be summed or averaged.
-
-        Returns
-        -------
-        time_new: numpy.ndarray
-            Time axis with new rebinned time resolution.
-
-        dynspec_new: numpy.ndarray
-            New rebinned Dynamical Power Spectrum.
-        """
-        if dt_new < self.dt:
-            raise ValueError("New time resolution must be larger than " "old time resolution!")
-
-        new_dynspec_object = copy.deepcopy(self)
-
-        dynspec_new = []
-        for data in self.dyn_ps:
-            time_new, bin_counts, bin_err, _ = utils.rebin_data(
-                self.time, data, dt_new, method=method
-            )
-            dynspec_new.append(bin_counts)
-
-        new_dynspec_object.time = time_new
-        new_dynspec_object.dyn_ps = np.array(dynspec_new)
-        new_dynspec_object.dt = dt_new
-        return new_dynspec_object
+        self.time = tstart + 0.5 * self.segment_size
+        self.df = avg.df
+        self.dt = self.segment_size
 
 
 def powerspectrum_from_time_array(
