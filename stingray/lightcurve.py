@@ -326,6 +326,13 @@ class Lightcurve(StingrayTimeseries):
         if gti is not None:
             self._gti = np.asarray(gti)
 
+        if os.name == "nt":
+            warnings.warn(
+                "On Windows, the size of an integer is 32 bits. "
+                "To avoid integer overflow, I'm converting the input array to float"
+            )
+            counts = counts.astype(float)
+
         if input_counts:
             self._counts = np.asarray(counts)
             self._counts_err = err
@@ -348,12 +355,6 @@ class Lightcurve(StingrayTimeseries):
 
         if not skip_checks:
             self.check_lightcurve()
-        if os.name == "nt":
-            warnings.warn(
-                "On Windows, the size of an integer is 32 bits. "
-                "To avoid integer overflow, I'm converting the input array to float"
-            )
-            counts = counts.astype(float)
 
     @property
     def time(self):
