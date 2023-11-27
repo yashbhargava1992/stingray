@@ -142,6 +142,12 @@ class StingrayObject(object):
                 "A StingrayObject needs to have the main_array_attr attribute specified"
             )
 
+    @property
+    def main_array_length(self):
+        if getattr(self, self.main_array_attr, None) is None:
+            return 0
+        return np.shape(np.asarray(getattr(self, self.main_array_attr)))[0]
+
     def array_attrs(self) -> list[str]:
         """List the names of the array attributes of the Stingray Object.
 
@@ -229,6 +235,80 @@ class StingrayObject(object):
         if self.not_array_attr is not None and len(self.not_array_attr) >= 1:
             all_meta_attrs += self.not_array_attr
         return all_meta_attrs
+
+    def dict(self) -> dict:
+        """Return a dictionary representation of the object."""
+        from collections import OrderedDict
+
+        main_attr = self.main_array_attr
+        meta_attrs = self.meta_attrs()
+        array_attrs = self.array_attrs()
+        internal_array_attrs = self.internal_array_attrs()
+
+        results = OrderedDict()
+        results[main_attr] = getattr(self, main_attr)
+
+        for attr in internal_array_attrs:
+            if isinstance(getattr(self.__class__, attr.lstrip("_"), None), property):
+                attr = attr.lstrip("_")
+            results[attr] = getattr(self, attr)
+
+        for attr in array_attrs:
+            results[attr] = getattr(self, attr)
+
+        for attr in meta_attrs:
+            results[attr] = getattr(self, attr)
+
+        return results
+
+    def pretty_print(self, func_to_apply=None, attrs_to_apply=[], attrs_to_discard=[]) -> str:
+        """Return a pretty-printed string representation of the object.
+
+        This is useful for debugging, and for interactive use.
+
+        Optional parameters
+        -------------------
+        func_to_apply : function
+            A function that modifies the attributes listed in ``attrs_to_apply``.
+            It must return the modified attributes and a label to be printed.
+            If ``None``, no function is applied.
+        attrs_to_apply : list of str
+            Attributes to be modified by ``func_to_apply``.
+        attrs_to_discard : list of str
+            Attributes to be discarded from the output.
+        """
+        print(self.__class__.__name__)
+        print("_" * len(self.__class__.__name__))
+        items = self.dict()
+        results = ""
+        np.set_printoptions(threshold=3, edgeitems=1)
+        for attr in items.keys():
+            if attr in attrs_to_discard:
+                continue
+            value = items[attr]
+            label = f"{attr:<15}: {items[attr]}"
+
+            if isinstance(value, Iterable) and not isinstance(value, str):
+                size = np.shape(value)
+                if len(size) == 1:
+                    label += f" (size {size[0]})"
+                else:
+                    label += f" (shape {size})"
+
+            if func_to_apply is not None and attr in attrs_to_apply:
+                new_value, new_label = func_to_apply(items[attr])
+                label += f"\n{attr + ' (' +new_label + ')':<15}: {new_value}"
+
+            results += label + "\n"
+        return results
+
+    def __repr__(self) -> str:
+        """Return a string representation of the object."""
+        return self.pretty_print()
+
+    def __str__(self) -> str:
+        """Return a string representation of the object."""
+        return self.__repr__()
 
     def __eq__(self, other_ts):
         """Compare two :class:`StingrayObject` instances with ``==``.
@@ -1132,6 +1212,14 @@ class StingrayTimeseries(StingrayObject):
         else:
             self._time = np.asarray(time, dtype=np.longdouble)
 
+    def __repr__(self) -> str:
+        """Return a string representation of the object."""
+        return self.pretty_print(
+            attrs_to_apply=["gti", "time", "tstart", "tseg", "tstop"],
+            func_to_apply=lambda x: (np.asarray(x) / 86400 + self.mjdref, "MJD"),
+            attrs_to_discard=["_mask", "header"],
+        )
+
     def _check_value_size(self, value, attr_name, compare_to_attr):
         """Check if the size of a value is compatible with the size of another attribute.
 
@@ -1218,9 +1306,7 @@ class StingrayTimeseries(StingrayObject):
 
     @property
     def n(self):
-        if getattr(self, self.main_array_attr, None) is None:
-            return 0
-        return np.shape(np.asarray(getattr(self, self.main_array_attr)))[0]
+        return self.main_array_length
 
     def __eq__(self, other_ts):
         return super().__eq__(other_ts)

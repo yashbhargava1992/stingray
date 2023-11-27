@@ -62,6 +62,9 @@ class TestStingrayObject:
         sting_obj.panesapa = [[41, 25], [98, 3]]
         cls.sting_obj = sting_obj
 
+    def test_print(self):
+        print(self.sting_obj)
+
     def test_preliminary(self):
         assert np.allclose(self.sting_obj.guefus, self.arr)
 
@@ -396,6 +399,9 @@ class TestStingrayTimeseries:
         )
         cls.sting_obj = sting_obj
         cls.sting_obj_highp = sting_obj_highp
+
+    def test_print(self):
+        print(self.sting_obj)
 
     def test_invalid_instantiation(self):
         with pytest.raises(ValueError, match="Lengths of time and guefus must be equal"):
@@ -1035,6 +1041,9 @@ class TestStingrayTimeseriesSubclass:
         sting_obj.panesapa = np.asarray([[41, 25], [98, 3]])
         sting_obj.gti = np.asarray([[-0.5, 2.5]])
         cls.sting_obj = sting_obj
+
+    def test_print(self):
+        print(self.sting_obj)
 
     def test_astropy_roundtrip(self):
         so = copy.deepcopy(self.sting_obj)

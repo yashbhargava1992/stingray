@@ -352,6 +352,15 @@ class TestLightcurve(object):
         """
         lc = Lightcurve(self.times, self.counts)
 
+    def test_print(self, capsys):
+        lc = Lightcurve(self.times, self.counts, header="TEST")
+
+        print(lc)
+        captured = capsys.readouterr()
+        assert "header" not in captured.out
+        assert "time" in captured.out
+        assert "counts" in captured.out
+
     def test_irregular_time_warning(self):
         """
         Check if inputting an irregularly spaced time iterable throws out

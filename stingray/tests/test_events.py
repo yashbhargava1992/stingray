@@ -66,6 +66,12 @@ class TestEvents(object):
         assert np.allclose(ev.time, times, atol=1e-15)
         assert np.allclose(ev.mjdref, 54600)
 
+    def test_print(self):
+        times = [1.01, 2, 3]
+        ev = EventList(times, mjdref=54600)
+
+        print(ev)
+
     def test_initiate_from_astropy_time(self):
         times = np.sort(np.random.uniform(1e8, 1e8 + 1000, 101).astype(np.longdouble))
         mjdref = 54600
