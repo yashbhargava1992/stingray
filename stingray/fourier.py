@@ -15,6 +15,196 @@ from .gti import (
 from .utils import fft, fftfreq, histogram, show_progress, sum_if_not_none_or_initialize
 
 
+def integrate_power_in_frequency_range(
+    frequency,
+    power,
+    frequency_range,
+    power_err=None,
+    df=None,
+    m=1,
+    poisson_level=0,
+):
+    """
+    Integrate the power in a given frequency range.
+
+    Parameters
+    ----------
+    frequency : iterable
+        The frequencies of the power spectrum
+    power : iterable
+        The power at each frequency
+    frequency_range : iterable of length 2
+        The frequency range to integrate
+    power_err : iterable, optional, default None
+        The power error bar at each frequency
+    df : float or float iterable, optional, default None
+        The frequency resolution of the input data. If None, it is calculated
+        from the median difference of input frequencies.
+    m : int, optional, default 1
+        The number of segments and/or contiguous frequency bins averaged to obtain power.
+        Only needed if ``power_err`` is None
+    poisson_level : float, optional, default 0
+        The Poisson noise level of the power spectrum.
+
+    Returns
+    -------
+    power_integrated : float
+        The integrated power
+    power_integrated_err : float
+        The error on the integrated power
+
+    """
+    frequency = np.array(frequency, dtype=float)
+    power = np.asarray(power, dtype=float)
+    if df is None:
+        df = np.median(np.diff(frequency))
+    if not isinstance(df, Iterable):
+        df = np.ones_like(frequency) * df
+
+    # The frequency_range is in the middle or at the edge of each bin. When only a part of the
+    # bin is included, we need to add the fraction of the bin that is included.
+    frequency_mask = (frequency + df / 2 > frequency_range[0]) & (
+        frequency - df / 2 < frequency_range[1]
+    )
+
+    freqs_to_integrate = frequency[frequency_mask]
+    correction_ratios = np.ones_like(freqs_to_integrate)
+    dfs_to_integrate = df[frequency_mask]
+
+    # The first and last bins are only partially included. We need to correct for the
+    # fraction of the bin actually included.
+    correction_ratios[0] = (
+        freqs_to_integrate[0] + 0.5 * dfs_to_integrate[0] - frequency_range[0]
+    ) / dfs_to_integrate[0]
+    correction_ratios[-1] = (
+        frequency_range[-1] - freqs_to_integrate[-1] + 0.5 * dfs_to_integrate[-1]
+    ) / dfs_to_integrate[-1]
+    dfs_to_integrate = dfs_to_integrate * correction_ratios
+
+    powers_to_integrate = power[frequency_mask]
+
+    if power_err is None:
+        power_err_to_integrate = powers_to_integrate / np.sqrt(m)
+    else:
+        power_err_to_integrate = np.asarray(power_err)[frequency_mask]
+
+    power_integrated = np.sum((powers_to_integrate - poisson_level) * dfs_to_integrate)
+    power_err_integrated = np.sqrt(np.sum((power_err_to_integrate * dfs_to_integrate) ** 2))
+    return power_integrated, power_err_integrated
+
+
+def power_color(
+    frequency,
+    power,
+    power_err=None,
+    frequency_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
+    df=None,
+    m=1,
+    frequencies_to_exclude=None,
+    poisson_level=0,
+):
+    """
+    Calculate the power color of a power spectrum.
+
+    Parameters
+    ----------
+    frequency : iterable
+        The frequencies of the power spectrum
+    power : iterable
+        The power at each frequency
+    power_err : iterable
+        The power error bar at each frequency
+    frequency_edges : iterable, optional, default ``[0.0039, 0.031, 0.25, 2.0, 16.0]``
+        The frequency intervals to use to calculate the power color. If empty,
+        the power color is calculated in the whole frequency range.
+    df : float or float iterable, optional, default None
+        The frequency resolution of the input data. If None, it is calculated
+        from the median difference of input frequencies.
+    m : int, optional, default 1
+        The number of segments and/or contiguous frequency bins averaged to obtain power
+    frequencies_to_exclude : 2-d iterable, optional, default None
+        The ranges of frequencies to exclude from the calculation of the power color.
+        For example, the frequencies containing strong QPOs.
+        E.g. ``[[0.1, 0.2], [3, 4]]`` will exclude the ranges 0.1-0.2 Hz and 3-4 Hz.
+    poisson_level : float, optional, default 0
+        The Poisson noise level of the power spectrum.
+
+    Returns
+    -------
+    power_color : float
+        The power color
+    power_color_err : float
+        The error on the power color
+    """
+    frequency_edges = np.asarray(frequency_edges)
+    frequency = np.asarray(frequency)
+    power = np.asarray(power)
+
+    if df is None:
+        df = np.median(np.diff(frequency))
+    input_frequency_low_edges = frequency - df / 2
+    input_frequency_high_edges = frequency + df / 2
+
+    if frequency_edges.min() < input_frequency_low_edges[0]:
+        raise ValueError("The minimum frequency is larger than the first frequency edge")
+    if frequency_edges.max() > input_frequency_high_edges[-1]:
+        raise ValueError("The maximum frequency is lower than the last frequency edge")
+
+    if power_err is None:
+        power_err = power / np.sqrt(m)
+    else:
+        power_err = np.asarray(power_err)
+
+    if frequencies_to_exclude is not None:
+        for f0, f1 in frequencies_to_exclude:
+            frequency_mask = (input_frequency_low_edges > f0) | (input_frequency_high_edges < f1)
+            idx0, idx1 = np.searchsorted(frequency, [f0, f1])
+            power[frequency_mask] = np.mean([power[idx0], power[idx1]])
+            power_err[frequency_mask] = np.max([power_err[idx0], power_err[idx1]])
+
+    var00, var00_err = integrate_power_in_frequency_range(
+        frequency,
+        power,
+        frequency_edges[:2],
+        power_err=power_err,
+        df=df,
+        m=m,
+        poisson_level=poisson_level,
+    )
+    var01, var01_err = integrate_power_in_frequency_range(
+        frequency,
+        power,
+        frequency_edges[2:4],
+        power_err=power_err,
+        df=df,
+        m=m,
+        poisson_level=poisson_level,
+    )
+    var10, var10_err = integrate_power_in_frequency_range(
+        frequency,
+        power,
+        frequency_edges[1:3],
+        power_err=power_err,
+        df=df,
+        m=m,
+        poisson_level=poisson_level,
+    )
+    var11, var11_err = integrate_power_in_frequency_range(
+        frequency,
+        power,
+        frequency_edges[3:5],
+        power_err=power_err,
+        df=df,
+        m=m,
+        poisson_level=poisson_level,
+    )
+    pc0 = var00 / var01
+    pc1 = var10 / var11
+    pc0_err = pc0 * (var00_err / var00 + var01_err / var01)
+    pc1_err = pc1 * (var10_err / var10 + var11_err / var11)
+    return pc0, pc0_err, pc1, pc1_err
+
+
 def positive_fft_bins(n_bin, include_zero=False):
     """
     Give the range of positive frequencies of a complex FFT.

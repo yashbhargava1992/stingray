@@ -663,3 +663,68 @@ def test_impose_symmetry_lsft():
     assert np.all((imp_sym_fast.real) == np.flip(imp_sym_fast.real))
     assert np.all((imp_sym_fast.imag) == (-np.flip(imp_sym_fast.imag)))
     assert np.all(freqs_new_slow == freqs_new_fast)
+
+
+class TestIntegration(object):
+    @classmethod
+    def setup_class(cls):
+        cls.freq = [0, 1, 2, 3]
+        cls.power = [2, 2, 2, 2]
+        cls.power_err = [1, 1, 1, 1]
+
+    def test_power_integration_middle_bin(self):
+        freq_range = [1, 2]
+        pow, powe = integrate_power_in_frequency_range(self.freq, self.power, freq_range)
+        assert np.isclose(pow, 2)
+        assert np.isclose(powe, np.sqrt(2))
+
+    def test_power_integration_precise(self):
+        freq_range = [0.5, 2.5]
+        df = 1
+        pow, powe = integrate_power_in_frequency_range(self.freq, self.power, freq_range, df=df)
+        assert np.allclose(pow, 4)
+        assert np.allclose(powe, 2 * np.sqrt(2))
+
+    def test_power_integration_poisson(self):
+        freq_range = [0.5, 2.5]
+        pow, powe = integrate_power_in_frequency_range(
+            self.freq, self.power, freq_range, poisson_level=1
+        )
+        assert np.allclose(pow, 2)
+        assert np.allclose(powe, 2 * np.sqrt(2))
+
+    def test_power_integration_err(self):
+        freq_range = [0.5, 2.5]
+        pow, powe = integrate_power_in_frequency_range(
+            self.freq, self.power, freq_range, power_err=self.power_err
+        )
+        assert np.allclose(pow, 4)
+        assert np.allclose(powe, np.sqrt(2))
+
+    def test_power_integration_m(self):
+        freq_range = [0.5, 2.5]
+        pow, powe = integrate_power_in_frequency_range(self.freq, self.power, freq_range, m=4)
+        assert np.allclose(pow, 4)
+        assert np.allclose(powe, np.sqrt(2))
+
+
+class TestPowerColor(object):
+    @classmethod
+    def setup_class(cls):
+        cls.freq = np.arange(0.0001, 17, 0.00001)
+        cls.power = 1 / cls.freq
+
+    def test_power_color(self):
+        pc0, _, pc1, _ = power_color(self.freq, self.power)
+        # The colors calculated with these frequency edges on a 1/f spectrum should be 1
+        assert np.isclose(pc0, 1)
+        assert np.isclose(pc1, 1)
+
+    def test_bad_edges(self):
+        good = self.freq > 1 / 255  # the smallest frequency is 1/256
+        with pytest.raises(ValueError, match="The minimum frequency is larger "):
+            power_color(self.freq[good], self.power[good])
+
+        good = self.freq < 15  # the smallest frequency is 1/256
+        with pytest.raises(ValueError, match="The maximum frequency is lower "):
+            power_color(self.freq[good], self.power[good])
