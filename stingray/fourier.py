@@ -22,7 +22,7 @@ def integrate_power_in_frequency_range(
     power_err=None,
     df=None,
     m=1,
-    poisson_level=0,
+    poisson_power=0,
 ):
     """
     Integrate the power in a given frequency range.
@@ -43,7 +43,7 @@ def integrate_power_in_frequency_range(
     m : int, optional, default 1
         The number of segments and/or contiguous frequency bins averaged to obtain power.
         Only needed if ``power_err`` is None
-    poisson_level : float, optional, default 0
+    poisson_power : float, optional, default 0
         The Poisson noise level of the power spectrum.
 
     Returns
@@ -56,6 +56,8 @@ def integrate_power_in_frequency_range(
     """
     frequency = np.array(frequency, dtype=float)
     power = np.asarray(power, dtype=float)
+    if not isinstance(poisson_power, Iterable):
+        poisson_power = np.ones_like(frequency) * poisson_power
     if df is None:
         df = np.median(np.diff(frequency))
     if not isinstance(df, Iterable):
@@ -68,6 +70,7 @@ def integrate_power_in_frequency_range(
     )
 
     freqs_to_integrate = frequency[frequency_mask]
+    poisson_power = poisson_power[frequency_mask]
     correction_ratios = np.ones_like(freqs_to_integrate)
     dfs_to_integrate = df[frequency_mask]
 
@@ -88,7 +91,7 @@ def integrate_power_in_frequency_range(
     else:
         power_err_to_integrate = np.asarray(power_err)[frequency_mask]
 
-    power_integrated = np.sum((powers_to_integrate - poisson_level) * dfs_to_integrate)
+    power_integrated = np.sum((powers_to_integrate - poisson_power) * dfs_to_integrate)
     power_err_integrated = np.sqrt(np.sum((power_err_to_integrate * dfs_to_integrate) ** 2))
     return power_integrated, power_err_integrated
 
@@ -101,7 +104,7 @@ def power_color(
     df=None,
     m=1,
     frequencies_to_exclude=None,
-    poisson_level=0,
+    poisson_power=0,
 ):
     """
     Calculate the power color of a power spectrum.
@@ -127,8 +130,10 @@ def power_color(
         For example, the frequencies containing strong QPOs.
         A 1-d iterable should contain two values for the edges of a single range. (E.g.
         ``[0.1, 0.2]``). ``[[0.1, 0.2], [3, 4]]`` will exclude the ranges 0.1-0.2 Hz and 3-4 Hz.
-    poisson_level : float, optional, default 0
-        The Poisson noise level of the power spectrum.
+    poisson_power : float or iterable, optional, default 0
+        The Poisson noise level of the power spectrum. If iterable, it should have the same
+        length as ``frequency``. (This might apply to the case of a power spectrum with a
+        strong dead time distortion
 
     Returns
     -------
@@ -178,7 +183,7 @@ def power_color(
         power_err=power_err,
         df=df,
         m=m,
-        poisson_level=poisson_level,
+        poisson_power=poisson_power,
     )
     var01, var01_err = integrate_power_in_frequency_range(
         frequency,
@@ -187,7 +192,7 @@ def power_color(
         power_err=power_err,
         df=df,
         m=m,
-        poisson_level=poisson_level,
+        poisson_power=poisson_power,
     )
     var10, var10_err = integrate_power_in_frequency_range(
         frequency,
@@ -196,7 +201,7 @@ def power_color(
         power_err=power_err,
         df=df,
         m=m,
-        poisson_level=poisson_level,
+        poisson_power=poisson_power,
     )
     var11, var11_err = integrate_power_in_frequency_range(
         frequency,
@@ -205,7 +210,7 @@ def power_color(
         power_err=power_err,
         df=df,
         m=m,
-        poisson_level=poisson_level,
+        poisson_power=poisson_power,
     )
     pc0 = var00 / var01
     pc1 = var10 / var11

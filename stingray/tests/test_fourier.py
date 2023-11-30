@@ -687,11 +687,12 @@ class TestIntegration(object):
 
     def test_power_integration_poisson(self):
         freq_range = [0.5, 2.5]
-        pow, powe = integrate_power_in_frequency_range(
-            self.freq, self.power, freq_range, poisson_level=1
-        )
-        assert np.allclose(pow, 2)
-        assert np.allclose(powe, 2 * np.sqrt(2))
+        for poisson_power in (1, np.ones_like(self.power)):
+            pow, powe = integrate_power_in_frequency_range(
+                self.freq, self.power, freq_range, poisson_power=poisson_power
+            )
+            assert np.allclose(pow, 2)
+            assert np.allclose(powe, 2 * np.sqrt(2))
 
     def test_power_integration_err(self):
         freq_range = [0.5, 2.5]
