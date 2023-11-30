@@ -1034,6 +1034,7 @@ class TestDynamicalPowerspectrum(object):
 
         dps_ev = DynamicalPowerspectrum(ev, segment_size=10, sample_time=self.lc.dt)
         assert np.allclose(dps.dyn_ps, dps_ev.dyn_ps)
+        dps_ev.power_colors(frequency_edges=[1 / 5, 1 / 2, 1, 2.0, 16.0])
 
     def test_with_long_seg_size(self):
         with pytest.raises(ValueError):

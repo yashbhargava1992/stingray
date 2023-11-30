@@ -21,7 +21,7 @@ from .utils import show_progress
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
 from .fourier import avg_cs_from_events, poisson_level
 from .fourier import fftfreq, fft, normalize_periodograms, raw_coherence
-from .fourier import get_flux_iterable_from_segments
+from .fourier import get_flux_iterable_from_segments, power_color
 
 from scipy.special import factorial
 
@@ -2197,6 +2197,56 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             max_positions.append(np.where(ps == max_power)[0][0])
 
         return np.array(max_positions)
+
+    def power_colors(
+        self,
+        frequency_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
+        frequencies_to_exclude=None,
+        poisson_power=0,
+    ):
+        """
+        Return the power colors of the dynamical power spectrum.
+
+        Parameters
+        ----------
+        frequency_edges: iterable
+            The edges of the frequency bins to be used for the power colors.
+
+        frequencies_to_exclude : 1-d or 2-d iterable, optional, default None
+            The ranges of frequencies to exclude from the calculation of the power color.
+            For example, the frequencies containing strong QPOs.
+            A 1-d iterable should contain two values for the edges of a single range. (E.g.
+            ``[0.1, 0.2]``). ``[[0.1, 0.2], [3, 4]]`` will exclude the ranges 0.1-0.2 Hz and
+            3-4 Hz.
+
+        poisson_power : float or iterable, optional, default 0
+            The Poisson noise level of the power spectrum. If iterable, it should have the same
+            length as ``frequency``. (This might apply to the case of a power spectrum with a
+            strong dead time distortion)
+
+        Returns
+        -------
+        pc0: np.ndarray
+        pc0_err: np.ndarray
+        pc1: np.ndarray
+        pc1_err: np.ndarray
+            The power colors for each spectrum and their respective errors
+        """
+        power_colors = []
+        for ps in self.dyn_ps.T:
+            power_colors.append(
+                power_color(
+                    self.freq,
+                    ps,
+                    frequency_edges=frequency_edges,
+                    frequencies_to_exclude=frequencies_to_exclude,
+                    df=self.df,
+                    poisson_power=poisson_power,
+                )
+            )
+
+        pc0, pc0_err, pc1, pc1_err = np.array(power_colors).T
+        return pc0, pc0_err, pc1, pc1_err
 
 
 def crossspectrum_from_time_array(

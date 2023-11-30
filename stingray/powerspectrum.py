@@ -1064,6 +1064,56 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
         self.time = tstart + 0.5 * self.segment_size
         self.df = avg.df
         self.dt = self.segment_size
+        self.meanrate = avg.nphots / avg.n / avg.dt
+        self.nphots = avg.nphots
+
+    def power_colors(
+        self,
+        frequency_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
+        frequencies_to_exclude=None,
+        poisson_power=None,
+    ):
+        """
+        Return the power colors of the dynamical power spectrum.
+
+        Parameters
+        ----------
+        frequency_edges: iterable
+            The edges of the frequency bins to be used for the power colors.
+
+        frequencies_to_exclude : 1-d or 2-d iterable, optional, default None
+            The ranges of frequencies to exclude from the calculation of the power color.
+            For example, the frequencies containing strong QPOs.
+            A 1-d iterable should contain two values for the edges of a single range. (E.g.
+            ``[0.1, 0.2]``). ``[[0.1, 0.2], [3, 4]]`` will exclude the ranges 0.1-0.2 Hz and
+            3-4 Hz.
+
+        poisson_level : float or iterable, optional
+            Defaults to the theoretical Poisson noise level (e.g. 2 for Leahy normalization).
+            The Poisson noise level of the power spectrum. If iterable, it should have the same
+            length as ``frequency``. (This might apply to the case of a power spectrum with a
+            strong dead time distortion)
+
+        Returns
+        -------
+        pc0: np.ndarray
+        pc0_err: np.ndarray
+        pc1: np.ndarray
+        pc1_err: np.ndarray
+            The power colors for each spectrum and their respective errors
+        """
+        if poisson_power is None:
+            poisson_power = poisson_level(
+                norm=self.norm,
+                meanrate=self.meanrate,
+                n_ph=self.nphots,
+            )
+
+        return super().power_colors(
+            frequency_edges=frequency_edges,
+            frequencies_to_exclude=frequencies_to_exclude,
+            poisson_power=poisson_power,
+        )
 
 
 def powerspectrum_from_time_array(
