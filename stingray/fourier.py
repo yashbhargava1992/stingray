@@ -157,9 +157,14 @@ def power_color(
         power_err = np.asarray(power_err)
 
     if frequencies_to_exclude is not None:
-        if len(np.shape(frequencies_to_exclude)):
+        if len(np.shape(frequencies_to_exclude)) == 1:
             frequencies_to_exclude = [frequencies_to_exclude]
-        if np.shape(frequencies_to_exclude)[1] != 2:
+
+        if (
+            not isinstance(frequencies_to_exclude, Iterable)
+            or len(np.shape(frequencies_to_exclude)) != 2
+            or np.shape(frequencies_to_exclude)[1] != 2
+        ):
             raise ValueError("frequencies_to_exclude must be of format [[f0, f1], [f2, f3], ...]")
         for f0, f1 in frequencies_to_exclude:
             frequency_mask = (input_frequency_low_edges > f0) & (input_frequency_high_edges < f1)

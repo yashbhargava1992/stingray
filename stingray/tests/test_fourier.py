@@ -729,6 +729,11 @@ class TestPowerColor(object):
         with pytest.raises(ValueError, match="The maximum frequency is lower "):
             power_color(self.freq[good], self.power[good])
 
+    def test_bad_excluded_interval(self):
+        for fte in ([1, 1.1, 3.0], [4], [[1, 1.1, 3.0]], 0, [[[1, 3]]]):
+            with pytest.raises(ValueError, match="frequencies_to_exclude must be of "):
+                power_color(self.freq, self.power, frequencies_to_exclude=fte)
+
     def test_excluded_frequencies(self):
         pc0, _, pc1, _ = power_color(self.freq, self.power, frequencies_to_exclude=[1, 1.1])
         # The colors calculated with these frequency edges on a 1/f spectrum should be 1
