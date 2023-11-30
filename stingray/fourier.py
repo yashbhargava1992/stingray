@@ -54,8 +54,10 @@ def integrate_power_in_frequency_range(
         The error on the integrated power
 
     """
-    frequency = np.array(frequency)
+    frequency = np.array(frequency, dtype=float)
     power = np.array(power)
+    if not np.iscomplexobj(power):
+        power = power.astype(float)
     if not isinstance(poisson_power, Iterable):
         poisson_power = np.ones_like(frequency) * poisson_power
     if df is None:
