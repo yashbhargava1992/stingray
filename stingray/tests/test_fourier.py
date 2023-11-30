@@ -735,3 +735,21 @@ class TestPowerColor(object):
         # The excluded frequency interval is small enough that the approximation should work
         assert np.isclose(pc0, 1, atol=0.001)
         assert np.isclose(pc1, 1, atol=0.001)
+
+    def test_with_power_err(self):
+        pc0, pc0_err, pc1, pc1_err = power_color(
+            self.freq,
+            self.power,
+            power_err=self.power / 2,
+        )
+        pc0e, pc0e_err, pc1e, pc1e_err = power_color(
+            self.freq,
+            self.power,
+            power_err=self.power,
+        )
+        assert np.isclose(pc0, 1, atol=0.001)
+        assert np.isclose(pc1, 1, atol=0.001)
+        assert np.isclose(pc0e, 1, atol=0.001)
+        assert np.isclose(pc1e, 1, atol=0.001)
+        assert np.isclose(pc0e_err / pc0_err, 2, atol=0.001)
+        assert np.isclose(pc1e_err / pc1_err, 2, atol=0.001)

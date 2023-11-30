@@ -165,7 +165,6 @@ def power_color(
             frequency_mask = (input_frequency_low_edges > f0) & (input_frequency_high_edges < f1)
             idx0, idx1 = np.searchsorted(frequency, [f0, f1])
             power[frequency_mask] = np.mean([power[idx0], power[idx1]])
-            power_err[frequency_mask] = np.max([power_err[idx0], power_err[idx1]])
 
     var00, var00_err = integrate_power_in_frequency_range(
         frequency,
