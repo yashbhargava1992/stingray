@@ -728,3 +728,10 @@ class TestPowerColor(object):
         good = self.freq < 15  # the smallest frequency is 1/256
         with pytest.raises(ValueError, match="The maximum frequency is lower "):
             power_color(self.freq[good], self.power[good])
+
+    def test_excluded_frequencies(self):
+        pc0, _, pc1, _ = power_color(self.freq, self.power, frequencies_to_exclude=[1, 1.1])
+        # The colors calculated with these frequency edges on a 1/f spectrum should be 1
+        # The excluded frequency interval is small enough that the approximation should work
+        assert np.isclose(pc0, 1, atol=0.001)
+        assert np.isclose(pc1, 1, atol=0.001)

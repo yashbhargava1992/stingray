@@ -122,10 +122,11 @@ def power_color(
         from the median difference of input frequencies.
     m : int, optional, default 1
         The number of segments and/or contiguous frequency bins averaged to obtain power
-    frequencies_to_exclude : 2-d iterable, optional, default None
+    frequencies_to_exclude : 1-d or 2-d iterable, optional, default None
         The ranges of frequencies to exclude from the calculation of the power color.
         For example, the frequencies containing strong QPOs.
-        E.g. ``[[0.1, 0.2], [3, 4]]`` will exclude the ranges 0.1-0.2 Hz and 3-4 Hz.
+        A 1-d iterable should contain two values for the edges of a single range. (E.g.
+        ``[0.1, 0.2]``). ``[[0.1, 0.2], [3, 4]]`` will exclude the ranges 0.1-0.2 Hz and 3-4 Hz.
     poisson_level : float, optional, default 0
         The Poisson noise level of the power spectrum.
 
@@ -156,8 +157,12 @@ def power_color(
         power_err = np.asarray(power_err)
 
     if frequencies_to_exclude is not None:
+        if len(np.shape(frequencies_to_exclude)):
+            frequencies_to_exclude = [frequencies_to_exclude]
+        if np.shape(frequencies_to_exclude)[1] != 2:
+            raise ValueError("frequencies_to_exclude must be of format [[f0, f1], [f2, f3], ...]")
         for f0, f1 in frequencies_to_exclude:
-            frequency_mask = (input_frequency_low_edges > f0) | (input_frequency_high_edges < f1)
+            frequency_mask = (input_frequency_low_edges > f0) & (input_frequency_high_edges < f1)
             idx0, idx1 = np.searchsorted(frequency, [f0, f1])
             power[frequency_mask] = np.mean([power[idx0], power[idx1]])
             power_err[frequency_mask] = np.max([power_err[idx0], power_err[idx1]])
