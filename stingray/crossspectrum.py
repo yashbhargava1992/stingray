@@ -2233,11 +2233,14 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             The power colors for each spectrum and their respective errors
         """
         power_colors = []
+        if np.iscomplexobj(self.dyn_ps):
+            warnings.warn("When using power_colors, complex powers will be cast to real.")
+
         for ps in self.dyn_ps.T:
             power_colors.append(
                 power_color(
                     self.freq,
-                    ps,
+                    ps.real,
                     frequency_edges=frequency_edges,
                     frequencies_to_exclude=frequencies_to_exclude,
                     df=self.df,
