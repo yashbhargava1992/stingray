@@ -2175,15 +2175,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
     def rebin_by_n_intervals(self, n, method="sum"):
         """
-        Rebin the Dynamic Power Spectrum to a new time resolution.
-
-        Note: this is *not* changing the time resolution of the input light
-        curve! ``dt`` is the integration time of each line of the dynamical power
-        spectrum (typically, an integer multiple of ``segment_size``).
-
-        While the new resolution does not need to be an integer of the previous time
-        resolution, be aware that if this is the case, the last time bin will be cut
-        off by the fraction left over by the integer division
+        Rebin the Dynamic Power Spectrum to a new time resolution, by summing n intervals.
 
         Parameters
         ----------
