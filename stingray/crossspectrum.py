@@ -2028,6 +2028,9 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         The time resolution of the dynamical spectrum. It is **not** the time resolution of the
         input light curve. It is the integration time of each line of the dynamical power
         spectrum (typically, an integer multiple of ``segment_size``).
+
+    m: int
+        The number of averaged cross spectra.
     """
 
     def __init__(self, data1, data2, segment_size, norm="frac", gti=None, sample_time=None):
