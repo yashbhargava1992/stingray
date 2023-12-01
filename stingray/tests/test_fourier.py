@@ -293,7 +293,19 @@ class TestFourier(object):
             silent=True,
             return_subcs=True,
         )
+
         assert np.isclose(out_comm["power"].std(), out["power"].std(), rtol=0.1)
+        assert np.isclose(out_comm["unnorm_power"].std(), out["unnorm_power"].std(), rtol=0.1)
+        # Run the same check on the subcs
+        assert np.isclose(out_comm.meta["subcs"].std(), out.meta["subcs"].std(), rtol=0.1)
+        assert np.isclose(
+            out_comm.meta["unnorm_subcs"].std(), out.meta["unnorm_subcs"].std(), rtol=0.1
+        )
+        # Now verify that the normalizations are consistent between single power and subcs
+        assert np.isclose(
+            out_comm["unnorm_power"].std() / out_comm["power"].std(),
+            out_comm.meta["unnorm_subcs"].std() / out_comm.meta["subcs"].std(),
+        )
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
