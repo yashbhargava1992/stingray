@@ -2078,8 +2078,12 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             save_all=True,
         )
         self.dyn_ps = np.array(avg.cs_all).T
+        conv = avg.cs_all / avg.unnorm_cs_all
+        self.unnorm_conversion = np.nanmean(conv)
         self.freq = avg.freq
         current_gti = avg.gti
+        self.nphots1 = avg.nphots1
+        self.nphots2 = avg.nphots2
 
         tstart, _ = time_intervals_from_gtis(current_gti, self.segment_size)
 
@@ -2316,6 +2320,69 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
         pc0, pc0_err, pc1, pc1_err = np.array(power_colors).T
         return pc0, pc0_err, pc1, pc1_err
+
+    def compute_rms(self, min_freq, max_freq, poisson_noise_level=0):
+        """
+        Compute the fractional rms amplitude in the power spectrum
+        between two frequencies.
+
+        Parameters
+        ----------
+        min_freq: float
+            The lower frequency bound for the calculation.
+
+        max_freq: float
+            The upper frequency bound for the calculation.
+
+        Other parameters
+        ----------------
+        poisson_noise_level : float, default is None
+            This is the Poisson noise level of the PDS with same
+            normalization as the PDS.
+
+        Returns
+        -------
+        rms: float
+            The fractional rms amplitude contained between ``min_freq`` and
+            ``max_freq``.
+
+        rms_err: float
+            The error on the fractional rms amplitude.
+
+        """
+        from .fourier import rms_calculation
+
+        dyn_ps_unnorm = self.dyn_ps / self.unnorm_conversion
+        poisson_noise_unnrom = poisson_noise_level / self.unnorm_conversion
+        if not hasattr(self, "nphots"):
+            nphots = (self.nphots1 * self.nphots2) ** 0.5
+        else:
+            nphots = self.nphots
+        T = self.dt * self.m
+        M_freqs = self.m
+        K_freqs = 1
+        minind = self.freq.searchsorted(min_freq)
+        maxind = self.freq.searchsorted(max_freq)
+        min_freq = self.freq[minind]
+        freq_bins = maxind - minind
+        rmss = []
+        rms_errs = []
+        for unnorm_powers in dyn_ps_unnorm.T:
+            r, re = rms_calculation(
+                unnorm_powers[minind:maxind],
+                min_freq,
+                max_freq,
+                nphots,
+                T,
+                M_freqs,
+                K_freqs,
+                freq_bins,
+                poisson_noise_unnrom,
+                deadtime=0.0,
+            )
+            rmss.append(r)
+            rms_errs.append(re)
+        return rmss, rms_errs
 
 
 def crossspectrum_from_time_array(

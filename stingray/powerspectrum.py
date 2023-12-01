@@ -210,7 +210,8 @@ class Powerspectrum(Crossspectrum):
             M_freq = self.m
             K_freq = self.k
             freq_bins = maxind - minind
-        T = self.dt * self.n
+
+        T = self.dt * self.n * 2
 
         if white_noise_offset is not None:
             powers = self.power[minind:maxind]
@@ -237,6 +238,7 @@ class Powerspectrum(Crossspectrum):
                 poisson_noise_unnorm = unnormalize_periodograms(
                     poisson_noise_level, self.dt, self.n, self.nphots, norm=self.norm
                 )
+
             return rms_calculation(
                 self.unnorm_power[minind:maxind],
                 min_freq,
@@ -1058,6 +1060,8 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
             gti=self.gti,
             save_all=True,
         )
+        conv = avg.cs_all / avg.unnorm_cs_all
+        self.unnorm_conversion = np.nanmean(conv)
         self.dyn_ps = np.array(avg.cs_all).T
         self.freq = avg.freq
         current_gti = avg.gti

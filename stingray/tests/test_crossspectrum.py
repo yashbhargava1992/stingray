@@ -1411,6 +1411,28 @@ class TestDynamicalCrossspectrum(object):
         with pytest.warns(UserWarning, match="When using power_colors, complex "):
             dps_ev.power_colors(frequency_edges=[1 / 5, 1 / 2, 1, 2.0, 16.0])
 
+    def test_rms_is_correct(self):
+        lc = copy.deepcopy(self.lc)
+        lc.counts = np.random.poisson(lc.counts)
+        dps = DynamicalCrossspectrum(lc, lc, segment_size=10, norm="leahy")
+        rms, rmse = dps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+        from stingray.powerspectrum import AveragedPowerspectrum
+
+        ps = AveragedPowerspectrum()
+        ps.freq = dps.freq
+        ps.power = dps.dyn_ps.T[0]
+        ps.unnorm_power = ps.power / dps.unnorm_conversion
+        ps.df = dps.df
+        ps.m = dps.m
+        ps.n = dps.freq.size
+        ps.dt = lc.dt
+        ps.norm = dps.norm
+        ps.k = 1
+        ps.nphots = (dps.nphots1 * dps.nphots2) ** 0.5
+        rms2, rmse2 = ps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+        assert np.isclose(rms[0], rms2)
+        assert np.isclose(rmse[0], rmse2, rtol=0.01)
+
     def test_works_with_events_and_its_complex(self):
         lc = copy.deepcopy(self.lc)
         lc.counts = np.random.poisson(10, size=lc.counts.size)
