@@ -1486,7 +1486,7 @@ def avg_pds_from_iterable(
 
         # If the user wants to normalize using the mean of the total
         # lightcurve, normalize it here
-        cs_seg = unnorm_power
+        cs_seg = copy.deepcopy(unnorm_power)
         if not use_common_mean:
             mean = n_ph / n_bin
 
@@ -1872,7 +1872,7 @@ def avg_cs_from_iterables(
                 unnorm_pd1 = unnorm_pd1[fgt0]
                 unnorm_pd2 = unnorm_pd2[fgt0]
 
-        cs_seg = unnorm_power
+        cs_seg = copy.deepcopy(unnorm_power)
         p1_seg = unnorm_pd1
         p2_seg = unnorm_pd2
 
