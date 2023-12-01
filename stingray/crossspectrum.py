@@ -2083,6 +2083,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         self.time = tstart + 0.5 * self.segment_size
         self.df = avg.df
         self.dt = self.segment_size
+        self.m = 1
 
     def rebin_frequency(self, df_new, method="sum"):
         """
@@ -2108,7 +2109,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         new_dynspec_object = copy.deepcopy(self)
         dynspec_new = []
         for data in self.dyn_ps.T:
-            freq_new, bin_counts, bin_err, _ = rebin_data(
+            freq_new, bin_counts, bin_err, step = rebin_data(
                 self.freq, data, dx_new=df_new, method=method
             )
             dynspec_new.append(bin_counts)
@@ -2116,6 +2117,8 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         new_dynspec_object.freq = freq_new
         new_dynspec_object.dyn_ps = np.array(dynspec_new).T
         new_dynspec_object.df = df_new
+        new_dynspec_object.m = int(step) * self.m
+
         return new_dynspec_object
 
     def rebin_time(self, dt_new, method="sum"):
@@ -2156,7 +2159,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
         dynspec_new = []
         for data in self.dyn_ps:
-            time_new, bin_counts, _, _ = rebin_data(
+            time_new, bin_counts, _, step = rebin_data(
                 self.time, data, dt_new, method=method, dx=self.dt
             )
             dynspec_new.append(bin_counts)
@@ -2164,6 +2167,73 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         new_dynspec_object.time = time_new
         new_dynspec_object.dyn_ps = np.array(dynspec_new)
         new_dynspec_object.dt = dt_new
+        new_dynspec_object.m = int(step) * self.m
+        return new_dynspec_object
+
+    def rebin_by_n_intervals(self, n, method="sum"):
+        """
+        Rebin the Dynamic Power Spectrum to a new time resolution.
+
+        Note: this is *not* changing the time resolution of the input light
+        curve! ``dt`` is the integration time of each line of the dynamical power
+        spectrum (typically, an integer multiple of ``segment_size``).
+
+        While the new resolution does not need to be an integer of the previous time
+        resolution, be aware that if this is the case, the last time bin will be cut
+        off by the fraction left over by the integer division
+
+        Parameters
+        ----------
+        n: int
+            The number of intervals to be combined into one.
+
+        method: {"sum" | "mean" | "average"}, optional, default "sum"
+            This keyword argument sets whether the counts in the new bins
+            should be summed or averaged.
+
+        Returns
+        -------
+        time_new: numpy.ndarray
+            Time axis with new rebinned time resolution.
+
+        dynspec_new: numpy.ndarray
+            New rebinned Dynamical Cross Spectrum.
+        """
+        if not np.issubdtype(type(n), np.integer):
+            warnings.warn("n must be an integer. Converting")
+
+            n = int(n)
+
+        if n == 1:
+            return copy.deepcopy(self)
+        if n < 1:
+            raise ValueError("n must be >= 1")
+
+        new_dynspec_object = copy.deepcopy(self)
+
+        dynspec_new = []
+        time_new = []
+        for i, data in enumerate(self.dyn_ps.T):
+            if i % n == 0:
+                count = 1
+                bin_counts = data
+                bin_times = self.time[i]
+            else:
+                count += 1
+                bin_counts += data
+                bin_times += self.time[i]
+            if count == n:
+                if method in ["mean", "average"]:
+                    bin_counts /= n
+                dynspec_new.append(bin_counts)
+                bin_times /= n
+                time_new.append(bin_times)
+
+        new_dynspec_object.time = time_new
+        new_dynspec_object.dyn_ps = np.array(dynspec_new).T
+        new_dynspec_object.dt *= n
+        new_dynspec_object.m = n * self.m
+
         return new_dynspec_object
 
     def trace_maximum(self, min_freq=None, max_freq=None):
@@ -2245,6 +2315,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
                     frequencies_to_exclude=frequencies_to_exclude,
                     df=self.df,
                     poisson_power=poisson_power,
+                    m=self.m,
                 )
             )
 

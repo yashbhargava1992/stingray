@@ -1066,6 +1066,7 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
         self.dt = self.segment_size
         self.meanrate = avg.nphots / avg.n / avg.dt
         self.nphots = avg.nphots
+        self.m = 1
 
     def power_colors(
         self,
