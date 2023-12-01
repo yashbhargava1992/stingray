@@ -107,6 +107,7 @@ def power_color(
     m=1,
     frequencies_to_exclude=None,
     poisson_power=0,
+    return_log=False,
 ):
     """
     Calculate the power color of a power spectrum.
@@ -117,6 +118,9 @@ def power_color(
         The frequencies of the power spectrum
     power : iterable
         The power at each frequency
+
+    Other Parameters
+    ----------------
     power_err : iterable
         The power error bar at each frequency
     frequency_edges : iterable, optional, default ``[0.0039, 0.031, 0.25, 2.0, 16.0]``
@@ -136,6 +140,8 @@ def power_color(
         The Poisson noise level of the power spectrum. If iterable, it should have the same
         length as ``frequency``. (This might apply to the case of a power spectrum with a
         strong dead time distortion
+    return_log : bool, optional, default False
+        Return the base-10 logarithm of the power color and the errors
 
     Returns
     -------
@@ -218,7 +224,74 @@ def power_color(
     pc1 = var10 / var11
     pc0_err = pc0 * (var00_err / var00 + var01_err / var01)
     pc1_err = pc1 * (var10_err / var10 + var11_err / var11)
+    if return_log:
+        pc0_err = 1 / pc0 * pc0_err
+        pc1_err = 1 / pc1 * pc1_err
+        pc0 = np.log10(pc0)
+        pc1 = np.log10(pc1)
     return pc0, pc0_err, pc1, pc1_err
+
+
+def hue_from_power_color(pc0, pc1, center=[4.51920, 0.453724]):
+    """Measure the angle of a point in the log-power color diagram wrt the center.
+
+    Angles are measured in radians, **in the clockwise direction**, with respect to a line oriented
+    at -45 degrees wrt the horizontal axis.
+
+    See Heil et al. 2015, MNRAS, 448, 3348
+
+    Parameters
+    ----------
+    pc0 : float
+        The (linear, not log!) power color in the first frequency range
+    pc1 : float
+        The (linear, not log!) power color in the second frequency range
+
+    Other Parameters
+    ----------------
+    center : iterable, optional, default [4.51920, 0.453724]
+        The coordinates of the center of the power color diagram
+
+    Returns
+    -------
+    hue : float
+        The angle of the point wrt the center, in radians
+    """
+    pc0 = np.log10(pc0)
+    pc1 = np.log10(pc1)
+
+    center = np.log10(np.asarray(center))
+
+    return hue_from_logpower_color(pc0, pc1, center=center)
+
+
+def hue_from_logpower_color(log10pc0, log10pc1, center=(np.log10(4.51920), np.log10(0.453724))):
+    """Measure the angle of a point in the log-power color diagram wrt the center.
+
+    Angles are measured in radians, **in the clockwise direction**, with respect to a line oriented
+    at -45 degrees wrt the horizontal axis.
+
+    See Heil et al. 2015, MNRAS, 448, 3348
+
+    Parameters
+    ----------
+    log10pc0 : float
+        The log10 power color in the first frequency range
+    log10pc1 : float
+        The log10 power color in the second frequency range
+
+    Other Parameters
+    ----------------
+    center : iterable, optional, default ``log10([4.51920, 0.453724])``
+        The coordinates of the center of the power color diagram
+
+    Returns
+    -------
+    hue : float
+        The angle of the point wrt the center, in radians
+    """
+    hue = 3 / 4 * np.pi - np.arctan2(log10pc1 - center[1], log10pc0 - center[0])
+    return hue
 
 
 def positive_fft_bins(n_bin, include_zero=False):

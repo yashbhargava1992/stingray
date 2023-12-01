@@ -721,6 +721,12 @@ class TestPowerColor(object):
         assert np.isclose(pc0, 1)
         assert np.isclose(pc1, 1)
 
+    def test_return_log(self):
+        pc0, _, pc1, _ = power_color(self.freq, self.power, return_log=True)
+        # The colors calculated with these frequency edges on a 1/f spectrum should be 1
+        assert np.isclose(pc0, 0, atol=0.001)
+        assert np.isclose(pc1, 0, atol=0.001)
+
     def test_bad_edges(self):
         good = self.freq > 1 / 255  # the smallest frequency is 1/256
         with pytest.raises(ValueError, match="The minimum frequency is larger "):
@@ -759,3 +765,16 @@ class TestPowerColor(object):
         assert np.isclose(pc1e, 1, atol=0.001)
         assert np.isclose(pc0e_err / pc0_err, 2, atol=0.001)
         assert np.isclose(pc1e_err / pc1_err, 2, atol=0.001)
+
+    def test_hue(self):
+        center = (4.51920, 0.453724)
+        log_center = np.log10(np.asarray(center))
+        for angle in np.radians(np.arange(0, 380, 20)):
+            factor = np.random.uniform(0.1, 10)
+            x = factor * np.cos(3 / 4 * np.pi - angle) + log_center[0]
+            y = factor * np.sin(3 / 4 * np.pi - angle) + log_center[1]
+            hue = hue_from_power_color(10**x, 10**y, center)
+            # Compare the angles in a safe way
+            c2 = (np.sin(hue) - np.sin(angle)) ** 2 + (np.cos(hue) - np.cos(angle)) ** 2
+            angle_diff = np.arccos((2.0 - c2) / 2.0)
+            assert np.isclose(angle_diff, 0, atol=0.001)
