@@ -2195,7 +2195,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             New rebinned Dynamical Cross Spectrum.
         """
         if not np.issubdtype(type(n), np.integer):
-            warnings.warn("n must be an integer. Converting")
+            warnings.warn("n must be an integer. Casting to int")
 
             n = int(n)
 
