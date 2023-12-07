@@ -768,3 +768,40 @@ class EventList(StingrayTimeseries):
         starts, stops, (colors, color_errs) = self.analyze_chunks(segment_size, color)
 
         return starts, stops, colors, color_errs
+
+    def get_intensity_evolution(self, segment_size, energy_range, use_pi=False):
+        """Compute the intensity in equal-length segments of the event list.
+
+        Parameters
+        ----------
+        segment_size : float
+            Segment size in seconds
+        energy_range : ``[en1_min, en1_max]``
+            Energy range to compute the intensity
+
+        Other Parameters
+        ----------------
+        use_pi : bool, default False
+            Use PI channel instead of energy in keV
+
+        Returns
+        -------
+        color : array-like
+            Array of colors, computed in each segment as the ratio of the
+            counts in the second energy range to the counts in the first energy
+            range.
+        """
+        if energy_range is None or np.shape(energy_range) != (2,):
+            raise ValueError("Energy ranges must be specified as a 2-element list")
+
+        def intensity(ev):
+            mask1 = ev.get_energy_mask(energy_range, use_pi=use_pi)
+            en1_ct = np.count_nonzero(mask1)
+
+            rate = en1_ct / segment_size
+            rate_err = np.sqrt(en1_ct) / segment_size
+            return rate, rate_err
+
+        starts, stops, (rate, rate_err) = self.analyze_chunks(segment_size, intensity)
+
+        return starts, stops, rate, rate_err
