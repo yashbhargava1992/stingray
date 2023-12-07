@@ -2561,18 +2561,16 @@ class StingrayTimeseries(StingrayObject):
             start, stop = bin_intervals_from_gtis(
                 self.gti, segment_size, self.time, fraction_step=fraction_step, dt=self.dt
             )
+            start_times = self.time[start] - 0.5 * self.dt
+            # Remember that stop is one element above the last element, because
+            # it's defined to be used in intervals start:stop
+            stop_times = self.time[stop - 1] + self.dt * 1.5
         else:
-            tstart, tstop = time_intervals_from_gtis(
+            start_times, stop_times = time_intervals_from_gtis(
                 self.gti, segment_size, fraction_step=fraction_step
             )
-            start = np.searchsorted(self.time, tstart)
-            stop = np.searchsorted(self.time, tstop)
-
-        start_times = self.time[start] - 0.5 * self.dt
-
-        # Remember that stop is one element above the last element, because
-        # it's defined to be used in intervals start:stop
-        stop_times = self.time[stop - 1] + self.dt * 1.5
+            start = np.searchsorted(self.time, start_times)
+            stop = np.searchsorted(self.time, stop_times)
 
         results = []
         for i, (st, sp) in enumerate(zip(start, stop)):
