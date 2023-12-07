@@ -2499,7 +2499,7 @@ class StingrayTimeseries(StingrayObject):
         keep_searching = True
 
         while keep_searching:
-            start_times, stop_times, results = self.analyze_chunks(segment_size, ts_sum)
+            start_times, stop_times, results = self.analyze_segments(ts_sum, segment_size)
             mincounts = np.min(results)
             if mincounts >= min_total_counts:
                 keep_searching = False
@@ -2508,18 +2508,19 @@ class StingrayTimeseries(StingrayObject):
 
         return segment_size
 
-    def analyze_chunks(self, segment_size, func, fraction_step=1, **kwargs):
+    def analyze_segments(self, func=None, segment_size=None, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
 
         Parameters
         ----------
-        segment_size : float
-            Length in seconds of the light curve segments
         func : function
             Function accepting a :class:`StingrayTimeseries` object as single argument, plus
             possible additional keyword arguments, and returning a number or a
             tuple - e.g., ``(result, error)`` where both ``result`` and ``error`` are
             numbers.
+        segment_size : float
+            Length in seconds of the light curve segments. If None, the full GTIs are considered
+            instead as segments.
 
         Other parameters
         ----------------
@@ -2557,7 +2558,14 @@ class StingrayTimeseries(StingrayObject):
         """
         from .gti import bin_intervals_from_gtis, time_intervals_from_gtis
 
-        if self.dt > 0:
+        if func is None:
+            raise ValueError("You have to specify a function to apply to the segments")
+        if segment_size is None:
+            start_times = self.gti[:, 0]
+            stop_times = self.gti[:, 1]
+            start = np.searchsorted(self.time, start_times)
+            stop = np.searchsorted(self.time, stop_times)
+        elif self.dt > 0:
             start, stop = bin_intervals_from_gtis(
                 self.gti, segment_size, self.time, fraction_step=fraction_step, dt=self.dt
             )
@@ -2573,11 +2581,13 @@ class StingrayTimeseries(StingrayObject):
             stop = np.searchsorted(self.time, stop_times)
 
         results = []
-        for i, (st, sp) in enumerate(zip(start, stop)):
+        for i, (st, sp, tst, tsp) in enumerate(zip(start, stop, start_times, stop_times)):
             if sp - st <= 1:
                 res = 0
             else:
                 lc_filt = self[st:sp]
+                lc_filt.gti = np.asarray([[tst, tsp]])
+
                 res = func(lc_filt, **kwargs)
             results.append(res)
 

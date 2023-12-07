@@ -1336,21 +1336,6 @@ class Lightcurve(StingrayTimeseries):
         """
         return super().estimate_segment_size(min_total_counts, min_time_bins)
 
-    #     rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt
-
-    #     segment_size = np.max([rough_estimate, min_time_bins * self.dt])
-
-    #     keep_searching = True
-    #     while keep_searching:
-    #         start_times, stop_times, results = self.analyze_lc_chunks(segment_size, np.sum)
-    #         mincounts = np.min(results)
-    #         if mincounts >= min_total_counts:
-    #             keep_searching = False
-    #         else:
-    #             segment_size += self.dt
-
-    #     return segment_size
-
     def analyze_lc_chunks(self, segment_size, func, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
 
@@ -1396,7 +1381,7 @@ class Lightcurve(StingrayTimeseries):
         >>> assert len(res) == 2
         >>> assert np.allclose(res, 10)
         """
-        return super().analyze_chunks(segment_size, func, fraction_step=fraction_step, **kwargs)
+        return super().analyze_segments(func, segment_size, fraction_step=fraction_step, **kwargs)
 
     def to_lightkurve(self):
         """

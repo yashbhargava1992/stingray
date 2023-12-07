@@ -729,16 +729,17 @@ class EventList(StingrayTimeseries):
 
         return new_ev
 
-    def get_color_evolution(self, segment_size, energy_ranges, use_pi=False):
+    def get_color_evolution(self, energy_ranges, segment_size=None, use_pi=False):
         """Compute the color in equal-length segments of the event list.
 
         Parameters
         ----------
-        segment_size : float
-            Segment size in seconds
         energy_ranges : 2x2 list
             List of energy ranges to compute the color:
             ``[[en1_min, en1_max], [en2_min, en2_max]]``
+        segment_size : float
+            Segment size in seconds. If None, the full GTIs are considered
+            instead as segments.
 
         Other Parameters
         ----------------
@@ -765,19 +766,20 @@ class EventList(StingrayTimeseries):
             color_err = color * (np.sqrt(en1_ct) / en1_ct + np.sqrt(en2_ct) / en2_ct)
             return color, color_err
 
-        starts, stops, (colors, color_errs) = self.analyze_chunks(segment_size, color)
+        starts, stops, (colors, color_errs) = self.analyze_segments(color, segment_size)
 
         return starts, stops, colors, color_errs
 
-    def get_intensity_evolution(self, segment_size, energy_range, use_pi=False):
+    def get_intensity_evolution(self, energy_range, segment_size=None, use_pi=False):
         """Compute the intensity in equal-length segments of the event list.
 
         Parameters
         ----------
-        segment_size : float
-            Segment size in seconds
         energy_range : ``[en1_min, en1_max]``
             Energy range to compute the intensity
+        segment_size : float
+            Segment size in seconds. If None, the full GTIs are considered
+            instead as segments.
 
         Other Parameters
         ----------------
@@ -797,11 +799,11 @@ class EventList(StingrayTimeseries):
         def intensity(ev):
             mask1 = ev.get_energy_mask(energy_range, use_pi=use_pi)
             en1_ct = np.count_nonzero(mask1)
-
+            segment_size = ev.gti[0, 1] - ev.gti[0, 0]
             rate = en1_ct / segment_size
             rate_err = np.sqrt(en1_ct) / segment_size
             return rate, rate_err
 
-        starts, stops, (rate, rate_err) = self.analyze_chunks(segment_size, intensity)
+        starts, stops, (rate, rate_err) = self.analyze_segments(intensity, segment_size)
 
         return starts, stops, rate, rate_err

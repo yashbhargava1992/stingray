@@ -609,26 +609,26 @@ class TestColors(object):
 
     def test_bad_interval_color(self):
         with pytest.raises(ValueError, match=" 2x2 array"):
-            self.events.get_color_evolution(10000, [[0, 3], [4, 6], [7, 8]])
+            self.events.get_color_evolution([[0, 3], [4, 6], [7, 8]], 10000)
         with pytest.raises(ValueError, match=" 2x2 array"):
-            self.events.get_color_evolution(10000, [[0, 3, 8]])
+            self.events.get_color_evolution([[0, 3, 8]], 10000)
         with pytest.raises(ValueError, match=" 2x2 array"):
-            self.events.get_color_evolution(10000, [0])
+            self.events.get_color_evolution([0], 10000)
         with pytest.raises(ValueError, match=" 2x2 array"):
-            self.events.get_color_evolution(10000, [[0, 1]])
+            self.events.get_color_evolution([[0, 1]], 10000)
 
     def test_bad_interval_intensity(self):
         with pytest.raises(ValueError, match="2-element list"):
-            self.events.get_intensity_evolution(10000, [[0, 3], [4, 6], [7, 8]])
+            self.events.get_intensity_evolution([[0, 3], [4, 6], [7, 8]], 10000)
         with pytest.raises(ValueError, match="2-element list"):
-            self.events.get_intensity_evolution(10000, [[0, 3, 8]])
+            self.events.get_intensity_evolution([[0, 3, 8]], 10000)
         with pytest.raises(ValueError, match="2-element list"):
-            self.events.get_intensity_evolution(10000, [0])
+            self.events.get_intensity_evolution([0], 10000)
         with pytest.raises(ValueError, match="2-element list"):
-            self.events.get_intensity_evolution(10000, [[0, 1]])
+            self.events.get_intensity_evolution([[0, 1]], 10000)
 
     def test_colors(self):
-        start, stop, colors, color_errs = self.events.get_color_evolution(10000, [[0, 3], [4, 6]])
+        start, stop, colors, color_errs = self.events.get_color_evolution([[0, 3], [4, 6]], 10000)
         # 5000 / 5000 = 1
         # 2 x sqrt(5000) / 5000 = 0.0282
         assert np.allclose(colors, 1, rtol=0.1)
@@ -636,10 +636,27 @@ class TestColors(object):
         assert np.allclose(start, np.arange(10) * 10000)
         assert np.allclose(stop, np.arange(1, 11) * 10000)
 
+    def test_colors_no_segment(self):
+        start, stop, colors, color_errs = self.events.get_color_evolution([[0, 3], [4, 6]])
+        # 50000 / 50000 = 1
+        # 2 x sqrt(50000) / 50000 = 0.0089
+        assert np.allclose(colors, 1, rtol=0.1)
+        assert np.allclose(color_errs, 0.0089, atol=0.001)
+        assert np.allclose(start, 0)
+        assert np.allclose(stop, 100000)
+
     def test_intensity(self):
-        start, stop, rate, rate_errs = self.events.get_intensity_evolution(10000, [0, 6])
+        start, stop, rate, rate_errs = self.events.get_intensity_evolution([0, 6], 10000)
 
         assert np.allclose(rate, 1, rtol=0.1)
         assert np.allclose(rate_errs, 0.01, atol=0.003)
         assert np.allclose(start, np.arange(10) * 10000)
         assert np.allclose(stop, np.arange(1, 11) * 10000)
+
+    def test_intensity_no_segment(self):
+        start, stop, rate, rate_errs = self.events.get_intensity_evolution([0, 6])
+
+        assert np.allclose(rate, 1, rtol=0.1)
+        assert np.allclose(rate_errs, 0.003, atol=0.001)
+        assert np.allclose(start, 0)
+        assert np.allclose(stop, 100000)
