@@ -556,7 +556,7 @@ class TestLightcurve(object):
         t = [0.5, 1.5, 2.5, 3.5, 4.5]
         lc = [5, 5, 0, 5, 5]
         gtis = [[0, 2], [3, 5]]
-        lc = Lightcurve(t, lc, gti=gtis)
+        lc = Lightcurve(t, lc, gti=gtis, dt=1)
 
         assert lc.meanrate == 5
         assert lc.meancounts == 5

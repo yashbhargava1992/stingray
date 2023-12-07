@@ -1053,6 +1053,7 @@ class StingrayObject(object):
             raise IndexError("The index must be either an integer or a slice " "object !")
 
         new_ts = type(self)()
+
         for attr in self.meta_attrs():
             setattr(new_ts, attr, copy.deepcopy(getattr(self, attr)))
 
@@ -1216,8 +1217,10 @@ class StingrayTimeseries(StingrayObject):
 
     @property
     def mask(self):
-        if self._mask is None:
+        if self._mask is None and self.gti is not None:
             self._mask = create_gti_mask(self.time, self.gti, dt=self.dt)
+        elif self._mask is None:
+            self._mask = np.ones_like(self.time, dtype=bool)
         return self._mask
 
     @property
@@ -1290,6 +1293,20 @@ class StingrayTimeseries(StingrayObject):
                 f"Can only assign new {attr_name} of the same shape as the {compare_to_attr} array"
             )
         return value
+
+    @property
+    def exposure(self):
+        """
+        Return the total exposure of the time series, i.e. the sum of the GTIs.
+
+        Returns
+        -------
+        total_exposure : float
+            The total exposure of the time series, in seconds.
+        """
+        from .gti import get_total_gti_length
+
+        return get_total_gti_length(self.gti)
 
     def __eq__(self, other_ts):
         return super().__eq__(other_ts)
@@ -2404,6 +2421,173 @@ class StingrayTimeseries(StingrayObject):
                     edgecolor="none",
                 )
         return ax
+
+    def estimate_segment_size(self, min_total_counts=None, min_time_bins=None):
+        """Estimate a reasonable segment length for chunk-by-chunk analysis.
+
+        Choose a reasonable length for time segments, given a minimum number of total
+        counts in the segment, and a minimum number of time bins in the segment.
+
+        The user specifies a condition on the total counts in each segment and
+        the minimum number of time bins.
+
+        Other Parameters
+        ----------------
+        min_total_counts : int
+            Minimum number of counts for each chunk
+        min_time_bins : int
+            Minimum number of time bins
+
+        Returns
+        -------
+        segment_size : float
+            The length of the light curve chunks that satisfies the conditions
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> time = np.arange(150)
+        >>> counts = np.zeros_like(time) + 3
+        >>> ts = StingrayTimeseries(time, counts=counts, dt=1)
+        >>> ts.estimate_segment_size(min_total_counts=10, min_time_bins=3)
+        4.0
+        >>> ts.estimate_segment_size(min_total_counts=10, min_time_bins=5)
+        5.0
+        >>> counts[2:4] = 1
+        >>> ts = StingrayTimeseries(time, counts=counts, dt=1)
+        >>> ts.estimate_segment_size(min_total_counts=3, min_time_bins=1)
+        3.0
+        >>> # A slightly more complex example
+        >>> dt=0.2
+        >>> time = np.arange(0, 1000, dt)
+        >>> counts = np.random.poisson(100, size=len(time))
+        >>> ts = StingrayTimeseries(time, counts=counts, dt=dt)
+        >>> ts.estimate_segment_size(100, 2)
+        0.4
+        >>> min_total_bins = 40
+        >>> ts.estimate_segment_size(100, 40)
+        8.0
+        """
+        if min_total_counts is None and min_time_bins is None:
+            raise ValueError(
+                "You have to specify at least one of min_total_counts or min_time_bins"
+            )
+
+        if min_total_counts is None:
+            if self.dt > 0:
+                min_total_counts = 0
+            else:
+                min_total_counts = min_time_bins
+
+        def ts_sum(ts):
+            if hasattr(ts, "counts"):
+                return np.sum(ts.counts[ts.mask])
+            return np.count_nonzero(ts.mask)
+
+        mean_ctrate = ts_sum(self) / self.exposure
+
+        if self.dt > 0:
+            # The ceil is on the number of bins
+            rough_estimate = np.ceil(min_total_counts / mean_ctrate / self.dt) * self.dt
+        else:
+            rough_estimate = np.ceil(min_total_counts / mean_ctrate)
+
+        step = self.dt if self.dt > 0 else 1.0
+
+        segment_size = np.max([rough_estimate, min_time_bins * step])
+
+        keep_searching = True
+
+        while keep_searching:
+            start_times, stop_times, results = self.analyze_chunks(segment_size, ts_sum)
+            mincounts = np.min(results)
+            if mincounts >= min_total_counts:
+                keep_searching = False
+            else:
+                segment_size += step
+
+        return segment_size
+
+    def analyze_chunks(self, segment_size, func, fraction_step=1, **kwargs):
+        """Analyze segments of the light curve with any function.
+
+        Parameters
+        ----------
+        segment_size : float
+            Length in seconds of the light curve segments
+        func : function
+            Function accepting a :class:`StingrayTimeseries` object as single argument, plus
+            possible additional keyword arguments, and returning a number or a
+            tuple - e.g., ``(result, error)`` where both ``result`` and ``error`` are
+            numbers.
+
+        Other parameters
+        ----------------
+        fraction_step : float
+            If the step is not a full ``segment_size`` but less (e.g. a moving window),
+            this indicates the ratio between step step and ``segment_size`` (e.g.
+            0.5 means that the window shifts of half ``segment_size``)
+        kwargs : keyword arguments
+            These additional keyword arguments, if present, they will be passed
+            to ``func``
+
+        Returns
+        -------
+        start_times : array
+            Lower time boundaries of all time segments.
+        stop_times : array
+            upper time boundaries of all segments.
+        result : array of N elements
+            The result of ``func`` for each segment of the light curve
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> time = np.arange(0, 10, 0.1)
+        >>> counts = np.zeros_like(time) + 10
+        >>> ts = StingrayTimeseries(time, counts=counts, dt=0.1)
+        >>> # Define a function that calculates the mean
+        >>> mean_func = lambda ts: np.mean(ts.counts)
+        >>> # Calculate the mean in segments of 5 seconds
+        >>> start, stop, res = ts.analyze_chunks(5, mean_func)
+        >>> len(res) == 2
+        True
+        >>> np.allclose(res, 10)
+        True
+        """
+        from .gti import bin_intervals_from_gtis, time_intervals_from_gtis
+
+        if self.dt > 0:
+            start, stop = bin_intervals_from_gtis(
+                self.gti, segment_size, self.time, fraction_step=fraction_step, dt=self.dt
+            )
+        else:
+            tstart, tstop = time_intervals_from_gtis(
+                self.gti, segment_size, fraction_step=fraction_step
+            )
+            start = np.searchsorted(self.time, tstart)
+            stop = np.searchsorted(self.time, tstop)
+
+        start_times = self.time[start] - 0.5 * self.dt
+
+        # Remember that stop is one element above the last element, because
+        # it's defined to be used in intervals start:stop
+        stop_times = self.time[stop - 1] + self.dt * 1.5
+
+        results = []
+        for i, (st, sp) in enumerate(zip(start, stop)):
+            if sp - st <= 1:
+                res = 0
+            else:
+                lc_filt = self[st:sp]
+                res = func(lc_filt, **kwargs)
+            results.append(res)
+
+        results = np.array(results)
+
+        if len(results.shape) == 2:
+            results = [results[:, i] for i in range(results.shape[1])]
+        return start_times, stop_times, results
 
 
 def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, float]:

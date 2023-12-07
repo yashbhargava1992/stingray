@@ -68,8 +68,10 @@ class TestStingrayObject:
         sting_obj.panesapa = [[41, 25], [98, 3]]
         cls.sting_obj = sting_obj
 
-    def test_print(self):
+    def test_print(self, capsys):
         print(self.sting_obj)
+        captured = capsys.readouterr()
+        assert "guefus" in captured.out
 
     def test_preliminary(self):
         assert np.allclose(self.sting_obj.guefus, self.arr)
@@ -406,8 +408,10 @@ class TestStingrayTimeseries:
         cls.sting_obj = sting_obj
         cls.sting_obj_highp = sting_obj_highp
 
-    def test_print(self):
+    def test_print(self, capsys):
         print(self.sting_obj)
+        captured = capsys.readouterr()
+        assert "59777" in captured.out
 
     def test_invalid_instantiation(self):
         with pytest.raises(ValueError, match="Lengths of time and guefus must be equal"):
@@ -1048,8 +1052,10 @@ class TestStingrayTimeseriesSubclass:
         sting_obj.gti = np.asarray([[-0.5, 2.5]])
         cls.sting_obj = sting_obj
 
-    def test_print(self):
+    def test_print(self, capsys):
         print(self.sting_obj)
+        captured = capsys.readouterr()
+        assert "59777" in captured.out
 
     def test_astropy_roundtrip(self):
         so = copy.deepcopy(self.sting_obj)
@@ -1421,3 +1427,46 @@ class TestFillBTI(object):
         lc_like_filt.gti = np.asarray([[0, 900], [950, 999], [999.5, 1000]])
         lc_new = lc_like_filt.fill_bad_time_intervals()
         assert np.allclose(lc_new.gti, self.gti)
+
+
+class TestAnalyzeChunks(object):
+    @classmethod
+    def setup_class(cls):
+        cls.time = np.arange(150)
+        counts = np.zeros_like(cls.time) + 3
+        cls.ts = StingrayTimeseries(cls.time, counts=counts, dt=1)
+        cls.ts_no_dt = StingrayTimeseries(cls.time, counts=counts, dt=0)
+
+    def test_invalid_input(self):
+        with pytest.raises(ValueError, match="You have to specify at least one of"):
+            self.ts.estimate_segment_size()
+        with pytest.raises(ValueError, match="You have to specify at least one of"):
+            self.ts_no_dt.estimate_segment_size()
+
+    def test_no_total_counts(self):
+        assert self.ts.estimate_segment_size(min_time_bins=2) == 2
+        assert self.ts_no_dt.estimate_segment_size(min_time_bins=2) == 2
+
+    def test_estimate_segment_size(self):
+        # Here, the total counts dominate
+        assert self.ts.estimate_segment_size(min_total_counts=10, min_time_bins=3) == 4.0
+
+    def test_estimate_segment_size_more_bins(self):
+        # Here, the time bins dominate
+        assert self.ts.estimate_segment_size(min_total_counts=10, min_time_bins=5) == 5.0
+
+    def test_estimate_segment_size_lower_counts(self):
+        counts = np.zeros_like(self.time) + 3
+        counts[2:4] = 1
+        ts = StingrayTimeseries(self.time, counts=counts, dt=1)
+        assert ts.estimate_segment_size(min_total_counts=3, min_time_bins=1) == 3.0
+
+    def test_estimate_segment_size_lower_dt(self):
+        # A slightly more complex example
+        dt = 0.2
+        time = np.arange(0, 1000, dt)
+        counts = np.random.poisson(100, size=len(time))
+        ts = StingrayTimeseries(time, counts=counts, dt=dt)
+        assert ts.estimate_segment_size(min_total_counts=100, min_time_bins=2) == 0.4
+
+        assert ts.estimate_segment_size(100, min_time_bins=40) == 8.0
