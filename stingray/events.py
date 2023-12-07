@@ -627,6 +627,25 @@ class EventList(StingrayTimeseries):
 
         return super().read(filename=filename, fmt=fmt)
 
+    def get_energy_mask(self, energy_range, use_pi=False):
+        """Get a mask corresponding to events with a given energy range.
+
+        Parameters
+        ----------
+        energy_range: [float, float]
+            Energy range in keV, or in PI channel (if ``use_pi`` is True)
+
+        Other Parameters
+        ----------------
+        use_pi : bool, default False
+            Use PI channel instead of energy in keV
+        """
+        if use_pi:
+            energies = self.pi
+        else:
+            energies = self.energy
+        return (energies >= energy_range[0]) & (energies < energy_range[1])
+
     def filter_energy_range(self, energy_range, inplace=False, use_pi=False):
         """Filter the event list from a given energy range.
 
@@ -654,12 +673,7 @@ class EventList(StingrayTimeseries):
         >>> assert np.allclose(events.time, [0, 1])
 
         """
-        if use_pi:
-            energies = self.pi
-        else:
-            energies = self.energy
-        mask = (energies >= energy_range[0]) & (energies < energy_range[1])
-
+        mask = self.get_energy_mask(energy_range, use_pi=use_pi)
         return self.apply_mask(mask, inplace=inplace)
 
     def apply_deadtime(self, deadtime, inplace=False, **kwargs):
@@ -714,3 +728,43 @@ class EventList(StingrayTimeseries):
             new_ev = [new_ev, retall]
 
         return new_ev
+
+    def get_color_evolution(self, segment_size, energy_ranges, use_pi=False):
+        """Compute the color in equal-length segments of the event list.
+
+        Parameters
+        ----------
+        segment_size : float
+            Segment size in seconds
+        energy_ranges : 2x2 list
+            List of energy ranges to compute the color:
+            ``[[en1_min, en1_max], [en2_min, en2_max]]``
+
+        Other Parameters
+        ----------------
+        use_pi : bool, default False
+            Use PI channel instead of energy in keV
+
+        Returns
+        -------
+        color : array-like
+            Array of colors, computed in each segment as the ratio of the
+            counts in the second energy range to the counts in the first energy
+            range.
+        """
+        if energy_ranges is None or np.shape(energy_ranges) != (2, 2):
+            raise ValueError("Energy ranges must be specified as a 2x2 array")
+
+        def color(ev):
+            mask1 = ev.get_energy_mask(energy_ranges[0], use_pi=use_pi)
+            mask2 = ev.get_energy_mask(energy_ranges[1], use_pi=use_pi)
+            en1_ct = np.count_nonzero(mask1)
+            en2_ct = np.count_nonzero(mask2)
+
+            color = en2_ct / en1_ct
+            color_err = color * (np.sqrt(en1_ct) / en1_ct + np.sqrt(en2_ct) / en2_ct)
+            return color, color_err
+
+        starts, stops, (colors, color_errs) = self.analyze_chunks(segment_size, color)
+
+        return starts, stops, colors, color_errs

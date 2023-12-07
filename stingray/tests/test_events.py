@@ -598,3 +598,17 @@ class TestFilters(object):
         assert np.allclose(filt_events.time, expected)
         assert np.allclose(filt_events.pi, 1)
         assert np.allclose(filt_events.energy, 1)
+
+
+def test_colors():
+    ev = EventList(
+        time=np.arange(100000) + 0.5, energy=np.random.choice([2, 5], 100000), gti=[[0, 100000]]
+    )
+
+    start, stop, colors, color_errs = ev.get_color_evolution(10000, [[0, 3], [4, 6]])
+    # 5000 / 5000 = 1
+    # 2 x sqrt(5000) / 5000 = 0.0282
+    assert np.allclose(colors, 1, rtol=0.1)
+    assert np.allclose(color_errs, 0.0282, atol=0.003)
+    assert np.allclose(start, np.arange(10) * 10000)
+    assert np.allclose(stop, np.arange(1, 11) * 10000)
