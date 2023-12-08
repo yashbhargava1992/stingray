@@ -2550,7 +2550,7 @@ class StingrayTimeseries(StingrayObject):
         >>> # Define a function that calculates the mean
         >>> mean_func = lambda ts: np.mean(ts.counts)
         >>> # Calculate the mean in segments of 5 seconds
-        >>> start, stop, res = ts.analyze_chunks(5, mean_func)
+        >>> start, stop, res = ts.analyze_segments(mean_func, 5)
         >>> len(res) == 2
         True
         >>> np.allclose(res, 10)
