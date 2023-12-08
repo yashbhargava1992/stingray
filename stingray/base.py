@@ -2230,11 +2230,11 @@ class StingrayTimeseries(StingrayObject):
             for attr in attrs_to_randomize:
                 low_arr = getattr(self, attr)[max(buffer_size - filt_low_idx, 0) : filt_low_idx]
                 high_arr = getattr(self, attr)[filt_hig_idx : buffer_size + filt_hig_idx]
-                if not attr in new_attrs:
+                if attr not in new_attrs:
                     new_attrs[attr] = [getattr(self, attr)[self.mask]]
                 new_attrs[attr].append(rs.choice(np.concatenate([low_arr, high_arr]), nevents))
             for attr in attrs_to_leave_alone:
-                if not attr in new_attrs:
+                if attr not in new_attrs:
                     new_attrs[attr] = [getattr(self, attr)[self.mask]]
                 if attr == "_mask":
                     new_attrs[attr].append(np.ones(nevents, dtype=bool))
