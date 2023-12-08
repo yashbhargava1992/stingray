@@ -2134,6 +2134,128 @@ class StingrayTimeseries(StingrayObject):
             mask = mask[::-1]
         return self.apply_mask(mask, inplace=inplace)
 
+    def fill_bad_time_intervals(
+        self,
+        max_length=None,
+        fluxes_to_randomize=None,
+        buffer_size=100,
+        uniform=None,
+        seed=None,
+    ):
+        """Fill short bad time intervals with random data.
+
+        Random data are extracted by randomly repeating the values of nearby good data (at least
+        ``buffer_size`` time bins). Non-uniform time series will have their times randomized from a
+        uniform distribution with the same count rate of nearby intervals (always decided from
+        ``buffer_size`` time bins).
+
+        Other Parameters
+        ----------------
+        max_length : float
+            Maximum length of a bad time interval to be filled. If None, the criterion is bad
+            time intervals shorter than 1/100th of the longest bad time interval.
+        fluxes_to_randomize : list of str, default None
+            List of array_attrs to randomize. ``If None``, all array_attrs are randomized.
+        buffer_size : int, default 100
+            Number of good data points to use to calculate the means and variance the random data
+            on each side of the bad time interval
+        uniform : bool, default None
+            Force the treatment of the data as uniformly sampled or not. If None, the data are
+            considered uniformly sampled if ``self.dt`` is larger than zero and the median
+            separation between subsequent times is within 1% of ``self.dt``.
+        seed : int, default None
+            Random seed to use for the simulation. If None, a random seed is generated.
+
+        """
+        from .gti import get_btis
+        from .utils import get_random_state
+
+        rs = get_random_state(seed)
+
+        if fluxes_to_randomize is None:
+            fluxes_to_randomize = self.array_attrs() + self.internal_array_attrs()
+            if "_mask" in fluxes_to_randomize:
+                fluxes_to_randomize.remove("_mask")
+        fluxes_to_leave_alone = [
+            a
+            for a in self.array_attrs() + self.internal_array_attrs()
+            if a not in fluxes_to_randomize
+        ]
+
+        if max_length is None:
+            max_length = np.max(self.gti[:, 1] - self.gti[:, 0]) / 100
+
+        btis = get_btis(self.gti, self.time[0], self.time[-1])
+        if len(btis) == 0:
+            return copy.deepcopy(self)
+        filtered_times = self.time[self.mask]
+        from .utils import find_nearest
+
+        new_times = [filtered_times.copy()]
+        new_attrs = {}
+        if uniform is None:
+            # The time series is considered uniformly sampled if the median separation between
+            # subsequent times is within 1% of the time resolution
+            uniform = False
+            if self.dt > 0 and np.isclose(np.median(np.diff(self.time)), self.dt, rtol=0.01):
+                uniform = True
+            logging.info(f"Data are {'not' if not uniform else ''} uniformly sampled")
+
+        added_gtis = []
+
+        for bti in btis:
+            length = bti[1] - bti[0]
+            if length > max_length:
+                continue
+            epsilon = 1e-5 * length
+            added_gtis.append([bti[0] - epsilon, bti[1] + epsilon])
+            filt_low_t, filt_low_idx = find_nearest(filtered_times, bti[0])
+            filt_hig_t, filt_hig_idx = find_nearest(filtered_times, bti[1], side="right")
+            if uniform:
+                local_new_times = np.arange(bti[0] + self.dt / 2, bti[1], self.dt)
+                nevents = local_new_times.size
+                new_times.append(local_new_times)
+            else:
+                low_time_arr = filtered_times[max(filt_low_idx - buffer_size, 0) : filt_low_idx]
+                high_time_arr = filtered_times[filt_hig_idx : buffer_size + filt_hig_idx]
+                ctrate = (
+                    np.count_nonzero(low_time_arr) / (filt_low_t - low_time_arr[0])
+                    + np.count_nonzero(high_time_arr) / (high_time_arr[-1] - filt_hig_t)
+                ) / 2
+                nevents = rs.poisson(ctrate * (bti[1] - bti[0]))
+                local_new_times = rs.uniform(bti[0], bti[1], nevents)
+                new_times.append(local_new_times)
+
+            for attr in fluxes_to_randomize:
+                low_arr = getattr(self, attr)[buffer_size - filt_low_idx : filt_low_idx]
+                high_arr = getattr(self, attr)[filt_hig_idx : buffer_size + filt_hig_idx]
+                if not attr in new_attrs:
+                    new_attrs[attr] = [getattr(self, attr)[self.mask]]
+                new_attrs[attr].append(rs.choice(np.concatenate([low_arr, high_arr]), nevents))
+            for attr in fluxes_to_leave_alone:
+                if not attr in new_attrs:
+                    new_attrs[attr] = [getattr(self, attr)[self.mask]]
+                if attr == "_mask":
+                    new_attrs[attr].append(np.ones(nevents, dtype=bool))
+                else:
+                    new_attrs[attr].append(np.zeros(nevents) + np.nan)
+
+        from .gti import join_gtis
+
+        new_gtis = join_gtis(self.gti, added_gtis)
+        new_times = np.concatenate(new_times)
+        order = np.argsort(new_times)
+        new_obj = type(self)()
+        new_obj.time = new_times[order]
+
+        for attr in self.meta_attrs():
+            setattr(new_obj, attr, getattr(self, attr))
+        # Todo: fix GTIs
+        for attr, values in new_attrs.items():
+            setattr(new_obj, attr, np.concatenate(values)[order])
+        new_obj.gti = new_gtis
+        return new_obj
+
     def plot(
         self,
         attr,
