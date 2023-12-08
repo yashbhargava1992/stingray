@@ -2218,6 +2218,7 @@ class StingrayTimeseries(StingrayObject):
             else:
                 low_time_arr = filtered_times[max(filt_low_idx - buffer_size, 0) : filt_low_idx]
                 high_time_arr = filtered_times[filt_hig_idx : buffer_size + filt_hig_idx]
+
                 ctrate = (
                     np.count_nonzero(low_time_arr) / (filt_low_t - low_time_arr[0])
                     + np.count_nonzero(high_time_arr) / (high_time_arr[-1] - filt_hig_t)
@@ -2227,7 +2228,7 @@ class StingrayTimeseries(StingrayObject):
                 new_times.append(local_new_times)
 
             for attr in fluxes_to_randomize:
-                low_arr = getattr(self, attr)[buffer_size - filt_low_idx : filt_low_idx]
+                low_arr = getattr(self, attr)[max(buffer_size - filt_low_idx, 0) : filt_low_idx]
                 high_arr = getattr(self, attr)[filt_hig_idx : buffer_size + filt_hig_idx]
                 if not attr in new_attrs:
                     new_attrs[attr] = [getattr(self, attr)[self.mask]]
