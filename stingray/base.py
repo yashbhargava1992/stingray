@@ -2137,7 +2137,7 @@ class StingrayTimeseries(StingrayObject):
     def fill_bad_time_intervals(
         self,
         max_length=None,
-        fluxes_to_randomize=None,
+        attrs_to_randomize=None,
         buffer_size=100,
         uniform=None,
         seed=None,
@@ -2154,7 +2154,7 @@ class StingrayTimeseries(StingrayObject):
         max_length : float
             Maximum length of a bad time interval to be filled. If None, the criterion is bad
             time intervals shorter than 1/100th of the longest bad time interval.
-        fluxes_to_randomize : list of str, default None
+        attrs_to_randomize : list of str, default None
             List of array_attrs to randomize. ``If None``, all array_attrs are randomized.
         buffer_size : int, default 100
             Number of good data points to use to calculate the means and variance the random data
@@ -2172,14 +2172,14 @@ class StingrayTimeseries(StingrayObject):
 
         rs = get_random_state(seed)
 
-        if fluxes_to_randomize is None:
-            fluxes_to_randomize = self.array_attrs() + self.internal_array_attrs()
-            if "_mask" in fluxes_to_randomize:
-                fluxes_to_randomize.remove("_mask")
-        fluxes_to_leave_alone = [
+        if attrs_to_randomize is None:
+            attrs_to_randomize = self.array_attrs() + self.internal_array_attrs()
+            if "_mask" in attrs_to_randomize:
+                attrs_to_randomize.remove("_mask")
+        attrs_to_leave_alone = [
             a
             for a in self.array_attrs() + self.internal_array_attrs()
-            if a not in fluxes_to_randomize
+            if a not in attrs_to_randomize
         ]
 
         if max_length is None:
@@ -2227,13 +2227,13 @@ class StingrayTimeseries(StingrayObject):
                 local_new_times = rs.uniform(bti[0], bti[1], nevents)
                 new_times.append(local_new_times)
 
-            for attr in fluxes_to_randomize:
+            for attr in attrs_to_randomize:
                 low_arr = getattr(self, attr)[max(buffer_size - filt_low_idx, 0) : filt_low_idx]
                 high_arr = getattr(self, attr)[filt_hig_idx : buffer_size + filt_hig_idx]
                 if not attr in new_attrs:
                     new_attrs[attr] = [getattr(self, attr)[self.mask]]
                 new_attrs[attr].append(rs.choice(np.concatenate([low_arr, high_arr]), nevents))
-            for attr in fluxes_to_leave_alone:
+            for attr in attrs_to_leave_alone:
                 if not attr in new_attrs:
                     new_attrs[attr] = [getattr(self, attr)[self.mask]]
                 if attr == "_mask":
