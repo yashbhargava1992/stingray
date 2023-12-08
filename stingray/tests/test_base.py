@@ -1310,6 +1310,11 @@ class TestFillBTI(object):
             time=time_edges[:-1] + 0.5, counts=counts, blablas=blablas, gti=cls.gti, dt=1
         )
 
+    def test_no_btis_returns_copy(self):
+        ts = StingrayTimeseries([1, 2, 3], energy=[4, 6, 8], gti=[[0.5, 3.5]])
+        ts_new = ts.fill_bad_time_intervals()
+        assert ts == ts_new
+
     def test_event_like(self):
         ev_like_filt = copy.deepcopy(self.ev_like)
         # I introduce a small gap in the GTIs
