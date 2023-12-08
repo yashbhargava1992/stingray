@@ -2190,6 +2190,7 @@ class StingrayTimeseries(StingrayObject):
 
         btis = get_btis(self.gti, self.time[0], self.time[-1])
         if len(btis) == 0:
+            logging.info("No bad time intervals to fill")
             return copy.deepcopy(self)
         filtered_times = self.time[self.mask]
         from .utils import find_nearest
@@ -2210,6 +2211,7 @@ class StingrayTimeseries(StingrayObject):
             length = bti[1] - bti[0]
             if length > max_length:
                 continue
+            logging.info(f"Filling bad time interval {bti}")
             epsilon = 1e-5 * length
             added_gtis.append([bti[0] - epsilon, bti[1] + epsilon])
             filt_low_t, filt_low_idx = find_nearest(filtered_times, bti[0])
