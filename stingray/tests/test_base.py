@@ -1299,7 +1299,10 @@ class TestFillBTI(object):
         cls.rand_time = np.sort(np.random.uniform(0, 1000, 100000))
         cls.rand_ener = np.random.uniform(0, 100, 100000)
         cls.gti = [[0, 900], [950, 1000]]
-        cls.ev_like = StingrayTimeseries(cls.rand_time, energy=cls.rand_ener, gti=cls.gti)
+        blablas = np.random.normal(0, 1, cls.rand_ener.size)
+        cls.ev_like = StingrayTimeseries(
+            cls.rand_time, energy=cls.rand_ener, blablas=blablas, gti=cls.gti
+        )
         time_edges = np.linspace(0, 1000, 1001)
         counts = np.histogram(cls.rand_time, bins=time_edges)[0]
         blablas = np.random.normal(0, 1, 1000)
@@ -1341,6 +1344,32 @@ class TestFillBTI(object):
         new_masked, filt_masked = lc_new.apply_gtis(), lc_like_filt.apply_gtis()
         for attr in ["time", "counts", "blablas"]:
             assert np.allclose(getattr(new_masked, attr), getattr(filt_masked, attr))
+
+    def test_ignore_attrs_ev_like(self):
+        ev_like_filt = copy.deepcopy(self.ev_like)
+        # I introduce a small gap in the GTIs
+        ev_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
+        ev_new0 = ev_like_filt.fill_bad_time_intervals(seed=1234)
+        ev_new1 = ev_like_filt.fill_bad_time_intervals(seed=1234, attrs_to_randomize=["energy"])
+        assert np.allclose(ev_new0.gti, ev_new1.gti)
+        assert np.allclose(ev_new0.time, ev_new1.time)
+
+        assert np.count_nonzero(np.isnan(ev_new0.blablas)) == 0
+        assert np.count_nonzero(np.isnan(ev_new1.blablas)) > 0
+        assert np.count_nonzero(np.isnan(ev_new1.energy)) == 0
+
+    def test_ignore_attrs_lc_like(self):
+        lc_like_filt = copy.deepcopy(self.lc_like)
+        # I introduce a small gap in the GTIs
+        lc_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
+        lc_new0 = lc_like_filt.fill_bad_time_intervals(seed=1234)
+        lc_new1 = lc_like_filt.fill_bad_time_intervals(seed=1234, attrs_to_randomize=["counts"])
+        assert np.allclose(lc_new0.gti, lc_new1.gti)
+        assert np.allclose(lc_new0.time, lc_new1.time)
+
+        assert np.count_nonzero(np.isnan(lc_new0.blablas)) == 0
+        assert np.count_nonzero(np.isnan(lc_new1.blablas)) > 0
+        assert np.count_nonzero(np.isnan(lc_new1.counts)) == 0
 
     def test_forcing_non_uniform(self):
         ev_like_filt = copy.deepcopy(self.ev_like)
