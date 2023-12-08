@@ -2156,6 +2156,7 @@ class StingrayTimeseries(StingrayObject):
             time intervals shorter than 1/100th of the longest bad time interval.
         attrs_to_randomize : list of str, default None
             List of array_attrs to randomize. ``If None``, all array_attrs are randomized.
+            It should not include ``time`` and ``_mask``, which are treated separately.
         buffer_size : int, default 100
             Number of good data points to use to calculate the means and variance the random data
             on each side of the bad time interval
@@ -2174,8 +2175,10 @@ class StingrayTimeseries(StingrayObject):
 
         if attrs_to_randomize is None:
             attrs_to_randomize = self.array_attrs() + self.internal_array_attrs()
-            if "_mask" in attrs_to_randomize:
-                attrs_to_randomize.remove("_mask")
+            for attr in ["time", "_mask"]:
+                if attr in attrs_to_randomize:
+                    attrs_to_randomize.remove(attr)
+
         attrs_to_leave_alone = [
             a
             for a in self.array_attrs() + self.internal_array_attrs()
