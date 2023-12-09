@@ -31,6 +31,7 @@ Current Capabilities
 * simulating a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
 * simulating an event list from a given light curve _and_ with a given energy spectrum
 * Good Time Interval operations
+* Filling gaps in light curves with statistically sound fake data
 
 1. Fourier methods
 ~~~~~~~~~~~~~~~~~~
