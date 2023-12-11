@@ -1608,11 +1608,14 @@ class Lightcurve(StingrayTimeseries):
         self,
         witherrors=False,
         labels=None,
-        axis=None,
+        ax=None,
         title=None,
         marker="-",
         save=False,
         filename=None,
+        axis_limits=None,
+        axis=None,
+        plot_btis=True,
     ):
         """
         Plot the light curve using ``matplotlib``.
@@ -1629,10 +1632,13 @@ class Lightcurve(StingrayTimeseries):
         labels : iterable, default ``None``
             A list of tuple with ``xlabel`` and ``ylabel`` as strings.
 
-        axis : list, tuple, string, default ``None``
+        axis_limits : list, tuple, string, default ``None``
             Parameter to set axis properties of the ``matplotlib`` figure. For example
             it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
             acceptable argument for the``matplotlib.pyplot.axis()`` method.
+
+        axis : list, tuple, string, default ``None``
+            Deprecated in favor of ``axis_limits``, same functionality.
 
         title : str, default ``None``
             The title of the plot.
@@ -1647,39 +1653,69 @@ class Lightcurve(StingrayTimeseries):
 
         filename : str
             File name of the image to save. Depends on the boolean ``save``.
+
+        ax : ``matplotlib.pyplot.axis`` object
+            Axis to be used for plotting. Defaults to creating a new one.
+
+        plot_btis : bool
+            Plot the bad time intervals as red areas on the plot
         """
-
-        fig = plt.figure()
-        if witherrors:
-            fig = plt.errorbar(self.time, self.counts, yerr=self.counts_err, fmt=marker)
-        else:
-            fig = plt.plot(self.time, self.counts, marker)
-
-        if labels is not None:
-            try:
-                plt.xlabel(labels[0])
-                plt.ylabel(labels[1])
-            except TypeError:
-                utils.simon("``labels`` must be either a list or tuple with " "x and y labels.")
-                raise
-            except IndexError:
-                utils.simon("``labels`` must have two labels for x and y " "axes.")
-                # Not raising here because in case of len(labels)==1, only
-                # x-axis will be labelled.
-
         if axis is not None:
-            plt.axis(axis)
+            warnings.warn(
+                "The ``axis`` argument is deprecated in favor of ``axis_limits``. "
+                "Please use that instead.",
+                DeprecationWarning,
+            )
+            axis_limits = axis
 
-        if title is not None:
-            plt.title(title)
+        flux_attr = "counts"
+        if not self.input_counts:
+            flux_attr = "countrate"
 
-        if save:
-            if filename is None:
-                plt.savefig("out.png")
-            else:
-                plt.savefig(filename)
-        else:
-            plt.show(block=False)
+        return super().plot(
+            flux_attr,
+            witherrors=witherrors,
+            labels=labels,
+            ax=ax,
+            title=title,
+            marker=marker,
+            save=save,
+            filename=filename,
+            plot_btis=plot_btis,
+            axis_limits=axis_limits,
+        )
+
+    #     fig = plt.figure()
+    #     if witherrors:
+    #         fig = plt.errorbar(self.time, self.counts, yerr=self.counts_err, fmt=marker)
+    #     else:
+    #         fig = plt.plot(self.time, self.counts, marker)
+
+    #     if labels is not None:
+    #         try:
+    #             plt.xlabel(labels[0])
+    #             plt.ylabel(labels[1])
+    #         except TypeError:
+    #             utils.simon("``labels`` must be either a list or tuple with " "x and y labels.")
+    #             raise
+    #         except IndexError:
+    #             utils.simon("``labels`` must have two labels for x and y " "axes.")
+    #             # Not raising here because in case of len(labels)==1, only
+    #             # x-axis will be labelled.
+
+    #     if axis is not None:
+    #         plt.axis(axis)
+
+    #     if title is not None:
+    #         plt.title(title)
+
+    #     if save:
+    #         if filename is None:
+    #             plt.savefig("out.png")
+    #         else:
+    #             plt.savefig(filename)
+    #     else:
+    #         plt.show(block=False)
 
     @classmethod
     def read(

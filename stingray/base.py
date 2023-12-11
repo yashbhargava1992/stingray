@@ -2207,11 +2207,12 @@ class StingrayTimeseries(StingrayObject):
 
         added_gtis = []
 
+        total_filled_time = 0
         for bti in btis:
             length = bti[1] - bti[0]
             if length > max_length:
                 continue
-            logging.info(f"Filling bad time interval {bti}")
+            logging.info(f"Filling bad time interval {bti} ({length:.4f} s)")
             epsilon = 1e-5 * length
             added_gtis.append([bti[0] - epsilon, bti[1] + epsilon])
             filt_low_t, filt_low_idx = find_nearest(filtered_times, bti[0])
@@ -2245,6 +2246,9 @@ class StingrayTimeseries(StingrayObject):
                     new_attrs[attr].append(np.ones(nevents, dtype=bool))
                 else:
                     new_attrs[attr].append(np.zeros(nevents) + np.nan)
+            total_filled_time += length
+
+        logging.info(f"A total of {total_filled_time} s of data were simulated")
 
         from .gti import join_gtis
 
@@ -2273,6 +2277,7 @@ class StingrayTimeseries(StingrayObject):
         save=False,
         filename=None,
         plot_btis=True,
+        axis_limits=None,
     ):
         """
         Plot the time series using ``matplotlib``.
@@ -2296,6 +2301,10 @@ class StingrayTimeseries(StingrayObject):
             could be ``['Time (s)', 'Counts (s^-1)']``
         ax : ``matplotlib.pyplot.axis`` object
             Axis to be used for plotting. Defaults to creating a new one.
+        axis_limits : list, tuple, string, default ``None``
+            Parameter to set axis properties of the ``matplotlib`` figure. For example
+            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
+            acceptable argument for the``matplotlib.pyplot.axis()`` method.
         title : str, default ``None``
             The title of the plot.
         marker : str, default '-'
@@ -2330,11 +2339,15 @@ class StingrayTimeseries(StingrayObject):
                 getattr(self, attr),
                 yerr=getattr(self, attr + "_err"),
                 fmt="o",
+                zorder=10,
             )
 
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
 
+        if axis_limits is not None:
+            ax.set_xlim(axis_limits[0], axis_limits[1])
+            ax.set_ylim(axis_limits[2], axis_limits[3])
         if title is not None:
             ax.set_title(title)
 
@@ -2349,7 +2362,14 @@ class StingrayTimeseries(StingrayObject):
             tend = max(self.time[-1] + self.dt / 2, self.gti[-1, 1])
             btis = get_btis(self.gti, tstart, tend)
             for bti in btis:
-                plt.axvspan(bti[0], bti[1], alpha=0.5, color="r", zorder=10)
+                plt.axvspan(
+                    bti[0],
+                    bti[1],
+                    alpha=0.5,
+                    color="r",
+                    zorder=1,
+                    edgecolor="none",
+                )
         return ax
 
 
