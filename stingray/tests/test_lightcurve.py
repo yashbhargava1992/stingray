@@ -1175,11 +1175,16 @@ class TestLightcurve(object):
         os.unlink("lc.png")
         plt.close("all")
 
-    def test_plot_axis(self):
+    def test_plot_axis_arg(self):
         lc = Lightcurve(self.times, self.counts)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
+        with pytest.warns(DeprecationWarning, match="argument is deprecated in favor"):
             lc.plot(axis=[0, 1, 0, 100])
+        assert plt.fignum_exists(1)
+        plt.close("all")
+
+    def test_plot_axis_limits_arg(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(axis_limits=[0, 1, 0, 100])
         assert plt.fignum_exists(1)
         plt.close("all")
 
