@@ -1159,6 +1159,50 @@ class StingrayTimeseries(StingrayObject):
                 raise ValueError(f"Lengths of time and {kw} must be equal.")
             setattr(self, kw, new_arr)
 
+    @property
+    def time(self):
+        return self._time
+
+    @time.setter
+    def time(self, value):
+        value = self._check_value_size(value, "time", "time")
+        if value is None:
+            for attr in self.internal_array_attrs() + self.array_attrs():
+                setattr(self, attr, None)
+        self._set_times(value, high_precision=self.high_precision)
+
+    @property
+    def gti(self):
+        if self._gti is None and self._time is not None:
+            if isinstance(self.dt, Iterable):
+                dt0 = self.dt[0]
+                dt1 = self.dt[-1]
+            else:
+                dt0 = dt1 = self.dt
+            self._gti = np.asarray([[self._time[0] - dt0 / 2, self._time[-1] + dt1 / 2]])
+        return self._gti
+
+    @gti.setter
+    def gti(self, value):
+        if value is None:
+            self._gti = None
+            return
+        value = np.asarray(value)
+        self._gti = value
+        self._mask = None
+
+    @property
+    def mask(self):
+        from .gti import create_gti_mask
+
+        if self._mask is None:
+            self._mask = create_gti_mask(self.time, self.gti, dt=self.dt)
+        return self._mask
+
+    @property
+    def n(self):
+        return self.main_array_length
+
     def _set_times(self, time, high_precision=False):
         if time is None or np.size(time) == 0:
             self._time = None
@@ -1220,50 +1264,6 @@ class StingrayTimeseries(StingrayObject):
                 f"Can only assign new {attr_name} of the same shape as the {compare_to_attr} array"
             )
         return value
-
-    @property
-    def time(self):
-        return self._time
-
-    @time.setter
-    def time(self, value):
-        value = self._check_value_size(value, "time", "time")
-        if value is None:
-            for attr in self.internal_array_attrs() + self.array_attrs():
-                setattr(self, attr, None)
-        self._set_times(value, high_precision=self.high_precision)
-
-    @property
-    def gti(self):
-        if self._gti is None and self._time is not None:
-            if isinstance(self.dt, Iterable):
-                dt0 = self.dt[0]
-                dt1 = self.dt[-1]
-            else:
-                dt0 = dt1 = self.dt
-            self._gti = np.asarray([[self._time[0] - dt0 / 2, self._time[-1] + dt1 / 2]])
-        return self._gti
-
-    @gti.setter
-    def gti(self, value):
-        if value is None:
-            self._gti = None
-            return
-        value = np.asarray(value)
-        self._gti = value
-        self._mask = None
-
-    @property
-    def mask(self):
-        from .gti import create_gti_mask
-
-        if self._mask is None:
-            self._mask = create_gti_mask(self.time, self.gti, dt=self.dt)
-        return self._mask
-
-    @property
-    def n(self):
-        return self.main_array_length
 
     def __eq__(self, other_ts):
         return super().__eq__(other_ts)
