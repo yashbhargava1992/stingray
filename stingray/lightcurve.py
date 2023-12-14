@@ -1685,38 +1685,6 @@ class Lightcurve(StingrayTimeseries):
             axis_limits=axis_limits,
         )
 
-    #     fig = plt.figure()
-    #     if witherrors:
-    #         fig = plt.errorbar(self.time, self.counts, yerr=self.counts_err, fmt=marker)
-    #     else:
-    #         fig = plt.plot(self.time, self.counts, marker)
-
-    #     if labels is not None:
-    #         try:
-    #             plt.xlabel(labels[0])
-    #             plt.ylabel(labels[1])
-    #         except TypeError:
-    #             utils.simon("``labels`` must be either a list or tuple with " "x and y labels.")
-    #             raise
-    #         except IndexError:
-    #             utils.simon("``labels`` must have two labels for x and y " "axes.")
-    #             # Not raising here because in case of len(labels)==1, only
-    #             # x-axis will be labelled.
-
-    #     if axis is not None:
-    #         plt.axis(axis)
-
-    #     if title is not None:
-    #         plt.title(title)
-
-    #     if save:
-    #         if filename is None:
-    #             plt.savefig("out.png")
-    #         else:
-    #             plt.savefig(filename)
-    #     else:
-    #         plt.show(block=False)
-
     @classmethod
     def read(
         cls, filename, fmt=None, format_=None, err_dist="gauss", skip_checks=False, **fits_kwargs

@@ -2325,15 +2325,18 @@ class StingrayTimeseries(StingrayObject):
             plt.figure(attr)
             ax = plt.gca()
 
-        if labels is None:
+        valid_labels = (isinstance(labels, Iterable) and not isinstance(labels, str)) and len(
+            labels
+        ) == 2
+        if labels is not None and not valid_labels:
+            warnings.warn("``labels`` must be an iterable with two labels for x and y axes.")
+
+        if labels is None or not valid_labels:
             labels = ["Time (s)"] + [attr]
 
-        if isinstance(labels, Iterable) and not isinstance(labels, str):
-            if len(labels) != 2:
-                warnings.warn("``labels`` must have two labels for x and y axes.")
-            else:
-                ylabel = labels[1]
-                xlabel = labels[0]
+        xlabel = labels[0]
+        ylabel = labels[1]
+        # Default values for labels
 
         ax.plot(self.time, getattr(self, attr), marker, ds="steps-mid", label=attr, zorder=10)
 
@@ -2370,7 +2373,7 @@ class StingrayTimeseries(StingrayObject):
                     bti[0],
                     bti[1],
                     alpha=0.5,
-                    color="r",
+                    facecolor="r",
                     zorder=1,
                     edgecolor="none",
                 )
