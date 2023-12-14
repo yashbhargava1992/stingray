@@ -996,7 +996,7 @@ class StingrayObject(object):
         """
         Return the number of bins of a the main array attributes
 
-        This method implements overrides the ``len`` function for a :class:`StingrayObject`
+        This method overrides the ``len`` function for a :class:`StingrayObject`
         object and returns the length of the array attributes (using the main array attribute
         as probe).
         """
@@ -1004,18 +1004,17 @@ class StingrayObject(object):
 
     def __getitem__(self, index):
         """
-        Return the corresponding count value at the index or a new :class:`StingrayObject`
-        object upon slicing.
-
-        This method adds functionality to retrieve the count value at
-        a particular index. This also can be used for slicing and generating
-        a new :class:`StingrayObject` object.
+        Return an element or a slice of the :class:`StingrayObject`.
 
         Parameters
         ----------
         index : int or slice instance
             Index value of the time array or a slice object.
 
+        Returns
+        -------
+        ts_new : :class:`StingrayObject` object
+            The new :class:`StingrayObject` object with the set of selected data.
         """
         from .utils import assign_value_if_none
 
@@ -1044,7 +1043,8 @@ class StingrayTimeseries(StingrayObject):
     """Basic class for time series data.
 
     This can be events, binned light curves, unevenly sampled light curves, etc. The only
-    requirement is that the data are associated with a time measurement.
+    requirement is that the data (which can be any quantity, related or not to an electromagnetic
+    measurement) are associated with a time measurement.
     We make a distinction between the *array* attributes, which have the same length of the
     ``time`` array, and the *meta* attributes, which can be scalars or arrays of different
     size. The array attributes can be multidimensional (e.g. a spectrum for each time bin),
@@ -1103,9 +1103,6 @@ class StingrayTimeseries(StingrayObject):
         List of attributes that are never to be considered as array attributes. For example, GTIs
         are not array attributes.
 
-    ncounts: int
-        The number of data points in the time series
-
     dt: float
         The time resolution of the measurements. Can be a scalar or an array attribute (useful
         for non-uniformly sampled data or events from different instruments)
@@ -1161,9 +1158,6 @@ class StingrayTimeseries(StingrayObject):
             if self.time.shape[0] != new_arr.shape[0]:
                 raise ValueError(f"Lengths of time and {kw} must be equal.")
             setattr(self, kw, new_arr)
-
-        # if gti is None and self.time is not None and np.size(self.time) > 0:
-        #     self.gti = np.asarray([[self.time[0] - 0.5 * self.dt, self.time[-1] + 0.5 * self.dt]])
 
     def _set_times(self, time, high_precision=False):
         if time is None or np.size(time) == 0:
