@@ -12,6 +12,8 @@ import numpy as np
 from astropy.table import Table
 from astropy.time import Time, TimeDelta
 from astropy.units import Quantity
+
+from stingray.utils import sqsum
 from .io import _can_save_longdouble, _can_serialize_meta
 
 from typing import TYPE_CHECKING, Type, TypeVar, Union
@@ -27,20 +29,13 @@ if TYPE_CHECKING:
     Tso = TypeVar("Tso", bound="StingrayObject")
 
 
-
 __all__ = [
-    "sqsum",
     "convert_table_attrs_to_lowercase",
     "interpret_times",
     "reduce_precision_if_extended",
     "StingrayObject",
     "StingrayTimeseries",
 ]
-
-
-def sqsum(array1, array2):
-    """Return the square root of the sum of the squares of two arrays."""
-    return np.sqrt(np.add(np.square(array1), np.square(array2)))
 
 
 def convert_table_attrs_to_lowercase(table: Table) -> Table:

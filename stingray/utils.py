@@ -2277,3 +2277,8 @@ def assign_if_not_finite(value, default):
     if not np.isfinite(value):
         return default
     return value
+
+
+def sqsum(array1, array2):
+    """Return the square root of the sum of the squares of two arrays."""
+    return np.sqrt(np.add(np.square(array1), np.square(array2)))
