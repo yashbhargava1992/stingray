@@ -83,11 +83,44 @@ class StingrayObject(object):
             return 0
         return np.shape(np.asarray(getattr(self, self.main_array_attr)))[0]
 
+    def data_attributes(self) -> list[str]:
+        """Clean up the list of attributes, only giving out those pointing to data.
+
+        List all the attributes that point directly to valid data. This method goes through all the
+        attributes of the class, eliminating methods, properties, and attributes that are complicated
+        to serialize such as other ``StingrayObject``, or arrays of objects.
+
+        This function does not make difference between array-like data and scalar data.
+
+        Returns
+        -------
+        data_attributes : list of str
+            List of attributes pointing to data that are not methods, properties,
+            or other ``StingrayObject`` instances.
+        """
+        return [
+            attr
+            for attr in dir(self)
+            if (
+                not attr.startswith("__")
+                and attr not in ["main_array_attr", "not_array_attr"]
+                and not isinstance(getattr(self.__class__, attr, None), property)
+                and not callable(value := getattr(self, attr))
+                and not isinstance(value, StingrayObject)
+                and not np.asarray(value).dtype == "O"
+            )
+        ]
+
     def array_attrs(self) -> list[str]:
         """List the names of the array attributes of the Stingray Object.
 
         By array attributes, we mean the ones with the same size and shape as
         ``main_array_attr`` (e.g. ``time`` in ``EventList``)
+
+        Returns
+        -------
+        attributes : list of str
+            List of array attributes.
         """
 
         main_attr = getattr(self, getattr(self, "main_array_attr"))
@@ -107,31 +140,19 @@ class StingrayObject(object):
             )
         ]
 
-    def data_attributes(self) -> list[str]:
-        """Clean up the list of attributes, only giving out actual data.
-
-        This also includes properties (which usually set internal data arrays, so they would
-        duplicate the effort), methods, and attributes that are complicated to serialize such
-        as other ``StingrayObject``, or arrays of objects.
-        """
-        return [
-            attr
-            for attr in dir(self)
-            if (
-                not attr.startswith("__")
-                and attr not in ["main_array_attr", "not_array_attr"]
-                and not isinstance(getattr(self.__class__, attr, None), property)
-                and not callable(value := getattr(self, attr))
-                and not isinstance(value, StingrayObject)
-                and not np.asarray(value).dtype == "O"
-            )
-        ]
-
     def internal_array_attrs(self) -> list[str]:
-        """List the names of the array attributes of the Stingray Object.
+        """List the names of the internal array attributes of the Stingray Object.
 
+        These are array attributes that can be set by properties, and are generally indicated
+        by an underscore followed by the name of the property that links to it (E.g.
+        ``_counts`` in ``Lightcurve``).
         By array attributes, we mean the ones with the same size and shape as
         ``main_array_attr`` (e.g. ``time`` in ``EventList``)
+
+        Returns
+        -------
+        attributes : list of str
+            List of internal array attributes.
         """
 
         main_attr = getattr(self, "main_array_attr")
@@ -159,6 +180,11 @@ class StingrayObject(object):
 
         By array attributes, we mean the ones with a different size and shape
         than ``main_array_attr`` (e.g. ``time`` in ``EventList``)
+
+        Returns
+        -------
+        attributes : list of str
+            List of meta attributes.
         """
         array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
 
