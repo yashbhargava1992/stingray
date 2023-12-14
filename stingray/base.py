@@ -1270,12 +1270,8 @@ class StingrayTimeseries(StingrayObject):
 
     def apply_gtis(self, new_gti=None, inplace: bool = True):
         """
-        Apply GTIs to a time series. Filters the ``time``, ``counts``,
-        ``countrate``, ``counts_err`` and ``countrate_err`` arrays for all bins
-        that fall into Good Time Intervals and recalculates mean countrate
-        and the number of bins.
-
-        If the data already have
+        Apply Good Time Intervals (GTIs) to a time series. Filters all the array attributes, only
+        keeping the bins that fall into GTIs.
 
         Parameters
         ----------
@@ -1770,8 +1766,9 @@ class StingrayTimeseries(StingrayObject):
         """
         Concatenate two :class:`StingrayTimeseries` objects.
 
-        This method concatenates two or more :class:`StingrayTimeseries` objects. GTIs are
-        recalculated by merging all the GTIs together. GTIs should not overlap at any point.
+        This method concatenates two or more :class:`StingrayTimeseries` objects along the time
+        axis. GTIs are recalculated by merging all the GTIs together. GTIs should not overlap at
+        any point.
 
         Parameters
         ----------
@@ -1978,6 +1975,11 @@ class StingrayTimeseries(StingrayObject):
         reference will be changed to the one of the first time series. An empty time series will
         be ignored.
 
+        Note: ``join`` is not equivalent to ``concatenate``. ``concatenate`` is used to join
+        multiple **non-overlapping** time series along the time axis, while ``join`` is more
+        general, and can be used to join multiple time series with different strategies (see
+        parameter ``strategy`` below).
+
         Parameters
         ----------
         other : :class:`StingrayTimeseries` or class:`list` of :class:`StingrayTimeseries`
@@ -2093,7 +2095,7 @@ class StingrayTimeseries(StingrayObject):
         """
         Sort a ``StingrayTimeseries`` object by time.
 
-        A ``StingrayTimeserie``s can be sorted in either increasing or decreasing order
+        A ``StingrayTimeseries`` can be sorted in either increasing or decreasing order
         using this method. The time array gets sorted and the counts array is
         changed accordingly.
 
