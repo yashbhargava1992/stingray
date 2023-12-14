@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from collections import OrderedDict
+
 import pickle
 import warnings
 import copy
@@ -199,7 +201,6 @@ class StingrayObject(object):
 
     def dict(self) -> dict:
         """Return a dictionary representation of the object."""
-        from collections import OrderedDict
 
         main_attr = self.main_array_attr
         meta_attrs = self.meta_attrs()
@@ -263,13 +264,9 @@ class StingrayObject(object):
             results += label + "\n"
         return results
 
-    def __repr__(self) -> str:
-        """Return a string representation of the object."""
-        return self.pretty_print()
-
     def __str__(self) -> str:
         """Return a string representation of the object."""
-        return self.__repr__()
+        return self.pretty_print()
 
     def __eq__(self, other_ts):
         """Compare two :class:`StingrayObject` instances with ``==``.
@@ -1173,7 +1170,7 @@ class StingrayTimeseries(StingrayObject):
         else:
             self._time = np.asarray(time, dtype=np.longdouble)
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         """Return a string representation of the object."""
         return self.pretty_print(
             attrs_to_apply=["gti", "time", "tstart", "tseg", "tstop"],

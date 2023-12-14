@@ -19,7 +19,7 @@ from .filters import get_deadtime_mask
 from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_boundaries
 from .io import load_events_and_gtis
 from .lightcurve import Lightcurve
-from .utils import assign_value_if_none, simon, interpret_times, njit
+from .utils import assign_value_if_none, simon, njit
 from .utils import histogram
 
 __all__ = ["EventList"]

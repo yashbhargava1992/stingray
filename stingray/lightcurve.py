@@ -33,12 +33,12 @@ from stingray.utils import (
     baseline_als,
     poisson_symmetrical_errors,
     simon,
-    interpret_times,
     is_sorted,
     check_isallfinite,
 )
 from stingray.io import lcurve_from_fits
 from stingray import bexvar
+from stingray.base import interpret_times
 
 __all__ = ["Lightcurve"]
 

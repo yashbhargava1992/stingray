@@ -14,7 +14,6 @@ import scipy
 from numpy import histogram as histogram_np
 from numpy import histogram2d as histogram2d_np
 from numpy import histogramdd as histogramdd_np
-from .base import interpret_times
 
 try:
     import pyfftw
