@@ -1476,13 +1476,48 @@ class Lightcurve(StingrayTimeseries):
             skip_checks=skip_checks,
         )
 
-    def to_astropy_timeseries(self):
-        return self._to_astropy_object(kind="timeseries")
+    def to_astropy_timeseries(self, **kwargs):
+        """Save the light curve to an :class:`astropy.timeseries.TimeSeries` object.
+
+        The time array and all the array attributes become columns. The meta attributes become
+        metadata of the :class:`astropy.timeseries.TimeSeries` object.
+        The time array is saved as a TimeDelta object.
+
+        Other Parameters
+        ----------------
+        no_longdouble : bool, default False
+            If True, the data are converted to double precision before being saved.
+            This is useful, e.g., for saving to FITS files, which do not support long double precision.
+        """
+        return self._to_astropy_object(kind="timeseries", **kwargs)
 
     def to_astropy_table(self, **kwargs):
+        """Save the light curve to an :class:`astropy.table.Table` object.
+
+        The time array and all the array attributes become columns. The meta attributes become
+        metadata of the :class:`astropy.table.Table` object.
+
+        Other Parameters
+        ----------------
+        no_longdouble : bool, default False
+            If True, the data are converted to double precision before being saved.
+            This is useful, e.g., for saving to FITS files, which do not support long double precision.
+        """
         return self._to_astropy_object(kind="table", **kwargs)
 
     def _to_astropy_object(self, kind="table", no_longdouble=False):
+        """Save the light curve to an :class:`astropy.table.Table` or :class:`astropy.timeseries.TimeSeries` object.
+
+        If ``kind`` is ``timeseries``, the time array and all the array attributes become columns.
+
+        Other Parameters
+        ----------------
+        kind : str, default ``table``
+            The type of object to return. Accepted values are ``table`` or ``timeseries``.
+        no_longdouble : bool, default False
+            If True, the data are converted to double precision before being saved.
+            This is useful, e.g., for saving to FITS files, which do not support long double precision.
+        """
         data = {}
 
         for attr in [
