@@ -362,8 +362,8 @@ class TestAveragedCrossspectrumEvents(object):
 
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_from_timeseries_with_err_works(self, norm):
-        lc1 = self.events1.to_timeseries(self.dt)
-        lc2 = self.events2.to_timeseries(self.dt)
+        lc1 = self.events1.to_binned_timeseries(self.dt)
+        lc2 = self.events2.to_binned_timeseries(self.dt)
         lc1.counts_err = np.sqrt(lc1.counts.mean()) + np.zeros_like(lc1.counts)
         lc2.counts_err = np.sqrt(lc2.counts.mean()) + np.zeros_like(lc2.counts)
         pds = AveragedCrossspectrum.from_stingray_timeseries(

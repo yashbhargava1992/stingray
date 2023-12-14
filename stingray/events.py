@@ -276,8 +276,8 @@ class EventList(StingrayTimeseries):
             self.time, dt, tstart=tstart, gti=self._gti, tseg=tseg, mjdref=self.mjdref
         )
 
-    def to_timeseries(self, dt, array_attrs=None):
-        """Convert the event list to a :class:`stingray.StingrayTimeseries` object.
+    def to_binned_timeseries(self, dt, array_attrs=None):
+        """Convert the event list to a binned :class:`stingray.StingrayTimeseries` object.
 
         The result will be something similar to a light curve, but with arbitrary
         attributes corresponding to a weighted sum of each specified attribute of

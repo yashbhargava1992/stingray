@@ -247,7 +247,7 @@ class TestAveragedPowerspectrumEvents(object):
 
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_from_timeseries_with_err_works(self, norm):
-        lc = self.events.to_timeseries(self.dt)
+        lc = self.events.to_binned_timeseries(self.dt)
         lc._counts_err = np.sqrt(lc.counts.mean()) + np.zeros_like(lc.counts)
         pds = AveragedPowerspectrum.from_stingray_timeseries(
             lc,

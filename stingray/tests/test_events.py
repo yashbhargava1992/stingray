@@ -115,7 +115,7 @@ class TestEvents(object):
         ev = EventList(self.time, gti=self.gti)
         ev.bla = np.zeros_like(ev.time) + 2
         lc = ev.to_lc(1)
-        ts = ev.to_timeseries(1)
+        ts = ev.to_binned_timeseries(1)
         assert np.allclose(ts.time, [0.5, 1.5, 2.5, 3.5])
         assert (ts.gti == self.gti).all()
         assert np.array_equal(ts.counts, lc.counts)
