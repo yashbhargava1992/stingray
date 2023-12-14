@@ -2281,3 +2281,19 @@ def assign_if_not_finite(value, default):
 def sqsum(array1, array2):
     """Return the square root of the sum of the squares of two arrays."""
     return np.sqrt(np.add(np.square(array1), np.square(array2)))
+
+
+@njit
+def _int_sum_non_zero(array):
+    """Sum all positive elements of an array of integers.
+
+    Parameters
+    ----------
+    array : array-like
+        Array of integers
+    """
+    sum = 0
+    for a in array:
+        if a > 0:
+            sum += int(a)
+    return sum

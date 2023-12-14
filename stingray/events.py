@@ -14,6 +14,8 @@ import numpy as np
 import numpy.random as ra
 from astropy.table import Table
 
+from stingray.utils import _int_sum_non_zero
+
 from .base import StingrayObject, StingrayTimeseries
 from .filters import get_deadtime_mask
 from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_boundaries
@@ -26,16 +28,21 @@ __all__ = ["EventList"]
 
 
 @njit
-def _int_sum_non_zero(array):
-    sum = 0
-    for a in array:
-        if a > 0:
-            sum += int(a)
-    return sum
-
-
-@njit
 def _from_lc_numba(times, counts, empty_times):
+    """Create a rough event list from a light curve.
+
+    This function creates as many events as the counts in each time bin of the light curve,
+    with event times equal to the light curve time stamps.
+
+    Parameters
+    ----------
+    times : array-like
+        Array of time stamps
+    counts : array-like
+        Array of counts
+    empty_times : array-like
+        Empty array to be filled with time stamps
+    """
     last = 0
     for t, c in zip(times, counts):
         if c <= 0:
