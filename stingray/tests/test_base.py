@@ -95,7 +95,7 @@ class TestStingrayObject:
         # Add a non-scalar meta attribute to both, just slightly different
         ts1.blah = [2]
         ts2.blah = [3]
-        ts1 != ts2
+        assert ts1 != ts2
 
         # Get back to normal
         del ts1.blah, ts2.blah
