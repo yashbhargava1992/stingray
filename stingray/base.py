@@ -12,6 +12,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.time import Time, TimeDelta
 from astropy.units import Quantity
+from .io import _can_save_longdouble, _can_serialize_meta
 
 from typing import TYPE_CHECKING, Type, TypeVar, Union
 
@@ -25,11 +26,6 @@ if TYPE_CHECKING:
     TTime = Union[Time, TimeDelta, Quantity, npt.ArrayLike]
     Tso = TypeVar("Tso", bound="StingrayObject")
 
-HAS_128 = True
-try:
-    np.float128
-except AttributeError:  # pragma: no cover
-    HAS_128 = False
 
 
 __all__ = [
@@ -40,62 +36,6 @@ __all__ = [
     "StingrayObject",
     "StingrayTimeseries",
 ]
-
-
-def _can_save_longdouble(probe_file: str, fmt: str) -> bool:
-    """Check if a given file format can save tables with longdoubles.
-
-    Try to save a table with a longdouble column, and if it doesn't work, catch the exception.
-    If the exception is related to longdouble, return False (otherwise just raise it, this
-    would mean there are larger problems that need to be solved). In this case, also warn that
-    probably part of the data will not be saved.
-
-    If no exception is raised, return True.
-    """
-    if not HAS_128:  # pragma: no cover
-        # There are no known issues with saving longdoubles where numpy.float128 is not defined
-        return True
-
-    try:
-        Table({"a": np.arange(0, 3, 1.212314).astype(np.float128)}).write(
-            probe_file, format=fmt, overwrite=True
-        )
-        yes_it_can = True
-        os.unlink(probe_file)
-    except ValueError as e:
-        if "float128" not in str(e):  # pragma: no cover
-            raise
-        warnings.warn(
-            f"{fmt} output does not allow saving metadata at maximum precision. "
-            "Converting to lower precision"
-        )
-        yes_it_can = False
-    return yes_it_can
-
-
-def _can_serialize_meta(probe_file: str, fmt: str) -> bool:
-    """
-    Try to save a table with meta to be serialized, and if it doesn't work, catch the exception.
-    If the exception is related to serialization, return False (otherwise just raise it, this
-    would mean there are larger problems that need to be solved). In this case, also warn that
-    probably part of the data will not be saved.
-
-    If no exception is raised, return True.
-    """
-    try:
-        Table({"a": [3]}).write(probe_file, overwrite=True, format=fmt, serialize_meta=True)
-
-        os.unlink(probe_file)
-        yes_it_can = True
-    except TypeError as e:
-        if "serialize_meta" not in str(e):  # pragma: no cover
-            raise
-        warnings.warn(
-            f"{fmt} output does not serialize the metadata at the moment. "
-            "Some attributes will be lost."
-        )
-        yes_it_can = False
-    return yes_it_can
 
 
 def sqsum(array1, array2):

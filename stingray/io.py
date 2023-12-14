@@ -28,6 +28,13 @@ except ImportError:
     _H5PY_INSTALLED = False
 
 
+HAS_128 = True
+try:
+    np.float128
+except AttributeError:  # pragma: no cover
+    HAS_128 = False
+
+
 def rough_calibration(pis, mission):
     """Make a rough conversion betwenn PI channel and energy.
 
@@ -916,3 +923,83 @@ def savefig(filename, **kwargs):
         )
 
     plt.savefig(filename, **kwargs)
+
+
+def _can_save_longdouble(probe_file: str, fmt: str) -> bool:
+    """Check if a given file format can save tables with longdoubles.
+
+    Try to save a table with a longdouble column, and if it doesn't work, catch the exception.
+    If the exception is related to longdouble, return False (otherwise just raise it, this
+    would mean there are larger problems that need to be solved). In this case, also warn that
+    probably part of the data will not be saved.
+
+    If no exception is raised, return True.
+
+    Parameters
+    ----------
+    probe_file : str
+        The name of the file to be used for probing
+    fmt : str
+        The format to be used for probing, in the ``format`` argument of ``Table.write``
+
+    Returns
+    -------
+    yes_it_can : bool
+        Whether the format can serialize the metadata
+    """
+    if not HAS_128:  # pragma: no cover
+        # There are no known issues with saving longdoubles where numpy.float128 is not defined
+        return True
+
+    try:
+        Table({"a": np.arange(0, 3, 1.212314).astype(np.float128)}).write(
+            probe_file, format=fmt, overwrite=True
+        )
+        yes_it_can = True
+        os.unlink(probe_file)
+    except ValueError as e:
+        if "float128" not in str(e):  # pragma: no cover
+            raise
+        warnings.warn(
+            f"{fmt} output does not allow saving metadata at maximum precision. "
+            "Converting to lower precision"
+        )
+        yes_it_can = False
+    return yes_it_can
+
+
+def _can_serialize_meta(probe_file: str, fmt: str) -> bool:
+    """
+    Try to save a table with meta to be serialized, and if it doesn't work, catch the exception.
+    If the exception is related to serialization, return False (otherwise just raise it, this
+    would mean there are larger problems that need to be solved). In this case, also warn that
+    probably part of the data will not be saved.
+
+    If no exception is raised, return True.
+
+    Parameters
+    ----------
+    probe_file : str
+        The name of the file to be used for probing
+    fmt : str
+        The format to be used for probing, in the ``format`` argument of ``Table.write``
+
+    Returns
+    -------
+    yes_it_can : bool
+        Whether the format can serialize the metadata
+    """
+    try:
+        Table({"a": [3]}).write(probe_file, overwrite=True, format=fmt, serialize_meta=True)
+
+        os.unlink(probe_file)
+        yes_it_can = True
+    except TypeError as e:
+        if "serialize_meta" not in str(e):  # pragma: no cover
+            raise
+        warnings.warn(
+            f"{fmt} output does not serialize the metadata at the moment. "
+            "Some attributes will be lost."
+        )
+        yes_it_can = False
+    return yes_it_can
