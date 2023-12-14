@@ -2328,8 +2328,12 @@ class StingrayTimeseries(StingrayObject):
         if labels is None:
             labels = ["Time (s)"] + [attr]
 
-        ylabel = labels[1]
-        xlabel = labels[0]
+        if isinstance(labels, Iterable) and not isinstance(labels, str):
+            if len(labels) != 2:
+                warnings.warn("``labels`` must have two labels for x and y axes.")
+            else:
+                ylabel = labels[1]
+                xlabel = labels[0]
 
         ax.plot(self.time, getattr(self, attr), marker, ds="steps-mid", label=attr, zorder=10)
 
