@@ -334,6 +334,14 @@ class StingrayObject(object):
         Array attributes (e.g. ``time``, ``pi``, ``energy``, etc. for
         ``EventList``) are converted into columns, while meta attributes
         (``mjdref``, ``gti``, etc.) are saved into the ``meta`` dictionary.
+
+        Other Parameters
+        ----------------
+        no_longdouble : bool
+            If True, reduce the precision of longdouble arrays to double precision.
+            This needs to be done in some cases, e.g. when the table is to be saved
+            in an architecture not supporting extended precision (e.g. ARM), but can
+            also be useful when an extended precision is not needed.
         """
         data = {}
         array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
