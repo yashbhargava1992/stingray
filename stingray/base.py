@@ -677,7 +677,7 @@ class StingrayObject(object):
             ts.write(filename, format=fmt, overwrite=True)
 
     def apply_mask(self, mask: npt.ArrayLike, inplace: bool = False, filtered_attrs: list = None):
-        """Apply a mask to all array attributes of the time series
+        """Apply a mask to all array attributes of the object
 
         Parameters
         ----------
@@ -687,12 +687,17 @@ class StingrayObject(object):
         Other parameters
         ----------------
         inplace : bool
-            If True, overwrite the current time series. Otherwise, return a new one.
+            If True, overwrite the current object. Otherwise, return a new one.
         filtered_attrs : list of str or None
             Array attributes to be filtered. Defaults to all array attributes if ``None``.
             The other array attributes will be set to ``None``. The main array attr is always
             included.
 
+        Returns
+        -------
+        ts_new : StingrayObject object
+            The new object with the mask applied if ``inplace`` is ``False``, otherwise the
+            same object.
         """
         all_attrs = self.internal_array_attrs() + self.array_attrs()
         if filtered_attrs is None:
@@ -820,8 +825,10 @@ class StingrayObject(object):
     def add(
         self, other, operated_attrs=None, error_attrs=None, error_operation=sqsum, inplace=False
     ):
-        """Add the array values of two time series element by element, assuming the ``time`` arrays
-        of the time series match exactly.
+        """Add two :class:`StingrayObject` instances.
+
+        Add the array values of two :class:`StingrayObject` instances element by element, assuming
+        the main array attributes of the instances match exactly.
 
         All array attrs ending with ``_err`` are treated as error bars and propagated with the
         sum of squares.
@@ -860,8 +867,8 @@ class StingrayObject(object):
     def __add__(self, other):
         """Operation that gets called with the ``+`` operator.
 
-        Add the array values of two time series element by element, assuming the ``time`` arrays
-        of the time series match exactly.
+        Add the array values of two :class:`StingrayObject` instances element by element, assuming
+        the main array attributes of the instances match exactly.
 
         All array attrs ending with ``_err`` are treated as error bars and propagated with the
         sum of squares.
@@ -878,8 +885,8 @@ class StingrayObject(object):
     def __iadd__(self, other):
         """Operation that gets called with the ``+=`` operator.
 
-        Add the array values of two time series element by element, assuming the ``time`` arrays
-        of the time series match exactly.
+        Add the array values of two :class:`StingrayObject` instances element by element, assuming
+        the main array attributes of the instances match exactly.
 
         All array attrs ending with ``_err`` are treated as error bars and propagated with the
         sum of squares.
@@ -898,9 +905,7 @@ class StingrayObject(object):
         self, other, operated_attrs=None, error_attrs=None, error_operation=sqsum, inplace=False
     ):
         """
-        Subtract *all the array attrs* of one time series from the ones of another
-        time series element by element, assuming the ``time`` arrays of the time series
-        match exactly.
+        Subtract *all the array attrs* of two :class:`StingrayObject` instances element by element, assuming the main array attributes of the instances match exactly.
 
         All array attrs ending with ``_err`` are treated as error bars and propagated with the
         sum of squares.
@@ -939,9 +944,7 @@ class StingrayObject(object):
     def __sub__(self, other):
         """Operation that gets called with the ``-`` operator.
 
-        Subtract *all the array attrs* of one time series from the ones of another
-        time series element by element, assuming the ``time`` arrays of the time series
-        match exactly.
+        Subtract *all the array attrs* of two :class:`StingrayObject` instances element by element, assuming the main array attributes of the instances match exactly.
 
         All array attrs ending with ``_err`` are treated as error bars and propagated with the
         sum of squares.
@@ -958,9 +961,7 @@ class StingrayObject(object):
     def __isub__(self, other):
         """Operation that gets called with the ``-=`` operator.
 
-        Subtract *all the array attrs* of one time series from the ones of another
-        time series element by element, assuming the ``time`` arrays of the time series
-        match exactly.
+        Subtract *all the array attrs* of two :class:`StingrayObject` instances element by element, assuming the main array attributes of the instances match exactly.
 
         All array attrs ending with ``_err`` are treated as error bars and propagated with the
         sum of squares.
@@ -977,11 +978,11 @@ class StingrayObject(object):
 
     def __neg__(self):
         """
-        Implement the behavior of negation of the array attributes of a time series object.
+        Implement the behavior of negation of the array attributes of a :class:`StingrayObject`
         Error attrs are left alone.
 
-        The negation operator ``-`` is supposed to invert the sign of the count
-        values of a time series object.
+        The negation operator ``-`` is supposed to invert the sign of all array attributes of a
+        time series object, leaving out the ones ending with ``_err``.
 
         """
 
@@ -993,9 +994,9 @@ class StingrayObject(object):
 
     def __len__(self):
         """
-        Return the number of time bins of a time series.
+        Return the number of bins of a the main array attributes
 
-        This method implements overrides the ``len`` function for a :class:`StingrayTimeseries`
+        This method implements overrides the ``len`` function for a :class:`StingrayObject`
         object and returns the length of the array attributes (using the main array attribute
         as probe).
         """
@@ -1003,16 +1004,12 @@ class StingrayObject(object):
 
     def __getitem__(self, index):
         """
-        Return the corresponding count value at the index or a new :class:`StingrayTimeseries`
+        Return the corresponding count value at the index or a new :class:`StingrayObject`
         object upon slicing.
 
         This method adds functionality to retrieve the count value at
         a particular index. This also can be used for slicing and generating
-        a new :class:`StingrayTimeseries` object. GTIs are recalculated based on the new light
-        curve segment
-
-        If the slice object is of kind ``start:stop:step``, GTIs are also sliced,
-        and rewritten as ``zip(time - self.dt /2, time + self.dt / 2)``
+        a new :class:`StingrayObject` object.
 
         Parameters
         ----------
