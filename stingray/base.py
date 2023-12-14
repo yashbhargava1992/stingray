@@ -1165,7 +1165,7 @@ class StingrayTimeseries(StingrayObject):
 
     @time.setter
     def time(self, value):
-        value = self._check_value_size(value, "time", "time")
+        value = self._validate_and_format(value, "time", "time")
         if value is None:
             for attr in self.internal_array_attrs() + self.array_attrs():
                 setattr(self, attr, None)
@@ -1221,7 +1221,7 @@ class StingrayTimeseries(StingrayObject):
             attrs_to_discard=["_mask", "header"],
         )
 
-    def _check_value_size(self, value, attr_name, compare_to_attr):
+    def _validate_and_format(self, value, attr_name, compare_to_attr):
         """Check if the size of a value is compatible with the size of another attribute.
 
         Different cases are possible:
@@ -1241,6 +1241,11 @@ class StingrayTimeseries(StingrayObject):
             The name of the attribute being checked.
         compare_to_attr : str
             The name of the attribute to compare with.
+
+        Returns
+        -------
+        value : array-like or None
+            The value to check wrapped in a class:`np.array`, if it is not None. Otherwise None
         """
         if value is None:
             return None

@@ -362,7 +362,7 @@ class Lightcurve(StingrayTimeseries):
 
     @time.setter
     def time(self, value):
-        value = self._check_value_size(value, "time", "time")
+        value = self._validate_and_format(value, "time", "time")
         if value is None:
             for attr in self.internal_array_attrs():
                 setattr(self, attr, None)
@@ -395,7 +395,7 @@ class Lightcurve(StingrayTimeseries):
 
     @counts.setter
     def counts(self, value):
-        value = self._check_value_size(value, "counts", "time")
+        value = self._validate_and_format(value, "counts", "time")
         self._counts = value
         self._countrate = None
         self._meancounts = None
@@ -423,7 +423,7 @@ class Lightcurve(StingrayTimeseries):
 
     @counts_err.setter
     def counts_err(self, value):
-        value = self._check_value_size(value, "counts_err", "counts")
+        value = self._validate_and_format(value, "counts_err", "counts")
 
         self._counts_err = value
         self._countrate_err = None
@@ -441,7 +441,7 @@ class Lightcurve(StingrayTimeseries):
 
     @countrate.setter
     def countrate(self, value):
-        value = self._check_value_size(value, "countrate", "time")
+        value = self._validate_and_format(value, "countrate", "time")
 
         self._countrate = value
         self._counts = None
@@ -467,7 +467,7 @@ class Lightcurve(StingrayTimeseries):
 
     @countrate_err.setter
     def countrate_err(self, value):
-        value = self._check_value_size(value, "countrate_err", "countrate")
+        value = self._validate_and_format(value, "countrate_err", "countrate")
 
         self._countrate_err = value
         self._counts_err = None
