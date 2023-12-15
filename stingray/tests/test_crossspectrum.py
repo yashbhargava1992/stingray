@@ -175,6 +175,8 @@ class TestAveragedCrossspectrumEvents(object):
 
         self.events1 = EventList(times1, gti=gti)
         self.events2 = EventList(times2, gti=gti)
+        self.events1.fake_weights = np.ones_like(self.events1.time)
+        self.events2.fake_weights = np.ones_like(self.events2.time)
 
         self.cs = Crossspectrum(self.events1, self.events2, dt=self.dt, norm="none")
 
@@ -357,6 +359,45 @@ class TestAveragedCrossspectrumEvents(object):
         )
         for attr in ["power", "freq", "m", "n", "nphots1", "nphots2", "segment_size"]:
             assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
+
+    @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
+    def test_from_timeseries_with_err_works(self, norm):
+        lc1 = self.events1.to_binned_timeseries(self.dt)
+        lc2 = self.events2.to_binned_timeseries(self.dt)
+        lc1.counts_err = np.sqrt(lc1.counts.mean()) + np.zeros_like(lc1.counts)
+        lc2.counts_err = np.sqrt(lc2.counts.mean()) + np.zeros_like(lc2.counts)
+        pds = AveragedCrossspectrum.from_stingray_timeseries(
+            lc1, lc2, "counts", "counts_err", segment_size=self.segment_size, norm=norm, silent=True
+        )
+        pds = AveragedCrossspectrum.from_stingray_timeseries(
+            lc1,
+            lc2,
+            "counts",
+            "counts_err",
+            segment_size=self.segment_size,
+            norm=norm,
+            silent=True,
+        )
+        pds_weight = AveragedCrossspectrum.from_stingray_timeseries(
+            lc1,
+            lc2,
+            "fake_weights",
+            "counts_err",
+            segment_size=self.segment_size,
+            norm=norm,
+            silent=True,
+        )
+        pds_ev = AveragedCrossspectrum.from_events(
+            self.events1,
+            self.events2,
+            segment_size=self.segment_size,
+            dt=self.dt,
+            norm=norm,
+            silent=True,
+        )
+        for attr in ["power", "freq", "m", "n", "nphots1", "nphots2", "segment_size"]:
+            assert np.allclose(getattr(pds, attr), getattr(pds_ev, attr))
+            assert np.allclose(getattr(pds_weight, attr), getattr(pds_ev, attr))
 
     def test_it_works_with_events(self):
         lc1 = self.events1.to_lc(self.dt)
@@ -1302,16 +1343,27 @@ class TestRoundTrip:
 
         self._check_equal(so, new_so)
 
-    @pytest.mark.parametrize("fmt", ["pickle", "ascii", "ascii.ecsv", "fits", "hdf5"])
+    @pytest.mark.parametrize("fmt", ["pickle", "hdf5"])
     def test_file_roundtrip(self, fmt):
         so = self.cs
         fname = f"dummy.{fmt}"
         if not _HAS_H5PY and fmt == "hdf5":
             with pytest.raises(Exception) as excinfo:
                 so.write(fname, fmt=fmt)
-                assert h5py in str(excinfo.value)
+                assert "h5py" in str(excinfo.value)
             return
         so.write(fname, fmt=fmt)
+        new_so = so.read(fname, fmt=fmt)
+        os.unlink(fname)
+
+        self._check_equal(so, new_so)
+
+    @pytest.mark.parametrize("fmt", ["ascii", "ascii.ecsv", "fits"])
+    def test_file_roundtrip_lossy(self, fmt):
+        so = self.cs
+        fname = f"dummy.{fmt}"
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            so.write(fname, fmt=fmt)
         new_so = so.read(fname, fmt=fmt)
         os.unlink(fname)
 

@@ -550,6 +550,63 @@ class Powerspectrum(Crossspectrum):
         )
 
     @staticmethod
+    def from_stingray_timeseries(
+        ts,
+        flux_attr,
+        error_flux_attr=None,
+        segment_size=None,
+        norm="none",
+        silent=False,
+        use_common_mean=True,
+        gti=None,
+    ):
+        """Calculate AveragedPowerspectrum from a time series.
+
+        Parameters
+        ----------
+        ts : `stingray.Timeseries`
+            Input Time Series
+        flux_attr : `str`
+            What attribute of the time series will be used.
+
+        Other parameters
+        ----------------
+        error_flux_attr : `str`
+            What attribute of the time series will be used as error bar.
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged.
+            Only relevant (and required) for AveragedCrossspectrum
+        norm : str, default "frac"
+            The normalization of the periodogram. "abs" is absolute rms, "frac" is
+            fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+            unnormalized periodogram
+        use_common_mean : bool, default True
+            The mean of the light curve can be estimated in each interval, or on
+            the full light curve. This gives different results (Alston+2013).
+            Here we assume the mean is calculated on the full light curve, but
+            the user can set ``use_common_mean`` to False to calculate it on a
+            per-segment basis.
+        silent : bool, default False
+            Silence the progress bars
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals. Defaults to the common GTIs from the two input
+            objects. Could throw errors if these GTIs have overlaps with the
+            input object GTIs! If you're getting errors regarding your GTIs,
+            don't  use this and only give GTIs to the input objects before
+            making the cross spectrum.
+        """
+        return powerspectrum_from_timeseries(
+            ts,
+            flux_attr=flux_attr,
+            error_flux_attr=error_flux_attr,
+            segment_size=segment_size,
+            norm=norm,
+            silent=silent,
+            use_common_mean=use_common_mean,
+            gti=gti,
+        )
+
+    @staticmethod
     def from_lightcurve(
         lc, segment_size=None, gti=None, norm="frac", silent=False, use_common_mean=True
     ):
@@ -1152,11 +1209,8 @@ def powerspectrum_from_lightcurve(
 
     Parameters
     ----------
-    events : `stingray.Lightcurve`
+    lc : `stingray.Lightcurve`
         Light curve to be analyzed.
-    dt : float
-        The time resolution of the intermediate light curves
-        (sets the Nyquist frequency)
 
     Other parameters
     ----------------
@@ -1213,6 +1267,86 @@ def powerspectrum_from_lightcurve(
     )
 
     return _create_powerspectrum_from_result_table(table, force_averaged=force_averaged)
+
+
+def powerspectrum_from_timeseries(
+    ts,
+    flux_attr,
+    error_flux_attr=None,
+    segment_size=None,
+    norm="none",
+    silent=False,
+    use_common_mean=True,
+    gti=None,
+    save_all=False,
+):
+    """Calculate power spectrum from a time series
+
+    Parameters
+    ----------
+    ts : `stingray.StingrayTimeseries`
+        Input time series
+    flux_attr : `str`
+        What attribute of the time series will be used.
+
+    Other parameters
+    ----------------
+    error_flux_attr : `str`
+        What attribute of the time series will be used as error bar.
+    segment_size : float
+        The length, in seconds, of the light curve segments that will be
+        averaged. Only required (and used) for ``AveragedPowerspectrum``.
+    gti : ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
+        Additional, optional Good Time intervals that get intersected with
+        the GTIs of the input object. Can cause errors if there are
+        overlaps between these GTIs and the input object GTIs. If that
+        happens, assign the desired GTIs to the input object.
+    norm : str, default "frac"
+        The normalization of the periodogram. `abs` is absolute rms, `frac`
+        is fractional rms, `leahy` is Leahy+83 normalization, and `none` is
+        the unnormalized periodogram.
+    use_common_mean : bool, default True
+        The mean of the light curve can be estimated in each interval, or
+        on the full light curve. This gives different results
+        (Alston+2013). By default, we assume the mean is calculated on the
+        full light curve, but the user can set ``use_common_mean`` to False
+        to calculate it on a per-segment basis.
+    silent : bool, default False
+        Silence the progress bars.
+    save_all : bool, default False
+        Save all intermediate PDSs used for the final average. Use with care.
+        This is likely to fill up your RAM on medium-sized datasets, and to
+        slow down the computation when rebinning.
+
+    Returns
+    -------
+    spec : `AveragedCrossspectrum` or `Crossspectrum`
+        The output cross spectrum.
+    """
+    force_averaged = segment_size is not None
+    # Suppress progress bar for single periodogram
+    silent = silent or (segment_size is None)
+    if gti is None:
+        gti = ts.gti
+
+    err = None
+    if error_flux_attr is not None:
+        err = getattr(ts, error_flux_attr)
+
+    results = avg_pds_from_events(
+        ts.time,
+        gti,
+        segment_size,
+        ts.dt,
+        norm=norm,
+        use_common_mean=use_common_mean,
+        silent=silent,
+        fluxes=getattr(ts, flux_attr),
+        errors=err,
+        return_subcs=save_all,
+    )
+
+    return _create_powerspectrum_from_result_table(results, force_averaged=force_averaged)
 
 
 def powerspectrum_from_lc_iterable(

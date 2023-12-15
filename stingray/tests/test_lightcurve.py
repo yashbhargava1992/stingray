@@ -48,6 +48,8 @@ except ImportError:
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
 
+plt.close("all")
+
 
 def fvar_fun(lc):
     from stingray.utils import excess_variance
@@ -82,11 +84,15 @@ class TestProperties(object):
         cls.lc_lowmem = Lightcurve(times, counts, gti=cls.gti, low_memory=True)
 
     def test_empty_lightcurve(self):
-        with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
-            Lightcurve()
+        lc0 = Lightcurve()
+        lc1 = Lightcurve([], [])
+        assert lc0.time is None
+        assert lc1.time is None
 
-        with pytest.warns(UserWarning, match="No time values passed to Lightcurve object!"):
-            Lightcurve([], [])
+    def test_add_data_to_empty_lightcurve(self):
+        lc0 = Lightcurve()
+        lc0.time = [1, 2, 3]
+        lc0.counts = [1, 2, 3]
 
     def test_bad_counts_lightcurve(self):
         with pytest.raises(StingrayError, match="Empty or invalid counts array. "):
@@ -149,6 +155,12 @@ class TestProperties(object):
         assert lc._bin_lo is None
         _ = lc.bin_lo
         assert lc._bin_lo is not None
+
+    def test_make_all_none(self):
+        lc = copy.deepcopy(self.lc)
+        lc.time = None
+        assert lc.counts is None
+        assert lc._counts is None
 
     def test_lightcurve_from_astropy_time(self):
         time = Time([57483, 57484], format="mjd")
@@ -246,18 +258,36 @@ class TestProperties(object):
         # (because low_memory, and input_counts is now False)
         assert lc._counts_err is None
 
-    @pytest.mark.parametrize(
-        "property", "time,counts,counts_err," "countrate,countrate_err".split(",")
-    )
-    def test_assign_bad_shape_fails(self, property):
+    @pytest.mark.parametrize("attr", "time,counts,countrate".split(","))
+    def test_add_data_to_empty_lightcurve_wrong(self, attr):
+        lc0 = Lightcurve()
+        lc0.time = [1, 2, 3]
+        with pytest.raises(ValueError, match=f".*the same shape as the time array"):
+            setattr(lc0, attr, [1, 2, 3, 4])
+
+    @pytest.mark.parametrize("attr", "counts,countrate".split(","))
+    def test_add_err_data_to_empty_lightcurve_wrong_order(self, attr):
+        lc0 = Lightcurve()
+        lc0.time = [1, 2, 3]
+        with pytest.raises(ValueError, match=f"if the {attr} array is not None"):
+            setattr(lc0, attr + "_err", [1, 2, 3])
+
+    @pytest.mark.parametrize("attr", "counts,countrate".split(","))
+    def test_add_err_data_to_empty_lightcurve_wrong_size(self, attr):
+        lc0 = Lightcurve()
+        lc0.time = [1, 2, 3]
+        setattr(lc0, attr, [1, 2, 1])
+        with pytest.raises(ValueError, match=f"the same shape as the {attr} array"):
+            setattr(lc0, attr + "_err", [1, 2, 3, 4])
+
+    @pytest.mark.parametrize("attr", "time,counts,counts_err,countrate,countrate_err".split(","))
+    def test_assign_scalar_data(self, attr):
         lc = copy.deepcopy(self.lc)
         # Same shape passes
-        setattr(lc, property, np.zeros_like(lc.time))
+        setattr(lc, attr, np.zeros_like(lc.time))
         # Different shape doesn't
-        with pytest.raises(ValueError):
-            setattr(lc, property, 3)
-        with pytest.raises(ValueError):
-            setattr(lc, property, np.arange(2))
+        with pytest.raises(ValueError, match="at least 1D"):
+            setattr(lc, attr, 3)
 
 
 class TestChunks(object):
@@ -321,6 +351,15 @@ class TestLightcurve(object):
         Demonstrate that we can create a trivial Lightcurve object.
         """
         lc = Lightcurve(self.times, self.counts)
+
+    def test_print(self, capsys):
+        lc = Lightcurve(self.times, self.counts, header="TEST")
+
+        print(lc)
+        captured = capsys.readouterr()
+        assert "header" not in captured.out
+        assert "time" in captured.out
+        assert "counts" in captured.out
 
     def test_irregular_time_warning(self):
         """
@@ -556,12 +595,12 @@ class TestLightcurve(object):
     def test_add_with_different_time_arrays(self):
         _times = [1.1, 2.1, 3.1, 4.1, 5.1]
         _counts = [2, 2, 2, 2, 2]
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
 
-        with pytest.raises(ValueError):
-            lc1 = Lightcurve(self.times, self.counts)
-            lc2 = Lightcurve(_times, _counts)
-
-            lc = lc1 + lc2
+        with pytest.warns(UserWarning, match="The good time intervals in the two time series"):
+            with pytest.raises(ValueError):
+                lc = lc1 + lc2
 
     def test_add_with_different_err_dist(self):
         lc1 = Lightcurve(self.times, self.counts)
@@ -581,16 +620,17 @@ class TestLightcurve(object):
         gti = [[0.0, 3.5]]
         lc1 = Lightcurve(self.times, self.counts, gti=self.gti)
         lc2 = Lightcurve(self.times, self.counts, gti=gti)
-        lc = lc1 + lc2
+        with pytest.warns(UserWarning, match="The good time intervals in the two time series"):
+            lc = lc1 + lc2
         np.testing.assert_almost_equal(lc.gti, [[0.5, 3.5]])
 
     def test_add_with_unequal_time_arrays(self):
         _times = [1, 3, 5, 7]
 
-        with pytest.raises(ValueError):
-            lc1 = Lightcurve(self.times, self.counts)
-            lc2 = Lightcurve(_times, self.counts)
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, self.counts)
 
+        with pytest.raises(ValueError):
             lc = lc1 + lc2
 
     def test_add_with_equal_time_arrays(self):
@@ -609,11 +649,12 @@ class TestLightcurve(object):
         _times = [1.1, 2.1, 3.1, 4.1, 5.1]
         _counts = [2, 2, 2, 2, 2]
 
-        with pytest.raises(ValueError):
-            lc1 = Lightcurve(self.times, self.counts)
-            lc2 = Lightcurve(_times, _counts)
+        lc1 = Lightcurve(self.times, self.counts)
+        lc2 = Lightcurve(_times, _counts)
 
-            _ = lc1 - lc2
+        with pytest.warns(UserWarning, match="The good time intervals in the two time series"):
+            with pytest.raises(ValueError):
+                _ = lc1 - lc2
 
     def test_sub_with_different_err_dist(self):
         lc1 = Lightcurve(self.times, self.counts)
@@ -742,6 +783,23 @@ class TestLightcurve(object):
         assert np.any(["MJDref" in r.message.args[0] for r in record])
 
         assert np.allclose(newlc.counts, 0)
+
+    def test_concatenate(self):
+        time0 = [1, 2, 3, 4]
+        time1 = [5, 6, 7, 8, 9]
+        count0 = [10, 20, 30, 40]
+        count1 = [50, 60, 70, 80, 90]
+        gti0 = [[0.5, 4.5]]
+        gti1 = [[4.5, 9.5]]
+        lc0 = Lightcurve(time0, counts=count0, err=np.asarray(count0) / 2, dt=1, gti=gti0)
+        lc1 = Lightcurve(time1, counts=count1, dt=1, gti=gti1)
+        with pytest.warns(UserWarning, match="The _counts_err array is empty in one of the"):
+            lc = lc0.concatenate(lc1)
+        assert np.allclose(lc.counts, count0 + count1)
+        # Errors have been defined inside
+        assert len(lc.counts_err) == len(lc.counts)
+        assert np.allclose(lc.time, time0 + time1)
+        assert np.allclose(lc.gti, [[0.5, 9.5]])
 
     def test_join_disjoint_time_arrays(self):
         _times = [5, 6, 7, 8]
@@ -1079,11 +1137,13 @@ class TestLightcurve(object):
         assert_allclose(sr.counts_err, lc.flux_err)
 
     def test_plot_simple(self):
+        plt.close("all")
         lc = Lightcurve(self.times, self.counts)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             lc.plot()
         assert plt.fignum_exists(1)
+        plt.close("all")
 
     def test_plot_wrong_label_type(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1091,6 +1151,7 @@ class TestLightcurve(object):
         with pytest.raises(TypeError):
             with pytest.warns(UserWarning, match="must be either a list or tuple") as w:
                 lc.plot(labels=123)
+        plt.close("all")
 
     def test_plot_labels_index_error(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1098,18 +1159,21 @@ class TestLightcurve(object):
             lc.plot(labels=("x"))
 
             assert np.any(["must have two labels" in str(wi.message) for wi in w])
+        plt.close("all")
 
     def test_plot_default_filename(self):
         lc = Lightcurve(self.times, self.counts)
         lc.plot(save=True)
         assert os.path.isfile("out.png")
         os.unlink("out.png")
+        plt.close("all")
 
     def test_plot_custom_filename(self):
         lc = Lightcurve(self.times, self.counts)
         lc.plot(save=True, filename="lc.png")
         assert os.path.isfile("lc.png")
         os.unlink("lc.png")
+        plt.close("all")
 
     def test_plot_axis(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1117,6 +1181,7 @@ class TestLightcurve(object):
             warnings.simplefilter("ignore", category=UserWarning)
             lc.plot(axis=[0, 1, 0, 100])
         assert plt.fignum_exists(1)
+        plt.close("all")
 
     def test_plot_title(self):
         lc = Lightcurve(self.times, self.counts)
@@ -1124,6 +1189,7 @@ class TestLightcurve(object):
             warnings.simplefilter("ignore", category=UserWarning)
             lc.plot(title="Test Lightcurve")
         assert plt.fignum_exists(1)
+        plt.close("all")
 
     def test_read_from_lcurve_1(self):
         fname = "lcurveA.fits"
@@ -1144,11 +1210,21 @@ class TestLightcurve(object):
     @pytest.mark.skipif("not _HAS_YAML")
     def test_io_with_ascii(self):
         lc = Lightcurve(self.times, self.counts)
-        lc.write("ascii_lc.ecsv", fmt="ascii")
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            lc.write("ascii_lc.ecsv", fmt="ascii")
         lc = lc.read("ascii_lc.ecsv", fmt="ascii")
         assert np.allclose(lc.time, self.times)
         assert np.allclose(lc.counts, self.counts)
         os.remove("ascii_lc.ecsv")
+
+    def test_io_with_fits(self):
+        lc = Lightcurve(self.times, self.counts)
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            lc.write("ascii_lc.fits", fmt="fits")
+        lc = lc.read("ascii_lc.fits", fmt="fits")
+        assert np.allclose(lc.time, self.times)
+        assert np.allclose(lc.counts, self.counts)
+        os.remove("ascii_lc.fits")
 
     def test_io_with_pickle(self):
         lc = Lightcurve(self.times, self.counts)

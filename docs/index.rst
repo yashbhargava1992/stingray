@@ -123,9 +123,9 @@ For the Gaussian Process modeling in `stingray.modeling.gpmodeling`, you'll need
 + etils
 + typing_extensions
 
-Most of these are installed via ``pip``, but if you have an Nvidia GPU available, you'll want to take special care 
-following the installation instructions for jax and tensorflow(-probability) in order to enable GPU support and 
-take advantage of those speed-ups. 
+Most of these are installed via ``pip``, but if you have an Nvidia GPU available, you'll want to take special care
+following the installation instructions for jax and tensorflow(-probability) in order to enable GPU support and
+take advantage of those speed-ups.
 
 For development work, you will need the following extra libraries:
 
@@ -271,6 +271,7 @@ Using Stingray
 
 Getting started
 ---------------
+
 .. toctree::
    :maxdepth: 2
 
@@ -284,6 +285,7 @@ Advanced
 .. toctree::
    :maxdepth: 2
 
+   timeseries
    modeling
    simulator
    deadtime

@@ -1407,6 +1407,76 @@ class Crossspectrum(StingrayObject):
         )
 
     @staticmethod
+    def from_stingray_timeseries(
+        ts1,
+        ts2,
+        flux_attr,
+        error_flux_attr=None,
+        segment_size=None,
+        norm="none",
+        power_type="all",
+        silent=False,
+        fullspec=False,
+        use_common_mean=True,
+        gti=None,
+    ):
+        """Calculate AveragedCrossspectrum from two light curves
+
+        Parameters
+        ----------
+        ts1 : `stingray.Timeseries`
+            Time series from channel 1
+        ts2 : `stingray.Timeseries`
+            Time series from channel 2
+        flux_attr : `str`
+            What attribute of the time series will be used.
+
+        Other parameters
+        ----------------
+        error_flux_attr : `str`
+            What attribute of the time series will be used as error bar.
+        segment_size : float
+            The length, in seconds, of the light curve segments that will be averaged.
+            Only relevant (and required) for AveragedCrossspectrum
+        norm : str, default "frac"
+            The normalization of the periodogram. "abs" is absolute rms, "frac" is
+            fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+            unnormalized periodogram
+        use_common_mean : bool, default True
+            The mean of the light curve can be estimated in each interval, or on
+            the full light curve. This gives different results (Alston+2013).
+            Here we assume the mean is calculated on the full light curve, but
+            the user can set ``use_common_mean`` to False to calculate it on a
+            per-segment basis.
+        fullspec : bool, default False
+            Return the full periodogram, including negative frequencies
+        silent : bool, default False
+            Silence the progress bars
+        power_type : str, default 'all'
+            If 'all', give complex powers. If 'abs', the absolute value; if 'real',
+            the real part
+        gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+            Good Time intervals. Defaults to the common GTIs from the two input
+            objects. Could throw errors if these GTIs have overlaps with the
+            input object GTIs! If you're getting errors regarding your GTIs,
+            don't  use this and only give GTIs to the input objects before
+            making the cross spectrum.
+        """
+        return crossspectrum_from_timeseries(
+            ts1,
+            ts2,
+            flux_attr=flux_attr,
+            error_flux_attr=error_flux_attr,
+            segment_size=segment_size,
+            norm=norm,
+            power_type=power_type,
+            silent=silent,
+            fullspec=fullspec,
+            use_common_mean=use_common_mean,
+            gti=gti,
+        )
+
+    @staticmethod
     def from_lc_iterable(
         iter_lc1,
         iter_lc2,
@@ -2334,30 +2404,112 @@ def crossspectrum_from_lightcurve(
     spec : `AveragedCrossspectrum` or `Crossspectrum`
         The output cross spectrum.
     """
+    error_flux_attr = None
+
+    if lc1.err_dist == "gauss":
+        error_flux_attr = "_counts_err"
+
+    return crossspectrum_from_timeseries(
+        lc1,
+        lc2,
+        "_counts",
+        error_flux_attr=error_flux_attr,
+        segment_size=segment_size,
+        norm=norm,
+        power_type=power_type,
+        silent=silent,
+        fullspec=fullspec,
+        use_common_mean=use_common_mean,
+        gti=gti,
+        save_all=save_all,
+    )
+
+
+def crossspectrum_from_timeseries(
+    ts1,
+    ts2,
+    flux_attr,
+    error_flux_attr=None,
+    segment_size=None,
+    norm="none",
+    power_type="all",
+    silent=False,
+    fullspec=False,
+    use_common_mean=True,
+    gti=None,
+    save_all=False,
+):
+    """Calculate AveragedCrossspectrum from two time series
+
+    Parameters
+    ----------
+    ts1 : `stingray.StingrayTimeseries`
+        Time series from channel 1
+    ts2 : `stingray.StingrayTimeseries`
+        Time series from channel 2
+    flux_attr : `str`
+        What attribute of the time series will be used.
+
+    Other parameters
+    ----------------
+    error_flux_attr : `str`
+        What attribute of the time series will be used as error bar.
+    segment_size : float, default None
+        The length, in seconds, of the light curve segments that will be averaged
+    norm : str, default "frac"
+        The normalization of the periodogram. "abs" is absolute rms, "frac" is
+        fractional rms, "leahy" is Leahy+83 normalization, and "none" is the
+        unnormalized periodogram
+    use_common_mean : bool, default True
+        The mean of the light curve can be estimated in each interval, or on
+        the full light curve. This gives different results (Alston+2013).
+        Here we assume the mean is calculated on the full light curve, but
+        the user can set ``use_common_mean`` to False to calculate it on a
+        per-segment basis.
+    fullspec : bool, default False
+        Return the full periodogram, including negative frequencies
+    silent : bool, default False
+        Silence the progress bars
+    power_type : str, default 'all'
+        If 'all', give complex powers. If 'abs', the absolute value; if 'real',
+        the real part
+    gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
+        Good Time intervals. Defaults to the common GTIs from the two input
+        objects
+    save_all : bool, default False
+        Save all intermediate spectra used for the final average. Use with care.
+        This is likely to fill up your RAM on medium-sized datasets, and to
+        slow down the computation when rebinning.
+
+    Returns
+    -------
+    spec : `AveragedCrossspectrum` or `Crossspectrum`
+        The output cross spectrum.
+    """
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
     if gti is None:
-        gti = cross_two_gtis(lc1.gti, lc2.gti)
+        gti = cross_two_gtis(ts1.gti, ts2.gti)
 
     err1 = err2 = None
-    if lc1.err_dist == "gauss":
-        err1 = lc1._counts_err
-        err2 = lc2._counts_err
+    if error_flux_attr is not None:
+        err1 = getattr(ts1, error_flux_attr)
+        err2 = getattr(ts2, error_flux_attr)
 
     results = avg_cs_from_events(
-        lc1.time,
-        lc2.time,
+        ts1.time,
+        ts2.time,
         gti,
         segment_size,
-        lc1.dt,
+        ts1.dt,
         norm=norm,
         use_common_mean=use_common_mean,
         fullspec=fullspec,
         silent=silent,
         power_type=power_type,
-        fluxes1=lc1.counts,
-        fluxes2=lc2.counts,
+        fluxes1=getattr(ts1, flux_attr),
+        fluxes2=getattr(ts2, flux_attr),
         errors1=err1,
         errors2=err2,
         return_auxil=True,
