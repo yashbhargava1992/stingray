@@ -25,7 +25,7 @@ of elements of the main array, which is ``time``.
 StingrayObject
 --------------
 
-.. autoclass:: stingray.StingrayTimeseries
+.. autoclass:: stingray.StingrayObject
    :members:
 
 ----
