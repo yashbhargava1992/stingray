@@ -5,6 +5,8 @@ Stingray API
 
 Library of Time Series Methods For Astronomical X-ray Data.
 
+Base Class
+==========
 Most `stingray`` classes are subclasses of a single class, :class:`stingray.StingrayObject`, which
 implements most of the I/O functionality and common behavior (e.g. strategies to combine data and
 make operations such as the sum, difference, or negation). This class is not intended to be
