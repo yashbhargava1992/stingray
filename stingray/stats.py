@@ -1024,7 +1024,7 @@ def power_upper_limit(pmeas, n=1, c=0.95):
 
 
 def amplitude_upper_limit(pmeas, counts, n=1, c=0.95, fft_corr=False, nyq_ratio=0):
-    """Upper limit on a sinusoidal modulation, given a measured power in the PDS/Z search.
+    r"""Upper limit on a sinusoidal modulation, given a measured power in the PDS/Z search.
 
     Eq. 10 in Vaughan+94 and `a_from_ssig`: they are equivalent but Vaughan+94
     corrects further for the response inside an FFT bin and at frequencies close
