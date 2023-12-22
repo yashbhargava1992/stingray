@@ -654,8 +654,7 @@ class Lightcurve(StingrayTimeseries):
         >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=5)
         >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=5)
         >>> lc = lc1 + lc2
-        >>> np.allclose(lc.counts, [ 900, 1300, 1200])
-        True
+        >>> assert np.allclose(lc.counts, [ 900, 1300, 1200])
         """
 
         return self._operation_with_other_obj(other, np.add)
@@ -683,8 +682,7 @@ class Lightcurve(StingrayTimeseries):
         >>> lc1 = Lightcurve(time, count1, gti=gti1, dt=10)
         >>> lc2 = Lightcurve(time, count2, gti=gti2, dt=10)
         >>> lc = lc1 - lc2
-        >>> np.allclose(lc.counts, [ 300, 1100,  400])
-        True
+        >>> assert np.allclose(lc.counts, [ 300, 1100,  400])
         """
 
         return self._operation_with_other_obj(other, np.subtract)
@@ -704,8 +702,7 @@ class Lightcurve(StingrayTimeseries):
         >>> lc1 = Lightcurve(time, count1)
         >>> lc2 = Lightcurve(time, count2)
         >>> lc_new = -lc1 + lc2
-        >>> np.allclose(lc_new.counts, [100, 100, 100])
-        True
+        >>> assert np.allclose(lc_new.counts, [100, 100, 100])
         """
         lc_new = Lightcurve(
             self.time,
@@ -742,10 +739,8 @@ class Lightcurve(StingrayTimeseries):
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> np.isclose(lc[2], 33)
-        True
-        >>> np.allclose(lc[:2].counts, [11, 22])
-        True
+        >>> assert np.isclose(lc[2], 33)
+        >>> assert np.allclose(lc[:2].counts, [11, 22])
         """
         if isinstance(index, (int, np.integer)):
             return self.counts[index]
@@ -1025,8 +1020,7 @@ class Lightcurve(StingrayTimeseries):
         >>> lc = lc1.join(lc2)
         >>> lc.time
         array([ 5, 10, 15, 20, 25, 30])
-        >>> np.allclose(lc.counts, [ 300,  100,  400,  600, 1200,  800])
-        True
+        >>> assert np.allclose(lc.counts, [ 300,  100,  400,  600, 1200,  800])
         """
         if self.mjdref != other.mjdref:
             warnings.warn("MJDref is different in the two light curves")
@@ -1154,16 +1148,14 @@ class Lightcurve(StingrayTimeseries):
         >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
         >>> lc = Lightcurve(time, count, dt=1)
         >>> lc_new = lc.truncate(start=2, stop=8)
-        >>> np.allclose(lc_new.counts, [30, 40, 50, 60, 70, 80])
-        True
+        >>> assert np.allclose(lc_new.counts, [30, 40, 50, 60, 70, 80])
         >>> lc_new.time
         array([3, 4, 5, 6, 7, 8])
         >>> # Truncation can also be done by time values
         >>> lc_new = lc.truncate(start=6, method='time')
         >>> lc_new.time
         array([6, 7, 8, 9])
-        >>> np.allclose(lc_new.counts, [60, 70, 80, 90])
-        True
+        >>> assert np.allclose(lc_new.counts, [60, 70, 80, 90])
         """
 
         return super().truncate(start=start, stop=stop, method=method)
@@ -1244,8 +1236,7 @@ class Lightcurve(StingrayTimeseries):
         >>> lc_new = lc.sort()
         >>> lc_new.time
         array([1, 2, 3])
-        >>> np.allclose(lc_new.counts, [100, 200, 300])
-        True
+        >>> assert np.allclose(lc_new.counts, [100, 200, 300])
 
         Returns
         -------
@@ -1288,8 +1279,7 @@ class Lightcurve(StingrayTimeseries):
         >>> lc_new = lc.sort_counts()
         >>> lc_new.time
         array([2, 1, 3])
-        >>> np.allclose(lc_new.counts, [100, 200, 300])
-        True
+        >>> assert np.allclose(lc_new.counts, [100, 200, 300])
         """
 
         mask = np.argsort(self.counts)
@@ -1406,10 +1396,8 @@ class Lightcurve(StingrayTimeseries):
         >>> mean_func = lambda x: np.mean(x)
         >>> # Calculate the mean in segments of 5 seconds
         >>> start, stop, res = lc.analyze_lc_chunks(5, mean_func)
-        >>> len(res) == 2
-        True
-        >>> np.allclose(res, 10)
-        True
+        >>> assert len(res) == 2
+        >>> assert np.allclose(res, 10)
         """
         start, stop = bin_intervals_from_gtis(
             self.gti, segment_size, self.time, fraction_step=fraction_step, dt=self.dt

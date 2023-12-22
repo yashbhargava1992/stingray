@@ -1568,8 +1568,8 @@ class StingrayTimeseries(StingrayObject):
         >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=5)
         >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=5)
         >>> ts = ts1 + ts2
-        >>> np.allclose(ts.counts, [ 900, 1300, 1200])
-        True
+        >>>  assert np.allclose(ts.counts, [ 900, 1300, 1200])
+
         """
 
         return super().__add__(other)
@@ -1597,8 +1597,7 @@ class StingrayTimeseries(StingrayObject):
         >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=10)
         >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=10)
         >>> ts = ts1 - ts2
-        >>> np.allclose(ts.counts, [ 300, 1100,  400])
-        True
+        >>>  assert np.allclose(ts.counts, [ 300, 1100,  400])
         """
 
         return super().__sub__(other)
@@ -1626,10 +1625,8 @@ class StingrayTimeseries(StingrayObject):
         >>> time = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         >>> count = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         >>> ts = StingrayTimeseries(time, array_attrs=dict(counts=count), dt=1)
-        >>> np.allclose(ts[2].counts, [33])
-        True
-        >>> np.allclose(ts[:2].counts, [11, 22])
-        True
+        >>> assert np.allclose(ts[2].counts, [33])
+        >>> assert np.allclose(ts[:2].counts, [11, 22])
         """
         from .utils import assign_value_if_none
         from .gti import cross_two_gtis
@@ -1692,16 +1689,14 @@ class StingrayTimeseries(StingrayObject):
         >>> count = [10, 20, 30, 40, 50, 60, 70, 80, 90]
         >>> ts = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
         >>> ts_new = ts.truncate(start=2, stop=8)
-        >>> np.allclose(ts_new.counts, [30, 40, 50, 60, 70, 80])
-        True
+        >>> assert np.allclose(ts_new.counts, [30, 40, 50, 60, 70, 80])
         >>> ts_new.time
         array([3, 4, 5, 6, 7, 8])
         >>> # Truncation can also be done by time values
         >>> ts_new = ts.truncate(start=6, method='time')
         >>> ts_new.time
         array([6, 7, 8, 9])
-        >>> np.allclose(ts_new.counts, [60, 70, 80, 90])
-        True
+        >>> assert np.allclose(ts_new.counts, [60, 70, 80, 90])
         """
 
         if not isinstance(method, str):
@@ -2119,8 +2114,7 @@ class StingrayTimeseries(StingrayObject):
         >>> ts_new = ts.sort()
         >>> ts_new.time
         array([1, 2, 3])
-        >>> np.allclose(ts_new.counts, [100, 200, 300])
-        True
+        >>> assert np.allclose(ts_new.counts, [100, 200, 300])
 
         Returns
         -------
@@ -2250,8 +2244,7 @@ def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, floa
     --------
     >>> import astropy.units as u
     >>> newt, mjdref = interpret_times(None)
-    >>> newt is None
-    True
+    >>> assert newt is None
     >>> time = Time(57483, format='mjd')
     >>> newt, mjdref = interpret_times(time)
     >>> assert newt == 0
@@ -2339,23 +2332,18 @@ def reduce_precision_if_extended(
     --------
     >>> x = 1.0
     >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
-    >>> val is x
-    True
+    >>> assert val is x
     >>> x = "1wrt"
-    >>> reduce_precision_if_extended(x, probe_types=["float64"]) is x
-    True
+    >>> assert reduce_precision_if_extended(x, probe_types=["float64"]) is x
     >>> x = np.asanyarray(1.0).astype(int)
     >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
-    >>> val is x
-    True
+    >>> assert val is x
     >>> x = np.asanyarray([1.0, 2]).astype(int)
     >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
-    >>> val is x
-    True
+    >>> assert val is x
     >>> x = np.asanyarray([1.0]).astype(int)
     >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
-    >>> val is x
-    True
+    >>> assert val is x
     >>> x = np.asanyarray(1.0).astype(np.float64)
     >>> reduce_precision_if_extended(x, probe_types=["float64"], destination=np.float32) is x
     False

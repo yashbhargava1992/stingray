@@ -147,8 +147,7 @@ def _patch_mission_info(info, mission=None):
     --------
     >>> info = {'gti': 'STDGTI'}
     >>> new_info = _patch_mission_info(info, mission=None)
-    >>> new_info['gti'] == info['gti']
-    True
+    >>> assert new_info['gti'] == info['gti']
     >>> new_info = _patch_mission_info(info, mission="xmm")
     >>> new_info['gti']
     'STDGTI,GTI0'
@@ -211,8 +210,7 @@ def _case_insensitive_search_in_list(string, list_of_strings):
     -------
     >>> _case_insensitive_search_in_list("a", ["A", "b"])
     'A'
-    >>> _case_insensitive_search_in_list("a", ["c", "b"]) is None
-    True
+    >>> assert _case_insensitive_search_in_list("a", ["c", "b"]) is None
     """
     for s in list_of_strings:
         if string.lower() == s.lower():
@@ -873,10 +871,8 @@ def split_numbers(number, shift=0):
     --------
     >>> n = 12.34
     >>> i, f = split_numbers(n)
-    >>> i == 12
-    True
-    >>> np.isclose(f, 0.34)
-    True
+    >>> assert i == 12
+    >>> assert np.isclose(f, 0.34)
     >>> split_numbers(n, 2)
     (12.34, 0.0)
     >>> split_numbers(n, -1)

@@ -78,7 +78,9 @@ def nextpow(a: float, x: float) -> float:
     assert x > 0 and a > 1
     if x <= 1:
         return 1.0
-    n = np.ceil(np.math.log(x, a))
+    import math
+
+    n = np.ceil(math.log(x, a))
     p = a ** (n - 1)
     return p if p >= x else a**n
 
