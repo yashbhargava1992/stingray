@@ -2254,35 +2254,25 @@ def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, floa
     True
     >>> time = Time(57483, format='mjd')
     >>> newt, mjdref = interpret_times(time)
-    >>> newt == 0
-    True
-    >>> mjdref == 57483
-    True
+    >>> assert newt == 0
+    >>> assert mjdref == 57483
     >>> time = Time([57483], format='mjd')
     >>> newt, mjdref = interpret_times(time)
-    >>> np.allclose(newt, 0)
-    True
-    >>> mjdref == 57483
-    True
+    >>> assert np.allclose(newt, 0)
+    >>> assert mjdref == 57483
     >>> time = TimeDelta([3, 4, 5] * u.s)
     >>> newt, mjdref = interpret_times(time)
-    >>> np.allclose(newt, [3, 4, 5])
-    True
+    >>> assert np.allclose(newt, [3, 4, 5])
     >>> time = np.array([3, 4, 5])
     >>> newt, mjdref = interpret_times(time, mjdref=45000)
-    >>> np.allclose(newt, [3, 4, 5])
-    True
-    >>> mjdref == 45000
-    True
+    >>> assert np.allclose(newt, [3, 4, 5])
+    >>> assert mjdref == 45000
     >>> time = np.array([3, 4, 5] * u.s)
     >>> newt, mjdref = interpret_times(time, mjdref=45000)
-    >>> np.allclose(newt, [3, 4, 5])
-    True
-    >>> mjdref == 45000
-    True
+    >>> assert np.allclose(newt, [3, 4, 5])
+    >>> assert mjdref == 45000
     >>> newt, mjdref = interpret_times(1, mjdref=45000)
-    >>> newt == 1
-    True
+    >>> assert newt == 1
     >>> newt, mjdref = interpret_times(list, mjdref=45000)
     Traceback (most recent call last):
     ...
@@ -2351,7 +2341,14 @@ def reduce_precision_if_extended(
     >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
     >>> val is x
     True
+    >>> x = "1wrt"
+    >>> reduce_precision_if_extended(x, probe_types=["float64"]) is x
+    True
     >>> x = np.asanyarray(1.0).astype(int)
+    >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
+    >>> val is x
+    True
+    >>> x = np.asanyarray([1.0, 2]).astype(int)
     >>> val = reduce_precision_if_extended(x, probe_types=["float64"])
     >>> val is x
     True
@@ -2366,7 +2363,25 @@ def reduce_precision_if_extended(
     >>> reduce_precision_if_extended(x, probe_types=["float64"], destination=np.float32) is x
     False
     """
-    if any([t in str(np.obj2sctype(x)) for t in probe_types]):
+
+    def obj2sctype(x):
+        """Convert an object to a numpy scalar type."""
+        if hasattr(np, "obj2sctype"):
+            return np.obj2sctype(x)
+
+        if isinstance(x, str):
+            return "str"
+
+        if isinstance(x, Iterable) and np.size(x) > 1:
+            return obj2sctype(x[0])
+
+        if not "numpy" in str(type(x)):
+            return "None"
+
+        return x.dtype.type
+        # return np.dtype(x).type
+
+    if any([t in str(obj2sctype(x)) for t in probe_types]):
         x_ret = x.astype(destination)
         return x_ret
     return x
