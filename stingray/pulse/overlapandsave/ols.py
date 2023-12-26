@@ -18,7 +18,7 @@ Features:
 - Supports alternative FFT engines such as PyFFTW
 - Supports reflect-mode (signal assumed to reflect infinitely, instead of 0
   outside its support; useful for avoiding edge effects)
-- Relatively straightforward to paralellize each step of the algorithm
+- Relatively straightforward to parallelize each step of the algorithm
 - Extensively unit-tested
 
 When it can be used as a drop-in replacement for `fftconvolve`:
@@ -324,7 +324,7 @@ def olsStep(
     hfftconj : complex array
         filter array, pre-transformed by ``prepareh``
     starts: list of ints
-        Starting indeces for each dimension
+        Starting indices for each dimension
     lengths: list of ints
         Length of interval in each dimension
     nfft: int

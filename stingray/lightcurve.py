@@ -1765,7 +1765,7 @@ class Lightcurve(StingrayTimeseries):
 
     def bexvar(self):
         """
-        Finds posterior samples of Bayesian excess varience (bexvar) for the light curve.
+        Finds posterior samples of Bayesian excess variance (bexvar) for the light curve.
         It requires source counts in ``counts`` and time intervals for each bin.
         If the ``dt`` is an array then uses its elements as time intervals
         for each bin. If ``dt`` is float, it calculates the time intervals by assuming
@@ -1774,7 +1774,7 @@ class Lightcurve(StingrayTimeseries):
         Returns
         -------
         lc_bexvar : iterable, `:class:numpy.array` of floats
-            An array of posterior samples of Bayesian excess varience (bexvar).
+            An array of posterior samples of Bayesian excess variance (bexvar).
         """
 
         # calculate time intervals for each bin if not provided by user

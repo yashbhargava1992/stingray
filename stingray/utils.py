@@ -171,7 +171,7 @@ def make_nd_into_arrays(array: np.ndarray, label: str) -> dict:
     Returns
     -------
     data : `dict`
-        Dictionary of arrays. Defauls to ``{label: array}`` if ``array`` is 1-dimensional,
+        Dictionary of arrays. Defaults to ``{label: array}`` if ``array`` is 1-dimensional,
         otherwise, e.g.: ``{label_dim1_2_3: array[1, 2, 3], ... }``
 
     Examples
@@ -1397,7 +1397,7 @@ def check_allclose_and_print(
 
         raise AssertionError(
             f"Different values in the arrays check by allclose: \
-                        {v1[bad]} vs {v2[bad]}, indeces are {np.where(v1[bad])[0]}\
+                        {v1[bad]} vs {v2[bad]}, indices are {np.where(v1[bad])[0]}\
                         and {np.where(v2[bad])[0]}"
         )
 
@@ -2031,7 +2031,7 @@ def _wrap_histograms(numba_func, weight_numba_func, np_func, *args, **kwargs):
 def histogram3d(*args, **kwargs):
     """Histogram implementation.
 
-    Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
+    Accepts the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
     of the histogram. Bonus: weights can be complex.
 
     Examples
@@ -2055,7 +2055,7 @@ def histogram3d(*args, **kwargs):
 def histogramnd(*args, **kwargs):
     """Histogram implementation.
 
-    Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
+    Accepts the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
     of the histogram. Bonus: weights can be complex.
 
     Examples
@@ -2084,7 +2084,7 @@ def histogramnd(*args, **kwargs):
 def histogram2d(*args, **kwargs):
     """Histogram implementation.
 
-    Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
+    Accepts the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
     of the histogram. Bonus: weights can be complex.
 
     Examples
@@ -2119,7 +2119,7 @@ def histogram2d(*args, **kwargs):
 def histogram(*args, **kwargs):
     """Histogram implementation.
 
-    Acceptes the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
+    Accepts the same arguments as `numpy.histogramdd`, but tries to use a Numba implementation
     of the histogram. Bonus: weights can be complex.
 
     Examples

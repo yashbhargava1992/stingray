@@ -36,7 +36,7 @@ except AttributeError:  # pragma: no cover
 
 
 def rough_calibration(pis, mission):
-    """Make a rough conversion betwenn PI channel and energy.
+    """Make a rough conversion between PI channel and energy.
 
     Only works for NICER, NuSTAR, and XMM.
 
@@ -393,7 +393,7 @@ def lcurve_from_fits(
     except Exception:  # pragma: no cover
         raise (Exception("TSTART and TSTOP need to be specified"))
 
-    # For nulccorr lcs this whould work
+    # For nulccorr lcs this would work
 
     timezero = high_precision_keyword_read(lchdulist[ratehdu].header, "TIMEZERO")
     # Sometimes timezero is "from tstart", sometimes it's an absolute time.
@@ -409,7 +409,7 @@ def lcurve_from_fits(
         timezero = Time(2440000.5 + timezero, scale="tdb", format="jd")
         tstart = Time(2440000.5 + tstart, scale="tdb", format="jd")
         tstop = Time(2440000.5 + tstop, scale="tdb", format="jd")
-        # if None, use NuSTAR defaulf MJDREF
+        # if None, use NuSTAR default MJDREF
         mjdref = assign_value_if_none(
             mjdref,
             Time(np.longdouble("55197.00076601852"), scale="tdb", format="mjd"),
@@ -907,7 +907,7 @@ def savefig(filename, **kwargs):
     kwargs : keyword arguments
         Keyword arguments to be passed to ``savefig`` function of
         ``matplotlib.pyplot``. For example use `bbox_inches='tight'` to
-        remove the undesirable whitepace around the image.
+        remove the undesirable whitespace around the image.
     """
 
     if not plt.fignum_exists(1):

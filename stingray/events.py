@@ -377,7 +377,7 @@ class EventList(StingrayTimeseries):
         Returns
         -------
         lc_list: `List`
-            List containig one :class:`stingray.Lightcurve` object for each GTI or segment
+            List containing one :class:`stingray.Lightcurve` object for each GTI or segment
         """
         return list(self.to_lc_iter(dt, segment_size))
 

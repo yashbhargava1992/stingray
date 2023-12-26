@@ -1794,7 +1794,7 @@ def avg_pds_from_events(
     If the input is a light curve, the time array needs to be uniformly sampled
     inside GTIs (it can have gaps outside), and the fluxes need to be passed
     through the ``fluxes`` array.
-    Otherwise, times are interpeted as photon arrival times.
+    Otherwise, times are interpreted as photon arrival times.
 
     Parameters
     ----------
@@ -1889,7 +1889,7 @@ def avg_cs_from_events(
     If the input is a light curve, the time arrays need to be uniformly sampled
     inside GTIs (they can have gaps outside), and the fluxes need to be passed
     through the ``fluxes1`` and ``fluxes2`` arrays.
-    Otherwise, times are interpeted as photon arrival times
+    Otherwise, times are interpreted as photon arrival times
 
     Parameters
     ----------

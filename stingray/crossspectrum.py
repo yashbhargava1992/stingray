@@ -2567,7 +2567,7 @@ def crossspectrum_from_lc_iterable(
         the real part
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. The GTIs of the input light curves are
-        interesected with these.
+        intersected with these.
 
     Returns
     -------
