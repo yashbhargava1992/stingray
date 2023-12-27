@@ -50,8 +50,7 @@ def simulate_times(lc, use_spline=False):
     >>> assert np.all(times <= 4.)
     >>> assert np.any(times > 3.)
     >>> assert np.any(times < 2.)
-    >>> np.any((times > 2.) & (times < 3.))  # No times outside GTIs
-    False
+    >>> assert not np.any((times > 2.) & (times < 3.))  # No times outside GTIs
     >>> lc.counts[0] = -3.
     >>> simulate_times(lc)  # Test with one negative value in the lc
     Traceback (most recent call last):
@@ -103,8 +102,7 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
     >>> assert np.all(times <= 5.5)
     >>> assert np.any(times > 4.5)
     >>> assert np.any(times < 3.5)
-    >>> np.any((times > 3.5) & (times < 4.5))  # No times outside GTIs
-    False
+    >>> assert not np.any((times > 3.5) & (times < 4.5))  # No times outside GTIs
     >>> # test that it works with integer times (former bug)
     >>> times = simulate_times_from_count_array([0, 1, 2, 3, 5], c, gti, 1, use_spline=True)
     >>> c[0] = -3.
