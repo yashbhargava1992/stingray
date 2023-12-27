@@ -242,7 +242,8 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_frac(pds, dt, lc.size, mean)
-    >>> assert np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(meanrate=meanrate,norm="frac"), rtol=0.01)
+    >>> assert np.isclose(
+    ...     pdsnorm[1:n_bin//2].mean(), poisson_level(meanrate=meanrate,norm="frac"), rtol=0.01)
     >>> pdsnorm = normalize_frac(pds, dt, lc.size, mean, background_flux=back)
     >>> assert np.isclose(pdsnorm[1:n_bin//2].mean(),
     ...                   poisson_level(meanrate=meanrate,norm="frac",backrate=backrate),
@@ -303,7 +304,8 @@ def normalize_abs(unnorm_power, dt, n_bin):
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_abs(pds, dt, lc.size)
-    >>> assert np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="abs", meanrate=meanrate), rtol=0.01)
+    >>> assert np.isclose(
+    ...     pdsnorm[1:n_bin//2].mean(), poisson_level(norm="abs", meanrate=meanrate), rtol=0.01)
     """
     #     It's frac * meanrate**2; Leahy / meanrate * meanrate**2
     #     n_ph = mean * n_bin

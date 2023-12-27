@@ -2362,7 +2362,7 @@ def reduce_precision_if_extended(
         if isinstance(x, Iterable) and np.size(x) > 1:
             return obj2sctype(x[0])
 
-        if not "numpy" in str(type(x)):
+        if "numpy" not in str(type(x)):
             return "None"
 
         return x.dtype.type
