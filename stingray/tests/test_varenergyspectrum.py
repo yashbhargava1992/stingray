@@ -174,7 +174,7 @@ class TestRmsAndCovSpectrum(object):
 
         cls.bin_time = 0.01
 
-        data = np.load(os.path.join(datadir, "sample_variable_series.fits"))["data"]
+        data = Table.read(os.path.join(datadir, "sample_variable_series.fits"))["data"]
         # No need for huge count rates
         flux = data / 40
         times = np.arange(data.size) * cls.bin_time
@@ -361,7 +361,7 @@ class TestLagEnergySpectrum(object):
 
         dt = 0.01
         cls.time_lag = 5.0
-        data = np.load(os.path.join(datadir, "sample_variable_series.fits"))["data"]
+        data = Table.read(os.path.join(datadir, "sample_variable_series.fits"))["data"]
         flux = data
         times = np.arange(data.size) * dt
         maxfreq = 0.15 / cls.time_lag
