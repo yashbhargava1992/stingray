@@ -2449,24 +2449,19 @@ class StingrayTimeseries(StingrayObject):
         >>> time = np.arange(150)
         >>> counts = np.zeros_like(time) + 3
         >>> ts = StingrayTimeseries(time, counts=counts, dt=1)
-        >>> ts.estimate_segment_size(min_total_counts=10, min_time_bins=3)
-        4.0
-        >>> ts.estimate_segment_size(min_total_counts=10, min_time_bins=5)
-        5.0
+        >>> assert np.isclose(ts.estimate_segment_size(min_total_counts=10, min_time_bins=3), 4.0)
+        >>> assert np.isclose(ts.estimate_segment_size(min_total_counts=10, min_time_bins=5), 5.0)
         >>> counts[2:4] = 1
         >>> ts = StingrayTimeseries(time, counts=counts, dt=1)
-        >>> ts.estimate_segment_size(min_total_counts=3, min_time_bins=1)
-        3.0
+        >>> assert np.isclose(ts.estimate_segment_size(min_total_counts=3, min_time_bins=1), 3.0)
         >>> # A slightly more complex example
         >>> dt=0.2
         >>> time = np.arange(0, 1000, dt)
         >>> counts = np.random.poisson(100, size=len(time))
         >>> ts = StingrayTimeseries(time, counts=counts, dt=dt)
-        >>> ts.estimate_segment_size(100, 2)
-        0.4
+        >>> assert np.isclose(ts.estimate_segment_size(100, 2), 0.4)
         >>> min_total_bins = 40
-        >>> ts.estimate_segment_size(100, 40)
-        8.0
+        >>> assert np.isclose(ts.estimate_segment_size(100, 40), 8.0)
         """
         if min_total_counts is None and min_time_bins is None:
             raise ValueError(
