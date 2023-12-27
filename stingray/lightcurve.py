@@ -1548,8 +1548,6 @@ class Lightcurve(StingrayTimeseries):
                 # Work around issue with Numpy 2.0 and Yaml serializer.
                 if rep.startswith("np.float"):
                     vals = float(vals)
-                elif rep.startswith("np.int"):
-                    vals = int(vals)
                 if no_longdouble:
                     vals = reduce_precision_if_extended(vals)
                 ts.meta[attr.lstrip("_")] = vals
