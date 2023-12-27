@@ -104,7 +104,7 @@ jobs:
           - name: Linux, Py3.11 with dev versions of dependencies
             os: ubuntu-latest
             python: '3.11'
-            tox_env: 'py311-test-devdeps'
+            tox_env: 'py311-test-devdeps-cov'
             experimental: false
 
           # Test with all optional dependencies installed.
