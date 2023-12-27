@@ -1568,8 +1568,7 @@ class StingrayTimeseries(StingrayObject):
         >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=5)
         >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=5)
         >>> ts = ts1 + ts2
-        >>>  assert np.allclose(ts.counts, [ 900, 1300, 1200])
-
+        >>> assert np.allclose(ts.counts, [ 900, 1300, 1200])
         """
 
         return super().__add__(other)
@@ -1597,7 +1596,7 @@ class StingrayTimeseries(StingrayObject):
         >>> ts1 = StingrayTimeseries(time, array_attrs=dict(counts=count1), gti=gti1, dt=10)
         >>> ts2 = StingrayTimeseries(time, array_attrs=dict(counts=count2), gti=gti2, dt=10)
         >>> ts = ts1 - ts2
-        >>>  assert np.allclose(ts.counts, [ 300, 1100,  400])
+        >>> assert np.allclose(ts.counts, [ 300, 1100,  400])
         """
 
         return super().__sub__(other)
