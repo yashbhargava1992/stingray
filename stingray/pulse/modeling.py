@@ -49,8 +49,7 @@ def sinc_square_model(x, amplitude=1.0, mean=0.0, width=1.0):
 
     Examples
     --------
-    >>> sinc_square_model(0, amplitude=2.)
-    2.0
+    >>> assert np.isclose(sinc_square_model(0, amplitude=2.), 2.0)
     """
     sqvalues = amplitude * sinc((x - mean) / width) ** 2
     return sqvalues

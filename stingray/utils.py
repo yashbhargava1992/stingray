@@ -318,7 +318,7 @@ def check_isallfinite(array):
             return _check_isallfinite_numba(np.asarray(array))
         except Exception:
             pass
-    return np.all(np.isfinite(array))
+    return bool(np.all(np.isfinite(array)))
 
 
 def is_sorted(array):
@@ -693,7 +693,7 @@ def apply_function_if_none(variable, value, func):
     >>> apply_function_if_none(var, value, np.mean)
     4
     >>> var = None
-    >>> apply_function_if_none(var, value, lambda y: np.mean(y))
+    >>> apply_function_if_none(var, value, lambda y: float(np.mean(y)))
     0.0
     """
     if variable is None:

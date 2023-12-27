@@ -88,10 +88,8 @@ def get_total_gti_length(gti, minlen=0):
     Examples
     --------
     >>> gti = [[0, 1000], [1000, 1001], [3000, 3020]]
-    >>> get_total_gti_length(gti)
-    1021
-    >>> get_total_gti_length(gti, minlen=5)
-    1020
+    >>> assert np.isclose(get_total_gti_length(gti), 1021)
+    >>> assert np.isclose(get_total_gti_length(gti, minlen=5), 1020)
     """
     lengths = get_gti_lengths(gti)
     return np.sum(lengths[lengths >= minlen])
@@ -1256,13 +1254,13 @@ def calculate_segment_bin_start(startbin, stopbin, nbin, fraction_step=1):
     Examples
     --------
     >>> st = calculate_segment_bin_start(0, 10000, 10000)
-    >>> st[-1]
+    >>> int(st[-1])
     0
     >>> st = calculate_segment_bin_start(0, 5, 2)
-    >>> st[-1]
+    >>> int(st[-1])
     2
     >>> st = calculate_segment_bin_start(0, 6, 2)
-    >>> st[-1]
+    >>> int(st[-1])
     4
     """
     st = np.arange(startbin, stopbin, int(nbin * fraction_step), dtype=int)

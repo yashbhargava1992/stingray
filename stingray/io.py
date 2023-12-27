@@ -873,10 +873,8 @@ def split_numbers(number, shift=0):
     >>> i, f = split_numbers(n)
     >>> assert i == 12
     >>> assert np.isclose(f, 0.34)
-    >>> split_numbers(n, 2)
-    (12.34, 0.0)
-    >>> split_numbers(n, -1)
-    (10.0, 2.34)
+    >>> assert np.allclose(split_numbers(n, 2), (12.34, 0.0))
+    >>> assert np.allclose(split_numbers(n, -1), (10.0, 2.34))
     """
     if isinstance(number, Iterable):
         number = np.asarray(number)

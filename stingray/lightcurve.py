@@ -1319,24 +1319,20 @@ class Lightcurve(StingrayTimeseries):
         >>> time = np.arange(150)
         >>> count = np.zeros_like(time) + 3
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> lc.estimate_segment_size(min_total_counts=10, min_time_bins=3)
-        4.0
-        >>> lc.estimate_segment_size(min_total_counts=10, min_time_bins=5)
-        5.0
+        >>> assert np.isclose(
+        ...     lc.estimate_segment_size(min_total_counts=10, min_time_bins=3), 4)
+        >>> assert np.isclose(lc.estimate_segment_size(min_total_counts=10, min_time_bins=5), 5)
         >>> count[2:4] = 1
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> lc.estimate_segment_size(min_total_counts=3, min_time_bins=1)
-        3.0
+        >>> assert np.isclose(lc.estimate_segment_size(min_total_counts=3, min_time_bins=1), 3)
         >>> # A slightly more complex example
         >>> dt=0.2
         >>> time = np.arange(0, 1000, dt)
         >>> counts = np.random.poisson(100, size=len(time))
         >>> lc = Lightcurve(time, counts, dt=dt)
-        >>> lc.estimate_segment_size(100, 2)
-        0.4
+        >>> assert np.isclose(lc.estimate_segment_size(100, 2), 0.4)
         >>> min_total_bins = 40
-        >>> lc.estimate_segment_size(100, 40)
-        8.0
+        >>> assert np.isclose(lc.estimate_segment_size(100, 40), 8.0)
         """
 
         rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt

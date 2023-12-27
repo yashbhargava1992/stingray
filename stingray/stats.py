@@ -82,13 +82,11 @@ def equivalent_gaussian_Nsigma_from_logp(logp):
     >>> log_pvalues = np.log(np.array(pvalues))
     >>> sigmas = np.array([1, 3, 6, 8, 25])
     >>> # Single number
-    >>> np.isclose(equivalent_gaussian_Nsigma_from_logp(log_pvalues[0]),
-    ...            sigmas[0], atol=0.01)
-    True
+    >>> assert np.isclose(equivalent_gaussian_Nsigma_from_logp(log_pvalues[0]),
+    ...                   sigmas[0], atol=0.01)
     >>> # Array
-    >>> np.allclose(equivalent_gaussian_Nsigma_from_logp(log_pvalues),
-    ...             sigmas, atol=0.01)
-    True
+    >>> assert np.allclose(equivalent_gaussian_Nsigma_from_logp(log_pvalues),
+    ...                    sigmas, atol=0.01)
     """
     if logp < -300:
         # print("Extended")
@@ -111,18 +109,14 @@ def equivalent_gaussian_Nsigma(p):
 
     Examples
     --------
-    >>> np.isclose(equivalent_gaussian_Nsigma(0.15865525393145707), 1,
-    ...                                       atol=0.01)
-    True
-    >>> np.isclose(equivalent_gaussian_Nsigma(0.0013498980316301035), 3,
-    ...                                       atol=0.01)
-    True
-    >>> np.isclose(equivalent_gaussian_Nsigma(9.865877e-10), 6,
-    ...                                       atol=0.01)
-    True
-    >>> np.isclose(equivalent_gaussian_Nsigma(6.22096e-16), 8,
-    ...                                       atol=0.01)
-    True
+    >>> assert np.isclose(equivalent_gaussian_Nsigma(0.15865525393145707), 1,
+    ...                   atol=0.01)
+    >>> assert np.isclose(equivalent_gaussian_Nsigma(0.0013498980316301035), 3,
+    ...                   atol=0.01)
+    >>> assert np.isclose(equivalent_gaussian_Nsigma(9.865877e-10), 6,
+    ...                   atol=0.01)
+    >>> assert np.isclose(equivalent_gaussian_Nsigma(6.22096e-16), 8,
+    ...                   atol=0.01)
     >>> assert np.isclose(equivalent_gaussian_Nsigma(3.0567e-138), 25, atol=0.1)
     """
     return equivalent_gaussian_Nsigma_from_logp(np.log(p))
@@ -1207,8 +1201,7 @@ def a_from_ssig(ssig, ncounts):
 
     Examples
     --------
-    >>> a_from_ssig(150, 30000)
-    0.1
+    >>> assert np.isclose(a_from_ssig(150, 30000), 0.1)
     """
     return np.sqrt(2 * ssig / ncounts)
 
@@ -1220,8 +1213,7 @@ def ssig_from_pf(pf, ncounts):
 
     Examples
     --------
-    >>> round(ssig_from_pf(pf_from_a(0.1), 30000), 1)
-    150.0
+    >>> assert round(ssig_from_pf(pf_from_a(0.1), 30000), 1) == 150.0
     """
     a = a_from_pf(pf)
     return ncounts / 2 * a**2
@@ -1234,8 +1226,7 @@ def pf_from_ssig(ssig, ncounts):
 
     Examples
     --------
-    >>> round(a_from_pf(pf_from_ssig(150, 30000)), 1)
-    0.1
+    >>> assert np.isclose(round(a_from_pf(pf_from_ssig(150, 30000)), 1), 0.1)
     """
     a = a_from_ssig(ssig, ncounts)
     return pf_from_a(a)
