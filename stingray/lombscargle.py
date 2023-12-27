@@ -41,17 +41,13 @@ def _autofrequency(min_freq=None, max_freq=None, df=None, dt=None, length=None, 
     Examples
     --------
     >>> freqs = _autofrequency(min_freq=0.1, max_freq=0.5, df=0.1)
-    >>> np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
-    True
+    >>> assert np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
     >>> freqs = _autofrequency(min_freq=0.1, max_freq=0.5, length=10)
-    >>> np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
-    True
+    >>> assert np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
     >>> freqs = _autofrequency(min_freq=0.1, dt=1, length=10)
-    >>> np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
-    True
+    >>> assert np.allclose(freqs, [0.1, 0.2, 0.3, 0.4, 0.5])
     >>> freqs = _autofrequency(max_freq=0.5, df=0.2)
-    >>> np.allclose(freqs, [0.1, 0.3, 0.5])
-    True
+    >>> assert np.allclose(freqs, [0.1, 0.3, 0.5])
     """
 
     if (df is None or df <= 0) and length is None:

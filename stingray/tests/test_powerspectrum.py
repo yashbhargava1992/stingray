@@ -6,6 +6,7 @@ import warnings
 import pytest
 import matplotlib.pyplot as plt
 from astropy.io import fits
+from astropy.table import Table
 from stingray import Lightcurve
 from stingray.events import EventList
 from stingray import Powerspectrum, AveragedPowerspectrum, DynamicalPowerspectrum
@@ -544,7 +545,7 @@ class TestPowerspectrum(object):
     def test_fractional_rms_in_frac_norm_is_consistent_averaged(self, norm):
         time = np.arange(0, 400, 1) + 0.5
 
-        data = np.load(os.path.join(datadir, "sample_variable_lc.npy"))[:400] * 1000
+        data = Table.read(os.path.join(datadir, "sample_variable_series.fits"))["data"][:400] * 1000
         poisson_counts = np.random.poisson(data)
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1, gti=[[0, 400]])
@@ -560,7 +561,7 @@ class TestPowerspectrum(object):
     def test_fractional_rms_in_frac_norm_is_consistent_averaged_freq_range(self, norm):
         time = np.arange(0, 400, 1) + 0.5
 
-        data = np.load(os.path.join(datadir, "sample_variable_lc.npy"))[:400] * 1000
+        data = Table.read(os.path.join(datadir, "sample_variable_series.fits"))["data"][:400] * 1000
         poisson_counts = np.random.poisson(data)
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1, gti=[[0, 400]])

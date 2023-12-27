@@ -419,8 +419,10 @@ class Powerspectrum(Crossspectrum):
         >>> pds.power = np.array([100000, 1, 1, 40, 1])
         >>> pds.m = 1
         >>> pds.nphots = 30000
-        >>> pds.modulation_upper_limit(fmin=2, fmax=5, c=0.99)
-        0.1016...
+        >>> assert np.isclose(
+        ...     pds.modulation_upper_limit(fmin=2, fmax=5, c=0.99),
+        ...     0.10164,
+        ...     atol=0.0001)
         """
 
         pds = self

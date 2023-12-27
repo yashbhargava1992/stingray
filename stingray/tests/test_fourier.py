@@ -95,7 +95,10 @@ def test_avg_cs_imperfect_lc_size():
 class TestCoherence(object):
     @classmethod
     def setup_class(cls):
-        data = np.load(os.path.join(datadir, "sample_variable_lc.npy"))[:10000] * 1000
+        data = (
+            Table.read(os.path.join(datadir, "sample_variable_series.fits"))["data"][:10000] * 1000
+        )
+        print(data.max(), data.min())
         cls.data1 = np.random.poisson(data)
         cls.data2 = np.random.poisson(data)
         ft1 = np.fft.fft(cls.data1)
@@ -612,13 +615,13 @@ def test_lags(phlag):
     time = np.sort(np.random.uniform(0, 100, 3000))
     ft0 = lsft_slow(func(time, 0), time, np.array([freq]))
     ft1 = lsft_slow(func(time, phlag), time, np.array([freq]))
-    measured_lag = (np.angle(ft0) - np.angle(ft1)) / 2 / np.pi
+    measured_lag = (np.angle(ft1) - np.angle(ft0)) / 2 / np.pi
     while measured_lag > 0.5:
-        measured_lag -= 0.5
+        measured_lag -= 1
     while measured_lag <= -0.5:
-        measured_lag += 0.5
+        measured_lag += 1
 
-    assert np.isclose((np.angle(ft1) - np.angle(ft0)) / 2 / np.pi, phlag, atol=0.02, rtol=0.02)
+    assert np.isclose(measured_lag, phlag, atol=0.02, rtol=0.02)
 
 
 def test_lsft_slow_fast():

@@ -66,19 +66,17 @@ def nextpow(a: float, x: float) -> float:
 
     Examples
     --------
-    >>> nextpow(2, 7)
-    8.0
-    >>> nextpow(2, 9)
-    16.0
-    >>> nextpow(5, 20)
-    25.0
-    >>> nextpow(4, 16)
-    16.0
+    >>> assert nextpow(2, 7) == 8.0
+    >>> assert nextpow(2, 9) == 16.0
+    >>> assert nextpow(5, 20) == 25.0
+    >>> assert nextpow(4, 16) == 16.0
     """
     assert x > 0 and a > 1
     if x <= 1:
         return 1.0
-    n = np.ceil(np.math.log(x, a))
+    import math
+
+    n = np.ceil(math.log(x, a))
     p = a ** (n - 1)
     return p if p >= x else a**n
 

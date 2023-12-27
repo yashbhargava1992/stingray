@@ -13,7 +13,7 @@ __all__ = ["CrossCorrelation", "AutoCorrelation"]
 
 
 class CrossCorrelation(object):
-    """Make a cross-correlation from light curves or a cross spectrum.
+    r"""Make a cross-correlation from light curves or a cross spectrum.
 
     You can also make an empty :class:`Crosscorrelation` object to populate
     with your own cross-correlation data.

@@ -376,14 +376,11 @@ def search_best_peaks(x, stat, threshold):
     >>> best_x, best_stat = search_best_peaks(x, stat, 0.5)
     >>> len(best_x)
     2
-    >>> best_x[0]
-    7.0
-    >>> best_x[1]
-    2.0
+    >>> assert np.isclose(best_x[0], 7.0)
+    >>> assert np.isclose(best_x[1], 2.0)
     >>> stat = [0, 0, 2.5, 0, 0, 1, 1, 2, 1, 0]
     >>> best_x, best_stat = search_best_peaks(x, stat, 0.5)
-    >>> best_x[0]
-    2.0
+    >>> assert np.isclose(best_x[0], 2.0)
     >>> # Test no peak above threshold
     >>> x = np.arange(10)
     >>> stat = [0, 0, 0.4, 0, 0, 0, 0, 0, 0, 0]

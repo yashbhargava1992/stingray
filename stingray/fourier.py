@@ -56,23 +56,19 @@ def positive_fft_bins(n_bin, include_zero=False):
     as an equivalent mask for the positive bins. Below, a few tests that
     this works as expected.
     >>> goodbins = positive_fft_bins(10)
-    >>> np.allclose(freq[good], freq[goodbins])
-    True
+    >>> assert np.allclose(freq[good], freq[goodbins])
     >>> freq = np.fft.fftfreq(11)
     >>> good = freq > 0
     >>> goodbins = positive_fft_bins(11)
-    >>> np.allclose(freq[good], freq[goodbins])
-    True
+    >>> assert np.allclose(freq[good], freq[goodbins])
     >>> freq = np.fft.fftfreq(10)
     >>> good = freq >= 0
     >>> goodbins = positive_fft_bins(10, include_zero=True)
-    >>> np.allclose(freq[good], freq[goodbins])
-    True
+    >>> assert np.allclose(freq[good], freq[goodbins])
     >>> freq = np.fft.fftfreq(11)
     >>> good = freq >= 0
     >>> goodbins = positive_fft_bins(11, include_zero=True)
-    >>> np.allclose(freq[good], freq[goodbins])
-    True
+    >>> assert np.allclose(freq[good], freq[goodbins])
     """
     # The zeroth bin is 0 Hz. We usually don't include it, but
     # if the user wants it, we do.
@@ -246,12 +242,12 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_frac(pds, dt, lc.size, mean)
-    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(meanrate=meanrate,norm="frac"), rtol=0.01)
-    True
+    >>> assert np.isclose(
+    ...     pdsnorm[1:n_bin//2].mean(), poisson_level(meanrate=meanrate,norm="frac"), rtol=0.01)
     >>> pdsnorm = normalize_frac(pds, dt, lc.size, mean, background_flux=back)
-    >>> np.isclose(pdsnorm[1:n_bin//2].mean(),
-    ...            poisson_level(meanrate=meanrate,norm="frac",backrate=backrate), rtol=0.01)
-    True
+    >>> assert np.isclose(pdsnorm[1:n_bin//2].mean(),
+    ...                   poisson_level(meanrate=meanrate,norm="frac",backrate=backrate),
+    ...                   rtol=0.01)
     """
     #     (mean * n_bin) / (mean /dt) = n_bin * dt
     #     It's Leahy / meanrate;
@@ -308,8 +304,8 @@ def normalize_abs(unnorm_power, dt, n_bin):
     >>> lc = np.random.poisson(mean, n_bin)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_abs(pds, dt, lc.size)
-    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="abs", meanrate=meanrate), rtol=0.01)
-    True
+    >>> assert np.isclose(
+    ...     pdsnorm[1:n_bin//2].mean(), poisson_level(norm="abs", meanrate=meanrate), rtol=0.01)
     """
     #     It's frac * meanrate**2; Leahy / meanrate * meanrate**2
     #     n_ph = mean * n_bin
@@ -356,10 +352,8 @@ def normalize_leahy_from_variance(unnorm_power, variance, n_bin):
     >>> lc = np.random.poisson(mean, n_bin).astype(float)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_leahy_from_variance(pds, var, lc.size)
-    >>> np.isclose(pdsnorm[0], 2 * np.sum(lc), rtol=0.01)
-    True
-    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
-    True
+    >>> assert np.isclose(pdsnorm[0], 2 * np.sum(lc), rtol=0.01)
+    >>> assert np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
 
     If the variance is zero, it will fail:
     >>> pdsnorm = normalize_leahy_from_variance(pds, 0., lc.size)
@@ -406,10 +400,8 @@ def normalize_leahy_poisson(unnorm_power, n_ph):
     >>> lc = np.random.poisson(mean, n_bin).astype(float)
     >>> pds = np.abs(fft(lc))**2
     >>> pdsnorm = normalize_leahy_poisson(pds, np.sum(lc))
-    >>> np.isclose(pdsnorm[0], 2 * np.sum(lc), rtol=0.01)
-    True
-    >>> np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
-    True
+    >>> assert np.isclose(pdsnorm[0], 2 * np.sum(lc), rtol=0.01)
+    >>> assert np.isclose(pdsnorm[1:n_bin//2].mean(), poisson_level(norm="leahy"), rtol=0.01)
     """
     return unnorm_power * 2.0 / n_ph
 
@@ -1011,10 +1003,8 @@ def get_average_ctrate(times, gti, segment_size, counts=None):
     >>> gti = np.asarray([[0, 1000]])
     >>> counts, _ = np.histogram(times, bins=np.linspace(0, 1000, 11))
     >>> bin_times = np.arange(50, 1000, 100)
-    >>> get_average_ctrate(bin_times, gti, 1000, counts=counts)
-    1.0
-    >>> get_average_ctrate(times, gti, 1000)
-    1.0
+    >>> assert get_average_ctrate(bin_times, gti, 1000, counts=counts) == 1.0
+    >>> assert get_average_ctrate(times, gti, 1000) == 1.0
     """
     n_ph = 0
     n_intvs = 0

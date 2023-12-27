@@ -3,6 +3,7 @@ Basic pulsar-related functions and statistics.
 """
 
 import functools
+import math
 from collections.abc import Iterable
 import warnings
 from scipy.optimize import minimize, basinhopping
@@ -57,16 +58,11 @@ def p_to_f(*period_derivatives):
 
     Examples
     --------
-    >>> p_to_f() == []
-    True
-    >>> np.allclose(p_to_f(1), [1])
-    True
-    >>> np.allclose(p_to_f(1, 2), [1, -2])
-    True
-    >>> np.allclose(p_to_f(1, 2, 3), [1, -2, 5])
-    True
-    >>> np.allclose(p_to_f(1, 2, 3, 4), [1, -2, 5, -16])
-    True
+    >>> assert p_to_f() == []
+    >>> assert np.allclose(p_to_f(1), [1])
+    >>> assert np.allclose(p_to_f(1, 2), [1, -2])
+    >>> assert np.allclose(p_to_f(1, 2, 3), [1, -2, 5])
+    >>> assert np.allclose(p_to_f(1, 2, 3, 4), [1, -2, 5, -16])
     """
     nder = len(period_derivatives)
     if nder == 0:
@@ -122,7 +118,7 @@ def pulse_phase(times, *frequency_derivatives, **opts):
     ph = ph0
 
     for i_f, f in enumerate(frequency_derivatives):
-        ph += 1 / np.math.factorial(i_f + 1) * times ** (i_f + 1) * f
+        ph += 1 / math.factorial(i_f + 1) * times ** (i_f + 1) * f
 
     if to_1:
         ph -= np.floor(ph)

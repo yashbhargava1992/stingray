@@ -76,8 +76,7 @@ def simple_events_from_lc(lc):
     >>> from stingray import Lightcurve
     >>> lc = Lightcurve([0, 1, 2], [2, 3, -1], dt=1)
     >>> ev = simple_events_from_lc(lc)
-    >>> np.allclose(ev.time, [0, 0, 1, 1, 1])
-    True
+    >>> assert np.allclose(ev.time, [0, 0, 1, 1, 1])
     """
     counts = lc.counts.astype(int)
     allcounts = _int_sum_non_zero(counts)
@@ -497,26 +496,20 @@ class EventList(StingrayTimeseries):
         --------
         >>> events = EventList(time=[0, 2, 1], energy=[0.3, 2, 0.5], pi=[3, 20, 5])
         >>> e1 = events.sort()
-        >>> np.allclose(e1.time, [0, 1, 2])
-        True
-        >>> np.allclose(e1.energy, [0.3, 0.5, 2])
-        True
-        >>> np.allclose(e1.pi, [3, 5, 20])
-        True
+        >>> assert np.allclose(e1.time, [0, 1, 2])
+        >>> assert np.allclose(e1.energy, [0.3, 0.5, 2])
+        >>> assert np.allclose(e1.pi, [3, 5, 20])
 
         But the original event list has not been altered (``inplace=False`` by
         default):
-        >>> np.allclose(events.time, [0, 2, 1])
-        True
+        >>> assert np.allclose(events.time, [0, 2, 1])
 
         Let's do it in place instead
         >>> e2 = events.sort(inplace=True)
-        >>> np.allclose(e2.time, [0, 1, 2])
-        True
+        >>> assert np.allclose(e2.time, [0, 1, 2])
 
         In this case, the original event list has been altered.
-        >>> np.allclose(events.time, [0, 1, 2])
-        True
+        >>> assert np.allclose(events.time, [0, 1, 2])
 
         """
         order = np.argsort(self.time)
@@ -654,15 +647,11 @@ class EventList(StingrayTimeseries):
         --------
         >>> events = EventList(time=[0, 1, 2], energy=[0.3, 0.5, 2], pi=[3, 5, 20])
         >>> e1 = events.filter_energy_range([0, 1])
-        >>> np.allclose(e1.time, [0, 1])
-        True
-        >>> np.allclose(events.time, [0, 1, 2])
-        True
+        >>> assert np.allclose(e1.time, [0, 1])
+        >>> assert np.allclose(events.time, [0, 1, 2])
         >>> e2 = events.filter_energy_range([0, 10], use_pi=True, inplace=True)
-        >>> np.allclose(e2.time, [0, 1])
-        True
-        >>> np.allclose(events.time, [0, 1])
-        True
+        >>> assert np.allclose(e2.time, [0, 1])
+        >>> assert np.allclose(events.time, [0, 1])
 
         """
         if use_pi:
@@ -705,21 +694,15 @@ class EventList(StingrayTimeseries):
         >>> filt_events, retval = events.apply_deadtime(0.11, inplace=False,
         ...                                             verbose=False,
         ...                                             return_all=True)
-        >>> filt_events is events
-        False
+        >>> assert filt_events is not events
         >>> expected = np.array([1, 2, 2.2, 3, 3.2])
-        >>> np.allclose(filt_events.time, expected)
-        True
-        >>> np.allclose(filt_events.pi, 1)
-        True
-        >>> np.allclose(filt_events.energy, 1)
-        True
-        >>> np.allclose(events.pi, 1)
-        False
+        >>> assert np.allclose(filt_events.time, expected)
+        >>> assert np.allclose(filt_events.pi, 1)
+        >>> assert np.allclose(filt_events.energy, 1)
+        >>> assert not np.allclose(events.pi, 1)
         >>> filt_events = events.apply_deadtime(0.11, inplace=True,
         ...                                     verbose=False)
-        >>> filt_events is events
-        True
+        >>> assert filt_events is events
         """
         local_retall = kwargs.pop("return_all", False)
 

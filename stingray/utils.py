@@ -148,8 +148,7 @@ def any_complex_in_array(array):
     --------
     >>> any_complex_in_array(np.array([1, 2, 3]))
     False
-    >>> any_complex_in_array(np.array([1, 2 + 1.j, 3]))
-    True
+    >>> assert any_complex_in_array(np.array([1, 2 + 1.j, 3]))
     """
     for a in array:
         if np.iscomplex(a):
@@ -180,16 +179,12 @@ def make_nd_into_arrays(array: np.ndarray, label: str) -> dict:
     >>> a1, a2, a3 = np.arange(3), np.arange(3, 6), np.arange(6, 9)
     >>> A = np.array([a1, a2, a3]).T
     >>> data = make_nd_into_arrays(A, "test")
-    >>> np.array_equal(data["test_dim0"], a1)
-    True
-    >>> np.array_equal(data["test_dim1"], a2)
-    True
-    >>> np.array_equal(data["test_dim2"], a3)
-    True
+    >>> assert np.array_equal(data["test_dim0"], a1)
+    >>> assert np.array_equal(data["test_dim1"], a2)
+    >>> assert np.array_equal(data["test_dim2"], a3)
     >>> A3 = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
     >>> data = make_nd_into_arrays(A3, "test")
-    >>> np.array_equal(data["test_dim0_0"], [1, 5])
-    True
+    >>> assert np.array_equal(data["test_dim0_0"], [1, 5])
     """
     data = {}
     array = np.asarray(array)
@@ -214,8 +209,7 @@ def get_dimensions_from_list_of_column_labels(labels: list, label: str) -> list:
     ...           'test_dim1_0', 'test_dim1_1', 'test_dim1_2', 'test', 'bu']
     >>> keys, dimensions = get_dimensions_from_list_of_column_labels(labels, "test")
     >>> for key0, key1 in zip(labels[:6], keys): assert key0 == key1
-    >>> np.array_equal(dimensions, [2, 3])
-    True
+    >>> assert np.array_equal(dimensions, [2, 3])
     """
     all_keys = []
     count_dimensions = None
@@ -258,20 +252,17 @@ def make_1d_arrays_into_nd(data: dict, label: str) -> np.ndarray:
     >>> A = np.array([a1, a2, a3]).T
     >>> data = make_nd_into_arrays(A, "test")
     >>> A_ret = make_1d_arrays_into_nd(data, "test")
-    >>> np.array_equal(A, A_ret)
-    True
+    >>> assert np.array_equal(A, A_ret)
     >>> A = np.array([[[1, 2, 12], [3, 4, 34]],
     ...               [[5, 6, 56], [7, 8, 78]],
     ...               [[9, 10, 910], [11, 12, 1112]],
     ...               [[13, 14, 1314], [15, 16, 1516]]])
     >>> data = make_nd_into_arrays(A, "_test")
     >>> A_ret = make_1d_arrays_into_nd(data, "_test")
-    >>> np.array_equal(A, A_ret)
-    True
+    >>> assert np.array_equal(A, A_ret)
     >>> data = make_nd_into_arrays(a1, "_test")
     >>> A_ret = make_1d_arrays_into_nd(data, "_test")
-    >>> np.array_equal(a1, A_ret)
-    True
+    >>> assert np.array_equal(a1, A_ret)
     """
 
     if label in list(data.keys()):
@@ -296,8 +287,7 @@ def _check_isallfinite_numba(array):
 
     Examples
     --------
-    >>> _check_isallfinite_numba(np.array([1., 2., 3.]))
-    True
+    >>> assert _check_isallfinite_numba(np.array([1., 2., 3.]))
     >>> _check_isallfinite_numba(np.array([1., np.inf, 3.]))
     False
     """
@@ -315,8 +305,7 @@ def check_isallfinite(array):
 
     Examples
     --------
-    >>> check_isallfinite([1, 2, 3])
-    True
+    >>> assert check_isallfinite([1, 2, 3])
     >>> check_isallfinite([1, np.inf, 3])
     False
     >>> check_isallfinite([1, np.nan, 3])
@@ -329,7 +318,7 @@ def check_isallfinite(array):
             return _check_isallfinite_numba(np.asarray(array))
         except Exception:
             pass
-    return np.all(np.isfinite(array))
+    return bool(np.all(np.isfinite(array)))
 
 
 def is_sorted(array):
@@ -464,16 +453,12 @@ def rebin_data(x, y, dx_new, yerr=None, method="sum", dx=None):
     >>> yerr = np.ones(x.size)
     >>> xbin, ybin, ybinerr, step_size = rebin_data(
     ...     x, y, 4, yerr=yerr, method='sum', dx=0.01)
-    >>> np.allclose(ybin, 400)
-    True
-    >>> np.allclose(ybinerr, 20)
-    True
+    >>> assert np.allclose(ybin, 400)
+    >>> assert np.allclose(ybinerr, 20)
     >>> xbin, ybin, ybinerr, step_size = rebin_data(
     ...     x, y, 4, yerr=yerr, method='mean')
-    >>> np.allclose(ybin, 1)
-    True
-    >>> np.allclose(ybinerr, 0.05)
-    True
+    >>> assert np.allclose(ybin, 1)
+    >>> assert np.allclose(ybinerr, 0.05)
     """
 
     y = np.asarray(y)
@@ -708,7 +693,7 @@ def apply_function_if_none(variable, value, func):
     >>> apply_function_if_none(var, value, np.mean)
     4
     >>> var = None
-    >>> apply_function_if_none(var, value, lambda y: np.mean(y))
+    >>> apply_function_if_none(var, value, lambda y: float(np.mean(y)))
     0.0
     """
     if variable is None:
@@ -1024,8 +1009,7 @@ def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False, offset
     >>> x = np.arange(0, 10, 0.01)
     >>> y = np.zeros_like(x) + 10
     >>> ysub = baseline_als(x, y)
-    >>> np.all(ysub < 0.001)
-    True
+    >>> assert np.all(ysub < 0.001)
     """
 
     if lam is None:
@@ -1367,8 +1351,7 @@ def check_iterables_close(iter0, iter1, **kwargs):
     False
     >>> iter0 = [(0, 0), (0, 1)]
     >>> iter1 = [(0, 0.), (0, 1.)]
-    >>> check_iterables_close(iter0, iter1)
-    True
+    >>> assert check_iterables_close(iter0, iter1)
     >>> iter1 = [(0, 0.), (0, 3.)]
     >>> check_iterables_close(iter0, iter1)
     False
@@ -1444,8 +1427,7 @@ def compute_bin(x, bin_edges):
     1
     >>> compute_bin(10, bin_edges)
     1
-    >>> compute_bin(11, bin_edges) is None
-    True
+    >>> assert compute_bin(11, bin_edges) is None
     """
 
     # assuming uniform bins for now
@@ -2188,14 +2170,11 @@ def equal_count_energy_ranges(energies, n_ranges, emin=None, emax=None):
     --------
     >>> energies = np.random.uniform(0, 10, 1000000)
     >>> edges = equal_count_energy_ranges(energies, 5, emin=0, emax=10)
-    >>> np.allclose(edges, [0, 2, 4, 6, 8, 10], atol=0.05)
-    True
+    >>> assert np.allclose(edges, [0, 2, 4, 6, 8, 10], atol=0.05)
     >>> edges = equal_count_energy_ranges(energies, 5)
-    >>> np.allclose(edges, [0, 2, 4, 6, 8, 10], atol=0.05)
-    True
+    >>> assert np.allclose(edges, [0, 2, 4, 6, 8, 10], atol=0.05)
     >>> edges = equal_count_energy_ranges(energies, 0)
-    >>> np.allclose(edges, [0, 10], atol=0.05)
-    True
+    >>> assert np.allclose(edges, [0, 10], atol=0.05)
     """
     need_filtering = False
     if emin is not None or emax is not None:
@@ -2264,8 +2243,7 @@ def assign_if_not_finite(value, default):
     >>> assign_if_not_finite(np.inf, 3.2)
     3.2
     >>> input_arr = np.array([np.nan, 1, np.inf, 2])
-    >>> np.allclose(assign_if_not_finite(input_arr, 3.2), [3.2, 1, 3.2, 2])
-    True
+    >>> assert np.allclose(assign_if_not_finite(input_arr, 3.2), [3.2, 1, 3.2, 2])
 
     """
     if isinstance(value, Iterable):
