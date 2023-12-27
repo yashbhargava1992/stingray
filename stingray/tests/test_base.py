@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from stingray.base import StingrayObject, StingrayTimeseries
 
-_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
+_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = _HAS_YAML = True
 
 try:
     import xarray
@@ -23,6 +23,11 @@ try:
     import h5py
 except ImportError:
     _HAS_H5PY = False
+
+try:
+    import yaml
+except ImportError:
+    _HAS_YAML = False
 
 
 class DummyStingrayObj(StingrayObject):
@@ -57,7 +62,8 @@ class TestStingrayObject:
         sting_obj.pardulas = [3.0 + 1.0j, 2.0j, 1.0 + 0.0j]
         sting_obj.sebadas = [[0, 1], [2, 3], [4, 5]]
         sting_obj._sebadas = [[0, 1], [2, 3], [4, 5]]
-        sting_obj.pirichitus = 4
+        sting_obj.pirichitus = np.int64(4)
+        sting_obj.pistochedus = np.float64(4)
         sting_obj.parafritus = "bonus!"
         sting_obj.panesapa = [[41, 25], [98, 3]]
         cls.sting_obj = sting_obj
