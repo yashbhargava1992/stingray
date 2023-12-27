@@ -357,7 +357,14 @@ class StingrayObject(object):
         for attr in meta_dict.keys():
             if no_longdouble:
                 meta_dict[attr] = reduce_precision_if_extended(meta_dict[attr])
-
+            value = meta_dict[attr]
+            rep = repr(value)
+            # Work around issue with Numpy 2.0 and Yaml serializer.
+            if "np.float" in rep:
+                value = float(value)
+            elif "np.int" in rep:
+                value = int(value)
+            meta_dict[attr] = value
         ts.meta.update(meta_dict)
 
         return ts

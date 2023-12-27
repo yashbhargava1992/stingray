@@ -1544,9 +1544,15 @@ class Lightcurve(StingrayTimeseries):
         ]:
             if hasattr(self, attr) and getattr(self, attr) is not None:
                 vals = getattr(self, attr)
+                rep = repr(vals)
+                # Work around issue with Numpy 2.0 and Yaml serializer.
+                if rep.startswith("np.float"):
+                    vals = float(vals)
+                elif rep.startswith("np.int"):
+                    vals = int(vals)
                 if no_longdouble:
                     vals = reduce_precision_if_extended(vals)
-                ts.meta[attr.lstrip("_")] = getattr(self, attr)
+                ts.meta[attr.lstrip("_")] = vals
 
         return ts
 
