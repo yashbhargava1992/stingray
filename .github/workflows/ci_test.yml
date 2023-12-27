@@ -100,6 +100,14 @@ jobs:
             use_remote_data: true
             experimental: false
 
+          # Test 3.12 with basic optional dependencies installed.
+          - name: Linux, Py3.12 basic dependencies and coverage
+            os: ubuntu-latest
+            python: '3.12'
+            tox_env: 'py312-test-cov'
+            use_remote_data: true
+            experimental: true
+
           # Development version of dependencies
           - name: Linux, Py3.11 with dev versions of dependencies
             os: ubuntu-latest
