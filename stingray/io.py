@@ -2,7 +2,7 @@ import logging
 import math
 import copy
 import os
-import pickle
+import traceback
 import warnings
 from collections.abc import Iterable
 
@@ -596,7 +596,8 @@ def load_events_and_gtis(
     if modekey is not None and modekey in probe_header:
         mode = probe_header[modekey].strip()
 
-    gtistring = get_key_from_mission_info(db, "gti", "GTI,STDGTI", instr, mode)
+    if gtistring is None:
+        gtistring = get_key_from_mission_info(db, "gti", "GTI,STDGTI", instr, mode)
     if hduname is None:
         hduname = get_key_from_mission_info(db, "events", "EVENTS", instr, mode)
 
@@ -655,12 +656,10 @@ def load_events_and_gtis(
                 accepted_gtistrings=accepted_gtistrings,
                 det_numbers=det_number,
             )
-        except Exception:  # pragma: no cover
-            warnings.warn(
-                "No extensions found with a valid name. "
-                "Please check the `accepted_gtistrings` values.",
-                AstropyUserWarning,
-            )
+        except Exception as e:  # pragma: no cover
+            warnings.warn("No valid GTI extensions found:", AstropyUserWarning)
+            traceback.print_exception(e)
+            warnings.warn("GTIs will be set to the entire time series.", AstropyUserWarning)
             gti_list = np.array([[t_start, t_stop]], dtype=np.longdouble)
     else:
         gti_list = load_gtis(gti_file, gtistring)
