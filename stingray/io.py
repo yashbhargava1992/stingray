@@ -2,6 +2,7 @@ import logging
 import math
 import copy
 import os
+import sys
 import traceback
 import warnings
 from collections.abc import Iterable
@@ -658,7 +659,7 @@ def load_events_and_gtis(
             )
         except Exception as e:  # pragma: no cover
             warnings.warn("No valid GTI extensions found:", AstropyUserWarning)
-            traceback.print_exception(e)
+            traceback.print_exc()
             warnings.warn("GTIs will be set to the entire time series.", AstropyUserWarning)
             gti_list = np.array([[t_start, t_stop]], dtype=np.longdouble)
     else:

@@ -71,7 +71,7 @@ class TestIO(object):
     def test_event_file_read_and_automatic_sort(self):
         """Test event file reading."""
         fname = os.path.join(datadir, "monol_testA_calib.evt")
-        with pytest.warns(AstropyUserWarning, match="No extensions found with a"):
+        with pytest.warns(AstropyUserWarning, match="No valid GTI extensions"):
             evdata = load_events_and_gtis(fname)
         fname_unsrt = os.path.join(datadir, "monol_testA_calib_unsrt.evt")
         with pytest.warns(UserWarning, match="not sorted. Sorting them for you"):
@@ -93,7 +93,7 @@ class TestIO(object):
     def test_event_file_read_additional_energy_cal(self):
         """Test event file reading."""
         fname = os.path.join(datadir, "monol_testA_calib.evt")
-        with pytest.warns(AstropyUserWarning, match="No extensions found with a"):
+        with pytest.warns(AstropyUserWarning, match="No valid GTI extensions"):
             vals = load_events_and_gtis(fname, additional_columns=["energy"])
         # These energies were calibrated with a different calibration than
         # returned from rough_calibration, on purpose! (notice the +1.)
