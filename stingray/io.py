@@ -658,9 +658,10 @@ def load_events_and_gtis(
                 det_numbers=det_number,
             )
         except Exception as e:  # pragma: no cover
-            warnings.warn("No valid GTI extensions found:", AstropyUserWarning)
-            traceback.print_exc()
-            warnings.warn("GTIs will be set to the entire time series.", AstropyUserWarning)
+            warnings.warn(
+                f"No valid GTI extensions found. \nError: {str(e)}\nGTIs will be set to the entire time series.",
+                AstropyUserWarning,
+            )
             gti_list = np.array([[t_start, t_stop]], dtype=np.longdouble)
     else:
         gti_list = load_gtis(gti_file, gtistring)
