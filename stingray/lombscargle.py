@@ -649,7 +649,7 @@ def _ls_cross(
     Parameters
     ----------
     lc1: :class:`stingray.lightcurve.Lightcurve` object
-        One light curve to be Lomb-Scargle Fourier transformed. Ths is the band of
+        One light curve to be Lomb-Scargle Fourier transformed. This is the band of
         interest or channel of interest.
 
     lc2: :class:`stingray.lightcurve.Lightcurve` object

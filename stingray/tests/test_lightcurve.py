@@ -1272,7 +1272,7 @@ class TestLightcurve(object):
         assert np.allclose(lc0.gti, [[0.5, 4.5]])
         assert np.allclose(lc1.gti, [[5.5, 7.5]])
         assert np.allclose(lc2.gti, [[8.5, 9.5]])
-        # Check if new attributes are also splited accordingly
+        # Check if new attributes are also split accordingly
         assert np.allclose(lc0.bg_counts, [0, 0, 0, 1])
         assert np.allclose(lc1.bg_counts, [1, 2])
         assert np.allclose(lc0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
@@ -1821,7 +1821,7 @@ class TestArraydt(object):
         assert np.allclose(lc1.bg_ratio, [0.2, 0.2])
         assert np.allclose(lc0.frac_exp, [1, 0.5, 1, 1])
         assert np.allclose(lc1.frac_exp, [0.5, 0.5])
-        # Check if `dt` is also splited accordingly
+        # Check if `dt` is also split accordingly
         assert np.allclose(lc0.dt, [1, 1, 1, 2])
         assert np.allclose(lc1.dt, [1, 2])
 

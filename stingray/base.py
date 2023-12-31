@@ -66,7 +66,7 @@ class StingrayObject(object):
 
     ``main_array_attr`` is, e.g. ``time`` for :class:`StingrayTimeseries` and
     :class:`Lightcurve`, ``freq`` for :class:`Crossspectrum`, ``energy`` for
-    :class:`VarEnergySpectrum`, and so on. It is the array with wich all other
+    :class:`VarEnergySpectrum`, and so on. It is the array with which all other
     attributes are compared: if they are of the same shape, they get saved as
     columns of the table/dataframe, otherwise as metadata.
     """

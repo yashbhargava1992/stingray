@@ -862,7 +862,7 @@ def classical_pvalue(power, nspec):
     # If the power is really big, it's safe to say it's significant,
     # and the p-value will be nearly zero
     if (power * nspec) > 30000:
-        simon("Probability of no signal too miniscule to calculate.")
+        simon("Probability of no signal too minuscule to calculate.")
         return 0.0
 
     else:

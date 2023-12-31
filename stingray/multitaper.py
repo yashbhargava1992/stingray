@@ -380,7 +380,7 @@ class Multitaper(Powerspectrum):
         """Calculate the weighted PSD from the Fourier transformed data.
 
         Calculate the weighted PSD from the Fourier transformed data by
-        combining the frequences responses of these tapered data using the given
+        combining the frequencies responses of these tapered data using the given
         weights.
 
         Parameters
@@ -734,7 +734,7 @@ class Multitaper(Powerspectrum):
 
         Notes
         -----
-        Does not currently support adapative weighting or jack-knife estimates.
+        Does not currently support adaptive weighting or jack-knife estimates.
         """
 
         lc.apply_gtis()  # Remove bins with missing data

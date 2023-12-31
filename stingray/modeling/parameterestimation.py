@@ -714,7 +714,7 @@ class ParameterEstimation(object):
             data and the model
 
         pars : iterable
-            A list of parameters to be passed to ``lpost.model`` in oder
+            A list of parameters to be passed to ``lpost.model`` in order
             to generate a model data set.
 
         Returns
@@ -1389,7 +1389,7 @@ class PSDParEst(ParameterEstimation):
             data and the model
 
         pars : iterable
-            A list of parameters to be passed to ``lpost.model`` in oder
+            A list of parameters to be passed to ``lpost.model`` in order
             to generate a model data set.
 
         Returns

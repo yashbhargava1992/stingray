@@ -32,7 +32,7 @@ def convolve_ols(a, b, memout=None):
     The code for the convolution, as implemented by Ahmed Fasih, is under
     stingray.pulse.overlapandsave
 
-    Mimicks scipy.signal.fftconvolve with mode='save'.
+    Mimics scipy.signal.fftconvolve with mode='save'.
 
     Examples
     --------
@@ -135,7 +135,7 @@ def _convolve_with_response(
         The initial FT, normalized so that || FT ||^2 are Leahy powers.
     response_and_j : tuple
         Tuple containing the response matrix corresponding to a given
-        acceleration and its position in the list of reponses allocated
+        acceleration and its position in the list of responses allocated
         at the start of the procedure in ``accelsearch``.
     detlev : float
         The power level considered good for detection

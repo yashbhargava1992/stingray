@@ -665,7 +665,7 @@ class TestStingrayTimeseries:
         assert np.allclose(ts0.gti, [[0.5, 4.5]])
         assert np.allclose(ts1.gti, [[5.5, 7.5]])
         assert np.allclose(ts2.gti, [[8.5, 9.5]])
-        # Check if new attributes are also splited accordingly
+        # Check if new attributes are also split accordingly
         assert np.allclose(ts0.bg_counts, [0, 0, 0, 1])
         assert np.allclose(ts1.bg_counts, [1, 2])
         assert np.allclose(ts0.bg_ratio, [0.1, 0.1, 0.1, 0.2])
@@ -817,8 +817,8 @@ class TestStingrayTimeseries:
         lc1 = lc0.rebin(dt_new=dx_new)
         from stingray import utils
 
-        # Verifiy that the rebinning of irregular data is sampled correctly,
-        # Including all data but the first point, which is outsid GTIs
+        # Verify that the rebinning of irregular data is sampled correctly,
+        # Including all data but the first point, which is outside GTIs
         xbin, ybin, yerr_bin, step_size = utils.rebin_data(x[1:], y[1:], dx_new, yerr[1:])
 
         assert np.allclose(lc1.time, xbin)

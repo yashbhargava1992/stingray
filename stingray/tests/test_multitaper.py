@@ -202,7 +202,7 @@ class TestMultitaper(object):
 
     def test_rebin_output_shapes(self):
         """
-        Test wether all the rebinned spectral attributes have the same shape.
+        Test whether all the rebinned spectral attributes have the same shape.
         """
         mtp = Multitaper(self.lc, norm="Leahy")
         mtp_rebin = mtp.rebin(df=1.5)
