@@ -1217,9 +1217,11 @@ class StingrayTimeseries(StingrayObject):
 
     @property
     def mask(self):
-        if self._mask is None and self.gti is not None:
-            self._mask = create_gti_mask(self.time, self.gti, dt=self.dt)
-        elif self._mask is None:
+        if self._mask is not None:
+            return self._mask
+        if self._gti is not None:
+            self._mask = create_gti_mask(self.time, self._gti, dt=self.dt)
+        else:
             self._mask = np.ones_like(self.time, dtype=bool)
         return self._mask
 
