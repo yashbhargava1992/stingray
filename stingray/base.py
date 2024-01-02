@@ -247,8 +247,8 @@ class StingrayObject(object):
 
         This is useful for debugging, and for interactive use.
 
-        Optional parameters
-        -------------------
+        Other parameters
+        ----------------
         func_to_apply : function
             A function that modifies the attributes listed in ``attrs_to_apply``.
             It must return the modified attributes and a label to be printed.
