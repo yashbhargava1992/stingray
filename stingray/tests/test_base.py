@@ -419,6 +419,14 @@ class TestStingrayTimeseries:
         with pytest.raises(ValueError, match="Lengths of time and guefus must be equal"):
             StingrayTimeseries(time=np.arange(10), array_attrs=dict(guefus=np.zeros((5, 2))))
 
+    def test_mask_is_none_then_isnt_no_gti(self):
+        ts = copy.deepcopy(self.sting_obj)
+        assert ts._mask is None
+        # Unset GTIs
+        ts.gti = None
+        # But when I use the mask property, it's an array
+        assert np.array_equal(ts.mask, np.ones(len(ts.time), dtype=bool))
+
     def test_apply_mask(self):
         ts = copy.deepcopy(self.sting_obj)
         mask = [True, True] + 8 * [False]
