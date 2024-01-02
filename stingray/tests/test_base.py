@@ -1480,3 +1480,20 @@ class TestAnalyzeChunks(object):
         assert ts.estimate_segment_size(min_total_counts=100, min_time_bins=2) == 0.4
 
         assert ts.estimate_segment_size(100, min_time_bins=40) == 8.0
+
+    def test_analyze_segments_invalid_func(self):
+        ts = StingrayTimeseries(self.time, dt=1, gti=[[-0.5, 0.5], [1.5, 150.5]])
+        with pytest.raises(ValueError, match="You have to specify a function to apply"):
+            ts.analyze_segments()
+
+    def test_analyze_segments_bad_intv(self):
+        ts = StingrayTimeseries(time=np.arange(10), dt=1, gti=[[-0.5, 0.5], [1.5, 10.5]])
+
+        def func(x):
+            return np.size(x.time)
+
+        # I do not specify the segment_size, which means results will be calculated per-GTI
+        with pytest.warns(UserWarning, match="has one data point or less."):
+            _, _, results = ts.analyze_segments(func)
+        # the first GTI contains only one bin, the result will be invalid
+        assert np.isnan(results[0])

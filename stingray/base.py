@@ -2580,7 +2580,10 @@ class StingrayTimeseries(StingrayObject):
         results = []
         for i, (st, sp, tst, tsp) in enumerate(zip(start, stop, start_times, stop_times)):
             if sp - st <= 1:
-                res = 0
+                warnings.warn(
+                    f"Segment {i} ({tst}--{tsp}) has one data point or less. Skipping it."
+                )
+                res = np.nan
             else:
                 lc_filt = self[st:sp]
                 lc_filt.gti = np.asarray([[tst, tsp]])
