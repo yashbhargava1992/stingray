@@ -1444,6 +1444,7 @@ class TestAnalyzeChunks(object):
         counts = np.zeros_like(cls.time) + 3
         cls.ts = StingrayTimeseries(cls.time, counts=counts, dt=1)
         cls.ts_no_dt = StingrayTimeseries(cls.time, counts=counts, dt=0)
+        cls.ts_no_counts = StingrayTimeseries(cls.time, dt=0)
 
     def test_invalid_input(self):
         with pytest.raises(ValueError, match="You have to specify at least one of"):
@@ -1454,6 +1455,7 @@ class TestAnalyzeChunks(object):
     def test_no_total_counts(self):
         assert self.ts.estimate_segment_size(min_time_bins=2) == 2
         assert self.ts_no_dt.estimate_segment_size(min_time_bins=2) == 2
+        assert self.ts_no_counts.estimate_segment_size(min_time_bins=2) == 2
 
     def test_estimate_segment_size(self):
         # Here, the total counts dominate
