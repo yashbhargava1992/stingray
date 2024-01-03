@@ -2144,10 +2144,19 @@ class StingrayTimeseries(StingrayObject):
     ):
         """Fill short bad time intervals with random data.
 
-        Random data are extracted by randomly repeating the values of nearby good data (at least
-        ``buffer_size`` time bins). Non-uniform time series will have their times randomized from a
-        uniform distribution with the same count rate of nearby intervals (always decided from
-        ``buffer_size`` time bins).
+        To fill the gaps in all but the time points (i.e., flux measures, energies), we take the
+        ``buffer_size`` (default 100) valid data points closest to the gap and repeat them randomly
+        with the same empirical statistical distribution. That is, if the "blabla" attributes, in
+        the 100 points of the buffer, has 30 times 10, 10 times 9, and 60 times 11, there will be
+        *on average* 30% of 10, 60% of 11, and 10% of 9 in the simulated data.
+
+        Times are treated differently depending on the fact that the time series is uniformly
+        sampled or not. If it is not, the times are simulated from a uniform distribution with the
+        same count rate found in the buffer. Otherwise, times just follow the same grid used
+        inside GTIs. Using the uniformly sampled or not is decided based on the ``uniform``
+        parameter. If left to ``None``, the time series is considered uniformly sampled if
+        ``self.dt`` is greater than zero and the median separation between subsequent times is
+        within 1% of the time resolution.
 
         Other Parameters
         ----------------
