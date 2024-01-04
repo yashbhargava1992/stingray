@@ -1318,7 +1318,7 @@ class TestFillBTI(object):
     def test_event_like(self):
         ev_like_filt = copy.deepcopy(self.ev_like)
         # I introduce a small gap in the GTIs
-        ev_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
+        ev_like_filt.gti = np.asarray([[0, 498], [500, 520], [522, 700], [702, 900], [950, 1000]])
         ev_new = ev_like_filt.fill_bad_time_intervals()
 
         assert np.allclose(ev_new.gti, self.gti)
@@ -1328,13 +1328,13 @@ class TestFillBTI(object):
         ev_new.gti = ev_like_filt.gti
 
         new_masked, filt_masked = ev_new.apply_gtis(), ev_like_filt.apply_gtis()
-        for attr in ["time", "energy"]:
+        for attr in ["time", "energy", "blablas"]:
             assert np.allclose(getattr(new_masked, attr), getattr(filt_masked, attr))
 
     def test_lc_like(self):
         lc_like_filt = copy.deepcopy(self.lc_like)
         # I introduce a small gap in the GTIs
-        lc_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
+        lc_like_filt.gti = np.asarray([[0, 498], [500, 520], [522, 700], [702, 900], [950, 1000]])
         lc_new = lc_like_filt.fill_bad_time_intervals()
         assert np.allclose(lc_new.gti, self.gti)
 
