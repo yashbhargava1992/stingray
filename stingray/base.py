@@ -2141,7 +2141,7 @@ class StingrayTimeseries(StingrayObject):
         self,
         max_length=None,
         attrs_to_randomize=None,
-        buffer_size=100,
+        buffer_size=None,
         even_sampling=None,
         seed=None,
     ):
@@ -2159,7 +2159,8 @@ class StingrayTimeseries(StingrayObject):
             ``buffer_size`` are adequate to your case.
 
         To fill the gaps in all but the time points (i.e., flux measures, energies), we take the
-        ``buffer_size`` (default 100) valid data points closest to the gap and repeat them randomly
+        ``buffer_size`` (by default, the largest value between 100 and the estimated samples in
+        a ``max_length``-long gap) valid data points closest to the gap and repeat them randomly
         with the same empirical statistical distribution. So, if the `my_fancy_attr` attribute, in
         the 100 points of the buffer, has 30 times 10, 10 times 9, and 60 times 11, there will be
         *on average* 30% of 10, 60% of 11, and 10% of 9 in the simulated data.
@@ -2217,13 +2218,22 @@ class StingrayTimeseries(StingrayObject):
 
         new_times = [filtered_times.copy()]
         new_attrs = {}
+        mean_data_separation = np.median(np.diff(filtered_times))
         if even_sampling is None:
             # The time series is considered evenly sampled if the median separation between
             # subsequent times is within 1% of the time resolution
             even_sampling = False
-            if self.dt > 0 and np.isclose(np.median(np.diff(self.time)), self.dt, rtol=0.01):
+            if self.dt > 0 and np.isclose(mean_data_separation, self.dt, rtol=0.01):
                 even_sampling = True
             logging.info(f"Data are {'not' if not even_sampling else ''} evenly sampled")
+
+        if even_sampling:
+            est_samples_in_gap = int(max_length / self.dt)
+        else:
+            est_samples_in_gap = int(max_length / mean_data_separation)
+
+        if buffer_size is None:
+            buffer_size = max(100, est_samples_in_gap)
 
         added_gtis = []
 
