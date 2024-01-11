@@ -2110,7 +2110,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             power spectrum!
 
         method: {"sum" | "mean" | "average"}, optional, default "sum"
-            This keyword argument sets whether the counts in the new bins
+            This keyword argument sets whether the powers in the new bins
             should be summed or averaged.
         """
         new_dynspec_object = copy.deepcopy(self)
@@ -2148,7 +2148,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             spectrum!
 
         method: {"sum" | "mean" | "average"}, optional, default "sum"
-            This keyword argument sets whether the counts in the new bins
+            This keyword argument sets whether the powers in the new bins
             should be summed or averaged.
 
         Returns
@@ -2191,7 +2191,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             The number of intervals to be combined into one.
 
         method: {"sum" | "mean" | "average"}, optional, default "sum"
-            This keyword argument sets whether the counts in the new bins
+            This keyword argument sets whether the powers in the new bins
             should be summed or averaged.
 
         Returns
