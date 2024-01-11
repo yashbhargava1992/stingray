@@ -2148,7 +2148,7 @@ class StingrayTimeseries(StingrayObject):
         """Fill short bad time intervals with random data.
 
         .. warning::
-            This method is only appropriate for _very short_ bad time intervals. The simulated data
+            This method is only appropriate for *very short* bad time intervals. The simulated data
             are basically white noise, so they are able to alter the statistical properties of
             variable data. For very short gaps in the data, the effect of these small
             injections of white noise should be negligible. How short depends on the single case,
