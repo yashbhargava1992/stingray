@@ -1381,8 +1381,8 @@ class TestFillBTI(object):
         # I introduce a small gap in the GTIs
         ev_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
         # Results should be exactly the same
-        ev_new0 = ev_like_filt.fill_bad_time_intervals(uniform=False, seed=201903)
-        ev_new1 = ev_like_filt.fill_bad_time_intervals(uniform=None, seed=201903)
+        ev_new0 = ev_like_filt.fill_bad_time_intervals(even_sampling=False, seed=201903)
+        ev_new1 = ev_like_filt.fill_bad_time_intervals(even_sampling=None, seed=201903)
         for attr in ["time", "energy"]:
             assert np.allclose(getattr(ev_new0, attr), getattr(ev_new1, attr))
 
@@ -1391,8 +1391,8 @@ class TestFillBTI(object):
         # I introduce a small gap in the GTIs
         lc_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
         # Results should be exactly the same
-        lc_new0 = lc_like_filt.fill_bad_time_intervals(uniform=True, seed=201903)
-        lc_new1 = lc_like_filt.fill_bad_time_intervals(uniform=None, seed=201903)
+        lc_new0 = lc_like_filt.fill_bad_time_intervals(even_sampling=True, seed=201903)
+        lc_new1 = lc_like_filt.fill_bad_time_intervals(even_sampling=None, seed=201903)
         for attr in ["time", "counts", "blablas"]:
             assert np.allclose(getattr(lc_new0, attr), getattr(lc_new1, attr))
 

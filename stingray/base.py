@@ -1093,7 +1093,7 @@ class StingrayTimeseries(StingrayObject):
 
     dt: float
         The time resolution of the time series. Can be a scalar or an array attribute (useful
-        for non-uniformly sampled data or events from different instruments)
+        for non-evenly sampled data or events from different instruments)
 
     mjdref : float
         The MJD used as a reference for the time array.
@@ -1128,7 +1128,7 @@ class StingrayTimeseries(StingrayObject):
 
     dt: float
         The time resolution of the measurements. Can be a scalar or an array attribute (useful
-        for non-uniformly sampled data or events from different instruments)
+        for non-evenly sampled data or events from different instruments)
 
     mjdref : float
         The MJD used as a reference for the time array.
@@ -2142,7 +2142,7 @@ class StingrayTimeseries(StingrayObject):
         max_length=None,
         attrs_to_randomize=None,
         buffer_size=100,
-        uniform=None,
+        even_sampling=None,
         seed=None,
     ):
         """Fill short bad time intervals with random data.
@@ -2163,11 +2163,11 @@ class StingrayTimeseries(StingrayObject):
         the 100 points of the buffer, has 30 times 10, 10 times 9, and 60 times 11, there will be
         *on average* 30% of 10, 60% of 11, and 10% of 9 in the simulated data.
 
-        Times are treated differently depending on the fact that the time series is uniformly
+        Times are treated differently depending on the fact that the time series is evenly
         sampled or not. If it is not, the times are simulated from a uniform distribution with the
         same count rate found in the buffer. Otherwise, times just follow the same grid used
-        inside GTIs. Using the uniformly sampled or not is decided based on the ``uniform``
-        parameter. If left to ``None``, the time series is considered uniformly sampled if
+        inside GTIs. Using the evenly sampled or not is decided based on the ``even_sampling``
+        parameter. If left to ``None``, the time series is considered evenly sampled if
         ``self.dt`` is greater than zero and the median separation between subsequent times is
         within 1% of the time resolution.
 
@@ -2182,9 +2182,9 @@ class StingrayTimeseries(StingrayObject):
         buffer_size : int, default 100
             Number of good data points to use to calculate the means and variance the random data
             on each side of the bad time interval
-        uniform : bool, default None
-            Force the treatment of the data as uniformly sampled or not. If None, the data are
-            considered uniformly sampled if ``self.dt`` is larger than zero and the median
+        even_sampling : bool, default None
+            Force the treatment of the data as evenly sampled or not. If None, the data are
+            considered evenly sampled if ``self.dt`` is larger than zero and the median
             separation between subsequent times is within 1% of ``self.dt``.
         seed : int, default None
             Random seed to use for the simulation. If None, a random seed is generated.
@@ -2216,13 +2216,13 @@ class StingrayTimeseries(StingrayObject):
 
         new_times = [filtered_times.copy()]
         new_attrs = {}
-        if uniform is None:
-            # The time series is considered uniformly sampled if the median separation between
+        if even_sampling is None:
+            # The time series is considered evenly sampled if the median separation between
             # subsequent times is within 1% of the time resolution
-            uniform = False
+            even_sampling = False
             if self.dt > 0 and np.isclose(np.median(np.diff(self.time)), self.dt, rtol=0.01):
-                uniform = True
-            logging.info(f"Data are {'not' if not uniform else ''} uniformly sampled")
+                even_sampling = True
+            logging.info(f"Data are {'not' if not even_sampling else ''} evenly sampled")
 
         added_gtis = []
 
@@ -2236,7 +2236,7 @@ class StingrayTimeseries(StingrayObject):
             added_gtis.append([bti[0] - epsilon, bti[1] + epsilon])
             filt_low_t, filt_low_idx = find_nearest(filtered_times, bti[0])
             filt_hig_t, filt_hig_idx = find_nearest(filtered_times, bti[1], side="right")
-            if uniform:
+            if even_sampling:
                 local_new_times = np.arange(bti[0] + self.dt / 2, bti[1], self.dt)
                 nevents = local_new_times.size
                 new_times.append(local_new_times)
