@@ -1355,9 +1355,10 @@ class Lightcurve(StingrayTimeseries):
         Other parameters
         ----------------
         fraction_step : float
-            If the step is not a full ``segment_size`` but less (e.g. a moving window),
-            this indicates the ratio between step step and ``segment_size`` (e.g.
-            0.5 means that the window shifts of half ``segment_size``)
+            By default, segments do not overlap (``fraction_step`` = 1). If ``fraction_step`` < 1,
+            then the start points of consecutive segments are ``fraction_step * segment_size``
+            apart, and consecutive segments overlap. For example, for ``fraction_step`` = 0.5,
+            the window shifts one half of ``segment_size``)
         kwargs : keyword arguments
             These additional keyword arguments, if present, they will be passed
             to ``func``

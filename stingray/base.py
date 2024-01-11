@@ -2438,18 +2438,19 @@ class StingrayTimeseries(StingrayObject):
     def estimate_segment_size(self, min_total_counts=None, min_time_bins=None):
         """Estimate a reasonable segment length for chunk-by-chunk analysis.
 
-        Choose a reasonable length for time segments, given a minimum number of total
-        counts in the segment, and a minimum number of time bins in the segment.
-
-        The user specifies a condition on the total counts in each segment and
-        the minimum number of time bins.
+        The user has to specify a criterion based on a minimum number of counts (if
+        the time series has a ``counts`` attribute) or a minimum number of time samples.
+        At least one between ``min_total_counts`` and ``min_time_bins`` must be specified.
+        In the special case of a time series with ``dt=0`` (event list-like, where each time
+        stamp correspond to a single count), the two definitions are equivalent.
 
         Other Parameters
         ----------------
         min_total_counts : int
-            Minimum number of counts for each chunk
+            Minimum number of counts for each chunk. Optional (but needs ``min_time_bins``
+            in this case)
         min_time_bins : int
-            Minimum number of time bins
+            Minimum number of time bins. Optional (but needs ``min_total_counts`` in this case)
 
         Returns
         -------
@@ -2615,9 +2616,10 @@ class StingrayTimeseries(StingrayObject):
         Other parameters
         ----------------
         fraction_step : float
-            If the step is not a full ``segment_size`` but less (e.g. a moving window),
-            this indicates the ratio between step step and ``segment_size`` (e.g.
-            0.5 means that the window shifts of half ``segment_size``)
+            By default, segments do not overlap (``fraction_step`` = 1). If ``fraction_step`` < 1,
+            then the start points of consecutive segments are ``fraction_step * segment_size``
+            apart, and consecutive segments overlap. For example, for ``fraction_step`` = 0.5,
+            the window shifts one half of ``segment_size``)
         kwargs : keyword arguments
             These additional keyword arguments, if present, they will be passed
             to ``func``
