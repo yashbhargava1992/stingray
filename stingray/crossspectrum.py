@@ -2179,7 +2179,11 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
     def rebin_by_n_intervals(self, n, method="sum"):
         """
-        Rebin the Dynamic Power Spectrum to a new time resolution, by summing n intervals.
+        Rebin the Dynamic Power Spectrum to a new time resolution, by summing contiguous intervals.
+
+        This is different from meth:`DynamicalPowerspectrum.rebin_time` in that it averages ``n``
+        consecutive intervals regardless of their distance in time. ``rebin_time`` will instead
+        average intervals that are separated at most by a time ``dt_new``.
 
         Parameters
         ----------
