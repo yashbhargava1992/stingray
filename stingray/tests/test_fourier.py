@@ -748,13 +748,18 @@ class TestPowerColor(object):
         with pytest.raises(ValueError, match="The maximum frequency is lower "):
             power_color(self.freq[good], self.power[good])
 
+        with pytest.raises(ValueError, match="freq_edges must have 5 elements"):
+            power_color(self.freq, self.power, freq_edges=[1])
+        with pytest.raises(ValueError, match="freq_edges must have 5 elements"):
+            power_color(self.freq, self.power, freq_edges=[1, 2, 3, 4, 5, 6])
+
     def test_bad_excluded_interval(self):
         for fte in ([1, 1.1, 3.0], [4], [[1, 1.1, 3.0]], 0, [[[1, 3]]]):
-            with pytest.raises(ValueError, match="frequencies_to_exclude must be of "):
-                power_color(self.freq, self.power, frequencies_to_exclude=fte)
+            with pytest.raises(ValueError, match="freqs_to_exclude must be of "):
+                power_color(self.freq, self.power, freqs_to_exclude=fte)
 
     def test_excluded_frequencies(self):
-        pc0, _, pc1, _ = power_color(self.freq, self.power, frequencies_to_exclude=[1, 1.1])
+        pc0, _, pc1, _ = power_color(self.freq, self.power, freqs_to_exclude=[1, 1.1])
         # The colors calculated with these frequency edges on a 1/f spectrum should be 1
         # The excluded frequency interval is small enough that the approximation should work
         assert np.isclose(pc0, 1, atol=0.001)

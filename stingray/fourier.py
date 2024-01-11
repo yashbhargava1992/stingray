@@ -110,7 +110,22 @@ def power_color(
     return_log=False,
 ):
     """
-    Calculate the power color of a power spectrum.
+    Calculate two power colors from a power spectrum.
+
+    Power colors are an alternative to spectral colors to understand the spectral state of an
+    accreting source. They are defined as the ratio of the power in two frequency ranges,
+    analogously to the colors calculated from electromagnetic spectra.
+
+    This function calculates two power colors, using the four frequency ranges contained
+    between the five frequency edges in ``freq_edges``. Given [f0, f1, f2, f3, f4], the
+    two power colors are calculated as the following ratios of the integrated power
+    (which are variances):
+
+    + PC0 = Var([f0, f1]) / Var([f2, f3])
+
+    + PC1 = Var([f1, f2]) / Var([f3, f4])
+
+    Errors are calculated using simple error propagation from the integrated power errors.
 
     See Heil et al. 2015, MNRAS, 448, 3348
 
@@ -126,8 +141,8 @@ def power_color(
     power_err : iterable
         The power error bar at each frequency
     freq_edges : iterable, optional, default ``[0.0039, 0.031, 0.25, 2.0, 16.0]``
-        The frequency intervals to use to calculate the power color. If empty,
-        the power color is calculated in the whole frequency range.
+        The five edges defining the four frequency intervals to use to calculate the power color.
+        If empty, the power color is calculated using the frequencies from Heil et al. 2015.
     df : float or float iterable, optional, default None
         The frequency resolution of the input data. If None, it is calculated
         from the median difference of input frequencies.
@@ -147,12 +162,19 @@ def power_color(
 
     Returns
     -------
-    power_color : float
-        The power color
-    power_color_err : float
-        The error on the power color
+    PC0 : float
+        The first power color
+    PC0_err : float
+        The error on the first power color
+    PC1 : float
+        The second power color
+    PC1_err : float
+        The error on the second power color
     """
     freq_edges = np.asarray(freq_edges)
+    if len(freq_edges) != 5:
+        raise ValueError("freq_edges must have 5 elements")
+
     frequency = np.asarray(frequency)
     power = np.asarray(power)
 
