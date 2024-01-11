@@ -196,7 +196,7 @@ def prepareh(h, nfft: List[int], rfftn=None):
         The FFT-transformed, conjugate filter array
     """
     rfftn = rfftn or np.fft.rfftn
-    return np.conj(rfftn(flip(np.conj(h)), nfft))
+    return np.conj(rfftn(flip(np.conj(h)), nfft, axes=np.arange(len(nfft))))
 
 
 def slice2range(s: slice):
@@ -365,7 +365,9 @@ def olsStep(
         for (start, length, nh, border) in zip(starts, lengths, nh, border)
     )
     xpart = padEdges(x, slices, mode=mode, **kwargs)
-    output = irfftn(rfftn(xpart, nfft) * hfftconj, nfft)
+    output = irfftn(
+        rfftn(xpart, nfft, axes=np.arange(len(nfft))) * hfftconj, nfft, axes=np.arange(len(nfft))
+    )
     return output[tuple(slice(0, s) for s in lengths)]
 
 
