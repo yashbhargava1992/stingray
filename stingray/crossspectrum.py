@@ -2092,7 +2092,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         self.dt = self.segment_size
         self.m = 1
 
-    def rebin_frequency(self, df_new, method="sum"):
+    def rebin_frequency(self, df_new, method="average"):
         """
         Rebin the Dynamic Power Spectrum to a new frequency resolution.
         Rebinning is an in-place operation, i.e. will replace the existing
@@ -2109,7 +2109,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             Must be larger than the frequency resolution of the old dynamical
             power spectrum!
 
-        method: {"sum" | "mean" | "average"}, optional, default "sum"
+        method: {"sum" | "mean" | "average"}, optional, default "average"
             This keyword argument sets whether the powers in the new bins
             should be summed or averaged.
         """
@@ -2128,7 +2128,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
         return new_dynspec_object
 
-    def rebin_time(self, dt_new, method="sum"):
+    def rebin_time(self, dt_new, method="average"):
         """
         Rebin the Dynamic Power Spectrum to a new time resolution.
 
@@ -2147,7 +2147,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             Must be larger than the time resolution of the old dynamical power
             spectrum!
 
-        method: {"sum" | "mean" | "average"}, optional, default "sum"
+        method: {"sum" | "mean" | "average"}, optional, default "average"
             This keyword argument sets whether the powers in the new bins
             should be summed or averaged.
 
@@ -2177,7 +2177,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         new_dynspec_object.m = int(step) * self.m
         return new_dynspec_object
 
-    def rebin_by_n_intervals(self, n, method="sum"):
+    def rebin_by_n_intervals(self, n, method="average"):
         """
         Rebin the Dynamic Power Spectrum to a new time resolution, by summing contiguous intervals.
 
@@ -2190,7 +2190,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         n: int
             The number of intervals to be combined into one.
 
-        method: {"sum" | "mean" | "average"}, optional, default "sum"
+        method: {"sum" | "mean" | "average"}, optional, default "average"
             This keyword argument sets whether the powers in the new bins
             should be summed or averaged.
 
