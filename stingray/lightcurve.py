@@ -1292,21 +1292,25 @@ class Lightcurve(StingrayTimeseries):
         warnings.warn("This function was renamed to estimate_segment_size", DeprecationWarning)
         return self.estimate_segment_size(*args, **kwargs)
 
-    def estimate_segment_size(self, min_total_counts=100, min_time_bins=100):
-        """Estimate a reasonable segment length for chunk-by-chunk analysis.
+    def estimate_segment_size(self, min_counts=100, min_samples=100, even_sampling=None):
+        """Estimate a reasonable segment length for segment-by-segment analysis.
 
-        Choose a reasonable length for time segments, given a minimum number of total
-        counts in the segment, and a minimum number of time bins in the segment.
-
-        The user specifies a condition on the total counts in each segment and
-        the minimum number of time bins.
+        The user has to specify a criterion based on a minimum number of counts (if
+        the time series has a ``counts`` attribute) or a minimum number of time samples.
+        At least one between ``min_counts`` and ``min_samples`` must be specified.
 
         Other Parameters
         ----------------
-        min_total_counts : int
-            Minimum number of counts for each chunk
-        min_time_bins : int
-            Minimum number of time bins
+        min_counts : int
+            Minimum number of counts for each chunk. Optional (but needs ``min_samples``
+            if left unspecified). Only makes sense if the series has a ``counts`` attribute and
+            it is evenly sampled.
+        min_samples : int
+            Minimum number of time bins. Optional (but needs ``min_counts`` if left unspecified).
+        even_sampling : bool
+            Force the treatment of the data as evenly sampled or not. If None, the data are
+            considered evenly sampled if ``self.dt`` is larger than zero and the median
+            separation between subsequent times is within 1% of ``self.dt``.
 
         Returns
         -------
@@ -1320,11 +1324,11 @@ class Lightcurve(StingrayTimeseries):
         >>> count = np.zeros_like(time) + 3
         >>> lc = Lightcurve(time, count, dt=1)
         >>> assert np.isclose(
-        ...     lc.estimate_segment_size(min_total_counts=10, min_time_bins=3), 4)
-        >>> assert np.isclose(lc.estimate_segment_size(min_total_counts=10, min_time_bins=5), 5)
+        ...     lc.estimate_segment_size(min_counts=10, min_samples=3), 4)
+        >>> assert np.isclose(lc.estimate_segment_size(min_counts=10, min_samples=5), 5)
         >>> count[2:4] = 1
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> assert np.isclose(lc.estimate_segment_size(min_total_counts=3, min_time_bins=1), 3)
+        >>> assert np.isclose(lc.estimate_segment_size(min_counts=3, min_samples=1), 3)
         >>> # A slightly more complex example
         >>> dt=0.2
         >>> time = np.arange(0, 1000, dt)
@@ -1334,7 +1338,7 @@ class Lightcurve(StingrayTimeseries):
         >>> min_total_bins = 40
         >>> assert np.isclose(lc.estimate_segment_size(100, 40), 8.0)
         """
-        return super().estimate_segment_size(min_total_counts, min_time_bins)
+        return super().estimate_segment_size(min_counts, min_samples, even_sampling=even_sampling)
 
     def analyze_lc_chunks(self, segment_size, func, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.

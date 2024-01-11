@@ -2435,22 +2435,27 @@ class StingrayTimeseries(StingrayObject):
                 )
         return ax
 
-    def estimate_segment_size(self, min_total_counts=None, min_time_bins=None):
-        """Estimate a reasonable segment length for chunk-by-chunk analysis.
+    def estimate_segment_size(self, min_counts=None, min_samples=None, even_sampling=None):
+        """Estimate a reasonable segment length for segment-by-segment analysis.
 
         The user has to specify a criterion based on a minimum number of counts (if
         the time series has a ``counts`` attribute) or a minimum number of time samples.
-        At least one between ``min_total_counts`` and ``min_time_bins`` must be specified.
+        At least one between ``min_counts`` and ``min_samples`` must be specified.
         In the special case of a time series with ``dt=0`` (event list-like, where each time
         stamp correspond to a single count), the two definitions are equivalent.
 
         Other Parameters
         ----------------
-        min_total_counts : int
-            Minimum number of counts for each chunk. Optional (but needs ``min_time_bins``
-            in this case)
-        min_time_bins : int
-            Minimum number of time bins. Optional (but needs ``min_total_counts`` in this case)
+        min_counts : int
+            Minimum number of counts for each chunk. Optional (but needs ``min_samples``
+            if left unspecified). Only makes sense if the series has a ``counts`` attribute and
+            it is evenly sampled.
+        min_samples : int
+            Minimum number of time bins. Optional (but needs ``min_counts`` if left unspecified).
+        even_sampling : bool
+            Force the treatment of the data as evenly sampled or not. If None, the data are
+            considered evenly sampled if ``self.dt`` is larger than zero and the median
+            separation between subsequent times is within 1% of ``self.dt``.
 
         Returns
         -------
@@ -2463,11 +2468,11 @@ class StingrayTimeseries(StingrayObject):
         >>> time = np.arange(150)
         >>> counts = np.zeros_like(time) + 3
         >>> ts = StingrayTimeseries(time, counts=counts, dt=1)
-        >>> assert np.isclose(ts.estimate_segment_size(min_total_counts=10, min_time_bins=3), 4.0)
-        >>> assert np.isclose(ts.estimate_segment_size(min_total_counts=10, min_time_bins=5), 5.0)
+        >>> assert np.isclose(ts.estimate_segment_size(min_counts=10, min_samples=3), 4.0)
+        >>> assert np.isclose(ts.estimate_segment_size(min_counts=10, min_samples=5), 5.0)
         >>> counts[2:4] = 1
         >>> ts = StingrayTimeseries(time, counts=counts, dt=1)
-        >>> assert np.isclose(ts.estimate_segment_size(min_total_counts=3, min_time_bins=1), 3.0)
+        >>> assert np.isclose(ts.estimate_segment_size(min_counts=3, min_samples=1), 3.0)
         >>> # A slightly more complex example
         >>> dt=0.2
         >>> time = np.arange(0, 1000, dt)
@@ -2477,35 +2482,50 @@ class StingrayTimeseries(StingrayObject):
         >>> min_total_bins = 40
         >>> assert np.isclose(ts.estimate_segment_size(100, 40), 8.0)
         """
-        if min_total_counts is None and min_time_bins is None:
-            raise ValueError(
-                "You have to specify at least one of min_total_counts or min_time_bins"
-            )
+        if min_counts is None and min_samples is None:
+            raise ValueError("You have to specify at least one of min_counts or min_samples")
 
-        if min_total_counts is None:
-            if self.dt > 0:
-                min_total_counts = 0
+        mean_data_separation = np.median(np.diff(self.time))
+
+        if even_sampling is None:
+            # The time series is considered evenly sampled if the median separation between
+            # subsequent times is within 1% of the time resolution
+            even_sampling = False
+            if (
+                self.dt is not None
+                and self.dt > 0
+                and np.isclose(mean_data_separation, self.dt, rtol=0.01)
+            ):
+                even_sampling = True
+            logging.info(f"Data are {'not' if not even_sampling else ''} evenly sampled")
+
+        if min_counts is None:
+            if even_sampling and hasattr(self, "counts"):
+                min_counts = 0
             else:
-                min_total_counts = min_time_bins
+                min_counts = min_samples
 
         mean_ctrate = _ts_sum(self) / self.exposure
 
-        if self.dt > 0:
-            # The ceil is on the number of bins
-            rough_estimate = np.ceil(min_total_counts / mean_ctrate / self.dt) * self.dt
+        rough_estimate = np.ceil(min_counts / mean_ctrate)
+
+        # If data are evenly sampled, even sampling make the segment an integer multiple of dt.
+        # Otherwise, just use steps of 1 second.
+        if even_sampling:
+            step = self.dt
         else:
-            rough_estimate = np.ceil(min_total_counts / mean_ctrate)
+            step = 1.0
 
-        step = self.dt if self.dt > 0 else 1.0
+        rough_estimate = np.ceil(min_counts / mean_ctrate / step) * step
 
-        segment_size = np.max([rough_estimate, min_time_bins * step])
+        segment_size = np.max([rough_estimate, min_samples * step])
 
         keep_searching = True
 
         while keep_searching:
             start_times, stop_times, results = self.analyze_segments(_ts_sum, segment_size)
             mincounts = np.min(results)
-            if mincounts >= min_total_counts:
+            if mincounts >= min_counts:
                 keep_searching = False
             else:
                 segment_size += step

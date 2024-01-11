@@ -1453,23 +1453,23 @@ class TestAnalyzeChunks(object):
             self.ts_no_dt.estimate_segment_size()
 
     def test_no_total_counts(self):
-        assert self.ts.estimate_segment_size(min_time_bins=2) == 2
-        assert self.ts_no_dt.estimate_segment_size(min_time_bins=2) == 2
-        assert self.ts_no_counts.estimate_segment_size(min_time_bins=2) == 2
+        assert self.ts.estimate_segment_size(min_samples=2) == 2
+        assert self.ts_no_dt.estimate_segment_size(min_samples=2) == 2
+        assert self.ts_no_counts.estimate_segment_size(min_samples=2) == 2
 
     def test_estimate_segment_size(self):
         # Here, the total counts dominate
-        assert self.ts.estimate_segment_size(min_total_counts=10, min_time_bins=3) == 4.0
+        assert self.ts.estimate_segment_size(min_counts=10, min_samples=3) == 4.0
 
     def test_estimate_segment_size_more_bins(self):
         # Here, the time bins dominate
-        assert self.ts.estimate_segment_size(min_total_counts=10, min_time_bins=5) == 5.0
+        assert self.ts.estimate_segment_size(min_counts=10, min_samples=5) == 5.0
 
     def test_estimate_segment_size_lower_counts(self):
         counts = np.zeros_like(self.time) + 3
         counts[2:4] = 1
         ts = StingrayTimeseries(self.time, counts=counts, dt=1)
-        assert ts.estimate_segment_size(min_total_counts=3, min_time_bins=1) == 3.0
+        assert ts.estimate_segment_size(min_counts=3, min_samples=1) == 3.0
 
     def test_estimate_segment_size_lower_dt(self):
         # A slightly more complex example
@@ -1477,9 +1477,9 @@ class TestAnalyzeChunks(object):
         time = np.arange(0, 1000, dt)
         counts = np.random.poisson(100, size=len(time))
         ts = StingrayTimeseries(time, counts=counts, dt=dt)
-        assert ts.estimate_segment_size(min_total_counts=100, min_time_bins=2) == 0.4
+        assert ts.estimate_segment_size(min_counts=100, min_samples=2) == 0.4
 
-        assert ts.estimate_segment_size(100, min_time_bins=40) == 8.0
+        assert ts.estimate_segment_size(100, min_samples=40) == 8.0
 
     def test_analyze_segments_bad_intv(self):
         ts = StingrayTimeseries(time=np.arange(10), dt=1, gti=[[-0.5, 0.5], [1.5, 10.5]])
