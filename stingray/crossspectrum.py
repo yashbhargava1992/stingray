@@ -2316,8 +2316,8 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
                 power_color(
                     self.freq,
                     ps.real,
-                    frequency_edges=freq_edges,
-                    frequencies_to_exclude=freqs_to_exclude,
+                    freq_edges=freq_edges,
+                    freqs_to_exclude=freqs_to_exclude,
                     df=self.df,
                     poisson_power=poisson_power,
                     m=self.m,

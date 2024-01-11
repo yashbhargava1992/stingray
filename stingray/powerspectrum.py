@@ -1077,8 +1077,8 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
 
     def power_colors(
         self,
-        frequency_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
-        frequencies_to_exclude=None,
+        freq_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
+        freqs_to_exclude=None,
         poisson_power=None,
     ):
         """
@@ -1086,10 +1086,10 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
 
         Parameters
         ----------
-        frequency_edges: iterable
+        freq_edges: iterable
             The edges of the frequency bins to be used for the power colors.
 
-        frequencies_to_exclude : 1-d or 2-d iterable, optional, default None
+        freqs_to_exclude : 1-d or 2-d iterable, optional, default None
             The ranges of frequencies to exclude from the calculation of the power color.
             For example, the frequencies containing strong QPOs.
             A 1-d iterable should contain two values for the edges of a single range. (E.g.
@@ -1118,8 +1118,8 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
             )
 
         return super().power_colors(
-            freq_edges=frequency_edges,
-            freqs_to_exclude=frequencies_to_exclude,
+            freq_edges=freq_edges,
+            freqs_to_exclude=freqs_to_exclude,
             poisson_power=poisson_power,
         )
 
