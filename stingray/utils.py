@@ -1299,7 +1299,7 @@ def nearest_power_of_two(x):
     return x_nearest
 
 
-def find_nearest(array, value):
+def find_nearest(array, value, side="left"):
     """
     Return the array value that is closest to the input value (Abigail Stevens:
     Thanks StackOverflow!)
@@ -1313,6 +1313,11 @@ def find_nearest(array, value):
     value : int or float
         The value you want to find the closest to in the array.
 
+    Other Parameters
+    ----------------
+    side : str
+        Look at the ``numpy.searchsorted`` documentation for more information.
+
     Returns
     -------
     array[idx] : int or float
@@ -1322,7 +1327,7 @@ def find_nearest(array, value):
         The index of the array of the closest value.
 
     """
-    idx = np.searchsorted(array, value, side="left")
+    idx = np.searchsorted(array, value, side=side)
     if idx == len(array) or np.fabs(value - array[idx - 1]) < np.fabs(value - array[idx]):
         return array[idx - 1], idx - 1
     else:

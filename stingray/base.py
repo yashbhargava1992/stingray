@@ -15,8 +15,27 @@ from astropy.table import Table
 from astropy.time import Time, TimeDelta
 from astropy.units import Quantity
 
-from stingray.utils import sqsum
 from .io import _can_save_longdouble, _can_serialize_meta
+from .utils import (
+    sqsum,
+    assign_value_if_none,
+    make_nd_into_arrays,
+    make_1d_arrays_into_nd,
+    get_random_state,
+    find_nearest,
+    rebin_data,
+)
+from .gti import (
+    create_gti_mask,
+    check_gtis,
+    cross_two_gtis,
+    join_gtis,
+    gti_border_bins,
+    get_btis,
+    merge_gtis,
+    check_separate,
+    append_gtis,
+)
 
 from typing import TYPE_CHECKING, Type, TypeVar, Union
 
@@ -478,7 +497,6 @@ class StingrayObject(object):
 
         """
         from pandas import DataFrame
-        from .utils import make_nd_into_arrays
 
         data = {}
         array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
@@ -515,7 +533,6 @@ class StingrayObject(object):
 
         """
         import re
-        from .utils import make_1d_arrays_into_nd
 
         cls = cls()
 
@@ -1023,7 +1040,6 @@ class StingrayObject(object):
         ts_new : :class:`StingrayObject` object
             The new :class:`StingrayObject` object with the set of selected data.
         """
-        from .utils import assign_value_if_none
 
         if isinstance(index, (int, np.integer)):
             start = index
@@ -1077,7 +1093,7 @@ class StingrayTimeseries(StingrayObject):
 
     dt: float
         The time resolution of the time series. Can be a scalar or an array attribute (useful
-        for non-uniformly sampled data or events from different instruments)
+        for non-evenly sampled data or events from different instruments)
 
     mjdref : float
         The MJD used as a reference for the time array.
@@ -1112,7 +1128,7 @@ class StingrayTimeseries(StingrayObject):
 
     dt: float
         The time resolution of the measurements. Can be a scalar or an array attribute (useful
-        for non-uniformly sampled data or events from different instruments)
+        for non-evenly sampled data or events from different instruments)
 
     mjdref : float
         The MJD used as a reference for the time array.
@@ -1200,8 +1216,6 @@ class StingrayTimeseries(StingrayObject):
 
     @property
     def mask(self):
-        from .gti import create_gti_mask
-
         if self._mask is None:
             self._mask = create_gti_mask(self.time, self.gti, dt=self.dt)
         return self._mask
@@ -1292,7 +1306,6 @@ class StingrayTimeseries(StingrayObject):
 
         """
         # I import here to avoid the risk of circular imports
-        from .gti import check_gtis, create_gti_mask
 
         if new_gti is None:
             new_gti = self.gti
@@ -1324,7 +1337,6 @@ class StingrayTimeseries(StingrayObject):
         list_of_tss : list
             A list of :class:`StingrayTimeseries` objects, one for each GTI segment
         """
-        from .gti import gti_border_bins, create_gti_mask
 
         if gti is None:
             gti = self.gti
@@ -1530,8 +1542,6 @@ class StingrayTimeseries(StingrayObject):
             other = other.change_mjdref(self.mjdref)
 
         if not np.array_equal(self.gti, other.gti):
-            from .gti import cross_two_gtis
-
             warnings.warn(
                 "The good time intervals in the two time series are different. Data outside the "
                 "common GTIs will be discarded."
@@ -1634,8 +1644,6 @@ class StingrayTimeseries(StingrayObject):
         >>> assert np.allclose(ts[2].counts, [33])
         >>> assert np.allclose(ts[:2].counts, [11, 22])
         """
-        from .utils import assign_value_if_none
-        from .gti import cross_two_gtis
 
         new_ts = super().__getitem__(index)
         step = 1
@@ -1721,7 +1729,6 @@ class StingrayTimeseries(StingrayObject):
 
     def _truncate_by_index(self, start, stop):
         """Private method for truncation using index values."""
-        from .gti import cross_two_gtis
 
         new_ts = self.apply_mask(slice(start, stop))
 
@@ -1835,7 +1842,6 @@ class StingrayTimeseries(StingrayObject):
         `ts_new` : :class:`StingrayTimeseries` object
             The resulting :class:`StingrayTimeseries` object.
         """
-        from .gti import check_separate, cross_gtis, append_gtis
 
         new_ts = type(self)()
 
@@ -1868,8 +1874,6 @@ class StingrayTimeseries(StingrayObject):
                 others[i] = other.change_mjdref(self.mjdref)
 
         all_objs = [self] + others
-
-        from .gti import merge_gtis
 
         # Check if none of the GTIs was already initialized.
         all_gti = [obj._gti for obj in all_objs if obj._gti is not None]
@@ -2039,7 +2043,6 @@ class StingrayTimeseries(StingrayObject):
         ts_new: :class:`StingrayTimeseries` object
             The :class:`StingrayTimeseries` object with the new, binned time series.
         """
-        from .utils import rebin_data
 
         if f is None and dt_new is None:
             raise ValueError("You need to specify at least one between f and " "dt_new")
@@ -2134,6 +2137,162 @@ class StingrayTimeseries(StingrayObject):
             mask = mask[::-1]
         return self.apply_mask(mask, inplace=inplace)
 
+    def fill_bad_time_intervals(
+        self,
+        max_length=None,
+        attrs_to_randomize=None,
+        buffer_size=None,
+        even_sampling=None,
+        seed=None,
+    ):
+        """Fill short bad time intervals with random data.
+
+        .. warning::
+            This method is only appropriate for *very short* bad time intervals. The simulated data
+            are basically white noise, so they are able to alter the statistical properties of
+            variable data. For very short gaps in the data, the effect of these small
+            injections of white noise should be negligible. How short depends on the single case,
+            the user is urged not to use the method as a black box and make simulations to measure
+            its effect. If you have long bad time intervals, you should use more advanced
+            techniques, not currently available in Stingray for this use case, such as Gaussian
+            Processes. In particular, please verify that the values of ``max_length`` and
+            ``buffer_size`` are adequate to your case.
+
+        To fill the gaps in all but the time points (i.e., flux measures, energies), we take the
+        ``buffer_size`` (by default, the largest value between 100 and the estimated samples in
+        a ``max_length``-long gap) valid data points closest to the gap and repeat them randomly
+        with the same empirical statistical distribution. So, if the `my_fancy_attr` attribute, in
+        the 100 points of the buffer, has 30 times 10, 10 times 9, and 60 times 11, there will be
+        *on average* 30% of 10, 60% of 11, and 10% of 9 in the simulated data.
+
+        Times are treated differently depending on the fact that the time series is evenly
+        sampled or not. If it is not, the times are simulated from a uniform distribution with the
+        same count rate found in the buffer. Otherwise, times just follow the same grid used
+        inside GTIs. Using the evenly sampled or not is decided based on the ``even_sampling``
+        parameter. If left to ``None``, the time series is considered evenly sampled if
+        ``self.dt`` is greater than zero and the median separation between subsequent times is
+        within 1% of the time resolution.
+
+        Other Parameters
+        ----------------
+        max_length : float
+            Maximum length of a bad time interval to be filled. If None, the criterion is bad
+            time intervals shorter than 1/100th of the longest good time interval.
+        attrs_to_randomize : list of str, default None
+            List of array_attrs to randomize. ``If None``, all array_attrs are randomized.
+            It should not include ``time`` and ``_mask``, which are treated separately.
+        buffer_size : int, default 100
+            Number of good data points to use to calculate the means and variance the random data
+            on each side of the bad time interval
+        even_sampling : bool, default None
+            Force the treatment of the data as evenly sampled or not. If None, the data are
+            considered evenly sampled if ``self.dt`` is larger than zero and the median
+            separation between subsequent times is within 1% of ``self.dt``.
+        seed : int, default None
+            Random seed to use for the simulation. If None, a random seed is generated.
+
+        """
+
+        rs = get_random_state(seed)
+
+        if attrs_to_randomize is None:
+            attrs_to_randomize = self.array_attrs() + self.internal_array_attrs()
+            for attr in ["time", "_mask"]:
+                if attr in attrs_to_randomize:
+                    attrs_to_randomize.remove(attr)
+
+        attrs_to_leave_alone = [
+            a
+            for a in self.array_attrs() + self.internal_array_attrs()
+            if a not in attrs_to_randomize
+        ]
+
+        if max_length is None:
+            max_length = np.max(self.gti[:, 1] - self.gti[:, 0]) / 100
+
+        btis = get_btis(self.gti, self.time[0], self.time[-1])
+        if len(btis) == 0:
+            logging.info("No bad time intervals to fill")
+            return copy.deepcopy(self)
+        filtered_times = self.time[self.mask]
+
+        new_times = [filtered_times.copy()]
+        new_attrs = {}
+        mean_data_separation = np.median(np.diff(filtered_times))
+        if even_sampling is None:
+            # The time series is considered evenly sampled if the median separation between
+            # subsequent times is within 1% of the time resolution
+            even_sampling = False
+            if self.dt > 0 and np.isclose(mean_data_separation, self.dt, rtol=0.01):
+                even_sampling = True
+            logging.info(f"Data are {'not' if not even_sampling else ''} evenly sampled")
+
+        if even_sampling:
+            est_samples_in_gap = int(max_length / self.dt)
+        else:
+            est_samples_in_gap = int(max_length / mean_data_separation)
+
+        if buffer_size is None:
+            buffer_size = max(100, est_samples_in_gap)
+
+        added_gtis = []
+
+        total_filled_time = 0
+        for bti in btis:
+            length = bti[1] - bti[0]
+            if length > max_length:
+                continue
+            logging.info(f"Filling bad time interval {bti} ({length:.4f} s)")
+            epsilon = 1e-5 * length
+            added_gtis.append([bti[0] - epsilon, bti[1] + epsilon])
+            filt_low_t, filt_low_idx = find_nearest(filtered_times, bti[0])
+            filt_hig_t, filt_hig_idx = find_nearest(filtered_times, bti[1], side="right")
+            if even_sampling:
+                local_new_times = np.arange(bti[0] + self.dt / 2, bti[1], self.dt)
+                nevents = local_new_times.size
+            else:
+                low_time_arr = filtered_times[max(filt_low_idx - buffer_size, 0) : filt_low_idx]
+                high_time_arr = filtered_times[filt_hig_idx : buffer_size + filt_hig_idx]
+
+                ctrate = (
+                    np.count_nonzero(low_time_arr) / (filt_low_t - low_time_arr[0])
+                    + np.count_nonzero(high_time_arr) / (high_time_arr[-1] - filt_hig_t)
+                ) / 2
+                nevents = rs.poisson(ctrate * (bti[1] - bti[0]))
+                local_new_times = rs.uniform(bti[0], bti[1], nevents)
+            new_times.append(local_new_times)
+
+            for attr in attrs_to_randomize:
+                low_arr = getattr(self, attr)[max(buffer_size - filt_low_idx, 0) : filt_low_idx]
+                high_arr = getattr(self, attr)[filt_hig_idx : buffer_size + filt_hig_idx]
+                if attr not in new_attrs:
+                    new_attrs[attr] = [getattr(self, attr)[self.mask]]
+                new_attrs[attr].append(rs.choice(np.concatenate([low_arr, high_arr]), nevents))
+            for attr in attrs_to_leave_alone:
+                if attr not in new_attrs:
+                    new_attrs[attr] = [getattr(self, attr)[self.mask]]
+                if attr == "_mask":
+                    new_attrs[attr].append(np.ones(nevents, dtype=bool))
+                else:
+                    new_attrs[attr].append(np.zeros(nevents) + np.nan)
+            total_filled_time += length
+
+        logging.info(f"A total of {total_filled_time} s of data were simulated")
+
+        new_gtis = join_gtis(self.gti, added_gtis)
+        new_times = np.concatenate(new_times)
+        order = np.argsort(new_times)
+        new_obj = type(self)()
+        new_obj.time = new_times[order]
+
+        for attr in self.meta_attrs():
+            setattr(new_obj, attr, getattr(self, attr))
+
+        for attr, values in new_attrs.items():
+            setattr(new_obj, attr, np.concatenate(values)[order])
+        new_obj.gti = new_gtis
+        return new_obj
+
     def plot(
         self,
         attr,
@@ -2145,6 +2304,7 @@ class StingrayTimeseries(StingrayObject):
         save=False,
         filename=None,
         plot_btis=True,
+        axis_limits=None,
     ):
         """
         Plot the time series using ``matplotlib``.
@@ -2168,6 +2328,10 @@ class StingrayTimeseries(StingrayObject):
             could be ``['Time (s)', 'Counts (s^-1)']``
         ax : ``matplotlib.pyplot.axis`` object
             Axis to be used for plotting. Defaults to creating a new one.
+        axis_limits : list, tuple, string, default ``None``
+            Parameter to set axis properties of the ``matplotlib`` figure. For example
+            it can be a list like ``[xmin, xmax, ymin, ymax]`` or any other
+            acceptable argument for the``matplotlib.pyplot.axis()`` method.
         title : str, default ``None``
             The title of the plot.
         marker : str, default '-'
@@ -2182,17 +2346,23 @@ class StingrayTimeseries(StingrayObject):
             Plot the bad time intervals as red areas on the plot
         """
         import matplotlib.pyplot as plt
-        from .gti import get_btis
 
         if ax is None:
             plt.figure(attr)
             ax = plt.gca()
 
-        if labels is None:
+        valid_labels = (isinstance(labels, Iterable) and not isinstance(labels, str)) and len(
+            labels
+        ) == 2
+        if labels is not None and not valid_labels:
+            warnings.warn("``labels`` must be an iterable with two labels for x and y axes.")
+
+        if labels is None or not valid_labels:
             labels = ["Time (s)"] + [attr]
 
-        ylabel = labels[1]
         xlabel = labels[0]
+        ylabel = labels[1]
+        # Default values for labels
 
         ax.plot(self.time, getattr(self, attr), marker, ds="steps-mid", label=attr, zorder=10)
 
@@ -2202,11 +2372,15 @@ class StingrayTimeseries(StingrayObject):
                 getattr(self, attr),
                 yerr=getattr(self, attr + "_err"),
                 fmt="o",
+                zorder=10,
             )
 
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
 
+        if axis_limits is not None:
+            ax.set_xlim(axis_limits[0], axis_limits[1])
+            ax.set_ylim(axis_limits[2], axis_limits[3])
         if title is not None:
             ax.set_title(title)
 
@@ -2221,7 +2395,14 @@ class StingrayTimeseries(StingrayObject):
             tend = max(self.time[-1] + self.dt / 2, self.gti[-1, 1])
             btis = get_btis(self.gti, tstart, tend)
             for bti in btis:
-                plt.axvspan(bti[0], bti[1], alpha=0.5, color="r", zorder=10)
+                plt.axvspan(
+                    bti[0],
+                    bti[1],
+                    alpha=0.5,
+                    facecolor="r",
+                    zorder=1,
+                    edgecolor="none",
+                )
         return ax
 
 

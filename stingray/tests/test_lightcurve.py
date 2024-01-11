@@ -1148,9 +1148,10 @@ class TestLightcurve(object):
     def test_plot_wrong_label_type(self):
         lc = Lightcurve(self.times, self.counts)
 
-        with pytest.raises(TypeError):
-            with pytest.warns(UserWarning, match="must be either a list or tuple") as w:
-                lc.plot(labels=123)
+        with pytest.warns(
+            UserWarning, match="``labels`` must be an iterable with two labels "
+        ) as w:
+            lc.plot(labels=123)
         plt.close("all")
 
     def test_plot_labels_index_error(self):
@@ -1158,7 +1159,9 @@ class TestLightcurve(object):
         with pytest.warns(UserWarning) as w:
             lc.plot(labels=("x"))
 
-            assert np.any(["must have two labels" in str(wi.message) for wi in w])
+            assert np.any(
+                ["``labels`` must be an iterable with two labels " in str(wi.message) for wi in w]
+            )
         plt.close("all")
 
     def test_plot_default_filename(self):
@@ -1175,11 +1178,16 @@ class TestLightcurve(object):
         os.unlink("lc.png")
         plt.close("all")
 
-    def test_plot_axis(self):
+    def test_plot_axis_arg(self):
         lc = Lightcurve(self.times, self.counts)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UserWarning)
+        with pytest.warns(DeprecationWarning, match="argument is deprecated in favor"):
             lc.plot(axis=[0, 1, 0, 100])
+        assert plt.fignum_exists(1)
+        plt.close("all")
+
+    def test_plot_axis_limits_arg(self):
+        lc = Lightcurve(self.times, self.counts)
+        lc.plot(axis_limits=[0, 1, 0, 100])
         assert plt.fignum_exists(1)
         plt.close("all")
 
