@@ -771,7 +771,7 @@ class EventList(StingrayTimeseries):
         return starts, stops, colors, color_errs
 
     def get_intensity_evolution(self, energy_range, segment_size=None, use_pi=False):
-        """Compute the intensity in equal-length segments of the event list.
+        """Compute the intensity in equal-length segments (or full GTIs) of the event list.
 
         Parameters
         ----------
