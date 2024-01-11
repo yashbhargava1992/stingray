@@ -2148,14 +2148,15 @@ class StingrayTimeseries(StingrayObject):
         """Fill short bad time intervals with random data.
 
         .. warning::
-            This method is only appropriate for _short_ bad time intervals. The simulated data
+            This method is only appropriate for _very short_ bad time intervals. The simulated data
             are basically white noise, so they are able to alter the statistical properties of
             variable data. For very short gaps in the data, the effect of these small
             injections of white noise should be negligible. How short depends on the single case,
             the user is urged not to use the method as a black box and make simulations to measure
             its effect. If you have long bad time intervals, you should use more advanced
             techniques, not currently available in Stingray for this use case, such as Gaussian
-            Processes.
+            Processes. In particular, please verify that the values of ``max_length`` and
+            ``buffer_size`` are adequate to your case.
 
         To fill the gaps in all but the time points (i.e., flux measures, energies), we take the
         ``buffer_size`` (default 100) valid data points closest to the gap and repeat them randomly
