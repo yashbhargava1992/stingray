@@ -2278,7 +2278,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         poisson_power=0,
     ):
         """
-        Return the power colors of the dynamical power spectrum.
+        Compute the power colors of the dynamical power spectrum.
 
         See Heil et al. 2015, MNRAS, 448, 3348
 
