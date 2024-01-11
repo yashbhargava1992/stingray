@@ -1141,7 +1141,10 @@ class StingrayTimeseries(StingrayObject):
 
     dt: float
         The time resolution of the measurements. Can be a scalar or an array attribute (useful
-        for non-evenly sampled data or events from different instruments)
+        for non-evenly sampled data or events from different instruments). It can also be 0, which
+        means that the time series is not evenly sampled and the effects of the time resolution are
+        considered negligible for the analysis. This is sometimes the case for events from
+        high-energy telescopes.
 
     mjdref : float
         The MJD used as a reference for the time array.
