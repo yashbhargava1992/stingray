@@ -2030,7 +2030,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         spectrum (typically, an integer multiple of ``segment_size``).
 
     m: int
-        The number of averaged cross spectra.
+        The number of averaged powers in each spectral bin (initially 1, it changes after rebinning).
     """
 
     def __init__(self, data1, data2, segment_size, norm="frac", gti=None, sample_time=None):
