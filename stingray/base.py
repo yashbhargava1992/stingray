@@ -2176,7 +2176,7 @@ class StingrayTimeseries(StingrayObject):
         ----------------
         max_length : float
             Maximum length of a bad time interval to be filled. If None, the criterion is bad
-            time intervals shorter than 1/100th of the longest bad time interval.
+            time intervals shorter than 1/100th of the longest good time interval.
         attrs_to_randomize : list of str, default None
             List of array_attrs to randomize. ``If None``, all array_attrs are randomized.
             It should not include ``time`` and ``_mask``, which are treated separately.
