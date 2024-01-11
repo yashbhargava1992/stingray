@@ -1063,6 +1063,17 @@ class StingrayObject(object):
         return new_ts
 
 
+def _ts_sum(ts):
+    """Sum the number of values of a time series object.
+
+    If it has a ``counts`` attribute, sum the counts. Otherwise, count the number
+    of time samples. Masked values are ignored.
+    """
+    if hasattr(ts, "counts"):
+        return np.sum(ts.counts[ts.mask])
+    return np.count_nonzero(ts.mask)
+
+
 class StingrayTimeseries(StingrayObject):
     """Basic class for time series data.
 
@@ -2476,12 +2487,7 @@ class StingrayTimeseries(StingrayObject):
             else:
                 min_total_counts = min_time_bins
 
-        def ts_sum(ts):
-            if hasattr(ts, "counts"):
-                return np.sum(ts.counts[ts.mask])
-            return np.count_nonzero(ts.mask)
-
-        mean_ctrate = ts_sum(self) / self.exposure
+        mean_ctrate = _ts_sum(self) / self.exposure
 
         if self.dt > 0:
             # The ceil is on the number of bins
@@ -2496,7 +2502,7 @@ class StingrayTimeseries(StingrayObject):
         keep_searching = True
 
         while keep_searching:
-            start_times, stop_times, results = self.analyze_segments(ts_sum, segment_size)
+            start_times, stop_times, results = self.analyze_segments(_ts_sum, segment_size)
             mincounts = np.min(results)
             if mincounts >= min_total_counts:
                 keep_searching = False
@@ -2505,7 +2511,7 @@ class StingrayTimeseries(StingrayObject):
 
         return segment_size
 
-    def analyze_segments(self, func=None, segment_size=None, fraction_step=1, **kwargs):
+    def analyze_segments(self, func, segment_size, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
 
         Parameters
@@ -2555,8 +2561,6 @@ class StingrayTimeseries(StingrayObject):
         """
         from .gti import bin_intervals_from_gtis, time_intervals_from_gtis
 
-        if func is None:
-            raise ValueError("You have to specify a function to apply to the segments")
         if segment_size is None:
             start_times = self.gti[:, 0]
             stop_times = self.gti[:, 1]
@@ -2596,6 +2600,38 @@ class StingrayTimeseries(StingrayObject):
         if len(results.shape) == 2:
             results = [results[:, i] for i in range(results.shape[1])]
         return start_times, stop_times, results
+
+    def analyze_by_gti(self, func, fraction_step=1, **kwargs):
+        """Analyze the light curve with any function, on a GTI-by-GTI base.
+
+        Parameters
+        ----------
+        func : function
+            Function accepting a :class:`StingrayTimeseries` object as single argument, plus
+            possible additional keyword arguments, and returning a number or a
+            tuple - e.g., ``(result, error)`` where both ``result`` and ``error`` are
+            numbers.
+
+        Other parameters
+        ----------------
+        fraction_step : float
+            If the step is not a full ``segment_size`` but less (e.g. a moving window),
+            this indicates the ratio between step step and ``segment_size`` (e.g.
+            0.5 means that the window shifts of half ``segment_size``)
+        kwargs : keyword arguments
+            These additional keyword arguments, if present, they will be passed
+            to ``func``
+
+        Returns
+        -------
+        start_times : array
+            Lower time boundaries of all time segments.
+        stop_times : array
+            upper time boundaries of all segments.
+        result : array of N elements
+            The result of ``func`` for each segment of the light curve
+        """
+        self.analyze_segments(func, segment_size=None, fraction_step=fraction_step, **kwargs)
 
 
 def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, float]:
