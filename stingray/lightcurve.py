@@ -1339,6 +1339,9 @@ class Lightcurve(StingrayTimeseries):
     def analyze_lc_chunks(self, segment_size, func, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
 
+        .. deprecated:: 2.0
+            Use :meth:`Lightcurve.analyze_segments(func, segment_size)` instead.
+
         Parameters
         ----------
         segment_size : float
@@ -1367,20 +1370,10 @@ class Lightcurve(StingrayTimeseries):
             upper time boundaries of all segments.
         result : array of N elements
             The result of ``func`` for each segment of the light curve
-
-        Examples
-        --------
-        >>> import numpy as np
-        >>> time = np.arange(0, 10, 0.1)
-        >>> counts = np.zeros_like(time) + 10
-        >>> lc = Lightcurve(time, counts, dt=0.1)
-        >>> # Define a function that calculates the mean
-        >>> mean_func = lambda x: np.mean(x)
-        >>> # Calculate the mean in segments of 5 seconds
-        >>> start, stop, res = lc.analyze_lc_chunks(5, mean_func)
-        >>> assert len(res) == 2
-        >>> assert np.allclose(res, 10)
         """
+        warnings.warn(
+            "The analyze_lc_chunks method was superseded by analyze_segments", DeprecationWarning
+        )
         return super().analyze_segments(func, segment_size, fraction_step=fraction_step, **kwargs)
 
     def to_lightkurve(self):
