@@ -1734,12 +1734,10 @@ class StingrayTimeseries(StingrayObject):
         >>> ts = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
         >>> ts_new = ts.truncate(start=2, stop=8)
         >>> assert np.allclose(ts_new.counts, [30, 40, 50, 60, 70, 80])
-        >>> ts_new.time
-        array([3, 4, 5, 6, 7, 8])
+        >>> assert np.allclose(ts_new.time, [3, 4, 5, 6, 7, 8])
         >>> # Truncation can also be done by time values
         >>> ts_new = ts.truncate(start=6, method='time')
-        >>> ts_new.time
-        array([6, 7, 8, 9])
+        >>> assert np.allclose(ts_new.time, [6, 7, 8, 9])
         >>> assert np.allclose(ts_new.counts, [60, 70, 80, 90])
         """
 
