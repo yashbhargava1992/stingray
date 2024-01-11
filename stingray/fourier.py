@@ -102,10 +102,10 @@ def power_color(
     frequency,
     power,
     power_err=None,
-    frequency_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
+    freq_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
     df=None,
     m=1,
-    frequencies_to_exclude=None,
+    freqs_to_exclude=None,
     poisson_power=0,
     return_log=False,
 ):
@@ -125,7 +125,7 @@ def power_color(
     ----------------
     power_err : iterable
         The power error bar at each frequency
-    frequency_edges : iterable, optional, default ``[0.0039, 0.031, 0.25, 2.0, 16.0]``
+    freq_edges : iterable, optional, default ``[0.0039, 0.031, 0.25, 2.0, 16.0]``
         The frequency intervals to use to calculate the power color. If empty,
         the power color is calculated in the whole frequency range.
     df : float or float iterable, optional, default None
@@ -133,7 +133,7 @@ def power_color(
         from the median difference of input frequencies.
     m : int, optional, default 1
         The number of segments and/or contiguous frequency bins averaged to obtain power
-    frequencies_to_exclude : 1-d or 2-d iterable, optional, default None
+    freqs_to_exclude : 1-d or 2-d iterable, optional, default None
         The ranges of frequencies to exclude from the calculation of the power color.
         For example, the frequencies containing strong QPOs.
         A 1-d iterable should contain two values for the edges of a single range. (E.g.
@@ -152,7 +152,7 @@ def power_color(
     power_color_err : float
         The error on the power color
     """
-    frequency_edges = np.asarray(frequency_edges)
+    freq_edges = np.asarray(freq_edges)
     frequency = np.asarray(frequency)
     power = np.asarray(power)
 
@@ -161,9 +161,9 @@ def power_color(
     input_frequency_low_edges = frequency - df / 2
     input_frequency_high_edges = frequency + df / 2
 
-    if frequency_edges.min() < input_frequency_low_edges[0]:
+    if freq_edges.min() < input_frequency_low_edges[0]:
         raise ValueError("The minimum frequency is larger than the first frequency edge")
-    if frequency_edges.max() > input_frequency_high_edges[-1]:
+    if freq_edges.max() > input_frequency_high_edges[-1]:
         raise ValueError("The maximum frequency is lower than the last frequency edge")
 
     if power_err is None:
@@ -171,17 +171,17 @@ def power_color(
     else:
         power_err = np.asarray(power_err)
 
-    if frequencies_to_exclude is not None:
-        if len(np.shape(frequencies_to_exclude)) == 1:
-            frequencies_to_exclude = [frequencies_to_exclude]
+    if freqs_to_exclude is not None:
+        if len(np.shape(freqs_to_exclude)) == 1:
+            freqs_to_exclude = [freqs_to_exclude]
 
         if (
-            not isinstance(frequencies_to_exclude, Iterable)
-            or len(np.shape(frequencies_to_exclude)) != 2
-            or np.shape(frequencies_to_exclude)[1] != 2
+            not isinstance(freqs_to_exclude, Iterable)
+            or len(np.shape(freqs_to_exclude)) != 2
+            or np.shape(freqs_to_exclude)[1] != 2
         ):
-            raise ValueError("frequencies_to_exclude must be of format [[f0, f1], [f2, f3], ...]")
-        for f0, f1 in frequencies_to_exclude:
+            raise ValueError("freqs_to_exclude must be of format [[f0, f1], [f2, f3], ...]")
+        for f0, f1 in freqs_to_exclude:
             frequency_mask = (input_frequency_low_edges > f0) & (input_frequency_high_edges < f1)
             idx0, idx1 = np.searchsorted(frequency, [f0, f1])
             power[frequency_mask] = np.mean([power[idx0], power[idx1]])
@@ -189,7 +189,7 @@ def power_color(
     var00, var00_err = integrate_power_in_frequency_range(
         frequency,
         power,
-        frequency_edges[:2],
+        freq_edges[:2],
         power_err=power_err,
         df=df,
         m=m,
@@ -198,7 +198,7 @@ def power_color(
     var01, var01_err = integrate_power_in_frequency_range(
         frequency,
         power,
-        frequency_edges[2:4],
+        freq_edges[2:4],
         power_err=power_err,
         df=df,
         m=m,
@@ -207,7 +207,7 @@ def power_color(
     var10, var10_err = integrate_power_in_frequency_range(
         frequency,
         power,
-        frequency_edges[1:3],
+        freq_edges[1:3],
         power_err=power_err,
         df=df,
         m=m,
@@ -216,7 +216,7 @@ def power_color(
     var11, var11_err = integrate_power_in_frequency_range(
         frequency,
         power,
-        frequency_edges[3:5],
+        freq_edges[3:5],
         power_err=power_err,
         df=df,
         m=m,

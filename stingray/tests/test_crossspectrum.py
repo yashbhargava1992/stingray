@@ -1409,7 +1409,7 @@ class TestDynamicalCrossspectrum(object):
         dps_ev = DynamicalCrossspectrum(ev, ev, segment_size=10, sample_time=self.lc.dt)
         assert np.allclose(dps.dyn_ps, dps_ev.dyn_ps)
         with pytest.warns(UserWarning, match="When using power_colors, complex "):
-            dps_ev.power_colors(frequency_edges=[1 / 5, 1 / 2, 1, 2.0, 16.0])
+            dps_ev.power_colors(freq_edges=[1 / 5, 1 / 2, 1, 2.0, 16.0])
 
     def test_rms_is_correct(self):
         lc = copy.deepcopy(self.lc)

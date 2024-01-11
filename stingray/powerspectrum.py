@@ -1118,8 +1118,8 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
             )
 
         return super().power_colors(
-            frequency_edges=frequency_edges,
-            frequencies_to_exclude=frequencies_to_exclude,
+            freq_edges=frequency_edges,
+            freqs_to_exclude=frequencies_to_exclude,
             poisson_power=poisson_power,
         )
 

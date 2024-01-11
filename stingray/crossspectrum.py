@@ -2273,8 +2273,8 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
     def power_colors(
         self,
-        frequency_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
-        frequencies_to_exclude=None,
+        freq_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
+        freqs_to_exclude=None,
         poisson_power=0,
     ):
         """
@@ -2284,10 +2284,10 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
         Parameters
         ----------
-        frequency_edges: iterable
+        freq_edges: iterable
             The edges of the frequency bins to be used for the power colors.
 
-        frequencies_to_exclude : 1-d or 2-d iterable, optional, default None
+        freqs_to_exclude : 1-d or 2-d iterable, optional, default None
             The ranges of frequencies to exclude from the calculation of the power color.
             For example, the frequencies containing strong QPOs.
             A 1-d iterable should contain two values for the edges of a single range. (E.g.
@@ -2296,7 +2296,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
         poisson_power : float or iterable, optional, default 0
             The Poisson noise level of the power spectrum. If iterable, it should have the same
-            length as ``frequency``. (This might apply to the case of a power spectrum with a
+            length as ``freq``. (This might apply to the case of a power spectrum with a
             strong dead time distortion)
 
         Returns
@@ -2316,8 +2316,8 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
                 power_color(
                     self.freq,
                     ps.real,
-                    frequency_edges=frequency_edges,
-                    frequencies_to_exclude=frequencies_to_exclude,
+                    frequency_edges=freq_edges,
+                    frequencies_to_exclude=freqs_to_exclude,
                     df=self.df,
                     poisson_power=poisson_power,
                     m=self.m,
