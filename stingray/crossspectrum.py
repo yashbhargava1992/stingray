@@ -2280,6 +2280,8 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         """
         Return the power colors of the dynamical power spectrum.
 
+        See Heil et al. 2015, MNRAS, 448, 3348
+
         Parameters
         ----------
         frequency_edges: iterable

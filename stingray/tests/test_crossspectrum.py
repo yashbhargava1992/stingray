@@ -1497,13 +1497,13 @@ class TestDynamicalCrossspectrum(object):
         with pytest.raises(ValueError):
             dps.rebin_frequency(df_new=dps.df / 2.0)
 
-    def test_rebin_time_default_method(self):
+    def test_rebin_time_sum_method(self):
         segment_size = 3
         dt_new = 6.0
         rebin_time = np.array([2.5, 8.5])
         rebin_dps = np.array([[1.73611111, 0.81018519]])
         dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
-        new_dps = dps.rebin_time(dt_new=dt_new)
+        new_dps = dps.rebin_time(dt_new=dt_new, method="sum")
         assert np.allclose(new_dps.time, rebin_time)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
         assert np.isclose(new_dps.dt, dt_new)
@@ -1514,7 +1514,7 @@ class TestDynamicalCrossspectrum(object):
         rebin_time = np.array([2.5, 8.5])
         rebin_dps = np.array([[1.73611111, 0.81018519]])
         dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
-        new_dps = dps.rebin_by_n_intervals(n=2)
+        new_dps = dps.rebin_by_n_intervals(n=2, method="sum")
         assert np.allclose(new_dps.time, rebin_time)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
         assert np.isclose(new_dps.dt, dt_new)
@@ -1537,7 +1537,7 @@ class TestDynamicalCrossspectrum(object):
         rebin_dps = np.array([[1.73611111, 0.81018519]])
         dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
         with pytest.warns(UserWarning, match="n must be an integer. Casting to int"):
-            new_dps = dps.rebin_by_n_intervals(n=2.1)
+            new_dps = dps.rebin_by_n_intervals(n=2.1, method="sum")
         assert np.allclose(new_dps.time, rebin_time)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
         assert np.isclose(new_dps.dt, dt_new)
@@ -1558,7 +1558,7 @@ class TestDynamicalCrossspectrum(object):
         dps2 = dps.rebin_by_n_intervals(n=1)
         assert np.allclose(dps2.dyn_ps, dps.dyn_ps)
 
-    def test_rebin_frequency_default_method(self):
+    def test_rebin_frequency_sum_method(self):
         segment_size = 50
         df_new = 10.0
         rebin_freq = np.array([5.01, 15.01, 25.01, 35.01])
@@ -1575,7 +1575,7 @@ class TestDynamicalCrossspectrum(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=segment_size)
-        new_dps = dps.rebin_frequency(df_new=df_new)
+        new_dps = dps.rebin_frequency(df_new=df_new, method="sum")
         assert np.allclose(new_dps.freq, rebin_freq)
         assert np.allclose(new_dps.dyn_ps, rebin_dps, atol=0.01)
         assert np.isclose(new_dps.df, df_new)
