@@ -112,6 +112,8 @@ def power_color(
     """
     Calculate the power color of a power spectrum.
 
+    See Heil et al. 2015, MNRAS, 448, 3348
+
     Parameters
     ----------
     frequency : iterable
