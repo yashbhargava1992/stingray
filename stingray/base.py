@@ -15,8 +15,27 @@ from astropy.table import Table
 from astropy.time import Time, TimeDelta
 from astropy.units import Quantity
 
-from stingray.utils import sqsum
 from .io import _can_save_longdouble, _can_serialize_meta
+from .utils import (
+    sqsum,
+    assign_value_if_none,
+    make_nd_into_arrays,
+    make_1d_arrays_into_nd,
+    get_random_state,
+    find_nearest,
+    rebin_data,
+)
+from .gti import (
+    create_gti_mask,
+    check_gtis,
+    cross_two_gtis,
+    join_gtis,
+    gti_border_bins,
+    get_btis,
+    merge_gtis,
+    check_separate,
+    append_gtis,
+)
 
 from typing import TYPE_CHECKING, Type, TypeVar, Union
 
@@ -478,7 +497,6 @@ class StingrayObject(object):
 
         """
         from pandas import DataFrame
-        from .utils import make_nd_into_arrays
 
         data = {}
         array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
@@ -515,7 +533,6 @@ class StingrayObject(object):
 
         """
         import re
-        from .utils import make_1d_arrays_into_nd
 
         cls = cls()
 
@@ -1023,7 +1040,6 @@ class StingrayObject(object):
         ts_new : :class:`StingrayObject` object
             The new :class:`StingrayObject` object with the set of selected data.
         """
-        from .utils import assign_value_if_none
 
         if isinstance(index, (int, np.integer)):
             start = index
@@ -1200,8 +1216,6 @@ class StingrayTimeseries(StingrayObject):
 
     @property
     def mask(self):
-        from .gti import create_gti_mask
-
         if self._mask is None:
             self._mask = create_gti_mask(self.time, self.gti, dt=self.dt)
         return self._mask
@@ -1292,7 +1306,6 @@ class StingrayTimeseries(StingrayObject):
 
         """
         # I import here to avoid the risk of circular imports
-        from .gti import check_gtis, create_gti_mask
 
         if new_gti is None:
             new_gti = self.gti
@@ -1324,7 +1337,6 @@ class StingrayTimeseries(StingrayObject):
         list_of_tss : list
             A list of :class:`StingrayTimeseries` objects, one for each GTI segment
         """
-        from .gti import gti_border_bins, create_gti_mask
 
         if gti is None:
             gti = self.gti
@@ -1530,8 +1542,6 @@ class StingrayTimeseries(StingrayObject):
             other = other.change_mjdref(self.mjdref)
 
         if not np.array_equal(self.gti, other.gti):
-            from .gti import cross_two_gtis
-
             warnings.warn(
                 "The good time intervals in the two time series are different. Data outside the "
                 "common GTIs will be discarded."
@@ -1634,8 +1644,6 @@ class StingrayTimeseries(StingrayObject):
         >>> assert np.allclose(ts[2].counts, [33])
         >>> assert np.allclose(ts[:2].counts, [11, 22])
         """
-        from .utils import assign_value_if_none
-        from .gti import cross_two_gtis
 
         new_ts = super().__getitem__(index)
         step = 1
@@ -1721,7 +1729,6 @@ class StingrayTimeseries(StingrayObject):
 
     def _truncate_by_index(self, start, stop):
         """Private method for truncation using index values."""
-        from .gti import cross_two_gtis
 
         new_ts = self.apply_mask(slice(start, stop))
 
@@ -1835,7 +1842,6 @@ class StingrayTimeseries(StingrayObject):
         `ts_new` : :class:`StingrayTimeseries` object
             The resulting :class:`StingrayTimeseries` object.
         """
-        from .gti import check_separate, cross_gtis, append_gtis
 
         new_ts = type(self)()
 
@@ -1868,8 +1874,6 @@ class StingrayTimeseries(StingrayObject):
                 others[i] = other.change_mjdref(self.mjdref)
 
         all_objs = [self] + others
-
-        from .gti import merge_gtis
 
         # Check if none of the GTIs was already initialized.
         all_gti = [obj._gti for obj in all_objs if obj._gti is not None]
@@ -2039,7 +2043,6 @@ class StingrayTimeseries(StingrayObject):
         ts_new: :class:`StingrayTimeseries` object
             The :class:`StingrayTimeseries` object with the new, binned time series.
         """
-        from .utils import rebin_data
 
         if f is None and dt_new is None:
             raise ValueError("You need to specify at least one between f and " "dt_new")
@@ -2177,8 +2180,6 @@ class StingrayTimeseries(StingrayObject):
             Random seed to use for the simulation. If None, a random seed is generated.
 
         """
-        from .gti import get_btis
-        from .utils import get_random_state
 
         rs = get_random_state(seed)
 
@@ -2202,7 +2203,6 @@ class StingrayTimeseries(StingrayObject):
             logging.info("No bad time intervals to fill")
             return copy.deepcopy(self)
         filtered_times = self.time[self.mask]
-        from .utils import find_nearest
 
         new_times = [filtered_times.copy()]
         new_attrs = {}
@@ -2258,8 +2258,6 @@ class StingrayTimeseries(StingrayObject):
             total_filled_time += length
 
         logging.info(f"A total of {total_filled_time} s of data were simulated")
-
-        from .gti import join_gtis
 
         new_gtis = join_gtis(self.gti, added_gtis)
         new_times = np.concatenate(new_times)
@@ -2328,7 +2326,6 @@ class StingrayTimeseries(StingrayObject):
             Plot the bad time intervals as red areas on the plot
         """
         import matplotlib.pyplot as plt
-        from .gti import get_btis
 
         if ax is None:
             plt.figure(attr)
