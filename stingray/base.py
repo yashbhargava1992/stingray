@@ -2159,7 +2159,7 @@ class StingrayTimeseries(StingrayObject):
 
         To fill the gaps in all but the time points (i.e., flux measures, energies), we take the
         ``buffer_size`` (default 100) valid data points closest to the gap and repeat them randomly
-        with the same empirical statistical distribution. That is, if the "blabla" attributes, in
+        with the same empirical statistical distribution. So, if the `my_fancy_attr` attribute, in
         the 100 points of the buffer, has 30 times 10, 10 times 9, and 60 times 11, there will be
         *on average* 30% of 10, 60% of 11, and 10% of 9 in the simulated data.
 
@@ -2239,7 +2239,6 @@ class StingrayTimeseries(StingrayObject):
             if even_sampling:
                 local_new_times = np.arange(bti[0] + self.dt / 2, bti[1], self.dt)
                 nevents = local_new_times.size
-                new_times.append(local_new_times)
             else:
                 low_time_arr = filtered_times[max(filt_low_idx - buffer_size, 0) : filt_low_idx]
                 high_time_arr = filtered_times[filt_hig_idx : buffer_size + filt_hig_idx]
@@ -2250,7 +2249,7 @@ class StingrayTimeseries(StingrayObject):
                 ) / 2
                 nevents = rs.poisson(ctrate * (bti[1] - bti[0]))
                 local_new_times = rs.uniform(bti[0], bti[1], nevents)
-                new_times.append(local_new_times)
+            new_times.append(local_new_times)
 
             for attr in attrs_to_randomize:
                 low_arr = getattr(self, attr)[max(buffer_size - filt_low_idx, 0) : filt_low_idx]
@@ -2277,7 +2276,7 @@ class StingrayTimeseries(StingrayObject):
 
         for attr in self.meta_attrs():
             setattr(new_obj, attr, getattr(self, attr))
-        # Todo: fix GTIs
+
         for attr, values in new_attrs.items():
             setattr(new_obj, attr, np.concatenate(values)[order])
         new_obj.gti = new_gtis
