@@ -33,8 +33,9 @@ from .gti import (
     gti_border_bins,
     get_btis,
     merge_gtis,
-    check_separate,
-    append_gtis,
+    get_total_gti_length,
+    bin_intervals_from_gtis,
+    time_intervals_from_gtis,
 )
 
 from typing import TYPE_CHECKING, Type, TypeVar, Union
@@ -1317,7 +1318,6 @@ class StingrayTimeseries(StingrayObject):
         total_exposure : float
             The total exposure of the time series, in seconds.
         """
-        from .gti import get_total_gti_length
 
         return get_total_gti_length(self.gti)
 
@@ -2578,7 +2578,6 @@ class StingrayTimeseries(StingrayObject):
         >>> np.allclose(res, 10)
         True
         """
-        from .gti import bin_intervals_from_gtis, time_intervals_from_gtis
 
         if segment_size is None:
             start_times = self.gti[:, 0]
