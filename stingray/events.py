@@ -788,10 +788,8 @@ class EventList(StingrayTimeseries):
 
         Returns
         -------
-        color : array-like
-            Array of colors, computed in each segment as the ratio of the
-            counts in the second energy range to the counts in the first energy
-            range.
+        intensity : array-like
+            Array of intensities (in counts/s), computed in each segment.
         """
         if energy_range is None or np.shape(energy_range) != (2,):
             raise ValueError("Energy ranges must be specified as a 2-element list")
