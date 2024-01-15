@@ -4,24 +4,19 @@ Definition of :class:`EventList`.
 :class:`EventList` is used to handle photon arrival times.
 """
 
-import copy
 import logging
-import pickle
 import warnings
-from collections.abc import Iterable
 
 import numpy as np
-import numpy.random as ra
-from astropy.table import Table
 
 from stingray.utils import _int_sum_non_zero
 
-from .base import StingrayObject, StingrayTimeseries
+from .base import StingrayTimeseries
 from .filters import get_deadtime_mask
-from .gti import append_gtis, check_separate, cross_gtis, generate_indices_of_boundaries
+from .gti import generate_indices_of_boundaries
 from .io import load_events_and_gtis
 from .lightcurve import Lightcurve
-from .utils import assign_value_if_none, simon, njit
+from .utils import simon, njit
 from .utils import histogram
 
 __all__ = ["EventList"]

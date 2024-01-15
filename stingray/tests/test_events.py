@@ -1,8 +1,8 @@
-import warnings
-import numpy as np
+import importlib
 import copy
 import os
 import pytest
+import numpy as np
 from astropy.time import Time
 
 from ..events import EventList
@@ -11,34 +11,10 @@ from ..lightcurve import Lightcurve
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
 
-_H5PY_INSTALLED = True
-_HAS_YAML = True
-_HAS_XARRAY = _HAS_PANDAS = True
-
-try:
-    import h5py
-except ImportError:
-    _H5PY_INSTALLED = False
-
-import astropy.timeseries
-from astropy.timeseries import TimeSeries
-
-try:
-    import xarray
-    from xarray import Dataset
-except ImportError:
-    _HAS_XARRAY = False
-
-try:
-    import pandas
-    from pandas import DataFrame
-except ImportError:
-    _HAS_PANDAS = False
-
-try:
-    import yaml
-except ImportError:
-    _HAS_YAML = False
+_HAS_XARRAY = importlib.util.find_spec("xarray") is not None
+_HAS_PANDAS = importlib.util.find_spec("pandas") is not None
+_HAS_H5PY = importlib.util.find_spec("h5py") is not None
+_HAS_YAML = importlib.util.find_spec("yaml") is not None
 
 
 class TestEvents(object):
@@ -56,7 +32,7 @@ class TestEvents(object):
             _ = EventList(self.time, self.counts, gti=self.gti, bubu="settete")
         assert np.any(["Unrecognized keywords:" in r.message.args[0] for r in record])
 
-    def test_warn_wrong_keywords(self):
+    def test_warn_wrong_keywords_ncounts(self):
         with pytest.warns(DeprecationWarning, match="The ncounts keyword does nothing"):
             _ = EventList(self.time, self.counts, gti=self.gti, ncounts=10)
 

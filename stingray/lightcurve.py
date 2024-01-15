@@ -5,14 +5,11 @@ Definition of :class::class:`Lightcurve`.
 or to save existing light curves in a class that's easy to use.
 """
 import os
-import copy
 import logging
 import warnings
-import pickle
 from collections.abc import Iterable
 
 import numpy as np
-import matplotlib.pyplot as plt
 from astropy.table import Table
 from astropy.time import TimeDelta, Time
 from astropy import units as u
@@ -21,11 +18,9 @@ from stingray.base import StingrayTimeseries, reduce_precision_if_extended
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.gti import (
-    bin_intervals_from_gtis,
     check_gtis,
     create_gti_mask,
     cross_two_gtis,
-    gti_border_bins,
     join_gtis,
 )
 from stingray.utils import (
