@@ -7,7 +7,6 @@ from collections import OrderedDict
 import pickle
 import warnings
 import copy
-import os
 import logging
 
 import numpy as np

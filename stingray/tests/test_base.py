@@ -1,33 +1,15 @@
 import os
+import importlib
 import copy
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 from stingray.base import StingrayObject, StingrayTimeseries
 
-_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = _HAS_YAML = True
-
-try:
-    import xarray
-    from xarray import Dataset
-except ImportError:
-    _HAS_XARRAY = False
-
-try:
-    import pandas
-    from pandas import DataFrame
-except ImportError:
-    _HAS_PANDAS = False
-
-try:
-    import h5py
-except ImportError:
-    _HAS_H5PY = False
-
-try:
-    import yaml
-except ImportError:
-    _HAS_YAML = False
+_HAS_XARRAY = importlib.util.find_spec("xarray") is not None
+_HAS_PANDAS = importlib.util.find_spec("pandas") is not None
+_HAS_H5PY = importlib.util.find_spec("h5py") is not None
+_HAS_YAML = importlib.util.find_spec("yaml") is not None
 
 
 class DummyStingrayObj(StingrayObject):
@@ -975,7 +957,7 @@ class TestStingrayTimeseries:
         so.guefus = np.random.randint(0, 4, 3)
         so.panesapa = np.random.randint(5, 9, (6, 2))
         with pytest.warns(
-            UserWarning, match=f".* output does not serialize the metadata at the moment"
+            UserWarning, match=".* output does not serialize the metadata at the moment"
         ):
             so.write(f"dummy.{fmt}", fmt=fmt)
         new_so = StingrayTimeseries.read(f"dummy.{fmt}", fmt=fmt)
