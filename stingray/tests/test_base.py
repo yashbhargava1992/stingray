@@ -1,33 +1,15 @@
 import os
+import importlib
 import copy
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 from stingray.base import StingrayObject, StingrayTimeseries
 
-_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = _HAS_YAML = True
-
-try:
-    import xarray
-    from xarray import Dataset
-except ImportError:
-    _HAS_XARRAY = False
-
-try:
-    import pandas
-    from pandas import DataFrame
-except ImportError:
-    _HAS_PANDAS = False
-
-try:
-    import h5py
-except ImportError:
-    _HAS_H5PY = False
-
-try:
-    import yaml
-except ImportError:
-    _HAS_YAML = False
+_HAS_XARRAY = importlib.util.find_spec("xarray") is not None
+_HAS_PANDAS = importlib.util.find_spec("pandas") is not None
+_HAS_H5PY = importlib.util.find_spec("h5py") is not None
+_HAS_YAML = importlib.util.find_spec("yaml") is not None
 
 
 class DummyStingrayObj(StingrayObject):
@@ -68,8 +50,10 @@ class TestStingrayObject:
         sting_obj.panesapa = [[41, 25], [98, 3]]
         cls.sting_obj = sting_obj
 
-    def test_print(self):
+    def test_print(self, capsys):
         print(self.sting_obj)
+        captured = capsys.readouterr()
+        assert "guefus" in captured.out
 
     def test_preliminary(self):
         assert np.allclose(self.sting_obj.guefus, self.arr)
@@ -406,14 +390,24 @@ class TestStingrayTimeseries:
         cls.sting_obj = sting_obj
         cls.sting_obj_highp = sting_obj_highp
 
-    def test_print(self):
+    def test_print(self, capsys):
         print(self.sting_obj)
+        captured = capsys.readouterr()
+        assert "59777" in captured.out
 
     def test_invalid_instantiation(self):
         with pytest.raises(ValueError, match="Lengths of time and guefus must be equal"):
             StingrayTimeseries(time=np.arange(10), array_attrs=dict(guefus=np.arange(11)))
         with pytest.raises(ValueError, match="Lengths of time and guefus must be equal"):
             StingrayTimeseries(time=np.arange(10), array_attrs=dict(guefus=np.zeros((5, 2))))
+
+    def test_mask_is_none_then_isnt_no_gti(self):
+        ts = copy.deepcopy(self.sting_obj)
+        assert ts._mask is None
+        # Unset GTIs
+        ts.gti = None
+        # But when I use the mask property, it's an array
+        assert np.array_equal(ts.mask, np.ones(len(ts.time), dtype=bool))
 
     def test_apply_mask(self):
         ts = copy.deepcopy(self.sting_obj)
@@ -963,7 +957,7 @@ class TestStingrayTimeseries:
         so.guefus = np.random.randint(0, 4, 3)
         so.panesapa = np.random.randint(5, 9, (6, 2))
         with pytest.warns(
-            UserWarning, match=f".* output does not serialize the metadata at the moment"
+            UserWarning, match=".* output does not serialize the metadata at the moment"
         ):
             so.write(f"dummy.{fmt}", fmt=fmt)
         new_so = StingrayTimeseries.read(f"dummy.{fmt}", fmt=fmt)
@@ -1048,8 +1042,10 @@ class TestStingrayTimeseriesSubclass:
         sting_obj.gti = np.asarray([[-0.5, 2.5]])
         cls.sting_obj = sting_obj
 
-    def test_print(self):
+    def test_print(self, capsys):
         print(self.sting_obj)
+        captured = capsys.readouterr()
+        assert "59777" in captured.out
 
     def test_astropy_roundtrip(self):
         so = copy.deepcopy(self.sting_obj)
@@ -1421,3 +1417,72 @@ class TestFillBTI(object):
         lc_like_filt.gti = np.asarray([[0, 900], [950, 999], [999.5, 1000]])
         lc_new = lc_like_filt.fill_bad_time_intervals()
         assert np.allclose(lc_new.gti, self.gti)
+
+
+class TestAnalyzeChunks(object):
+    @classmethod
+    def setup_class(cls):
+        cls.time = np.arange(150)
+        counts = np.zeros_like(cls.time) + 3
+        cls.ts = StingrayTimeseries(cls.time, counts=counts, dt=1)
+        cls.ts_no_dt = StingrayTimeseries(cls.time, counts=counts, dt=0)
+        cls.ts_no_counts = StingrayTimeseries(cls.time, dt=0)
+
+    def test_invalid_input(self):
+        with pytest.raises(ValueError, match="You have to specify at least one of"):
+            self.ts.estimate_segment_size()
+        with pytest.raises(ValueError, match="You have to specify at least one of"):
+            self.ts_no_dt.estimate_segment_size()
+
+    def test_no_total_counts(self):
+        assert self.ts.estimate_segment_size(min_samples=2) == 2
+        assert self.ts_no_dt.estimate_segment_size(min_samples=2) == 2
+        assert self.ts_no_counts.estimate_segment_size(min_samples=2) == 2
+
+    def test_estimate_segment_size(self):
+        # Here, the total counts dominate
+        assert self.ts.estimate_segment_size(min_counts=10, min_samples=3) == 4.0
+
+    def test_estimate_segment_size_more_bins(self):
+        # Here, the time bins dominate
+        assert self.ts.estimate_segment_size(min_counts=10, min_samples=5) == 5.0
+
+    def test_estimate_segment_size_lower_counts(self):
+        counts = np.zeros_like(self.time) + 3
+        counts[2:4] = 1
+        ts = StingrayTimeseries(self.time, counts=counts, dt=1)
+        assert ts.estimate_segment_size(min_counts=3, min_samples=1) == 3.0
+
+    def test_estimate_segment_size_lower_dt(self):
+        # A slightly more complex example
+        dt = 0.2
+        time = np.arange(0, 1000, dt)
+        counts = np.random.poisson(100, size=len(time))
+        ts = StingrayTimeseries(time, counts=counts, dt=dt)
+        assert ts.estimate_segment_size(min_counts=100, min_samples=2) == 0.4
+
+        assert ts.estimate_segment_size(100, min_samples=40) == 8.0
+
+    def test_analyze_segments_bad_intv(self):
+        ts = StingrayTimeseries(time=np.arange(10), dt=1, gti=[[-0.5, 0.5], [1.5, 10.5]])
+
+        def func(x):
+            return np.size(x.time)
+
+        # I do not specify the segment_size, which means results will be calculated per-GTI
+        with pytest.warns(UserWarning, match="has one data point or less."):
+            _, _, results = ts.analyze_segments(func, segment_size=None)
+        # the first GTI contains only one bin, the result will be invalid
+        assert np.isnan(results[0])
+
+    def test_analyze_segments_by_gti(self):
+        ts = StingrayTimeseries(time=np.arange(11), dt=1, gti=[[-0.5, 5.5], [6.5, 10.5]])
+
+        def func(x):
+            return np.size(x.time)
+
+        _, _, results_as = ts.analyze_segments(func, segment_size=None)
+        _, _, results_ag = ts.analyze_by_gti(func)
+
+        assert np.allclose(results_as, results_ag)
+        assert np.allclose(results_as, [6, 4])

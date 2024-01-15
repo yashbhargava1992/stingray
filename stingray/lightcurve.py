@@ -5,14 +5,11 @@ Definition of :class::class:`Lightcurve`.
 or to save existing light curves in a class that's easy to use.
 """
 import os
-import copy
 import logging
 import warnings
-import pickle
 from collections.abc import Iterable
 
 import numpy as np
-import matplotlib.pyplot as plt
 from astropy.table import Table
 from astropy.time import TimeDelta, Time
 from astropy import units as u
@@ -21,11 +18,9 @@ from stingray.base import StingrayTimeseries, reduce_precision_if_extended
 import stingray.utils as utils
 from stingray.exceptions import StingrayError
 from stingray.gti import (
-    bin_intervals_from_gtis,
     check_gtis,
     create_gti_mask,
     cross_two_gtis,
-    gti_border_bins,
     join_gtis,
 )
 from stingray.utils import (
@@ -1292,21 +1287,25 @@ class Lightcurve(StingrayTimeseries):
         warnings.warn("This function was renamed to estimate_segment_size", DeprecationWarning)
         return self.estimate_segment_size(*args, **kwargs)
 
-    def estimate_segment_size(self, min_total_counts=100, min_time_bins=100):
-        """Estimate a reasonable segment length for chunk-by-chunk analysis.
+    def estimate_segment_size(self, min_counts=100, min_samples=100, even_sampling=None):
+        """Estimate a reasonable segment length for segment-by-segment analysis.
 
-        Choose a reasonable length for time segments, given a minimum number of total
-        counts in the segment, and a minimum number of time bins in the segment.
-
-        The user specifies a condition on the total counts in each segment and
-        the minimum number of time bins.
+        The user has to specify a criterion based on a minimum number of counts (if
+        the time series has a ``counts`` attribute) or a minimum number of time samples.
+        At least one between ``min_counts`` and ``min_samples`` must be specified.
 
         Other Parameters
         ----------------
-        min_total_counts : int
-            Minimum number of counts for each chunk
-        min_time_bins : int
-            Minimum number of time bins
+        min_counts : int
+            Minimum number of counts for each chunk. Optional (but needs ``min_samples``
+            if left unspecified). Only makes sense if the series has a ``counts`` attribute and
+            it is evenly sampled.
+        min_samples : int
+            Minimum number of time bins. Optional (but needs ``min_counts`` if left unspecified).
+        even_sampling : bool
+            Force the treatment of the data as evenly sampled or not. If None, the data are
+            considered evenly sampled if ``self.dt`` is larger than zero and the median
+            separation between subsequent times is within 1% of ``self.dt``.
 
         Returns
         -------
@@ -1320,11 +1319,11 @@ class Lightcurve(StingrayTimeseries):
         >>> count = np.zeros_like(time) + 3
         >>> lc = Lightcurve(time, count, dt=1)
         >>> assert np.isclose(
-        ...     lc.estimate_segment_size(min_total_counts=10, min_time_bins=3), 4)
-        >>> assert np.isclose(lc.estimate_segment_size(min_total_counts=10, min_time_bins=5), 5)
+        ...     lc.estimate_segment_size(min_counts=10, min_samples=3), 4)
+        >>> assert np.isclose(lc.estimate_segment_size(min_counts=10, min_samples=5), 5)
         >>> count[2:4] = 1
         >>> lc = Lightcurve(time, count, dt=1)
-        >>> assert np.isclose(lc.estimate_segment_size(min_total_counts=3, min_time_bins=1), 3)
+        >>> assert np.isclose(lc.estimate_segment_size(min_counts=3, min_samples=1), 3)
         >>> # A slightly more complex example
         >>> dt=0.2
         >>> time = np.arange(0, 1000, dt)
@@ -1334,24 +1333,13 @@ class Lightcurve(StingrayTimeseries):
         >>> min_total_bins = 40
         >>> assert np.isclose(lc.estimate_segment_size(100, 40), 8.0)
         """
-
-        rough_estimate = np.ceil(min_total_counts / self.meancounts) * self.dt
-
-        segment_size = np.max([rough_estimate, min_time_bins * self.dt])
-
-        keep_searching = True
-        while keep_searching:
-            start_times, stop_times, results = self.analyze_lc_chunks(segment_size, np.sum)
-            mincounts = np.min(results)
-            if mincounts >= min_total_counts:
-                keep_searching = False
-            else:
-                segment_size += self.dt
-
-        return segment_size
+        return super().estimate_segment_size(min_counts, min_samples, even_sampling=even_sampling)
 
     def analyze_lc_chunks(self, segment_size, func, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
+
+        .. deprecated:: 2.0
+            Use :meth:`Lightcurve.analyze_segments(func, segment_size)` instead.
 
         Parameters
         ----------
@@ -1366,9 +1354,10 @@ class Lightcurve(StingrayTimeseries):
         Other parameters
         ----------------
         fraction_step : float
-            If the step is not a full ``segment_size`` but less (e.g. a moving window),
-            this indicates the ratio between step step and ``segment_size`` (e.g.
-            0.5 means that the window shifts of half ``segment_size``)
+            By default, segments do not overlap (``fraction_step`` = 1). If ``fraction_step`` < 1,
+            then the start points of consecutive segments are ``fraction_step * segment_size``
+            apart, and consecutive segments overlap. For example, for ``fraction_step`` = 0.5,
+            the window shifts one half of ``segment_size``)
         kwargs : keyword arguments
             These additional keyword arguments, if present, they will be passed
             to ``func``
@@ -1381,40 +1370,11 @@ class Lightcurve(StingrayTimeseries):
             upper time boundaries of all segments.
         result : array of N elements
             The result of ``func`` for each segment of the light curve
-
-        Examples
-        --------
-        >>> import numpy as np
-        >>> time = np.arange(0, 10, 0.1)
-        >>> counts = np.zeros_like(time) + 10
-        >>> lc = Lightcurve(time, counts, dt=0.1)
-        >>> # Define a function that calculates the mean
-        >>> mean_func = lambda x: np.mean(x)
-        >>> # Calculate the mean in segments of 5 seconds
-        >>> start, stop, res = lc.analyze_lc_chunks(5, mean_func)
-        >>> assert len(res) == 2
-        >>> assert np.allclose(res, 10)
         """
-        start, stop = bin_intervals_from_gtis(
-            self.gti, segment_size, self.time, fraction_step=fraction_step, dt=self.dt
+        warnings.warn(
+            "The analyze_lc_chunks method was superseded by analyze_segments", DeprecationWarning
         )
-        start_times = self.time[start] - 0.5 * self.dt
-
-        # Remember that stop is one element above the last element, because
-        # it's defined to be used in intervals start:stop
-        stop_times = self.time[stop - 1] + self.dt * 1.5
-
-        results = []
-        for i, (st, sp) in enumerate(zip(start, stop)):
-            lc_filt = self[st:sp]
-            res = func(lc_filt, **kwargs)
-            results.append(res)
-
-        results = np.array(results)
-
-        if len(results.shape) == 2:
-            results = [results[:, i] for i in range(results.shape[1])]
-        return start_times, stop_times, results
+        return super().analyze_segments(func, segment_size, fraction_step=fraction_step, **kwargs)
 
     def to_lightkurve(self):
         """

@@ -1,8 +1,8 @@
-import warnings
-import numpy as np
+import importlib
 import copy
 import os
 import pytest
+import numpy as np
 from astropy.time import Time
 
 from ..events import EventList
@@ -11,34 +11,10 @@ from ..lightcurve import Lightcurve
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
 
-_H5PY_INSTALLED = True
-_HAS_YAML = True
-_HAS_XARRAY = _HAS_PANDAS = True
-
-try:
-    import h5py
-except ImportError:
-    _H5PY_INSTALLED = False
-
-import astropy.timeseries
-from astropy.timeseries import TimeSeries
-
-try:
-    import xarray
-    from xarray import Dataset
-except ImportError:
-    _HAS_XARRAY = False
-
-try:
-    import pandas
-    from pandas import DataFrame
-except ImportError:
-    _HAS_PANDAS = False
-
-try:
-    import yaml
-except ImportError:
-    _HAS_YAML = False
+_HAS_XARRAY = importlib.util.find_spec("xarray") is not None
+_HAS_PANDAS = importlib.util.find_spec("pandas") is not None
+_HAS_H5PY = importlib.util.find_spec("h5py") is not None
+_HAS_YAML = importlib.util.find_spec("yaml") is not None
 
 
 class TestEvents(object):
@@ -56,7 +32,7 @@ class TestEvents(object):
             _ = EventList(self.time, self.counts, gti=self.gti, bubu="settete")
         assert np.any(["Unrecognized keywords:" in r.message.args[0] for r in record])
 
-    def test_warn_wrong_keywords(self):
+    def test_warn_wrong_keywords_ncounts(self):
         with pytest.warns(DeprecationWarning, match="The ncounts keyword does nothing"):
             _ = EventList(self.time, self.counts, gti=self.gti, ncounts=10)
 
@@ -210,7 +186,7 @@ class TestEvents(object):
         assert np.allclose(ev.time, self.time)
         os.remove("ev.pickle")
 
-    @pytest.mark.skipif("not _H5PY_INSTALLED")
+    @pytest.mark.skipif("not _HAS_H5PY")
     def test_io_with_hdf5_auto(self):
         ev = EventList(time=self.time, mjdref=54000)
         ev.write("ev.hdf5")
@@ -219,7 +195,7 @@ class TestEvents(object):
         assert np.allclose(ev.time, self.time)
         os.remove("ev.hdf5")
 
-    @pytest.mark.skipif("not _H5PY_INSTALLED")
+    @pytest.mark.skipif("not _HAS_H5PY")
     def test_io_with_hdf5(self):
         ev = EventList(time=self.time, mjdref=54000)
         ev.write("ev.hdf5", fmt="hdf5")
@@ -598,3 +574,65 @@ class TestFilters(object):
         assert np.allclose(filt_events.time, expected)
         assert np.allclose(filt_events.pi, 1)
         assert np.allclose(filt_events.energy, 1)
+
+
+class TestColors(object):
+    @classmethod
+    def setup_class(cls):
+        cls.events = EventList(
+            time=np.arange(100000) + 0.5, energy=np.random.choice([2, 5], 100000), gti=[[0, 100000]]
+        )
+
+    def test_bad_interval_color(self):
+        with pytest.raises(ValueError, match=" 2x2 array"):
+            self.events.get_color_evolution([[0, 3], [4, 6], [7, 8]], 10000)
+        with pytest.raises(ValueError, match=" 2x2 array"):
+            self.events.get_color_evolution([[0, 3, 8]], 10000)
+        with pytest.raises(ValueError, match=" 2x2 array"):
+            self.events.get_color_evolution([0], 10000)
+        with pytest.raises(ValueError, match=" 2x2 array"):
+            self.events.get_color_evolution([[0, 1]], 10000)
+
+    def test_bad_interval_intensity(self):
+        with pytest.raises(ValueError, match="2-element list"):
+            self.events.get_intensity_evolution([[0, 3], [4, 6], [7, 8]], 10000)
+        with pytest.raises(ValueError, match="2-element list"):
+            self.events.get_intensity_evolution([[0, 3, 8]], 10000)
+        with pytest.raises(ValueError, match="2-element list"):
+            self.events.get_intensity_evolution([0], 10000)
+        with pytest.raises(ValueError, match="2-element list"):
+            self.events.get_intensity_evolution([[0, 1]], 10000)
+
+    def test_colors(self):
+        start, stop, colors, color_errs = self.events.get_color_evolution([[0, 3], [4, 6]], 10000)
+        # 5000 / 5000 = 1
+        # 2 x sqrt(5000) / 5000 = 0.0282
+        assert np.allclose(colors, 1, rtol=0.1)
+        assert np.allclose(color_errs, 0.0282, atol=0.003)
+        assert np.allclose(start, np.arange(10) * 10000)
+        assert np.allclose(stop, np.arange(1, 11) * 10000)
+
+    def test_colors_no_segment(self):
+        start, stop, colors, color_errs = self.events.get_color_evolution([[0, 3], [4, 6]])
+        # 50000 / 50000 = 1
+        # 2 x sqrt(50000) / 50000 = 0.0089
+        assert np.allclose(colors, 1, rtol=0.1)
+        assert np.allclose(color_errs, 0.0089, atol=0.001)
+        assert np.allclose(start, 0)
+        assert np.allclose(stop, 100000)
+
+    def test_intensity(self):
+        start, stop, rate, rate_errs = self.events.get_intensity_evolution([0, 6], 10000)
+
+        assert np.allclose(rate, 1, rtol=0.1)
+        assert np.allclose(rate_errs, 0.01, atol=0.003)
+        assert np.allclose(start, np.arange(10) * 10000)
+        assert np.allclose(stop, np.arange(1, 11) * 10000)
+
+    def test_intensity_no_segment(self):
+        start, stop, rate, rate_errs = self.events.get_intensity_evolution([0, 6])
+
+        assert np.allclose(rate, 1, rtol=0.1)
+        assert np.allclose(rate_errs, 0.003, atol=0.001)
+        assert np.allclose(start, 0)
+        assert np.allclose(stop, 100000)

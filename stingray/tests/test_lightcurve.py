@@ -1,14 +1,13 @@
 import os
+import importlib
 import copy
 import numpy as np
 import pytest
 import warnings
-import os
 import matplotlib.pyplot as plt
 from numpy.testing import assert_allclose
 import astropy.units as u
 from astropy.time import Time
-import astropy.timeseries
 from astropy.timeseries import TimeSeries
 from astropy.table import Table
 import scipy.stats
@@ -19,31 +18,12 @@ from stingray.gti import create_gti_mask
 
 np.random.seed(20150907)
 
-_H5PY_INSTALLED = True
-_HAS_LIGHTKURVE = True
-_HAS_YAML = True
+_H5PY_INSTALLED = importlib.util.find_spec("h5py") is not None
+_HAS_LIGHTKURVE = importlib.util.find_spec("lightkurve") is not None
+_HAS_YAML = importlib.util.find_spec("yaml") is not None
+_HAS_ULTRANEST = importlib.util.find_spec("ultranest") is not None
+
 _IS_WINDOWS = os.name == "nt"
-_HAS_ULTRANEST = True
-
-try:
-    import h5py
-except ImportError:
-    _H5PY_INSTALLED = False
-
-try:
-    import lightkurve
-except ImportError:
-    _HAS_LIGHTKURVE = False
-
-try:
-    import yaml
-except ImportError:
-    _HAS_YAML = False
-
-try:
-    import ultranest
-except ImportError:
-    _HAS_ULTRANEST = False
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
@@ -117,7 +97,7 @@ class TestProperties(object):
         assert np.any(["On Windows, the size of an integer" in r.message.args[0] for r in record])
 
     @pytest.mark.skipif("_IS_WINDOWS")
-    def test_warn_on_windows(self, monkeypatch):
+    def test_warn_on_windows_monkeypatching_elsewhere(self, monkeypatch):
         monkeypatch.setattr(os, "name", "nt")
         with pytest.warns(UserWarning) as record:
             _ = Lightcurve(self.lc.time, self.lc.counts, gti=self.lc.gti)
@@ -262,7 +242,7 @@ class TestProperties(object):
     def test_add_data_to_empty_lightcurve_wrong(self, attr):
         lc0 = Lightcurve()
         lc0.time = [1, 2, 3]
-        with pytest.raises(ValueError, match=f".*the same shape as the time array"):
+        with pytest.raises(ValueError, match=".*the same shape as the time array"):
             setattr(lc0, attr, [1, 2, 3, 4])
 
     @pytest.mark.parametrize("attr", "counts,countrate".split(","))
@@ -304,7 +284,8 @@ class TestChunks(object):
         cls.lc = Lightcurve(times, counts, gti=cls.gti)
 
     def test_analyze_lc_chunks_fvar_fracstep(self):
-        start, stop, res = self.lc.analyze_lc_chunks(20, fvar_fun, fraction_step=0.5)
+        with pytest.warns(DeprecationWarning, match="The analyze_lc_chunks method was superseded"):
+            start, stop, res = self.lc.analyze_lc_chunks(20, fvar_fun, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         fvar, fvar_err = res
 
@@ -314,20 +295,55 @@ class TestChunks(object):
         assert np.all(fvar > fvar_err)
 
     def test_analyze_lc_chunks_nvar_fracstep(self):
-        start, stop, res = self.lc.analyze_lc_chunks(20, fvar_fun, fraction_step=0.5)
+        with pytest.warns(DeprecationWarning, match="The analyze_lc_chunks method was superseded"):
+            start, stop, res = self.lc.analyze_lc_chunks(20, fvar_fun, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         fvar, fvar_err = res
-        start, stop, res = self.lc.analyze_lc_chunks(20, nvar_fun, fraction_step=0.5)
+        with pytest.warns(DeprecationWarning, match="The analyze_lc_chunks method was superseded"):
+            start, stop, res = self.lc.analyze_lc_chunks(20, nvar_fun, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         nevar, nevar_err = res
         assert np.allclose(nevar, fvar**2, rtol=0.01)
 
     def test_analyze_lc_chunks_nvar_fracstep_mean(self):
-        start, stop, mean = self.lc.analyze_lc_chunks(20, np.mean, fraction_step=0.5)
-        start, stop, res = self.lc.analyze_lc_chunks(20, evar_fun, fraction_step=0.5)
+        with pytest.warns(DeprecationWarning, match="The analyze_lc_chunks method was superseded"):
+            start, stop, mean = self.lc.analyze_lc_chunks(20, np.mean, fraction_step=0.5)
+        with pytest.warns(DeprecationWarning, match="The analyze_lc_chunks method was superseded"):
+            start, stop, res = self.lc.analyze_lc_chunks(20, evar_fun, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         evar, evar_err = res
-        start, stop, res = self.lc.analyze_lc_chunks(20, nvar_fun, fraction_step=0.5)
+        with pytest.warns(DeprecationWarning, match="The analyze_lc_chunks method was superseded"):
+            start, stop, res = self.lc.analyze_lc_chunks(20, nvar_fun, fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        nevar, nevar_err = res
+        assert np.allclose(nevar * mean**2, evar, rtol=0.01)
+        assert np.allclose(nevar_err * mean**2, evar_err, rtol=0.01)
+
+    def test_analyze_segments_fvar_fracstep(self):
+        start, stop, res = self.lc.analyze_segments(fvar_fun, 20, fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        fvar, fvar_err = res
+
+        assert np.allclose(start[0], self.gti[0, 0])
+        assert np.all(fvar > 0)
+        # This must be a clear measurement of fvar
+        assert np.all(fvar > fvar_err)
+
+    def test_analyze_segments_nvar_fracstep(self):
+        start, stop, res = self.lc.analyze_segments(fvar_fun, 20, fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        fvar, fvar_err = res
+        start, stop, res = self.lc.analyze_segments(nvar_fun, 20, fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        nevar, nevar_err = res
+        assert np.allclose(nevar, fvar**2, rtol=0.01)
+
+    def test_analyze_segments_nvar_fracstep_mean(self):
+        start, stop, mean = self.lc.analyze_segments(np.mean, 20, fraction_step=0.5)
+        start, stop, res = self.lc.analyze_segments(evar_fun, 20, fraction_step=0.5)
+        # excess_variance returns fvar and fvar_err
+        evar, evar_err = res
+        start, stop, res = self.lc.analyze_segments(nvar_fun, 20, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         nevar, nevar_err = res
         assert np.allclose(nevar * mean**2, evar, rtol=0.01)
@@ -426,13 +442,13 @@ class TestLightcurve(object):
         lc = Lightcurve(self.times, self.counts)
         assert lc.n == 4
 
-    def test_analyze_lc_chunks(self):
+    def test_analyze_segments(self):
         lc = Lightcurve(self.times, self.counts, gti=self.gti)
 
         def func(lc):
             return lc.time[0]
 
-        start, stop, res = lc.analyze_lc_chunks(2, func)
+        start, stop, res = lc.analyze_segments(func, 2)
         assert start[0] == 0.5
         assert np.allclose(start + lc.dt / 2, res)
 
@@ -556,7 +572,7 @@ class TestLightcurve(object):
         t = [0.5, 1.5, 2.5, 3.5, 4.5]
         lc = [5, 5, 0, 5, 5]
         gtis = [[0, 2], [3, 5]]
-        lc = Lightcurve(t, lc, gti=gtis)
+        lc = Lightcurve(t, lc, gti=gtis, dt=1)
 
         assert lc.meanrate == 5
         assert lc.meancounts == 5
@@ -1522,7 +1538,7 @@ class TestLightcurveRebin(object):
         lc = Lightcurve(time, count, gti=[[-0.5, 150.5]])
         lc.gti = [[-0.5, 2.5], [12.5, 14.5]]
         lc_new = lc.apply_gtis(inplace=inplace)
-        if inplace == True:
+        if inplace:
             assert lc_new is lc
         assert lc_new.n == 5
         for attr in lc_new.array_attrs():
@@ -1542,7 +1558,7 @@ class TestLightcurveRebin(object):
         lc_rate = Lightcurve(time, counts=countrate, input_counts=False, gti=[[-0.5, 10.5]])
         lc_rate.gti = [[-0.5, 2.5]]
         lc_rate_new = lc_rate.apply_gtis(inplace=inplace)
-        if inplace == True:
+        if inplace:
             assert lc_rate_new is lc_rate
         assert lc_rate_new.n == 2
         for attr in lc_rate_new.array_attrs():
