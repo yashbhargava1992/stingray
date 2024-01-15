@@ -2652,7 +2652,7 @@ class StingrayTimeseries(StingrayObject):
         result : array of N elements
             The result of ``func`` for each segment of the light curve
         """
-        self.analyze_segments(func, segment_size=None, fraction_step=fraction_step, **kwargs)
+        return self.analyze_segments(func, segment_size=None, fraction_step=fraction_step, **kwargs)
 
 
 def interpret_times(time: TTime, mjdref: float = 0) -> tuple[npt.ArrayLike, float]:

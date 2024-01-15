@@ -1474,3 +1474,15 @@ class TestAnalyzeChunks(object):
             _, _, results = ts.analyze_segments(func, segment_size=None)
         # the first GTI contains only one bin, the result will be invalid
         assert np.isnan(results[0])
+
+    def test_analyze_segments_by_gti(self):
+        ts = StingrayTimeseries(time=np.arange(11), dt=1, gti=[[-0.5, 5.5], [6.5, 10.5]])
+
+        def func(x):
+            return np.size(x.time)
+
+        _, _, results_as = ts.analyze_segments(func, segment_size=None)
+        _, _, results_ag = ts.analyze_by_gti(func)
+
+        assert np.allclose(results_as, results_ag)
+        assert np.allclose(results_as, [6, 4])
