@@ -186,7 +186,7 @@ class TestEvents(object):
         assert np.allclose(ev.time, self.time)
         os.remove("ev.pickle")
 
-    @pytest.mark.skipif("not _H5PY_INSTALLED")
+    @pytest.mark.skipif("not _HAS_H5PY")
     def test_io_with_hdf5_auto(self):
         ev = EventList(time=self.time, mjdref=54000)
         ev.write("ev.hdf5")
@@ -195,7 +195,7 @@ class TestEvents(object):
         assert np.allclose(ev.time, self.time)
         os.remove("ev.hdf5")
 
-    @pytest.mark.skipif("not _H5PY_INSTALLED")
+    @pytest.mark.skipif("not _HAS_H5PY")
     def test_io_with_hdf5(self):
         ev = EventList(time=self.time, mjdref=54000)
         ev.write("ev.hdf5", fmt="hdf5")
