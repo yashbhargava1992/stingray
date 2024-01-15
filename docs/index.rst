@@ -24,15 +24,16 @@ Current Capabilities
 1. Data handling and simulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* loading event lists from fits files of a few missions (RXTE/PCA, NuSTAR/FPM, XMM-Newton/EPIC, NICER/XTI)
-* constructing light curves from event data, various operations on light curves (e.g. addition, subtraction, joining, and truncation)
+* loading event lists from fits files (and generally good handling of OGIP-compliant missions, like RXTE/PCA, NuSTAR/FPM, XMM-Newton/EPIC, NICER/XTI)
+* constructing light curves and time series from event data
+* various operations on time series (e.g. addition, subtraction, joining, and truncation)
 * simulating a light curve with a given power spectrum
 * simulating a light curve from another light curve and a 1-d (time) or 2-d (time-energy) impulse response
 * simulating an event list from a given light curve _and_ with a given energy spectrum
 * Good Time Interval operations
 * Filling gaps in light curves with statistically sound fake data
 
-2. Fourier methods
+1. Fourier methods
 ~~~~~~~~~~~~~~~~~~
 * power spectra and cross spectra in Leahy, rms normalization, absolute rms and no normalization
 * averaged power spectra and cross spectra
@@ -45,6 +46,7 @@ Current Capabilities
 * bispectra; *needs testing*
 * (Bayesian) quasi-periodic oscillation searches
 * Lomb-Scargle periodograms and cross spectra
+* Power Colors
 
 3. Other time series methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,7 +64,6 @@ Other future additions we are currently implementing are:
 * bicoherence
 * phase-resolved spectroscopy of quasi-periodic oscillations
 * Fourier-frequency-resolved spectroscopy
-* power colours
 * full HEASARC-compatible mission support
 * pulsar searches with :math:`H`-test
 * binary pulsar searches

@@ -1408,6 +1408,30 @@ class TestDynamicalCrossspectrum(object):
 
         dps_ev = DynamicalCrossspectrum(ev, ev, segment_size=10, sample_time=self.lc.dt)
         assert np.allclose(dps.dyn_ps, dps_ev.dyn_ps)
+        with pytest.warns(UserWarning, match="When using power_colors, complex "):
+            dps_ev.power_colors(freq_edges=[1 / 5, 1 / 2, 1, 2.0, 16.0])
+
+    def test_rms_is_correct(self):
+        lc = copy.deepcopy(self.lc)
+        lc.counts = np.random.poisson(lc.counts)
+        dps = DynamicalCrossspectrum(lc, lc, segment_size=10, norm="leahy")
+        rms, rmse = dps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+        from stingray.powerspectrum import AveragedPowerspectrum
+
+        ps = AveragedPowerspectrum()
+        ps.freq = dps.freq
+        ps.power = dps.dyn_ps.T[0]
+        ps.unnorm_power = ps.power / dps.unnorm_conversion
+        ps.df = dps.df
+        ps.m = dps.m
+        ps.n = dps.freq.size
+        ps.dt = lc.dt
+        ps.norm = dps.norm
+        ps.k = 1
+        ps.nphots = (dps.nphots1 * dps.nphots2) ** 0.5
+        rms2, rmse2 = ps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+        assert np.isclose(rms[0], rms2)
+        assert np.isclose(rmse[0], rmse2, rtol=0.01)
 
     def test_works_with_events_and_its_complex(self):
         lc = copy.deepcopy(self.lc)
@@ -1473,18 +1497,68 @@ class TestDynamicalCrossspectrum(object):
         with pytest.raises(ValueError):
             dps.rebin_frequency(df_new=dps.df / 2.0)
 
-    def test_rebin_time_default_method(self):
+    def test_rebin_time_sum_method(self):
         segment_size = 3
         dt_new = 6.0
         rebin_time = np.array([2.5, 8.5])
         rebin_dps = np.array([[1.73611111, 0.81018519]])
         dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
-        new_dps = dps.rebin_time(dt_new=dt_new)
+        new_dps = dps.rebin_time(dt_new=dt_new, method="sum")
         assert np.allclose(new_dps.time, rebin_time)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
         assert np.isclose(new_dps.dt, dt_new)
 
-    def test_rebin_frequency_default_method(self):
+    def test_rebin_n(self):
+        segment_size = 3
+        dt_new = 6.0
+        rebin_time = np.array([2.5, 8.5])
+        rebin_dps = np.array([[1.73611111, 0.81018519]])
+        dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
+        new_dps = dps.rebin_by_n_intervals(n=2, method="sum")
+        assert np.allclose(new_dps.time, rebin_time)
+        assert np.allclose(new_dps.dyn_ps, rebin_dps)
+        assert np.isclose(new_dps.dt, dt_new)
+
+    def test_rebin_n_average(self):
+        segment_size = 3
+        dt_new = 6.0
+        rebin_time = np.array([2.5, 8.5])
+        rebin_dps = np.array([[1.73611111, 0.81018519]])
+        dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
+        new_dps = dps.rebin_by_n_intervals(n=2, method="average")
+        assert np.allclose(new_dps.time, rebin_time)
+        assert np.allclose(new_dps.dyn_ps, rebin_dps / 2)
+        assert np.isclose(new_dps.dt, dt_new)
+
+    def test_rebin_n_warns_for_non_integer(self):
+        segment_size = 3
+        dt_new = 6.0
+        rebin_time = np.array([2.5, 8.5])
+        rebin_dps = np.array([[1.73611111, 0.81018519]])
+        dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
+        with pytest.warns(UserWarning, match="n must be an integer. Casting to int"):
+            new_dps = dps.rebin_by_n_intervals(n=2.1, method="sum")
+        assert np.allclose(new_dps.time, rebin_time)
+        assert np.allclose(new_dps.dyn_ps, rebin_dps)
+        assert np.isclose(new_dps.dt, dt_new)
+
+    def test_rebin_n_fails_for_n_lt_1(self):
+        segment_size = 3
+
+        dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
+        with pytest.raises(ValueError, match="n must be >= 1"):
+            _ = dps.rebin_by_n_intervals(n=0)
+        dps2 = dps.rebin_by_n_intervals(n=1)
+        assert np.allclose(dps2.dyn_ps, dps.dyn_ps)
+
+    def test_rebin_n_copies_for_n_1(self):
+        segment_size = 3
+
+        dps = DynamicalCrossspectrum(self.lc_test, self.lc_test, segment_size=segment_size)
+        dps2 = dps.rebin_by_n_intervals(n=1)
+        assert np.allclose(dps2.dyn_ps, dps.dyn_ps)
+
+    def test_rebin_frequency_sum_method(self):
         segment_size = 50
         df_new = 10.0
         rebin_freq = np.array([5.01, 15.01, 25.01, 35.01])
@@ -1501,7 +1575,7 @@ class TestDynamicalCrossspectrum(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=segment_size)
-        new_dps = dps.rebin_frequency(df_new=df_new)
+        new_dps = dps.rebin_frequency(df_new=df_new, method="sum")
         assert np.allclose(new_dps.freq, rebin_freq)
         assert np.allclose(new_dps.dyn_ps, rebin_dps, atol=0.01)
         assert np.isclose(new_dps.df, df_new)

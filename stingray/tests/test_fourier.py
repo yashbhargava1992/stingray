@@ -293,7 +293,19 @@ class TestFourier(object):
             silent=True,
             return_subcs=True,
         )
+
         assert np.isclose(out_comm["power"].std(), out["power"].std(), rtol=0.1)
+        assert np.isclose(out_comm["unnorm_power"].std(), out["unnorm_power"].std(), rtol=0.1)
+        # Run the same check on the subcs
+        assert np.isclose(out_comm.meta["subcs"].std(), out.meta["subcs"].std(), rtol=0.1)
+        assert np.isclose(
+            out_comm.meta["unnorm_subcs"].std(), out.meta["unnorm_subcs"].std(), rtol=0.1
+        )
+        # Now verify that the normalizations are consistent between single power and subcs
+        assert np.isclose(
+            out_comm["unnorm_power"].std() / out_comm["power"].std(),
+            out_comm.meta["unnorm_subcs"].std() / out_comm.meta["subcs"].std(),
+        )
 
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
@@ -663,3 +675,123 @@ def test_impose_symmetry_lsft():
     assert np.all((imp_sym_fast.real) == np.flip(imp_sym_fast.real))
     assert np.all((imp_sym_fast.imag) == (-np.flip(imp_sym_fast.imag)))
     assert np.all(freqs_new_slow == freqs_new_fast)
+
+
+class TestIntegration(object):
+    @classmethod
+    def setup_class(cls):
+        cls.freq = [0, 1, 2, 3]
+        cls.power = [2, 2, 2, 2]
+        cls.power_err = [1, 1, 1, 1]
+
+    def test_power_integration_middle_bin(self):
+        freq_range = [1, 2]
+        pow, powe = integrate_power_in_frequency_range(self.freq, self.power, freq_range)
+        assert np.isclose(pow, 2)
+        assert np.isclose(powe, np.sqrt(2))
+
+    def test_power_integration_precise(self):
+        freq_range = [0.5, 2.5]
+        df = 1
+        pow, powe = integrate_power_in_frequency_range(self.freq, self.power, freq_range, df=df)
+        assert np.allclose(pow, 4)
+        assert np.allclose(powe, 2 * np.sqrt(2))
+
+    def test_power_integration_poisson(self):
+        freq_range = [0.5, 2.5]
+        for poisson_power in (1, np.ones_like(self.power)):
+            pow, powe = integrate_power_in_frequency_range(
+                self.freq, self.power, freq_range, poisson_power=poisson_power
+            )
+            assert np.allclose(pow, 2)
+            assert np.allclose(powe, 2 * np.sqrt(2))
+
+    def test_power_integration_err(self):
+        freq_range = [0.5, 2.5]
+        pow, powe = integrate_power_in_frequency_range(
+            self.freq, self.power, freq_range, power_err=self.power_err
+        )
+        assert np.allclose(pow, 4)
+        assert np.allclose(powe, np.sqrt(2))
+
+    def test_power_integration_m(self):
+        freq_range = [0.5, 2.5]
+        pow, powe = integrate_power_in_frequency_range(self.freq, self.power, freq_range, m=4)
+        assert np.allclose(pow, 4)
+        assert np.allclose(powe, np.sqrt(2))
+
+
+class TestPowerColor(object):
+    @classmethod
+    def setup_class(cls):
+        cls.freq = np.arange(0.0001, 17, 0.00001)
+        cls.power = 1 / cls.freq
+
+    def test_power_color(self):
+        pc0, _, pc1, _ = power_color(self.freq, self.power)
+        # The colors calculated with these frequency edges on a 1/f spectrum should be 1
+        assert np.isclose(pc0, 1)
+        assert np.isclose(pc1, 1)
+
+    def test_return_log(self):
+        pc0, _, pc1, _ = power_color(self.freq, self.power, return_log=True)
+        # The colors calculated with these frequency edges on a 1/f spectrum should be 1
+        assert np.isclose(pc0, 0, atol=0.001)
+        assert np.isclose(pc1, 0, atol=0.001)
+
+    def test_bad_edges(self):
+        good = self.freq > 1 / 255  # the smallest frequency is 1/256
+        with pytest.raises(ValueError, match="The minimum frequency is larger "):
+            power_color(self.freq[good], self.power[good])
+
+        good = self.freq < 15  # the smallest frequency is 1/256
+        with pytest.raises(ValueError, match="The maximum frequency is lower "):
+            power_color(self.freq[good], self.power[good])
+
+        with pytest.raises(ValueError, match="freq_edges must have 5 elements"):
+            power_color(self.freq, self.power, freq_edges=[1])
+        with pytest.raises(ValueError, match="freq_edges must have 5 elements"):
+            power_color(self.freq, self.power, freq_edges=[1, 2, 3, 4, 5, 6])
+
+    def test_bad_excluded_interval(self):
+        for fte in ([1, 1.1, 3.0], [4], [[1, 1.1, 3.0]], 0, [[[1, 3]]]):
+            with pytest.raises(ValueError, match="freqs_to_exclude must be of "):
+                power_color(self.freq, self.power, freqs_to_exclude=fte)
+
+    def test_excluded_frequencies(self):
+        pc0, _, pc1, _ = power_color(self.freq, self.power, freqs_to_exclude=[1, 1.1])
+        # The colors calculated with these frequency edges on a 1/f spectrum should be 1
+        # The excluded frequency interval is small enough that the approximation should work
+        assert np.isclose(pc0, 1, atol=0.001)
+        assert np.isclose(pc1, 1, atol=0.001)
+
+    def test_with_power_err(self):
+        pc0, pc0_err, pc1, pc1_err = power_color(
+            self.freq,
+            self.power,
+            power_err=self.power / 2,
+        )
+        pc0e, pc0e_err, pc1e, pc1e_err = power_color(
+            self.freq,
+            self.power,
+            power_err=self.power,
+        )
+        assert np.isclose(pc0, 1, atol=0.001)
+        assert np.isclose(pc1, 1, atol=0.001)
+        assert np.isclose(pc0e, 1, atol=0.001)
+        assert np.isclose(pc1e, 1, atol=0.001)
+        assert np.isclose(pc0e_err / pc0_err, 2, atol=0.001)
+        assert np.isclose(pc1e_err / pc1_err, 2, atol=0.001)
+
+    def test_hue(self):
+        center = (4.51920, 0.453724)
+        log_center = np.log10(np.asarray(center))
+        for angle in np.radians(np.arange(0, 380, 20)):
+            factor = np.random.uniform(0.1, 10)
+            x = factor * np.cos(3 / 4 * np.pi - angle) + log_center[0]
+            y = factor * np.sin(3 / 4 * np.pi - angle) + log_center[1]
+            hue = hue_from_power_color(10**x, 10**y, center)
+            # Compare the angles in a safe way
+            c2 = (np.sin(hue) - np.sin(angle)) ** 2 + (np.cos(hue) - np.cos(angle)) ** 2
+            angle_diff = np.arccos((2.0 - c2) / 2.0)
+            assert np.isclose(angle_diff, 0, atol=0.001)

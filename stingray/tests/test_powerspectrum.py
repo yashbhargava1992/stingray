@@ -1034,6 +1034,29 @@ class TestDynamicalPowerspectrum(object):
 
         dps_ev = DynamicalPowerspectrum(ev, segment_size=10, sample_time=self.lc.dt)
         assert np.allclose(dps.dyn_ps, dps_ev.dyn_ps)
+        dps_ev.power_colors(freq_edges=[1 / 5, 1 / 2, 1, 2.0, 16.0])
+
+    def test_rms_is_correct(self):
+        lc = copy.deepcopy(self.lc)
+        lc.counts = np.random.poisson(lc.counts)
+        dps = DynamicalPowerspectrum(lc, segment_size=10, norm="leahy")
+        rms, rmse = dps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+        from stingray.powerspectrum import AveragedPowerspectrum
+
+        ps = AveragedPowerspectrum()
+        ps.freq = dps.freq
+        ps.power = dps.dyn_ps.T[0]
+        ps.unnorm_power = ps.power / dps.unnorm_conversion
+        ps.df = dps.df
+        ps.m = dps.m
+        ps.n = dps.freq.size
+        ps.dt = lc.dt
+        ps.norm = dps.norm
+        ps.k = 1
+        ps.nphots = dps.nphots
+        rms2, rmse2 = ps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+        assert np.isclose(rms[0], rms2)
+        assert np.isclose(rmse[0], rmse2, rtol=0.01)
 
     def test_with_long_seg_size(self):
         with pytest.raises(ValueError):
@@ -1087,13 +1110,13 @@ class TestDynamicalPowerspectrum(object):
         with pytest.raises(ValueError):
             dps.rebin_frequency(df_new=dps.df / 2.0)
 
-    def test_rebin_time_default_method(self):
+    def test_rebin_time_sum_method(self):
         segment_size = 3
         dt_new = 6.0
         rebin_time = np.array([2.5, 8.5])
         rebin_dps = np.array([[1.73611111, 0.81018519]])
         dps = DynamicalPowerspectrum(self.lc_test, segment_size=segment_size)
-        new_dps = dps.rebin_time(dt_new=dt_new)
+        new_dps = dps.rebin_time(dt_new=dt_new, method="sum")
         assert np.allclose(new_dps.time, rebin_time)
         assert np.allclose(new_dps.dyn_ps, rebin_dps)
         assert np.isclose(new_dps.dt, dt_new)
@@ -1115,7 +1138,7 @@ class TestDynamicalPowerspectrum(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             dps = DynamicalPowerspectrum(self.lc, segment_size=segment_size)
-        new_dps = dps.rebin_frequency(df_new=df_new)
+        new_dps = dps.rebin_frequency(df_new=df_new, method="sum")
         assert np.allclose(new_dps.freq, rebin_freq)
         assert np.allclose(new_dps.dyn_ps, rebin_dps, atol=0.01)
         assert np.isclose(new_dps.df, df_new)

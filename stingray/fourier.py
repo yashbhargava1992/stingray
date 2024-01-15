@@ -15,6 +15,309 @@ from .gti import (
 from .utils import fft, fftfreq, histogram, show_progress, sum_if_not_none_or_initialize
 
 
+def integrate_power_in_frequency_range(
+    frequency,
+    power,
+    frequency_range,
+    power_err=None,
+    df=None,
+    m=1,
+    poisson_power=0,
+):
+    """
+    Integrate the power in a given frequency range.
+
+    Parameters
+    ----------
+    frequency : iterable
+        The frequencies of the power spectrum
+    power : iterable
+        The power at each frequency
+    frequency_range : iterable of length 2
+        The frequency range to integrate
+    power_err : iterable, optional, default None
+        The power error bar at each frequency
+    df : float or float iterable, optional, default None
+        The frequency resolution of the input data. If None, it is calculated
+        from the median difference of input frequencies.
+    m : int, optional, default 1
+        The number of segments and/or contiguous frequency bins averaged to obtain power.
+        Only needed if ``power_err`` is None
+    poisson_power : float, optional, default 0
+        The Poisson noise level of the power spectrum.
+
+    Returns
+    -------
+    power_integrated : float
+        The integrated power
+    power_integrated_err : float
+        The error on the integrated power
+
+    """
+    frequency = np.array(frequency, dtype=float)
+    power = np.array(power)
+    if not np.iscomplexobj(power):
+        power = power.astype(float)
+    if not isinstance(poisson_power, Iterable):
+        poisson_power = np.ones_like(frequency) * poisson_power
+    if df is None:
+        df = np.median(np.diff(frequency))
+    if not isinstance(df, Iterable):
+        df = np.ones_like(frequency) * df
+
+    # The frequency_range is in the middle or at the edge of each bin. When only a part of the
+    # bin is included, we need to add the fraction of the bin that is included.
+    frequency_mask = (frequency + df / 2 > frequency_range[0]) & (
+        frequency - df / 2 < frequency_range[1]
+    )
+
+    freqs_to_integrate = frequency[frequency_mask]
+    poisson_power = poisson_power[frequency_mask]
+    correction_ratios = np.ones_like(freqs_to_integrate)
+    dfs_to_integrate = df[frequency_mask]
+
+    # The first and last bins are only partially included. We need to correct for the
+    # fraction of the bin actually included.
+    correction_ratios[0] = (
+        freqs_to_integrate[0] + 0.5 * dfs_to_integrate[0] - frequency_range[0]
+    ) / dfs_to_integrate[0]
+    correction_ratios[-1] = (
+        frequency_range[-1] - freqs_to_integrate[-1] + 0.5 * dfs_to_integrate[-1]
+    ) / dfs_to_integrate[-1]
+    dfs_to_integrate = dfs_to_integrate * correction_ratios
+
+    powers_to_integrate = power[frequency_mask]
+
+    if power_err is None:
+        power_err_to_integrate = powers_to_integrate / np.sqrt(m)
+    else:
+        power_err_to_integrate = np.asarray(power_err)[frequency_mask]
+
+    power_integrated = np.sum((powers_to_integrate - poisson_power) * dfs_to_integrate)
+    power_err_integrated = np.sqrt(np.sum((power_err_to_integrate * dfs_to_integrate) ** 2))
+    return power_integrated, power_err_integrated
+
+
+def power_color(
+    frequency,
+    power,
+    power_err=None,
+    freq_edges=[1 / 256, 1 / 32, 0.25, 2.0, 16.0],
+    df=None,
+    m=1,
+    freqs_to_exclude=None,
+    poisson_power=0,
+    return_log=False,
+):
+    """
+    Calculate two power colors from a power spectrum.
+
+    Power colors are an alternative to spectral colors to understand the spectral state of an
+    accreting source. They are defined as the ratio of the power in two frequency ranges,
+    analogously to the colors calculated from electromagnetic spectra.
+
+    This function calculates two power colors, using the four frequency ranges contained
+    between the five frequency edges in ``freq_edges``. Given [f0, f1, f2, f3, f4], the
+    two power colors are calculated as the following ratios of the integrated power
+    (which are variances):
+
+    + PC0 = Var([f0, f1]) / Var([f2, f3])
+
+    + PC1 = Var([f1, f2]) / Var([f3, f4])
+
+    Errors are calculated using simple error propagation from the integrated power errors.
+
+    See Heil et al. 2015, MNRAS, 448, 3348
+
+    Parameters
+    ----------
+    frequency : iterable
+        The frequencies of the power spectrum
+    power : iterable
+        The power at each frequency
+
+    Other Parameters
+    ----------------
+    power_err : iterable
+        The power error bar at each frequency
+    freq_edges : iterable, optional, default ``[0.0039, 0.031, 0.25, 2.0, 16.0]``
+        The five edges defining the four frequency intervals to use to calculate the power color.
+        If empty, the power color is calculated using the frequencies from Heil et al. 2015.
+    df : float or float iterable, optional, default None
+        The frequency resolution of the input data. If None, it is calculated
+        from the median difference of input frequencies.
+    m : int, optional, default 1
+        The number of segments and/or contiguous frequency bins averaged to obtain power
+    freqs_to_exclude : 1-d or 2-d iterable, optional, default None
+        The ranges of frequencies to exclude from the calculation of the power color.
+        For example, the frequencies containing strong QPOs.
+        A 1-d iterable should contain two values for the edges of a single range. (E.g.
+        ``[0.1, 0.2]``). ``[[0.1, 0.2], [3, 4]]`` will exclude the ranges 0.1-0.2 Hz and 3-4 Hz.
+    poisson_power : float or iterable, optional, default 0
+        The Poisson noise level of the power spectrum. If iterable, it should have the same
+        length as ``frequency``. (This might apply to the case of a power spectrum with a
+        strong dead time distortion
+    return_log : bool, optional, default False
+        Return the base-10 logarithm of the power color and the errors
+
+    Returns
+    -------
+    PC0 : float
+        The first power color
+    PC0_err : float
+        The error on the first power color
+    PC1 : float
+        The second power color
+    PC1_err : float
+        The error on the second power color
+    """
+    freq_edges = np.asarray(freq_edges)
+    if len(freq_edges) != 5:
+        raise ValueError("freq_edges must have 5 elements")
+
+    frequency = np.asarray(frequency)
+    power = np.asarray(power)
+
+    if df is None:
+        df = np.median(np.diff(frequency))
+    input_frequency_low_edges = frequency - df / 2
+    input_frequency_high_edges = frequency + df / 2
+
+    if freq_edges.min() < input_frequency_low_edges[0]:
+        raise ValueError("The minimum frequency is larger than the first frequency edge")
+    if freq_edges.max() > input_frequency_high_edges[-1]:
+        raise ValueError("The maximum frequency is lower than the last frequency edge")
+
+    if power_err is None:
+        power_err = power / np.sqrt(m)
+    else:
+        power_err = np.asarray(power_err)
+
+    if freqs_to_exclude is not None:
+        if len(np.shape(freqs_to_exclude)) == 1:
+            freqs_to_exclude = [freqs_to_exclude]
+
+        if (
+            not isinstance(freqs_to_exclude, Iterable)
+            or len(np.shape(freqs_to_exclude)) != 2
+            or np.shape(freqs_to_exclude)[1] != 2
+        ):
+            raise ValueError("freqs_to_exclude must be of format [[f0, f1], [f2, f3], ...]")
+        for f0, f1 in freqs_to_exclude:
+            frequency_mask = (input_frequency_low_edges > f0) & (input_frequency_high_edges < f1)
+            idx0, idx1 = np.searchsorted(frequency, [f0, f1])
+            power[frequency_mask] = np.mean([power[idx0], power[idx1]])
+
+    var00, var00_err = integrate_power_in_frequency_range(
+        frequency,
+        power,
+        freq_edges[:2],
+        power_err=power_err,
+        df=df,
+        m=m,
+        poisson_power=poisson_power,
+    )
+    var01, var01_err = integrate_power_in_frequency_range(
+        frequency,
+        power,
+        freq_edges[2:4],
+        power_err=power_err,
+        df=df,
+        m=m,
+        poisson_power=poisson_power,
+    )
+    var10, var10_err = integrate_power_in_frequency_range(
+        frequency,
+        power,
+        freq_edges[1:3],
+        power_err=power_err,
+        df=df,
+        m=m,
+        poisson_power=poisson_power,
+    )
+    var11, var11_err = integrate_power_in_frequency_range(
+        frequency,
+        power,
+        freq_edges[3:5],
+        power_err=power_err,
+        df=df,
+        m=m,
+        poisson_power=poisson_power,
+    )
+    pc0 = var00 / var01
+    pc1 = var10 / var11
+    pc0_err = pc0 * (var00_err / var00 + var01_err / var01)
+    pc1_err = pc1 * (var10_err / var10 + var11_err / var11)
+    if return_log:
+        pc0_err = 1 / pc0 * pc0_err
+        pc1_err = 1 / pc1 * pc1_err
+        pc0 = np.log10(pc0)
+        pc1 = np.log10(pc1)
+    return pc0, pc0_err, pc1, pc1_err
+
+
+def hue_from_power_color(pc0, pc1, center=[4.51920, 0.453724]):
+    """Measure the angle of a point in the log-power color diagram wrt the center.
+
+    Angles are measured in radians, **in the clockwise direction**, with respect to a line oriented
+    at -45 degrees wrt the horizontal axis.
+
+    See Heil et al. 2015, MNRAS, 448, 3348
+
+    Parameters
+    ----------
+    pc0 : float
+        The (linear, not log!) power color in the first frequency range
+    pc1 : float
+        The (linear, not log!) power color in the second frequency range
+
+    Other Parameters
+    ----------------
+    center : iterable, optional, default [4.51920, 0.453724]
+        The coordinates of the center of the power color diagram
+
+    Returns
+    -------
+    hue : float
+        The angle of the point wrt the center, in radians
+    """
+    pc0 = np.log10(pc0)
+    pc1 = np.log10(pc1)
+
+    center = np.log10(np.asarray(center))
+
+    return hue_from_logpower_color(pc0, pc1, center=center)
+
+
+def hue_from_logpower_color(log10pc0, log10pc1, center=(np.log10(4.51920), np.log10(0.453724))):
+    """Measure the angle of a point in the log-power color diagram wrt the center.
+
+    Angles are measured in radians, **in the clockwise direction**, with respect to a line oriented
+    at -45 degrees wrt the horizontal axis.
+
+    See Heil et al. 2015, MNRAS, 448, 3348
+
+    Parameters
+    ----------
+    log10pc0 : float
+        The log10 power color in the first frequency range
+    log10pc1 : float
+        The log10 power color in the second frequency range
+
+    Other Parameters
+    ----------------
+    center : iterable, optional, default ``log10([4.51920, 0.453724])``
+        The coordinates of the center of the power color diagram
+
+    Returns
+    -------
+    hue : float
+        The angle of the point wrt the center, in radians
+    """
+    hue = 3 / 4 * np.pi - np.arctan2(log10pc1 - center[1], log10pc0 - center[0])
+    return hue
+
+
 def positive_fft_bins(n_bin, include_zero=False):
     """
     Give the range of positive frequencies of a complex FFT.
@@ -1207,7 +1510,7 @@ def avg_pds_from_iterable(
 
         # If the user wants to normalize using the mean of the total
         # lightcurve, normalize it here
-        cs_seg = unnorm_power
+        cs_seg = copy.deepcopy(unnorm_power)
         if not use_common_mean:
             mean = n_ph / n_bin
 
@@ -1593,7 +1896,7 @@ def avg_cs_from_iterables(
                 unnorm_pd1 = unnorm_pd1[fgt0]
                 unnorm_pd2 = unnorm_pd2[fgt0]
 
-        cs_seg = unnorm_power
+        cs_seg = copy.deepcopy(unnorm_power)
         p1_seg = unnorm_pd1
         p2_seg = unnorm_pd2
 
