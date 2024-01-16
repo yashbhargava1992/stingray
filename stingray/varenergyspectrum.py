@@ -841,14 +841,14 @@ class LagSpectrum(VarEnergySpectrum):
                 sub_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="none"
             )
 
+            if results_cross is None or results_ps is None:
+                continue
+
             # Nph per interval, so on average it's the total number of events divided by
             # the number of intervals
             sub_power_noise = poisson_level(
                 norm="none", n_ph=sub_events.size / results_ps.meta["m"]
             )
-
-            if results_cross is None or results_ps is None:
-                continue
 
             cross = results_cross["power"]
             sub_power = results_ps["power"]
