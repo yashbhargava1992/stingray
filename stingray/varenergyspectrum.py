@@ -802,12 +802,15 @@ class LagSpectrum(VarEnergySpectrum):
     def _spectrum_function(self):
         # Extract the photon arrival times from the reference band
         ref_events = self._get_times_from_energy_range(self.events2, self.ref_band[0])
-        ref_power_noise = poisson_level(norm="none", n_ph=ref_events.size)
 
         # Calculate the PDS in the reference band. Needed to calculate errors.
         results = avg_pds_from_events(
             ref_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="none"
         )
+
+        # Nph per interval, so on average it's the total number of events divided by
+        # the number of intervals
+        ref_power_noise = poisson_level(norm="none", n_ph=ref_events.size / results.meta["m"])
         freq = results["freq"]
         ref_power = results["power"]
         m_ave = results.meta["m"]
@@ -823,7 +826,6 @@ class LagSpectrum(VarEnergySpectrum):
         for i, eint in enumerate(show_progress(self.energy_intervals)):
             # Extract the photon arrival times from the subject band
             sub_events = self._get_times_from_energy_range(self.events1, eint)
-            sub_power_noise = poisson_level(norm="none", n_ph=sub_events.size)
 
             results_cross = avg_cs_from_events(
                 sub_events,
@@ -837,6 +839,12 @@ class LagSpectrum(VarEnergySpectrum):
 
             results_ps = avg_pds_from_events(
                 sub_events, self.gti, self.segment_size, self.bin_time, silent=True, norm="none"
+            )
+
+            # Nph per interval, so on average it's the total number of events divided by
+            # the number of intervals
+            sub_power_noise = poisson_level(
+                norm="none", n_ph=sub_events.size / results_ps.meta["m"]
             )
 
             if results_cross is None or results_ps is None:
