@@ -1123,6 +1123,75 @@ def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M):
     return rms, high_snr_err
 
 
+def get_rms_from_unnorm_periodogram(
+    unnorm_powers,
+    nphots_per_segment,
+    df,
+    M=1,
+    poisson_noise_unnorm=None,
+    segment_size=None,
+    kind="frac",
+):
+    """Calculate the fractional rms amplitude from unnormalized powers.
+
+    We assume the powers come from an unnormalized Bartlett periodogram.
+    If so, the Poisson noise level is ``nphots_per_segment``, but the user
+    can specify otherwise (e.g. if the Poisson noise level is altered by dead time).
+    The ``segment_size`` and ``nphots_per_segment`` parameters refer to the length
+    and averaged counts of each segment of data used for the Bartlett periodogram.
+
+    Parameters
+    ----------
+    unnorm_powers : np.ndarray
+        The unnormalized power spectrum
+    nphots_per_segment : float
+        The averaged number of photons per segment of the data used for the Bartlett periodogram
+    df : float
+        The frequency resolution of the periodogram
+
+    Other parameters
+    ----------------
+    poisson_noise_unnorm : float
+        The unnormalized Poisson noise level
+    segment_size : float
+        The size of the segment, in seconds
+    M : int
+        The number of segments averaged to obtain the periodogram
+    kind : str
+        One of "frac" or "abs"
+    """
+
+    if segment_size is None:
+        segment_size = 1 / np.min(df)
+
+    if poisson_noise_unnorm is None:
+        poisson_noise_unnorm = nphots_per_segment
+
+    meanrate = nphots_per_segment / segment_size
+    # print("new_s", meanrate, df, unnorm_powers.size)
+
+    def to_leahy(powers):
+        return powers * 2.0 / nphots_per_segment
+
+    def to_frac(powers):
+        return to_leahy(powers) / meanrate
+
+    def to_abs(powers):
+        return to_leahy(powers) * meanrate**2
+
+    if kind.startswith("frac"):
+        to_norm = to_frac
+    elif kind.startswith("abs"):
+        to_norm = to_abs
+    else:
+        raise ValueError("Only fractional or absolute rms are supported.")
+
+    poisson = to_norm(poisson_noise_unnorm)
+    powers = to_norm(unnorm_powers)
+
+    return get_rms_from_rms_norm_periodogram(powers, poisson, df, M)
+
+
 def rms_calculation(
     unnorm_powers,
     min_freq,
@@ -1191,6 +1260,10 @@ def rms_calculation(
         The error on the fractional rms amplitude.
 
     """
+    warnings.warn(
+        "The rms_calculation function is deprecated. Use get_rms_from_unnorm_periodogram instead.",
+        DeprecationWarning,
+    )
     rms_norm_powers = unnorm_powers * 2 * T / nphots**2
     rms_poisson_noise = poisson_noise_unnorm * 2 * T / nphots**2
 
