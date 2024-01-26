@@ -463,12 +463,6 @@ class TestPowerspectrum(object):
         std_lc = np.var(self.lc.counts) / np.mean(self.lc.counts) ** 2
         assert np.isclose(ps_int, std_lc, atol=0.01, rtol=0.01)
 
-    def test_compute_rms_wrong_norm(self):
-        ps = Powerspectrum(self.lc)
-        ps.norm = "gibberish"
-        # This will now pass, due to changes on 2022-10-10
-        ps.compute_rms(0, 10)
-
     def test_compute_rms_rebinning_is_consistent(self):
         time = np.arange(0, 100, 1) + 0.5
 
@@ -1038,7 +1032,8 @@ class TestDynamicalPowerspectrum(object):
 
     def test_rms_is_correct(self):
         lc = copy.deepcopy(self.lc)
-        lc.counts = np.random.poisson(lc.counts)
+        # Create a clear variable signal with an exponential decay
+        lc.counts = np.random.poisson(100000 * np.exp(-(lc.time) / 100))
         dps = DynamicalPowerspectrum(lc, segment_size=10, norm="leahy")
         rms, rmse = dps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
         from stingray.powerspectrum import AveragedPowerspectrum

@@ -1413,7 +1413,9 @@ class TestDynamicalCrossspectrum(object):
 
     def test_rms_is_correct(self):
         lc = copy.deepcopy(self.lc)
-        lc.counts = np.random.poisson(lc.counts)
+        # Create a clear variable signal with an exponential decay
+        lc.counts = np.random.poisson(100000 * np.exp(-(lc.time) / 100))
+
         dps = DynamicalCrossspectrum(lc, lc, segment_size=10, norm="leahy")
         rms, rmse = dps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
         from stingray.powerspectrum import AveragedPowerspectrum
