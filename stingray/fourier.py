@@ -1050,6 +1050,79 @@ def estimate_intrinsic_coherence(cross_power, power1, power2, power1_noise, powe
     return new_coherence
 
 
+def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M):
+    r"""Calculate integrated rms spectrum (frac or abs).
+
+    If M=1, it starts by rebinning the powers slightly in order to get a slightly
+    better approximation for the error bars.
+
+    Parameters
+    ----------
+    power_sqrms: array-like
+        Powers, in units of fractional rms ($(rms/mean)^2 Hz{-1}$)
+    poisson_noise_sqrms: float
+        Poisson noise level, in units of fractional rms ($(rms/mean)^2 Hz{-1}$
+    df: float or ``np.array``, same dimension of ``power_sqrms``
+        The frequency resolution of each power
+    M: int or ``np.array``, same dimension of ``power_sqrms``
+        The number of powers averaged to obtain each value of power.
+    """
+    from stingray.utils import rebin_data
+
+    m_is_iterable = isinstance(M, Iterable)
+    df_is_iterable = isinstance(df, Iterable)
+
+    # if M is an iterable but all values are the same, let's simplify
+    if m_is_iterable and len(list(set(M))) == 1:
+        M = M[0]
+        m_is_iterable = False
+    # the same with df
+    if df_is_iterable and len(list(set(df))) == 1:
+        df = df[0]
+        df_is_iterable = False
+
+    # But they cannot be of different kind. There would be something wrong with the data
+    if m_is_iterable != df_is_iterable:
+        raise ValueError("M and df must be either both constant, or none of them.")
+
+    # If powers are not rebinned, we rebin them slightly. The error on the power is tricky,
+    # because powers follow a non-central chi squared distribution. If we combine powers with
+    # very different underlying signal level, the error bars will be completely wrong. But
+    # nearby powers have a higher chance of having similar values, and so, by combining them,
+    # we have a higher chance of obtaining sensible quasi-Gaussian error bars, easier to
+    # propagate through standard quadrature summation
+    if not m_is_iterable and M == 1 and power_sqrms.size > 100:
+        _, local_power_sqrms, _, local_M = rebin_data(
+            np.arange(power_sqrms.size) * df,
+            power_sqrms,
+            df * 4,
+            yerr=None,
+            method="average",
+            dx=df,
+        )
+        local_df = df * local_M
+        total_local_powers = local_M * local_power_sqrms.size
+        total_power_err = np.sqrt(np.sum(local_power_sqrms**2 * local_df**2 / local_M))
+        total_power_err *= power_sqrms.size / total_local_powers
+    else:
+        total_power_err = np.sqrt(np.sum(power_sqrms**2 * df**2 / M))
+
+    powers_sub = power_sqrms - poisson_noise_sqrms
+
+    total_power_sub = np.sum(powers_sub * df)
+
+    if total_power_sub < 0:
+        # By the definition, it makes no sense to define an error bar here.
+        warnings.warn("Poisson-subtracted power is below 0")
+        return 0.0, 0.0
+
+    rms = np.sqrt(total_power_sub)
+
+    high_snr_err = 0.5 / rms * total_power_err
+
+    return rms, high_snr_err
+
+
 def rms_calculation(
     unnorm_powers,
     min_freq,
@@ -1118,25 +1191,14 @@ def rms_calculation(
         The error on the fractional rms amplitude.
 
     """
-    rms_squared = (
-        np.sum((unnorm_powers - poisson_noise_unnrom) * 1 / T * K_freqs) * 2 * T / nphots**2
+    rms_norm_powers = unnorm_powers * 2 * T / nphots**2
+    rms_poisson_noise = poisson_noise_unnrom * 2 * T / nphots**2
+
+    df = 1 / T * K_freqs
+
+    rms, rms_err = get_rms_from_rms_norm_periodogram(
+        rms_norm_powers, rms_poisson_noise, df, M_freqs
     )
-
-    if rms_squared < 0.0:
-        rms_err = np.sqrt(
-            np.var((unnorm_powers - poisson_noise_unnrom) * 1 / T * K_freqs) * 2 * T / nphots**2
-        )
-        return 0.0, rms_err
-    rms = np.sqrt(rms_squared)
-
-    rms_noise_squared = (
-        poisson_noise_unnrom * (max_freq - min_freq) * 2 * T / nphots**2
-    )  # rms of the noise
-    rms_err_squared = (2 * rms_squared * rms_noise_squared + rms_noise_squared**2) / (
-        2 * np.sum(M_freqs) * freq_bins * rms_squared
-    )
-    rms_err = np.sqrt(rms_err_squared)
-
     return rms, rms_err
 
 
