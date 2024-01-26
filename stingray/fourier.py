@@ -2,6 +2,7 @@ import copy
 import warnings
 from collections.abc import Iterable
 from typing import Optional
+import logging
 
 import numpy as np
 import numpy.typing as npt
@@ -1050,7 +1051,7 @@ def estimate_intrinsic_coherence(cross_power, power1, power2, power1_noise, powe
     return new_coherence
 
 
-def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M):
+def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M, low_M_buffer_size=4):
     r"""Calculate integrated rms spectrum (frac or abs).
 
     If M=1, it starts by rebinning the powers slightly in order to get a slightly
@@ -1066,6 +1067,12 @@ def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M):
         The frequency resolution of each power
     M: int or ``np.array``, same dimension of ``power_sqrms``
         The number of powers averaged to obtain each value of power.
+
+    Other Parameters
+    ----------------
+    low_M_buffer_size : int, default 4
+        If M=1, the powers are rebinned to have a minimum of ``low_M_buffer_size`` powers
+        in each bin. This is done to get a better estimate of the error bars.
     """
     from stingray.utils import rebin_data
 
@@ -1081,21 +1088,32 @@ def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M):
         df = df[0]
         df_is_iterable = False
 
+    low_M_values = M < 30
+
+    if np.any(M < 30):
+        quantity = "Some"
+        if not m_is_iterable or np.count_nonzero(low_M_values) == M.size:
+            quantity = "All"
+        warnings.warn(
+            f"{quantity} power spectral bins have M<30. The error bars on the rms might be wrong. "
+            "In some cases one might try to increase the number of segments, for example by "
+            "reducing the segment size."
+        )
     # But they cannot be of different kind. There would be something wrong with the data
     if m_is_iterable != df_is_iterable:
         raise ValueError("M and df must be either both constant, or none of them.")
 
-    # If powers are not rebinned, we rebin them slightly. The error on the power is tricky,
+    # If powers are not rebinned and M=1, we rebin them slightly. The error on the power is tricky,
     # because powers follow a non-central chi squared distribution. If we combine powers with
     # very different underlying signal level, the error bars will be completely wrong. But
     # nearby powers have a higher chance of having similar values, and so, by combining them,
     # we have a higher chance of obtaining sensible quasi-Gaussian error bars, easier to
     # propagate through standard quadrature summation
-    if not m_is_iterable and M == 1 and power_sqrms.size > 100:
+    if not m_is_iterable and M == 1 and power_sqrms.size > low_M_buffer_size:
         _, local_power_sqrms, _, local_M = rebin_data(
             np.arange(power_sqrms.size) * df,
             power_sqrms,
-            df * 4,
+            df * low_M_buffer_size,
             yerr=None,
             method="average",
             dx=df,
