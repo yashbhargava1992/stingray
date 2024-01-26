@@ -1132,7 +1132,7 @@ def rms_calculation(
     M_freqs,
     K_freqs,
     freq_bins,
-    poisson_noise_unnrom,
+    poisson_noise_unnorm,
     deadtime=0.0,
 ):
     """
@@ -1142,7 +1142,7 @@ def rms_calculation(
 
     Parameters
     ----------
-    unnrom_powers: array of float
+    unnorm_powers: array of float
         unnormalised power or cross spectrum, the array has already been
         filtered for the given frequency range
 
@@ -1173,7 +1173,7 @@ def rms_calculation(
         if it NOT rebinned freq_bins is the number of frequency bins
         in the given frequency range.
 
-    poisson_noise_unnrom : float
+    poisson_noise_unnorm : float
         This is the Poisson noise level unnormalised.
 
     Other parameters
@@ -1192,7 +1192,7 @@ def rms_calculation(
 
     """
     rms_norm_powers = unnorm_powers * 2 * T / nphots**2
-    rms_poisson_noise = poisson_noise_unnrom * 2 * T / nphots**2
+    rms_poisson_noise = poisson_noise_unnorm * 2 * T / nphots**2
 
     df = 1 / T * K_freqs
 
