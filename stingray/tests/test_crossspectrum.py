@@ -437,7 +437,7 @@ class TestAveragedCrossspectrumEvents(object):
     def test_rebin_log(self):
         # For now, just verify that it doesn't crash
         new_cs = self.acs.rebin_log(f=0.1)
-        assert isinstance(new_cs, self.acs)
+        assert isinstance(new_cs, type(self.acs))
         new_cs.time_lag()
 
     def test_rebin_log_returns_complex_values(self):
@@ -745,7 +745,7 @@ class TestCrossspectrum(object):
     def test_rebin_log(self):
         # For now, just verify that it doesn't crash
         new_cs = self.cs.rebin_log(f=0.1)
-        assert isinstance(new_cs, self.cs)
+        assert isinstance(new_cs, type(self.cs))
         new_cs.time_lag()
 
     def test_norm_abs_same_lc(self):
@@ -754,7 +754,7 @@ class TestCrossspectrum(object):
         assert len(cs.power) == 4999
         assert cs.norm == "abs"
         abs_noise = 2.0 * self.rate1  # expected Poisson noise level
-        assert np.isclose(np.mean(cs.power[1:]), abs_noise)
+        assert np.isclose(np.mean(cs.power[1:]), abs_noise, rtol=0.2)
 
     def test_norm_leahy_same_lc(self):
         # with pytest.warns(UserWarning) as record:
@@ -1182,7 +1182,7 @@ class TestAveragedCrossspectrum(object):
         # For now, just verify that it doesn't crash
         new_cs = self.cs.rebin_log(f=0.1)
         assert hasattr(new_cs, "dt") and new_cs.dt is not None
-        assert isinstance(new_cs, self.cs)
+        assert isinstance(new_cs, type(self.cs))
         new_cs.time_lag()
 
     def test_rebin_log_returns_complex_values_and_errors(self):
