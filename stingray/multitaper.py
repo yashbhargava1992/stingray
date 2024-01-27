@@ -171,6 +171,7 @@ class Multitaper(Powerspectrum):
             self.nphots = None
             self.k = 1
             self.jk_var_deg_freedom = None
+            self.segment_size = None
             return
         elif not isinstance(data, EventList):
             lc = data
@@ -182,6 +183,7 @@ class Multitaper(Powerspectrum):
         self.power_type = "real"
         self.fullspec = False
         self.k = 1
+        self.segment_size = None
 
         self._make_multitaper_periodogram(
             lc,

@@ -149,14 +149,16 @@ class TestMultitaper(object):
 
         lc = Lightcurve(time, counts=poisson_counts, dt=1, gti=[[0, 100]])
         mtp = Multitaper(lc, norm="leahy")
-        rms_mtp_l, rms_err_l = mtp.compute_rms(
-            min_freq=mtp.freq[1], max_freq=mtp.freq[-1], poisson_noise_level=0
-        )
+        with pytest.warns(UserWarning, match="M<30"):
+            rms_mtp_l, rms_err_l = mtp.compute_rms(
+                min_freq=mtp.freq[1], max_freq=mtp.freq[-1], poisson_noise_level=0
+            )
 
         mtp = Multitaper(lc, norm="frac")
-        rms_mtp, rms_err = mtp.compute_rms(
-            min_freq=mtp.freq[1], max_freq=mtp.freq[-1], poisson_noise_level=0
-        )
+        with pytest.warns(UserWarning, match="M<30"):
+            rms_mtp, rms_err = mtp.compute_rms(
+                min_freq=mtp.freq[1], max_freq=mtp.freq[-1], poisson_noise_level=0
+            )
         assert np.allclose(rms_mtp, rms_mtp_l, atol=0.01)
         assert np.allclose(rms_err, rms_err_l, atol=0.01)
 
