@@ -75,7 +75,8 @@ class TestIO(object):
             evdata = load_events_and_gtis(fname)
         fname_unsrt = os.path.join(datadir, "monol_testA_calib_unsrt.evt")
         with pytest.warns(UserWarning, match="not sorted. Sorting them for you"):
-            evdata_unsrt = load_events_and_gtis(fname_unsrt)
+            with pytest.warns(AstropyUserWarning, match="No valid GTI extensions"):
+                evdata_unsrt = load_events_and_gtis(fname_unsrt)
 
         for attr in "ev_list", "energy_list", "pi_list":
             assert np.allclose(getattr(evdata, attr), getattr(evdata_unsrt, attr))

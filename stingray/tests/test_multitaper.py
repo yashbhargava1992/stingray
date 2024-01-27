@@ -238,14 +238,14 @@ class TestMultitaper(object):
 
     def test_get_adaptive_psd_with_less_tapers(self):
         with pytest.warns(UserWarning) as record:
-            mtp = Multitaper(lc=self.lc, NW=1.5, adaptive=True)
+            mtp = Multitaper(data=self.lc, NW=1.5, adaptive=True)
         assert np.any(["Not adaptively" in r.message.args[0] for r in record])
         assert mtp.multitaper_norm_power is not None
 
     @pytest.mark.parametrize("lombscargle", [False, True])
     def test_max_eigval_less_than_threshold(self, lombscargle):
         with pytest.warns(UserWarning) as record:
-            mtp = Multitaper(lc=self.lc, NW=0.5, low_bias=True, lombscargle=lombscargle)
+            mtp = Multitaper(data=self.lc, NW=0.5, low_bias=True, lombscargle=lombscargle)
         assert np.any(["not properly use low_bias" in r.message.args[0] for r in record])
         assert len(mtp.eigvals) > 0
 

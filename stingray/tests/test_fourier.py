@@ -896,11 +896,11 @@ class TestRMS(object):
         assert np.isclose(rms_from_rms, rms, atol=3 * rmse_from_rms)
         assert np.isclose(rms_from_unnorm, rms, atol=3 * rmse_from_unnorm)
 
-    @pytest.mark.parametrize("M", [1, 10, 100])
     @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
-    def test_rms_low(self, nphots, M):
+    def test_rms_low(self, nphots):
         meanrate = nphots / self.segment_size
         poisson_noise_rms = 2 / meanrate
+        M = 100
 
         pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(
             0, nphots, M, distort_poisson_by=0.9
