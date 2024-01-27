@@ -808,9 +808,9 @@ class TestRMS(object):
         cls.segment_size = 256
         cls.df = 1 / cls.segment_size
 
-        freqs = np.arange(cls.df, 1, cls.df)
+        cls.freqs = np.arange(cls.df, 1, cls.df)
         pds_shape_func = Lorentz1D(x_0=0, fwhm=fwhm)
-        cls.pds_shape_raw = pds_shape_func(freqs)
+        cls.pds_shape_raw = pds_shape_func(cls.freqs)
 
     @pytest.mark.parametrize("M", [100, 10000])
     @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
@@ -943,3 +943,36 @@ class TestRMS(object):
             ValueError, match="M and df must be either both constant, or none of them."
         ):
             get_rms_from_rms_norm_periodogram(pds_shape_rms, poisson_noise_rms, df, M)
+
+    def test_deprecation_rms_calculation(self):
+        nphots = 1_000_000
+        rms = 0.5
+        M = 1000
+        meanrate = nphots / self.segment_size
+        poisson_noise_rms = 2 / meanrate
+        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
+        pds_shape_rms += poisson_noise_rms
+
+        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
+        pds_rms_noisy = random_part * pds_shape_rms
+
+        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+        with pytest.warns(DeprecationWarning, match="The rms_calculation function is deprecated"):
+            rms, _ = rms_calculation(
+                pds_unnorm,
+                self.freqs.min(),
+                self.freqs.max(),
+                nphots,
+                self.segment_size,
+                M,
+                1,
+                len(self.freqs),
+                poisson_noise_unnorm=nphots,
+            )
+        rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
+            pds_unnorm,
+            nphots,
+            self.df,
+            M=M,
+        )
+        assert np.isclose(rms, rms_from_unnorm, atol=3 * rmse_from_unnorm)
