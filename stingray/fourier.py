@@ -1192,7 +1192,7 @@ def get_rms_from_unnorm_periodogram(
         return to_leahy(powers) / meanrate
 
     def to_abs(powers):
-        return to_leahy(powers) * meanrate**2
+        return to_leahy(powers) * meanrate
 
     if kind.startswith("frac"):
         to_norm = to_frac

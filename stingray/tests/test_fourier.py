@@ -853,6 +853,25 @@ class TestRMS(object):
         assert np.isclose(rms_from_rms, rms, atol=3 * rmse_from_rms)
         assert np.isclose(rms_from_unnorm, rms, atol=3 * rmse_from_unnorm)
 
+    @pytest.mark.parametrize("M", [100, 10000])
+    @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
+    @pytest.mark.parametrize("rms", [0.05, 0.1, 0.32, 0.5])
+    def test_rms_abs(self, M, nphots, rms):
+        meanrate = nphots / self.segment_size
+        poisson_noise_rms = 2 / meanrate
+        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
+        pds_shape_rms += poisson_noise_rms
+
+        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
+        pds_rms_noisy = random_part * pds_shape_rms
+
+        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+
+        rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
+            pds_unnorm, nphots, self.df, M=M, kind="abs"
+        )
+        assert np.isclose(rms_from_unnorm, rms * meanrate, atol=3 * rmse_from_unnorm * meanrate)
+
     @pytest.mark.parametrize("M", [1, 10])
     @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
     @pytest.mark.parametrize("rms", [0.05, 0.1, 0.32, 0.5])
