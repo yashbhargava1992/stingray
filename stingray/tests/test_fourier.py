@@ -947,6 +947,12 @@ class TestRMS(object):
         ):
             get_rms_from_rms_norm_periodogram(self.pds_shape_raw, 2, df, M=100)
 
+    def test_invalid_kind(self):
+        # Make df non constant
+
+        with pytest.raises(ValueError, match="Only 'frac' or 'abs' rms are supported."):
+            get_rms_from_unnorm_periodogram(self.pds_shape_raw, 2, 0.1, M=100, kind="asdfkhf")
+
     def test_deprecation_rms_calculation(self):
         nphots = 1_000_000
         rms = 0.5

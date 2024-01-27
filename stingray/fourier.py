@@ -1199,7 +1199,7 @@ def get_rms_from_unnorm_periodogram(
     elif kind.startswith("abs"):
         to_norm = to_abs
     else:
-        raise ValueError("Only fractional or absolute rms are supported.")
+        raise ValueError("Only 'frac' or 'abs' rms are supported.")
 
     poisson = to_norm(poisson_noise_unnorm)
     powers = to_norm(unnorm_powers)
