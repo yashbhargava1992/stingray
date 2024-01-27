@@ -22,6 +22,7 @@ from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
 from .fourier import avg_cs_from_events, poisson_level
 from .fourier import fftfreq, fft, normalize_periodograms, raw_coherence
 from .fourier import get_flux_iterable_from_segments, power_color
+from .fourier import get_rms_from_unnorm_periodogram
 
 from scipy.special import factorial
 
@@ -853,7 +854,7 @@ class Crossspectrum(StingrayObject):
 
         for attr in ["power", "power_err"]:
             unnorm_attr = "unnorm_" + attr
-            if not hasattr(self, unnorm_attr):
+            if not hasattr(self, unnorm_attr) or getattr(self, unnorm_attr) is None:
                 continue
             power = normalize_periodograms(
                 getattr(self, unnorm_attr),
@@ -2356,36 +2357,33 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             The error on the fractional rms amplitude.
 
         """
-        from .fourier import rms_calculation
-
         dyn_ps_unnorm = self.dyn_ps / self.unnorm_conversion
         poisson_noise_unnrom = poisson_noise_level / self.unnorm_conversion
         if not hasattr(self, "nphots"):
             nphots = (self.nphots1 * self.nphots2) ** 0.5
         else:
             nphots = self.nphots
-        T = self.dt * self.m
-        M_freqs = self.m
-        K_freqs = 1
-        minind = self.freq.searchsorted(min_freq)
-        maxind = self.freq.searchsorted(max_freq)
-        min_freq = self.freq[minind]
-        freq_bins = maxind - minind
+
+        good = (self.freq >= min_freq) & (self.freq <= max_freq)
+
+        M_freq = self.m
+        if isinstance(self.m, Iterable):
+            M_freq = self.m[good]
+
         rmss = []
         rms_errs = []
+
         for unnorm_powers in dyn_ps_unnorm.T:
-            r, re = rms_calculation(
-                unnorm_powers[minind:maxind],
-                min_freq,
-                max_freq,
+            r, re = get_rms_from_unnorm_periodogram(
+                unnorm_powers[good],
                 nphots,
-                T,
-                M_freqs,
-                K_freqs,
-                freq_bins,
-                poisson_noise_unnrom,
-                deadtime=0.0,
+                self.df,
+                M=M_freq,
+                poisson_noise_unnorm=poisson_noise_unnrom,
+                segment_size=self.segment_size,
+                kind="frac",
             )
+
             rmss.append(r)
             rms_errs.append(re)
         return rmss, rms_errs

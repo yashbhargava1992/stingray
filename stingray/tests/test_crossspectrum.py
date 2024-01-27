@@ -1417,7 +1417,9 @@ class TestDynamicalCrossspectrum(object):
         lc.counts = np.random.poisson(100000 * np.exp(-(lc.time) / 100))
 
         dps = DynamicalCrossspectrum(lc, lc, segment_size=10, norm="leahy")
-        rms, rmse = dps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+        with pytest.warns(UserWarning, match="All power spectral bins have M<30"):
+            rms, rmse = dps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+
         from stingray.powerspectrum import AveragedPowerspectrum
 
         ps = AveragedPowerspectrum()
@@ -1431,7 +1433,8 @@ class TestDynamicalCrossspectrum(object):
         ps.norm = dps.norm
         ps.k = 1
         ps.nphots = (dps.nphots1 * dps.nphots2) ** 0.5
-        rms2, rmse2 = ps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
+        with pytest.warns(UserWarning, match="All power spectral bins have M<30"):
+            rms2, rmse2 = ps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
         assert np.isclose(rms[0], rms2)
         assert np.isclose(rmse[0], rmse2, rtol=0.01)
 

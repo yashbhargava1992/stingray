@@ -1178,7 +1178,6 @@ def get_rms_from_unnorm_periodogram(
     kind : str
         One of "frac" or "abs"
     """
-
     if segment_size is None:
         segment_size = 1 / np.min(df)
 
@@ -1186,7 +1185,6 @@ def get_rms_from_unnorm_periodogram(
         poisson_noise_unnorm = nphots_per_segment
 
     meanrate = nphots_per_segment / segment_size
-    # print("new_s", meanrate, df, unnorm_powers.size)
 
     def to_leahy(powers):
         return powers * 2.0 / nphots_per_segment
