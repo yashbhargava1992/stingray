@@ -9,11 +9,11 @@ from astropy import log
 from astropy.table import Table
 
 from stingray.lightcurve import Lightcurve
-from ..crossspectrum import AveragedCrossspectrum, show_progress, get_flux_generator
+from ..crossspectrum import AveragedCrossspectrum, get_flux_generator
 from ..powerspectrum import AveragedPowerspectrum
 from ..fourier import normalize_periodograms, fft, fftfreq, positive_fft_bins
-
-from ..gti import cross_two_gtis, bin_intervals_from_gtis
+from ..utils import show_progress
+from ..gti import cross_two_gtis
 
 
 __all__ = ["calculate_FAD_correction", "get_periodograms_from_FAD_results", "FAD"]
