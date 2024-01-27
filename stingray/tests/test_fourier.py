@@ -826,19 +826,25 @@ class TestRMS(object):
         pds_shape_func = Lorentz1D(x_0=0, fwhm=fwhm)
         cls.pds_shape_raw = pds_shape_func(cls.freqs)
 
+    def _prepare_pds_for_rms_tests(self, rms, nphots, M, distort_poisson_by=1):
+        meanrate = nphots / self.segment_size
+        poisson_noise_rms = 2 / meanrate
+        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
+        pds_shape_rms += poisson_noise_rms * distort_poisson_by
+
+        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
+        pds_rms_noisy = random_part * pds_shape_rms
+
+        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+        return pds_rms_noisy, pds_unnorm
+
     @pytest.mark.parametrize("M", [100, 10000])
     @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
     @pytest.mark.parametrize("rms", [0.05, 0.1, 0.32, 0.5])
     def test_rms(self, M, nphots, rms):
         meanrate = nphots / self.segment_size
         poisson_noise_rms = 2 / meanrate
-        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
-        pds_shape_rms += poisson_noise_rms
-
-        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
-        pds_rms_noisy = random_part * pds_shape_rms
-
-        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+        pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(rms, nphots, M)
 
         rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
             pds_unnorm,
@@ -858,14 +864,7 @@ class TestRMS(object):
     @pytest.mark.parametrize("rms", [0.05, 0.1, 0.32, 0.5])
     def test_rms_abs(self, M, nphots, rms):
         meanrate = nphots / self.segment_size
-        poisson_noise_rms = 2 / meanrate
-        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
-        pds_shape_rms += poisson_noise_rms
-
-        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
-        pds_rms_noisy = random_part * pds_shape_rms
-
-        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+        _, pds_unnorm = self._prepare_pds_for_rms_tests(rms, nphots, M)
 
         rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
             pds_unnorm, nphots, self.df, M=M, kind="abs"
@@ -879,13 +878,8 @@ class TestRMS(object):
         """Test that the warning is raised when M is low."""
         meanrate = nphots / self.segment_size
         poisson_noise_rms = 2 / meanrate
-        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
-        pds_shape_rms += poisson_noise_rms
 
-        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
-        pds_rms_noisy = random_part * pds_shape_rms
-
-        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+        pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(rms, nphots, M)
 
         with pytest.warns(UserWarning, match="All power spectral bins have M<30."):
             rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
@@ -908,14 +902,9 @@ class TestRMS(object):
         meanrate = nphots / self.segment_size
         poisson_noise_rms = 2 / meanrate
 
-        pds_shape_rms = poisson_noise_rms
-
-        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
-        pds_rms_noisy = random_part * pds_shape_rms
-
-        # Make the power significantly smaller than the Poisson noise
-        pds_rms_noisy *= 0.9
-        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+        pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(
+            0, nphots, M, distort_poisson_by=0.9
+        )
 
         with pytest.warns(UserWarning, match="Poisson-subtracted power is below 0"):
             get_rms_from_unnorm_periodogram(
@@ -937,16 +926,10 @@ class TestRMS(object):
         meanrate = nphots / self.segment_size
         poisson_noise_rms = 2 / meanrate
 
-        df = np.zeros_like(self.pds_shape_raw) + self.df
+        pds_rms_noisy, _ = self._prepare_pds_for_rms_tests(rms, nphots, M)
 
-        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
-        pds_shape_rms += poisson_noise_rms
-
-        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
-        pds_rms_noisy = random_part * pds_shape_rms
-
-        M = np.zeros_like(self.pds_shape_raw) + 100
-        df = np.zeros_like(self.pds_shape_raw) + self.df
+        M = np.zeros_like(pds_rms_noisy) + 100
+        df = np.zeros_like(pds_rms_noisy) + self.df
 
         rms_from_rms, rmse_from_rms = get_rms_from_rms_norm_periodogram(
             pds_rms_noisy, poisson_noise_rms, df, M
@@ -955,19 +938,6 @@ class TestRMS(object):
         assert np.isclose(rms_from_rms, rms, atol=3 * rmse_from_rms)
 
     def test_incompatible_m_and_df(self):
-        # Very safe, high-rms dataset
-        nphots = 1_000_000
-        rms = 0.5
-        M = 1000
-
-        meanrate = nphots / self.segment_size
-        poisson_noise_rms = 2 / meanrate
-
-        df = np.zeros_like(self.pds_shape_raw) + self.df
-
-        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
-        pds_shape_rms += poisson_noise_rms
-
         # Make df non constant
         df = np.zeros_like(self.pds_shape_raw) + self.df
         df[-1] = 2 * self.df
@@ -975,21 +945,13 @@ class TestRMS(object):
         with pytest.raises(
             ValueError, match="M and df must be either both constant, or none of them."
         ):
-            get_rms_from_rms_norm_periodogram(pds_shape_rms, poisson_noise_rms, df, M)
+            get_rms_from_rms_norm_periodogram(self.pds_shape_raw, 2, df, M=100)
 
     def test_deprecation_rms_calculation(self):
         nphots = 1_000_000
         rms = 0.5
         M = 1000
-        meanrate = nphots / self.segment_size
-        poisson_noise_rms = 2 / meanrate
-        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
-        pds_shape_rms += poisson_noise_rms
-
-        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
-        pds_rms_noisy = random_part * pds_shape_rms
-
-        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+        _, pds_unnorm = self._prepare_pds_for_rms_tests(rms, nphots, M)
         with pytest.warns(DeprecationWarning, match="The rms_calculation function is deprecated"):
             rms, _ = rms_calculation(
                 pds_unnorm,
