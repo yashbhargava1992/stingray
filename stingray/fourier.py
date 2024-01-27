@@ -2,7 +2,6 @@ import copy
 import warnings
 from collections.abc import Iterable
 from typing import Optional
-import logging
 
 import numpy as np
 import numpy.typing as npt
@@ -1792,7 +1791,7 @@ def avg_cs_from_iterables_quick(flux_iterable1, flux_iterable2, dt, norm="frac")
 
     """
     # Initialize stuff
-    unnorm_cross = unnorm_pds1 = unnorm_pds2 = None
+    unnorm_cross = None
     n_ave = 0
 
     sum_of_photons1 = sum_of_photons2 = 0

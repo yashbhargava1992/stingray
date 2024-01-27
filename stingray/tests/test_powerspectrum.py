@@ -2,34 +2,19 @@ import os
 import numpy as np
 import copy
 import warnings
+import importlib
 
 import pytest
 import matplotlib.pyplot as plt
 from astropy.io import fits
-from astropy.table import Table
 from stingray import Lightcurve
 from stingray.events import EventList
 from stingray import Powerspectrum, AveragedPowerspectrum, DynamicalPowerspectrum
 from astropy.modeling.models import Lorentz1D
 
-_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
-
-try:
-    import xarray
-    from xarray import Dataset
-except ImportError:
-    _HAS_XARRAY = False
-
-try:
-    import pandas
-    from pandas import DataFrame
-except ImportError:
-    _HAS_PANDAS = False
-
-try:
-    import h5py
-except ImportError:
-    _HAS_H5PY = False
+_HAS_XARRAY = importlib.util.find_spec("xarray") is not None
+_HAS_PANDAS = importlib.util.find_spec("pandas") is not None
+_HAS_H5PY = importlib.util.find_spec("h5py") is not None
 
 
 def clear_all_figs():

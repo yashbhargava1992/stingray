@@ -1,9 +1,23 @@
 import os
-from pickle import FALSE
 
+from collections.abc import Iterable
 import pytest
+import numpy as np
+from astropy.table import Table
 
-from stingray.fourier import *
+from stingray.fourier import fft, fftfreq, normalize_abs, normalize_frac, poisson_level
+from stingray.fourier import (
+    get_flux_iterable_from_segments,
+    avg_pds_from_events,
+    avg_cs_from_events,
+)
+from stingray.fourier import normalize_periodograms, raw_coherence, estimate_intrinsic_coherence
+from stingray.fourier import bias_term, error_on_averaged_cross_spectrum, unnormalize_periodograms
+from stingray.fourier import impose_symmetry_lsft, lsft_slow, lsft_fast, rms_calculation
+from stingray.fourier import get_average_ctrate, normalize_leahy_from_variance
+from stingray.fourier import integrate_power_in_frequency_range, power_color, hue_from_power_color
+from stingray.fourier import get_rms_from_rms_norm_periodogram, get_rms_from_unnorm_periodogram
+
 from stingray.utils import check_allclose_and_print
 from astropy.modeling.models import Lorentz1D
 

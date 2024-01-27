@@ -1,4 +1,5 @@
 import os
+import importlib
 import numpy as np
 import pytest
 import warnings
@@ -7,34 +8,20 @@ import scipy.special
 from astropy.io import fits
 from stingray import Lightcurve
 from stingray import Crossspectrum, AveragedCrossspectrum, DynamicalCrossspectrum
+from stingray import AveragedPowerspectrum
 from stingray.crossspectrum import cospectra_pvalue
 from stingray.crossspectrum import normalize_crossspectrum, normalize_crossspectrum_gauss
 from stingray.crossspectrum import coherence, time_lag
 from stingray import StingrayError
 from stingray.simulator import Simulator
-from stingray.fourier import poisson_level, raw_coherence
+from stingray.fourier import poisson_level
 
 from stingray.events import EventList
 import copy
 
-_HAS_XARRAY = _HAS_PANDAS = _HAS_H5PY = True
-
-try:
-    import xarray
-    from xarray import Dataset
-except ImportError:
-    _HAS_XARRAY = False
-
-try:
-    import pandas
-    from pandas import DataFrame
-except ImportError:
-    _HAS_PANDAS = False
-
-try:
-    import h5py
-except ImportError:
-    _HAS_H5PY = False
+_HAS_XARRAY = importlib.util.find_spec("xarray") is not None
+_HAS_PANDAS = importlib.util.find_spec("pandas") is not None
+_HAS_H5PY = importlib.util.find_spec("h5py") is not None
 
 np.random.seed(20160528)
 curdir = os.path.abspath(os.path.dirname(__file__))
@@ -450,7 +437,7 @@ class TestAveragedCrossspectrumEvents(object):
     def test_rebin_log(self):
         # For now, just verify that it doesn't crash
         new_cs = self.acs.rebin_log(f=0.1)
-        assert type(new_cs) == type(self.acs)
+        assert isinstance(new_cs, self.acs)
         new_cs.time_lag()
 
     def test_rebin_log_returns_complex_values(self):
@@ -758,10 +745,10 @@ class TestCrossspectrum(object):
     def test_rebin_log(self):
         # For now, just verify that it doesn't crash
         new_cs = self.cs.rebin_log(f=0.1)
-        assert type(new_cs) == type(self.cs)
+        assert isinstance(new_cs, self.cs)
         new_cs.time_lag()
 
-    def test_norm_abs(self):
+    def test_norm_abs_same_lc(self):
         # Testing for a power spectrum of lc1
         cs = Crossspectrum(self.lc1, self.lc1, norm="abs")
         assert len(cs.power) == 4999
@@ -769,7 +756,7 @@ class TestCrossspectrum(object):
         abs_noise = 2.0 * self.rate1  # expected Poisson noise level
         assert np.isclose(np.mean(cs.power[1:]), abs_noise)
 
-    def test_norm_leahy(self):
+    def test_norm_leahy_same_lc(self):
         # with pytest.warns(UserWarning) as record:
         cs = Crossspectrum(self.lc1, self.lc1, norm="leahy")
         assert len(cs.power) == 4999
@@ -777,7 +764,7 @@ class TestCrossspectrum(object):
         leahy_noise = 2.0  # expected Poisson noise level
         assert np.isclose(np.mean(cs.power[1:]), leahy_noise, rtol=0.02)
 
-    def test_norm_frac(self):
+    def test_norm_frac_same_lc(self):
         with pytest.warns(UserWarning) as record:
             cs = Crossspectrum(self.lc1, self.lc1, norm="frac")
         assert len(cs.power) == 4999
@@ -963,8 +950,8 @@ class TestCrossspectrum(object):
 
     def test_fullspec(self):
         csT = Crossspectrum(self.lc1, self.lc2, fullspec=True)
-        assert csT.fullspec == True
-        assert self.cs.fullspec == False
+        assert csT.fullspec is True
+        assert self.cs.fullspec is False
         assert csT.n == self.cs.n
         assert csT.n == len(csT.power)
         assert self.cs.n != len(self.cs.power)
@@ -1195,7 +1182,7 @@ class TestAveragedCrossspectrum(object):
         # For now, just verify that it doesn't crash
         new_cs = self.cs.rebin_log(f=0.1)
         assert hasattr(new_cs, "dt") and new_cs.dt is not None
-        assert type(new_cs) == type(self.cs)
+        assert isinstance(new_cs, self.cs)
         new_cs.time_lag()
 
     def test_rebin_log_returns_complex_values_and_errors(self):
@@ -1419,8 +1406,6 @@ class TestDynamicalCrossspectrum(object):
         dps = DynamicalCrossspectrum(lc, lc, segment_size=10, norm="leahy")
         with pytest.warns(UserWarning, match="All power spectral bins have M<30"):
             rms, rmse = dps.compute_rms(1 / 5, 16.0, poisson_noise_level=2)
-
-        from stingray.powerspectrum import AveragedPowerspectrum
 
         ps = AveragedPowerspectrum()
         ps.freq = dps.freq

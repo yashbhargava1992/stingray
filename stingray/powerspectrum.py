@@ -1,4 +1,3 @@
-import copy
 import warnings
 from collections.abc import Generator, Iterable
 
@@ -17,14 +16,8 @@ from .lightcurve import Lightcurve
 from .fourier import avg_pds_from_iterable, unnormalize_periodograms
 from .fourier import avg_pds_from_events
 from .fourier import get_flux_iterable_from_segments
-from .fourier import rms_calculation, poisson_level
-
-try:
-    from tqdm import tqdm as show_progress
-except ImportError:
-
-    def show_progress(a, **kwargs):
-        return a
+from .fourier import poisson_level
+from .fourier import get_rms_from_unnorm_periodogram
 
 
 __all__ = ["Powerspectrum", "AveragedPowerspectrum", "DynamicalPowerspectrum"]
@@ -193,8 +186,6 @@ class Powerspectrum(Crossspectrum):
         K_freq = self.k
         if isinstance(self.m, Iterable):
             K_freq = self.k[good]
-
-        from .fourier import get_rms_from_unnorm_periodogram
 
         if poisson_noise_level is None:
             poisson_noise_unnorm = poisson_level("none", n_ph=self.nphots)

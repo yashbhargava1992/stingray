@@ -6,21 +6,18 @@ import numpy as np
 import scipy
 import scipy.optimize
 import scipy.stats
-from astropy import log
 import matplotlib.pyplot as plt
 
 from stingray.exceptions import StingrayError
-from stingray.gti import bin_intervals_from_gtis, check_gtis, cross_two_gtis
 from stingray.utils import rebin_data, rebin_data_log, simon
 
 from .base import StingrayObject
 from .events import EventList
 from .gti import cross_two_gtis, time_intervals_from_gtis
 from .lightcurve import Lightcurve
-from .utils import show_progress
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
 from .fourier import avg_cs_from_events, poisson_level
-from .fourier import fftfreq, fft, normalize_periodograms, raw_coherence
+from .fourier import normalize_periodograms, raw_coherence
 from .fourier import get_flux_iterable_from_segments, power_color
 from .fourier import get_rms_from_unnorm_periodogram
 
