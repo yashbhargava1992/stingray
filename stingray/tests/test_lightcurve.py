@@ -1643,17 +1643,24 @@ class TestBexvar(object):
     @pytest.mark.skipif("not _HAS_ULTRANEST")
     def test_bexvar_with_dt_as_array(self):
         # create lightcurve with ``dt`` as an array
-        lc = Lightcurve(
-            time=self.time,
-            counts=self.src_counts,
-            dt=self.time_delta,
-            gti=[[self.time[0], self.time[-1]]],
-            bg_counts=self.bg_counts,
-            bg_ratio=self.bg_ratio,
-            frac_exp=self.frac_exp,
-            skip_checks=True,
+        with pytest.warns(UserWarning) as record:
+            lc = Lightcurve(
+                time=self.time,
+                counts=self.src_counts,
+                dt=self.time_delta,
+                gti=[[self.time[0], self.time[-1]]],
+                bg_counts=self.bg_counts,
+                bg_ratio=self.bg_ratio,
+                frac_exp=self.frac_exp,
+                skip_checks=True,
+            )
+        assert np.any(
+            [
+                "Some functionalities of Stingray Lightcurve will not work when `dt` is Iterable"
+                in str(r.message)
+                for r in record
+            ]
         )
-
         # provide time intervals externally to find bexvar
         log_cr_sigma_from_method = lc.bexvar()
         log_cr_sigma_result = np.load(self.fname_result, allow_pickle=True)[1]
