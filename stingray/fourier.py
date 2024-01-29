@@ -1050,6 +1050,163 @@ def estimate_intrinsic_coherence(cross_power, power1, power2, power1_noise, powe
     return new_coherence
 
 
+def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M, low_M_buffer_size=4):
+    r"""Calculate integrated rms spectrum (frac or abs).
+
+    If M=1, it starts by rebinning the powers slightly in order to get a slightly
+    better approximation for the error bars.
+
+    Parameters
+    ----------
+    power_sqrms: array-like
+        Powers, in units of fractional rms ($(rms/mean)^2 Hz{-1}$)
+    poisson_noise_sqrms: float
+        Poisson noise level, in units of fractional rms ($(rms/mean)^2 Hz{-1}$
+    df: float or ``np.array``, same dimension of ``power_sqrms``
+        The frequency resolution of each power
+    M: int or ``np.array``, same dimension of ``power_sqrms``
+        The number of powers averaged to obtain each value of power.
+
+    Other Parameters
+    ----------------
+    low_M_buffer_size : int, default 4
+        If M=1, the powers are rebinned to have a minimum of ``low_M_buffer_size`` powers
+        in each bin. This is done to get a better estimate of the error bars.
+    """
+    from stingray.utils import rebin_data
+
+    m_is_iterable = isinstance(M, Iterable)
+    df_is_iterable = isinstance(df, Iterable)
+
+    # if M is an iterable but all values are the same, let's simplify
+    if m_is_iterable and len(list(set(M))) == 1:
+        M = M[0]
+        m_is_iterable = False
+    # the same with df
+    if df_is_iterable and len(list(set(df))) == 1:
+        df = df[0]
+        df_is_iterable = False
+
+    low_M_values = M < 30
+
+    if np.any(M < 30):
+        quantity = "Some"
+        if not m_is_iterable or np.count_nonzero(low_M_values) == M.size:
+            quantity = "All"
+        warnings.warn(
+            f"{quantity} power spectral bins have M<30. The error bars on the rms might be wrong. "
+            "In some cases one might try to increase the number of segments, for example by "
+            "reducing the segment size, in order to obtain at least 30 segments."
+        )
+    # But they cannot be of different kind. There would be something wrong with the data
+    if m_is_iterable != df_is_iterable:
+        raise ValueError("M and df must be either both constant, or none of them.")
+
+    # If powers are not rebinned and M=1, we rebin them slightly. The error on the power is tricky,
+    # because powers follow a non-central chi squared distribution. If we combine powers with
+    # very different underlying signal level, the error bars will be completely wrong. But
+    # nearby powers have a higher chance of having similar values, and so, by combining them,
+    # we have a higher chance of obtaining sensible quasi-Gaussian error bars, easier to
+    # propagate through standard quadrature summation
+    if not m_is_iterable and M == 1 and power_sqrms.size > low_M_buffer_size:
+        _, local_power_sqrms, _, local_M = rebin_data(
+            np.arange(power_sqrms.size) * df,
+            power_sqrms,
+            df * low_M_buffer_size,
+            yerr=None,
+            method="average",
+            dx=df,
+        )
+        local_df = df * local_M
+        total_local_powers = local_M * local_power_sqrms.size
+        total_power_err = np.sqrt(np.sum(local_power_sqrms**2 * local_df**2 / local_M))
+        total_power_err *= power_sqrms.size / total_local_powers
+    else:
+        total_power_err = np.sqrt(np.sum(power_sqrms**2 * df**2 / M))
+
+    powers_sub = power_sqrms - poisson_noise_sqrms
+
+    total_power_sub = np.sum(powers_sub * df)
+
+    if total_power_sub < 0:
+        # By the definition, it makes no sense to define an error bar here.
+        warnings.warn("Poisson-subtracted power is below 0")
+        return 0.0, 0.0
+
+    rms = np.sqrt(total_power_sub)
+
+    high_snr_err = 0.5 / rms * total_power_err
+
+    return rms, high_snr_err
+
+
+def get_rms_from_unnorm_periodogram(
+    unnorm_powers,
+    nphots_per_segment,
+    df,
+    M=1,
+    poisson_noise_unnorm=None,
+    segment_size=None,
+    kind="frac",
+):
+    """Calculate the fractional rms amplitude from unnormalized powers.
+
+    We assume the powers come from an unnormalized Bartlett periodogram.
+    If so, the Poisson noise level is ``nphots_per_segment``, but the user
+    can specify otherwise (e.g. if the Poisson noise level is altered by dead time).
+    The ``segment_size`` and ``nphots_per_segment`` parameters refer to the length
+    and averaged counts of each segment of data used for the Bartlett periodogram.
+
+    Parameters
+    ----------
+    unnorm_powers : np.ndarray
+        The unnormalized power spectrum
+    nphots_per_segment : float
+        The averaged number of photons per segment of the data used for the Bartlett periodogram
+    df : float
+        The frequency resolution of the periodogram
+
+    Other parameters
+    ----------------
+    poisson_noise_unnorm : float
+        The unnormalized Poisson noise level
+    segment_size : float
+        The size of the segment, in seconds
+    M : int
+        The number of segments averaged to obtain the periodogram
+    kind : str
+        One of "frac" or "abs"
+    """
+    if segment_size is None:
+        segment_size = 1 / np.min(df)
+
+    if poisson_noise_unnorm is None:
+        poisson_noise_unnorm = nphots_per_segment
+
+    meanrate = nphots_per_segment / segment_size
+
+    def to_leahy(powers):
+        return powers * 2.0 / nphots_per_segment
+
+    def to_frac(powers):
+        return to_leahy(powers) / meanrate
+
+    def to_abs(powers):
+        return to_leahy(powers) * meanrate
+
+    if kind.startswith("frac"):
+        to_norm = to_frac
+    elif kind.startswith("abs"):
+        to_norm = to_abs
+    else:
+        raise ValueError("Only 'frac' or 'abs' rms are supported.")
+
+    poisson = to_norm(poisson_noise_unnorm)
+    powers = to_norm(unnorm_powers)
+
+    return get_rms_from_rms_norm_periodogram(powers, poisson, df, M)
+
+
 def rms_calculation(
     unnorm_powers,
     min_freq,
@@ -1059,7 +1216,7 @@ def rms_calculation(
     M_freqs,
     K_freqs,
     freq_bins,
-    poisson_noise_unnrom,
+    poisson_noise_unnorm,
     deadtime=0.0,
 ):
     """
@@ -1069,7 +1226,7 @@ def rms_calculation(
 
     Parameters
     ----------
-    unnrom_powers: array of float
+    unnorm_powers: array of float
         unnormalised power or cross spectrum, the array has already been
         filtered for the given frequency range
 
@@ -1100,7 +1257,7 @@ def rms_calculation(
         if it NOT rebinned freq_bins is the number of frequency bins
         in the given frequency range.
 
-    poisson_noise_unnrom : float
+    poisson_noise_unnorm : float
         This is the Poisson noise level unnormalised.
 
     Other parameters
@@ -1118,25 +1275,18 @@ def rms_calculation(
         The error on the fractional rms amplitude.
 
     """
-    rms_squared = (
-        np.sum((unnorm_powers - poisson_noise_unnrom) * 1 / T * K_freqs) * 2 * T / nphots**2
+    warnings.warn(
+        "The rms_calculation function is deprecated. Use get_rms_from_unnorm_periodogram instead.",
+        DeprecationWarning,
     )
+    rms_norm_powers = unnorm_powers * 2 * T / nphots**2
+    rms_poisson_noise = poisson_noise_unnorm * 2 * T / nphots**2
 
-    if rms_squared < 0.0:
-        rms_err = np.sqrt(
-            np.var((unnorm_powers - poisson_noise_unnrom) * 1 / T * K_freqs) * 2 * T / nphots**2
-        )
-        return 0.0, rms_err
-    rms = np.sqrt(rms_squared)
+    df = 1 / T * K_freqs
 
-    rms_noise_squared = (
-        poisson_noise_unnrom * (max_freq - min_freq) * 2 * T / nphots**2
-    )  # rms of the noise
-    rms_err_squared = (2 * rms_squared * rms_noise_squared + rms_noise_squared**2) / (
-        2 * np.sum(M_freqs) * freq_bins * rms_squared
+    rms, rms_err = get_rms_from_rms_norm_periodogram(
+        rms_norm_powers, rms_poisson_noise, df, M_freqs
     )
-    rms_err = np.sqrt(rms_err_squared)
-
     return rms, rms_err
 
 
@@ -1641,7 +1791,7 @@ def avg_cs_from_iterables_quick(flux_iterable1, flux_iterable2, dt, norm="frac")
 
     """
     # Initialize stuff
-    unnorm_cross = unnorm_pds1 = unnorm_pds2 = None
+    unnorm_cross = None
     n_ave = 0
 
     sum_of_photons1 = sum_of_photons2 = 0

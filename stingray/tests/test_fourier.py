@@ -1,13 +1,31 @@
 import os
-from pickle import FALSE
 
+from collections.abc import Iterable
 import pytest
+import numpy as np
+from astropy.table import Table
 
-from stingray.fourier import *
+from stingray.fourier import fft, fftfreq, normalize_abs, normalize_frac, poisson_level
+from stingray.fourier import (
+    get_flux_iterable_from_segments,
+    avg_pds_from_events,
+    avg_cs_from_events,
+)
+from stingray.fourier import normalize_periodograms, raw_coherence, estimate_intrinsic_coherence
+from stingray.fourier import bias_term, error_on_averaged_cross_spectrum, unnormalize_periodograms
+from stingray.fourier import impose_symmetry_lsft, lsft_slow, lsft_fast, rms_calculation
+from stingray.fourier import get_average_ctrate, normalize_leahy_from_variance
+from stingray.fourier import integrate_power_in_frequency_range, power_color, hue_from_power_color
+from stingray.fourier import get_rms_from_rms_norm_periodogram, get_rms_from_unnorm_periodogram
+
 from stingray.utils import check_allclose_and_print
+from astropy.modeling.models import Lorentz1D
 
 curdir = os.path.abspath(os.path.dirname(__file__))
 datadir = os.path.join(curdir, "data")
+
+
+rng = np.random.RandomState(137259723)
 
 
 def compare_tables(table1, table2, rtol=0.001, discard=[]):
@@ -36,7 +54,7 @@ def test_norm():
     N = 1000000
     dt = 0.2
     meanrate = mean / dt
-    lc = np.random.poisson(mean, N)
+    lc = rng.poisson(mean, N)
     pds = np.abs(fft(lc)) ** 2
     freq = fftfreq(N, dt)
     good = slice(1, N // 2)
@@ -99,8 +117,8 @@ class TestCoherence(object):
             Table.read(os.path.join(datadir, "sample_variable_series.fits"))["data"][:10000] * 1000
         )
         print(data.max(), data.min())
-        cls.data1 = np.random.poisson(data)
-        cls.data2 = np.random.poisson(data)
+        cls.data1 = rng.poisson(data)
+        cls.data2 = rng.poisson(data)
         ft1 = np.fft.fft(cls.data1)
         ft2 = np.fft.fft(cls.data2)
         dt = 0.01
@@ -138,7 +156,7 @@ class TestCoherence(object):
         C, P1, P2 = self.cross[:nbins], self.pds1[:nbins], self.pds2[:nbins]
         bsq = bias_term(P1, P2, self.p1noise, self.p2noise, self.N)
         # must be lower than bsq!
-        low_coh_cross = np.random.normal(bsq**0.5 / 10, bsq**0.5 / 100) + 0.0j
+        low_coh_cross = rng.normal(bsq**0.5 / 10, bsq**0.5 / 100) + 0.0j
         coh = raw_coherence(low_coh_cross, P1, P2, self.p1noise, self.p2noise, self.N)
         assert np.allclose(coh, 0)
         # Do it with a single number
@@ -176,13 +194,13 @@ class TestFourier(object):
         cls.ctrate = 10000
         cls.N = np.rint(cls.length / cls.dt).astype(int)
         cls.dt = cls.length / cls.N
-        cls.times = np.sort(np.random.uniform(0, cls.length, int(cls.length * cls.ctrate)))
+        cls.times = np.sort(rng.uniform(0, cls.length, int(cls.length * cls.ctrate)))
         cls.gti = np.asarray([[0, cls.length]])
         cls.counts, bins = np.histogram(cls.times, bins=np.linspace(0, cls.length, cls.N + 1))
         cls.errs = np.ones_like(cls.counts) * np.sqrt(cls.ctrate)
         cls.bin_times = (bins[:-1] + bins[1:]) / 2
         cls.segment_size = 5.0
-        cls.times2 = np.sort(np.random.uniform(0, cls.length, int(cls.length * cls.ctrate)))
+        cls.times2 = np.sort(rng.uniform(0, cls.length, int(cls.length * cls.ctrate)))
         cls.counts2, _ = np.histogram(cls.times2, bins=np.linspace(0, cls.length, cls.N + 1))
         cls.errs2 = np.ones_like(cls.counts2) * np.sqrt(cls.ctrate)
 
@@ -225,15 +243,15 @@ class TestFourier(object):
             assert np.allclose(fe, fc)
 
     def test_avg_pds_bad_input(self):
-        times = np.sort(np.random.uniform(0, 1000, 1))
+        times = np.sort(rng.uniform(0, 1000, 1))
         out_ev = avg_pds_from_events(times, self.gti, self.segment_size, self.dt)
         assert out_ev is None
 
     @pytest.mark.parametrize("return_subcs", [True, False])
     @pytest.mark.parametrize("return_auxil", [True, False])
     def test_avg_cs_bad_input(self, return_auxil, return_subcs):
-        times1 = np.sort(np.random.uniform(0, 1000, 1))
-        times2 = np.sort(np.random.uniform(0, 1000, 1))
+        times1 = np.sort(rng.uniform(0, 1000, 1))
+        times2 = np.sort(rng.uniform(0, 1000, 1))
         out_ev = avg_cs_from_events(
             times1,
             times2,
@@ -443,7 +461,7 @@ class TestNorms(object):
         good = freq > 0
         cls.good = good
         cls.meanrate = cls.mean / cls.dt
-        cls.lc = np.random.poisson(cls.mean, cls.N).astype(float)
+        cls.lc = rng.poisson(cls.mean, cls.N).astype(float)
         cls.nph = np.sum(cls.lc)
         cls.pds = (np.abs(np.fft.fft(cls.lc)) ** 2)[good]
         cls.cross = ((np.fft.fft(cls.lc)) ** 2)[good]
@@ -624,7 +642,7 @@ def test_lags(phlag):
     def func(time, phase=0):
         return 2 + np.sin(2 * np.pi * (time * freq - phase))
 
-    time = np.sort(np.random.uniform(0, 100, 3000))
+    time = np.sort(rng.uniform(0, 100, 3000))
     ft0 = lsft_slow(func(time, 0), time, np.array([freq]))
     ft1 = lsft_slow(func(time, phlag), time, np.array([freq]))
     measured_lag = (np.angle(ft1) - np.angle(ft0)) / 2 / np.pi
@@ -787,7 +805,7 @@ class TestPowerColor(object):
         center = (4.51920, 0.453724)
         log_center = np.log10(np.asarray(center))
         for angle in np.radians(np.arange(0, 380, 20)):
-            factor = np.random.uniform(0.1, 10)
+            factor = rng.uniform(0.1, 10)
             x = factor * np.cos(3 / 4 * np.pi - angle) + log_center[0]
             y = factor * np.sin(3 / 4 * np.pi - angle) + log_center[1]
             hue = hue_from_power_color(10**x, 10**y, center)
@@ -795,3 +813,175 @@ class TestPowerColor(object):
             c2 = (np.sin(hue) - np.sin(angle)) ** 2 + (np.cos(hue) - np.cos(angle)) ** 2
             angle_diff = np.arccos((2.0 - c2) / 2.0)
             assert np.isclose(angle_diff, 0, atol=0.001)
+
+
+class TestRMS(object):
+    @classmethod
+    def setup_class(cls):
+        fwhm = 0.23456
+        cls.segment_size = 256
+        cls.df = 1 / cls.segment_size
+
+        cls.freqs = np.arange(cls.df, 1.54232, cls.df)
+        pds_shape_func = Lorentz1D(x_0=0, fwhm=fwhm)
+        cls.pds_shape_raw = pds_shape_func(cls.freqs)
+
+        pds_shape_func_qpo = Lorentz1D(x_0=0, fwhm=0.312567) + Lorentz1D(x_0=0.5, fwhm=0.1)
+        cls.pds_shape_qpo_raw = pds_shape_func_qpo(cls.freqs)
+
+    def _prepare_pds_for_rms_tests(self, rms, nphots, M, distort_poisson_by=1, with_qpo=False):
+        meanrate = nphots / self.segment_size
+        poisson_noise_rms = 2 / meanrate
+        pds_shape = self.pds_shape_raw if not with_qpo else self.pds_shape_qpo_raw
+
+        pds_shape_rms = pds_shape / np.sum(pds_shape * self.df) * rms**2
+        pds_shape_rms += poisson_noise_rms * distort_poisson_by
+
+        random_part = rng.chisquare(2 * M, size=pds_shape.size) / 2 / M
+        pds_rms_noisy = random_part * pds_shape_rms
+
+        pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
+        return pds_rms_noisy, pds_unnorm
+
+    @pytest.mark.parametrize("M", [100, 10000])
+    @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
+    @pytest.mark.parametrize("rms", [0.05, 0.1, 0.32, 0.5])
+    @pytest.mark.parametrize("with_qpo", [False, True])
+    def test_rms(self, M, nphots, rms, with_qpo):
+        meanrate = nphots / self.segment_size
+        poisson_noise_rms = 2 / meanrate
+        pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(
+            rms, nphots, M, with_qpo=with_qpo
+        )
+
+        rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
+            pds_unnorm,
+            nphots,
+            self.df,
+            M=M,
+        )
+        rms_from_rms, rmse_from_rms = get_rms_from_rms_norm_periodogram(
+            pds_rms_noisy, poisson_noise_rms, self.df, M
+        )
+
+        assert np.isclose(rms_from_rms, rms, atol=3 * rmse_from_rms)
+        assert np.isclose(rms_from_unnorm, rms, atol=3 * rmse_from_unnorm)
+
+    @pytest.mark.parametrize("M", [100, 10000])
+    @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
+    @pytest.mark.parametrize("rms", [0.05, 0.1, 0.32, 0.5])
+    def test_rms_abs(self, M, nphots, rms):
+        meanrate = nphots / self.segment_size
+        _, pds_unnorm = self._prepare_pds_for_rms_tests(rms, nphots, M)
+
+        rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
+            pds_unnorm, nphots, self.df, M=M, kind="abs"
+        )
+        assert np.isclose(rms_from_unnorm, rms * meanrate, atol=3 * rmse_from_unnorm * meanrate)
+
+    @pytest.mark.parametrize("M", [1, 10])
+    @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
+    @pytest.mark.parametrize("rms", [0.05, 0.1, 0.32, 0.5])
+    def test_rms_M_low(self, M, nphots, rms):
+        """Test that the warning is raised when M is low."""
+        meanrate = nphots / self.segment_size
+        poisson_noise_rms = 2 / meanrate
+
+        pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(rms, nphots, M)
+
+        with pytest.warns(UserWarning, match="All power spectral bins have M<30."):
+            rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
+                pds_unnorm,
+                nphots,
+                self.df,
+                M=M,
+            )
+        with pytest.warns(UserWarning, match="All power spectral bins have M<30."):
+            rms_from_rms, rmse_from_rms = get_rms_from_rms_norm_periodogram(
+                pds_rms_noisy, poisson_noise_rms, self.df, M
+            )
+
+        assert np.isclose(rms_from_rms, rms, atol=3 * rmse_from_rms)
+        assert np.isclose(rms_from_unnorm, rms, atol=3 * rmse_from_unnorm)
+
+    @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
+    def test_rms_low(self, nphots):
+        meanrate = nphots / self.segment_size
+        poisson_noise_rms = 2 / meanrate
+        M = 100
+
+        pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(
+            0, nphots, M, distort_poisson_by=0.9
+        )
+
+        with pytest.warns(UserWarning, match="Poisson-subtracted power is below 0"):
+            get_rms_from_unnorm_periodogram(
+                pds_unnorm,
+                nphots,
+                self.df,
+                M=M,
+                kind="frac",
+            )
+        with pytest.warns(UserWarning, match="Poisson-subtracted power is below 0"):
+            get_rms_from_rms_norm_periodogram(pds_rms_noisy, poisson_noise_rms, self.df, M)
+
+    def test_array_m_and_df(self):
+        # Very safe, high-rms dataset
+        nphots = 1_000_000
+        rms = 0.5
+        M = 1000
+
+        meanrate = nphots / self.segment_size
+        poisson_noise_rms = 2 / meanrate
+
+        pds_rms_noisy, _ = self._prepare_pds_for_rms_tests(rms, nphots, M)
+
+        M = np.zeros_like(pds_rms_noisy) + 100
+        df = np.zeros_like(pds_rms_noisy) + self.df
+
+        rms_from_rms, rmse_from_rms = get_rms_from_rms_norm_periodogram(
+            pds_rms_noisy, poisson_noise_rms, df, M
+        )
+
+        assert np.isclose(rms_from_rms, rms, atol=3 * rmse_from_rms)
+
+    def test_incompatible_m_and_df(self):
+        # Make df non constant
+        df = np.zeros_like(self.pds_shape_raw) + self.df
+        df[-1] = 2 * self.df
+
+        with pytest.raises(
+            ValueError, match="M and df must be either both constant, or none of them."
+        ):
+            get_rms_from_rms_norm_periodogram(self.pds_shape_raw, 2, df, M=100)
+
+    def test_invalid_kind(self):
+        # Make df non constant
+
+        with pytest.raises(ValueError, match="Only 'frac' or 'abs' rms are supported."):
+            get_rms_from_unnorm_periodogram(self.pds_shape_raw, 2, 0.1, M=100, kind="asdfkhf")
+
+    def test_deprecation_rms_calculation(self):
+        nphots = 1_000_000
+        rms = 0.5
+        M = 1000
+        _, pds_unnorm = self._prepare_pds_for_rms_tests(rms, nphots, M)
+        with pytest.warns(DeprecationWarning, match="The rms_calculation function is deprecated"):
+            rms, _ = rms_calculation(
+                pds_unnorm,
+                self.freqs.min(),
+                self.freqs.max(),
+                nphots,
+                self.segment_size,
+                M,
+                1,
+                len(self.freqs),
+                poisson_noise_unnorm=nphots,
+            )
+        rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
+            pds_unnorm,
+            nphots,
+            self.df,
+            M=M,
+        )
+        assert np.isclose(rms, rms_from_unnorm, atol=3 * rmse_from_unnorm)
