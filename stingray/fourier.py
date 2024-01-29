@@ -1096,7 +1096,7 @@ def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M, l
         warnings.warn(
             f"{quantity} power spectral bins have M<30. The error bars on the rms might be wrong. "
             "In some cases one might try to increase the number of segments, for example by "
-            "reducing the segment size."
+            "reducing the segment size, in order to obtain at least 30 segments."
         )
     # But they cannot be of different kind. There would be something wrong with the data
     if m_is_iterable != df_is_iterable:
