@@ -179,13 +179,13 @@ class Powerspectrum(Crossspectrum):
         good = (self.freq >= min_freq) & (self.freq <= max_freq)
 
         M_freq = self.m
+        K_freq = self.k
+
+        if isinstance(self.k, Iterable):
+            K_freq = self.k[good]
 
         if isinstance(self.m, Iterable):
             M_freq = self.m[good]
-
-        K_freq = self.k
-        if isinstance(self.m, Iterable):
-            K_freq = self.k[good]
 
         if poisson_noise_level is None:
             poisson_noise_unnorm = poisson_level("none", n_ph=self.nphots)
