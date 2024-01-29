@@ -822,17 +822,22 @@ class TestRMS(object):
         cls.segment_size = 256
         cls.df = 1 / cls.segment_size
 
-        cls.freqs = np.arange(cls.df, 1, cls.df)
+        cls.freqs = np.arange(cls.df, 1.54232, cls.df)
         pds_shape_func = Lorentz1D(x_0=0, fwhm=fwhm)
         cls.pds_shape_raw = pds_shape_func(cls.freqs)
 
-    def _prepare_pds_for_rms_tests(self, rms, nphots, M, distort_poisson_by=1):
+        pds_shape_func_qpo = Lorentz1D(x_0=0, fwhm=0.312567) + Lorentz1D(x_0=0.5, fwhm=0.1)
+        cls.pds_shape_qpo_raw = pds_shape_func_qpo(cls.freqs)
+
+    def _prepare_pds_for_rms_tests(self, rms, nphots, M, distort_poisson_by=1, with_qpo=False):
         meanrate = nphots / self.segment_size
         poisson_noise_rms = 2 / meanrate
-        pds_shape_rms = self.pds_shape_raw / np.sum(self.pds_shape_raw * self.df) * rms**2
+        pds_shape = self.pds_shape_raw if not with_qpo else self.pds_shape_qpo_raw
+
+        pds_shape_rms = pds_shape / np.sum(pds_shape * self.df) * rms**2
         pds_shape_rms += poisson_noise_rms * distort_poisson_by
 
-        random_part = rng.chisquare(2 * M, size=self.pds_shape_raw.size) / 2 / M
+        random_part = rng.chisquare(2 * M, size=pds_shape.size) / 2 / M
         pds_rms_noisy = random_part * pds_shape_rms
 
         pds_unnorm = pds_rms_noisy * meanrate / 2 * nphots
@@ -841,10 +846,13 @@ class TestRMS(object):
     @pytest.mark.parametrize("M", [100, 10000])
     @pytest.mark.parametrize("nphots", [100_000, 1_000_000])
     @pytest.mark.parametrize("rms", [0.05, 0.1, 0.32, 0.5])
-    def test_rms(self, M, nphots, rms):
+    @pytest.mark.parametrize("with_qpo", [False, True])
+    def test_rms(self, M, nphots, rms, with_qpo):
         meanrate = nphots / self.segment_size
         poisson_noise_rms = 2 / meanrate
-        pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(rms, nphots, M)
+        pds_rms_noisy, pds_unnorm = self._prepare_pds_for_rms_tests(
+            rms, nphots, M, with_qpo=with_qpo
+        )
 
         rms_from_unnorm, rmse_from_unnorm = get_rms_from_unnorm_periodogram(
             pds_unnorm,
