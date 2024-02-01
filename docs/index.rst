@@ -134,7 +134,7 @@ For development work, you will need the following extra libraries:
 + pytest
 + pytest-astropy
 + tox
-+ jinja2<=3.0.0
++ jinja2==3.1.3
 + docutils
 + sphinx-astropy
 + nbsphinx>=0.8.3,!=0.8.8
