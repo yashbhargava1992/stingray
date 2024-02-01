@@ -1,13 +1,6 @@
 v2.0 beta (2024-01-31)
 ----------------------
 
-Breaking Changes
-^^^^^^^^^^^^^^^^
-
-- Eliminate deprecated ``format_`` keyword from read and write methods. (`#729 <https://github.com/StingraySoftware/stingray/pull/729>`__)
-- Remove legacy interface and obsolete large data machinery. (`#755 <https://github.com/StingraySoftware/stingray/pull/755>`__)
-
-
 New Features
 ^^^^^^^^^^^^
 - Power colors à la Heil et al. 2015 (`#780 <https://github.com/StingraySoftware/stingray/pull/780>`__)
@@ -39,6 +32,14 @@ Bug Fixes
 - Various bug fixes in DynamicalPowerspectrum, on event loading and time rebinning (`#779 <https://github.com/StingraySoftware/stingray/pull/779>`__)
 - Fix issue with the Poisson noise calculation in lag spectra, that produced NaN errors under some conditions (`#789 <https://github.com/StingraySoftware/stingray/pull/789>`__)
 - Fix rms computation and error bars (`#792 <https://github.com/StingraySoftware/stingray/pull/792>`__)
+
+
+Breaking Changes
+^^^^^^^^^^^^^^^^
+
+- Eliminate deprecated ``format_`` keyword from read and write methods. (`#729 <https://github.com/StingraySoftware/stingray/pull/729>`__)
+- Remove legacy interface and obsolete large data machinery. (`#755 <https://github.com/StingraySoftware/stingray/pull/755>`__)
+- Eliminate deprecated ``white_noise_level`` keyword from ``compute_rms``. (`#792 <https://github.com/StingraySoftware/stingray/pull/792>`__)
 
 
 Internal Changes
