@@ -998,10 +998,10 @@ def fix_segment_size_to_integer_samples(segment_size, dt, tolerance=0.01):
 
     Examples
     --------
-    >>> fix_segment_size_to_integer_samples(1.0, 0.1)
-    (1.0, 10)
-    >>> fix_segment_size_to_integer_samples(0.999, 0.1)
-    (1.0, 10)
+    >>> seg, n = fix_segment_size_to_integer_samples(1.0, 0.1)
+    >>> assert seg == 1.0, n == 10
+    >>> seg, n = fix_segment_size_to_integer_samples(0.999, 0.1)
+    >>> assert seg == 1.0, n == 10
     """
     n_bin_float = segment_size / dt
     n_bin_down = np.floor(segment_size / dt)
