@@ -92,7 +92,7 @@ def test_avg_pds_imperfect_lc_size():
     segment_size = 5.99
     dt = 1
     res = avg_pds_from_events(times, gti, segment_size, dt, fluxes=fluxes)
-    assert res.meta["segment_size"] == 5
+    assert res.meta["segment_size"] == 6
     assert res.meta["dt"] == 1
 
 
@@ -106,7 +106,7 @@ def test_avg_cs_imperfect_lc_size():
     res = avg_cs_from_events(
         times1, times2, gti, segment_size, dt, fluxes1=fluxes1, fluxes2=fluxes2
     )
-    assert res.meta["segment_size"] == 5
+    assert res.meta["segment_size"] == 6
     assert res.meta["dt"] == 1
 
 

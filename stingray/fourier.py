@@ -12,7 +12,14 @@ from .gti import (
     generate_indices_of_segment_boundaries_binned,
     generate_indices_of_segment_boundaries_unbinned,
 )
-from .utils import fft, fftfreq, histogram, show_progress, sum_if_not_none_or_initialize
+from .utils import (
+    fft,
+    fftfreq,
+    histogram,
+    show_progress,
+    sum_if_not_none_or_initialize,
+    fix_segment_size_to_integer_samples,
+)
 
 
 def integrate_power_in_frequency_range(
@@ -2304,12 +2311,11 @@ def avg_pds_from_events(
     """
     binned = fluxes is not None
     if segment_size is not None:
-        n_bin = np.rint(segment_size / dt).astype(int)
-        segment_size = n_bin * dt
+        segment_size, n_bin = fix_segment_size_to_integer_samples(segment_size, dt)
     elif binned and segment_size is None:
         n_bin = fluxes.size
     else:
-        n_bin = np.rint((gti.max() - gti.min()) / dt).astype(int)
+        _, n_bin = fix_segment_size_to_integer_samples(gti.max() - gti.min(), dt)
 
     flux_iterable = get_flux_iterable_from_segments(
         times, gti, segment_size, n_bin, dt=dt, fluxes=fluxes, errors=errors
@@ -2410,13 +2416,13 @@ def avg_cs_from_events(
     """
 
     binned = fluxes1 is not None and fluxes2 is not None
+
     if segment_size is not None:
-        n_bin = np.rint(segment_size / dt).astype(int)
-        segment_size = n_bin * dt
+        segment_size, n_bin = fix_segment_size_to_integer_samples(segment_size, dt)
     elif binned and segment_size is None:
         n_bin = fluxes1.size
     else:
-        n_bin = np.rint((gti.max() - gti.min()) / dt).astype(int)
+        _, n_bin = fix_segment_size_to_integer_samples(gti.max() - gti.min(), dt)
 
     flux_iterable1 = get_flux_iterable_from_segments(
         times1, gti, segment_size, n_bin=n_bin, dt=dt, fluxes=fluxes1, errors=errors1

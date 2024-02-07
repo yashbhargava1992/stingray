@@ -970,6 +970,51 @@ def _als(y, lam, p, niter=10):
     return z
 
 
+def fix_segment_size_to_integer_samples(segment_size, dt, tolerance=0.01):
+    """Fix segment size to an integer number of bins.
+
+    In the most common case, it will be reduced to an integer number of bins,
+    approximating to the lower integer. However, when it is close to the next
+    integer, it will be approximated to the higher integer.
+
+    Parameters
+    ----------
+    segment_size : float
+        The segment size in seconds
+    dt : float
+        The sample time in seconds
+
+    Other Parameters
+    ----------------
+    tolerance : float
+        The tolerance to consider when approximating to the higher integer
+
+    Returns
+    -------
+    segment_size : float
+        The segment size in seconds, fixed to an integer number of bins
+    n_bin : int
+        The number of bins in the segment
+
+    Examples
+    --------
+    >>> fix_segment_size_to_integer_samples(1.0, 0.1)
+    (1.0, 10)
+    >>> fix_segment_size_to_integer_samples(0.999, 0.1)
+    (1.0, 10)
+    """
+    n_bin_float = segment_size / dt
+    n_bin_down = np.floor(segment_size / dt)
+    n_bin_up = np.ceil(segment_size / dt)
+    n_bin = n_bin_down
+
+    if n_bin_up - n_bin_float < tolerance:
+        n_bin = n_bin_up
+
+    segment_size = n_bin * dt
+    return segment_size, int(n_bin)
+
+
 def baseline_als(x, y, lam=None, p=None, niter=10, return_baseline=False, offset_correction=False):
     """Baseline Correction with Asymmetric Least Squares Smoothing.
 
