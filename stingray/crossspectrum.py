@@ -1566,6 +1566,21 @@ class Crossspectrum(StingrayObject):
         ``crossspectrum_from_XXXX`` function, and initialize ``self`` with
         the correct attributes.
         """
+        if segment_size is None and isinstance(data1, StingrayObject):
+            common_gti = cross_two_gtis(data1.gti, data2.gti)
+            data1.gti = common_gti
+            data2.gti = common_gti
+            data1 = data1.apply_gtis(inplace=False)
+            data2 = data2.apply_gtis(inplace=False)
+            print(data1.gti, data2.gti)
+            print("filtered")
+            print(data1.time, data2.time)
+
+            if hasattr(data1, "counts"):
+                assert data2.time.size == data1.time.size and np.allclose(
+                    data2.time - data1.time, 0
+                ), "Time arrays are not the same"
+
         if isinstance(data1, EventList):
             spec = crossspectrum_from_events(
                 data1,

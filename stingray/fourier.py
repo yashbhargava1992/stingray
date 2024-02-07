@@ -1527,12 +1527,20 @@ def get_flux_iterable_from_segments(
     cast_kind = float
     if dt is None and binned:
         dt = np.median(np.diff(times[:100]))
+
     if binned:
         fluxes = np.asarray(fluxes)
         if np.iscomplexobj(fluxes):
             cast_kind = complex
 
-    fun = _which_segment_idx_fun(binned, dt)
+    if segment_size is None:
+        segment_size = gti[-1, 1] - gti[0, 0]
+
+        def fun(times, gti, segment_size):
+            return [[gti[0, 0], gti[-1, 1], 0, times.size]]
+
+    else:
+        fun = _which_segment_idx_fun(binned, dt)
 
     for s, e, idx0, idx1 in fun(times, gti, segment_size):
         if idx1 - idx0 < 2:
@@ -1542,6 +1550,7 @@ def get_flux_iterable_from_segments(
             event_times = times[idx0:idx1]
             # astype here serves to avoid integer rounding issues in Windows,
             # where long is a 32-bit integer.
+            print(event_times - s, n_bin, 0, segment_size)
             cts = histogram(
                 (event_times - s).astype(float), bins=n_bin, range=[0, segment_size]
             ).astype(float)
@@ -2402,21 +2411,32 @@ def avg_cs_from_events(
     n_ave : int
         the number of averaged periodograms
     """
-    if segment_size is None:
-        segment_size = gti.max() - gti.min()
-    n_bin = int(segment_size / dt)
+    # if segment_size is None:
+    #     gti = np.asarray([[gti.min(), gti.max()]])
+    #     n_bin = None
+    # else:
+    #     n_bin = np.rint(segment_size / dt).astype(int)
 
-    # adjust dt
-    # dt = segment_size / n_bin
-    if fluxes1 is None and fluxes2 is None:
-        dt = segment_size / n_bin
-    else:
+    #     # adjust dt
+    #     # dt = segment_size / n_bin
+    #     if fluxes1 is None and fluxes2 is None:
+    #         dt = segment_size / n_bin
+    #     else:
+    #         segment_size = n_bin * dt
+    binned = fluxes1 is not None and fluxes2 is not None
+    if segment_size is not None:
+        n_bin = np.rint(segment_size / dt).astype(int)
         segment_size = n_bin * dt
+    elif binned and segment_size is None:
+        n_bin = fluxes1.size
+    else:
+        n_bin = np.rint((gti.max() - gti.min()) / dt).astype(int)
+
     flux_iterable1 = get_flux_iterable_from_segments(
-        times1, gti, segment_size, n_bin, dt=dt, fluxes=fluxes1, errors=errors1
+        times1, gti, segment_size, n_bin=n_bin, dt=dt, fluxes=fluxes1, errors=errors1
     )
     flux_iterable2 = get_flux_iterable_from_segments(
-        times2, gti, segment_size, n_bin, dt=dt, fluxes=fluxes2, errors=errors2
+        times2, gti, segment_size, n_bin=n_bin, dt=dt, fluxes=fluxes2, errors=errors2
     )
 
     is_events = np.all([val is None for val in (fluxes1, fluxes2, errors1, errors2)])
