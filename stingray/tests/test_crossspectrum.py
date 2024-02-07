@@ -178,6 +178,19 @@ class TestAveragedCrossspectrumEvents(object):
         )
         self.lc1, self.lc2 = self.events1, self.events2
 
+    def test_single_cs_of_lc_with_tight_gtis_does_not_crash(self):
+        tstart = 1.0
+        tend = 10.0
+        gti = [[1.0, 9.0]]
+
+        time = np.linspace(tstart, tend, 10000)
+        counts1 = np.random.poisson(10, size=time.shape[0])
+        counts2 = np.random.poisson(10, size=time.shape[0])
+
+        lc1 = Lightcurve(time, counts1, gti=gti)
+        lc2 = Lightcurve(time, counts2, gti=gti)
+        Crossspectrum(lc1, lc2, norm="leahy")
+
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_common_mean_gives_comparable_scatter(self, norm):
         acs = AveragedCrossspectrum(
