@@ -1572,9 +1572,6 @@ class Crossspectrum(StingrayObject):
             data2.gti = common_gti
             data1 = data1.apply_gtis(inplace=False)
             data2 = data2.apply_gtis(inplace=False)
-            print(data1.gti, data2.gti)
-            print("filtered")
-            print(data1.time, data2.time)
 
             if hasattr(data1, "counts"):
                 assert data2.time.size == data1.time.size and np.allclose(

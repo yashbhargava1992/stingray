@@ -1550,7 +1550,6 @@ def get_flux_iterable_from_segments(
             event_times = times[idx0:idx1]
             # astype here serves to avoid integer rounding issues in Windows,
             # where long is a 32-bit integer.
-            print(event_times - s, n_bin, 0, segment_size)
             cts = histogram(
                 (event_times - s).astype(float), bins=n_bin, range=[0, segment_size]
             ).astype(float)
@@ -2303,17 +2302,15 @@ def avg_pds_from_events(
     mean : float
         the mean flux
     """
-    if segment_size is None:
-        n_bin = times.size
+    binned = fluxes is not None
+    if segment_size is not None:
+        n_bin = np.rint(segment_size / dt).astype(int)
         segment_size = n_bin * dt
-        gti = [[times[0] - dt / 2, times[-1] + dt / 2]]
+    elif binned and segment_size is None:
+        n_bin = fluxes.size
     else:
-        n_bin = int(segment_size / dt)
+        n_bin = np.rint((gti.max() - gti.min()) / dt).astype(int)
 
-    if fluxes is None:
-        dt = segment_size / n_bin
-    else:
-        segment_size = n_bin * dt
     flux_iterable = get_flux_iterable_from_segments(
         times, gti, segment_size, n_bin, dt=dt, fluxes=fluxes, errors=errors
     )
@@ -2411,18 +2408,7 @@ def avg_cs_from_events(
     n_ave : int
         the number of averaged periodograms
     """
-    # if segment_size is None:
-    #     gti = np.asarray([[gti.min(), gti.max()]])
-    #     n_bin = None
-    # else:
-    #     n_bin = np.rint(segment_size / dt).astype(int)
 
-    #     # adjust dt
-    #     # dt = segment_size / n_bin
-    #     if fluxes1 is None and fluxes2 is None:
-    #         dt = segment_size / n_bin
-    #     else:
-    #         segment_size = n_bin * dt
     binned = fluxes1 is not None and fluxes2 is not None
     if segment_size is not None:
         n_bin = np.rint(segment_size / dt).astype(int)

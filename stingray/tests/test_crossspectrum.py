@@ -187,10 +187,8 @@ class TestAveragedCrossspectrumEvents(object):
 
         counts1 = np.random.poisson(10, size=time.shape[0])
         counts2 = np.random.poisson(10, size=time.shape[0])
-        print("bu", time)
         lc1 = Lightcurve(time, counts1, gti=gti)
         lc2 = Lightcurve(time, counts2, gti=gti)
-        print(lc1.time, lc2.time)
         Crossspectrum(lc1, lc2, norm="leahy")
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
