@@ -2403,11 +2403,8 @@ def avg_cs_from_events(
         the number of averaged periodograms
     """
     if segment_size is None:
-        n_bin = times1.size
-        segment_size = n_bin * dt
-        gti = [[times1[0] - dt / 2, times1[-1] + dt / 2]]
-    else:
-        n_bin = int(segment_size / dt)
+        segment_size = gti.max() - gti.min()
+    n_bin = int(segment_size / dt)
 
     # adjust dt
     # dt = segment_size / n_bin
