@@ -1286,6 +1286,7 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         use_common_mean=True,
         gti=None,
+        save_all=False,
     ):
         """Calculate AveragedCrossspectrum from two event lists
 
@@ -1327,6 +1328,9 @@ class Crossspectrum(StingrayObject):
             input object GTIs! If you're getting errors regarding your GTIs,
             don't use this and only give GTIs to the input objects before
             making the cross spectrum.
+        save_all : bool, default False
+            If True, save all the individual periodograms that are averaged to
+            produce the final periodogram.
         """
 
         return crossspectrum_from_events(
@@ -1340,6 +1344,7 @@ class Crossspectrum(StingrayObject):
             fullspec=fullspec,
             use_common_mean=use_common_mean,
             gti=gti,
+            save_all=save_all,
         )
 
     @staticmethod
@@ -1353,6 +1358,7 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         use_common_mean=True,
         gti=None,
+        save_all=False,
     ):
         """Calculate AveragedCrossspectrum from two light curves
 
@@ -1391,6 +1397,9 @@ class Crossspectrum(StingrayObject):
             input object GTIs! If you're getting errors regarding your GTIs,
             don't  use this and only give GTIs to the input objects before
             making the cross spectrum.
+        save_all : bool, default False
+            If True, save all the individual periodograms that are averaged to
+            produce the final periodogram.
         """
         return crossspectrum_from_lightcurve(
             lc1,
@@ -1402,6 +1411,7 @@ class Crossspectrum(StingrayObject):
             fullspec=fullspec,
             use_common_mean=use_common_mean,
             gti=gti,
+            save_all=save_all,
         )
 
     @staticmethod
@@ -1417,6 +1427,7 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         use_common_mean=True,
         gti=None,
+        save_all=False,
     ):
         """Calculate AveragedCrossspectrum from two light curves
 
@@ -1459,6 +1470,9 @@ class Crossspectrum(StingrayObject):
             input object GTIs! If you're getting errors regarding your GTIs,
             don't  use this and only give GTIs to the input objects before
             making the cross spectrum.
+        save_all : bool, default False
+            If True, save all the individual periodograms that are averaged to
+            produce the final periodogram.
         """
         return crossspectrum_from_timeseries(
             ts1,
@@ -1472,6 +1486,7 @@ class Crossspectrum(StingrayObject):
             fullspec=fullspec,
             use_common_mean=use_common_mean,
             gti=gti,
+            save_all=save_all,
         )
 
     @staticmethod
@@ -1486,6 +1501,7 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         use_common_mean=True,
         gti=None,
+        save_all=False,
     ):
         """Calculate AveragedCrossspectrum from two light curves
 
@@ -1543,6 +1559,7 @@ class Crossspectrum(StingrayObject):
             fullspec=fullspec,
             use_common_mean=use_common_mean,
             gti=gti,
+            save_all=save_all,
         )
 
     def _initialize_from_any_input(
