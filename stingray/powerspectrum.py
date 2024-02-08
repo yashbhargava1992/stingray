@@ -77,6 +77,12 @@ class Powerspectrum(Crossspectrum):
         Note that for a single realization (``m=1``) the error is equal to the
         power.
 
+    unnorm_power: numpy.ndarray
+        The array of unnormalized powers
+
+    unnorm_power_err: numpy.ndarray
+        The uncertainties of ``unnorm_power``.
+
     df: float
         The frequency resolution.
 
@@ -801,8 +807,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The array of mid-bin frequencies that the Fourier transform samples.
 
     power: numpy.ndarray
-        The array of normalized squared absolute values of Fourier
-        amplitudes.
+        The array of normalized powers
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
@@ -811,6 +816,12 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         binning, or averaging power spectra of segments of a light curve).
         Note that for a single realization (``m=1``) the error is equal to the
         power.
+
+    unnorm_power: numpy.ndarray
+        The array of unnormalized powers
+
+    unnorm_power_err: numpy.ndarray
+        The uncertainties of ``unnorm_power``.
 
     df: float
         The frequency resolution.
@@ -824,6 +835,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     nphots: float
         The total number of photons in the light curve.
 
+    cs_all: list of :class:`Powerspectrum` objects
+        The list of all periodograms used to calculate the average periodogram.
     """
 
     def __init__(

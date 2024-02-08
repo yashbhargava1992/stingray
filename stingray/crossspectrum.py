@@ -509,7 +509,7 @@ class Crossspectrum(StingrayObject):
         The array of mid-bin frequencies that the Fourier transform samples
 
     power: numpy.ndarray
-        The array of cross spectra (complex numbers)
+        The array of cross spectral powers in the wanted normalization (complex numbers)
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
@@ -517,6 +517,12 @@ class Crossspectrum(StingrayObject):
         Where ``m`` is the number of power averaged in each bin (by frequency
         binning, or averaging more than one spectra). Note that for a single
         realization (``m=1``) the error is equal to the power.
+
+    unnorm_power : numpy.ndarray
+        The array of unnormalized cross spectral powers (complex numbers)
+
+    unnorm_power_err : numpy.ndarray
+        The uncertainties of ``unnorm_power``.
 
     df: float
         The frequency resolution
@@ -1764,7 +1770,7 @@ class AveragedCrossspectrum(Crossspectrum):
         The array of mid-bin frequencies that the Fourier transform samples.
 
     power: numpy.ndarray
-        The array of cross spectra.
+        The array of cross spectral powers in the wanted normalization.
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
@@ -1773,6 +1779,12 @@ class AveragedCrossspectrum(Crossspectrum):
         binning, or averaging power spectra of segments of a light curve).
         Note that for a single realization (``m=1``) the error is equal to the
         power.
+
+    unnorm_power: numpy.ndarray
+        The array of unnormalized powers
+
+    unnorm_power_err: numpy.ndarray
+        The uncertainties of ``unnorm_power``.
 
     df: float
         The frequency resolution.
@@ -1791,6 +1803,11 @@ class AveragedCrossspectrum(Crossspectrum):
 
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals.
+
+    cs_all: list of :class:`Crossspectrum` objects
+        If ``save_all`` is True, save the cross spectrum of each segment in
+        this attribute.
+
     """
 
     def __init__(
