@@ -2286,11 +2286,17 @@ class StingrayTimeseries(StingrayObject):
             else:
                 low_time_arr = filtered_times[max(filt_low_idx - buffer_size, 0) : filt_low_idx]
                 high_time_arr = filtered_times[filt_hig_idx : buffer_size + filt_hig_idx]
-
-                ctrate = (
-                    np.count_nonzero(low_time_arr) / (filt_low_t - low_time_arr[0])
-                    + np.count_nonzero(high_time_arr) / (high_time_arr[-1] - filt_hig_t)
-                ) / 2
+                ctrate_low = ctrate_high = np.nan
+                if len(low_time_arr) > 0:
+                    ctrate_low = np.count_nonzero(low_time_arr) / (filt_low_t - low_time_arr[0])
+                if len(high_time_arr) > 0:
+                    ctrate_high = np.count_nonzero(high_time_arr) / (high_time_arr[-1] - filt_hig_t)
+                ctrate = np.nanmean([ctrate_low, ctrate_high])
+                if not np.isfinite(ctrate):
+                    warnings.warn(
+                        f"No valid data around to simulate the time series in interval {bti[0]}-{bti[1]}. Skipping."
+                    )
+                    continue
                 nevents = rs.poisson(ctrate * (bti[1] - bti[0]))
                 local_new_times = rs.uniform(bti[0], bti[1], nevents)
             new_times.append(local_new_times)
