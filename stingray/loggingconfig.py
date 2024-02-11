@@ -1,5 +1,6 @@
 import logging
 
+logger = None
 
 class CustomFormatter(logging.Formatter):
 
@@ -25,10 +26,15 @@ class CustomFormatter(logging.Formatter):
 
 
 def setup_logger():
-    logger = logging.getLogger(__name__)
-    handler = logging.StreamHandler()
-    formatter = CustomFormatter()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
+    global logger
+    
+    if not logger:
+        logger = logging.getLogger(__name__)
+        handler = logging.StreamHandler()
+        formatter = CustomFormatter()
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+
+    
     return logger

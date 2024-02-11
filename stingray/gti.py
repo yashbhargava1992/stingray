@@ -10,6 +10,7 @@ from .utils import contiguous_regions, jit, HAS_NUMBA
 from .utils import assign_value_if_none, apply_function_if_none
 from .utils import check_iterables_close, is_sorted
 from stingray.exceptions import StingrayError
+from stingray.loggingconfig import setup_logger
 
 
 __all__ = [
@@ -37,6 +38,8 @@ __all__ = [
     "generate_indices_of_segment_boundaries_unbinned",
     "generate_indices_of_segment_boundaries_binned",
 ]
+
+logger = setup_logger()
 
 
 def gti_len(gti):
@@ -116,7 +119,7 @@ def load_gtis(fits_file, gtistring=None):
     """
 
     gtistring = assign_value_if_none(gtistring, "GTI")
-    logging.info("Loading GTIS from file %s" % fits_file)
+    logger.info("Loading GTIS from file %s" % fits_file)
     lchdulist = fits.open(fits_file, checksum=True, ignore_missing_end=True)
     lchdulist.verify("warn")
 
@@ -624,7 +627,7 @@ def create_gti_from_condition(time, condition, safe_interval=0, dt=None):
 
     gtis = []
     for idx in idxs:
-        logging.debug(idx)
+        logger.debug(idx)
         startidx = idx[0]
         stopidx = idx[1] - 1
 

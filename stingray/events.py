@@ -10,6 +10,7 @@ import warnings
 import numpy as np
 
 from stingray.utils import _int_sum_non_zero
+from stingray.loggingconfig import setup_logger
 
 from .base import StingrayTimeseries
 from .filters import get_deadtime_mask
@@ -20,6 +21,8 @@ from .utils import simon, njit
 from .utils import histogram
 
 __all__ = ["EventList"]
+
+logger = setup_logger()
 
 
 @njit
@@ -309,7 +312,7 @@ class EventList(StingrayTimeseries):
 
         for attr in array_attrs:
             if getattr(self, attr, None) is not None:
-                logging.info(f"Creating the {attr} array")
+                logger.info(f"Creating the {attr} array")
 
                 attr_dict[attr] = histogram(
                     self.time, bins=nbins, weights=getattr(self, attr), range=ranges

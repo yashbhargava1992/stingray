@@ -11,6 +11,7 @@ from stingray import Powerspectrum, AveragedPowerspectrum
 from stingray.modeling import ParameterEstimation, PSDParEst, OptimizationResults, SamplingResults
 from stingray.modeling import PSDPosterior, set_logprior, PSDLogLikelihood, LogLikelihood
 from stingray.modeling.posterior import fitter_to_model_params
+from stingray.loggingconfig import CustomFormatter
 
 try:
     from statsmodels.tools.numdiff import approx_hess
@@ -46,6 +47,8 @@ class OptimizationResultsSubclassDummy(OptimizationResults):
             self.log.setLevel(logging.DEBUG)
             if not self.log.handlers:
                 ch = logging.StreamHandler()
+                formatter = CustomFormatter()
+                ch.setFormatter(formatter)
                 ch.setLevel(logging.DEBUG)
                 self.log.addHandler(ch)
 

@@ -34,10 +34,13 @@ from stingray.utils import (
 from stingray.io import lcurve_from_fits
 from stingray import bexvar
 from stingray.base import interpret_times
+from stingray.loggingconfig import setup_logger
 
 __all__ = ["Lightcurve"]
 
 valid_statistics = ["poisson", "gauss", None]
+
+logger = setup_logger()
 
 
 class Lightcurve(StingrayTimeseries):
@@ -288,7 +291,7 @@ class Lightcurve(StingrayTimeseries):
         self._time = time
 
         if dt is None and time.size > 1:
-            logging.info(
+            logger.info(
                 "Computing the bin time ``dt``. This can take "
                 "time. If you know the bin time, please specify it"
                 " at light curve creation"
@@ -480,7 +483,7 @@ class Lightcurve(StingrayTimeseries):
         return self._bin_hi
 
     def initial_optional_checks(self, time, counts, err, gti=None):
-        logging.info(
+        logger.info(
             "Checking if light curve is well behaved. This "
             "can take time, so if you are sure it is already "
             "sorted, specify skip_checks=True at light curve "
@@ -515,11 +518,11 @@ class Lightcurve(StingrayTimeseries):
         if nonfinite_flag:
             warnings.warn("There are non-finite points in the data, but they are outside GTIs. ")
 
-        logging.info("Checking if light curve is sorted.")
+        logger.info("Checking if light curve is sorted.")
         unsorted = not is_sorted(time)
 
         if unsorted:
-            logging.warning("The light curve is unsorted.")
+            logger.warning("The light curve is unsorted.")
         return time, counts, err
 
     def check_lightcurve(self):
@@ -875,14 +878,14 @@ class Lightcurve(StingrayTimeseries):
             if gti is not None:
                 tseg = np.max(gti) - tstart
 
-        logging.info("make_lightcurve: tseg: " + str(tseg))
+        logger.info("make_lightcurve: tseg: " + str(tseg))
 
         timebin = int(tseg / dt)
         # If we are missing the next bin by just 1%, let's round up:
         if tseg / dt - timebin >= 0.99:
             timebin += 1
 
-        logging.info("make_lightcurve: timebin:  " + str(timebin))
+        logger.info("make_lightcurve: timebin:  " + str(timebin))
 
         tend = tstart + timebin * dt
         good = (tstart <= toa) & (toa < tend)
