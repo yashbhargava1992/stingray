@@ -12,6 +12,7 @@ __all__ = ["Window1D", "Optimal1D"]
 
 logger = setup_logger()
 
+
 class Window1D(object):
     """
     Make a top hat filter (window function) for power spectrum or cross

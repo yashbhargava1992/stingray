@@ -2,8 +2,8 @@ import logging
 
 logger = None
 
-class CustomFormatter(logging.Formatter):
 
+class CustomFormatter(logging.Formatter):
     grey = "\x1b[38;20m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
@@ -16,7 +16,7 @@ class CustomFormatter(logging.Formatter):
         logging.INFO: grey + format + reset,
         logging.WARNING: yellow + format + reset,
         logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
+        logging.CRITICAL: bold_red + format + reset,
     }
 
     def format(self, record):
@@ -27,7 +27,7 @@ class CustomFormatter(logging.Formatter):
 
 def setup_logger():
     global logger
-    
+
     if not logger:
         logger = logging.getLogger(__name__)
         handler = logging.StreamHandler()
@@ -36,5 +36,4 @@ def setup_logger():
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
 
-    
     return logger

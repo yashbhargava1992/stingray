@@ -20,6 +20,7 @@ __all__ = ["calculate_FAD_correction", "get_periodograms_from_FAD_results", "FAD
 
 logger = setup_logger()
 
+
 def FAD(
     data1,
     data2,

@@ -9,6 +9,7 @@ __FACTORIALS = factorial(np.arange(160))
 
 logger = setup_logger()
 
+
 def r_in(td, r_0):
     """Calculate incident countrate given dead time and detected countrate."""
     tau = 1 / r_0
