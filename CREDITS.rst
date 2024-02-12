@@ -47,6 +47,7 @@ Contributors
 * Mihir Tripathi
 * Ricardo Vallés Blanco
 * Dhruv Vats
+* Sri Guru Datta Pisupati
 
 If you have contributed to Stingray and your name is missing,
 please send an email to the coordinators, or
