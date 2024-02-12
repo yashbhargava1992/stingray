@@ -13,6 +13,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.time import Time, TimeDelta
 from astropy.units import Quantity
+from stingray.loggingconfig import setup_logger
 
 from .io import _can_save_longdouble, _can_serialize_meta
 from .utils import (
@@ -57,6 +58,8 @@ __all__ = [
     "StingrayObject",
     "StingrayTimeseries",
 ]
+
+logger = setup_logger()
 
 
 def convert_table_attrs_to_lowercase(table: Table) -> Table:
@@ -1971,7 +1974,7 @@ class StingrayTimeseries(StingrayObject):
                 all_meta_attrs.remove(attr)
 
         for attr in ignore_meta:
-            logging.info(f"The {attr} attribute will be removed from the output ")
+            logger.info(f"The {attr} attribute will be removed from the output ")
             if attr in all_meta_attrs:
                 all_meta_attrs.remove(attr)
 
@@ -2242,7 +2245,7 @@ class StingrayTimeseries(StingrayObject):
 
         btis = get_btis(self.gti, self.time[0], self.time[-1])
         if len(btis) == 0:
-            logging.info("No bad time intervals to fill")
+            logger.info("No bad time intervals to fill")
             return copy.deepcopy(self)
         filtered_times = self.time[self.mask]
 
@@ -2255,7 +2258,7 @@ class StingrayTimeseries(StingrayObject):
             even_sampling = False
             if self.dt > 0 and np.isclose(mean_data_separation, self.dt, rtol=0.01):
                 even_sampling = True
-            logging.info(f"Data are {'not' if not even_sampling else ''} evenly sampled")
+            logger.info(f"Data are {'not' if not even_sampling else ''} evenly sampled")
 
         if even_sampling:
             est_samples_in_gap = int(max_length / self.dt)
@@ -2272,7 +2275,7 @@ class StingrayTimeseries(StingrayObject):
             length = bti[1] - bti[0]
             if length > max_length:
                 continue
-            logging.info(f"Filling bad time interval {bti} ({length:.4f} s)")
+            logger.info(f"Filling bad time interval {bti} ({length:.4f} s)")
             epsilon = 1e-5 * length
             added_gtis.append([bti[0] - epsilon, bti[1] + epsilon])
             filt_low_t, filt_low_idx = find_nearest(filtered_times, bti[0])
@@ -2307,7 +2310,7 @@ class StingrayTimeseries(StingrayObject):
                     new_attrs[attr].append(np.zeros(nevents) + np.nan)
             total_filled_time += length
 
-        logging.info(f"A total of {total_filled_time} s of data were simulated")
+        logger.info(f"A total of {total_filled_time} s of data were simulated")
 
         new_gtis = join_gtis(self.gti, added_gtis)
         new_times = np.concatenate(new_times)
@@ -2497,7 +2500,7 @@ class StingrayTimeseries(StingrayObject):
                 and np.isclose(mean_data_separation, self.dt, rtol=0.01)
             ):
                 even_sampling = True
-            logging.info(f"Data are {'not' if not even_sampling else ''} evenly sampled")
+            logger.info(f"Data are {'not' if not even_sampling else ''} evenly sampled")
 
         if min_counts is None:
             if even_sampling and hasattr(self, "counts"):

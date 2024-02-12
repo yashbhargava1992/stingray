@@ -14,6 +14,7 @@ from astropy.logger import AstropyUserWarning
 import matplotlib.pyplot as plt
 
 import stingray.utils as utils
+from stingray.loggingconfig import setup_logger
 
 from .utils import assign_value_if_none, is_string, order_list_of_arrays, is_sorted
 from .gti import get_gti_from_all_extensions, load_gtis
@@ -34,6 +35,8 @@ try:
     np.float128
 except AttributeError:  # pragma: no cover
     HAS_128 = False
+
+logger = setup_logger()
 
 
 def rough_calibration(pis, mission):
@@ -799,7 +802,7 @@ def ref_mjd(fits_file, hdu=1):
 
     if isinstance(fits_file, Iterable) and not is_string(fits_file):  # pragma: no cover
         fits_file = fits_file[0]
-        logging.info("opening %s" % fits_file)
+        logger.info("opening %s" % fits_file)
 
     hdulist = fits.open(fits_file, ignore_missing_end=True)
 
@@ -843,7 +846,7 @@ def common_name(str1, str2, default="common"):
     common_str = common_str.lstrip("_").lstrip("-")
     if common_str == "":
         common_str = default
-    logging.debug("common_name: %s %s -> %s" % (str1, str2, common_str))
+    logger.debug("common_name: %s %s -> %s" % (str1, str2, common_str))
     return common_str
 
 

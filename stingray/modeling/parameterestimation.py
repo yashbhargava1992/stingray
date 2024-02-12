@@ -46,6 +46,7 @@ from stingray.modeling.posterior import (
     logmin,
     fitter_to_model_params,
 )
+from stingray.loggingconfig import CustomFormatter
 
 
 class OptimizationResults(object):
@@ -140,6 +141,8 @@ class OptimizationResults(object):
             self.log.setLevel(logging.DEBUG)
             if not self.log.handlers:
                 ch = logging.StreamHandler()
+                formatter = CustomFormatter()
+                ch.setFormatter(formatter)
                 ch.setLevel(logging.DEBUG)
                 self.log.addHandler(ch)
 
