@@ -85,13 +85,13 @@ def pi_to_energy(pis, rmf_file=None):
         The rmf file used to read the calibration. If None or not specified,
         the one given by default_nustar_rmf() is used.
     """
-    calp, calEmin, calEmax = read_rmf(rmf_file)
+    calp, cal_emin, cal_emax = read_rmf(rmf_file)
     es = np.zeros(len(pis), dtype=float)
     for ic, c in enumerate(calp):
         good = pis == c
         if not np.any(good):
             continue
-        es[good] = (calEmin[ic] + calEmax[ic]) / 2
+        es[good] = (cal_emin[ic] + cal_emax[ic]) / 2
 
     return es
 
