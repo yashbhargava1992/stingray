@@ -1573,10 +1573,19 @@ class Crossspectrum(StingrayObject):
             data1 = data1.apply_gtis(inplace=False)
             data2 = data2.apply_gtis(inplace=False)
 
-            if hasattr(data1, "counts"):
+            data1_is_binned = (
+                "counts" in data1.array_attrs() or "_counts" in data1.internal_array_attrs()
+            )
+            data2_is_binned = (
+                "counts" in data2.array_attrs() or "_counts" in data2.internal_array_attrs()
+            )
+
+            if data1_is_binned and data2_is_binned:
                 assert data2.time.size == data1.time.size and np.allclose(
                     data2.time - data1.time, 0
                 ), "Time arrays are not the same"
+            elif data1_is_binned or data2_is_binned:
+                raise ValueError("Please use input data of the same kind")
 
         if isinstance(data1, EventList):
             spec = crossspectrum_from_events(

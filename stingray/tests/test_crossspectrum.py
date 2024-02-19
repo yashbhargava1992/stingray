@@ -724,6 +724,15 @@ class TestCrossspectrum(object):
             with pytest.raises(AssertionError, match="Time arrays are not the same"):
                 Crossspectrum(self.lc1, lc_)
 
+    def test_make_crossspectrum_lc_and_evts(self):
+        counts = np.array([1] * 10001)
+        dt = 0.0001
+        time = np.arange(0.0, 1.0001, dt)
+        lc_ = Lightcurve(time, counts, gti=[[time[0] - dt / 2, time[-1] + dt / 2]])
+        ev_ = EventList(time)
+        with pytest.raises(ValueError, match="Please use input data of the same kind"):
+            Crossspectrum(ev_, lc_, skip_checks=True)
+
     def test_make_crossspectrum_diff_lc_stat(self):
         lc_ = copy.deepcopy(self.lc1)
         lc_.err_dist = "gauss"
