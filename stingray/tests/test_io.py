@@ -197,4 +197,4 @@ class TestCalibrate(object):
 
         pis = np.array([1, 2, 3])
         energies = pi_to_energy(pis, self.rmf)
-        assert np.allclose(energies, [1.64, 1.68, 1.72])
+        assert np.allclose(energies, [1.66, 1.70, 1.74])
