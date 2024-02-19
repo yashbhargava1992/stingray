@@ -14,7 +14,7 @@ from .gti import cross_two_gtis, time_intervals_from_gtis
 
 from .lightcurve import Lightcurve
 from .fourier import avg_pds_from_iterable, unnormalize_periodograms
-from .fourier import avg_pds_from_events
+from .fourier import avg_pds_from_timeseries
 from .fourier import get_flux_iterable_from_segments
 from .fourier import poisson_level
 from .fourier import get_rms_from_unnorm_periodogram
@@ -1134,7 +1134,7 @@ def powerspectrum_from_time_array(
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
-    table = avg_pds_from_events(
+    table = avg_pds_from_timeseries(
         times,
         gti,
         segment_size,
@@ -1267,7 +1267,7 @@ def powerspectrum_from_lightcurve(
     if gti is None:
         gti = lc.gti
 
-    table = avg_pds_from_events(
+    table = avg_pds_from_timeseries(
         lc.time,
         gti,
         segment_size,
@@ -1347,7 +1347,7 @@ def powerspectrum_from_timeseries(
     if error_flux_attr is not None:
         err = getattr(ts, error_flux_attr)
 
-    results = avg_pds_from_events(
+    results = avg_pds_from_timeseries(
         ts.time,
         gti,
         segment_size,

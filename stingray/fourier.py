@@ -2243,7 +2243,15 @@ def avg_cs_from_iterables(
     return results
 
 
-def avg_pds_from_events(
+def avg_pds_from_events(*args, **kwargs):
+    warnings.warn(
+        "avg_pds_from_events is deprecated, use avg_cs_from_timeseries instead", DeprecationWarning
+    )
+
+    return avg_pds_from_timeseries(*args, **kwargs)
+
+
+def avg_pds_from_timeseries(
     times,
     gti,
     segment_size,
@@ -2333,7 +2341,14 @@ def avg_pds_from_events(
     return cross
 
 
-def avg_cs_from_events(
+def avg_cs_from_events(*args, **kwargs):
+    warnings.warn(
+        "avg_cs_from_events is deprecated, use avg_cs_from_timeseries instead", DeprecationWarning
+    )
+    return avg_cs_from_timeseries(*args, **kwargs)
+
+
+def avg_cs_from_timeseries(
     times1,
     times2,
     gti,

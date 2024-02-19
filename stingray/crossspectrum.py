@@ -16,7 +16,7 @@ from .events import EventList
 from .gti import cross_two_gtis, time_intervals_from_gtis
 from .lightcurve import Lightcurve
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
-from .fourier import avg_cs_from_events, poisson_level
+from .fourier import avg_cs_from_timeseries, poisson_level
 from .fourier import normalize_periodograms, raw_coherence
 from .fourier import get_flux_iterable_from_segments, power_color
 from .fourier import get_rms_from_unnorm_periodogram
@@ -2456,7 +2456,7 @@ def crossspectrum_from_time_array(
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
-    results = avg_cs_from_events(
+    results = avg_cs_from_timeseries(
         times1,
         times2,
         gti,
@@ -2696,7 +2696,7 @@ def crossspectrum_from_timeseries(
         err1 = getattr(ts1, error_flux_attr)
         err2 = getattr(ts2, error_flux_attr)
 
-    results = avg_cs_from_events(
+    results = avg_cs_from_timeseries(
         ts1.time,
         ts2.time,
         gti,
