@@ -1504,7 +1504,7 @@ def get_flux_iterable_from_segments(
     gti : [[gti00, gti01], [gti10, gti11], ...]
         good time intervals
     segment_size : float
-        length of segments
+        length of segments. If ``None``, the full light curve is used.
 
     Other parameters
     ----------------
@@ -2271,7 +2271,7 @@ def avg_pds_from_events(
     gti : [[gti00, gti01], [gti10, gti11], ...]
         Good time intervals.
     segment_size : float
-        Length of segments.
+        Length of segments. If ``None``, the full light curve is used.
     dt : float
         Time resolution of the light curves used to produce periodograms.
 
@@ -2369,7 +2369,7 @@ def avg_cs_from_events(
     gti : [[gti00, gti01], [gti10, gti11], ...]
         common good time intervals
     segment_size : float
-        length of segments
+        length of segments. If ``None``, the full light curve is used.
     dt : float
         Time resolution of the light curves used to produce periodograms
 
