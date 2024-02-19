@@ -212,14 +212,18 @@ class TestEvents(object):
         assert np.allclose(ev.time, self.time)
         os.remove("ev.fits")
 
-    def test_fits_with_standard_file(self):
+    def test_fits_with_standard_file_and_calibrate(self):
         """Test that fits works with a standard event list
         file.
         """
         fname = os.path.join(datadir, "monol_testA.evt")
+        rmf_file = os.path.join(datadir, "test.rmf")
         ev = EventList()
         ev = ev.read(fname, fmt="hea")
+        energies = copy.deepcopy(ev.energy)
         assert np.isclose(ev.mjdref, 55197.00076601852)
+        ev.convert_pi_to_energy(rmf_file)
+        assert np.allclose(ev.energy, energies, atol=0.03)
 
     def test_fits_with_additional(self):
         """Test that fits works with a standard event list

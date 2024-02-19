@@ -14,7 +14,8 @@ from stingray.loggingconfig import setup_logger
 from .base import StingrayTimeseries
 from .filters import get_deadtime_mask
 from .gti import generate_indices_of_boundaries
-from .io import load_events_and_gtis
+from .io import load_events_and_gtis, pi_to_energy
+
 from .lightcurve import Lightcurve
 from .utils import simon, njit
 from .utils import histogram
@@ -623,6 +624,20 @@ class EventList(StingrayTimeseries):
             return evt
 
         return super().read(filename=filename, fmt=fmt)
+
+    def convert_pi_to_energy(self, rmf_file):
+        """Calibrate the energy column of the event list.
+
+        Defines the ``energy`` attribute of the event list by converting the
+        PI channels to energy using the provided RMF file.
+
+        Parameters
+        ----------
+        rmf_file : str
+            The file name of the RMF file to use for calibration.
+        """
+
+        self.energy = pi_to_energy(self.pi, rmf_file)
 
     def get_energy_mask(self, energy_range, use_pi=False):
         """Get a mask corresponding to events with a given energy range.
