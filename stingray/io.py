@@ -11,6 +11,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.logger import AstropyUserWarning
 import matplotlib.pyplot as plt
+from astropy.io import fits as pf
 
 import stingray.utils as utils
 from stingray.loggingconfig import setup_logger
@@ -36,6 +37,63 @@ except AttributeError:  # pragma: no cover
     HAS_128 = False
 
 logger = setup_logger()
+
+
+def read_rmf(rmf_file=None):
+    """Load RMF info.
+
+    .. note:: Preliminary: only EBOUNDS are read.
+
+    Parameters
+    ----------
+    rmf_file : str
+        The rmf file used to read the calibration. If None or not specified,
+        the one given by default_nustar_rmf() is used.
+
+    Returns
+    -------
+    pis : array-like
+        the PI channels
+    e_mins : array-like
+        the lower energy bound of each PI channel
+    e_maxs : array-like
+        the upper energy bound of each PI channel
+    """
+
+    lchdulist = pf.open(rmf_file, checksum=True)
+    lchdulist.verify("warn")
+    lctable = lchdulist["EBOUNDS"].data
+    pis = np.array(lctable.field("CHANNEL"))
+    e_mins = np.array(lctable.field("E_MIN"))
+    e_maxs = np.array(lctable.field("E_MAX"))
+    lchdulist.close()
+
+    return pis, e_mins, e_maxs
+
+
+def pi_to_energy(pis, rmf_file=None):
+    """Read the energy channels corresponding to the given PI channels.
+
+    Parameters
+    ----------
+    pis : array-like
+        The channels to lookup in the rmf
+
+    Other Parameters
+    ----------------
+    rmf_file : str
+        The rmf file used to read the calibration. If None or not specified,
+        the one given by default_nustar_rmf() is used.
+    """
+    calp, calEmin, calEmax = read_rmf(rmf_file)
+    es = np.zeros(len(pis), dtype=float)
+    for ic, c in enumerate(calp):
+        good = pis == c
+        if not np.any(good):
+            continue
+        es[good] = (calEmin[ic] + calEmax[ic]) / 2
+
+    return es
 
 
 def rough_calibration(pis, mission):
