@@ -1,6 +1,12 @@
 import pytest
 import numpy as np
-from stingray.power_colors import power_color, hue_from_power_color, plot_hues, plot_power_colors
+from stingray.power_colors import (
+    power_color,
+    hue_from_power_color,
+    plot_hues,
+    plot_power_colors,
+    DEFAULT_COLOR_CONFIGURATION,
+)
 
 rng = np.random.RandomState(1259723)
 
@@ -13,6 +19,8 @@ class TestPowerColor(object):
         cls.pc0, cls.pc0e, cls.pc1, cls.pc1e = power_color(cls.freq, cls.power)
         cls.lpc0, _, cls.lpc1, _ = power_color(cls.freq, cls.power, return_log=True)
         cls.rms, cls.rmse = 0.1, 0.01
+        cls.configuration = DEFAULT_COLOR_CONFIGURATION
+        cls.configuration["state_definitions"]["HSS"]["hue_limits"] = [300, 370]
 
     def test_power_color(self):
         # The colors calculated with these frequency edges on a 1/f spectrum should be 1
@@ -82,7 +90,21 @@ class TestPowerColor(object):
             assert np.isclose(angle_diff, 0, atol=0.001)
 
     def test_plot_color(self):
-        plot_power_colors(self.pc0, self.pc0e, self.pc1, self.pc1e, plot_spans=True)
+        plot_power_colors(
+            self.pc0,
+            self.pc0e,
+            self.pc1,
+            self.pc1e,
+            plot_spans=True,
+            configuration=self.configuration,
+        )
 
     def test_hues(self):
-        plot_hues(self.rms, self.rmse, self.pc0, self.pc1, plot_spans=True)
+        plot_hues(
+            self.rms,
+            self.rmse,
+            self.pc0,
+            self.pc1,
+            plot_spans=True,
+            configuration=self.configuration,
+        )
