@@ -18,8 +18,9 @@ from .lightcurve import Lightcurve
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
 from .fourier import avg_cs_from_timeseries, poisson_level
 from .fourier import normalize_periodograms, raw_coherence
-from .fourier import get_flux_iterable_from_segments, power_color
+from .fourier import get_flux_iterable_from_segments
 from .fourier import get_rms_from_unnorm_periodogram
+from .power_colors import power_color
 
 from scipy.special import factorial
 
@@ -509,7 +510,7 @@ class Crossspectrum(StingrayObject):
         The array of mid-bin frequencies that the Fourier transform samples
 
     power: numpy.ndarray
-        The array of cross spectral powers in the wanted normalization (complex numbers)
+        The array of cross spectra (complex numbers)
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
@@ -517,12 +518,6 @@ class Crossspectrum(StingrayObject):
         Where ``m`` is the number of power averaged in each bin (by frequency
         binning, or averaging more than one spectra). Note that for a single
         realization (``m=1``) the error is equal to the power.
-
-    unnorm_power : numpy.ndarray
-        The array of unnormalized cross spectral powers (complex numbers)
-
-    unnorm_power_err : numpy.ndarray
-        The uncertainties of ``unnorm_power``.
 
     df: float
         The frequency resolution
@@ -1292,7 +1287,6 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         use_common_mean=True,
         gti=None,
-        save_all=False,
     ):
         """Calculate AveragedCrossspectrum from two event lists
 
@@ -1334,9 +1328,6 @@ class Crossspectrum(StingrayObject):
             input object GTIs! If you're getting errors regarding your GTIs,
             don't use this and only give GTIs to the input objects before
             making the cross spectrum.
-        save_all : bool, default False
-            If True, save all the individual periodograms that are averaged to
-            produce the final periodogram.
         """
 
         return crossspectrum_from_events(
@@ -1350,7 +1341,6 @@ class Crossspectrum(StingrayObject):
             fullspec=fullspec,
             use_common_mean=use_common_mean,
             gti=gti,
-            save_all=save_all,
         )
 
     @staticmethod
@@ -1364,7 +1354,6 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         use_common_mean=True,
         gti=None,
-        save_all=False,
     ):
         """Calculate AveragedCrossspectrum from two light curves
 
@@ -1403,9 +1392,6 @@ class Crossspectrum(StingrayObject):
             input object GTIs! If you're getting errors regarding your GTIs,
             don't  use this and only give GTIs to the input objects before
             making the cross spectrum.
-        save_all : bool, default False
-            If True, save all the individual periodograms that are averaged to
-            produce the final periodogram.
         """
         return crossspectrum_from_lightcurve(
             lc1,
@@ -1417,7 +1403,6 @@ class Crossspectrum(StingrayObject):
             fullspec=fullspec,
             use_common_mean=use_common_mean,
             gti=gti,
-            save_all=save_all,
         )
 
     @staticmethod
@@ -1433,7 +1418,6 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         use_common_mean=True,
         gti=None,
-        save_all=False,
     ):
         """Calculate AveragedCrossspectrum from two light curves
 
@@ -1476,9 +1460,6 @@ class Crossspectrum(StingrayObject):
             input object GTIs! If you're getting errors regarding your GTIs,
             don't  use this and only give GTIs to the input objects before
             making the cross spectrum.
-        save_all : bool, default False
-            If True, save all the individual periodograms that are averaged to
-            produce the final periodogram.
         """
         return crossspectrum_from_timeseries(
             ts1,
@@ -1492,7 +1473,6 @@ class Crossspectrum(StingrayObject):
             fullspec=fullspec,
             use_common_mean=use_common_mean,
             gti=gti,
-            save_all=save_all,
         )
 
     @staticmethod
@@ -1507,7 +1487,6 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         use_common_mean=True,
         gti=None,
-        save_all=False,
     ):
         """Calculate AveragedCrossspectrum from two light curves
 
@@ -1565,7 +1544,6 @@ class Crossspectrum(StingrayObject):
             fullspec=fullspec,
             use_common_mean=use_common_mean,
             gti=gti,
-            save_all=save_all,
         )
 
     def _initialize_from_any_input(
@@ -1770,7 +1748,7 @@ class AveragedCrossspectrum(Crossspectrum):
         The array of mid-bin frequencies that the Fourier transform samples.
 
     power: numpy.ndarray
-        The array of cross spectral powers in the wanted normalization.
+        The array of cross spectra.
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
@@ -1779,12 +1757,6 @@ class AveragedCrossspectrum(Crossspectrum):
         binning, or averaging power spectra of segments of a light curve).
         Note that for a single realization (``m=1``) the error is equal to the
         power.
-
-    unnorm_power: numpy.ndarray
-        The array of unnormalized powers
-
-    unnorm_power_err: numpy.ndarray
-        The uncertainties of ``unnorm_power``.
 
     df: float
         The frequency resolution.
@@ -1803,11 +1775,6 @@ class AveragedCrossspectrum(Crossspectrum):
 
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals.
-
-    cs_all: list of :class:`Crossspectrum` objects
-        If ``save_all`` is True, save the cross spectrum of each segment in
-        this attribute.
-
     """
 
     def __init__(
