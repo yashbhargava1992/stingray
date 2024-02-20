@@ -89,22 +89,24 @@ class TestPowerColor(object):
             angle_diff = np.arccos((2.0 - c2) / 2.0)
             assert np.isclose(angle_diff, 0, atol=0.001)
 
-    def test_plot_color(self):
+    @pytest.mark.parametrize("plot_spans", [True, False])
+    def test_plot_color(self, plot_spans):
         plot_power_colors(
             self.pc0,
             self.pc0e,
             self.pc1,
             self.pc1e,
-            plot_spans=True,
+            plot_spans=plot_spans,
             configuration=self.configuration,
         )
 
-    def test_hues(self):
+    @pytest.mark.parametrize("plot_spans", [True, False])
+    def test_hues(self, plot_spans):
         plot_hues(
             self.rms,
             self.rmse,
             self.pc0,
             self.pc1,
-            plot_spans=True,
+            plot_spans=plot_spans,
             configuration=self.configuration,
         )

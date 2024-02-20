@@ -64,9 +64,13 @@ def _create_rms_hue_plot(polar=False, plot_spans=False, configuration=DEFAULT_CO
         color = configuration["state_definitions"][state]["color"]
         xmin, xmax = configuration["state_definitions"][state]["hue_limits"]
 
-        x_func = lambda x: x
+        def x_func(x):
+            return x
+
         if polar:
-            x_func = lambda x: np.radians(x)
+
+            def x_func(x):
+                return np.radians(x)
 
         ax.fill_between(
             np.linspace(x_func(xmin), x_func(xmax), 20),
