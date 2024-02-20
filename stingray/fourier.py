@@ -12,7 +12,14 @@ from .gti import (
     generate_indices_of_segment_boundaries_binned,
     generate_indices_of_segment_boundaries_unbinned,
 )
-from .utils import fft, fftfreq, histogram, show_progress, sum_if_not_none_or_initialize
+from .utils import (
+    fft,
+    fftfreq,
+    histogram,
+    show_progress,
+    sum_if_not_none_or_initialize,
+    fix_segment_size_to_integer_samples,
+)
 
 
 def integrate_power_in_frequency_range(
@@ -1497,7 +1504,7 @@ def get_flux_iterable_from_segments(
     gti : [[gti00, gti01], [gti10, gti11], ...]
         good time intervals
     segment_size : float
-        length of segments
+        length of segments. If ``None``, the full light curve is used.
 
     Other parameters
     ----------------
@@ -1527,12 +1534,20 @@ def get_flux_iterable_from_segments(
     cast_kind = float
     if dt is None and binned:
         dt = np.median(np.diff(times[:100]))
+
     if binned:
         fluxes = np.asarray(fluxes)
         if np.iscomplexobj(fluxes):
             cast_kind = complex
 
-    fun = _which_segment_idx_fun(binned, dt)
+    if segment_size is None:
+        segment_size = gti[-1, 1] - gti[0, 0]
+
+        def fun(times, gti, segment_size):
+            return [[gti[0, 0], gti[-1, 1], 0, times.size]]
+
+    else:
+        fun = _which_segment_idx_fun(binned, dt)
 
     for s, e, idx0, idx1 in fun(times, gti, segment_size):
         if idx1 - idx0 < 2:
@@ -2228,7 +2243,15 @@ def avg_cs_from_iterables(
     return results
 
 
-def avg_pds_from_events(
+def avg_pds_from_events(*args, **kwargs):
+    warnings.warn(
+        "avg_pds_from_events is deprecated, use avg_cs_from_timeseries instead", DeprecationWarning
+    )
+
+    return avg_pds_from_timeseries(*args, **kwargs)
+
+
+def avg_pds_from_timeseries(
     times,
     gti,
     segment_size,
@@ -2256,7 +2279,7 @@ def avg_pds_from_events(
     gti : [[gti00, gti01], [gti10, gti11], ...]
         Good time intervals.
     segment_size : float
-        Length of segments.
+        Length of segments. If ``None``, the full light curve is used.
     dt : float
         Time resolution of the light curves used to produce periodograms.
 
@@ -2294,13 +2317,14 @@ def avg_pds_from_events(
     mean : float
         the mean flux
     """
-    if segment_size is None:
-        segment_size = gti.max() - gti.min()
-    n_bin = int(segment_size / dt)
-    if fluxes is None:
-        dt = segment_size / n_bin
+    binned = fluxes is not None
+    if segment_size is not None:
+        segment_size, n_bin = fix_segment_size_to_integer_samples(segment_size, dt)
+    elif binned and segment_size is None:
+        n_bin = fluxes.size
     else:
-        segment_size = n_bin * dt
+        _, n_bin = fix_segment_size_to_integer_samples(gti.max() - gti.min(), dt)
+
     flux_iterable = get_flux_iterable_from_segments(
         times, gti, segment_size, n_bin, dt=dt, fluxes=fluxes, errors=errors
     )
@@ -2317,7 +2341,14 @@ def avg_pds_from_events(
     return cross
 
 
-def avg_cs_from_events(
+def avg_cs_from_events(*args, **kwargs):
+    warnings.warn(
+        "avg_cs_from_events is deprecated, use avg_cs_from_timeseries instead", DeprecationWarning
+    )
+    return avg_cs_from_timeseries(*args, **kwargs)
+
+
+def avg_cs_from_timeseries(
     times1,
     times2,
     gti,
@@ -2353,7 +2384,7 @@ def avg_cs_from_events(
     gti : [[gti00, gti01], [gti10, gti11], ...]
         common good time intervals
     segment_size : float
-        length of segments
+        length of segments. If ``None``, the full light curve is used.
     dt : float
         Time resolution of the light curves used to produce periodograms
 
@@ -2398,20 +2429,21 @@ def avg_cs_from_events(
     n_ave : int
         the number of averaged periodograms
     """
-    if segment_size is None:
-        segment_size = gti.max() - gti.min()
-    n_bin = int(segment_size / dt)
-    # adjust dt
-    # dt = segment_size / n_bin
-    if fluxes1 is None and fluxes2 is None:
-        dt = segment_size / n_bin
+
+    binned = fluxes1 is not None and fluxes2 is not None
+
+    if segment_size is not None:
+        segment_size, n_bin = fix_segment_size_to_integer_samples(segment_size, dt)
+    elif binned and segment_size is None:
+        n_bin = fluxes1.size
     else:
-        segment_size = n_bin * dt
+        _, n_bin = fix_segment_size_to_integer_samples(gti.max() - gti.min(), dt)
+
     flux_iterable1 = get_flux_iterable_from_segments(
-        times1, gti, segment_size, n_bin, dt=dt, fluxes=fluxes1, errors=errors1
+        times1, gti, segment_size, n_bin=n_bin, dt=dt, fluxes=fluxes1, errors=errors1
     )
     flux_iterable2 = get_flux_iterable_from_segments(
-        times2, gti, segment_size, n_bin, dt=dt, fluxes=fluxes2, errors=errors2
+        times2, gti, segment_size, n_bin=n_bin, dt=dt, fluxes=fluxes2, errors=errors2
     )
 
     is_events = np.all([val is None for val in (fluxes1, fluxes2, errors1, errors2)])

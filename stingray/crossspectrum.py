@@ -16,7 +16,7 @@ from .events import EventList
 from .gti import cross_two_gtis, time_intervals_from_gtis
 from .lightcurve import Lightcurve
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
-from .fourier import avg_cs_from_events, poisson_level
+from .fourier import avg_cs_from_timeseries, poisson_level
 from .fourier import normalize_periodograms, raw_coherence
 from .fourier import get_flux_iterable_from_segments, power_color
 from .fourier import get_rms_from_unnorm_periodogram
@@ -1566,6 +1566,27 @@ class Crossspectrum(StingrayObject):
         ``crossspectrum_from_XXXX`` function, and initialize ``self`` with
         the correct attributes.
         """
+        if segment_size is None and isinstance(data1, StingrayObject):
+            common_gti = cross_two_gtis(data1.gti, data2.gti)
+            data1.gti = common_gti
+            data2.gti = common_gti
+            data1 = data1.apply_gtis(inplace=False)
+            data2 = data2.apply_gtis(inplace=False)
+
+            data1_is_binned = (
+                "counts" in data1.array_attrs() or "_counts" in data1.internal_array_attrs()
+            )
+            data2_is_binned = (
+                "counts" in data2.array_attrs() or "_counts" in data2.internal_array_attrs()
+            )
+
+            if data1_is_binned and data2_is_binned:
+                assert data2.time.size == data1.time.size and np.allclose(
+                    data2.time - data1.time, 0
+                ), "Time arrays are not the same"
+            elif data1_is_binned or data2_is_binned:
+                raise ValueError("Please use input data of the same kind")
+
         if isinstance(data1, EventList):
             spec = crossspectrum_from_events(
                 data1,
@@ -2444,7 +2465,7 @@ def crossspectrum_from_time_array(
     force_averaged = segment_size is not None
     # Suppress progress bar for single periodogram
     silent = silent or (segment_size is None)
-    results = avg_cs_from_events(
+    results = avg_cs_from_timeseries(
         times1,
         times2,
         gti,
@@ -2684,7 +2705,7 @@ def crossspectrum_from_timeseries(
         err1 = getattr(ts1, error_flux_attr)
         err2 = getattr(ts2, error_flux_attr)
 
-    results = avg_cs_from_events(
+    results = avg_cs_from_timeseries(
         ts1.time,
         ts2.time,
         gti,

@@ -178,6 +178,19 @@ class TestAveragedCrossspectrumEvents(object):
         )
         self.lc1, self.lc2 = self.events1, self.events2
 
+    def test_single_cs_of_lc_with_tight_gtis_does_not_crash(self):
+        tstart = 1.0
+        tend = 10.0
+        gti = [[1.0, 9.0]]
+
+        time = np.linspace(tstart, tend, 10001)
+
+        counts1 = np.random.poisson(10, size=time.shape[0])
+        counts2 = np.random.poisson(10, size=time.shape[0])
+        lc1 = Lightcurve(time, counts1, gti=gti)
+        lc2 = Lightcurve(time, counts2, gti=gti)
+        Crossspectrum(lc1, lc2, norm="leahy")
+
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_common_mean_gives_comparable_scatter(self, norm):
         acs = AveragedCrossspectrum(
@@ -704,13 +717,21 @@ class TestCrossspectrum(object):
 
     def test_make_crossspectrum_diff_lc_counts_shape(self):
         counts = np.array([1] * 10001)
-        time = np.linspace(0.0, 1.0001, 10001)
-        lc_ = Lightcurve(time, counts)
+        dt = 0.0001
+        time = np.arange(0.0, 1.0001, dt)
+        lc_ = Lightcurve(time, counts, gti=[[time[0] - dt / 2, time[-1] + dt / 2]])
         with pytest.warns(UserWarning, match="Lightcurves do not have same tseg"):
-            with pytest.raises(
-                AssertionError, match="No GTIs are equal to or longer than segment_size"
-            ):
+            with pytest.raises(AssertionError, match="Time arrays are not the same"):
                 Crossspectrum(self.lc1, lc_)
+
+    def test_make_crossspectrum_lc_and_evts(self):
+        counts = np.array([1] * 10001)
+        dt = 0.0001
+        time = np.arange(0.0, 1.0001, dt)
+        lc_ = Lightcurve(time, counts, gti=[[time[0] - dt / 2, time[-1] + dt / 2]])
+        ev_ = EventList(time)
+        with pytest.raises(ValueError, match="Please use input data of the same kind"):
+            Crossspectrum(ev_, lc_, skip_checks=True)
 
     def test_make_crossspectrum_diff_lc_stat(self):
         lc_ = copy.deepcopy(self.lc1)

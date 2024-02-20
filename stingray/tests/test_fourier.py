@@ -8,6 +8,8 @@ from astropy.table import Table
 from stingray.fourier import fft, fftfreq, normalize_abs, normalize_frac, poisson_level
 from stingray.fourier import (
     get_flux_iterable_from_segments,
+    avg_pds_from_timeseries,
+    avg_cs_from_timeseries,
     avg_pds_from_events,
     avg_cs_from_events,
 )
@@ -91,8 +93,20 @@ def test_avg_pds_imperfect_lc_size():
     gti = np.asarray([[-0.5, 99.5]])
     segment_size = 5.99
     dt = 1
-    res = avg_pds_from_events(times, gti, segment_size, dt, fluxes=fluxes)
-    assert res.meta["segment_size"] == 5
+    res = avg_pds_from_timeseries(times, gti, segment_size, dt, fluxes=fluxes)
+    assert res.meta["segment_size"] == 6
+    assert res.meta["dt"] == 1
+
+
+def test_avg_pds_from_events_warns():
+    times = np.arange(100)
+    fluxes = np.ones(100).astype(float)
+    gti = np.asarray([[-0.5, 99.5]])
+    segment_size = 5.99
+    dt = 1
+    with pytest.warns(DeprecationWarning, match="avg_pds_from_events is deprecated"):
+        res = avg_pds_from_events(times, gti, segment_size, dt, fluxes=fluxes)
+    assert res.meta["segment_size"] == 6
     assert res.meta["dt"] == 1
 
 
@@ -103,10 +117,25 @@ def test_avg_cs_imperfect_lc_size():
     gti = np.asarray([[-0.5, 99.5]])
     segment_size = 5.99
     dt = 1
-    res = avg_cs_from_events(
+    res = avg_cs_from_timeseries(
         times1, times2, gti, segment_size, dt, fluxes1=fluxes1, fluxes2=fluxes2
     )
-    assert res.meta["segment_size"] == 5
+    assert res.meta["segment_size"] == 6
+    assert res.meta["dt"] == 1
+
+
+def test_avg_cs_from_events_warns():
+    times1 = times2 = np.arange(100)
+    fluxes1 = np.ones(100).astype(float)
+    fluxes2 = np.ones(100).astype(float)
+    gti = np.asarray([[-0.5, 99.5]])
+    segment_size = 5.99
+    dt = 1
+    with pytest.warns(DeprecationWarning, match="avg_cs_from_events is deprecated"):
+        res = avg_cs_from_events(
+            times1, times2, gti, segment_size, dt, fluxes1=fluxes1, fluxes2=fluxes2
+        )
+    assert res.meta["segment_size"] == 6
     assert res.meta["dt"] == 1
 
 
@@ -244,7 +273,7 @@ class TestFourier(object):
 
     def test_avg_pds_bad_input(self):
         times = np.sort(rng.uniform(0, 1000, 1))
-        out_ev = avg_pds_from_events(times, self.gti, self.segment_size, self.dt)
+        out_ev = avg_pds_from_timeseries(times, self.gti, self.segment_size, self.dt)
         assert out_ev is None
 
     @pytest.mark.parametrize("return_subcs", [True, False])
@@ -252,7 +281,7 @@ class TestFourier(object):
     def test_avg_cs_bad_input(self, return_auxil, return_subcs):
         times1 = np.sort(rng.uniform(0, 1000, 1))
         times2 = np.sort(rng.uniform(0, 1000, 1))
-        out_ev = avg_cs_from_events(
+        out_ev = avg_cs_from_timeseries(
             times1,
             times2,
             self.gti,
@@ -265,7 +294,7 @@ class TestFourier(object):
 
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_avg_pds_use_common_mean_similar_stats(self, norm):
-        out_comm = avg_pds_from_events(
+        out_comm = avg_pds_from_timeseries(
             self.times,
             self.gti,
             self.segment_size,
@@ -275,7 +304,7 @@ class TestFourier(object):
             silent=True,
             fluxes=None,
         )
-        out = avg_pds_from_events(
+        out = avg_pds_from_timeseries(
             self.times,
             self.gti,
             self.segment_size,
@@ -289,7 +318,7 @@ class TestFourier(object):
 
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_avg_cs_use_common_mean_similar_stats(self, norm):
-        out_comm = avg_cs_from_events(
+        out_comm = avg_cs_from_timeseries(
             self.times,
             self.times2,
             self.gti,
@@ -300,7 +329,7 @@ class TestFourier(object):
             silent=True,
             return_subcs=True,
         )
-        out = avg_cs_from_events(
+        out = avg_cs_from_timeseries(
             self.times,
             self.times2,
             self.gti,
@@ -328,7 +357,7 @@ class TestFourier(object):
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_avg_pds_cts_and_events_are_equal(self, norm, use_common_mean):
-        out_ev = avg_pds_from_events(
+        out_ev = avg_pds_from_timeseries(
             self.times,
             self.gti,
             self.segment_size,
@@ -339,7 +368,7 @@ class TestFourier(object):
             fluxes=None,
             return_subcs=True,
         )
-        out_ct = avg_pds_from_events(
+        out_ct = avg_pds_from_timeseries(
             self.bin_times,
             self.gti,
             self.segment_size,
@@ -355,7 +384,7 @@ class TestFourier(object):
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_avg_pds_cts_and_err_and_events_are_equal(self, norm, use_common_mean):
-        out_ev = avg_pds_from_events(
+        out_ev = avg_pds_from_timeseries(
             self.times,
             self.gti,
             self.segment_size,
@@ -366,7 +395,7 @@ class TestFourier(object):
             fluxes=None,
             return_subcs=True,
         )
-        out_ct = avg_pds_from_events(
+        out_ct = avg_pds_from_timeseries(
             self.bin_times,
             self.gti,
             self.segment_size,
@@ -389,7 +418,7 @@ class TestFourier(object):
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_avg_cs_cts_and_events_are_equal(self, norm, use_common_mean):
-        out_ev = avg_cs_from_events(
+        out_ev = avg_cs_from_timeseries(
             self.times,
             self.times2,
             self.gti,
@@ -399,7 +428,7 @@ class TestFourier(object):
             use_common_mean=use_common_mean,
             silent=False,
         )
-        out_ct = avg_cs_from_events(
+        out_ct = avg_cs_from_timeseries(
             self.bin_times,
             self.bin_times,
             self.gti,
@@ -419,7 +448,7 @@ class TestFourier(object):
     @pytest.mark.parametrize("use_common_mean", [True, False])
     @pytest.mark.parametrize("norm", ["frac", "abs", "none", "leahy"])
     def test_avg_cs_cts_and_err_and_events_are_equal(self, norm, use_common_mean):
-        out_ev = avg_cs_from_events(
+        out_ev = avg_cs_from_timeseries(
             self.times,
             self.times2,
             self.gti,
@@ -429,7 +458,7 @@ class TestFourier(object):
             use_common_mean=use_common_mean,
             silent=False,
         )
-        out_ct = avg_cs_from_events(
+        out_ct = avg_cs_from_timeseries(
             self.bin_times,
             self.bin_times,
             self.gti,
