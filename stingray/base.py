@@ -8,7 +8,6 @@ from collections import OrderedDict
 import pickle
 import warnings
 import copy
-import logging
 
 import numpy as np
 from astropy.table import Table
@@ -38,7 +37,6 @@ from .gti import (
     bin_intervals_from_gtis,
     time_intervals_from_gtis,
 )
-
 from typing import TYPE_CHECKING, Type, TypeVar, Union
 
 if TYPE_CHECKING:

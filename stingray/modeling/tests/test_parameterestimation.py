@@ -2,6 +2,7 @@ import numpy as np
 import scipy.stats
 import os
 import warnings
+import logging
 
 import pytest
 from astropy.modeling import models
@@ -44,13 +45,13 @@ class LogLikelihoodDummy(LogLikelihood):
 class OptimizationResultsSubclassDummy(OptimizationResults):
     def __init__(self, lpost, res, neg, log=None):
         if log is None:
-            self.log = logger.getLogger("Fitting summary")
+            self.log = logging.getLogger("Fitting summary")
             self.log.setLevel(logger.DEBUG)
             if not self.log.handlers:
-                ch = logger.StreamHandler()
+                ch = logging.StreamHandler()
                 formatter = CustomFormatter()
                 ch.setFormatter(formatter)
-                ch.setLevel(logger.DEBUG)
+                ch.setLevel(logging.DEBUG)
                 self.log.addHandler(ch)
 
         self.neg = neg
@@ -388,10 +389,10 @@ if can_sample:
     class SamplingResultsDummy(SamplingResults):
         def __init__(self, sampler, ci_min=0.05, ci_max=0.95, log=None):
             if log is None:
-                self.log = logger.getLogger("Fitting summary")
+                self.log = logging.getLogger("Fitting summary")
                 self.log.setLevel(logger.DEBUG)
                 if not self.log.handlers:
-                    ch = logger.StreamHandler()
+                    ch = logging.StreamHandler()
                     ch.setLevel(logger.DEBUG)
                     self.log.addHandler(ch)
 
@@ -498,8 +499,8 @@ if can_sample:
 
 @pytest.fixture()
 def logger():
-    logger = logger.getLogger("Some.Logger")
-    logger.setLevel(logger.INFO)
+    logger = logging.getLogger("Some.Logger")
+    logger.setLevel(logging.INFO)
 
     return logger
 
