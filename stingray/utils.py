@@ -6,7 +6,6 @@ import random
 import string
 import sys
 import warnings
-import logging
 import tempfile
 from collections.abc import Iterable
 
@@ -15,6 +14,9 @@ import scipy
 from numpy import histogram as histogram_np
 from numpy import histogram2d as histogram2d_np
 from numpy import histogramdd as histogramdd_np
+from .loggingconfig import setup_logger
+
+logger = setup_logger()
 
 try:
     import pyfftw
@@ -33,7 +35,7 @@ try:
 
     pyfftw.interfaces.cache.enable()
     HAS_PYFFTW = True
-    logging.info("Using PyFFTW")
+    logger.info("Using PyFFTW")
 except ImportError:
     from numpy.fft import ifft, fft, fftfreq, fftn, ifftn, fftshift, fft2, ifftshift, rfft, rfftfreq
 

@@ -1,6 +1,5 @@
 import re
 import numpy as np
-import logging
 import warnings
 from collections.abc import Iterable
 import copy

@@ -2,7 +2,6 @@ import numpy as np
 import scipy.stats
 import os
 import warnings
-import logging
 
 import pytest
 from astropy.modeling import models
@@ -11,7 +10,7 @@ from stingray import Powerspectrum, AveragedPowerspectrum
 from stingray.modeling import ParameterEstimation, PSDParEst, OptimizationResults, SamplingResults
 from stingray.modeling import PSDPosterior, set_logprior, PSDLogLikelihood, LogLikelihood
 from stingray.modeling.posterior import fitter_to_model_params
-from stingray.loggingconfig import CustomFormatter
+from stingray.loggingconfig import CustomFormatter, setup_logger
 
 try:
     from statsmodels.tools.numdiff import approx_hess
@@ -29,6 +28,8 @@ except ImportError:
 
 import matplotlib.pyplot as plt
 
+logger = setup_logger()
+
 pytestmark = pytest.mark.slow
 
 
@@ -43,13 +44,13 @@ class LogLikelihoodDummy(LogLikelihood):
 class OptimizationResultsSubclassDummy(OptimizationResults):
     def __init__(self, lpost, res, neg, log=None):
         if log is None:
-            self.log = logging.getLogger("Fitting summary")
-            self.log.setLevel(logging.DEBUG)
+            self.log = logger.getLogger("Fitting summary")
+            self.log.setLevel(logger.DEBUG)
             if not self.log.handlers:
-                ch = logging.StreamHandler()
+                ch = logger.StreamHandler()
                 formatter = CustomFormatter()
                 ch.setFormatter(formatter)
-                ch.setLevel(logging.DEBUG)
+                ch.setLevel(logger.DEBUG)
                 self.log.addHandler(ch)
 
         self.neg = neg
@@ -387,11 +388,11 @@ if can_sample:
     class SamplingResultsDummy(SamplingResults):
         def __init__(self, sampler, ci_min=0.05, ci_max=0.95, log=None):
             if log is None:
-                self.log = logging.getLogger("Fitting summary")
-                self.log.setLevel(logging.DEBUG)
+                self.log = logger.getLogger("Fitting summary")
+                self.log.setLevel(logger.DEBUG)
                 if not self.log.handlers:
-                    ch = logging.StreamHandler()
-                    ch.setLevel(logging.DEBUG)
+                    ch = logger.StreamHandler()
+                    ch.setLevel(logger.DEBUG)
                     self.log.addHandler(ch)
 
             # store all the samples
@@ -497,8 +498,8 @@ if can_sample:
 
 @pytest.fixture()
 def logger():
-    logger = logging.getLogger("Some.Logger")
-    logger.setLevel(logging.INFO)
+    logger = logger.getLogger("Some.Logger")
+    logger.setLevel(logger.INFO)
 
     return logger
 

@@ -21,7 +21,6 @@ try:
 except ImportError:
     use_corner = False
 
-import logging
 from multiprocessing import Pool
 
 import numpy as np
@@ -46,7 +45,9 @@ from stingray.modeling.posterior import (
     logmin,
     fitter_to_model_params,
 )
-from stingray.loggingconfig import CustomFormatter
+from stingray.loggingconfig import CustomFormatter, setup_logger
+
+logging = setup_logger()
 
 
 class OptimizationResults(object):
