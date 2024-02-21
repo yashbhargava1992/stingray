@@ -101,7 +101,8 @@ class TestPowerColor(object):
         )
 
     @pytest.mark.parametrize("plot_spans", [True, False])
-    def test_hues(self, plot_spans):
+    @pytest.mark.parametrize("polar", [True, False])
+    def test_hues(self, plot_spans, polar):
         plot_hues(
             self.rms,
             self.rmse,
@@ -109,4 +110,5 @@ class TestPowerColor(object):
             self.pc1,
             plot_spans=plot_spans,
             configuration=self.configuration,
+            polar=polar,
         )
