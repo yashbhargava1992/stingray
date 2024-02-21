@@ -11,7 +11,7 @@ from stingray import Powerspectrum, AveragedPowerspectrum
 from stingray.modeling import ParameterEstimation, PSDParEst, OptimizationResults, SamplingResults
 from stingray.modeling import PSDPosterior, set_logprior, PSDLogLikelihood, LogLikelihood
 from stingray.modeling.posterior import fitter_to_model_params
-from stingray.loggingconfig import CustomFormatter
+from stingray.loggingconfig import CustomFormatter, setup_logger
 
 try:
     from statsmodels.tools.numdiff import approx_hess
@@ -28,6 +28,8 @@ except ImportError:
     can_sample = False
 
 import matplotlib.pyplot as plt
+
+logger = setup_logger()
 
 pytestmark = pytest.mark.slow
 

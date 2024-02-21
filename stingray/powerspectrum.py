@@ -77,6 +77,12 @@ class Powerspectrum(Crossspectrum):
         Note that for a single realization (``m=1``) the error is equal to the
         power.
 
+    unnorm_power: numpy.ndarray
+        The array of unnormalized powers
+
+    unnorm_power_err: numpy.ndarray
+        The uncertainties of ``unnorm_power``.
+
     df: float
         The frequency resolution.
 
@@ -458,7 +464,14 @@ class Powerspectrum(Crossspectrum):
 
     @staticmethod
     def from_events(
-        events, dt, segment_size=None, gti=None, norm="frac", silent=False, use_common_mean=True
+        events,
+        dt,
+        segment_size=None,
+        gti=None,
+        norm="frac",
+        silent=False,
+        use_common_mean=True,
+        save_all=False,
     ):
         """
         Calculate an average power spectrum from an event list.
@@ -494,6 +507,8 @@ class Powerspectrum(Crossspectrum):
             to calculate it on a per-segment basis.
         silent : bool, default False
             Silence the progress bars.
+        save_all : bool, default False
+            Save all intermediate PDSs used for the final average.
         """
         if gti is None:
             gti = events.gti
@@ -505,6 +520,7 @@ class Powerspectrum(Crossspectrum):
             norm=norm,
             silent=silent,
             use_common_mean=use_common_mean,
+            save_all=save_all,
         )
 
     @staticmethod
@@ -517,6 +533,7 @@ class Powerspectrum(Crossspectrum):
         silent=False,
         use_common_mean=True,
         gti=None,
+        save_all=False,
     ):
         """Calculate AveragedPowerspectrum from a time series.
 
@@ -552,6 +569,8 @@ class Powerspectrum(Crossspectrum):
             input object GTIs! If you're getting errors regarding your GTIs,
             don't  use this and only give GTIs to the input objects before
             making the cross spectrum.
+        save_all : bool, default False
+            Save all intermediate PDSs used for the final average.
         """
         return powerspectrum_from_timeseries(
             ts,
@@ -562,11 +581,18 @@ class Powerspectrum(Crossspectrum):
             silent=silent,
             use_common_mean=use_common_mean,
             gti=gti,
+            save_all=save_all,
         )
 
     @staticmethod
     def from_lightcurve(
-        lc, segment_size=None, gti=None, norm="frac", silent=False, use_common_mean=True
+        lc,
+        segment_size=None,
+        gti=None,
+        norm="frac",
+        silent=False,
+        use_common_mean=True,
+        save_all=False,
     ):
         """
         Calculate a power spectrum from a light curve.
@@ -602,6 +628,8 @@ class Powerspectrum(Crossspectrum):
             to calculate it on a per-segment basis.
         silent : bool, default False
             Silence the progress bars.
+        save_all : bool, default False
+            Save all intermediate PDSs used for the final average.
         """
         if gti is None:
             gti = lc.gti
@@ -612,11 +640,19 @@ class Powerspectrum(Crossspectrum):
             norm=norm,
             silent=silent,
             use_common_mean=use_common_mean,
+            save_all=save_all,
         )
 
     @staticmethod
     def from_lc_iterable(
-        iter_lc, dt, segment_size=None, gti=None, norm="frac", silent=False, use_common_mean=True
+        iter_lc,
+        dt,
+        segment_size=None,
+        gti=None,
+        norm="frac",
+        silent=False,
+        use_common_mean=True,
+        save_all=False,
     ):
         """
         Calculate the average power spectrum of an iterable collection of
@@ -653,6 +689,8 @@ class Powerspectrum(Crossspectrum):
             to calculate it on a per-segment basis.
         silent : bool, default False
             Silence the progress bars.
+        save_all : bool, default False
+            Save all intermediate PDSs used for the final average.
         """
 
         return powerspectrum_from_lc_iterable(
@@ -663,6 +701,7 @@ class Powerspectrum(Crossspectrum):
             norm=norm,
             silent=silent,
             use_common_mean=use_common_mean,
+            save_all=save_all,
         )
 
     def _initialize_from_any_input(
@@ -801,8 +840,7 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         The array of mid-bin frequencies that the Fourier transform samples.
 
     power: numpy.ndarray
-        The array of normalized squared absolute values of Fourier
-        amplitudes.
+        The array of normalized powers
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
@@ -811,6 +849,12 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
         binning, or averaging power spectra of segments of a light curve).
         Note that for a single realization (``m=1``) the error is equal to the
         power.
+
+    unnorm_power: numpy.ndarray
+        The array of unnormalized powers
+
+    unnorm_power_err: numpy.ndarray
+        The uncertainties of ``unnorm_power``.
 
     df: float
         The frequency resolution.
@@ -824,6 +868,8 @@ class AveragedPowerspectrum(AveragedCrossspectrum, Powerspectrum):
     nphots: float
         The total number of photons in the light curve.
 
+    cs_all: list of :class:`Powerspectrum` objects
+        The list of all periodograms used to calculate the average periodogram.
     """
 
     def __init__(

@@ -1,4 +1,3 @@
-import logging
 import math
 import copy
 import os
@@ -734,16 +733,12 @@ class EventReadOutput:
 
 
 def mkdir_p(path):  # pragma: no cover
-    """Safe ``mkdir`` function, found at [so-mkdir]_.
+    """Safe ``mkdir`` function
 
     Parameters
     ----------
     path : str
         The absolute path to the directory to be created
-
-    Notes
-    -----
-    .. [so-mkdir] http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
     """
     import os
 

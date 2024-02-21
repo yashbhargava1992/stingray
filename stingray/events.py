@@ -4,7 +4,6 @@ Definition of :class:`EventList`.
 :class:`EventList` is used to handle photon arrival times.
 """
 
-import logging
 import warnings
 
 import numpy as np

@@ -18,8 +18,9 @@ from .lightcurve import Lightcurve
 from .fourier import avg_cs_from_iterables, error_on_averaged_cross_spectrum
 from .fourier import avg_cs_from_timeseries, poisson_level
 from .fourier import normalize_periodograms, raw_coherence
-from .fourier import get_flux_iterable_from_segments, power_color
+from .fourier import get_flux_iterable_from_segments
 from .fourier import get_rms_from_unnorm_periodogram
+from .power_colors import power_color
 
 from scipy.special import factorial
 
