@@ -1,4 +1,5 @@
 """Base classes"""
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -2289,12 +2290,15 @@ class StingrayTimeseries(StingrayObject):
                 high_time_arr = filtered_times[filt_hig_idx : buffer_size + filt_hig_idx]
                 high_time_arr = high_time_arr[high_time_arr < bti[1] + buffer_size]
 
-                ctrate_low = ctrate_high = np.nan
-
                 if len(low_time_arr) > 0 and (filt_low_t - low_time_arr[0]) > 0:
                     ctrate_low = np.count_nonzero(low_time_arr) / (filt_low_t - low_time_arr[0])
+                else:
+                    ctrate_low = np.nan
                 if len(high_time_arr) > 0 and (high_time_arr[-1] - filt_hig_t) > 0:
                     ctrate_high = np.count_nonzero(high_time_arr) / (high_time_arr[-1] - filt_hig_t)
+                else:
+                    ctrate_high = np.nan
+
                 if not np.isfinite(ctrate_low) and not np.isfinite(ctrate_high):
                     warnings.warn(
                         f"No valid data around to simulate the time series in interval "
