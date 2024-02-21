@@ -1327,6 +1327,18 @@ class TestFillBTI(object):
         for attr in ["time", "energy", "blablas"]:
             assert np.allclose(getattr(new_masked, attr), getattr(filt_masked, attr))
 
+    def test_no_counts_in_buffer(self):
+        ev_like_filt = copy.deepcopy(self.ev_like)
+        # I introduce a small gap in the GTIs
+        ev_like_filt.gti = np.asarray([[0, 490], [491, 498], [500, 505], [510, 520], [522, 700]])
+
+        # I empty out two GTIs
+        bad = (ev_like_filt.time > 490) & (ev_like_filt.time < 510)
+        ev_like_filt = ev_like_filt.apply_mask(~bad)
+
+        with pytest.warns(UserWarning, match="simulate the time series in interval 498-500"):
+            ev_like_filt.fill_bad_time_intervals(max_length=3, buffer_size=2)
+
     def test_lc_like(self):
         lc_like_filt = copy.deepcopy(self.lc_like)
         # I introduce a small gap in the GTIs

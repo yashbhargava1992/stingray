@@ -1,4 +1,5 @@
 """Base classes"""
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -2285,12 +2286,27 @@ class StingrayTimeseries(StingrayObject):
                 nevents = local_new_times.size
             else:
                 low_time_arr = filtered_times[max(filt_low_idx - buffer_size, 0) : filt_low_idx]
+                low_time_arr = low_time_arr[low_time_arr > bti[0] - buffer_size]
                 high_time_arr = filtered_times[filt_hig_idx : buffer_size + filt_hig_idx]
+                high_time_arr = high_time_arr[high_time_arr < bti[1] + buffer_size]
 
-                ctrate = (
-                    np.count_nonzero(low_time_arr) / (filt_low_t - low_time_arr[0])
-                    + np.count_nonzero(high_time_arr) / (high_time_arr[-1] - filt_hig_t)
-                ) / 2
+                if len(low_time_arr) > 0 and (filt_low_t - low_time_arr[0]) > 0:
+                    ctrate_low = np.count_nonzero(low_time_arr) / (filt_low_t - low_time_arr[0])
+                else:
+                    ctrate_low = np.nan
+                if len(high_time_arr) > 0 and (high_time_arr[-1] - filt_hig_t) > 0:
+                    ctrate_high = np.count_nonzero(high_time_arr) / (high_time_arr[-1] - filt_hig_t)
+                else:
+                    ctrate_high = np.nan
+
+                if not np.isfinite(ctrate_low) and not np.isfinite(ctrate_high):
+                    warnings.warn(
+                        f"No valid data around to simulate the time series in interval "
+                        f"{bti[0]:g}-{bti[1]:g}. Skipping. Please check that the buffer size is "
+                        f"adequate."
+                    )
+                    continue
+                ctrate = np.nanmean([ctrate_low, ctrate_high])
                 nevents = rs.poisson(ctrate * (bti[1] - bti[0]))
                 local_new_times = rs.uniform(bti[0], bti[1], nevents)
             new_times.append(local_new_times)
