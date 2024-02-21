@@ -46,7 +46,7 @@ class OptimizationResultsSubclassDummy(OptimizationResults):
     def __init__(self, lpost, res, neg, log=None):
         if log is None:
             self.log = logging.getLogger("Fitting summary")
-            self.log.setLevel(logger.DEBUG)
+            self.log.setLevel(logging.DEBUG)
             if not self.log.handlers:
                 ch = logging.StreamHandler()
                 formatter = CustomFormatter()
@@ -390,10 +390,10 @@ if can_sample:
         def __init__(self, sampler, ci_min=0.05, ci_max=0.95, log=None):
             if log is None:
                 self.log = logging.getLogger("Fitting summary")
-                self.log.setLevel(logger.DEBUG)
+                self.log.setLevel(logging.DEBUG)
                 if not self.log.handlers:
                     ch = logging.StreamHandler()
-                    ch.setLevel(logger.DEBUG)
+                    ch.setLevel(logging.DEBUG)
                     self.log.addHandler(ch)
 
             # store all the samples
