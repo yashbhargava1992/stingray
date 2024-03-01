@@ -60,13 +60,12 @@ def read_rmf(rmf_file=None):
         the upper energy bound of each PI channel
     """
 
-    lchdulist = pf.open(rmf_file, checksum=True)
-    lchdulist.verify("warn")
-    lctable = lchdulist["EBOUNDS"].data
-    pis = np.array(lctable.field("CHANNEL"))
-    e_mins = np.array(lctable.field("E_MIN"))
-    e_maxs = np.array(lctable.field("E_MAX"))
-    lchdulist.close()
+    with pf.open(rmf_file, checksum=True, memmap=False) as lchdulist:
+        lchdulist.verify("warn")
+        lctable = lchdulist["EBOUNDS"].data
+        pis = np.array(lctable.field("CHANNEL"))
+        e_mins = np.array(lctable.field("E_MIN"))
+        e_maxs = np.array(lctable.field("E_MAX"))
 
     return pis, e_mins, e_maxs
 
