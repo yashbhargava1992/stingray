@@ -212,6 +212,11 @@ class TestEvents(object):
         assert np.allclose(ev.time, self.time)
         os.remove("ev.fits")
 
+    def test_calibrate_directly_warns(self):
+        rmf_file = os.path.join(datadir, "test.rmf")
+        with pytest.warns(UserWarning, match="PI channels must be provided"):
+            EventList(time=self.time, mjdref=54000, rmf_file=rmf_file)
+
     def test_calibrate_directly(self):
         rmf_file = os.path.join(datadir, "test.rmf")
         pis = np.random.randint(0, 1000, np.size(self.time))
