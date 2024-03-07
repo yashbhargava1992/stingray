@@ -226,10 +226,17 @@ class TestEvents(object):
 
         assert np.array_equal(ev1.energy, ev2.energy)
 
-    def test_fits_with_standard_file_and_calibrate_directly(self):
+    def test_fits_standard(self):
         """Test that fits works with a standard event list
         file.
         """
+        fname = os.path.join(datadir, "monol_testA.evt")
+        ev = EventList()
+        ev = ev.read(fname, fmt="hea")
+        assert np.isclose(ev.mjdref, 55197.00076601852)
+
+    def test_fits_with_standard_file_and_calibrate_directly(self):
+        """Test that fits works and calibration works."""
         fname = os.path.join(datadir, "monol_testA.evt")
         rmf_file = os.path.join(datadir, "test.rmf")
         ev1 = EventList()
