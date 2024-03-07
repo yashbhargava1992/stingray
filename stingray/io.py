@@ -39,7 +39,7 @@ except AttributeError:  # pragma: no cover
 logger = setup_logger()
 
 
-def read_rmf(rmf_file=None):
+def read_rmf(rmf_file):
     """Load RMF info.
 
     .. note:: Preliminary: only EBOUNDS are read.
@@ -47,8 +47,7 @@ def read_rmf(rmf_file=None):
     Parameters
     ----------
     rmf_file : str
-        The rmf file used to read the calibration. If None or not specified,
-        the one given by default_nustar_rmf() is used.
+        The rmf file used to read the calibration.
 
     Returns
     -------
@@ -70,7 +69,7 @@ def read_rmf(rmf_file=None):
     return pis, e_mins, e_maxs
 
 
-def pi_to_energy(pis, rmf_file=None):
+def pi_to_energy(pis, rmf_file):
     """Read the energy channels corresponding to the given PI channels.
 
     Parameters
@@ -81,8 +80,7 @@ def pi_to_energy(pis, rmf_file=None):
     Other Parameters
     ----------------
     rmf_file : str
-        The rmf file used to read the calibration. If None or not specified,
-        the one given by default_nustar_rmf() is used.
+        The rmf file used to read the calibration.
     """
     calp, cal_emin, cal_emax = read_rmf(rmf_file)
     es = np.zeros(len(pis), dtype=float)
