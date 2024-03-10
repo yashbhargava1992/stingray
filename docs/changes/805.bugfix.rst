@@ -1,0 +1,1 @@
+Fix nphots estimate in accelsearch, that lead to an underestimation of the power of candidates
