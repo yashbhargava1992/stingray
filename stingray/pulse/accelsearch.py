@@ -353,7 +353,12 @@ def accelsearch(
         signal = np.asarray(signal)
 
     dt = times[1] - times[0]
-    if gti is not None:
+    n_photons = np.sum(signal)
+    if gti is not None and isinstance(gti, Iterable) and len(gti) > 1:
+        warnings.warn(
+            "Data contain multiple GTIs. Bad time intervals will be "
+            "filled with the mean of the signal."
+        )
         gti = np.asarray(gti)
         # Fill in the data with a constant outside GTIs
         gti_mask = create_gti_mask(times, gti)
@@ -367,7 +372,6 @@ def accelsearch(
         expo_fraction = 1
         gti = np.array([[times[0] - dt / 2, times[-1] + dt / 2]])
 
-    n_photons = np.sum(signal)
     spectr = fft(signal) * np.sqrt(2 / n_photons)
     freq = fftfreq(len(spectr), dt)
 
@@ -402,9 +406,7 @@ def accelsearch(
     start_z = -zmax
     end_z = zmax
     range_z = np.arange(start_z, end_z, delta_z)
-    logger.info(
-        "min and max possible r_dot: {}--{}".format(delta_z / T**2, np.max(range_z) / T**2)
-    )
+    logger.info("min and max r_dot: {}--{}".format(delta_z / T**2, np.max(range_z) / T**2))
     freqs_to_search = freq[freq_intv_to_search]
 
     candidate_table = Table(
