@@ -354,7 +354,11 @@ def accelsearch(
 
     dt = times[1] - times[0]
     n_photons = np.sum(signal)
-    if gti is not None:
+    if gti is not None and isinstance(gti, Iterable) and len(gti) > 1:
+        warnings.warn(
+            "Data contain multiple GTIs. Bad time intervals will be "
+            "filled with the mean of the signal."
+        )
         gti = np.asarray(gti)
         # Fill in the data with a constant outside GTIs
         gti_mask = create_gti_mask(times, gti)
