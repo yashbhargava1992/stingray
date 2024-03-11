@@ -1583,8 +1583,8 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, ch
 
     Other Parameters
     ----------------
-    skip_checks : bool
-        If True, skip the checks for the time array being sorted.
+    check_sorted : bool, default False
+        If True, checks that the time array is sorted.
 
     Yields
     ------
