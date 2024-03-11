@@ -767,6 +767,7 @@ def load_events_and_gtis(
             returns.energy_list = rough_calibration(cal_pi, mission)
             logger.info(
                 f"A default calibration was applied to the {mission} data. "
+                "See io.rough_calibration for details. "
                 "Use the `rmf_file` argument in `EventList.read`, or calibrate with "
                 "`EventList.convert_pi_to_energy(rmf_file)`, if you want to apply a specific "
                 "response matrix"

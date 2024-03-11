@@ -15,7 +15,6 @@ from .base import StingrayTimeseries
 from .filters import get_deadtime_mask
 from .gti import generate_indices_of_boundaries
 from .io import load_events_and_gtis, pi_to_energy
-
 from .lightcurve import Lightcurve
 from .utils import simon, njit
 from .utils import histogram
