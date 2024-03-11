@@ -96,7 +96,7 @@ def pi_to_energy(pis, rmf_file):
 def rough_calibration(pis, mission):
     """Make a rough conversion between PI channel and energy.
 
-    Only works for NICER, NuSTAR, and XMM.
+    Only works for NICER, NuSTAR, IXPE, and XMM.
 
     Parameters
     ----------
