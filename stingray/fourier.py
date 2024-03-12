@@ -1335,11 +1335,10 @@ def get_flux_iterable_from_segments(
             yield None
             continue
         if not binned:
-            event_times = times[idx0:idx1]
             # astype here serves to avoid integer rounding issues in Windows,
             # where long is a 32-bit integer.
             cts = histogram(
-                (event_times - s).astype(float), bins=n_bin, range=[0, segment_size]
+                (times[idx0:idx1] - s).astype(float), bins=n_bin, range=[0, segment_size]
             ).astype(float)
             cts = np.array(cts)
         else:
