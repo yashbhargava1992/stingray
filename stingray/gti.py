@@ -1621,9 +1621,12 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, ch
 
     if check_sorted:
         assert is_sorted(times), "Array is not sorted"
+    all_times = np.sort(np.array(list(set(np.concatenate([start, stop])))))
 
-    startidx = np.asarray(np.searchsorted(times, start))
-    stopidx = np.asarray(np.searchsorted(times, stop))
+    idxs = np.searchsorted(times, all_times)
+    idx_dict = dict([(s, a) for s, a in zip(all_times, idxs)])
+    startidx = np.asarray([idx_dict[s] for s in start])
+    stopidx = np.asarray([idx_dict[s] for s in stop])
 
     for s, e, idx0, idx1 in zip(start, stop, startidx, stopidx):
         yield s, e, idx0, idx1
