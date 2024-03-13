@@ -11,6 +11,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.logger import AstropyUserWarning
 import matplotlib.pyplot as plt
+from astropy.io import fits as pf
 
 import stingray.utils as utils
 from stingray.loggingconfig import setup_logger
@@ -38,10 +39,64 @@ except AttributeError:  # pragma: no cover
 logger = setup_logger()
 
 
+def read_rmf(rmf_file):
+    """Load RMF info.
+
+    .. note:: Preliminary: only EBOUNDS are read.
+
+    Parameters
+    ----------
+    rmf_file : str
+        The rmf file used to read the calibration.
+
+    Returns
+    -------
+    pis : array-like
+        the PI channels
+    e_mins : array-like
+        the lower energy bound of each PI channel
+    e_maxs : array-like
+        the upper energy bound of each PI channel
+    """
+
+    with pf.open(rmf_file, checksum=True, memmap=False) as lchdulist:
+        lchdulist.verify("warn")
+        lctable = lchdulist["EBOUNDS"].data
+        pis = np.array(lctable.field("CHANNEL"))
+        e_mins = np.array(lctable.field("E_MIN"))
+        e_maxs = np.array(lctable.field("E_MAX"))
+
+    return pis, e_mins, e_maxs
+
+
+def pi_to_energy(pis, rmf_file):
+    """Read the energy channels corresponding to the given PI channels.
+
+    Parameters
+    ----------
+    pis : array-like
+        The channels to lookup in the rmf
+
+    Other Parameters
+    ----------------
+    rmf_file : str
+        The rmf file used to read the calibration.
+    """
+    calp, cal_emin, cal_emax = read_rmf(rmf_file)
+    es = np.zeros(len(pis), dtype=float)
+    for ic, c in enumerate(calp):
+        good = pis == c
+        if not np.any(good):
+            continue
+        es[good] = (cal_emin[ic] + cal_emax[ic]) / 2
+
+    return es
+
+
 def rough_calibration(pis, mission):
     """Make a rough conversion between PI channel and energy.
 
-    Only works for NICER, NuSTAR, and XMM.
+    Only works for NICER, NuSTAR, IXPE, and XMM.
 
     Parameters
     ----------
@@ -710,6 +765,13 @@ def load_events_and_gtis(
     else:
         try:
             returns.energy_list = rough_calibration(cal_pi, mission)
+            logger.info(
+                f"A default calibration was applied to the {mission} data. "
+                "See io.rough_calibration for details. "
+                "Use the `rmf_file` argument in `EventList.read`, or calibrate with "
+                "`EventList.convert_pi_to_energy(rmf_file)`, if you want to apply a specific "
+                "response matrix"
+            )
         except ValueError:
             returns.energy_list = None
     returns.instr = instr.lower()

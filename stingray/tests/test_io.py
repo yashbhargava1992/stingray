@@ -182,3 +182,19 @@ class TestFileFormats(object):
         plt.plot([1, 2, 3])
         savefig("test.png")
         os.unlink("test.png")
+
+
+class TestCalibrate(object):
+    @classmethod
+    def setup_class(cls):
+        curdir = os.path.abspath(os.path.dirname(__file__))
+        cls.datadir = os.path.join(curdir, "data")
+
+        cls.rmf = os.path.join(cls.datadir, "test.rmf")
+
+    def test_calibrate_spectrum(self):
+        from ..io import pi_to_energy
+
+        pis = np.array([1, 2, 3])
+        energies = pi_to_energy(pis, self.rmf)
+        assert np.allclose(energies, [1.66, 1.70, 1.74])

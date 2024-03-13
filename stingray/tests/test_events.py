@@ -212,7 +212,21 @@ class TestEvents(object):
         assert np.allclose(ev.time, self.time)
         os.remove("ev.fits")
 
-    def test_fits_with_standard_file(self):
+    def test_calibrate_directly_warns(self):
+        rmf_file = os.path.join(datadir, "test.rmf")
+        with pytest.warns(UserWarning, match="PI channels must be provided"):
+            EventList(time=self.time, mjdref=54000, rmf_file=rmf_file)
+
+    def test_calibrate_directly(self):
+        rmf_file = os.path.join(datadir, "test.rmf")
+        pis = np.random.randint(0, 1000, np.size(self.time))
+        ev1 = EventList(time=self.time, pi=pis, mjdref=54000, rmf_file=rmf_file)
+        ev2 = EventList(time=self.time, pi=pis, mjdref=54000)
+        ev2.convert_pi_to_energy(rmf_file)
+
+        assert np.array_equal(ev1.energy, ev2.energy)
+
+    def test_fits_standard(self):
         """Test that fits works with a standard event list
         file.
         """
@@ -220,6 +234,17 @@ class TestEvents(object):
         ev = EventList()
         ev = ev.read(fname, fmt="hea")
         assert np.isclose(ev.mjdref, 55197.00076601852)
+
+    def test_fits_with_standard_file_and_calibrate_directly(self):
+        """Test that fits works and calibration works."""
+        fname = os.path.join(datadir, "monol_testA.evt")
+        rmf_file = os.path.join(datadir, "test.rmf")
+        ev1 = EventList()
+        ev1 = ev1.read(fname, fmt="hea")
+        ev2 = EventList()
+        ev2 = ev2.read(fname, fmt="hea", rmf_file=rmf_file)
+        ev1.convert_pi_to_energy(rmf_file)
+        assert np.array_equal(ev1.energy, ev2.energy)
 
     def test_fits_with_additional(self):
         """Test that fits works with a standard event list
