@@ -1565,7 +1565,7 @@ def generate_indices_of_gti_boundaries(times, gti, dt=0):
         yield s, e, idx0, idx1
 
 
-def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, check_sorted=False):
+def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, check_sorted=True):
     """
     Get the indices of events from different segments of the observation.
 
@@ -1604,7 +1604,7 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, ch
     >>> times = [0.1, 0.2, 0.5, 0.8, 1.1]
     >>> gtis = [[0, 0.55], [0.6, 2.1]]
     >>> vals = generate_indices_of_segment_boundaries_unbinned(
-    ...    times, gtis, 0.5, check_sorted=True)
+    ...    times, gtis, 0.5)
     >>> v0 = next(vals)
     >>> assert np.allclose(v0[:2], [0, 0.5])
     >>> # Note: 0.5 is not included in the interval
@@ -1621,6 +1621,7 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, ch
 
     if check_sorted:
         assert is_sorted(times), "Array is not sorted"
+
     all_times = np.sort(
         np.array(  # Wrap in a numpy array
             list(  # Transform into a proper iterable. Set is not recognized by np.array

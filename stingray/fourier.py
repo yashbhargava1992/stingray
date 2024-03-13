@@ -1200,6 +1200,15 @@ def _which_segment_idx_fun(binned=False, dt=None):
     # Make function interface equal (fluxes gets ignored)
     if not binned:
         fun = generate_indices_of_segment_boundaries_unbinned
+
+        # Define a new function, make sure that, by default, the sort check
+        # is disabled.
+        def fun(*args, **kwargs):
+            check_sorted = kwargs.pop("check_sorted", False)
+            return generate_indices_of_segment_boundaries_unbinned(
+                *args, check_sorted=check_sorted, **kwargs
+            )
+
     else:
         # Define a new function, so that we can pass the correct dt as an
         # argument.
