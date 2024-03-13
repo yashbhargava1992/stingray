@@ -1200,6 +1200,15 @@ def _which_segment_idx_fun(binned=False, dt=None):
     # Make function interface equal (fluxes gets ignored)
     if not binned:
         fun = generate_indices_of_segment_boundaries_unbinned
+
+        # Define a new function, make sure that, by default, the sort check
+        # is disabled.
+        def fun(*args, **kwargs):
+            check_sorted = kwargs.pop("check_sorted", False)
+            return generate_indices_of_segment_boundaries_unbinned(
+                *args, check_sorted=check_sorted, **kwargs
+            )
+
     else:
         # Define a new function, so that we can pass the correct dt as an
         # argument.
@@ -1335,11 +1344,10 @@ def get_flux_iterable_from_segments(
             yield None
             continue
         if not binned:
-            event_times = times[idx0:idx1]
             # astype here serves to avoid integer rounding issues in Windows,
             # where long is a 32-bit integer.
             cts = histogram(
-                (event_times - s).astype(float), bins=n_bin, range=[0, segment_size]
+                (times[idx0:idx1] - s).astype(float), bins=n_bin, range=[0, segment_size]
             ).astype(float)
             cts = np.array(cts)
         else:

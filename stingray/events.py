@@ -145,6 +145,9 @@ class EventList(StingrayTimeseries):
     rmf_file : str, default None
         The file name of the RMF file to use for calibration.
 
+    skip_checks : bool, default False
+        Skip checks for the validity of the event list. Use with caution.
+
     **other_kw :
         Used internally. Any other keyword arguments will be ignored
 
@@ -211,6 +214,7 @@ class EventList(StingrayTimeseries):
         timeref=None,
         timesys=None,
         rmf_file=None,
+        skip_checks=False,
         **other_kw,
     ):
         if ncounts is not None:
@@ -243,6 +247,7 @@ class EventList(StingrayTimeseries):
             timeref=timeref,
             timesys=timesys,
             rmf_file=rmf_file,
+            skip_checks=skip_checks,
             **other_kw,
         )
 
@@ -502,7 +507,8 @@ class EventList(StingrayTimeseries):
 
         Examples
         --------
-        >>> events = EventList(time=[0, 2, 1], energy=[0.3, 2, 0.5], pi=[3, 20, 5])
+        >>> events = EventList(time=[0, 2, 1], energy=[0.3, 2, 0.5], pi=[3, 20, 5],
+        ...                    skip_checks=True)
         >>> e1 = events.sort()
         >>> assert np.allclose(e1.time, [0, 1, 2])
         >>> assert np.allclose(e1.energy, [0.3, 0.5, 2])

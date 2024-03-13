@@ -488,10 +488,12 @@ class TestJoinEvents:
 
     def test_overlapping_join_infer(self):
         """Join two non-overlapping event lists."""
-        ev = EventList(time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]])
-        ev_other = EventList(
-            time=[5.1, 7, 6.1, 6.11, 10.1], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]]
-        )
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            ev = EventList(time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]])
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            ev_other = EventList(
+                time=[5.1, 7, 6.1, 6.11, 10.1], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]]
+            )
         ev_new = ev.join(ev_other, strategy="infer")
 
         assert (ev_new.time == np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1])).all()
@@ -500,15 +502,20 @@ class TestJoinEvents:
 
     def test_overlapping_join_change_mjdref(self):
         """Join two non-overlapping event lists."""
-        ev = EventList(
-            time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]], mjdref=57001
-        )
-        ev_other = EventList(
-            time=np.asarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
-            energy=[2, 3, 8, 1, 2],
-            gti=np.asarray([[5, 7], [8, 10]]) + 86400,
-            mjdref=57000,
-        )
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            ev = EventList(
+                time=[1, 1.1, 10, 6, 5],
+                energy=[10, 6, 3, 11, 2],
+                gti=[[1, 3], [5, 6]],
+                mjdref=57001,
+            )
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            ev_other = EventList(
+                time=np.asarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
+                energy=[2, 3, 8, 1, 2],
+                gti=np.asarray([[5, 7], [8, 10]]) + 86400,
+                mjdref=57000,
+            )
         with pytest.warns(UserWarning, match="Attribute mjdref is different"):
             ev_new = ev.join(ev_other, strategy="intersection")
 

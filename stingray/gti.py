@@ -1565,7 +1565,7 @@ def generate_indices_of_gti_boundaries(times, gti, dt=0):
         yield s, e, idx0, idx1
 
 
-def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size):
+def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, check_sorted=True):
     """
     Get the indices of events from different segments of the observation.
 
@@ -1580,6 +1580,11 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size):
         Good time intervals.
     segment_size : float
         Length of segments.
+
+    Other Parameters
+    ----------------
+    check_sorted : bool, default True
+        If True, checks that the time array is sorted.
 
     Yields
     ------
@@ -1598,7 +1603,8 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size):
     --------
     >>> times = [0.1, 0.2, 0.5, 0.8, 1.1]
     >>> gtis = [[0, 0.55], [0.6, 2.1]]
-    >>> vals = generate_indices_of_segment_boundaries_unbinned(times, gtis, 0.5)
+    >>> vals = generate_indices_of_segment_boundaries_unbinned(
+    ...    times, gtis, 0.5)
     >>> v0 = next(vals)
     >>> assert np.allclose(v0[:2], [0, 0.5])
     >>> # Note: 0.5 is not included in the interval
@@ -1613,10 +1619,23 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size):
 
     start, stop = time_intervals_from_gtis(gti, segment_size)
 
-    assert is_sorted(times), "Array is not sorted"
+    if check_sorted:
+        assert is_sorted(times), "Array is not sorted"
 
-    startidx = np.asarray(np.searchsorted(times, start))
-    stopidx = np.asarray(np.searchsorted(times, stop))
+    all_times = np.sort(
+        np.array(  # Wrap in a numpy array
+            list(  # Transform into a proper iterable. Set is not recognized by np.array
+                set(  # Only unique values. Start and stop have a lot of overlap
+                    np.concatenate([start, stop])  # Concatenate start and stop
+                )
+            )
+        )
+    )
+
+    idxs = np.searchsorted(times, all_times)
+    idx_dict = dict([(s, a) for s, a in zip(all_times, idxs)])
+    startidx = np.asarray([idx_dict[s] for s in start])
+    stopidx = np.asarray([idx_dict[s] for s in stop])
 
     for s, e, idx0, idx1 in zip(start, stop, startidx, stopidx):
         yield s, e, idx0, idx1
