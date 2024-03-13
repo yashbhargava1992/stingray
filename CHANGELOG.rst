@@ -1,5 +1,5 @@
-v2.0 beta (2024-01-31)
-----------------------
+v2.0 (2024-03-13)
+-----------------
 
 New Features
 ^^^^^^^^^^^^
@@ -33,6 +33,7 @@ Bug Fixes
 - Fix issue with the Poisson noise calculation in lag spectra, that produced NaN errors under some conditions (`#789 <https://github.com/StingraySoftware/stingray/pull/789>`__)
 - Fix rms computation and error bars (`#792 <https://github.com/StingraySoftware/stingray/pull/792>`__)
 - Fix issue with ``Powerspectrum`` of a single light curve (`#663 <https://github.com/StingraySoftware/stingray/pull/663>`__)
+- Fix nphots estimate in accelsearch, that lead to an underestimation of the power of candidates (`#807 <https://github.com/StingraySoftware/stingray/pull/807>`__)
 
 Breaking Changes
 ^^^^^^^^^^^^^^^^
@@ -49,6 +50,7 @@ Internal Changes
 - Separate slow tests from quick ones (`#758 <https://github.com/StingraySoftware/stingray/pull/758>`__)
 - Use Readthedocs for documentation building (`#769 <https://github.com/StingraySoftware/stingray/pull/769>`__)
 - More informative GTI messages (`#787 <https://github.com/StingraySoftware/stingray/pull/787>`__)
+- Eliminated the usage of astropy logging (`#799 <https://github.com/StingraySoftware/stingray/pull/799>`__)
 
 
 v1.1.2 (2023-05-25)
