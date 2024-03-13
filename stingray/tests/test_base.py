@@ -850,9 +850,10 @@ class TestStingrayTimeseries:
         bleh = [4, 1, 2, 0.5]
         mjdref = 57000
 
-        lc = StingrayTimeseries(
-            times, array_attrs={"blah": blah, "_bleh": bleh}, dt=1, mjdref=mjdref
-        )
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            lc = StingrayTimeseries(
+                times, array_attrs={"blah": blah, "_bleh": bleh}, dt=1, mjdref=mjdref
+            )
 
         lc_new = lc.sort()
 
@@ -1223,12 +1224,14 @@ class TestJoinEvents:
 
     def test_overlapping_join_infer(self):
         """Join two non-overlapping event lists."""
-        ts = StingrayTimeseries(
-            time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]]
-        )
-        ts_other = StingrayTimeseries(
-            time=[5.1, 7, 6.1, 6.11, 10.1], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]]
-        )
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            ts = StingrayTimeseries(
+                time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]]
+            )
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            ts_other = StingrayTimeseries(
+                time=[5.1, 7, 6.1, 6.11, 10.1], energy=[2, 3, 8, 1, 2], gti=[[5, 7], [8, 10]]
+            )
         ts_new = ts.join(ts_other, strategy="infer")
 
         assert (ts_new.time == np.array([1, 1.1, 5, 5.1, 6, 6.1, 6.11, 7, 10, 10.1])).all()
@@ -1237,15 +1240,20 @@ class TestJoinEvents:
 
     def test_overlapping_join_change_mjdref(self):
         """Join two non-overlapping event lists."""
-        ts = StingrayTimeseries(
-            time=[1, 1.1, 10, 6, 5], energy=[10, 6, 3, 11, 2], gti=[[1, 3], [5, 6]], mjdref=57001
-        )
-        ts_other = StingrayTimeseries(
-            time=np.asarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
-            energy=[2, 3, 8, 1, 2],
-            gti=np.asarray([[5, 7], [8, 10]]) + 86400,
-            mjdref=57000,
-        )
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            ts = StingrayTimeseries(
+                time=[1, 1.1, 10, 6, 5],
+                energy=[10, 6, 3, 11, 2],
+                gti=[[1, 3], [5, 6]],
+                mjdref=57001,
+            )
+        with pytest.warns(UserWarning, match="The time array is not sorted."):
+            ts_other = StingrayTimeseries(
+                time=np.asarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
+                energy=[2, 3, 8, 1, 2],
+                gti=np.asarray([[5, 7], [8, 10]]) + 86400,
+                mjdref=57000,
+            )
         with pytest.warns(UserWarning, match="Attribute mjdref is different"):
             ts_new = ts.join(ts_other, strategy="intersection")
 

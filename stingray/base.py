@@ -1127,6 +1127,10 @@ class StingrayTimeseries(StingrayObject):
     ephem : str
         The JPL ephemeris used to barycenter the data, if any (e.g. DE430)
 
+    skip_checks : bool
+        Skip checks on the time array. Useful when the user is reasonably sure that the
+        input data are valid.
+
     **other_kw :
         Used internally. Any other keyword arguments will be set as attributes of the object.
 
@@ -1176,6 +1180,7 @@ class StingrayTimeseries(StingrayObject):
         ephem: str = None,
         timeref: str = None,
         timesys: str = None,
+        skip_checks: bool = False,
         **other_kw,
     ):
         StingrayObject.__init__(self)
@@ -1198,6 +1203,12 @@ class StingrayTimeseries(StingrayObject):
             if self.time.shape[0] != new_arr.shape[0]:
                 raise ValueError(f"Lengths of time and {kw} must be equal.")
             setattr(self, kw, new_arr)
+        from .utils import is_sorted
+
+        if not skip_checks:
+            if self.time is not None and not is_sorted(self.time):
+                warnings.warn("The time array is not sorted. Sorting it now.")
+                self.sort(inplace=True)
 
     @property
     def time(self):
@@ -2151,7 +2162,7 @@ class StingrayTimeseries(StingrayObject):
         --------
         >>> time = [2, 1, 3]
         >>> count = [200, 100, 300]
-        >>> ts = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1)
+        >>> ts = StingrayTimeseries(time, array_attrs={"counts": count}, dt=1, skip_checks=True)
         >>> ts_new = ts.sort()
         >>> ts_new.time
         array([1, 2, 3])
