@@ -1621,7 +1621,15 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, ch
 
     if check_sorted:
         assert is_sorted(times), "Array is not sorted"
-    all_times = np.sort(np.array(list(set(np.concatenate([start, stop])))))
+    all_times = np.sort(
+        np.array(  # Wrap in a numpy array
+            list(  # Transform into a proper iterable. Set is not recognized by np.array
+                set(  # Only unique values. Start and stop have a lot of overlap
+                    np.concatenate([start, stop])  # Concatenate start and stop
+                )
+            )
+        )
+    )
 
     idxs = np.searchsorted(times, all_times)
     idx_dict = dict([(s, a) for s, a in zip(all_times, idxs)])
