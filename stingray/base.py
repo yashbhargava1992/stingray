@@ -422,6 +422,14 @@ class StingrayObject(object):
             setattr(cls, attr.lower(), np.array(ts[attr]))
 
         for key, val in ts.meta.items():
+            if (
+                isinstance(getattr(cls.__class__, key.lower(), None), property)
+                and getattr(cls.__class__, key.lower(), None).fset is None
+            ):
+                warnings.warn(
+                    f"{key} is a property of StingrayTimeseries without a setter. Not setting it"
+                )
+                continue
             setattr(cls, key.lower(), val)
 
         return cls
