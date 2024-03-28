@@ -883,7 +883,9 @@ class TestStingrayTimeseries:
     def test_setting_property_fails(self):
         ts = Table(dict(time=[1, 2, 3]))
         ts.meta["exposure"] = 10
-        with pytest.warns(UserWarning, match="exposure is a property of "):
+        with pytest.warns(
+            UserWarning, match=r".*protected attribute\(s\) of StingrayTimeseries: exposure"
+        ):
             StingrayTimeseries.from_astropy_table(ts)
 
     @pytest.mark.parametrize("highprec", [True, False])
