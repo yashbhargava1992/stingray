@@ -436,7 +436,7 @@ class StingrayObject(object):
             attrs = ",".join(attributes_left_unchanged)
             warnings.warn(
                 f"The input table contains protected attribute(s) of StingrayTimeseries: {attrs}. "
-                "These values will not be set in the new object. "
+                "These values are set internally by the class, and cannot be overwritten. "
                 "This issue is common when reading from FITS files using `fmt='fits'`."
                 " If this is the case, please consider using `fmt='ogip'` instead."
             )
