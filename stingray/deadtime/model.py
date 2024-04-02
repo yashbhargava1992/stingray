@@ -520,7 +520,7 @@ def non_paralyzable_dead_time_model(
     power : array of floats
         Power spectrum
     """
-
+    print(rate, background_rate, 1 / dead_time)
     if rate + background_rate > 1 / dead_time:
         raise ValueError(
             "The sum of the source and background count rates is larger than the inverse "
