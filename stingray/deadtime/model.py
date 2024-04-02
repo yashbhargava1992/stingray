@@ -85,19 +85,35 @@ def e_m_x_x_over_factorial(x: float, m: int):
 
 
 def r_in(td, r_0):
-    """Calculate incident countrate given dead time and detected countrate."""
+    """Calculate incident countrate given dead time and detected countrate.
+
+    Parameters
+    ----------
+    td : float
+        Dead time
+    r_0 : float
+        Detected countrate
+    """
     tau = 1 / r_0
     return 1.0 / (tau - td)
 
 
 def r_det(td, r_i):
-    """Calculate detected countrate given dead time and incident countrate."""
+    """Calculate detected countrate given dead time and incident countrate.
+
+    Parameters
+    ----------
+    td : float
+        Dead time
+    r_i : float
+        Incident countrate
+    """
     tau = 1 / r_i
     return 1.0 / (tau + td)
 
 
 @njit()
-def Gn(x, n):
+def _Gn(x, n):
     """Term in Eq. 34 in Zhang+95."""
     s = 0.0
 
@@ -113,7 +129,7 @@ def Gn(x, n):
 
 
 @njit()
-def h(k, n, td, tb, tau):
+def _h(k, n, td, tb, tau):
     """Term in Eq. 35 in Zhang+95."""
     # Typo in Zhang+95 corrected. k * tb, not k * td
     factor = k * tb - n * td
@@ -121,7 +137,7 @@ def h(k, n, td, tb, tau):
     if k * tb - n * td < 0:
         return 0.0
 
-    val = k - n * (td + tau) / tb + tau / tb * Gn(factor / tau, n)
+    val = k - n * (td + tau) / tb + tau / tb * _Gn(factor / tau, n)
 
     return val
 
@@ -131,24 +147,50 @@ INFINITE = 699
 
 @njit()
 def A0(r0, td, tb, tau):
-    """Term in Eq. 38 in Zhang+95."""
+    """Term in Eq. 38 in Zhang+95.
+
+    Parameters
+    ----------
+    r0 : float
+        Detected countrate
+    td : float
+        Dead time
+    tb : float
+        Bin time of the light curve
+    tau : float
+        Inverse of the incident countrate
+    """
     s = 0.0
     for n in range(1, int(max(2, tb / td * 2 + 1))):
-        s += h(1, n, td, tb, tau)
+        s += _h(1, n, td, tb, tau)
 
     return r0 * tb * (1 + 2 * s)
 
 
 @njit()
 def A_single_k(k, r0, td, tb, tau):
-    """Term in Eq. 39 in Zhang+95."""
+    """Term in Eq. 39 in Zhang+95.
+
+    Parameters
+    ----------
+    k : int
+        Order of the term
+    r0 : float
+        Detected countrate
+    td : float
+        Dead time
+    tb : float
+        Bin time of the light curve
+    tau : float
+        Inverse of the incident countrate
+    """
     if k == 0:
         return A0(r0, td, tb, tau)
     # Equation 39
     s = 0.0
 
     for n in range(1, int(max(3, (k + 1) * tb / td * 2))):
-        new_val = h(k + 1, n, td, tb, tau) - 2 * h(k, n, td, tb, tau) + h(k - 1, n, td, tb, tau)
+        new_val = _h(k + 1, n, td, tb, tau) - 2 * _h(k, n, td, tb, tau) + _h(k - 1, n, td, tb, tau)
 
         s += new_val
 
@@ -156,7 +198,21 @@ def A_single_k(k, r0, td, tb, tau):
 
 
 def A(k, r0, td, tb, tau):
-    """Term in Eq. 39 in Zhang+95."""
+    """Term in Eq. 39 in Zhang+95.
+
+    Parameters
+    ----------
+    k : int or array of ints
+        Order of the term
+    r0 : float
+        Detected countrate
+    td : float
+        Dead time
+    tb : float
+        Bin time of the light curve
+    tau : float
+        Inverse of the incident countrate
+    """
     if isinstance(k, Iterable):
         return np.array([A_single_k(ki, r0, td, tb, tau) for ki in k])
 
@@ -164,16 +220,49 @@ def A(k, r0, td, tb, tau):
 
 
 def limit_A(rate, td, tb):
-    """Limit of A for k->infty, as per Eq. 43 in Zhang+95."""
+    """Limit of A for k->infty, as per Eq. 43 in Zhang+95.
+
+    Parameters
+    ----------
+    rate : float
+        Incident count rate
+    td : float
+        Dead time
+    tb : float
+        Bin time of the light curve
+    """
     r0 = r_det(td, rate)
     return r0**2 * tb**2
 
 
 def check_A(rate, td, tb, max_k=100, save_to=None, linthresh=0.000001, rate_is_incident=True):
-    """Test that A is well-behaved.
+    r"""Test that A is well-behaved.
 
-    Check that Ak ->r0**2tb**2 for k->infty, as per Eq. 43 in
-    Zhang+95.
+    This function produces a plot of :math:`A_k - r_0^2 t_b^2` vs :math:`k`, to visually check that
+    :math:`A_k \rightarrow r_0^2 t_b^2` for :math:`k\rightarrow\infty`, as per Eq. 43 in Zhang+95.
+
+    With this function is possible to determine how many inner loops `k` (`limit_k` in function
+    pds_model_zhang) are necessary for a correct approximation of the dead time model
+
+    Parameters
+    ----------
+    rate : float
+        Count rate, either incident or detected (use the `rate_is_incident` bool to specify)
+    td : float
+        Dead time
+    tb : float
+        Bin time of the light curve
+
+    Other Parameters
+    ----------------
+    max_k : int
+        Maximum k to plot
+    save_to : str, default None
+        If not None, save the plot to this file
+    linthresh : float, default 0.000001
+        Linear threshold for the "symlog" scale of the plot
+    rate_is_incident : bool, default True
+        If True, the input rate is the incident count rate. If False, it is the detected one.
     """
     if rate_is_incident:
         tau = 1 / rate
@@ -201,7 +290,7 @@ def check_A(rate, td, tb, max_k=100, save_to=None, linthresh=0.000001, rate_is_i
 
 
 @njit()
-def B_raw(k, r0, td, tb, tau):
+def _B_raw(k, r0, td, tb, tau):
     """Term in Eq. 45 in Zhang+95."""
     if k == 0:
         return 2 * (A_single_k(0, r0, td, tb, tau) - r0**2 * tb**2) / (r0 * tb)
@@ -212,32 +301,83 @@ def B_raw(k, r0, td, tb, tau):
 
 
 @njit()
-def safe_B_single_k(k, r0, td, tb, tau, limit_k=60):
+def _safe_B_single_k(k, r0, td, tb, tau, limit_k=60):
     """Term in Eq. 39 in Zhang+95, with a cut in the maximum k.
 
     This can be risky. Only use if B is really 0 for high k.
     """
     if k > limit_k:
         return 0.0
-    return B_raw(k, r0, td, tb, tau)
+    return _B_raw(k, r0, td, tb, tau)
 
 
-def safe_B(k, r0, td, tb, tau, limit_k=60):
+def _safe_B(k, r0, td, tb, tau, limit_k=60):
     """Term in Eq. 39 in Zhang+95, with a cut in the maximum k.
 
     This can be risky. Only use if B is really 0 for high k.
     """
     if isinstance(k, Iterable):
-        return np.array([safe_B_single_k(ki, r0, td, tb, tau, limit_k=limit_k) for ki in k])
-    return safe_B_single_k(int(k), r0, td, tb, tau, limit_k=limit_k)
+        return np.array([_safe_B_single_k(ki, r0, td, tb, tau, limit_k=limit_k) for ki in k])
+    return _safe_B_single_k(int(k), r0, td, tb, tau, limit_k=limit_k)
 
 
 def B(k, r0, td, tb, tau, limit_k=60):
-    return safe_B(k, r0, td, tb, tau, limit_k=limit_k)
+    """Term in Eq. 39 in Zhang+95, with a cut in the maximum k.
+
+    The cut can be risky. Only use if B is really 0 for high k. Use `check_B` to test.
+
+    Parameters
+    ----------
+    k : int or array of ints
+        Order of the term
+    r0 : float
+        Detected countrate
+    td : float
+        Dead time
+    tb : float
+        Bin time of the light curve
+    tau : float
+        Inverse of the incident countrate
+
+    Other Parameters
+    ----------------
+    limit_k : int
+        Limit to this value the number of terms in the inner loops of
+        calculations. Check the plots returned by  the `check_B` and
+        `check_A` functions to test that this number is adequate.
+    """
+    return _safe_B(k, r0, td, tb, tau, limit_k=limit_k)
 
 
 def check_B(rate, td, tb, max_k=100, save_to=None, linthresh=0.000001, rate_is_incident=True):
-    """Check that B->0 for k->infty."""
+    r"""Check that :math:`B\rightarrow 0` for :math:`k\rightarrow \infty`.
+
+    This function produces a plot of :math:`B_k` vs :math:`k`, to visually check that
+    :math:`B_k \rightarrow 0` for :math:`k\rightarrow\infty`, as per Eq. 43 in Zhang+95.
+
+    With this function is possible to determine how many inner loops `k` (`limit_k` in function
+    pds_model_zhang) are necessary for a correct approximation of the dead time model
+
+    Parameters
+    ----------
+    rate : float
+        Count rate, either incident or detected (use the `rate_is_incident` bool to specify)
+    td : float
+        Dead time
+    tb : float
+        Bin time of the light curve
+
+    Other Parameters
+    ----------------
+    max_k : int
+        Maximum k to plot
+    save_to : str, default None
+        If not None, save the plot to this file
+    linthresh : float, default 0.000001
+        Linear threshold for the "symlog" scale of the plot
+    rate_is_incident : bool, default True
+        If True, the input rate is the incident count rate. If False, it is the detected one.
+    """
     if rate_is_incident:
         tau = 1 / rate
         r0 = r_det(td, rate)
@@ -275,11 +415,11 @@ def _inner_loop_pds_zhang(N, tau, r0, td, tb, limit_k=60):
         eq8_sum = 0.0
 
         for k in range(1, min(N, limit_k)):
-            Bk = safe_B_single_k(k, r0, td, tb, tau, limit_k=limit_k)
+            Bk = _safe_B_single_k(k, r0, td, tb, tau, limit_k=limit_k)
 
             eq8_sum += (N - k) / N * Bk * np.cos(2 * np.pi * j * k / N)
 
-        P[j] = safe_B_single_k(0, r0, td, tb, tau) + eq8_sum
+        P[j] = _safe_B_single_k(0, r0, td, tb, tau) + eq8_sum
 
     return P
 
