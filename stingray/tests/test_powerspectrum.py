@@ -501,7 +501,9 @@ class TestPowerspectrum(object):
         square of the number of data points in the light curve
         """
         ps = Powerspectrum(self.lc, norm="Leahy")
-        ps_var = (np.sum(self.lc.counts) / ps.n**2.0) * (np.sum(ps.power[:-1]) + ps.power[-1] / 2.0)
+        ps_var = (np.sum(self.lc.counts) / ps.n**2.0) * (
+            np.sum(ps.power[:-1]) + ps.power[-1] / 2.0
+        )
 
         assert np.isclose(ps_var, np.var(self.lc.counts), atol=0.01)
 

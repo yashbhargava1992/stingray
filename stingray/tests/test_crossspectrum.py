@@ -1251,7 +1251,8 @@ class TestAveragedCrossspectrum(object):
         assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower / 2.0)))
 
     def test_deadtime_corr(self):
-        tmax = 10.0
+        tmax = 100.0
+        segment_size = 1
         events1 = np.sort(np.random.uniform(0, tmax, 10000))
         events2 = np.sort(np.random.uniform(0, tmax, 10000))
         events1_dt = filter_for_deadtime(events1, deadtime=0.0025)
@@ -1261,7 +1262,7 @@ class TestAveragedCrossspectrum(object):
             events2_dt,
             gti=[[0, tmax]],
             dt=0.01,
-            segment_size=1,
+            segment_size=segment_size,
             save_all=True,
             norm="leahy",
         )
@@ -1271,7 +1272,9 @@ class TestAveragedCrossspectrum(object):
                 dead_time=0.0025, rate=np.size(events1_dt) / tmax, paralyzable=True
             )
 
-        cs = cs_dt.deadtime_correct(dead_time=0.0025, rate=np.size(events1_dt) / tmax)
+        cs = cs_dt.deadtime_correct(
+            dead_time=0.0025, rate=np.size(events1_dt) / (tmax / segment_size)
+        )
         # Poisson noise has a scatter of sqrt(2/N) in the cospectrum
         assert np.isclose(np.std(cs.power.real), np.sqrt(2 / 10), rtol=0.1)
 
