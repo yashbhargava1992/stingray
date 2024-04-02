@@ -13,6 +13,7 @@ from stingray.crossspectrum import cospectra_pvalue, crossspectrum_from_time_arr
 from stingray.crossspectrum import normalize_crossspectrum, normalize_crossspectrum_gauss
 from stingray.crossspectrum import coherence, time_lag
 from stingray import StingrayError
+from stingray.utils import HAS_NUMBA
 from stingray.simulator import Simulator
 from stingray.fourier import poisson_level
 from stingray.filters import filter_for_deadtime
@@ -1250,6 +1251,7 @@ class TestAveragedCrossspectrum(object):
         maxpower = np.max(cs.power)
         assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower / 2.0)))
 
+    @pytest.mark.skipif("not HAS_NUMBA")
     def test_deadtime_corr(self):
         tmax = 100.0
         segment_size = 1
