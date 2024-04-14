@@ -209,11 +209,17 @@ def _patch_mission_info(info, mission=None):
     >>> new_info = _patch_mission_info(info, mission="xmm")
     >>> new_info['gti']
     'STDGTI,GTI0'
+    >>> new_info = _patch_mission_info(info, mission="xte")
+    >>> new_info['ecol']
+    'PHA'
     """
     if mission is None:
         return info
     if mission.lower() == "xmm" and "gti" in info:
         info["gti"] += ",GTI0"
+    if mission.lower() == "xte" and "ecol" in info:
+        info["ecol"] = "PHA"
+        info["ccol"] = "PCUID"
     return info
 
 
@@ -358,15 +364,22 @@ def get_key_from_mission_info(info, key, default, inst=None, mode=None):
     'BU'
     """
     filt_info = copy.deepcopy(info)
-    if inst is not None and inst in filt_info:
-        filt_info.update(info[inst])
-        filt_info.pop(inst)
-    if mode is not None and mode in filt_info:
-        filt_info.update(info[inst][mode])
-        filt_info.pop(mode)
+    key = key.lower()
+    filt_info = dict([(k.lower(), v) for k, v in filt_info.items()])
+    if inst is not None:
+        inst = inst.lower()
+        if inst in filt_info:
+            filt_info.update(filt_info[inst])
+            filt_info.pop(inst)
+    if mode is not None:
+        mode = mode.lower()
+        if mode in filt_info:
+            filt_info.update(filt_info[inst][mode])
+            filt_info.pop(mode)
 
     if key in filt_info:
         return filt_info[key]
+
     return default
 
 
