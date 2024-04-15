@@ -141,7 +141,41 @@ __all__ = [
     "find_nearest",
     "check_isallfinite",
     "heaviside",
+    "make_dictionary_lowercase",
 ]
+
+
+def make_dictionary_lowercase(dictionary, recursive=False):
+    """Make all keys of a dictionary lowercase.
+
+    Optionally, if some values are dictionaries, they can be made lowercase too.
+
+    Parameters
+    ----------
+    dictionary : dict
+        The dictionary to be made lowercase
+
+    Other Parameters
+    ----------------
+    recursive : bool
+        If ``True``, make all keys of nested dictionaries lowercase too.
+
+    Examples
+    --------
+    >>> d1 = {"A": 1, "B": 2, "C": {"D": 3, "E": {"F": 4}}}
+    >>> d2 = make_dictionary_lowercase(d1)
+    >>> assert d2 == {"a": 1, "b": 2, "c": {"D": 3, "E": {"F": 4}}}
+    >>> d3 = make_dictionary_lowercase(d1, recursive=True)
+    >>> assert d3 == {"a": 1, "b": 2, "c": {"d": 3, "e": {"f": 4}}}
+    """
+    new_dict = {}
+    for key, value in dictionary.items():
+        if recursive and isinstance(value, dict):
+            value = make_dictionary_lowercase(value, recursive=True)
+
+        new_dict[key.lower()] = value
+
+    return new_dict
 
 
 @njit()
