@@ -684,7 +684,7 @@ def load_events_and_gtis(
             func = get_rough_conversion_function(
                 mission, instrument=instr, epoch=t_start / 86400 + mjdref
             )
-            returns.energy_list = func(cal_pi)
+            returns.energy_list = func(cal_pi, detector_id=detector_id)
             logger.info(
                 f"A default calibration was applied to the {mission} data. "
                 "See io.rough_calibration for details. "

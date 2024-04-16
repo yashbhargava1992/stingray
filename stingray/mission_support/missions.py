@@ -67,7 +67,7 @@ def _patch_mission_info(info, mission=None):
     if mission.lower() == "xmm" and "gti" in info:
         info["gti"] += ",GTI0"
     if mission.lower() == "xte" and "ecol" in info:
-        info["ecol"] = "PI"
+        info["ecol"] = "PHA"
         info["ccol"] = "PCUID"
     return info
 
@@ -137,15 +137,37 @@ def get_rough_conversion_function(mission, instrument=None, epoch=None):
     """
 
     if mission.lower() == "nustar":
-        return lambda pi: pi * 0.04 + 1.62
+
+        def func(pi, **kwargs):
+            return pi * 0.04 + 1.62
+
+        return func
+
     if mission.lower() == "xmm":
-        return lambda pi: pi * 0.001
+
+        def func(pi, **kwargs):
+            return pi * 0.001
+
+        return func
+
     if mission.lower() == "nicer":
-        return lambda pi: pi * 0.01
+
+        def func(pi, **kwargs):
+            return pi * 0.01
+
+        return func
+
     if mission.lower() == "ixpe":
-        return lambda pi: pi / 375 * 15
+
+        def func(pi, **kwargs):
+            return pi / 375 * 15
+
+        return func
+
     if mission.lower() == "xte":
-        return rxte_calibration_func(instrument, epoch)
+        func = rxte_calibration_func(instrument, epoch)
+        return func
+
     raise ValueError(f"Mission {mission.lower()} not recognized")
 
 

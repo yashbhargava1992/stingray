@@ -107,6 +107,12 @@ class TestIO(object):
             load_events_and_gtis(fname, additional_columns=["PRIOR"])
         assert np.any(["Trying first extension" in r.message.args[0] for r in record])
 
+    def test_event_file_read_rxte(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, "xte_test.evt.gz")
+        data = load_events_and_gtis(fname)
+        assert data.mission.lower() == "xte"
+
     def test_event_file_read_no_mission(self):
         """Test event file reading."""
         fname = os.path.join(datadir, "nomission.evt")

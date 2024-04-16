@@ -249,10 +249,10 @@ def pca_calibration_func(epoch):
         energies_0[chan_sep[0] : chan_sep[1] + 1] = energy_0
         energies_1234[chan_sep[0] : chan_sep[1] + 1] = energy_1234
 
-    def func(chan, module):
-        if module == 0:
-            return energies_0[chan]
-        return energies_1234[chan]
+    def func(chan, detector_id=0):
+        if detector_id == 0:
+            return energies_0[int(chan)]
+        return energies_1234[int(chan)]
 
     return np.vectorize(func)
 
@@ -277,4 +277,4 @@ def rxte_pca_event_file_interpretation(hdulist):
     local_chans = np.asarray([int(np.mean(ch)) for ch in _decode_energy_channels(tevtb2)])
 
     # channels = _decode_energy_channels(tevtb2)
-    hdulist["XTE_SE"].data["PI"] = local_chans[hdulist["XTE_SE"].data["PHA"]]
+    hdulist["XTE_SE"].data["PHA"] = local_chans[hdulist["XTE_SE"].data["PHA"]]
