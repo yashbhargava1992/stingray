@@ -245,9 +245,6 @@ class EventList(StingrayTimeseries):
             **other_kw,
         )
 
-        if self.energy is None:
-            self.calibrate(rmf_file=rmf_file)
-
         if other_kw != {}:
             warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
