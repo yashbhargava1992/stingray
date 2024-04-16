@@ -60,7 +60,7 @@ def _patch_mission_info(info, mission=None):
     'STDGTI,GTI0'
     >>> new_info = _patch_mission_info(info, mission="xte")
     >>> new_info['ecol']
-    'PI'
+    'PHA'
     """
     if mission is None:
         return info
