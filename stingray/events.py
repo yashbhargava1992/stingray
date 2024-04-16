@@ -263,22 +263,6 @@ class EventList(StingrayTimeseries):
         """Number of events in the event list."""
         return self.n
 
-    def calibrate(self, rmf_file=None):
-        energy = None
-        if rmf_file is not None:
-            if self.pi is None:
-                warnings.warn("PI channels must be provided to calibrate the energy")
-            else:
-                energy = pi_to_energy(self.pi, rmf_file)
-
-        elif self.mission is not None:
-            from stingray.mission_support.missions import get_rough_conversion_function
-
-            epoch = self.gti[0, 0] / 86400 + self.mjdref
-            conversion_func = get_rough_conversion_function(self.mission, self.instr, epoch=epoch)
-            energy = conversion_func(self.pi)
-        return energy
-
     def to_lc(self, dt, tstart=None, tseg=None):
         """
         Convert event list to a :class:`stingray.Lightcurve` object.
