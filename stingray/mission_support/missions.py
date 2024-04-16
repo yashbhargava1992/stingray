@@ -1,6 +1,6 @@
 import os
 import warnings
-from .rxte import rxte_calibration_func
+from .rxte import rxte_calibration_func, rxte_pca_event_file_interpretation
 
 
 def rough_calibration(pis, mission):
@@ -71,7 +71,7 @@ def _patch_mission_info(info, mission=None):
     if mission.lower() == "xmm" and "gti" in info:
         info["gti"] += ",GTI0"
     if mission.lower() == "xte" and "ecol" in info:
-        info["ecol"] = "PHA"
+        info["ecol"] = "PI"
         info["ccol"] = "PCUID"
     return info
 
@@ -151,3 +151,16 @@ def get_rough_conversion_function(mission, instrument=None, epoch=None):
     if mission.lower() == "xte":
         return rxte_calibration_func(instrument, epoch)
     raise ValueError(f"Mission {mission.lower()} not recognized")
+
+
+def mission_specific_event_interpretation(mission):
+    """Get the mission-specific FITS interpretation function."""
+
+    if mission.lower() == "xte":
+
+        return rxte_pca_event_file_interpretation
+
+    def _empty(x):
+        return x
+
+    return _empty

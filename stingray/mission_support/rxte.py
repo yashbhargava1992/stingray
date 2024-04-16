@@ -262,3 +262,19 @@ def rxte_calibration_func(instrument, epoch):
     if instrument.lower() == "pca":
         return pca_calibration_func(epoch)
     return ValueError(f"Unknown XTE instrument: {instrument}")
+
+
+def rxte_pca_event_file_interpretation(hdulist):
+    """Interpret the FITS header of an RXTE event file."""
+    if "XTE_SE" not in hdulist:
+        raise ValueError(
+            "No XTE_SE extension found. At the moment, only science events "
+            "are supported by Stingray for XTE."
+        )
+    tevtb2 = hdulist["XTE_SE"].header.get("TEVTB2", None)
+    if tevtb2 is None:
+        raise ValueError("No TEVTB2 keyword found in the header")
+    local_chans = np.asarray([int(np.mean(ch)) for ch in _decode_energy_channels(tevtb2)])
+
+    # channels = _decode_energy_channels(tevtb2)
+    hdulist["XTE_SE"].data["PI"] = local_chans[hdulist["XTE_SE"].data["PHA"]]

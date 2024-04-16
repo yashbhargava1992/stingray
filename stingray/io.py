@@ -25,7 +25,12 @@ from .utils import (
 )
 from .gti import get_gti_from_all_extensions, load_gtis
 
-from .mission_support import read_mission_info, rough_calibration
+from .mission_support import (
+    read_mission_info,
+    rough_calibration,
+    get_rough_conversion_function,
+    mission_specific_event_interpretation,
+)
 
 # Python 3
 import pickle
@@ -551,6 +556,10 @@ def load_events_and_gtis(
         mission_key = "TELESCOP"
     mission = probe_header[mission_key].lower()
 
+    mission_specific_processing = mission_specific_event_interpretation(mission)
+
+    mission_specific_processing(hdulist)
+
     db = read_mission_info(mission)
     instkey = get_key_from_mission_info(db, "instkey", "INSTRUME")
     instr = mode = None
@@ -667,9 +676,24 @@ def load_events_and_gtis(
     returns.gti_list = gti_list
     returns.pi_list = pi
     returns.cal_pi_list = cal_pi
+
     if "energy" in additional_data and np.any(additional_data["energy"] > 0.0):
         returns.energy_list = additional_data["energy"]
-
+    else:
+        func = get_rough_conversion_function(
+            mission, instrument=instr, epoch=t_start / 86400 + mjdref
+        )
+        try:
+            returns.energy_list = func(cal_pi)
+            logger.info(
+                f"A default calibration was applied to the {mission} data. "
+                "See io.rough_calibration for details. "
+                "Use the `rmf_file` argument in `EventList.read`, or calibrate with "
+                "`EventList.convert_pi_to_energy(rmf_file)`, if you want to apply a specific "
+                "response matrix"
+            )
+        except ValueError:
+            returns.energy_list = None
     returns.instr = instr.lower()
     returns.mission = mission.lower()
     returns.mjdref = mjdref
