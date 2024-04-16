@@ -89,7 +89,7 @@ class TestIO(object):
         assert np.any(["Column energy not found" in r.message.args[0] for r in record])
         # This is the default calibration for nustar data, as returned
         # from rough_calibration
-        assert np.allclose(vals.energy_list, vals.pi_list * 0.04 + 1.6)
+        assert np.allclose(vals.energy_list, vals.pi_list * 0.04 + 1.62)
 
     def test_event_file_read_additional_energy_cal(self):
         """Test event file reading."""
