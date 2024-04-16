@@ -157,7 +157,6 @@ def mission_specific_event_interpretation(mission):
     """Get the mission-specific FITS interpretation function."""
 
     if mission.lower() == "xte":
-
         return rxte_pca_event_file_interpretation
 
     def _empty(x):
