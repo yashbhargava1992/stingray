@@ -1,4 +1,5 @@
 import os
+import warnings
 
 
 def rough_calibration(pis, mission):
@@ -21,7 +22,7 @@ def rough_calibration(pis, mission):
     Examples
     --------
     >>> rough_calibration(0, 'nustar')
-    1.6
+    1.62
     >>> rough_calibration(0.0, 'ixpe')
     0.0
     >>> # It's case-insensitive
@@ -34,8 +35,12 @@ def rough_calibration(pis, mission):
     >>> rough_calibration(100, 'nicer')
     1.0
     """
+    warnings.warn(
+        "`rough_calibration` is deprecated and will be removed in a future release.",
+        DeprecationWarning,
+    )
     if mission.lower() == "nustar":
-        return pis * 0.04 + 1.6
+        return pis * 0.04 + 1.62
     elif mission.lower() == "xmm":
         return pis * 0.001
     elif mission.lower() == "nicer":
