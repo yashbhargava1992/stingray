@@ -680,10 +680,10 @@ def load_events_and_gtis(
     if "energy" in additional_data and np.any(additional_data["energy"] > 0.0):
         returns.energy_list = additional_data["energy"]
     else:
-        func = get_rough_conversion_function(
-            mission, instrument=instr, epoch=t_start / 86400 + mjdref
-        )
         try:
+            func = get_rough_conversion_function(
+                mission, instrument=instr, epoch=t_start / 86400 + mjdref
+            )
             returns.energy_list = func(cal_pi)
             logger.info(
                 f"A default calibration was applied to the {mission} data. "

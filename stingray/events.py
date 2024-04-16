@@ -223,6 +223,12 @@ class EventList(StingrayTimeseries):
                 DeprecationWarning,
             )
 
+        if rmf_file is not None:
+            if pi is None:
+                warnings.warn("PI channels must be provided to calibrate the energy")
+            else:
+                energy = pi_to_energy(pi, rmf_file)
+
         StingrayTimeseries.__init__(
             self,
             time=time,
