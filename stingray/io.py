@@ -669,18 +669,7 @@ def load_events_and_gtis(
     returns.cal_pi_list = cal_pi
     if "energy" in additional_data and np.any(additional_data["energy"] > 0.0):
         returns.energy_list = additional_data["energy"]
-    else:
-        try:
-            returns.energy_list = rough_calibration(cal_pi, mission)
-            logger.info(
-                f"A default calibration was applied to the {mission} data. "
-                "See io.rough_calibration for details. "
-                "Use the `rmf_file` argument in `EventList.read`, or calibrate with "
-                "`EventList.convert_pi_to_energy(rmf_file)`, if you want to apply a specific "
-                "response matrix"
-            )
-        except ValueError:
-            returns.energy_list = None
+
     returns.instr = instr.lower()
     returns.mission = mission.lower()
     returns.mjdref = mjdref

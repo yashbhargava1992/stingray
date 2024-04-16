@@ -223,12 +223,6 @@ class EventList(StingrayTimeseries):
                 DeprecationWarning,
             )
 
-        if rmf_file is not None:
-            if pi is None:
-                warnings.warn("PI channels must be provided to calibrate the energy")
-            else:
-                energy = pi_to_energy(pi, rmf_file)
-
         StingrayTimeseries.__init__(
             self,
             time=time,
@@ -251,6 +245,9 @@ class EventList(StingrayTimeseries):
             **other_kw,
         )
 
+        if self.energy is None:
+            self.calibrate(rmf_file=rmf_file)
+
         if other_kw != {}:
             warnings.warn(f"Unrecognized keywords: {list(other_kw.keys())}")
 
@@ -262,6 +259,22 @@ class EventList(StingrayTimeseries):
     def ncounts(self):
         """Number of events in the event list."""
         return self.n
+
+    def calibrate(self, rmf_file=None):
+        energy = None
+        if rmf_file is not None:
+            if self.pi is None:
+                warnings.warn("PI channels must be provided to calibrate the energy")
+            else:
+                energy = pi_to_energy(self.pi, rmf_file)
+
+        elif self.mission is not None:
+            from stingray.mission_support.missions import get_rough_conversion_function
+
+            epoch = self.gti[0, 0] / 86400 + self.mjdref
+            conversion_func = get_rough_conversion_function(self.mission, self.instr, epoch=epoch)
+            energy = conversion_func(self.pi)
+        return energy
 
     def to_lc(self, dt, tstart=None, tseg=None):
         """
