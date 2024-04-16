@@ -36,10 +36,6 @@ def rough_calibration(pis, mission):
     >>> rough_calibration(100, 'nicer')
     1.0
     """
-    warnings.warn(
-        "`rough_calibration` is deprecated and will be removed in a future release.",
-        DeprecationWarning,
-    )
     if mission.lower() == "nustar":
         return pis * 0.04 + 1.62
     elif mission.lower() == "xmm":
@@ -56,7 +52,7 @@ def _patch_mission_info(info, mission=None):
 
     Examples
     --------
-    >>> info = {'gti': 'STDGTI'}
+    >>> info = {'gti': 'STDGTI', 'ecol': 'PHA'}
     >>> new_info = _patch_mission_info(info, mission=None)
     >>> assert new_info['gti'] == info['gti']
     >>> new_info = _patch_mission_info(info, mission="xmm")
@@ -64,7 +60,7 @@ def _patch_mission_info(info, mission=None):
     'STDGTI,GTI0'
     >>> new_info = _patch_mission_info(info, mission="xte")
     >>> new_info['ecol']
-    'PHA'
+    'PI'
     """
     if mission is None:
         return info

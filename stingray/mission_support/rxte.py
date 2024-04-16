@@ -87,10 +87,10 @@ def pca_calibration_func(epoch):
 
     Examples
     --------
-    >>> conversion_function = rxte_calibration_funcs(50082)
+    >>> conversion_function = pca_calibration_func(50082)
     >>> float(conversion_function(10, 0))
     3.04
-    >>> conversion_function = rxte_calibration_funcs(55930)
+    >>> conversion_function = pca_calibration_func(55930)
     >>> float(conversion_function(10, 0))
     4.53
     >>> float(conversion_function(10, 3))
