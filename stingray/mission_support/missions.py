@@ -1,5 +1,6 @@
 import os
 import warnings
+from .rxte import rxte_calibration_func
 
 
 def rough_calibration(pis, mission):
@@ -117,3 +118,36 @@ def read_mission_info(mission=None):
                 previous_db_step = previous_db_step[key]
             previous_db_step[data[-1]] = value
     return _patch_mission_info(db, mission)
+
+
+def get_rough_conversion_function(mission, instrument=None, epoch=None):
+    """Get a rough PI-Energy conversion function for a mission.
+
+    The function should accept a PI channel and return the corresponding energy.
+    Additional keyword arguments (e.g. epoch, detector) can be passed to the function.
+
+    Parameters
+    ----------
+    mission : str
+        Mission name
+    instrument : str
+        Instrument onboard the mission
+    epoch : float
+        Epoch of the observation in MJD (important for missions updating their calibration).
+    Returns
+    -------
+    function
+        Conversion function
+    """
+
+    if mission.lower() == "nustar":
+        return lambda pi: pi * 0.04 + 1.62
+    if mission.lower() == "xmm":
+        return lambda pi: pi * 0.001
+    if mission.lower() == "nicer":
+        return lambda pi: pi * 0.01
+    if mission.lower() == "ixpe":
+        return lambda pi: pi / 375 * 15
+    if mission.lower() == "xte":
+        return rxte_calibration_func(instrument, epoch)
+    raise ValueError(f"Mission {mission.lower()} not recognized")

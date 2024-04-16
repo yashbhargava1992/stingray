@@ -71,7 +71,7 @@ times = [
 edge_epochs = Time(times, format="isot", scale="utc").mjd
 
 
-def rxte_calibration_func(epoch):
+def pca_calibration_func(epoch):
     """Return the calibration functions for RXTE, separately for PCUs 1-4 and PCU 0.
 
     Parameters
@@ -255,3 +255,10 @@ def rxte_calibration_func(epoch):
         return energies_1234[chan]
 
     return np.vectorize(func)
+
+
+def rxte_calibration_func(instrument, epoch):
+    """Return the calibration function for RXTE at a given epoch."""
+    if instrument.lower() == "pca":
+        return pca_calibration_func(epoch)
+    return ValueError(f"Unknown XTE instrument: {instrument}")
