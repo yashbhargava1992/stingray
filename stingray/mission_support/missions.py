@@ -116,6 +116,10 @@ def read_mission_info(mission=None):
     return _patch_mission_info(db, mission)
 
 
+def _wrap_function_ignoring_kwargs(func, **kwargs):
+    return func
+
+
 def get_rough_conversion_function(mission, instrument=None, epoch=None):
     """Get a rough PI-Energy conversion function for a mission.
 
@@ -137,32 +141,16 @@ def get_rough_conversion_function(mission, instrument=None, epoch=None):
     """
 
     if mission.lower() == "nustar":
-
-        def func(pi, **kwargs):
-            return pi * 0.04 + 1.62
-
-        return func
+        return _wrap_function_ignoring_kwargs(lambda pi: pi * 0.04 + 1.62)
 
     if mission.lower() == "xmm":
-
-        def func(pi, **kwargs):
-            return pi * 0.001
-
-        return func
+        return _wrap_function_ignoring_kwargs(lambda pi: pi * 0.001)
 
     if mission.lower() == "nicer":
-
-        def func(pi, **kwargs):
-            return pi * 0.01
-
-        return func
+        return _wrap_function_ignoring_kwargs(lambda pi: pi * 0.01)
 
     if mission.lower() == "ixpe":
-
-        def func(pi, **kwargs):
-            return pi / 375 * 15
-
-        return func
+        return _wrap_function_ignoring_kwargs(lambda pi: pi / 375 * 15)
 
     if mission.lower() == "xte":
         func = rxte_calibration_func(instrument, epoch)
