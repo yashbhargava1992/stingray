@@ -116,8 +116,11 @@ def read_mission_info(mission=None):
     return _patch_mission_info(db, mission)
 
 
-def _wrap_function_ignoring_kwargs(func, **kwargs):
-    return func
+def _wrap_function_ignoring_kwargs(func):
+    def func_wrapper(pi, **kwargs):
+        return func(pi)
+
+    return func_wrapper
 
 
 def get_rough_conversion_function(mission, instrument=None, epoch=None):
