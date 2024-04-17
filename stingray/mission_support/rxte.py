@@ -269,7 +269,22 @@ def rxte_calibration_func(instrument, epoch):
 
 
 def rxte_pca_event_file_interpretation(hdulist):
-    """Interpret the FITS header of an RXTE event file."""
+    """Interpret the FITS header of an RXTE event file.
+
+    At the moment, only science event files are supported. In these files,
+    the energy channels are stored in a column named PHA. However, this is not
+    the PHA column that can be directly used to convert to energy. These are
+    channels that get changed on a per-observation basis, and can be converted
+    to the "absolute" PHA channels tabulated in `pca_calibration_func` by using
+    the TEVTB2 keyword. This function changes the content of the PHA column by
+    putting in the mean "absolute" PHA channel corresponding to each local PHA
+    channel.
+
+    Parameters
+    ----------
+    hdulist : `astropy.io.fits.HDUList`
+        The FITS file to interpret.
+    """
     if "XTE_SE" not in hdulist:
         raise ValueError(
             "No XTE_SE extension found. At the moment, only science events "

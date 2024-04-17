@@ -1,3 +1,15 @@
+"""This module contains functions to interpret data from different missions.
+
+The key functions are:
+
+- `read_mission_info`: Search the relevant information about a mission in xselect.mdb.
+- `get_rough_conversion_function`: Get a rough PI-Energy conversion function for a mission.
+- `mission_specific_event_interpretation`: Get the mission-specific FITS interpretation function. This function will take a FITS :class:`astropy.io.fits.HDUList` object and modify it in place to make the read into Stingray easier.
+- `rough_calibration` (obsolete): Make a rough conversion between PI channel and energy.
+
+Whenever a given mission needs complicate processing, its functions can be made available for specific missions in their own separate modules. For example, the RXTE mission has its own module, `rxte.py`, which contains functions to interpret RXTE data.
+"""
+
 import os
 import warnings
 from .rxte import rxte_calibration_func, rxte_pca_event_file_interpretation
@@ -123,6 +135,14 @@ def _wrap_function_ignoring_kwargs(func):
     return func_wrapper
 
 
+SIMPLE_CONVERSION_FUNCTIONS = {
+    "nustar": lambda pi: pi * 0.04 + 1.62,
+    "xmm": lambda pi: pi * 0.001,
+    "nicer": lambda pi: pi * 0.01,
+    "ixpe": lambda pi: pi / 375 * 15,
+}
+
+
 def get_rough_conversion_function(mission, instrument=None, epoch=None):
     """Get a rough PI-Energy conversion function for a mission.
 
@@ -137,23 +157,15 @@ def get_rough_conversion_function(mission, instrument=None, epoch=None):
         Instrument onboard the mission
     epoch : float
         Epoch of the observation in MJD (important for missions updating their calibration).
+
     Returns
     -------
     function
         Conversion function
     """
 
-    if mission.lower() == "nustar":
-        return _wrap_function_ignoring_kwargs(lambda pi: pi * 0.04 + 1.62)
-
-    if mission.lower() == "xmm":
-        return _wrap_function_ignoring_kwargs(lambda pi: pi * 0.001)
-
-    if mission.lower() == "nicer":
-        return _wrap_function_ignoring_kwargs(lambda pi: pi * 0.01)
-
-    if mission.lower() == "ixpe":
-        return _wrap_function_ignoring_kwargs(lambda pi: pi / 375 * 15)
+    if mission.lower() in SIMPLE_CONVERSION_FUNCTIONS:
+        return _wrap_function_ignoring_kwargs(SIMPLE_CONVERSION_FUNCTIONS[mission.lower()])
 
     if mission.lower() == "xte":
         func = rxte_calibration_func(instrument, epoch)
@@ -163,7 +175,10 @@ def get_rough_conversion_function(mission, instrument=None, epoch=None):
 
 
 def mission_specific_event_interpretation(mission):
-    """Get the mission-specific FITS interpretation function."""
+    """Get the mission-specific FITS interpretation function.
+
+    This function will read a FITS :class:`astropy.io.fits.HDUList` object and modify it in place to make the read into Stingray easier.
+    """
 
     if mission.lower() == "xte":
         return rxte_pca_event_file_interpretation
