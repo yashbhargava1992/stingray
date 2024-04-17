@@ -96,7 +96,17 @@ def _decode_energy_channels(tevtb2):
 
 
 def pca_calibration_func(epoch):
-    """Return the calibration functions for RXTE, separately for PCUs 1-4 and PCU 0.
+    """Return the appropriate calibration function for RXTE for a given observing epoch.
+
+    This function has signature ``func(pha, detector_id)`` and gives the energy corresponding
+    to the PHA channel for the given detector (array values allowed).
+
+    Internally, this is done by pre-allocating some arrays with the energy values for each
+    PHA channel and detector group (1-4 and 0, due to a damage that PCU 0 incurred in 2000),
+    and then returning a function that looks up the energy for each channel.
+
+    This does not require any interpolation, as the calibration is tabulated for each channel,
+    and it is pretty efficient given the very small number of channels supported by the PCA (255).
 
     Parameters
     ----------

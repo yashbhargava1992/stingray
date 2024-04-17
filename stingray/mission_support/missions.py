@@ -4,10 +4,14 @@ The key functions are:
 
 - `read_mission_info`: Search the relevant information about a mission in xselect.mdb.
 - `get_rough_conversion_function`: Get a rough PI-Energy conversion function for a mission.
-- `mission_specific_event_interpretation`: Get the mission-specific FITS interpretation function. This function will take a FITS :class:`astropy.io.fits.HDUList` object and modify it in place to make the read into Stingray easier.
+- `mission_specific_event_interpretation`: Get the mission-specific FITS interpretation
+  function. This function will take a FITS :class:`astropy.io.fits.HDUList` object and
+  modify it in place to make the read into Stingray easier.
 - `rough_calibration` (obsolete): Make a rough conversion between PI channel and energy.
 
-Whenever a given mission needs complicate processing, its functions can be made available for specific missions in their own separate modules. For example, the RXTE mission has its own module, `rxte.py`, which contains functions to interpret RXTE data.
+Whenever a given mission needs complicate processing, its functions can be made available
+for specific missions in their own separate modules. For example, the RXTE mission has its
+own module, ``rxte.py``, which contains functions to interpret RXTE data.
 """
 
 import os
@@ -177,7 +181,8 @@ def get_rough_conversion_function(mission, instrument=None, epoch=None):
 def mission_specific_event_interpretation(mission):
     """Get the mission-specific FITS interpretation function.
 
-    This function will read a FITS :class:`astropy.io.fits.HDUList` object and modify it in place to make the read into Stingray easier.
+    This function will read a FITS :class:`astropy.io.fits.HDUList` object and modify it
+    in place to make the read into Stingray easier.
     """
 
     if mission.lower() == "xte":
