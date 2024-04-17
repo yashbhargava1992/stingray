@@ -113,6 +113,14 @@ class TestIO(object):
         data = load_events_and_gtis(fname)
         assert data.mission.lower() == "xte"
 
+    def test_event_file_read_rxte_gx(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, "xte_gx_test.evt.gz")
+        data = load_events_and_gtis(fname)
+        assert data.mission.lower() == "xte"
+        assert np.min(data.pi_list) == 2
+        assert np.max(data.pi_list) == 255
+
     def test_event_file_read_no_mission(self):
         """Test event file reading."""
         fname = os.path.join(datadir, "nomission.evt")

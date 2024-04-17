@@ -39,6 +39,10 @@ def _split_chan_spec(chan, sep="~"):
 def _split_C_string(string, sep="~"):
     """Interpret the C string in the TEVTB2 key and return a list of channel tuples."""
     channel_list = []
+    if ":" in string:
+        cs_range = string.split(":")
+        return [(c, c) for c in range(int(cs_range[0]), int(cs_range[1]) + 1)]
+
     for chan in string.split(","):
         cs = _split_chan_spec(chan, sep)
         channel_list.append(cs)
