@@ -6,6 +6,17 @@ from astropy.table import Table
 
 c_match = re.compile(r"C\[(.*)\]")
 
+_EDGE_TIMES = [
+    "1995-12-30T00:00:00.0",  # launch
+    "1996-03-21T18:33:00.0",
+    "1996-04-15T23:05:00.0",
+    "1999-03-22T17:37:00.0",
+    "2000-05-13T00:00:00.0",
+    "2012-01-05T00:00:00.0",  # decommissioning
+]
+
+_EDGE_EPOCHS = Time(_EDGE_TIMES, format="isot", scale="utc").mjd
+
 
 def _split_chan_spec(chan, sep="~"):
     """Split a channel specification into a tuple of integers.
@@ -50,7 +61,28 @@ def _split_C_string(string, sep="~"):
 
 
 def _decode_energy_channels(tevtb2):
-    """Understand the TEVTB2 key and return a list of channel tuples."""
+    """Understand the channel information TEVTB2 key.
+
+    Parameters
+    ----------
+    tevtb2 : str
+        The TEVTB2 key from the FITS header.
+
+    Returns
+    -------
+    chans: list of tuples
+        A list of tuples, each containing the start and stop channel of a group of channels.
+
+    Examples
+    --------
+    >>> tevtb2 = '(M[1]{1},C[43,44~45]{6})'
+    >>> chans = _decode_energy_channels(tevtb2)
+    >>> assert chans == [(43, 43), (44, 45)]
+    >>> _decode_energy_channels('(M[1]{1})')
+    Traceback (most recent call last):
+    ...
+    ValueError: No C line found in the TEVTB2 key.
+    """
     dll_fmt_string_split = re.split(",(?=[A-Z])", tevtb2)
     for line in dll_fmt_string_split:
         if not line.startswith("C"):
@@ -58,21 +90,9 @@ def _decode_energy_channels(tevtb2):
         line = c_match.match(line).group(1)
         break
     else:
-        raise ValueError("No C line found")
+        raise ValueError("No C line found in the TEVTB2 key.")
 
     return _split_C_string(line)
-
-
-times = [
-    "1995-12-30T00:00:00.0",  # launch
-    "1996-03-21T18:33:00.0",
-    "1996-04-15T23:05:00.0",
-    "1999-03-22T17:37:00.0",
-    "2000-05-13T00:00:00.0",
-    "2012-01-05T00:00:00.0",  # decommissioning
-]
-
-edge_epochs = Time(times, format="isot", scale="utc").mjd
 
 
 def pca_calibration_func(epoch):
@@ -239,7 +259,7 @@ def pca_calibration_func(epoch):
     abs_chan = caltable["Abs"]
     chans = [_split_chan_spec(chan, sep="-") for chan in abs_chan]
 
-    col_idx = np.searchsorted(edge_epochs, epoch)
+    col_idx = np.searchsorted(_EDGE_EPOCHS, epoch)
     if col_idx == 5:
         col_1234 = "E5_1234"
         col_0 = "E5_0"
@@ -262,10 +282,20 @@ def pca_calibration_func(epoch):
 
 
 def rxte_calibration_func(instrument, epoch):
-    """Return the calibration function for RXTE at a given epoch."""
+    """Return the calibration function for RXTE at a given epoch.
+
+    Examples
+    --------
+    >>> calibration_func = rxte_calibration_func("PCa", 50082)
+    >>> assert calibration_func(10) == pca_calibration_func(50082)(10)
+    >>> rxte_calibration_func("HEXTE", 55930)
+    Traceback (most recent call last):
+    ...
+    ValueError: Unknown XTE instrument: HEXTE
+    """
     if instrument.lower() == "pca":
         return pca_calibration_func(epoch)
-    return ValueError(f"Unknown XTE instrument: {instrument}")
+    raise ValueError(f"Unknown XTE instrument: {instrument}")
 
 
 def rxte_pca_event_file_interpretation(hdulist):
@@ -290,9 +320,7 @@ def rxte_pca_event_file_interpretation(hdulist):
             "No XTE_SE extension found. At the moment, only science events "
             "are supported by Stingray for XTE."
         )
-    tevtb2 = hdulist["XTE_SE"].header.get("TEVTB2", None)
-    if tevtb2 is None:
-        raise ValueError("No TEVTB2 keyword found in the header")
+    tevtb2 = hdulist["XTE_SE"].header["TEVTB2"]
     local_chans = np.asarray([int(np.mean(ch)) for ch in _decode_energy_channels(tevtb2)])
 
     # channels = _decode_energy_channels(tevtb2)
