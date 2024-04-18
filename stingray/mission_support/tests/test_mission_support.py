@@ -10,7 +10,6 @@ datadir = os.path.join(curdir, "..", "..", "tests", "data")
 class TestXTE(object):
     @classmethod
     def setup_class(cls):
-        cls.xtefile = os.path.join(datadir, "xte_test.evt.gz")
         cls.wrongfile = os.path.join(datadir, "monol_testA.evt")
 
     def test_wrong_file_raises(self):
