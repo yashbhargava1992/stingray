@@ -1,6 +1,5 @@
 name: Report a Bug
 description: State the bug affecting Stingray.
-title: " "
 labels: 
   - bug
   - help wanted
