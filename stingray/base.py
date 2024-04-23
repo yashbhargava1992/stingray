@@ -2646,24 +2646,27 @@ class StingrayTimeseries(StingrayObject):
             stop = np.searchsorted(self.time, stop_times)
 
         results = []
+        good = np.ones(start.size, dtype=bool)
+
         for i, (st, sp, tst, tsp) in enumerate(zip(start, stop, start_times, stop_times)):
             if sp - st <= 1:
                 warnings.warn(
                     f"Segment {i} ({tst}--{tsp}) has one data point or less. Skipping it."
                 )
-                res = np.nan
-            else:
-                lc_filt = self[st:sp]
-                lc_filt.gti = np.asarray([[tst, tsp]])
+                good[i] = False
+                continue
+            lc_filt = self[st:sp]
+            lc_filt.gti = np.asarray([[tst, tsp]])
 
-                res = func(lc_filt, **kwargs)
+            res = func(lc_filt, **kwargs)
             results.append(res)
 
         results = np.array(results)
 
         if len(results.shape) == 2:
             results = [results[:, i] for i in range(results.shape[1])]
-        return start_times, stop_times, results
+
+        return start_times[good], stop_times[good], results
 
     def analyze_by_gti(self, func, fraction_step=1, **kwargs):
         """Analyze the light curve with any function, on a GTI-by-GTI base.
