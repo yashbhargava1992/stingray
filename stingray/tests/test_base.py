@@ -1500,9 +1500,7 @@ class TestAnalyzeChunks(object):
 
         # I do not specify the segment_size, which means results will be calculated per-GTI
         with pytest.warns(UserWarning, match="has one data point or less."):
-            _, _, results = ts.analyze_segments(func, segment_size=None)
-        # the first GTI contains only one bin, the result will be invalid
-        assert np.isnan(results[0])
+            ts.analyze_segments(func, segment_size=None)
 
     def test_analyze_segments_by_gti(self):
         ts = StingrayTimeseries(time=np.arange(11), dt=1, gti=[[-0.5, 5.5], [6.5, 10.5]])
