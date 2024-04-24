@@ -797,6 +797,8 @@ class EventList(StingrayTimeseries):
             en1_ct = np.count_nonzero(mask1)
             en2_ct = np.count_nonzero(mask2)
 
+            if en1_ct == 0 or en2_ct == 0:
+                return np.nan, np.nan
             color = en2_ct / en1_ct
             color_err = color * (np.sqrt(en1_ct) / en1_ct + np.sqrt(en2_ct) / en2_ct)
             return color, color_err
