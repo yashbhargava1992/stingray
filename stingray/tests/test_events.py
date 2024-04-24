@@ -644,6 +644,12 @@ class TestColors(object):
         assert np.allclose(start, np.arange(10) * 10000)
         assert np.allclose(stop, np.arange(1, 11) * 10000)
 
+    def test_colors_missing_energies(self):
+        events = copy.deepcopy(self.events)
+        events.filter_energy_range([0, 3], inplace=True)
+        with pytest.warns(UserWarning, match="No counts in one of the energy ranges"):
+            events.get_color_evolution([[0, 3], [4, 6]], 10000)
+
     def test_colors_no_segment(self):
         start, stop, colors, color_errs = self.events.get_color_evolution([[0, 3], [4, 6]])
         # 50000 / 50000 = 1
