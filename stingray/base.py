@@ -2676,6 +2676,13 @@ class StingrayTimeseries(StingrayObject):
                     else:
                         outs[i].append(res[i])
             results = outs
+
+        # Try to transform into a (possibly multi-dimensional) numpy array
+        try:
+            results = np.array(results)
+        except ValueError:  # pragma: no cover
+            pass
+
         return start_times, stop_times, results
 
     def analyze_by_gti(self, func, fraction_step=1, **kwargs):
