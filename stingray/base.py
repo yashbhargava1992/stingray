@@ -2672,7 +2672,7 @@ class StingrayTimeseries(StingrayObject):
             for res in results:
                 for i in range(n_outs):
                     if res is None:
-                        outs[i] = None
+                        outs[i].append(None)
                     else:
                         outs[i].append(res[i])
             results = outs

@@ -1492,11 +1492,14 @@ class TestAnalyzeChunks(object):
 
         assert ts.estimate_segment_size(100, min_samples=40) == 8.0
 
-    def test_analyze_segments_bad_intv(self):
+    @pytest.mark.parametrize("n_outs", [0, 1, 2, 3])
+    def test_analyze_segments_bad_intv(self, n_outs):
         ts = StingrayTimeseries(time=np.arange(10), dt=1, gti=[[-0.5, 0.5], [1.5, 10.5]])
 
         def func(x):
-            return np.size(x.time)
+            if n_outs == 0:
+                return np.size(x.time)
+            return [np.size(x.time) for _ in range(n_outs)]
 
         # I do not specify the segment_size, which means results will be calculated per-GTI
         with pytest.warns(UserWarning, match="has one data point or less."):
