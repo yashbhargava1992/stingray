@@ -2606,8 +2606,10 @@ class StingrayTimeseries(StingrayObject):
             Lower time boundaries of all time segments.
         stop_times : array
             upper time boundaries of all segments.
-        result : array of N elements
-            The result of ``func`` for each segment of the light curve
+        result : list of N elements
+            The result of ``func`` for each segment of the light curve. If the function
+            returns multiple outputs, they are returned as a list of arrays.
+            If a given interval has not enough data for a calculation, ``None`` is returned.
 
         Examples
         --------
@@ -2646,27 +2648,35 @@ class StingrayTimeseries(StingrayObject):
             stop = np.searchsorted(self.time, stop_times)
 
         results = []
-        good = np.ones(start.size, dtype=bool)
 
+        n_outs = 1
         for i, (st, sp, tst, tsp) in enumerate(zip(start, stop, start_times, stop_times)):
             if sp - st <= 1:
                 warnings.warn(
                     f"Segment {i} ({tst}--{tsp}) has one data point or less. Skipping it."
                 )
-                good[i] = False
+                results.append(None)
                 continue
             lc_filt = self[st:sp]
             lc_filt.gti = np.asarray([[tst, tsp]])
 
             res = func(lc_filt, **kwargs)
             results.append(res)
+            if isinstance(res, Iterable):
+                n_outs = len(res)
 
-        results = np.array(results)
+        # If the function returns multiple outputs, we need to separate them
 
-        if len(results.shape) == 2:
-            results = [results[:, i] for i in range(results.shape[1])]
-
-        return start_times[good], stop_times[good], results
+        if n_outs > 1:
+            outs = [[] for _ in range(n_outs)]
+            for res in results:
+                for i in range(n_outs):
+                    if res is None:
+                        outs[i] = None
+                    else:
+                        outs[i].append(res[i])
+            results = outs
+        return start_times, stop_times, results
 
     def analyze_by_gti(self, func, fraction_step=1, **kwargs):
         """Analyze the light curve with any function, on a GTI-by-GTI base.
