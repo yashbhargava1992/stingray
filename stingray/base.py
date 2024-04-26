@@ -2662,7 +2662,7 @@ class StingrayTimeseries(StingrayObject):
 
             res = func(lc_filt, **kwargs)
             results.append(res)
-            if isinstance(res, Iterable):
+            if isinstance(res, Iterable) and not isinstance(res, str):
                 n_outs = len(res)
 
         # If the function returns multiple outputs, we need to separate them
