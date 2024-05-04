@@ -347,10 +347,8 @@ def accelsearch(
         the time and the observation length.
 
     """
-    if not isinstance(times, np.ndarray):
-        times = np.asanyarray(times)
-    if not isinstance(signal, np.ndarray):
-        signal = np.asanyarray(signal)
+    times = np.asanyarray(times)
+    signal = np.asanyarray(signal)
 
     dt = times[1] - times[0]
     n_photons = np.sum(signal)
