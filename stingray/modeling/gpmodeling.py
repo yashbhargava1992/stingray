@@ -782,10 +782,12 @@ class GPResult:
         )
 
         nbins = max(10, int(jnp.sqrt(self.results.ESS)) + 1)
-        binsx = jnp.linspace(*jnp.percentile(samples_resampled, jnp.asarray([0, 100])), 2 * nbins)
+        binsx = jnp.linspace(
+            *jnp.percentile(samples_resampled, jnp.asanyarray([0, 100])), 2 * nbins
+        )
 
         plt.hist(
-            np.asarray(samples_resampled),
+            np.asanyarray(samples_resampled),
             bins=binsx,
             density=True,
             alpha=1.0,

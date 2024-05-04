@@ -31,7 +31,7 @@ def _folding_search(
     stat_func, times, frequencies, segment_size=np.inf, use_times=False, fdots=0, **kwargs
 ):
     fgrid, fdgrid = np.meshgrid(
-        np.asarray(frequencies).astype(np.float64), np.asarray(fdots).astype(np.float64)
+        np.asanyarray(frequencies).astype(np.float64), np.asanyarray(fdots).astype(np.float64)
     )
     stats = np.zeros_like(fgrid)
     times = (times - times[0]).astype(np.float64)
@@ -391,8 +391,8 @@ def search_best_peaks(x, stat, threshold):
     []
 
     """
-    stat = np.asarray(stat)
-    x = np.asarray(x)
+    stat = np.asanyarray(stat)
+    x = np.asanyarray(x)
     peaks = stat >= threshold
     regions = contiguous_regions(peaks)
     if len(regions) == 0:

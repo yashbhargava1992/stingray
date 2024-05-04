@@ -112,7 +112,7 @@ except ImportError:
             Axis along which to calculate ``mad``. Default is ``0``, can also
             be ``None``
         """
-        data = np.asarray(data)
+        data = np.asanyarray(data)
         if axis is not None:
             center = np.apply_over_axes(np.median, data, axis)
         else:
@@ -234,7 +234,7 @@ def make_nd_into_arrays(array: np.ndarray, label: str) -> dict:
     >>> assert np.array_equal(data["test_dim0_0"], [1, 5])
     """
     data = {}
-    array = np.asarray(array)
+    array = np.asanyarray(array)
     shape = np.shape(array)
     ndim = len(shape)
     if ndim <= 1:
@@ -362,7 +362,7 @@ def check_isallfinite(array):
         # Numba is very picky about the type of the input array. If an exception
         # occurs in the numba-compiled function, use the default Numpy implementation.
         try:
-            return _check_isallfinite_numba(np.asarray(array))
+            return _check_isallfinite_numba(np.asanyarray(array))
         except Exception:
             pass
     return bool(np.all(np.isfinite(array)))
@@ -385,7 +385,7 @@ def is_sorted(array):
         True if the array is sorted, False otherwise
     """
 
-    array = np.asarray(array)
+    array = np.asanyarray(array)
     # If the array is empty or has only one element, it is sorted
     if array.size <= 1:
         return True
@@ -428,7 +428,7 @@ def _is_sorted_numba(array):
 
 
 def _root_squared_mean(array):
-    array = np.asarray(array)
+    array = np.asanyarray(array)
     return np.sqrt(np.sum(array**2)) / array.size
 
 
@@ -508,11 +508,11 @@ def rebin_data(x, y, dx_new, yerr=None, method="sum", dx=None):
     >>> assert np.allclose(ybinerr, 0.05)
     """
 
-    y = np.asarray(y)
+    y = np.asanyarray(y)
     if yerr is None:
         yerr = np.zeros_like(y)
     else:
-        yerr = np.asarray(yerr)
+        yerr = np.asanyarray(yerr)
 
     if isinstance(dx, Iterable):
         dx_old = dx
@@ -645,9 +645,9 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
     """
 
     dx_init = apply_function_if_none(dx, np.diff(x), np.median)
-    x = np.asarray(x)
-    y = np.asarray(y)
-    y_err = np.asarray(apply_function_if_none(y_err, y, np.zeros_like))
+    x = np.asanyarray(x)
+    y = np.asanyarray(y)
+    y_err = np.asanyarray(apply_function_if_none(y_err, y, np.zeros_like))
 
     if x.shape[0] != y.shape[0]:
         raise ValueError("x and y must be of the same length!")
@@ -665,7 +665,7 @@ def rebin_data_log(x, y, f, y_err=None, dx=None):
         binx_for_stats.append(binx_for_stats[-1] + dx * (1.0 + f))
         dx = binx_for_stats[-1] - binx_for_stats[-2]
 
-    binx_for_stats = np.asarray(binx_for_stats)
+    binx_for_stats = np.asanyarray(binx_for_stats)
 
     real = y.real
     real_err = y_err.real
@@ -1318,10 +1318,10 @@ def poisson_symmetrical_errors(counts):
     >>> from astropy.stats import poisson_conf_interval
     >>> counts = np.random.randint(0, 1000, 100)
     >>> # ---- Do it without the lookup table ----
-    >>> err_low, err_high = poisson_conf_interval(np.asarray(counts),
+    >>> err_low, err_high = poisson_conf_interval(np.asanyarray(counts),
     ...                 interval='frequentist-confidence', sigma=1)
-    >>> err_low -= np.asarray(counts)
-    >>> err_high -= np.asarray(counts)
+    >>> err_low -= np.asanyarray(counts)
+    >>> err_high -= np.asanyarray(counts)
     >>> err = (np.absolute(err_low) + np.absolute(err_high))/2.0
     >>> # Do it with this function
     >>> err_thisfun = poisson_symmetrical_errors(counts)
@@ -1330,14 +1330,14 @@ def poisson_symmetrical_errors(counts):
     """
     from astropy.stats import poisson_conf_interval
 
-    counts_int = np.asarray(counts, dtype=np.int64)
+    counts_int = np.asanyarray(counts, dtype=np.int64)
     count_values = np.nonzero(np.bincount(counts_int))[0]
     err_low, err_high = poisson_conf_interval(
         count_values, interval="frequentist-confidence", sigma=1
     )
     # calculate approximately symmetric uncertainties
-    err_low -= np.asarray(count_values)
-    err_high -= np.asarray(count_values)
+    err_low -= np.asanyarray(count_values)
+    err_high -= np.asanyarray(count_values)
     err = (np.absolute(err_low) + np.absolute(err_high)) / 2.0
 
     idxs = np.searchsorted(count_values, counts_int)
@@ -1488,8 +1488,8 @@ def check_allclose_and_print(
     try:
         assert np.allclose(v1, v2, rtol, atol)
     except Exception as e:
-        v1 = np.asarray(v1)
-        v2 = np.asarray(v2)
+        v1 = np.asanyarray(v1)
+        v2 = np.asanyarray(v2)
         bad = np.abs(v1 - v2) >= (atol + rtol * np.abs(v2))
 
         raise AssertionError(
@@ -1636,7 +1636,7 @@ def hist1d_numba_seq(a, bins, range, use_memmap=False, tmp=None):
     """
     hist_arr = _allocate_array_or_memmap((bins,), a.dtype, use_memmap=use_memmap, tmp=tmp)
 
-    return _hist1d_numba_seq(hist_arr, a, bins, np.asarray(range))
+    return _hist1d_numba_seq(hist_arr, a, bins, np.asanyarray(range))
 
 
 @njit(nogil=True, parallel=False)
@@ -1700,7 +1700,7 @@ def hist2d_numba_seq(x, y, bins, range, use_memmap=False, tmp=None):
     """
 
     H = _allocate_array_or_memmap(bins, np.uint64, use_memmap=use_memmap, tmp=tmp)
-    return _hist2d_numba_seq(H, np.array([x, y]), np.asarray(list(bins)), np.asarray(range))
+    return _hist2d_numba_seq(H, np.array([x, y]), np.asanyarray(list(bins)), np.asanyarray(range))
 
 
 @njit(nogil=True, parallel=False)
@@ -1763,7 +1763,9 @@ def hist3d_numba_seq(tracks, bins, range, use_memmap=False, tmp=None):
     """
     H = _allocate_array_or_memmap(bins, np.uint64, use_memmap=use_memmap, tmp=tmp)
 
-    return _hist3d_numba_seq(H, np.asarray(tracks), np.asarray(list(bins)), np.asarray(range))
+    return _hist3d_numba_seq(
+        H, np.asanyarray(tracks), np.asanyarray(list(bins)), np.asanyarray(range)
+    )
 
 
 @njit(nogil=True, parallel=False)
@@ -1836,7 +1838,7 @@ def hist1d_numba_seq_weight(a, weights, bins, range, use_memmap=False, tmp=None)
     else:
         hist_arr = np.zeros((bins,), dtype=a.dtype)
 
-    return _hist1d_numba_seq_weight(hist_arr, a, weights, bins, np.asarray(range))
+    return _hist1d_numba_seq_weight(hist_arr, a, weights, bins, np.asanyarray(range))
 
 
 @njit(nogil=True, parallel=False)
@@ -1905,8 +1907,8 @@ def hist2d_numba_seq_weight(x, y, weights, bins, range, use_memmap=False, tmp=No
         H,
         np.array([x, y]),
         weights,
-        np.asarray(list(bins)),
-        np.asarray(range),
+        np.asanyarray(list(bins)),
+        np.asanyarray(range),
     )
 
 
@@ -1974,10 +1976,10 @@ def hist3d_numba_seq_weight(tracks, weights, bins, range, use_memmap=False, tmp=
     H = _allocate_array_or_memmap(bins, np.double, use_memmap=use_memmap, tmp=tmp)
     return _hist3d_numba_seq_weight(
         H,
-        np.asarray(tracks),
+        np.asanyarray(tracks),
         weights,
-        np.asarray(list(bins)),
-        np.asarray(range),
+        np.asanyarray(list(bins)),
+        np.asanyarray(range),
     )
 
 
@@ -2064,7 +2066,7 @@ def histnd_numba_seq(tracks, bins, range, use_memmap=False, tmp=None):
     ...                       range=np.array([[0., 1.], [2., 3.], [4., 5.]]))
     >>> assert np.all(H == Hn)
     """
-    tracks = np.asarray(tracks)
+    tracks = np.asanyarray(tracks)
     H = _allocate_array_or_memmap(bins, np.uint64, use_memmap=use_memmap, tmp=tmp)
     slice_int = np.zeros(len(bins), dtype=np.uint64)
 

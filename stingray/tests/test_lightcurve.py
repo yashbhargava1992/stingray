@@ -808,7 +808,7 @@ class TestLightcurve(object):
         count1 = [50, 60, 70, 80, 90]
         gti0 = [[0.5, 4.5]]
         gti1 = [[4.5, 9.5]]
-        lc0 = Lightcurve(time0, counts=count0, err=np.asarray(count0) / 2, dt=1, gti=gti0)
+        lc0 = Lightcurve(time0, counts=count0, err=np.asanyarray(count0) / 2, dt=1, gti=gti0)
         lc1 = Lightcurve(time1, counts=count1, dt=1, gti=gti1)
         with pytest.warns(UserWarning) as record:
             lc = lc0.concatenate(lc1)

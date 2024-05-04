@@ -272,7 +272,7 @@ def fold_events(times, *frequency_derivatives, **opts):
     if gti is None:
         gti = [[times[0], times[-1]]]
     # Be safe if gtis are a list
-    gti = np.asarray(gti)
+    gti = np.asanyarray(gti)
     ref_time = _default_value_if_no_key(opts, "ref_time", 0)
     expocorr = _default_value_if_no_key(opts, "expocorr", False)
 
@@ -648,7 +648,7 @@ def z_n(data, n, datatype="events", err=None, norm=None):
     z2_n : float
         The Z^2_n statistics of the events.
     """
-    data = np.asarray(data)
+    data = np.asanyarray(data)
 
     if norm is not None:
         warnings.warn(
