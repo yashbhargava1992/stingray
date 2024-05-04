@@ -144,6 +144,32 @@ __all__ = [
 ]
 
 
+def force_array(x):
+    """Convert an input to a numpy array.
+
+    If it is not iterable, convert to a 1-element array.
+
+    Parameters
+    ----------
+    x : iterable or number
+        The input to be converted
+
+    Returns
+    -------
+    x : numpy.ndarray
+        The input converted to a numpy array
+
+    Examples
+    --------
+    >>> assert isinstance(force_array(1), np.ndarray)
+    >>> assert isinstance(force_array([1]), np.ndarray)
+    """
+    if not isinstance(x, Iterable):
+        x = [x]
+
+    return np.asanyarray(x)
+
+
 @njit()
 def heaviside(x):
     """Heaviside function. Returns 1 if x>0, and 0 otherwise.
