@@ -99,7 +99,7 @@ def integrate_power_in_frequency_range(
     if power_err is None:
         power_err_to_integrate = powers_to_integrate / np.sqrt(m)
     else:
-        power_err_to_integrate = np.asarray(power_err)[frequency_mask]
+        power_err_to_integrate = np.asanyarray(power_err)[frequency_mask]
 
     power_integrated = np.sum((powers_to_integrate - poisson_power) * dfs_to_integrate)
     power_err_integrated = np.sqrt(np.sum((power_err_to_integrate * dfs_to_integrate) ** 2))
@@ -1250,7 +1250,7 @@ def get_average_ctrate(times, gti, segment_size, counts=None):
     Examples
     --------
     >>> times = np.sort(np.random.uniform(0, 1000, 1000))
-    >>> gti = np.asarray([[0, 1000]])
+    >>> gti = np.asanyarray([[0, 1000]])
     >>> counts, _ = np.histogram(times, bins=np.linspace(0, 1000, 11))
     >>> bin_times = np.arange(50, 1000, 100)
     >>> assert get_average_ctrate(bin_times, gti, 1000, counts=counts) == 1.0
@@ -1326,7 +1326,7 @@ def get_flux_iterable_from_segments(
         dt = np.median(np.diff(times[:100]))
 
     if binned:
-        fluxes = np.asarray(fluxes)
+        fluxes = np.asanyarray(fluxes)
         if np.iscomplexobj(fluxes):
             cast_kind = complex
 
@@ -2399,7 +2399,7 @@ def lsft_slow(
         An array of Fourier transformed data.
     """
     y_ = y - np.mean(y)
-    freqs = np.asarray(freqs[np.asarray(freqs) >= 0])
+    freqs = np.asanyarray(freqs[np.asanyarray(freqs) >= 0])
 
     ft_real = np.zeros_like(freqs)
     ft_imag = np.zeros_like(freqs)

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import numpy as np
 from .fourier import integrate_power_in_frequency_range
+from .utils import force_array
 from collections.abc import Iterable
 
 DEFAULT_COLOR_CONFIGURATION = {
@@ -177,9 +178,9 @@ def _create_pc_plot(
         ax.set_ylim(yrange)
         return ax
 
-    center = np.log10(np.asarray(configuration["center"]))
-    ax.set_xlim(center[0] + np.asarray(xrange))
-    ax.set_ylim(center[1] + np.asarray(yrange))
+    center = np.log10(np.asanyarray(configuration["center"]))
+    ax.set_xlim(center[0] + np.asanyarray(xrange))
+    ax.set_ylim(center[1] + np.asanyarray(yrange))
 
     for angle in range(0, 360, 20):
         x, y = _hue_line_data(center, np.radians(angle), ref_angle=configuration["ref_angle"])
@@ -264,7 +265,7 @@ def plot_hues(
     plot_spans=False,
     configuration=DEFAULT_COLOR_CONFIGURATION,
 ):
-    hues = hue_from_power_color(pc1, pc2)
+    hues = hue_from_power_color(force_array(pc1), force_array(pc2))
 
     ax = _create_rms_hue_plot(polar=polar, plot_spans=plot_spans, configuration=configuration)
     hues = hues % (np.pi * 2)
@@ -348,12 +349,12 @@ def power_color(
     PC1_err : float
         The error on the second power color
     """
-    freq_edges = np.asarray(freq_edges)
+    freq_edges = np.asanyarray(freq_edges)
     if len(freq_edges) != 5:
         raise ValueError("freq_edges must have 5 elements")
 
-    frequency = np.asarray(frequency)
-    power = np.asarray(power)
+    frequency = np.asanyarray(frequency)
+    power = np.asanyarray(power)
 
     if df is None:
         df = np.median(np.diff(frequency))
@@ -368,7 +369,7 @@ def power_color(
     if power_err is None:
         power_err = power / np.sqrt(m)
     else:
-        power_err = np.asarray(power_err)
+        power_err = np.asanyarray(power_err)
 
     if freqs_to_exclude is not None:
         if len(np.shape(freqs_to_exclude)) == 1:
@@ -461,7 +462,7 @@ def hue_from_power_color(pc0, pc1, center=[4.51920, 0.453724]):
     pc0 = np.log10(pc0)
     pc1 = np.log10(pc1)
 
-    center = np.log10(np.asarray(center))
+    center = np.log10(np.asanyarray(center))
 
     return hue_from_logpower_color(pc0, pc1, center=center)
 

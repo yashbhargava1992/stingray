@@ -25,7 +25,7 @@ class TestEvents(object):
         self.counts = [3000, 2000, 2200, 3600]
         self.counts_flat = [3000, 3000, 3000, 3000]
         self.spectrum = [[1, 2, 3, 4, 5, 6], [1000, 2040, 1000, 3000, 4020, 2070]]
-        self.gti = np.asarray([[0, 4]])
+        self.gti = np.asanyarray([[0, 4]])
 
     def test_warn_wrong_keywords(self):
         with pytest.warns(UserWarning) as record:
@@ -511,9 +511,9 @@ class TestJoinEvents:
             )
         with pytest.warns(UserWarning, match="The time array is not sorted."):
             ev_other = EventList(
-                time=np.asarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
+                time=np.asanyarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
                 energy=[2, 3, 8, 1, 2],
-                gti=np.asarray([[5, 7], [8, 10]]) + 86400,
+                gti=np.asanyarray([[5, 7], [8, 10]]) + 86400,
                 mjdref=57000,
             )
         with pytest.warns(UserWarning, match="Attribute mjdref is different"):

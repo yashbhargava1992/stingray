@@ -104,7 +104,7 @@ class StingrayObject(object):
     def main_array_length(self):
         if getattr(self, self.main_array_attr, None) is None:
             return 0
-        return np.shape(np.asarray(getattr(self, self.main_array_attr)))[0]
+        return np.shape(np.asanyarray(getattr(self, self.main_array_attr)))[0]
 
     def data_attributes(self) -> list[str]:
         """Clean up the list of attributes, only giving out those pointing to data.
@@ -130,7 +130,7 @@ class StingrayObject(object):
                 and not isinstance(getattr(self.__class__, attr, None), property)
                 and not callable(value := getattr(self, attr))
                 and not isinstance(value, StingrayObject)
-                and not np.asarray(value).dtype == "O"
+                and not np.asanyarray(value).dtype == "O"
             )
         ]
 
@@ -368,7 +368,7 @@ class StingrayObject(object):
         array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
 
         for attr in array_attrs:
-            vals = np.asarray(getattr(self, attr))
+            vals = np.asanyarray(getattr(self, attr))
             if no_longdouble:
                 vals = reduce_precision_if_extended(vals)
             data[attr] = vals
@@ -455,7 +455,7 @@ class StingrayObject(object):
         array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
 
         for attr in array_attrs:
-            new_data = np.asarray(getattr(self, attr))
+            new_data = np.asanyarray(getattr(self, attr))
             ndim = len(np.shape(new_data))
             if ndim > 1:
                 new_data = ([attr + f"_dim{i}" for i in range(ndim)], new_data)
@@ -520,7 +520,7 @@ class StingrayObject(object):
         array_attrs = self.array_attrs() + [self.main_array_attr] + self.internal_array_attrs()
 
         for attr in array_attrs:
-            values = np.asarray(getattr(self, attr))
+            values = np.asanyarray(getattr(self, attr))
             ndim = len(np.shape(values))
             if ndim > 1:
                 local_data = make_nd_into_arrays(values, attr)
@@ -758,13 +758,13 @@ class StingrayObject(object):
             setattr(
                 new_ts,
                 "_" + self.main_array_attr,
-                copy.deepcopy(np.asarray(getattr(self, self.main_array_attr))[mask]),
+                copy.deepcopy(np.asanyarray(getattr(self, self.main_array_attr))[mask]),
             )
         else:
             setattr(
                 new_ts,
                 self.main_array_attr,
-                copy.deepcopy(np.asarray(getattr(self, self.main_array_attr))[mask]),
+                copy.deepcopy(np.asanyarray(getattr(self, self.main_array_attr))[mask]),
             )
 
         for attr in all_attrs:
@@ -772,7 +772,7 @@ class StingrayObject(object):
                 # Eliminate all unfiltered attributes
                 setattr(new_ts, attr, None)
             else:
-                setattr(new_ts, attr, copy.deepcopy(np.asarray(getattr(self, attr))[mask]))
+                setattr(new_ts, attr, copy.deepcopy(np.asanyarray(getattr(self, attr))[mask]))
         return new_ts
 
     def _operation_with_other_obj(
@@ -1030,7 +1030,7 @@ class StingrayObject(object):
 
         ts_new = copy.deepcopy(self)
         for attr in self._default_operated_attrs():
-            setattr(ts_new, attr, -np.asarray(getattr(self, attr)))
+            setattr(ts_new, attr, -np.asanyarray(getattr(self, attr)))
 
         return ts_new
 
@@ -1215,7 +1215,7 @@ class StingrayTimeseries(StingrayObject):
         for kw in other_kw:
             setattr(self, kw, other_kw[kw])
         for kw in array_attrs:
-            new_arr = np.asarray(array_attrs[kw])
+            new_arr = np.asanyarray(array_attrs[kw])
             if self.time.shape[0] != new_arr.shape[0]:
                 raise ValueError(f"Lengths of time and {kw} must be equal.")
             setattr(self, kw, new_arr)
@@ -1246,7 +1246,7 @@ class StingrayTimeseries(StingrayObject):
                 dt1 = self.dt[-1]
             else:
                 dt0 = dt1 = self.dt
-            self._gti = np.asarray([[self._time[0] - dt0 / 2, self._time[-1] + dt1 / 2]])
+            self._gti = np.asanyarray([[self._time[0] - dt0 / 2, self._time[-1] + dt1 / 2]])
         return self._gti
 
     @gti.setter
@@ -1254,7 +1254,7 @@ class StingrayTimeseries(StingrayObject):
         if value is None:
             self._gti = None
             return
-        value = np.asarray(value)
+        value = np.asanyarray(value)
         self._gti = value
         self._mask = None
 
@@ -1278,15 +1278,15 @@ class StingrayTimeseries(StingrayObject):
             return
         time, _ = interpret_times(time, self.mjdref)
         if not high_precision:
-            self._time = np.asarray(time)
+            self._time = np.asanyarray(time)
         else:
-            self._time = np.asarray(time, dtype=np.longdouble)
+            self._time = np.asanyarray(time, dtype=np.longdouble)
 
     def __str__(self) -> str:
         """Return a string representation of the object."""
         return self.pretty_print(
             attrs_to_apply=["gti", "time", "tstart", "tseg", "tstop"],
-            func_to_apply=lambda x: (np.asarray(x) / 86400 + self.mjdref, "MJD"),
+            func_to_apply=lambda x: (np.asanyarray(x) / 86400 + self.mjdref, "MJD"),
             attrs_to_discard=["_mask", "header"],
         )
 
@@ -1318,7 +1318,7 @@ class StingrayTimeseries(StingrayObject):
         """
         if value is None:
             return None
-        value = np.asarray(value)
+        value = np.asanyarray(value)
         if len(value.shape) < 1:
             raise ValueError(f"{attr_name} array must be at least 1D")
         # If the attribute we compare it with is the same and it is currently None, we assign it
@@ -1446,7 +1446,7 @@ class StingrayTimeseries(StingrayObject):
         for attr in array_attrs:
             if attr == "time":
                 continue
-            data[attr] = np.asarray(getattr(self, attr))
+            data[attr] = np.asanyarray(getattr(self, attr))
 
         if data == {}:
             data = None
@@ -1489,7 +1489,7 @@ class StingrayTimeseries(StingrayObject):
 
         new_cls = cls()
         time, mjdref = interpret_times(time, mjdref)
-        new_cls.time = np.asarray(time)  # type: ignore
+        new_cls.time = np.asanyarray(time)  # type: ignore
 
         array_attrs = ts.colnames
         for key, val in ts.meta.items():
@@ -1498,7 +1498,7 @@ class StingrayTimeseries(StingrayObject):
         for attr in array_attrs:
             if attr == "time":
                 continue
-            setattr(new_cls, attr, np.asarray(ts[attr]))
+            setattr(new_cls, attr, np.asanyarray(ts[attr]))
 
         return new_cls
 
@@ -1553,11 +1553,11 @@ class StingrayTimeseries(StingrayObject):
             ts = self
         else:
             ts = copy.deepcopy(self)
-        ts.time = np.asarray(ts.time) + time_shift  # type: ignore
+        ts.time = np.asanyarray(ts.time) + time_shift  # type: ignore
         # Pay attention here: if the GTIs are created dynamically while we
         # access the property,
         if ts._gti is not None:
-            ts._gti = np.asarray(ts._gti) + time_shift  # type: ignore
+            ts._gti = np.asanyarray(ts._gti) + time_shift  # type: ignore
 
         return ts
 
@@ -1718,7 +1718,9 @@ class StingrayTimeseries(StingrayObject):
             delta_gti_start = new_ts.dt[0] * 0.5
             delta_gti_stop = new_ts.dt[-1] * 0.5
 
-        new_gti = np.asarray([[new_ts.time[0] - delta_gti_start, new_ts.time[-1] + delta_gti_stop]])
+        new_gti = np.asanyarray(
+            [[new_ts.time[0] - delta_gti_start, new_ts.time[-1] + delta_gti_stop]]
+        )
         if step > 1 and delta_gti_start > 0:
             new_gt1 = np.array(list(zip(new_ts.time - new_ts.dt / 2, new_ts.time + new_ts.dt / 2)))
             new_gti = cross_two_gtis(new_gti, new_gt1)
@@ -1797,7 +1799,8 @@ class StingrayTimeseries(StingrayObject):
             dtstop = self.dt[-1]
 
         gti = cross_two_gtis(
-            self.gti, np.asarray([[new_ts.time[0] - 0.5 * dtstart, new_ts.time[-1] + 0.5 * dtstop]])
+            self.gti,
+            np.asanyarray([[new_ts.time[0] - 0.5 * dtstart, new_ts.time[-1] + 0.5 * dtstop]]),
         )
 
         new_ts.gti = gti
@@ -2108,7 +2111,7 @@ class StingrayTimeseries(StingrayObject):
         elif f is not None:
             dt_new = f * self.dt
 
-        if np.any(dt_new < np.asarray(self.dt)):
+        if np.any(dt_new < np.asanyarray(self.dt)):
             raise ValueError("The new time resolution must be larger than the old one!")
 
         gti_new = []
@@ -2150,7 +2153,7 @@ class StingrayTimeseries(StingrayObject):
 
         if len(gti_new) == 0:
             raise ValueError("No valid GTIs after rebin.")
-        new_ts.gti = np.asarray(gti_new)
+        new_ts.gti = np.asanyarray(gti_new)
 
         for attr in self.meta_attrs():
             if attr == "dt":
@@ -2654,7 +2657,7 @@ class StingrayTimeseries(StingrayObject):
                 res = np.nan
             else:
                 lc_filt = self[st:sp]
-                lc_filt.gti = np.asarray([[tst, tsp]])
+                lc_filt.gti = np.asanyarray([[tst, tsp]])
 
                 res = func(lc_filt, **kwargs)
             results.append(res)

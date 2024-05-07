@@ -40,7 +40,7 @@ class BadStingrayObj(StingrayObject):
 class TestStingrayObject:
     @classmethod
     def setup_class(cls):
-        cls.arr = np.asarray([4, 5, 2])
+        cls.arr = np.asanyarray([4, 5, 2])
         sting_obj = DummyStingrayObj(cls.arr)
         sting_obj.pardulas = [3.0 + 1.0j, 2.0j, 1.0 + 0.0j]
         sting_obj.sebadas = [[0, 1], [2, 3], [4, 5]]
@@ -376,16 +376,16 @@ class TestStingrayTimeseries:
             mjdref=59777.000,
             array_attrs=dict(guefus=cls.arr),
             parafritus="bonus!",
-            panesapa=np.asarray([[41, 25], [98, 3]]),
-            gti=np.asarray([[-0.5, 10.5]]),
+            panesapa=np.asanyarray([[41, 25], [98, 3]]),
+            gti=np.asanyarray([[-0.5, 10.5]]),
         )
         sting_obj_highp = StingrayTimeseries(
             time=cls.time,
             mjdref=59777.000,
             array_attrs=dict(guefus=cls.arr),
             parafritus="bonus!",
-            panesapa=np.asarray([[41, 25], [98, 3]]),
-            gti=np.asarray([[-0.5, 10.5]]),
+            panesapa=np.asanyarray([[41, 25], [98, 3]]),
+            gti=np.asanyarray([[-0.5, 10.5]]),
             high_precision=True,
         )
         cls.sting_obj = sting_obj
@@ -507,7 +507,8 @@ class TestStingrayTimeseries:
             [0, 3],
             gti=[[0.5, 1.5], [2.5, 3.5]],
             array_attrs=dict(
-                panesapa=np.asarray([[41, 25], [98, 3]]), _panesapa=np.asarray([[41, 25], [98, 3]])
+                panesapa=np.asanyarray([[41, 25], [98, 3]]),
+                _panesapa=np.asanyarray([[41, 25], [98, 3]]),
             ),
             dt=1,
         )
@@ -620,7 +621,7 @@ class TestStingrayTimeseries:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_apply_gti(self, inplace):
         so = copy.deepcopy(self.sting_obj)
-        so.gti = np.asarray([[-0.1, 2.1]])
+        so.gti = np.asanyarray([[-0.1, 2.1]])
         so2 = so.apply_gtis()
         if inplace:
             assert so2 is so
@@ -847,7 +848,7 @@ class TestStingrayTimeseries:
 
     def test_sort(self):
         times = [2, 1, 3, 4]
-        blah = np.asarray([40, 10, 20, 5])
+        blah = np.asanyarray([40, 10, 20, 5])
         bleh = [4, 1, 2, 0.5]
         mjdref = 57000
 
@@ -1045,11 +1046,11 @@ class TestStingrayTimeseriesSubclass:
     def setup_class(cls):
         cls.arr = [4, 5, 2]
         sting_obj = DummyStingrayTs(cls.arr)
-        sting_obj.time = np.asarray([0, 1, 2])
+        sting_obj.time = np.asanyarray([0, 1, 2])
         sting_obj.mjdref = 59777.000
         sting_obj.parafritus = "bonus!"
-        sting_obj.panesapa = np.asarray([[41, 25], [98, 3]])
-        sting_obj.gti = np.asarray([[-0.5, 2.5]])
+        sting_obj.panesapa = np.asanyarray([[41, 25], [98, 3]])
+        sting_obj.gti = np.asanyarray([[-0.5, 2.5]])
         cls.sting_obj = sting_obj
 
     def test_print(self, capsys):
@@ -1258,9 +1259,9 @@ class TestJoinEvents:
             )
         with pytest.warns(UserWarning, match="The time array is not sorted."):
             ts_other = StingrayTimeseries(
-                time=np.asarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
+                time=np.asanyarray([5.1, 7, 6.1, 6.11, 10.1]) + 86400,
                 energy=[2, 3, 8, 1, 2],
-                gti=np.asarray([[5, 7], [8, 10]]) + 86400,
+                gti=np.asanyarray([[5, 7], [8, 10]]) + 86400,
                 mjdref=57000,
             )
         with pytest.warns(UserWarning, match="Attribute mjdref is different"):
@@ -1331,7 +1332,9 @@ class TestFillBTI(object):
     def test_event_like(self):
         ev_like_filt = copy.deepcopy(self.ev_like)
         # I introduce a small gap in the GTIs
-        ev_like_filt.gti = np.asarray([[0, 498], [500, 520], [522, 700], [702, 900], [950, 1000]])
+        ev_like_filt.gti = np.asanyarray(
+            [[0, 498], [500, 520], [522, 700], [702, 900], [950, 1000]]
+        )
         ev_new = ev_like_filt.fill_bad_time_intervals()
 
         assert np.allclose(ev_new.gti, self.gti)
@@ -1347,7 +1350,7 @@ class TestFillBTI(object):
     def test_no_counts_in_buffer(self):
         ev_like_filt = copy.deepcopy(self.ev_like)
         # I introduce a small gap in the GTIs
-        ev_like_filt.gti = np.asarray([[0, 490], [491, 498], [500, 505], [510, 520], [522, 700]])
+        ev_like_filt.gti = np.asanyarray([[0, 490], [491, 498], [500, 505], [510, 520], [522, 700]])
 
         # I empty out two GTIs
         bad = (ev_like_filt.time > 490) & (ev_like_filt.time < 510)
@@ -1359,7 +1362,9 @@ class TestFillBTI(object):
     def test_lc_like(self):
         lc_like_filt = copy.deepcopy(self.lc_like)
         # I introduce a small gap in the GTIs
-        lc_like_filt.gti = np.asarray([[0, 498], [500, 520], [522, 700], [702, 900], [950, 1000]])
+        lc_like_filt.gti = np.asanyarray(
+            [[0, 498], [500, 520], [522, 700], [702, 900], [950, 1000]]
+        )
         lc_new = lc_like_filt.fill_bad_time_intervals()
         assert np.allclose(lc_new.gti, self.gti)
 
@@ -1378,7 +1383,7 @@ class TestFillBTI(object):
     def test_ignore_attrs_ev_like(self):
         ev_like_filt = copy.deepcopy(self.ev_like)
         # I introduce a small gap in the GTIs
-        ev_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
+        ev_like_filt.gti = np.asanyarray([[0, 498], [500, 900], [950, 1000]])
         ev_new0 = ev_like_filt.fill_bad_time_intervals(seed=1234)
         ev_new1 = ev_like_filt.fill_bad_time_intervals(seed=1234, attrs_to_randomize=["energy"])
         assert np.allclose(ev_new0.gti, ev_new1.gti)
@@ -1391,7 +1396,7 @@ class TestFillBTI(object):
     def test_ignore_attrs_lc_like(self):
         lc_like_filt = copy.deepcopy(self.lc_like)
         # I introduce a small gap in the GTIs
-        lc_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
+        lc_like_filt.gti = np.asanyarray([[0, 498], [500, 900], [950, 1000]])
         lc_new0 = lc_like_filt.fill_bad_time_intervals(seed=1234)
         lc_new1 = lc_like_filt.fill_bad_time_intervals(seed=1234, attrs_to_randomize=["counts"])
         assert np.allclose(lc_new0.gti, lc_new1.gti)
@@ -1404,7 +1409,7 @@ class TestFillBTI(object):
     def test_forcing_non_uniform(self):
         ev_like_filt = copy.deepcopy(self.ev_like)
         # I introduce a small gap in the GTIs
-        ev_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
+        ev_like_filt.gti = np.asanyarray([[0, 498], [500, 900], [950, 1000]])
         # Results should be exactly the same
         ev_new0 = ev_like_filt.fill_bad_time_intervals(even_sampling=False, seed=201903)
         ev_new1 = ev_like_filt.fill_bad_time_intervals(even_sampling=None, seed=201903)
@@ -1414,7 +1419,7 @@ class TestFillBTI(object):
     def test_forcing_uniform(self):
         lc_like_filt = copy.deepcopy(self.lc_like)
         # I introduce a small gap in the GTIs
-        lc_like_filt.gti = np.asarray([[0, 498], [500, 900], [950, 1000]])
+        lc_like_filt.gti = np.asanyarray([[0, 498], [500, 900], [950, 1000]])
         # Results should be exactly the same
         lc_new0 = lc_like_filt.fill_bad_time_intervals(even_sampling=True, seed=201903)
         lc_new1 = lc_like_filt.fill_bad_time_intervals(even_sampling=None, seed=201903)
@@ -1424,26 +1429,26 @@ class TestFillBTI(object):
     def test_bti_close_to_edge_event_like(self):
         ev_like_filt = copy.deepcopy(self.ev_like)
         # I introduce a small gap in the GTIs
-        ev_like_filt.gti = np.asarray([[0, 0.5], [1, 900], [950, 1000]])
+        ev_like_filt.gti = np.asanyarray([[0, 0.5], [1, 900], [950, 1000]])
         ev_new = ev_like_filt.fill_bad_time_intervals()
         assert np.allclose(ev_new.gti, self.gti)
 
         ev_like_filt = copy.deepcopy(self.ev_like)
         # I introduce a small gap in the GTIs
-        ev_like_filt.gti = np.asarray([[0, 900], [950, 999], [999.5, 1000]])
+        ev_like_filt.gti = np.asanyarray([[0, 900], [950, 999], [999.5, 1000]])
         ev_new = ev_like_filt.fill_bad_time_intervals()
         assert np.allclose(ev_new.gti, self.gti)
 
     def test_bti_close_to_edge_lc_like(self):
         lc_like_filt = copy.deepcopy(self.lc_like)
         # I introduce a small gap in the GTIs
-        lc_like_filt.gti = np.asarray([[0, 0.5], [1, 900], [950, 1000]])
+        lc_like_filt.gti = np.asanyarray([[0, 0.5], [1, 900], [950, 1000]])
         lc_new = lc_like_filt.fill_bad_time_intervals()
         assert np.allclose(lc_new.gti, self.gti)
 
         lc_like_filt = copy.deepcopy(self.lc_like)
         # I introduce a small gap in the GTIs
-        lc_like_filt.gti = np.asarray([[0, 900], [950, 999], [999.5, 1000]])
+        lc_like_filt.gti = np.asanyarray([[0, 900], [950, 999], [999.5, 1000]])
         lc_new = lc_like_filt.fill_bad_time_intervals()
         assert np.allclose(lc_new.gti, self.gti)
 
