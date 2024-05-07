@@ -16,8 +16,21 @@ from astropy.io import fits as pf
 import stingray.utils as utils
 from stingray.loggingconfig import setup_logger
 
-from .utils import assign_value_if_none, is_string, order_list_of_arrays, is_sorted
+from .utils import (
+    assign_value_if_none,
+    is_string,
+    order_list_of_arrays,
+    is_sorted,
+    make_dictionary_lowercase,
+)
 from .gti import get_gti_from_all_extensions, load_gtis
+
+from .mission_support import (
+    read_mission_info,
+    rough_calibration,
+    get_rough_conversion_function,
+    mission_specific_event_interpretation,
+)
 
 # Python 3
 import pickle
@@ -93,50 +106,6 @@ def pi_to_energy(pis, rmf_file):
     return es
 
 
-def rough_calibration(pis, mission):
-    """Make a rough conversion between PI channel and energy.
-
-    Only works for NICER, NuSTAR, IXPE, and XMM.
-
-    Parameters
-    ----------
-    pis: float or array of floats
-        PI channels in data
-    mission: str
-        Mission name
-
-    Returns
-    -------
-    energies : float or array of floats
-        Energy values
-
-    Examples
-    --------
-    >>> rough_calibration(0, 'nustar')
-    1.6
-    >>> rough_calibration(0.0, 'ixpe')
-    0.0
-    >>> # It's case-insensitive
-    >>> rough_calibration(1200, 'XMm')
-    1.2
-    >>> rough_calibration(10, 'asDf')
-    Traceback (most recent call last):
-        ...
-    ValueError: Mission asdf not recognized
-    >>> rough_calibration(100, 'nicer')
-    1.0
-    """
-    if mission.lower() == "nustar":
-        return pis * 0.04 + 1.6
-    elif mission.lower() == "xmm":
-        return pis * 0.001
-    elif mission.lower() == "nicer":
-        return pis * 0.01
-    elif mission.lower() == "ixpe":
-        return pis / 375 * 15
-    raise ValueError(f"Mission {mission.lower()} not recognized")
-
-
 def get_file_extension(fname):
     """Get the extension from the file name.
 
@@ -196,69 +165,6 @@ def high_precision_keyword_read(hdr, keyword):
         return value
     except KeyError:
         return None
-
-
-def _patch_mission_info(info, mission=None):
-    """Add some information that is surely missing in xselect.mdb.
-
-    Examples
-    --------
-    >>> info = {'gti': 'STDGTI'}
-    >>> new_info = _patch_mission_info(info, mission=None)
-    >>> assert new_info['gti'] == info['gti']
-    >>> new_info = _patch_mission_info(info, mission="xmm")
-    >>> new_info['gti']
-    'STDGTI,GTI0'
-    """
-    if mission is None:
-        return info
-    if mission.lower() == "xmm" and "gti" in info:
-        info["gti"] += ",GTI0"
-    return info
-
-
-def read_mission_info(mission=None):
-    """Search the relevant information about a mission in xselect.mdb."""
-    curdir = os.path.abspath(os.path.dirname(__file__))
-    fname = os.path.join(curdir, "datasets", "xselect.mdb")
-
-    # If HEADAS is defined, search for the most up-to-date version of the
-    # mission database
-    if os.getenv("HEADAS"):
-        hea_fname = os.path.join(os.getenv("HEADAS"), "bin", "xselect.mdb")
-        if os.path.exists(hea_fname):
-            fname = hea_fname
-    if mission is not None:
-        mission = mission.lower()
-
-    db = {}
-    with open(fname) as fobj:
-        for line in fobj.readlines():
-            line = line.strip()
-            if mission is not None and not line.lower().startswith(mission):
-                continue
-            if line.startswith("!") or line == "":
-                continue
-            allvals = line.split()
-            string = allvals[0]
-            value = allvals[1:]
-            if len(value) == 1:
-                value = value[0]
-
-            data = string.split(":")[:]
-            if mission is None:
-                if data[0] not in db:
-                    db[data[0]] = {}
-                previous_db_step = db[data[0]]
-            else:
-                previous_db_step = db
-            data = data[1:]
-            for key in data[:-1]:
-                if key not in previous_db_step:
-                    previous_db_step[key] = {}
-                previous_db_step = previous_db_step[key]
-            previous_db_step[data[-1]] = value
-    return _patch_mission_info(db, mission)
 
 
 def _case_insensitive_search_in_list(string, list_of_strings):
@@ -357,16 +263,22 @@ def get_key_from_mission_info(info, key, default, inst=None, mode=None):
     >>> get_key_from_mission_info(info, "ghghg", "BU", inst="C", mode="M1")
     'BU'
     """
-    filt_info = copy.deepcopy(info)
-    if inst is not None and inst in filt_info:
-        filt_info.update(info[inst])
-        filt_info.pop(inst)
-    if mode is not None and mode in filt_info:
-        filt_info.update(info[inst][mode])
-        filt_info.pop(mode)
+    filt_info = make_dictionary_lowercase(info, recursive=True)
+    key = key.lower()
+    if inst is not None:
+        inst = inst.lower()
+        if inst in filt_info:
+            filt_info.update(filt_info[inst])
+            filt_info.pop(inst)
+    if mode is not None:
+        mode = mode.lower()
+        if mode in filt_info:
+            filt_info.update(filt_info[mode])
+            filt_info.pop(mode)
 
     if key in filt_info:
         return filt_info[key]
+
     return default
 
 
@@ -644,6 +556,10 @@ def load_events_and_gtis(
         mission_key = "TELESCOP"
     mission = probe_header[mission_key].lower()
 
+    mission_specific_processing = mission_specific_event_interpretation(mission)
+
+    mission_specific_processing(hdulist)
+
     db = read_mission_info(mission)
     instkey = get_key_from_mission_info(db, "instkey", "INSTRUME")
     instr = mode = None
@@ -760,11 +676,15 @@ def load_events_and_gtis(
     returns.gti_list = gti_list
     returns.pi_list = pi
     returns.cal_pi_list = cal_pi
+
     if "energy" in additional_data and np.any(additional_data["energy"] > 0.0):
         returns.energy_list = additional_data["energy"]
     else:
         try:
-            returns.energy_list = rough_calibration(cal_pi, mission)
+            func = get_rough_conversion_function(
+                mission, instrument=instr, epoch=t_start / 86400 + mjdref
+            )
+            returns.energy_list = func(cal_pi, detector_id=detector_id)
             logger.info(
                 f"A default calibration was applied to the {mission} data. "
                 "See io.rough_calibration for details. "

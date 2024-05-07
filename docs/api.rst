@@ -263,6 +263,16 @@ I/O Functionality
 .. automodule:: stingray.io
    :members:
 
+Mission-specific I/O
+--------------------
+
+.. automodule:: stingray.mission_support.missions
+   :members:
+
+.. automodule:: stingray.mission_support.rxte
+   :members:
+
+
 Other Utility Functions
 -----------------------
 

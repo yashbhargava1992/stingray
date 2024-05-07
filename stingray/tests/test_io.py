@@ -89,7 +89,7 @@ class TestIO(object):
         assert np.any(["Column energy not found" in r.message.args[0] for r in record])
         # This is the default calibration for nustar data, as returned
         # from rough_calibration
-        assert np.allclose(vals.energy_list, vals.pi_list * 0.04 + 1.6)
+        assert np.allclose(vals.energy_list, vals.pi_list * 0.04 + 1.62)
 
     def test_event_file_read_additional_energy_cal(self):
         """Test event file reading."""
@@ -106,6 +106,22 @@ class TestIO(object):
         with pytest.warns(UserWarning) as record:
             load_events_and_gtis(fname, additional_columns=["PRIOR"])
         assert np.any(["Trying first extension" in r.message.args[0] for r in record])
+
+    def test_event_file_read_rxte(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, "xte_test.evt.gz")
+        data = load_events_and_gtis(fname)
+        assert data.mission.lower() == "xte"
+
+    def test_event_file_read_rxte_gx(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, "xte_gx_test.evt.gz")
+        data = load_events_and_gtis(fname)
+        assert data.mission.lower() == "xte"
+        assert np.min(data.pi_list) == 2
+        assert np.max(data.pi_list) == 255
+        assert np.allclose(data.energy_list.min(), 2.06)
+        assert np.allclose(data.energy_list.max(), 117.86)
 
     def test_event_file_read_no_mission(self):
         """Test event file reading."""

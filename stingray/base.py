@@ -2660,6 +2660,7 @@ class StingrayTimeseries(StingrayObject):
                 warnings.warn(
                     f"Segment {i} ({tst}--{tsp}) has one data point or less. Skipping it "
                 )
+
                 continue
             lc_filt = self[st:sp]
             lc_filt.gti = np.asanyarray([[tst, tsp]])
