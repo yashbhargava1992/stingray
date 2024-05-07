@@ -232,12 +232,12 @@ class EventList(StingrayTimeseries):
         StingrayTimeseries.__init__(
             self,
             time=time,
-            energy=None if energy is None else np.asarray(energy),
+            energy=None if energy is None else np.asanyarray(energy),
             mjdref=mjdref,
             dt=dt,
             notes=notes,
-            gti=np.asarray(gti) if gti is not None else None,
-            pi=None if pi is None else np.asarray(pi),
+            gti=np.asanyarray(gti) if gti is not None else None,
+            pi=None if pi is None else np.asanyarray(pi),
             high_precision=high_precision,
             mission=mission,
             instr=instr,
@@ -367,7 +367,7 @@ class EventList(StingrayTimeseries):
                 self.time[idx_st : idx_end + 1],
                 dt,
                 tstart=st,
-                gti=np.asarray([[st, end]]),
+                gti=np.asanyarray([[st, end]]),
                 tseg=tseg,
                 mjdref=self.mjdref,
                 use_hist=True,
@@ -474,8 +474,8 @@ class EventList(StingrayTimeseries):
             return
 
         if isinstance(spectrum, list) or isinstance(spectrum, np.ndarray):
-            energy = np.asarray(spectrum)[0]
-            fluxes = np.asarray(spectrum)[1]
+            energy = np.asanyarray(spectrum)[0]
+            fluxes = np.asanyarray(spectrum)[1]
 
             if not isinstance(energy, np.ndarray):
                 raise IndexError("Spectrum must be a 2-d array or list")

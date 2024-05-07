@@ -142,7 +142,9 @@ class TestVarEnergySpectrum(object):
 
     def test_construct_lightcurves_pi(self):
         events = EventList(
-            [0.09, 0.21, 0.23, 0.32, 0.4, 0.54], pi=np.asarray([0, 0, 0, 0, 1, 1]), gti=[[0, 0.65]]
+            [0.09, 0.21, 0.23, 0.32, 0.4, 0.54],
+            pi=np.asanyarray([0, 0, 0, 0, 1, 1]),
+            gti=[[0, 0.65]],
         )
         vespec = DummyVarEnergy(
             events, [0.0, 10000], (0, 1, 2, "lin"), [0.5, 1.1], use_pi=True, bin_time=0.1
@@ -178,7 +180,7 @@ class TestRmsAndCovSpectrum(object):
         # No need for huge count rates
         flux = data / 40
         times = np.arange(data.size) * cls.bin_time
-        gti = np.asarray([[0, data.size * cls.bin_time]])
+        gti = np.asanyarray([[0, data.size * cls.bin_time]])
         test_lc = Lightcurve(
             times, flux, err_dist="gauss", gti=gti, dt=cls.bin_time, skip_checks=True
         )

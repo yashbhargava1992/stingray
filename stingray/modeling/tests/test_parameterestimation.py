@@ -346,7 +346,7 @@ class TestOptimizationResults(object):
     def test_compute_covariance_with_hess_inverse(self):
         self.optres._compute_covariance(self.lpost, self.opt)
 
-        assert np.allclose(self.optres.cov, np.asarray(self.opt.hess_inv))
+        assert np.allclose(self.optres.cov, np.asanyarray(self.opt.hess_inv))
         assert np.allclose(self.optres.err, np.sqrt(np.diag(self.opt.hess_inv)))
 
     @pytest.mark.skipif("comp_hessian")

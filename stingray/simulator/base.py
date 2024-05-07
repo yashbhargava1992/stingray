@@ -111,9 +111,9 @@ def simulate_times_from_count_array(time, counts, gti, dt, use_spline=False):
         ...
     ValueError: simulate_times can only work with...
     """
-    time = np.asarray(time)
-    counts = np.asarray(counts).astype(float)
-    gti = np.asarray(gti)
+    time = np.asanyarray(time)
+    counts = np.asanyarray(counts).astype(float)
+    gti = np.asanyarray(gti)
     kind = "linear"
     if use_spline and time.size > 2:
         kind = "cubic"
@@ -220,7 +220,7 @@ def simulate_with_inverse_cdf(
     >>> assert np.all(np.diff(vals)) >= 0
 
     """
-    binned_pdf = np.asarray(binned_pdf).astype(float)
+    binned_pdf = np.asanyarray(binned_pdf).astype(float)
 
     if x_range is None:
         x_range = [0, 1]

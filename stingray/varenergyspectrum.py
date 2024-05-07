@@ -62,12 +62,12 @@ def get_non_overlapping_ref_band(channel_band, ref_band):
     >>> new_ref = get_non_overlapping_ref_band([0, 1], [[2, 3]])
     >>> assert np.allclose(new_ref, [[2, 3]])
     """
-    channel_band = np.asarray(channel_band)
-    ref_band = np.asarray(ref_band)
+    channel_band = np.asanyarray(channel_band)
+    ref_band = np.asanyarray(ref_band)
     if len(ref_band.shape) <= 1:
-        ref_band = np.asarray([ref_band])
+        ref_band = np.asanyarray([ref_band])
     if check_separate(ref_band, [channel_band]):
-        return np.asarray(ref_band)
+        return np.asanyarray(ref_band)
     not_channel_band = [
         [0, channel_band[0]],
         [channel_band[1], np.max([np.max(ref_band), channel_band[1] + 1])],
@@ -211,14 +211,14 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
         if isinstance(energy_spec, tuple):
             energies = _decode_energy_specification(energy_spec)
         else:
-            energies = np.asarray(energy_spec)
+            energies = np.asanyarray(energy_spec)
 
         self.energy_intervals = list(zip(energies[0:-1], energies[1:]))
 
-        self.ref_band = np.asarray(assign_value_if_none(ref_band, [0, np.inf]))
+        self.ref_band = np.asanyarray(assign_value_if_none(ref_band, [0, np.inf]))
 
         if len(self.ref_band.shape) <= 1:
-            self.ref_band = np.asarray([self.ref_band])
+            self.ref_band = np.asanyarray([self.ref_band])
 
         self.segment_size = self.delta_nu = None
         if segment_size is not None:
@@ -1057,7 +1057,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
 
             # Convert the cross spectrum to a covariance.
             cov, cov_e = cross_to_covariance(
-                np.asarray([Cmean, Ce]), mean_ref_power, ref_power_noise, delta_nu
+                np.asanyarray([Cmean, Ce]), mean_ref_power, ref_power_noise, delta_nu
             )
 
             meanrate = mean / self.bin_time

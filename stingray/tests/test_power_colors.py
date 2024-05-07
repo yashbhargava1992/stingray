@@ -78,7 +78,7 @@ class TestPowerColor(object):
 
     def test_hue(self):
         center = (4.51920, 0.453724)
-        log_center = np.log10(np.asarray(center))
+        log_center = np.log10(np.asanyarray(center))
         for angle in np.radians(np.arange(0, 380, 20)):
             factor = rng.uniform(0.1, 10)
             x = factor * np.cos(3 / 4 * np.pi - angle) + log_center[0]

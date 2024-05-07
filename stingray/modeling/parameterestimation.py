@@ -174,7 +174,7 @@ class OptimizationResults(object):
 
         if hasattr(res, "hess_inv"):
             if not isinstance(res.hess_inv, np.ndarray):
-                self.cov = np.asarray(res.hess_inv.todense())
+                self.cov = np.asanyarray(res.hess_inv.todense())
             else:
                 self.cov = res.hess_inv
 

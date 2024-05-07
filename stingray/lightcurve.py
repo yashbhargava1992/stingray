@@ -266,11 +266,11 @@ class Lightcurve(StingrayTimeseries):
         time, mjdref = interpret_times(time, mjdref=mjdref)
         self.mjdref = mjdref
 
-        time = np.asarray(time)
-        counts = np.asarray(counts)
+        time = np.asanyarray(time)
+        counts = np.asanyarray(counts)
 
         if err is not None:
-            err = np.asarray(err)
+            err = np.asanyarray(err)
 
         if not skip_checks:
             time, counts, err = self.initial_optional_checks(time, counts, err, gti=gti)
@@ -323,7 +323,7 @@ class Lightcurve(StingrayTimeseries):
 
         self._gti = None
         if gti is not None:
-            self._gti = np.asarray(gti)
+            self._gti = np.asanyarray(gti)
 
         if os.name == "nt":
             warnings.warn(
@@ -333,22 +333,22 @@ class Lightcurve(StingrayTimeseries):
             counts = counts.astype(float)
 
         if input_counts:
-            self._counts = np.asarray(counts)
+            self._counts = np.asanyarray(counts)
             self._counts_err = err
         else:
-            self._countrate = np.asarray(counts)
+            self._countrate = np.asanyarray(counts)
             self._countrate_err = err
 
         if bg_counts is not None:
-            self.bg_counts = np.asarray(bg_counts)
+            self.bg_counts = np.asanyarray(bg_counts)
         else:
             self.bg_counts = None
         if bg_ratio is not None:
-            self.bg_ratio = np.asarray(bg_ratio)
+            self.bg_ratio = np.asanyarray(bg_ratio)
         else:
             self.bg_ratio = None
         if frac_exp is not None:
-            self.frac_exp = np.asarray(frac_exp)
+            self.frac_exp = np.asanyarray(frac_exp)
         else:
             self.frac_exp = None
 
@@ -752,7 +752,7 @@ class Lightcurve(StingrayTimeseries):
             new_time = self.time[start:stop:step]
 
             new_gti = [[self.time[start] - 0.5 * self.dt, self.time[stop - 1] + 0.5 * self.dt]]
-            new_gti = np.asarray(new_gti)
+            new_gti = np.asanyarray(new_gti)
             if step > 1:
                 new_gt1 = np.array(list(zip(new_time - self.dt / 2, new_time + self.dt / 2)))
                 new_gti = cross_two_gtis(new_gti, new_gt1)
@@ -860,7 +860,7 @@ class Lightcurve(StingrayTimeseries):
         """
         toa, mjdref = interpret_times(toa, mjdref=mjdref)
 
-        toa = np.sort(np.asarray(toa))
+        toa = np.sort(np.asanyarray(toa))
         # tstart is an optional parameter to set a starting time for
         # the light curve in case this does not coincide with the first photon
         if tstart is None:
@@ -1092,9 +1092,9 @@ class Lightcurve(StingrayTimeseries):
             new_counts = np.concatenate([first_lc.counts, second_lc.counts])
             new_counts_err = np.concatenate([first_lc.counts_err, second_lc.counts_err])
 
-        new_time = np.asarray(new_time)
-        new_counts = np.asarray(new_counts)
-        new_counts_err = np.asarray(new_counts_err)
+        new_time = np.asanyarray(new_time)
+        new_counts = np.asanyarray(new_counts)
+        new_counts_err = np.asanyarray(new_counts_err)
         gti = join_gtis(self.gti, other.gti)
 
         lc_new = Lightcurve(
@@ -1477,7 +1477,7 @@ class Lightcurve(StingrayTimeseries):
             "_bin_hi",
         ]:
             if hasattr(self, attr) and getattr(self, attr) is not None:
-                vals = np.asarray(getattr(self, attr))
+                vals = np.asanyarray(getattr(self, attr))
                 if no_longdouble:
                     vals = reduce_precision_if_extended(vals)
                 data[attr.lstrip("_")] = vals

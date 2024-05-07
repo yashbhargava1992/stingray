@@ -673,8 +673,8 @@ def cross_two_gtis(gti0, gti1):
     >>> len(newgti)
     0
     """
-    gti0 = join_equal_gti_boundaries(np.asarray(gti0))
-    gti1 = join_equal_gti_boundaries(np.asarray(gti1))
+    gti0 = join_equal_gti_boundaries(np.asanyarray(gti0))
+    gti1 = join_equal_gti_boundaries(np.asanyarray(gti1))
     # Check GTIs
     check_gtis(gti0)
     check_gtis(gti1)
@@ -826,7 +826,7 @@ def get_btis(gtis, start_time=None, stop_time=None):
         if start_time is None or stop_time is None:
             raise ValueError("Empty GTI and no valid start_time " "and stop_time. BAD!")
 
-        return np.asarray([[start_time, stop_time]])
+        return np.asanyarray([[start_time, stop_time]])
     check_gtis(gtis)
 
     start_time = assign_value_if_none(start_time, gtis[0][0])
@@ -844,7 +844,7 @@ def get_btis(gtis, start_time=None, stop_time=None):
     if stop_time > gtis[-1][1]:
         btis.extend([[gtis[-1][1], stop_time]])
 
-    return np.asarray(btis)
+    return np.asanyarray(btis)
 
 
 @jit(nopython=True)
@@ -911,8 +911,8 @@ def check_separate(gti0, gti1):
     >>> assert check_separate(gti0, gti1)
     """
 
-    gti0 = np.asarray(gti0)
-    gti1 = np.asarray(gti1)
+    gti0 = np.asanyarray(gti0)
+    gti1 = np.asanyarray(gti1)
     if len(gti0) == 0 or len(gti1) == 0:
         return True
 
@@ -953,7 +953,7 @@ def join_equal_gti_boundaries(gti, threshold=0.0):
             ng.append(new_gtis[count])
         count += 1
     ng.append(new_gtis[-1])
-    return np.asarray(ng)
+    return np.asanyarray(ng)
 
 
 def merge_gtis(gti_list, strategy):
@@ -1005,7 +1005,7 @@ def merge_gtis(gti_list, strategy):
         return None
 
     if strategy == "none":
-        return np.asarray([[global_min, global_max]])
+        return np.asanyarray([[global_min, global_max]])
 
     if len(all_gti_lists) == 1:
         return all_gti_lists[0]
@@ -1060,8 +1060,8 @@ def append_gtis(gti0, gti1):
     >>> assert np.allclose(append_gtis([[0, 1]], [[1, 3]]), [[0, 3]])
     """
 
-    gti0 = np.asarray(gti0)
-    gti1 = np.asarray(gti1)
+    gti0 = np.asanyarray(gti0)
+    gti1 = np.asanyarray(gti1)
     # Check if independently GTIs are well behaved.
     check_gtis(gti0)
     check_gtis(gti1)
@@ -1123,8 +1123,8 @@ def join_gtis(gti0, gti1):
         The newly created GTI
     """
 
-    gti0 = np.asarray(gti0)
-    gti1 = np.asarray(gti1)
+    gti0 = np.asanyarray(gti0)
+    gti1 = np.asanyarray(gti1)
 
     # Check if independently GTIs are well behaved.
     check_gtis(gti0)
@@ -1135,11 +1135,11 @@ def join_gtis(gti0, gti1):
 
     g0 = gti0.flatten()
     # Opening GTI: type = 1; Closing: type = -1
-    g0_type = np.asarray(
+    g0_type = np.asanyarray(
         list(zip(-np.ones(int(len(g0) / 2), dtype=int), np.ones(int(len(g0) / 2), dtype=int)))
     )
     g1 = gti1.flatten()
-    g1_type = np.asarray(
+    g1_type = np.asanyarray(
         list(zip(-np.ones(int(len(g1) / 2), dtype=int), np.ones(int(len(g1) / 2), dtype=int)))
     )
 
@@ -1332,8 +1332,8 @@ def bin_intervals_from_gtis(gtis, segment_size, time, dt=None, fraction_step=1, 
     >>> assert np.allclose(time[start_bins[0]:stop_bins[0]], [0.5, 1.5])
     >>> assert np.allclose(time[start_bins[1]:stop_bins[1]], [2.5, 3.5])
     """
-    time = np.asarray(time)
-    gtis = np.asarray(gtis)
+    time = np.asanyarray(time)
+    gtis = np.asanyarray(gtis)
     if dt is None:
         dt = np.median(np.diff(time))
 
@@ -1433,8 +1433,8 @@ def gti_border_bins(gtis, time, dt=None, epsilon=0.001):
     >>> assert np.allclose(times[start_bins[0]:stop_bins[0]], [0.5, 1.5, 2.5, 3.5, 4.5])
     >>> np.allclose(times[start_bins[1]:stop_bins[1]], [6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5])
     True"""
-    time = np.asarray(time)
-    gtis = np.asarray(gtis)
+    time = np.asanyarray(time)
+    gtis = np.asanyarray(gtis)
     if dt is None:
         dt = np.median(np.diff(time))
 
@@ -1557,8 +1557,8 @@ def generate_indices_of_gti_boundaries(times, gti, dt=0):
     >>> assert np.allclose(v0[:2], gtis[0])
     >>> assert np.allclose(v0[2:], [0, 3])
     """
-    gti = np.asarray(gti)
-    times = np.asarray(times)
+    gti = np.asanyarray(gti)
+    times = np.asanyarray(times)
     startidx, stopidx = gti_border_bins(gti, times, dt=dt)
 
     for s, e, idx0, idx1 in zip(gti[:, 0], gti[:, 1], startidx, stopidx):
@@ -1614,8 +1614,8 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, ch
     >>> # Again: 1.1 is not included in the interval
     >>> assert np.allclose(v1[2:], [3, 4])
     """
-    gti = np.asarray(gti)
-    times = np.asarray(times)
+    gti = np.asanyarray(gti)
+    times = np.asanyarray(times)
 
     start, stop = time_intervals_from_gtis(gti, segment_size)
 
@@ -1632,10 +1632,10 @@ def generate_indices_of_segment_boundaries_unbinned(times, gti, segment_size, ch
         )
     )
 
-    idxs = np.searchsorted(times, all_times)
+    idxs = times.searchsorted(all_times)
     idx_dict = dict([(s, a) for s, a in zip(all_times, idxs)])
-    startidx = np.asarray([idx_dict[s] for s in start])
-    stopidx = np.asarray([idx_dict[s] for s in stop])
+    startidx = np.asanyarray([idx_dict[s] for s in start])
+    stopidx = np.asanyarray([idx_dict[s] for s in stop])
 
     for s, e, idx0, idx1 in zip(start, stop, startidx, stopidx):
         yield s, e, idx0, idx1
@@ -1679,8 +1679,8 @@ def generate_indices_of_segment_boundaries_binned(times, gti, segment_size, dt=N
     >>> assert np.allclose(v0[:2], [0.05, 0.55])
     >>> assert np.allclose(v0[2:], [0, 5])
     """
-    gti = np.asarray(gti)
-    times = np.asarray(times)
+    gti = np.asanyarray(gti)
+    times = np.asanyarray(times)
     startidx, stopidx = bin_intervals_from_gtis(gti, segment_size, times, dt=dt)
 
     if dt is None:
