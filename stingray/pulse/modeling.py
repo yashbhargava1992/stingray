@@ -97,7 +97,7 @@ def sinc_square_deriv(x, amplitude=1.0, mean=0.0, width=1.0):
         * (x * np.cos((x - mean) / width) - np.sin((x - mean) / width))
         / ((x - mean) / width) ** 2
     )
-    d_x = np.asarray(d_x)
+    d_x = np.asanyarray(d_x)
     d_amplitude = sinc((x - mean) / width) ** 2
     d_x[x_is_zero] = 0
 

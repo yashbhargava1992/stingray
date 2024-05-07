@@ -75,7 +75,7 @@ def test_flux_iterables(dtype):
     times = np.arange(4)
     fluxes = np.ones(4).astype(dtype)
     errors = np.ones(4).astype(dtype) * np.sqrt(2)
-    gti = np.asarray([[-0.5, 3.5]])
+    gti = np.asanyarray([[-0.5, 3.5]])
     iter = get_flux_iterable_from_segments(times, gti, 2, n_bin=None, fluxes=fluxes, errors=errors)
     cast_kind = float
     if np.iscomplexobj(fluxes):
@@ -90,7 +90,7 @@ def test_flux_iterables(dtype):
 def test_avg_pds_imperfect_lc_size():
     times = np.arange(100)
     fluxes = np.ones(100).astype(float)
-    gti = np.asarray([[-0.5, 99.5]])
+    gti = np.asanyarray([[-0.5, 99.5]])
     segment_size = 5.99
     dt = 1
     res = avg_pds_from_timeseries(times, gti, segment_size, dt, fluxes=fluxes)
@@ -101,7 +101,7 @@ def test_avg_pds_imperfect_lc_size():
 def test_avg_pds_from_events_warns():
     times = np.arange(100)
     fluxes = np.ones(100).astype(float)
-    gti = np.asarray([[-0.5, 99.5]])
+    gti = np.asanyarray([[-0.5, 99.5]])
     segment_size = 5.99
     dt = 1
     with pytest.warns(DeprecationWarning, match="avg_pds_from_events is deprecated"):
@@ -114,7 +114,7 @@ def test_avg_cs_imperfect_lc_size():
     times1 = times2 = np.arange(100)
     fluxes1 = np.ones(100).astype(float)
     fluxes2 = np.ones(100).astype(float)
-    gti = np.asarray([[-0.5, 99.5]])
+    gti = np.asanyarray([[-0.5, 99.5]])
     segment_size = 5.99
     dt = 1
     res = avg_cs_from_timeseries(
@@ -128,7 +128,7 @@ def test_avg_cs_from_events_warns():
     times1 = times2 = np.arange(100)
     fluxes1 = np.ones(100).astype(float)
     fluxes2 = np.ones(100).astype(float)
-    gti = np.asarray([[-0.5, 99.5]])
+    gti = np.asanyarray([[-0.5, 99.5]])
     segment_size = 5.99
     dt = 1
     with pytest.warns(DeprecationWarning, match="avg_cs_from_events is deprecated"):
@@ -224,7 +224,7 @@ class TestFourier(object):
         cls.N = np.rint(cls.length / cls.dt).astype(int)
         cls.dt = cls.length / cls.N
         cls.times = np.sort(rng.uniform(0, cls.length, int(cls.length * cls.ctrate)))
-        cls.gti = np.asarray([[0, cls.length]])
+        cls.gti = np.asanyarray([[0, cls.length]])
         cls.counts, bins = np.histogram(cls.times, bins=np.linspace(0, cls.length, cls.N + 1))
         cls.errs = np.ones_like(cls.counts) * np.sqrt(cls.ctrate)
         cls.bin_times = (bins[:-1] + bins[1:]) / 2

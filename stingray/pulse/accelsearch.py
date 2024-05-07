@@ -166,7 +166,7 @@ def _convolve_with_response(
     """
     response, j = response_and_j
     r_freqs = np.arange(A.size)
-    if np.asarray(response).size == 1:
+    if np.asanyarray(response).size == 1:
         accel = A
     else:
         accel = convolve(A, response, memout=memout)
@@ -347,10 +347,8 @@ def accelsearch(
         the time and the observation length.
 
     """
-    if not isinstance(times, np.ndarray):
-        times = np.asarray(times)
-    if not isinstance(signal, np.ndarray):
-        signal = np.asarray(signal)
+    times = np.asanyarray(times)
+    signal = np.asanyarray(signal)
 
     dt = times[1] - times[0]
     n_photons = np.sum(signal)
@@ -359,7 +357,7 @@ def accelsearch(
             "Data contain multiple GTIs. Bad time intervals will be "
             "filled with the mean of the signal."
         )
-        gti = np.asarray(gti)
+        gti = np.asanyarray(gti)
         # Fill in the data with a constant outside GTIs
         gti_mask = create_gti_mask(times, gti)
         expo_fraction = np.count_nonzero(gti_mask) / len(gti_mask)
@@ -496,8 +494,8 @@ def interbin_fft(freq, fft):
     """
     import numpy as np
 
-    freq = np.asarray(freq)
-    fft = np.asarray(fft)
+    freq = np.asanyarray(freq)
+    fft = np.asanyarray(fft)
 
     neglast = freq[-1] < 0
     if neglast:
