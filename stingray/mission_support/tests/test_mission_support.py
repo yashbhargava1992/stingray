@@ -11,7 +11,6 @@ datadir = os.path.join(curdir, "..", "..", "tests", "data")
 
 
 class TestAll(object):
-
     def test_wrong_mission_raises(self):
         with pytest.raises(ValueError, match="Mission blah not recognized"):
             get_rough_conversion_function("blah")
