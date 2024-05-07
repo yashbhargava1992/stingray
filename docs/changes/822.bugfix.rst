@@ -1,0 +1,1 @@
+Fix case when analyze_segments has an invalid segment

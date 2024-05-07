@@ -2582,6 +2582,8 @@ class StingrayTimeseries(StingrayObject):
     def analyze_segments(self, func, segment_size, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
 
+        Intervals with less than one data point are skipped.
+
         Parameters
         ----------
         func : function
@@ -2609,8 +2611,10 @@ class StingrayTimeseries(StingrayObject):
             Lower time boundaries of all time segments.
         stop_times : array
             upper time boundaries of all segments.
-        result : array of N elements
-            The result of ``func`` for each segment of the light curve
+        result : list of N elements
+            The result of ``func`` for each segment of the light curve. If the function
+            returns multiple outputs, they are returned as a list of arrays.
+            If a given interval has not enough data for a calculation, ``None`` is returned.
 
         Examples
         --------
@@ -2649,23 +2653,37 @@ class StingrayTimeseries(StingrayObject):
             stop = np.searchsorted(self.time, stop_times)
 
         results = []
+
+        n_outs = 1
         for i, (st, sp, tst, tsp) in enumerate(zip(start, stop, start_times, stop_times)):
             if sp - st <= 1:
                 warnings.warn(
-                    f"Segment {i} ({tst}--{tsp}) has one data point or less. Skipping it."
+                    f"Segment {i} ({tst}--{tsp}) has one data point or less. Skipping it "
                 )
-                res = np.nan
-            else:
-                lc_filt = self[st:sp]
-                lc_filt.gti = np.asanyarray([[tst, tsp]])
+                continue
+            lc_filt = self[st:sp]
+            lc_filt.gti = np.asanyarray([[tst, tsp]])
 
-                res = func(lc_filt, **kwargs)
+            res = func(lc_filt, **kwargs)
             results.append(res)
+            if isinstance(res, Iterable) and not isinstance(res, str):
+                n_outs = len(res)
 
-        results = np.array(results)
+        # If the function returns multiple outputs, we need to separate them
 
-        if len(results.shape) == 2:
-            results = [results[:, i] for i in range(results.shape[1])]
+        if n_outs > 1:
+            outs = [[] for _ in range(n_outs)]
+            for res in results:
+                for i in range(n_outs):
+                    outs[i].append(res[i])
+            results = outs
+
+        # Try to transform into a (possibly multi-dimensional) numpy array
+        try:
+            results = np.array(results)
+        except ValueError:  # pragma: no cover
+            pass
+
         return start_times, stop_times, results
 
     def analyze_by_gti(self, func, fraction_step=1, **kwargs):
