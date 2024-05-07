@@ -116,7 +116,7 @@ def pca_calibration_func(epoch):
     Returns
     -------
     conversion_function : callable
-        A function that converts PHA channel to energy for PCU 0. This function accepts
+        A function that converts PHA channel to energy. This function accepts
         two arguments: the PHA channel and the PCU number.
 
     Examples
@@ -315,8 +315,8 @@ def rxte_pca_event_file_interpretation(hdulist):
     the energy channels are stored in a column named PHA. However, this is not
     the PHA column that can be directly used to convert to energy. These are
     channels that get changed on a per-observation basis, and can be converted
-    to the "absolute" PHA channels tabulated in `pca_calibration_func` by using
-    the TEVTB2 keyword. This function changes the content of the PHA column by
+    to the "absolute" PHA channels (the ones tabulated in `pca_calibration_func`)
+    by using the TEVTB2 keyword. This function changes the content of the PHA column by
     putting in the mean "absolute" PHA channel corresponding to each local PHA
     channel.
 
