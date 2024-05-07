@@ -120,6 +120,8 @@ class TestIO(object):
         assert data.mission.lower() == "xte"
         assert np.min(data.pi_list) == 2
         assert np.max(data.pi_list) == 255
+        assert np.allclose(data.energy_list.min(), 2.06)
+        assert np.allclose(data.energy_list.max(), 117.86)
 
     def test_event_file_read_no_mission(self):
         """Test event file reading."""
