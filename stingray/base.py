@@ -2653,7 +2653,7 @@ class StingrayTimeseries(StingrayObject):
         for i, (st, sp, tst, tsp) in enumerate(zip(start, stop, start_times, stop_times)):
             if sp - st <= 1:
                 warnings.warn(
-                    f"Segment {i} ({tst}--{tsp}) has one data point or less. Skipping it."
+                    f"Segment {i} ({tst}--{tsp}) has one data point or less. "
                 )
                 results.append(None)
                 continue
