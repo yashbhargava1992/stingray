@@ -2653,9 +2653,8 @@ class StingrayTimeseries(StingrayObject):
         for i, (st, sp, tst, tsp) in enumerate(zip(start, stop, start_times, stop_times)):
             if sp - st <= 1:
                 warnings.warn(
-                    f"Segment {i} ({tst}--{tsp}) has one data point or less. "
+                    f"Segment {i} ({tst}--{tsp}) has one data point or less. Skipping it "
                 )
-                results.append(None)
                 continue
             lc_filt = self[st:sp]
             lc_filt.gti = np.asarray([[tst, tsp]])
@@ -2671,10 +2670,7 @@ class StingrayTimeseries(StingrayObject):
             outs = [[] for _ in range(n_outs)]
             for res in results:
                 for i in range(n_outs):
-                    if res is None:
-                        outs[i].append(None)
-                    else:
-                        outs[i].append(res[i])
+                    outs[i].append(res[i])
             results = outs
 
         # Try to transform into a (possibly multi-dimensional) numpy array
