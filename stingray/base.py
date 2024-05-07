@@ -2579,7 +2579,7 @@ class StingrayTimeseries(StingrayObject):
     def analyze_segments(self, func, segment_size, fraction_step=1, **kwargs):
         """Analyze segments of the light curve with any function.
 
-        Intervals with less than two data points are skipped.
+        Intervals with less than one data point are skipped.
 
         Parameters
         ----------
