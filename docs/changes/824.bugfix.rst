@@ -1,1 +1,0 @@
-Substitute np.asarray with np.asanyarray everywhere, to avoid copying memory maps into memory if possible

@@ -1,1 +1,0 @@
-Fix issue when setting a property from a FITS file read
