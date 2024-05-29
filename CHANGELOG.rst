@@ -1,3 +1,29 @@
+v2.1 (2024-05-29)
+---------------------
+
+New Features
+^^^^^^^^^^^^
+
+- Add function to calibrate event lists based on RMF file (`#804 <https://github.com/StingraySoftware/stingray/pull/804>`__)
+- Speed up computation of pds for large arrays (`#808 <https://github.com/StingraySoftware/stingray/pull/808>`__)
+- Add support for XTE science event data (`#816 <https://github.com/StingraySoftware/stingray/pull/816>`__)
+- A friendlier API for the non-paralyzable dead time model model (`#800 <https://github.com/StingraySoftware/stingray/pull/800>`__)
+
+Bug Fixes
+^^^^^^^^^
+
+- Fix issue when setting a property from a FITS file read (`#814 <https://github.com/StingraySoftware/stingray/pull/814>`__)
+- Fix case when analyze_segments has an invalid segment (`#822 <https://github.com/StingraySoftware/stingray/pull/822>`__)
+- Substitute np.asarray with np.asanyarray everywhere, to avoid copying memory maps into memory if possible (`#824 <https://github.com/StingraySoftware/stingray/pull/824>`__)
+
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Dead time model fixes: more stable computations, better plotting of check_A and check_B (`#800 <https://github.com/StingraySoftware/stingray/pull/800>`__)
+- Bumped jinja version to 3.1.4 (`#825 <https://github.com/StingraySoftware/stingray/pull/825>`__)
+
+
 v2.0 (2024-03-13)
 -----------------
 
