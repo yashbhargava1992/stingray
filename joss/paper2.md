@@ -62,6 +62,6 @@ In Stingray's design and development, we continue to strive to provide specific 
 MB and EVL are supported in part by Italian Research Center on High Performance Computing Big Data and Quantum Computing (ICSC), project funded by European Union - NextGenerationEU - and National
 Recovery and Resilience Plan (NRRP) - Mission 4 Component 2 within the activities of Spoke 3
 (Astrophysics and Cosmos Observations)
-
+D.H. is supported by the Women In Science Excel (WISE) programme of the Netherlands Organisation for Scientific Research (NWO).
 
 # References
