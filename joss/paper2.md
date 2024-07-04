@@ -14,14 +14,29 @@ authors:
   orcid: 0000-0002-1169-7486
   affiliation: 2
 - name: Abigail Stevens
+  orcid: 0000-0002-5041-3079
+  affiliation: 3
 - name: John Swinbank
+  affiliation: 4
 - name: Guglielmo Mastroserio
+  affiliation: 5
 - name: Matteo Lucchini
+  orcid: 0000-0002-2235-3347
+  affiliation: 6
 - name: Eleonora Veronica Lai
+  affiliation: 1
+  orcid: 0000-0002-6421-2198
 - name: Amogh Desai
+  affiliation: 7
 - name: Gaurav Joshi
+  orcid: 0009-0009-2305-5008
+  affiliation: 8
 - name: Francesco Pisanu
+  orcid: 0000-0003-0799-5760
+  affiliation: 9
 - name: Sri Guru Datta Pisupati
+  orcid: 0009-0006-3745-5553
+  affiliation: 10
 - name: Swapnil Sharma
 - name: Mihir Tripathi
 - name: Dhruv Vats
@@ -31,11 +46,19 @@ affiliations:
   index: 1
 - name: SRON
   index: 2
+-name: Anton Pannekoek Institute, University of Amsterdam, Science Park 904, 1098 XH Amsterdam, The Netherlands
+  index: 6
+-name: Indian Institute of Technology Gandhinagar
+  index: 8
+-name: LIPN-Université Sorbonne Paris Nord
+  index: 9
+-name: Chaitanya Bharathi Institute of Technology, Hyderabad,India
+  index: 10
 
-date: 03 July 2024
+date: 04 July 2024
 bibliography: joss.bib
-aas-doi: 10.3847/1538-4357/ab258d
-aas-journal: Astrophysical Journal
+aas-doi:
+aas-journal:
 ---
 
 # Summary
