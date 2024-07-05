@@ -38,8 +38,13 @@ authors:
   orcid: 0009-0006-3745-5553
   affiliation: 10
 - name: Swapnil Sharma
+  affiliation: 11
 - name: Mihir Tripathi
+  affiliation: 12
+  orcid: 0009-0007-2723-0315
 - name: Dhruv Vats
+  affiliation: 13
+  orcid: 0009-0001-0542-0755
 
 affiliations:
 - name: INAF-Osservatorio Astronomico di Cagliari, via della Scienza 5, I-09047 Selargius (CA), Italy
@@ -54,6 +59,10 @@ affiliations:
   index: 9
 -name: Chaitanya Bharathi Institute of Technology, Hyderabad,India
   index: 10
+-name: Academia Sinica Institute of Astronomy & Astrophysics 11F of Astronomy-Mathematics Building, AS/NTU, No. 1, Section 4, Roosevelt Road, Taipei 10617, Taiwan, R.O.C.
+  index: 12
+-name: Voltron Data, US
+  index: 13
 
 date: 04 July 2024
 bibliography: joss.bib
