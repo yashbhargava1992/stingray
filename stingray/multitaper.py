@@ -16,6 +16,12 @@ from .events import EventList
 from .lightcurve import Lightcurve
 from .utils import rebin_data, simon, fft, rfft, rfftfreq
 
+try:
+    integration_func = np.trapezoid
+except AttributeError:
+    # < Numpy 2.0.0
+    integration_func = np.trapz
+
 __all__ = ["Multitaper"]
 
 # Inspired from nitime (https://nipy.org/nitime/)
@@ -460,7 +466,7 @@ class Multitaper(Powerspectrum):
 
         psd_est = self.psd_from_freq_response(freq_response, sqrt_eigvals[:, np.newaxis])
 
-        var = np.trapz(psd_est, dx=np.pi / n_freqs) / (2 * np.pi)
+        var = integration_func(psd_est, dx=np.pi / n_freqs) / (2 * np.pi)
         del psd_est
 
         psd = np.empty(n_freqs)
