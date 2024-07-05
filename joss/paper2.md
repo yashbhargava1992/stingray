@@ -51,6 +51,8 @@ affiliations:
   index: 1
 - name: SRON
   index: 2
+-name: MSU Museum, Michigan State University
+  index: 3
 -name: Anton Pannekoek Institute, University of Amsterdam, Science Park 904, 1098 XH Amsterdam, The Netherlands
   index: 6
 -name: Indian Institute of Technology Gandhinagar
