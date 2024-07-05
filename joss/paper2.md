@@ -59,6 +59,8 @@ affiliations:
   index: 9
 -name: Chaitanya Bharathi Institute of Technology, Hyderabad,India
   index: 10
+-name: Indian Institute of Technology, Mandi
+  index: 11
 -name: Academia Sinica Institute of Astronomy & Astrophysics 11F of Astronomy-Mathematics Building, AS/NTU, No. 1, Section 4, Roosevelt Road, Taipei 10617, Taiwan, R.O.C.
   index: 12
 -name: Voltron Data, US
