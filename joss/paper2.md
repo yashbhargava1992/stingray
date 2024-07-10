@@ -29,6 +29,7 @@ authors:
   orcid: 0000-0002-6421-2198
 - name: Amogh Desai
   affiliation: 7
+  orcid: 0000-0002-6015-9553
 - name: Gaurav Joshi
   orcid: 0009-0009-2305-5008
   affiliation: 8
@@ -58,6 +59,8 @@ affiliations:
   index: 5
 -name: Anton Pannekoek Institute, University of Amsterdam, Science Park 904, 1098 XH Amsterdam, The Netherlands
   index: 6
+-name: Carnegie Mellon University
+  index: 7
 -name: Indian Institute of Technology Gandhinagar
   index: 8
 -name: LIPN-Université Sorbonne Paris Nord
