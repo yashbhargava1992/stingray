@@ -43,17 +43,20 @@ def _default_value_if_no_key(dictionary, key, default):
     except:
         return default
 
-def validate_key_in_list(key, optional_keys):
 
-    '''
+def validate_key_in_list(key, optional_keys):
+    """
     if key not in optional_keys:
         raise ValueError(f"The key '{key}' is not found in the list of optional keys: {optional_keys}")
 
-    '''
+    """
 
     if key not in optional_keys:
-        warnings.warn(f"The key '{key}' is not in the list of optional keys: {optional_keys}", UserWarning)
+        warnings.warn(
+            f"The key '{key}' is not in the list of optional keys: {optional_keys}", UserWarning
+        )
     return key in optional_keys
+
 
 def p_to_f(*period_derivatives):
     """Convert periods into frequencies, and vice versa.
@@ -275,17 +278,10 @@ def fold_events(times, *frequency_derivatives, **opts):
         The uncertainties on the pulse profile
     """
 
-    optional_parameters = [
-    'nbins',
-    'weights',
-    'gti',
-    'ref_time',
-    'expocorr',
-    'mode'
-    ]
+    optional_parameters = ["nbins", "weights", "gti", "ref_time", "expocorr", "mode"]
 
     for key in opts:
-        validate_key_in_list(key, optional_keys= optional_parameters)
+        validate_key_in_list(key, optional_keys=optional_parameters)
 
     mode = _default_value_if_no_key(opts, "mode", "ef")
     nbin = _default_value_if_no_key(opts, "nbin", 16)
