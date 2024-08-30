@@ -44,20 +44,6 @@ def _default_value_if_no_key(dictionary, key, default):
         return default
 
 
-def validate_key_in_list(key, optional_keys):
-    """
-    if key not in optional_keys:
-        raise ValueError(f"The key '{key}' is not found in the list of optional keys: {optional_keys}")
-
-    """
-
-    if key not in optional_keys:
-        warnings.warn(
-            f"The key '{key}' is not in the list of optional keys: {optional_keys}", UserWarning
-        )
-    return key in optional_keys
-
-
 def p_to_f(*period_derivatives):
     """Convert periods into frequencies, and vice versa.
 
@@ -127,8 +113,8 @@ def pulse_phase(times, *frequency_derivatives, **opts):
 
     """
 
-    ph0 = _default_value_if_no_key(opts, "ph0", 0)
-    to_1 = _default_value_if_no_key(opts, "to_1", True)
+    ph0 = dict.pop(opts, "ph0", 0)
+    to_1 = dict.pop(opts, "to_1", True)
     ph = ph0
 
     for i_f, f in enumerate(frequency_derivatives):
@@ -278,23 +264,23 @@ def fold_events(times, *frequency_derivatives, **opts):
         The uncertainties on the pulse profile
     """
 
-    optional_parameters = ["nbins", "weights", "gti", "ref_time", "expocorr", "mode"]
-
-    for key in opts:
-        validate_key_in_list(key, optional_keys=optional_parameters)
-
-    mode = _default_value_if_no_key(opts, "mode", "ef")
-    nbin = _default_value_if_no_key(opts, "nbin", 16)
-    weights = _default_value_if_no_key(opts, "weights", 1)
+    mode = dict.pop(opts, "mode", "ef")
+    nbin = dict.pop(opts, "nbin", 16)
+    weights = dict.pop(opts, "weights", 1)
     # If no key is passed, *or gti is None*, defaults to the
     # initial and final event
-    gti = _default_value_if_no_key(opts, "gti", None)
+    gti = dict.pop(opts, "gti", None)
     if gti is None:
         gti = [[times[0], times[-1]]]
     # Be safe if gtis are a list
     gti = np.asanyarray(gti)
-    ref_time = _default_value_if_no_key(opts, "ref_time", 0)
-    expocorr = _default_value_if_no_key(opts, "expocorr", False)
+    ref_time = dict.pop(opts, "ref_time", 0)
+    expocorr = dict.pop(opts, "expocorr", False)
+
+    if opts:
+       raise ValueError(f"Unidentified keys: {opts}")
+
+    print(mode, nbin, weights)
 
     if not isinstance(weights, Iterable):
         weights *= np.ones(len(times))
