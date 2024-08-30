@@ -278,9 +278,9 @@ def fold_events(times, *frequency_derivatives, **opts):
     expocorr = dict.pop(opts, "expocorr", False)
 
     if opts:
-       raise ValueError(f"Unidentified keys: {opts}")
-
-    print(mode, nbin, weights)
+        raise ValueError(
+            f"Unidentified keys: {opts.keys()} \n Please refer to the docstring for optional parameters."
+        )
 
     if not isinstance(weights, Iterable):
         weights *= np.ones(len(times))
