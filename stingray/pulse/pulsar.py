@@ -113,8 +113,8 @@ def pulse_phase(times, *frequency_derivatives, **opts):
 
     """
 
-    ph0 = opts.pop( "ph0", 0)
-    to_1 = opts.pop( "to_1", True)
+    ph0 = opts.pop("ph0", 0)
+    to_1 = opts.pop("to_1", True)
     ph = ph0
 
     for i_f, f in enumerate(frequency_derivatives):
@@ -264,18 +264,18 @@ def fold_events(times, *frequency_derivatives, **opts):
         The uncertainties on the pulse profile
     """
 
-    mode = opts.pop( "mode", "ef")
-    nbin = opts.pop( "nbin", 16)
-    weights = opts.pop( "weights", 1)
+    mode = opts.pop("mode", "ef")
+    nbin = opts.pop("nbin", 16)
+    weights = opts.pop("weights", 1)
     # If no key is passed, *or gti is None*, defaults to the
     # initial and final event
-    gti = opts.pop( "gti", None)
+    gti = opts.pop("gti", None)
     if gti is None:
         gti = [[times[0], times[-1]]]
     # Be safe if gtis are a list
     gti = np.asanyarray(gti)
-    ref_time = opts.pop( "ref_time", 0)
-    expocorr = opts.pop( "expocorr", False)
+    ref_time = opts.pop("ref_time", 0)
+    expocorr = opts.pop("expocorr", False)
 
     if opts:
         raise ValueError(
