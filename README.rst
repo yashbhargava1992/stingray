@@ -2,7 +2,7 @@
 Stingray
 ========
 
-.. csv-table:: 
+.. csv-table::
    :header: "Usage", "Release", "Development", "Community"
    :widths: 50, 50, 50, 50
 
@@ -10,7 +10,7 @@ Stingray
    |Docs|, |joss|, |Repo status|,  " "
    |License|, |doi|, |Coverage Status Master|, " "
 
-       
+
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
