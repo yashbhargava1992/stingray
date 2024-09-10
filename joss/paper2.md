@@ -27,25 +27,28 @@ authors:
 - name: Eleonora Veronica Lai
   affiliation: 1
   orcid: 0000-0002-6421-2198
-- name: Amogh Desai
+- name: Johannes Buchner
   affiliation: 7
+  orcid: 0000-0003-0426-6634
+- name: Amogh Desai
+  affiliation: 8
   orcid: 0000-0002-6015-9553
 - name: Gaurav Joshi
   orcid: 0009-0009-2305-5008
-  affiliation: 8
+  affiliation: 9
 - name: Francesco Pisanu
   orcid: 0000-0003-0799-5760
-  affiliation: 9
+  affiliation: 10
 - name: Sri Guru Datta Pisupati
   orcid: 0009-0006-3745-5553
-  affiliation: 10
-- name: Swapnil Sharma
   affiliation: 11
-- name: Mihir Tripathi
+- name: Swapnil Sharma
   affiliation: 12
+- name: Mihir Tripathi
+  affiliation: 13
   orcid: 0009-0007-2723-0315
 - name: Dhruv Vats
-  affiliation: 13
+  affiliation: 14
   orcid: 0009-0001-0542-0755
 
 affiliations:
@@ -59,20 +62,22 @@ affiliations:
   index: 5
 -name: Anton Pannekoek Institute, University of Amsterdam, Science Park 904, 1098 XH Amsterdam, The Netherlands
   index: 6
--name: Carnegie Mellon University
+-name: Max Planck Institute for Extraterrestrial Physics, Giessenbachstrasse, 85741 Garching, Germany
   index: 7
--name: Indian Institute of Technology Gandhinagar
+-name: Carnegie Mellon University
   index: 8
--name: LIPN-Université Sorbonne Paris Nord
+-name: Indian Institute of Technology Gandhinagar
   index: 9
--name: Chaitanya Bharathi Institute of Technology, Hyderabad,India
+-name: LIPN-Université Sorbonne Paris Nord
   index: 10
--name: Indian Institute of Technology, Mandi
+-name: Chaitanya Bharathi Institute of Technology, Hyderabad,India
   index: 11
--name: Academia Sinica Institute of Astronomy & Astrophysics 11F of Astronomy-Mathematics Building, AS/NTU, No. 1, Section 4, Roosevelt Road, Taipei 10617, Taiwan, R.O.C.
+-name: Indian Institute of Technology, Mandi
   index: 12
--name: Voltron Data, US
+-name: Academia Sinica Institute of Astronomy & Astrophysics 11F of Astronomy-Mathematics Building, AS/NTU, No. 1, Section 4, Roosevelt Road, Taipei 10617, Taiwan, R.O.C.
   index: 13
+-name: Voltron Data, US
+  index: 14
 
 date: 04 July 2024
 bibliography: joss.bib
