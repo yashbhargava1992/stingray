@@ -2,14 +2,22 @@
 Authors and Credits
 *******************
 
-Stingray Project Coordinators
-=============================
+Stingray Founders
+=================
 
 * Matteo Bachetti
 * Paul Balm
 * Daniela Huppenkothen
 * Simone Migliari
 * Abigail Stevens
+
+Current Maintainers
+===================
+* Matteo Bachetti
+* Daniela Huppenkothen
+* Guglielmo Mastroserio
+* John Swinbank
+* Matteo Lucchini
 
 Contributors
 ============
@@ -22,10 +30,16 @@ Contributors
 * Nick Gorgone
 * Anurag Hota
 * Ajit Jadhav
+* Gaurav Joshi
 * Usman Khan
 * Sambhav Kothari
+* Abhinav Kumar
 * Sandeep Kumar
+* Utkarsh Kumar
+* Eleonora Veronica Lai
+* luzpaz
 * Max Mahlke
+* Kartik Mandar
 * Evandro Martinez Ribeiro
 * Himanshu Mishra
 * Sashank Mishra
@@ -33,6 +47,7 @@ Contributors
 * paopaofi
 * parkma99
 * Francesco Pisanu
+* Sri Guru Datta Pisupati
 * Rashmi Raj
 * Haroon Rashid
 * Achilles Rasquinha
@@ -41,17 +56,11 @@ Contributors
 * Swapnil Sharma
 * Brigitta Sipocz
 * Arfon Smith
-* John Swinbank
 * Akash Tandon
 * Marta Mancosu
 * Mihir Tripathi
 * Ricardo Vallés Blanco
 * Dhruv Vats
-* Guglielmo Mastroserio
-* Sri Guru Datta Pisupati
-* Gaurav Joshi
-* luzpaz
-* Abhinav Kumar
 
 If you have contributed to Stingray and your name is missing,
 please send an email to the coordinators, or
