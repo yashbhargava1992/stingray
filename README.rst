@@ -2,7 +2,15 @@
 Stingray
 ========
 
-|Build Status Master| |Docs| |Slack| |joss| |doi| |Coverage Status Master| |GitHub release| |Repo status|
+.. csv-table:: 
+   :header: "Usage", "Release", "Development", "Community"
+   :widths: 50, 50, 50, 50
+
+   |Python version|, |GitHub release|, |Build Status Master|, |Slack|
+   |Docs|, |joss|, |Repo status|,  " "
+   |License|, |doi|, |Coverage Status Master|, " "
+
+       
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 X-Ray Spectral Timing Made Easy
@@ -69,6 +77,8 @@ Copyright & Licensing
 All content © 2015 The Authors.
 The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ for details.
 
+.. |Python version| image:: https://img.shields.io/python/required-version-toml?tomlFilePath=https://raw.githubusercontent.com/stingraysoftware/stingray/main/pyproject.toml
+   :alt: Python Version from PEP 621 TOML
 .. |Build Status Master| image:: https://github.com/StingraySoftware/stingray/workflows/CI%20Tests/badge.svg
    :target: https://github.com/StingraySoftware/stingray/actions/
 .. |Docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
@@ -86,6 +96,8 @@ The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ 
 .. |Repo status| image:: https://www.repostatus.org/badges/latest/active.svg
    :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
    :target: https://www.repostatus.org/#active
+.. |License| image:: https://img.shields.io/badge/License-MIT-yellow.svg
+   :target: https://opensource.org/licenses/MIT
 
 .. _Astropy: https://www.github.com/astropy/astropy
 .. _Issues: https://www.github.com/stingraysoftware/stingray/issues
