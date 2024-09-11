@@ -22,6 +22,7 @@ Current Maintainers
 Contributors
 ============
 
+* Johannes Buchner
 * Riccardo Campana
 * Meg Davis
 * Amogh Desai
