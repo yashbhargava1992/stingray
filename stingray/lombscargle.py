@@ -1,15 +1,25 @@
 import copy
+from collections.abc import Iterable
 import warnings
 from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
+import scipy
+import scipy.stats
 from astropy.timeseries.periodograms import LombScargle
 
 from .crossspectrum import Crossspectrum
 from .events import EventList
 from .exceptions import StingrayError
-from .fourier import impose_symmetry_lsft, lsft_fast, lsft_slow
+from .fourier import (
+    impose_symmetry_lsft,
+    lsft_fast,
+    lsft_slow,
+    get_rms_from_unnorm_periodogram,
+    poisson_level,
+    unnormalize_periodograms,
+)
 from .lightcurve import Lightcurve
 from .utils import simon
 
@@ -352,6 +362,7 @@ class LombScargleCrossspectrum(Crossspectrum):
         self.oversampling = None
         self.variance1 = None
         self.variance2 = None
+        self.variance = None
         return
 
     def time_lag(self):
@@ -387,17 +398,45 @@ class LombScargleCrossspectrum(Crossspectrum):
         raise AttributeError(
             "Object has no attribute named 'from_lc_iterable' ! Not applicable for unevenly sampled data"
         )
-        
+
         if self.df is None:
             self.df = self.freq[1] - self.freq[0]
 
-    
-        
-       
     def compute_rms(self, min_freq, max_freq, poisson_noise_level=None):
+        """
+        Compute the fractional rms amplitude in the power spectrum
+        between two frequencies.
 
+        Parameters
+        ----------
+        min_freq: float
+            The lower frequency bound for the calculation.
 
-        
+        max_freq: float
+            The upper frequency bound for the calculation.
+
+        Other parameters
+        ----------------
+        poisson_noise_level : float, default is None
+            This is the Poisson noise level of the PDS with same
+            normalization as the PDS. If poissoin_noise_level is None,
+            the Poisson noise is calculated in the idealcase
+            e.g. 2./<countrate> for fractional rms normalisation
+            Dead time and other instrumental effects can alter it.
+            The user can fit the Poisson noise level outside
+            this function using the same normalisation of the PDS
+            and it will get subtracted from powers here.
+
+        Returns
+        -------
+        rms: float
+            The fractional rms amplitude contained between ``min_freq`` and
+            ``max_freq``.
+
+        rms_err: float
+            The error on the fractional rms amplitude.
+
+        """
         good = (self.freq >= min_freq) & (self.freq <= max_freq)
 
         M_freq = self.m
@@ -427,8 +466,7 @@ class LombScargleCrossspectrum(Crossspectrum):
         )
 
         return rms, rmse
-    
-    
+
     def _rms_error(self, powers):
         r"""
         Compute the error on the fractional rms amplitude using error
@@ -467,7 +505,7 @@ class LombScargleCrossspectrum(Crossspectrum):
         delta_rms = sq_sum_err * drms_dp
         return delta_rms
 
-    
+
 class LombScarglePowerspectrum(LombScargleCrossspectrum):
     type = "powerspectrum"
     """
