@@ -120,7 +120,7 @@ class TestAll(object):
     def test_plot_profile_existing_ax(self):
         fig = plt.figure("Pulse profile")
         ax = plt.subplot()
-        phase, prof, _ = fold_events(self.event_times, self.pulse_frequency, ax=ax)
+        phase, prof, _ = fold_events(self.event_times, self.pulse_frequency)
         ax = plot_profile(phase, prof, ax=ax)
         plt.savefig("profile_existing_ax.png")
         plt.close(fig)
@@ -128,7 +128,7 @@ class TestAll(object):
     def test_plot_profile_errorbars(self):
         fig = plt.figure("Pulse profile")
         ax = plt.subplot()
-        phase, prof, err = fold_events(self.event_times, self.pulse_frequency, ax=ax)
+        phase, prof, err = fold_events(self.event_times, self.pulse_frequency)
 
         ax = plot_profile(phase, prof, err=err, ax=ax)
         plt.savefig("profile_errorbars.png")
