@@ -1,0 +1,25 @@
+# .pre-commit-config.yaml
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0  # You can check for the latest version
+    hooks:
+      - id: trailing-whitespace
+        files: \.py$
+      - id: end-of-file-fixer
+        files: \.py$
+
+  - repo: https://github.com/psf/black
+    rev: 23.9.1  # You can check for the latest version
+    hooks:
+      - id: black
+        language_version: python3
+        files: \.py$
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.1.0  # You can check for the latest version
+    hooks:
+      - id: flake8
+        language_version: python3
+        files: \.py$
+
