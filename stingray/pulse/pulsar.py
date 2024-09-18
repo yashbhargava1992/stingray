@@ -279,7 +279,7 @@ def fold_events(times, *frequency_derivatives, **opts):
 
     if opts:
         raise ValueError(
-            f"Unidentified keyword(s) to fold_events: {opts.keys()} \n Please refer to the description of the function for optional parameters."
+            f"Unidentified keyword(s) to fold_events: {', '.join([k for k in opts.keys()])} \n Please refer to the description of the function for optional parameters."
         )
 
     if not isinstance(weights, Iterable):
