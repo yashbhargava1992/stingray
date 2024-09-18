@@ -111,6 +111,12 @@ class TestAll(object):
         plt.savefig("phaseogram_direct.png")
         plt.close(plt.gcf())
 
+    def test_search_wrongk_key_fails(self):
+        with pytest.raises(
+            ValueError, match="Unidentified keyword to fold_events: dict_keys(['fdot'])"
+        ) as excinfo:
+            phase, prof, _ = fold_events(self.event_times, self.pulse_frequency, fdot=12)
+
     def test_plot_profile(self):
         phase, prof, _ = fold_events(self.event_times, self.pulse_frequency)
         ax = plot_profile(phase, prof)
