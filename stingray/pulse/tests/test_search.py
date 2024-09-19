@@ -113,8 +113,7 @@ class TestAll(object):
 
     def test_search_wrong_key_fails(self):
         with pytest.raises(
-            ValueError,
-            match="Unidentified keyword(s) to fold_events: fdot, fddot \n Please refer to the description of the function for optional parameters.",
+            ValueError, match=r"Unidentified keyword\(s\) to fold_events: fdot, fddot"
         ):
             phase, prof, _ = fold_events(self.event_times, self.pulse_frequency, fdot=12, fddot=34)
 
