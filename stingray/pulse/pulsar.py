@@ -113,8 +113,8 @@ def pulse_phase(times, *frequency_derivatives, **opts):
 
     """
 
-    ph0 = _default_value_if_no_key(opts, "ph0", 0)
-    to_1 = _default_value_if_no_key(opts, "to_1", True)
+    ph0 = opts.pop("ph0", 0)
+    to_1 = opts.pop("to_1", True)
     ph = ph0
 
     for i_f, f in enumerate(frequency_derivatives):
@@ -263,18 +263,24 @@ def fold_events(times, *frequency_derivatives, **opts):
     profile_err : array of floats
         The uncertainties on the pulse profile
     """
-    mode = _default_value_if_no_key(opts, "mode", "ef")
-    nbin = _default_value_if_no_key(opts, "nbin", 16)
-    weights = _default_value_if_no_key(opts, "weights", 1)
+
+    mode = opts.pop("mode", "ef")
+    nbin = opts.pop("nbin", 16)
+    weights = opts.pop("weights", 1)
     # If no key is passed, *or gti is None*, defaults to the
     # initial and final event
-    gti = _default_value_if_no_key(opts, "gti", None)
+    gti = opts.pop("gti", None)
     if gti is None:
         gti = [[times[0], times[-1]]]
     # Be safe if gtis are a list
     gti = np.asanyarray(gti)
-    ref_time = _default_value_if_no_key(opts, "ref_time", 0)
-    expocorr = _default_value_if_no_key(opts, "expocorr", False)
+    ref_time = opts.pop("ref_time", 0)
+    expocorr = opts.pop("expocorr", False)
+
+    if opts:
+        raise ValueError(
+            f"Unidentified keyword(s) to fold_events: {', '.join([k for k in opts.keys()])} \n Please refer to the description of the function for optional parameters."
+        )
 
     if not isinstance(weights, Iterable):
         weights *= np.ones(len(times))
