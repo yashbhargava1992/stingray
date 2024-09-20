@@ -74,7 +74,7 @@ If you find this package useful in your research, please provide appropriate ack
 Copyright & Licensing
 ---------------------
 
-All content © 2015 The Authors.
+All content © 2024 The Authors.
 The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ for details.
 
 .. |Python version| image:: https://img.shields.io/python/required-version-toml?tomlFilePath=https://raw.githubusercontent.com/stingraysoftware/stingray/main/pyproject.toml
