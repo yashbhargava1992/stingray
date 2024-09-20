@@ -97,7 +97,6 @@ A **minimal installation** of Stingray requires the following dependencies:
 In **typical** uses, requiring input/output, caching of results, and faster processing, we **recommend the following dependencies**:
 
 + numba (**highly** recommended)
-+ tbb (needed by numba)
 + tqdm (for progress bars, always useful)
 + pyfftw (for the fastest FFT in the West)
 + h5py (for input/output)
@@ -124,6 +123,8 @@ For the Gaussian Process modeling in `stingray.modeling.gpmodeling`, you'll need
 + tinygp
 + etils
 + typing_extensions
+
+For the Bexvar calculations in `stingray.bexvar` and `stingray.lightcurve`, you'll need `UltraNest <https://johannesbuchner.github.io/UltraNest/index.html>`_.
 
 Most of these are installed via ``pip``, but if you have an Nvidia GPU available, you'll want to take special care
 following the installation instructions for jax and tensorflow(-probability) in order to enable GPU support and
@@ -270,6 +271,9 @@ the stingray source directory.
 
 Using Stingray
 ===============
+
+The documentation below is built on top of Jupyter notebooks that can be run locally.
+The easiest way to retrieve the notebooks is by `cloning the notebooks repository <https://github.com/StingraySoftware/notebooks>`_ and browsing the directories, which are conveniently divided by topic.
 
 A Spectral timing exploration
 -----------------------------
