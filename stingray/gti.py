@@ -1733,14 +1733,14 @@ def split_gtis_at_indices(gtis, index_list):
 
 
 def find_large_bad_time_intervals(gtis, bti_length_limit=86400):
-    """Find large bad time intervals in a list of GTIs, and split the GTI list accordingly.
+    """Find large bad time intervals (BTIs) in a list of GTIs, and split the GTI list accordingly.
 
     Parameters
     ----------
     gtis : 2-d float array
         List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
     bti_length_limit : float
-        Maximum length of a bad time interval. If a BTI is longer than this, an edge will be
+        Maximum length of a BTI. If a BTI is longer than this, an edge will be
         returned at the midpoint of the BTI.
 
     Returns
@@ -1775,7 +1775,7 @@ def split_gtis_by_exposure(gtis, exposure_per_chunk, new_interval_if_gti_sep=Non
     gtis : 2-d float array
         List of GTIs of the form ``[[gti0_0, gti0_1], [gti1_0, gti1_1], ...]``
     exposure_per_chunk : float
-        Total exposure of each chunk
+        Total exposure of each chunk, in seconds
 
     Other Parameters
     ----------------
@@ -1801,7 +1801,7 @@ def split_gtis_by_exposure(gtis, exposure_per_chunk, new_interval_if_gti_sep=Non
 
     """
     gtis = np.asanyarray(gtis)
-    total_exposure = np.sum(np.diff(gtis, axis=1))
+    rough_total_exposure = np.sum(np.diff(gtis, axis=1))
     compulsory_edges = []
     if new_interval_if_gti_sep is not None:
         compulsory_edges = find_large_bad_time_intervals(gtis, new_interval_if_gti_sep)
@@ -1813,7 +1813,7 @@ def split_gtis_by_exposure(gtis, exposure_per_chunk, new_interval_if_gti_sep=Non
             final_gti_list.extend(local_split_gtis)
         return final_gti_list
 
-    n_intervals = int(np.rint(total_exposure / exposure_per_chunk))
+    n_intervals = int(np.rint(rough_total_exposure / exposure_per_chunk))
 
     if n_intervals <= 1:
         return np.asarray([gtis])
@@ -1836,10 +1836,9 @@ def split_gtis_by_exposure(gtis, exposure_per_chunk, new_interval_if_gti_sep=Non
     for g in gtis:
         exposure_edges.append(last_exposure)
         last_exposure += g[1] - g[0]
+    total_exposure = last_exposure
 
     exposure_edges = np.asarray(exposure_edges)
-
-    total_exposure = last_exposure
 
     exposure_per_interval = total_exposure / n_intervals
     exposure_intervals = np.arange(0, total_exposure + exposure_per_interval, exposure_per_interval)
