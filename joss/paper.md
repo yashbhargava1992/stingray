@@ -1,5 +1,5 @@
 ---
-title: 'stingray: A fast and modern Python library for spectral timing'
+title: 'Stingray 2: A fast and modern Python library for spectral timing'
 tags:
 - Python
 - astronomy
@@ -79,7 +79,7 @@ affiliations:
 - name: Voltron Data, US
   index: 14
 
-date: 04 July 2024
+date: 01 October 2024
 bibliography: joss.bib
 aas-doi:
 aas-journal:
@@ -101,7 +101,7 @@ The originally planned implementation of spectral timing techniques — measures
 
 We introduced a wide range of new techniques particularly designed to analyze unevenly sampled data sets, responding to the growing need for these techniques with the advent of large-scale astronomical time domain surveys, subject to irregular observing constraints. Methods include Gaussian Process modeling of quasi-periodic oscillations [hubner] and Lomb-Scargle cross spectra [scargle]. We have introduced the Fourier-Domain Acceleration Search [ransom] for pulsars; the H-test [dejager] and Phase Dispersion Minimization  [stellingwerf] statistics were also introduced into the pulsar sub package to evaluate the folded profiles of pulsars. We expanded the statistical capabilities of Stingray by introducing a number of statistical evaluation functions to estimate the statistics of periodograms, with particular attention to the upper limits on variable power.
 
-Finally, we have added a number of high-level exploratory and diagnostic functionality specifically as an essential toolbox to characterize accreting compact objects during their outbursts: standard products such as color-color and hardness-intensity diagrams, and their equivalent diagnostics in the frequency domain, "power colors" [@powercolors].
+Finally, we have added a number of high-level exploratory and diagnostic functionality specifically as an essential toolbox to characterize accreting compact objects during their outbursts: standard products such as color-color and hardness-intensity diagrams, and their equivalent diagnostics in the frequency domain, "power colors" [@heil].
 
 In Stingray's design and development, we continue to strive to provide specific high-level functionality to the high-energy astrophysics community, but built on top of general-purpose classes and methods that are designed to be easily adapted and extended to other use cases. Ongoing work funded by the Italian [National Recovery and Resilience Plan](https://www.mef.gov.it/en/focus/The-National-Recovery-and-Resilience-Plan-NRRP/) is pushing Stingray's performance further with the use of GPUs and parallel computing in anticipation of large-scale astronomical time domain surveys for example with the Vera Rubin Telescope. In addition, the near-future will see an overhaul and redesign of Stingray's `modeling` subpackage in order to take advantage of recent developments in fast optimization and sampling algorithms and probabilistic programming. In order to facilitate spectral-timing with state-of-the-art instruments, we are actively working to integrate Stingray with ongoing software efforts improving modeling of astronomical spectra.
 
