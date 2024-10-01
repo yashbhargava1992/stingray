@@ -56,27 +56,27 @@ affiliations:
   index: 1
 - name: SRON
   index: 2
--name: MSU Museum, Michigan State University
+- name: MSU Museum, Michigan State University
   index: 3
--name: Dipartimento di Fisica, Universit`a Degli Studi di Milano, Via Celoria, 16, Milano, 20133, Italy
+- name: Dipartimento di Fisica, Universit`a Degli Studi di Milano, Via Celoria, 16, Milano, 20133, Italy
   index: 5
--name: Anton Pannekoek Institute, University of Amsterdam, Science Park 904, 1098 XH Amsterdam, The Netherlands
+- name: Anton Pannekoek Institute, University of Amsterdam, Science Park 904, 1098 XH Amsterdam, The Netherlands
   index: 6
--name: Max Planck Institute for Extraterrestrial Physics, Giessenbachstrasse, 85741 Garching, Germany
+- name: Max Planck Institute for Extraterrestrial Physics, Giessenbachstrasse, 85741 Garching, Germany
   index: 7
--name: Carnegie Mellon University
+- name: Carnegie Mellon University
   index: 8
--name: Indian Institute of Technology Gandhinagar
+- name: Indian Institute of Technology Gandhinagar
   index: 9
--name: LIPN-Université Sorbonne Paris Nord
+- name: LIPN-Université Sorbonne Paris Nord
   index: 10
--name: Chaitanya Bharathi Institute of Technology, Hyderabad,India
+- name: Chaitanya Bharathi Institute of Technology, Hyderabad,India
   index: 11
--name: Indian Institute of Technology, Mandi
+- name: Indian Institute of Technology, Mandi
   index: 12
--name: Academia Sinica Institute of Astronomy & Astrophysics 11F of Astronomy-Mathematics Building, AS/NTU, No. 1, Section 4, Roosevelt Road, Taipei 10617, Taiwan, R.O.C.
+- name: Academia Sinica Institute of Astronomy & Astrophysics 11F of Astronomy-Mathematics Building, AS/NTU, No. 1, Section 4, Roosevelt Road, Taipei 10617, Taiwan, R.O.C.
   index: 13
--name: Voltron Data, US
+- name: Voltron Data, US
   index: 14
 
 date: 04 July 2024
