@@ -7,7 +7,7 @@ Stingray
    :widths: 50, 50, 50, 50
 
    |Python version|, |GitHub release|, |Build Status Master|, |Slack|
-   |Docs|, |joss|, |Repo status|,  " "
+   |Docs|, |joss|, |Repo status|,  |pyOpenSci Peer-Reviewed|
    |License|, |doi|, |Coverage Status Master|, " "
 
 
@@ -98,6 +98,8 @@ The code is distributed under the MIT license; see `LICENSE.rst <LICENSE.rst>`_ 
    :target: https://www.repostatus.org/#active
 .. |License| image:: https://img.shields.io/badge/License-MIT-yellow.svg
    :target: https://opensource.org/licenses/MIT
+.. |pyOpenSci Peer-Reviewed| image:: https://pyopensci.org/badges/peer-reviewed.svg 
+   :target: https://github.com/pyOpenSci/software-review/issues/201
 
 .. _Astropy: https://www.github.com/astropy/astropy
 .. _Issues: https://www.github.com/stingraysoftware/stingray/issues
