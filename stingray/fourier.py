@@ -1358,6 +1358,139 @@ def get_flux_iterable_from_segments(
         yield cts
 
 
+def center_pds_on_f(freqs, powers, f0, nbins=100):
+    """Extract a slice of PDS around a given frequency.
+
+    This function extracts a slice of the power spectrum around a given frequency.
+    The slice has a length of ``nbins``. If the slice goes beyond the edges of the
+    power spectrum, the missing values are filled with NaNs.
+
+    Parameters
+    ----------
+    freqs : np.array
+        Array of frequencies, the same for all powers
+    powers : np.array
+        Array of powers
+    f0 : float
+        Central frequency
+
+    Other parameters
+    ----------------
+    nbins : int, default 100
+        Number of bins to extract
+
+    Examples
+    --------
+    >>> freqs = np.arange(1, 100) * 0.1
+    >>> powers = 10 / freqs
+    >>> f0 = 0.3
+    >>> p = center_pds_on_f(freqs, powers, f0)
+    >>> assert np.isnan(p[0])
+    >>> assert not np.any(np.isnan(p[48:]))
+    """
+    powers = np.asarray(powers)
+    chunk = np.zeros(nbins) + np.nan
+    fchunk = np.zeros(nbins)
+
+    start_f_idx = np.searchsorted(freqs, f0)
+
+    minbin = start_f_idx - nbins // 2
+    maxbin = minbin + nbins
+
+    if minbin < 0:
+        chunk[-minbin : min(nbins, powers.size - minbin)] = powers[: minbin + nbins]
+    elif maxbin > powers.size:
+        chunk[: nbins - (maxbin - powers.size)] = powers[minbin:]
+    else:
+        chunk[:] = powers[minbin:maxbin]
+
+    return chunk
+
+
+def shift_and_add(freqs, power_list, f0_list, nbins=100, rebin=None, df=None, M=None):
+    """Add a list of power spectra, centered on different frequencies.
+
+    This is the basic operation for the shift-and-add operation used to track
+    kHz QPOs in X-ray binaries (e.g. Méndez et al. 1998, ApJ, 494, 65).
+
+    Parameters
+    ----------
+    freqs : np.array
+        Array of frequencies, the same for all powers. Must be sorted and on a uniform
+        grid.
+    power_list : list of np.array
+        List of power spectra. Each power spectrum must have the same length
+        as the frequency array.
+    f0_list : list of float
+        List of central frequencies
+
+    Other parameters
+    ----------------
+    nbins : int, default 100
+        Number of bins to extract
+    rebin : int, default None
+        Rebin the final spectrum by this factor. At the moment, the rebinning
+        is linear.
+    df : float, default None
+        Frequency resolution of the power spectra. If not given, it is calculated
+        from the input frequencies.
+    M : int or list of int, default None
+        Number of segments used to calculate each power spectrum. If a list is
+        given, it must have the same length as the power list.
+
+    Returns
+    -------
+    f : np.array
+        Array of output frequencies
+    p : np.array
+        Array of output powers
+    n : np.array
+        Number of contributing power spectra at each frequency
+
+    Examples
+    --------
+    >>> power_list = [[2, 5, 2, 2, 2], [1, 1, 5, 1, 1], [3, 3, 3, 5, 3]]
+    >>> freqs = np.arange(5) * 0.1
+    >>> f0_list = [0.1, 0.2, 0.3, 0.4]
+    >>> f, p, n = shift_and_add(freqs, power_list, f0_list, nbins=5)
+    >>> assert np.array_equal(n, [2, 3, 3, 3, 2])
+    >>> assert np.array_equal(p, [2. , 2. , 5. , 2. , 1.5])
+    >>> assert np.allclose(f, [0.05, 0.15, 0.25, 0.35, 0.45])
+    """
+    final_powers = np.zeros(nbins)
+    freqs = np.asarray(freqs)
+
+    mid_idx = np.searchsorted(freqs, np.mean(f0_list))
+    if M is None:
+        M = 1
+    if not isinstance(M, Iterable):
+        M = np.ones(len(power_list)) * M
+
+    count = np.zeros(nbins)
+    for f0, powers, m in zip(f0_list, power_list, M):
+        idx = np.searchsorted(freqs, f0_list)
+
+        powers = np.asarray(powers) * m
+        new_power = center_pds_on_f(freqs, powers, f0, nbins=nbins)
+        bad = np.isnan(new_power)
+        new_power[bad] = 0.0
+        final_powers += new_power
+        count += np.array(~bad, dtype=int) * m
+
+    if df is None:
+        df = freqs[1] - freqs[0]
+
+    final_freqs = np.arange(-nbins // 2, nbins // 2 + 1)[:nbins] * df
+    final_freqs = final_freqs - (final_freqs[0] + final_freqs[-1]) / 2 + np.mean(f0_list)
+    final_powers = final_powers / count
+
+    if rebin is not None:
+        final_freqs, final_powers, _, _ = rebin_data(final_freqs, final_powers, rebin * df)
+        final_powers = final_powers / rebin
+
+    return final_freqs, final_powers, count
+
+
 def avg_pds_from_iterable(
     flux_iterable, dt, norm="frac", use_common_mean=True, silent=False, return_subcs=False
 ):
