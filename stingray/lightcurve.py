@@ -1383,8 +1383,7 @@ class Lightcurve(StingrayTimeseries):
     def to_lightkurve(self):
         """
         Returns a `lightkurve.LightCurve` object.
-        This feature requires `Lightkurve
-        <https://docs.lightkurve.org/>`_ to be installed
+        This feature requires ``Lightkurve`` to be installed
         (e.g. ``pip install lightkurve``).  An `ImportError` will
         be raised if this package is not available.
 
