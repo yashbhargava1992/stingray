@@ -1032,7 +1032,7 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
             return
 
         if segment_size is None or lc is None:
-            raise RuntimeError("lc and segment_size must all be specified")
+            raise TypeError("lc and segment_size must all be specified")
 
         if isinstance(lc, EventList) and sample_time is None:
             raise ValueError("To pass an input event lists, please specify sample_time")

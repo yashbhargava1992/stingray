@@ -1430,6 +1430,10 @@ class TestDynamicalCrossspectrum(object):
         test_counts = [2, 3, 1, 3, 1, 5, 2, 1, 4, 2, 2, 2, 3, 4, 1, 7]
         cls.lc_test = Lightcurve(test_times, test_counts)
 
+    def test_bad_args(self):
+        with pytest.raises(TypeError, match=".must all be specified"):
+            _ = DynamicalCrossspectrum(1)
+
     def test_with_short_seg_size(self):
         with pytest.raises(ValueError):
             dps = DynamicalCrossspectrum(self.lc, self.lc, segment_size=0)
@@ -1673,5 +1677,5 @@ class TestDynamicalCrossspectrum(object):
         dps.m = 1
         output = dps.shift_and_add(f0_list, nbins=5)
         assert np.array_equal(output.m, [2, 3, 3, 3, 2])
-        assert np.array_equal(output.power, [2. , 2. , 5. , 2. , 1.5])
+        assert np.array_equal(output.power, [2.0, 2.0, 5.0, 2.0, 1.5])
         assert np.allclose(output.freq, [0.05, 0.15, 0.25, 0.35, 0.45])

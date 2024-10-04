@@ -878,6 +878,10 @@ class TestDynamicalPowerspectrum(object):
         test_counts = [2, 3, 1, 3, 1, 5, 2, 1, 4, 2, 2, 2, 3, 4, 1, 7]
         cls.lc_test = Lightcurve(test_times, test_counts)
 
+    def test_bad_args(self):
+        with pytest.raises(TypeError, match=".must all be specified"):
+            _ = DynamicalPowerspectrum(1)
+
     def test_with_short_seg_size(self):
         with pytest.raises(ValueError):
             dps = DynamicalPowerspectrum(self.lc, segment_size=0)

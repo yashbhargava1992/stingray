@@ -2146,7 +2146,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             return
 
         if segment_size is None or data1 is None or data2 is None:
-            raise RuntimeError("data1, data2, and segment_size must all be specified")
+            raise TypeError("data1, data2, and segment_size must all be specified")
 
         if isinstance(data1, EventList) and sample_time is None:
             raise ValueError("To pass input event lists, please specify sample_time")
