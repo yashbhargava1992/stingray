@@ -1021,6 +1021,21 @@ class TestDynamicalPowerspectrum(object):
         assert np.allclose(new_dps.dyn_ps, rebin_dps, atol=0.00001)
         assert np.isclose(new_dps.df, df_new)
 
+    def test_shift_and_add(self):
+        power_list = [[2, 5, 2, 2, 2], [1, 1, 5, 1, 1], [3, 3, 3, 5, 3]]
+        power_list = np.array(power_list).T
+        freqs = np.arange(5) * 0.1
+        f0_list = [0.1, 0.2, 0.3, 0.4]
+        dps = DynamicalPowerspectrum()
+        dps.dyn_ps = power_list
+        dps.freq = freqs
+        dps.df = 0.1
+        dps.m = 1
+        output = dps.shift_and_add(f0_list, nbins=5)
+        assert np.array_equal(output.m, [2, 3, 3, 3, 2])
+        assert np.array_equal(output.power, [2.0, 2.0, 5.0, 2.0, 1.5])
+        assert np.allclose(output.freq, [0.05, 0.15, 0.25, 0.35, 0.45])
+
 
 class TestRoundTrip:
     @classmethod

@@ -1020,7 +1020,20 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
         The number of averaged cross spectra.
     """
 
-    def __init__(self, lc, segment_size, norm="frac", gti=None, sample_time=None):
+    def __init__(self, lc=None, segment_size=None, norm="frac", gti=None, sample_time=None):
+        self.segment_size = segment_size
+        self.sample_time = sample_time
+        self.gti = gti
+        self.norm = norm
+
+        if segment_size is None and lc is None:
+            self._initialize_empty()
+            self.dyn_ps = None
+            return
+
+        if segment_size is None or lc is None:
+            raise RuntimeError("lc and segment_size must all be specified")
+
         if isinstance(lc, EventList) and sample_time is None:
             raise ValueError("To pass an input event lists, please specify sample_time")
         elif isinstance(lc, Lightcurve):
@@ -1033,12 +1046,10 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
         if segment_size < 2 * sample_time:
             raise ValueError("Length of the segment is too short to form a light curve!")
 
-        self.segment_size = segment_size
-        self.sample_time = sample_time
-        self.gti = gti
-        self.norm = norm
-
         self._make_matrix(lc)
+
+    def shift_and_add(self, f0_list, nbins=100):
+        return super().shift_and_add(f0_list, nbins=nbins, output_obj_type=AveragedPowerspectrum)
 
     def _make_matrix(self, lc):
         """
