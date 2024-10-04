@@ -1048,8 +1048,10 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
 
         self._make_matrix(lc)
 
-    def shift_and_add(self, f0_list, nbins=100):
-        return super().shift_and_add(f0_list, nbins=nbins, output_obj_type=AveragedPowerspectrum)
+    def shift_and_add(self, f0_list, nbins=100, rebin=None):
+        return super().shift_and_add(
+            f0_list, nbins=nbins, output_obj_type=AveragedPowerspectrum, rebin=rebin
+        )
 
     def _make_matrix(self, lc):
         """

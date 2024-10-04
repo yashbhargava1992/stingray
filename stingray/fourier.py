@@ -20,6 +20,7 @@ from .utils import (
     show_progress,
     sum_if_not_none_or_initialize,
     fix_segment_size_to_integer_samples,
+    rebin_data,
 )
 
 
@@ -1485,6 +1486,7 @@ def shift_and_add(freqs, power_list, f0_list, nbins=100, rebin=None, df=None, M=
     final_powers = final_powers / count
 
     if rebin is not None:
+        _, count, _, _ = rebin_data(final_freqs, count, rebin * df)
         final_freqs, final_powers, _, _ = rebin_data(final_freqs, final_powers, rebin * df)
         final_powers = final_powers / rebin
 

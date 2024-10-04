@@ -2380,7 +2380,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
 
         return np.array(max_positions)
 
-    def shift_and_add(self, f0_list, nbins=100, output_obj_type=AveragedCrossspectrum):
+    def shift_and_add(self, f0_list, nbins=100, output_obj_type=AveragedCrossspectrum, rebin=None):
         """Shift and add the dynamical power spectrum.
 
         This is the basic operation for the shift-and-add operation used to track
@@ -2401,7 +2401,9 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         ----------------
         nbins : int, default 100
             Number of bins to extract
-
+        rebin : int, default None
+            Rebin the final spectrum by this factor. At the moment, the rebinning
+            is linear.
         Returns
         -------
         output: :class:`AveragedPowerspectrum` or :class:`AveragedCrossspectrum`
@@ -2426,7 +2428,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         from .fourier import shift_and_add
 
         final_freqs, final_powers, count = shift_and_add(
-            self.freq, self.dyn_ps.T, f0_list, nbins=nbins, M=self.m, df=self.df
+            self.freq, self.dyn_ps.T, f0_list, nbins=nbins, M=self.m, df=self.df, rebin=rebin
         )
 
         output = output_obj_type()
