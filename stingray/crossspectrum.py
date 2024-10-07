@@ -2381,7 +2381,7 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         return np.array(max_positions)
 
     def shift_and_add(self, f0_list, nbins=100, output_obj_type=AveragedCrossspectrum, rebin=None):
-        """Shift and add the dynamical power spectrum.
+        """Shift and add the dynamical cross spectrum.
 
         This is the basic operation for the shift-and-add operation used to track
         kHz QPOs in X-ray binaries (e.g. Méndez et al. 1998, ApJ, 494, 65).
@@ -2404,6 +2404,10 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         rebin : int, default None
             Rebin the final spectrum by this factor. At the moment, the rebinning
             is linear.
+        output_obj_type : class, default :class:`AveragedCrossspectrum`
+            The type of the output object. Can be, e.g. :class:`AveragedCrossspectrum` or
+            :class:`AveragedPowerspectrum`.
+
         Returns
         -------
         output: :class:`AveragedPowerspectrum` or :class:`AveragedCrossspectrum`
