@@ -1442,7 +1442,9 @@ def shift_and_add(freqs, power_list, f0_list, nbins=100, rebin=None, df=None, M=
     Returns
     -------
     f : np.array
-        Array of output frequencies
+        Array of output frequencies. This will be centered on the mean of the
+        input ``f0_list``, and have the same frequency resolution as the original
+        frequency array.
     p : np.array
         Array of output powers
     n : np.array
