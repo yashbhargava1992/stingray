@@ -2132,7 +2132,22 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
         The number of averaged powers in each spectral bin (initially 1, it changes after rebinning).
     """
 
-    def __init__(self, data1, data2, segment_size, norm="frac", gti=None, sample_time=None):
+    def __init__(
+        self, data1=None, data2=None, segment_size=None, norm="frac", gti=None, sample_time=None
+    ):
+        self.segment_size = segment_size
+        self.sample_time = sample_time
+        self.gti = gti
+        self.norm = norm
+
+        if segment_size is None and data1 is None and data2 is None:
+            self._initialize_empty()
+            self.dyn_ps = None
+            return
+
+        if segment_size is None or data1 is None or data2 is None:
+            raise TypeError("data1, data2, and segment_size must all be specified")
+
         if isinstance(data1, EventList) and sample_time is None:
             raise ValueError("To pass input event lists, please specify sample_time")
         elif isinstance(data1, Lightcurve):
@@ -2144,11 +2159,6 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
                 )
         if segment_size < 2 * sample_time:
             raise ValueError("Length of the segment is too short to form a light curve!")
-
-        self.segment_size = segment_size
-        self.sample_time = sample_time
-        self.gti = gti
-        self.norm = norm
 
         self._make_matrix(data1, data2)
 
@@ -2369,6 +2379,74 @@ class DynamicalCrossspectrum(AveragedCrossspectrum):
             max_positions.append(np.where(ps == max_power)[0][0])
 
         return np.array(max_positions)
+
+    def shift_and_add(self, f0_list, nbins=100, output_obj_type=AveragedCrossspectrum, rebin=None):
+        """Shift and add the dynamical cross spectrum.
+
+        This is the basic operation for the shift-and-add operation used to track
+        kHz QPOs in X-ray binaries (e.g. Méndez et al. 1998, ApJ, 494, 65).
+
+        Parameters
+        ----------
+        freqs : np.array
+            Array of frequencies, the same for all powers. Must be sorted and on a uniform
+            grid.
+        power_list : list of np.array
+            List of power spectra. Each power spectrum must have the same length
+            as the frequency array.
+        f0_list : list of float
+            List of central frequencies
+
+        Other parameters
+        ----------------
+        nbins : int, default 100
+            Number of bins to extract
+        rebin : int, default None
+            Rebin the final spectrum by this factor. At the moment, the rebinning
+            is linear.
+        output_obj_type : class, default :class:`AveragedCrossspectrum`
+            The type of the output object. Can be, e.g. :class:`AveragedCrossspectrum` or
+            :class:`AveragedPowerspectrum`.
+
+        Returns
+        -------
+        output: :class:`AveragedPowerspectrum` or :class:`AveragedCrossspectrum`
+            The final averaged power spectrum.
+
+        Examples
+        --------
+        >>> power_list = [[2, 5, 2, 2, 2], [1, 1, 5, 1, 1], [3, 3, 3, 5, 3]]
+        >>> power_list = np.array(power_list).T
+        >>> freqs = np.arange(5) * 0.1
+        >>> f0_list = [0.1, 0.2, 0.3, 0.4]
+        >>> dps = DynamicalCrossspectrum()
+        >>> dps.dyn_ps = power_list
+        >>> dps.freq = freqs
+        >>> dps.df = 0.1
+        >>> dps.m = 1
+        >>> output = dps.shift_and_add(f0_list, nbins=5)
+        >>> assert np.array_equal(output.m, [2, 3, 3, 3, 2])
+        >>> assert np.array_equal(output.power, [2. , 2. , 5. , 2. , 1.5])
+        >>> assert np.allclose(output.freq, [0.05, 0.15, 0.25, 0.35, 0.45])
+        """
+        from .fourier import shift_and_add
+
+        final_freqs, final_powers, count = shift_and_add(
+            self.freq, self.dyn_ps.T, f0_list, nbins=nbins, M=self.m, df=self.df, rebin=rebin
+        )
+
+        output = output_obj_type()
+        good = ~np.isnan(final_powers)
+
+        output.freq = final_freqs[good]
+        output.power = final_powers[good]
+        output.m = count[good]
+        output.df = self.df
+        output.norm = self.norm
+        output.gti = self.gti
+        output.segment_size = self.segment_size
+
+        return output
 
     def power_colors(
         self,

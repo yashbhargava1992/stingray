@@ -878,6 +878,10 @@ class TestDynamicalPowerspectrum(object):
         test_counts = [2, 3, 1, 3, 1, 5, 2, 1, 4, 2, 2, 2, 3, 4, 1, 7]
         cls.lc_test = Lightcurve(test_times, test_counts)
 
+    def test_bad_args(self):
+        with pytest.raises(TypeError, match=".must all be specified"):
+            _ = DynamicalPowerspectrum(1)
+
     def test_with_short_seg_size(self):
         with pytest.raises(ValueError):
             dps = DynamicalPowerspectrum(self.lc, segment_size=0)
@@ -1020,6 +1024,36 @@ class TestDynamicalPowerspectrum(object):
         assert np.allclose(new_dps.freq, rebin_freq)
         assert np.allclose(new_dps.dyn_ps, rebin_dps, atol=0.00001)
         assert np.isclose(new_dps.df, df_new)
+
+    def test_shift_and_add(self):
+        power_list = [[2, 5, 2, 2, 2], [1, 1, 5, 1, 1], [3, 3, 3, 5, 3]]
+        power_list = np.array(power_list).T
+        freqs = np.arange(5) * 0.1
+        f0_list = [0.1, 0.2, 0.3, 0.4]
+        dps = DynamicalPowerspectrum()
+        dps.dyn_ps = power_list
+        dps.freq = freqs
+        dps.df = 0.1
+        dps.m = 1
+        output = dps.shift_and_add(f0_list, nbins=5)
+        assert np.array_equal(output.m, [2, 3, 3, 3, 2])
+        assert np.array_equal(output.power, [2.0, 2.0, 5.0, 2.0, 1.5])
+        assert np.allclose(output.freq, [0.05, 0.15, 0.25, 0.35, 0.45])
+
+    def test_shift_and_add_rebin(self):
+        power_list = [[2, 5, 2, 2, 2], [1, 1, 5, 1, 1], [3, 3, 3, 5, 3]]
+        power_list = np.array(power_list).T
+        freqs = np.arange(5) * 0.1
+        f0_list = [0.1, 0.2, 0.3, 0.4]
+        dps = DynamicalPowerspectrum()
+        dps.dyn_ps = power_list
+        dps.freq = freqs
+        dps.df = 0.1
+        dps.m = 1
+        output = dps.shift_and_add(f0_list, nbins=5, rebin=2)
+        assert np.array_equal(output.m, [5, 6])
+        assert np.array_equal(output.power, [2.0, 3.5])
+        assert np.allclose(output.freq, [0.1, 0.3])
 
 
 class TestRoundTrip:

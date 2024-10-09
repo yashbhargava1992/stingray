@@ -20,6 +20,8 @@ from .utils import (
     show_progress,
     sum_if_not_none_or_initialize,
     fix_segment_size_to_integer_samples,
+    rebin_data,
+    njit,
 )
 
 
@@ -1356,6 +1358,225 @@ def get_flux_iterable_from_segments(
                 cts = cts, errors[idx0:idx1].astype(cast_kind)
 
         yield cts
+
+
+@njit()
+def _safe_array_slice_indices(input_size, input_center_idx, nbins):
+    """Calculate the indices needed to extract a n-bin slice of an array, centered at an index.
+
+    Let us say we have an array of size ``input_size`` and we want to extract a slice of
+    ``nbins`` centered at index ``input_center_idx``. We should be robust when the slice goes
+    beyond the edges of the input array, possibly leaving missing values in the output array.
+    This function calculates the indices needed to extract the slice from the input array, and
+    the indices in the output array that will be filled.
+
+    In the most common case, the slice is entirely contained within the input array, so that the
+    output slice will just be ``[0:nbins]`` and the input slice
+    ``[input_center_idx - nbins // 2: input_center_idx - nbins // 2 + nbins]``.
+
+    Parameters
+    ----------
+    input_size : int
+        Input array size
+    center_idx : int
+        Index of the center of the slice
+    nbins : int
+        Number of bins to extract
+
+    Returns
+    -------
+    input_slice : list
+        Indices to extract the slice from the input array
+    output_slice : list
+        Indices to fill the output array
+
+    Examples
+    --------
+    >>> _safe_array_slice_indices(input_size=10, input_center_idx=5, nbins=3)
+    ([4, 7], [0, 3])
+
+    If the slice goes beyond the right edge: the output slice will only cover
+    the first two bins of the output array, and up to the end of the input array.
+    >>> _safe_array_slice_indices(input_size=6, input_center_idx=5, nbins=3)
+    ([4, 6], [0, 2])
+
+    """
+
+    minbin = input_center_idx - nbins // 2
+    maxbin = minbin + nbins
+
+    if minbin < 0:
+        output_slice = [-minbin, min(nbins, input_size - minbin)]
+        input_slice = [0, minbin + nbins]
+    elif maxbin > input_size:
+        output_slice = [0, nbins - (maxbin - input_size)]
+        input_slice = [minbin, input_size]
+    else:
+        output_slice = [0, nbins]
+        input_slice = [minbin, maxbin]
+
+    return input_slice, output_slice
+
+
+@njit()
+def extract_pds_slice_around_freq(freqs, powers, f0, nbins=100):
+    """Extract a slice of PDS around a given frequency.
+
+    This function extracts a slice of the power spectrum around a given frequency.
+    The slice has a length of ``nbins``. If the slice goes beyond the edges of the
+    power spectrum, the missing values are filled with NaNs.
+
+    Parameters
+    ----------
+    freqs : np.array
+        Array of frequencies, the same for all powers
+    powers : np.array
+        Array of powers
+    f0 : float
+        Central frequency
+
+    Other parameters
+    ----------------
+    nbins : int, default 100
+        Number of bins to extract
+
+    Examples
+    --------
+    >>> freqs = np.arange(1, 100) * 0.1
+    >>> powers = 10 / freqs
+    >>> f0 = 0.3
+    >>> p = extract_pds_slice_around_freq(freqs, powers, f0)
+    >>> assert np.isnan(p[0])
+    >>> assert not np.any(np.isnan(p[48:]))
+    """
+    powers = np.asarray(powers)
+    chunk = np.zeros(nbins) + np.nan
+    # fchunk = np.zeros(nbins)
+
+    start_f_idx = np.searchsorted(freqs, f0)
+
+    input_slice, output_slice = _safe_array_slice_indices(powers.size, start_f_idx, nbins)
+    chunk[output_slice[0] : output_slice[1]] = powers[input_slice[0] : input_slice[1]]
+    return chunk
+
+
+@njit()
+def _shift_and_average_core(input_array_list, weight_list, center_indices, nbins):
+    """Core function to shift_and_add, JIT-compiled for your convenience.
+
+    Parameters
+    ----------
+    input_array_list : list of np.array
+        List of input arrays
+    weight_list : list of float
+        List of weights for each input array
+    center_indices : list of int
+        Central indices of the slice of each input array to be summed
+    nbins : int
+        Number of bins to extract around the central index of each input array
+
+    Returns
+    -------
+    output_array : np.array
+        Average of the input arrays, weighted by the weights
+    sum_of_weights : np.array
+        Sum of the weights at each output bin
+    """
+    input_size = input_array_list[0].size
+    output_array = np.zeros(nbins)
+    sum_of_weights = np.zeros(nbins)
+    for idx, array, weight in zip(center_indices, input_array_list, weight_list):
+        input_slice, output_slice = _safe_array_slice_indices(input_size, idx, nbins)
+
+        for i in range(input_slice[1] - input_slice[0]):
+            output_array[output_slice[0] + i] += array[input_slice[0] + i] * weight
+
+            sum_of_weights[output_slice[0] + i] += weight
+
+    output_array = output_array / sum_of_weights
+
+    return output_array, sum_of_weights
+
+
+def shift_and_add(freqs, power_list, f0_list, nbins=100, rebin=None, df=None, M=None):
+    """Add a list of power spectra, centered on different frequencies.
+
+    This is the basic operation for the shift-and-add operation used to track
+    kHz QPOs in X-ray binaries (e.g. Méndez et al. 1998, ApJ, 494, 65).
+
+    Parameters
+    ----------
+    freqs : np.array
+        Array of frequencies, the same for all powers. Must be sorted and on a uniform
+        grid.
+    power_list : list of np.array
+        List of power spectra. Each power spectrum must have the same length
+        as the frequency array.
+    f0_list : list of float
+        List of central frequencies
+
+    Other parameters
+    ----------------
+    nbins : int, default 100
+        Number of bins to extract
+    rebin : int, default None
+        Rebin the final spectrum by this factor. At the moment, the rebinning
+        is linear.
+    df : float, default None
+        Frequency resolution of the power spectra. If not given, it is calculated
+        from the input frequencies.
+    M : int or list of int, default None
+        Number of segments used to calculate each power spectrum. If a list is
+        given, it must have the same length as the power list.
+
+    Returns
+    -------
+    f : np.array
+        Array of output frequencies
+    p : np.array
+        Array of output powers
+    n : np.array
+        Number of contributing power spectra at each frequency
+
+    Examples
+    --------
+    >>> power_list = [[2, 5, 2, 2, 2], [1, 1, 5, 1, 1], [3, 3, 3, 5, 3]]
+    >>> freqs = np.arange(5) * 0.1
+    >>> f0_list = [0.1, 0.2, 0.3, 0.4]
+    >>> f, p, n = shift_and_add(freqs, power_list, f0_list, nbins=5)
+    >>> assert np.array_equal(n, [2, 3, 3, 3, 2])
+    >>> assert np.array_equal(p, [2. , 2. , 5. , 2. , 1.5])
+    >>> assert np.allclose(f, [0.05, 0.15, 0.25, 0.35, 0.45])
+    """
+
+    # Check if the input list of power contains numpy arrays
+    if not hasattr(power_list[0], "size"):
+        power_list = np.asarray(power_list)
+    # input_size = np.size(power_list[0])
+    freqs = np.asarray(freqs)
+
+    # mid_idx = np.searchsorted(freqs, np.mean(f0_list))
+    if M is None:
+        M = 1
+    if not isinstance(M, Iterable):
+        M = np.ones(len(power_list)) * M
+
+    center_f_indices = np.searchsorted(freqs, f0_list)
+
+    final_powers, count = _shift_and_average_core(power_list, M, center_f_indices, nbins)
+
+    if df is None:
+        df = freqs[1] - freqs[0]
+
+    final_freqs = np.arange(-nbins // 2, nbins // 2 + 1)[:nbins] * df
+    final_freqs = final_freqs - (final_freqs[0] + final_freqs[-1]) / 2 + np.mean(f0_list)
+
+    if rebin is not None:
+        _, count, _, _ = rebin_data(final_freqs, count, rebin * df)
+        final_freqs, final_powers, _, _ = rebin_data(final_freqs, final_powers, rebin * df)
+        final_powers = final_powers / rebin
+
+    return final_freqs, final_powers, count
 
 
 def avg_pds_from_iterable(
