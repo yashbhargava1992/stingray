@@ -88,18 +88,22 @@ aas-journal:
 
 # Summary
 
-Time series analysis concerns the detection, characterization and modeling quantities that vary with time. The measured quantity may be anything from the average length of T-shirts in Southern Sardinia to the emission of light of our Sun.
+Stingray is an Astropy-affiliated [@astropy2013,@astropy2022] Python package that brings advanced timing techniques to the wider astronomical community, with a focus on high-energy astrophysics, but built on top of general-purpose classes and methods that are designed to be easily adapted and extended to other use cases.
+Stingray was previously described in [@stingrayjoss,@stingrayapj]. Its core functionality comprises Fourier-based analyses [@bachettihuppenkothen], but the package has expanded significantly over time in both scope and functionality. In this paper we describe the improvements to the software in the last ~5 years.
+
+# Background
+
+Time series analysis concerns the detection, characterization and modeling quantities that vary with time.
 This variability might be strictly periodic like a metronome, quasi-periodic like our heart beat, or stochastic, like the vibration of the ground during an earthquake.
-Celestial objects are known to be change in brightness over time, driven by a diverse range of physical processes that include convection, stellar evolution and accretion of material onto black holes. Time scales range from sub-milliseconds to billions of years.
+Celestial objects are known to be change in brightness over time, driven by a diverse range of physical processes. Time scales range from sub-milliseconds to billions of years.
 For example, the rotation of some pulsars, extremely dense stellar remnants, can be tracked over time and be considered almost like a cosmic clock. Other applications require complex modeling, including the study of the signals produced by the complicated interplay, propagation and partial re-emission of the light emitted by different regions around an accreting black hole. These studies require techniques that blend together traditional time series analysis and modeling of wavelength-dependent spectra [@uttley].
 
 # Statement of need
-Until 2015, these techniques were used by competing Groups using their own in-house codes. Few of them were shared publically, often with poor documentation and/or based on commercial or niche programming languages.
-Stingray is an Astropy-affiliated [@astropy2013,@astropy2022] Python package that brings advanced timing techniques to the wider astronomical community, with a focus on high-energy astrophysics.
-Stingray was previously described in [@stingrayjoss,@stingrayapj]. Its core functionality comprises Fourier-based analyses [@bachettihuppenkothen], but the package has expanded significantly over time in both scope and functionality. In this paper we describe the improvements to the software in the last ~5 years.
+Until 2015, the techniques described above were used by competing Groups using their own in-house codes. Very few of them were shared publicly, often with poor documentation and/or based on commercial or niche programming languages. Stingray brought them to the general astronomical community, and is now used worldwide, especially by young students.
 
+# Five years of Development
 A core development goal has been to accelerate core stingray functionality, lower memory footprint, and refactor code to be extensive and interoperable.
-Stingray’s core classes for Fourier analysis have shown dramatic increases in performance over time, as evident from [our benchmarks](https://stingray.science/stingray-benchmarks/). Stingray can now produce standard timing products
+Stingray’s core classes have shown dramatic increases in performance over time, as evident from [our benchmarks](https://stingray.science/stingray-benchmarks/). Stingray can now produce standard timing products
 of a typical high-flux NICER observation in ~one second. This is the result of algorithmic improvement, and of leveraging of Just-In-Time compilation through Numba in many key components of the code. A second improvement includes large-scale reorganization of the code to avoid duplication,
 and the creation of metaclasses that enable seamless integration with other popular array formats for time series (e.g. [Pandas](https://pandas.pydata.org/), [Xarray](https://docs.xarray.dev/en/stable/index.html), [Lightkurve](https://docs.lightkurve.org/), [Astropy Timeseries](https://docs.astropy.org/en/stable/timeseries/index.html)) and data formats ([FITS](), [HDF5](https://www.hdfgroup.org/solutions/hdf5/), [extended CSV](https://docs.astropy.org/en/stable/io/ascii/ecsv.html)).
 
@@ -109,9 +113,9 @@ We introduced a wide range of new techniques particularly designed to analyze un
 We expanded the statistical capabilities of Stingray,
 with particular attention to the calculation of confidence limits and upper limits on variability measures.
 
-Finally, we have added a number of high-level exploratory and diagnostic functionality specifically as an essential toolbox to characterize accreting compact objects during their outbursts: standard products such as color-color and hardness-intensity diagrams, and their equivalent diagnostics in the frequency domain, "power colors" [@heil].
+Finally, we have added a number of high-level exploratory and diagnostic functionality specifically as an essential toolbox to characterize accreting compact objects during their outbursts, such as color-color and hardness-intensity diagrams, and their equivalent diagnostics in the frequency domain, "power colors" [@heil].
 
-We continue to strive to provide specific high-level functionality to the high-energy astrophysics community, but built on top of general-purpose classes and methods that are designed to be easily adapted and extended to other use cases. Ongoing work funded by the Italian [National Recovery and Resilience Plan](https://www.mef.gov.it/en/focus/The-National-Recovery-and-Resilience-Plan-NRRP/) is pushing Stingray's performance further with the use of GPUs and parallel computing in anticipation of large-scale astronomical time domain surveys for example with the Vera Rubin Telescope. In addition, the near-future will see an overhaul and redesign of Stingray's `modeling` subpackage in order to take advantage of recent developments in fast optimization and sampling algorithms and probabilistic programming. In order to facilitate spectral-timing with state-of-the-art instruments, we are actively working to integrate Stingray with ongoing software efforts improving modeling of astronomical spectra.
+Ongoing work funded by the Italian [National Recovery and Resilience Plan](https://www.mef.gov.it/en/focus/The-National-Recovery-and-Resilience-Plan-NRRP/) is pushing Stingray's performance further with the use of GPUs and parallel computing in anticipation of large-scale astronomical time domain surveys for example with the Vera Rubin Telescope. In addition, the near-future will see an overhaul and redesign of Stingray's `modeling` subpackage in order to take advantage of recent developments in fast optimization and sampling algorithms and probabilistic programming. In order to facilitate spectral-timing with state-of-the-art instruments, we are actively working to integrate Stingray with ongoing software efforts improving modeling of astronomical spectra.
 
 # Acknowledgments
 MB and EVL are supported in part by Italian Research Center on High Performance Computing Big Data and Quantum Computing (ICSC), project funded by European Union - NextGenerationEU - and National
