@@ -54,31 +54,31 @@ authors:
 
 affiliations:
 - name: INAF-OACagliari, Italy
- index: 1
+  index: 1
 - name: UvA, The Netherlands
- index: 2
+  index: 2
 - name: MSU Museum, Michigan State University, USA
- index: 3
+  index: 3
 - name: ASTRON, The Netherlands
- index: 4
+  index: 4
 - name: Dip. Fisica, Università di Milano, Italy
- index: 5
+  index: 5
 - name: MPE, Garching, Germany
- index: 6
+  index: 6
 - name: Carnegie Mellon University, USA
- index: 7
+  index: 7
 - name: Indian Institute of Technology Gandhinagar
- index: 8
+  index: 8
 - name: LIPN-Université Sorbonne Paris Nord
- index: 9
+  index: 9
 - name: Chaitanya Bharathi Institute of Technology, Hyderabad, India
- index: 10
+  index: 10
 - name: Indian Institute of Technology, Mandi
- index: 11
+  index: 11
 - name: Academia Sinica Institute of Astronomy & Astrophysics, Taipei, Taiwan, R.O.C.
- index: 12
+  index: 12
 - name: Voltron Data, US
- index: 13
+  index: 13
 
 date: 01 October 2024
 bibliography: joss.bib
