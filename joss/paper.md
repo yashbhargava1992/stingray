@@ -23,63 +23,62 @@ authors:
   orcid: 0000-0003-4216-7936
 - name: Matteo Lucchini
   orcid: 0000-0002-2235-3347
-  affiliation: 6
+  affiliation: 2
 - name: Eleonora Veronica Lai
   affiliation: 1
   orcid: 0000-0002-6421-2198
 - name: Johannes Buchner
-  affiliation: 7
+  affiliation: 6
   orcid: 0000-0003-0426-6634
 - name: Amogh Desai
-  affiliation: 8
+  affiliation: 7
   orcid: 0000-0002-6015-9553
 - name: Gaurav Joshi
   orcid: 0009-0009-2305-5008
-  affiliation: 9
+  affiliation: 8
 - name: Francesco Pisanu
   orcid: 0000-0003-0799-5760
-  affiliation: 10
+  affiliation: 9
 - name: Sri Guru Datta Pisupati
   orcid: 0009-0006-3745-5553
-  affiliation: 11
+  affiliation: 10
 - name: Swapnil Sharma
-  affiliation: 12
+  affiliation: 11
 - name: Mihir Tripathi
-  affiliation: 13
+  affiliation: 12
   orcid: 0009-0007-2723-0315
 - name: Dhruv Vats
-  affiliation: 14
+  affiliation: 13
   orcid: 0009-0001-0542-0755
 
+
 affiliations:
-- name: INAF-Osservatorio Astronomico di Cagliari, via della Scienza 5, I-09047 Selargius (CA), Italy
-  index: 1
-- name: UvA
-  index: 2
-- name: MSU Museum, Michigan State University
-  index: 3
-- name: ASTRON
-  index: 4
-- name: Dipartimento di Fisica, Universit`a Degli Studi di Milano, Via Celoria, 16, Milano, 20133, Italy
-  index: 5
-- name: Anton Pannekoek Institute, University of Amsterdam, Science Park 904, 1098 XH Amsterdam, The Netherlands
-  index: 6
-- name: Max Planck Institute for Extraterrestrial Physics, Giessenbachstrasse, 85741 Garching, Germany
-  index: 7
-- name: Carnegie Mellon University
-  index: 8
+- name: INAF-OACagliari, Italy
+ index: 1
+- name: UvA, The Netherlands
+ index: 2
+- name: MSU Museum, Michigan State University, USA
+ index: 3
+- name: ASTRON, The Netherlands
+ index: 4
+- name: Dip. Fisica, Università di Milano, Italy
+ index: 5
+- name: MPE, Garching, Germany
+ index: 6
+- name: Carnegie Mellon University, USA
+ index: 7
 - name: Indian Institute of Technology Gandhinagar
-  index: 9
+ index: 8
 - name: LIPN-Université Sorbonne Paris Nord
-  index: 10
-- name: Chaitanya Bharathi Institute of Technology, Hyderabad,India
-  index: 11
+ index: 9
+- name: Chaitanya Bharathi Institute of Technology, Hyderabad, India
+ index: 10
 - name: Indian Institute of Technology, Mandi
-  index: 12
-- name: Academia Sinica Institute of Astronomy & Astrophysics 11F of Astronomy-Mathematics Building, AS/NTU, No. 1, Section 4, Roosevelt Road, Taipei 10617, Taiwan, R.O.C.
-  index: 13
+ index: 11
+- name: Academia Sinica Institute of Astronomy & Astrophysics, Taipei, Taiwan, R.O.C.
+ index: 12
 - name: Voltron Data, US
-  index: 14
+ index: 13
 
 date: 01 October 2024
 bibliography: joss.bib
