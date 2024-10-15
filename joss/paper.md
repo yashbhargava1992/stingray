@@ -92,7 +92,6 @@ aas-journal:
 Time series analysis concerns the detection, characterization and modeling quantities that vary with time. The measured quantity may be anything from the average length of T-shirts in Southern Sardinia to the emission of light of our Sun.
 This variability might be strictly periodic like a metronome, quasi-periodic like our heart beat, or stochastic, like the vibration of the ground during an earthquake.
 Celestial objects are known to be change in brightness over time, driven by a diverse range of physical processes that include convection, stellar evolution and accretion of material onto black holes. Time scales range from sub-milliseconds to billions of years.
-<!-- Astrophysical research uses time series analysis to characterize the important time scales in the systems under scrutiny, and connect them to the underlying physical processes that cause them. -->
 For example, the rotation of some pulsars, extremely dense stellar remnants, can be tracked over time and be considered almost like a cosmic clock. Other applications require complex modeling, including the study of the signals produced by the complicated interplay, propagation and partial re-emission of the light emitted by different regions around an accreting black hole. These studies require techniques that blend together traditional time series analysis and modeling of wavelength-dependent spectra [@uttley].
 
 # Statement of need
@@ -101,19 +100,14 @@ Stingray is an Astropy-affiliated [@astropy2013,@astropy2022] Python package tha
 Stingray was previously described in [@stingrayjoss,@stingrayapj]. Its core functionality comprises Fourier-based analyses [@bachettihuppenkothen], but the package has expanded significantly over time in both scope and functionality. In this paper we describe the improvements to the software in the last ~5 years.
 
 A core development goal has been to accelerate core stingray functionality, lower memory footprint, and refactor code to be extensive and interoperable.
-<!-->, in order to prepare the library for the increasing size and complexity of modern astronomical datasets. -->
 Stingray’s core classes for Fourier analysis have shown dramatic increases in performance over time, as evident from [our benchmarks](https://stingray.science/stingray-benchmarks/). Stingray can now produce standard timing products
-<!-- (e.g. a Bartlett periodogram with a Nyquist frequency of 1000 Hz and a segment size of 128 s) -->
 of a typical high-flux NICER observation in ~one second. This is the result of algorithmic improvement, and of leveraging of Just-In-Time compilation through Numba in many key components of the code. A second improvement includes large-scale reorganization of the code to avoid duplication,
-<!-- without major breaking changes to the API -->
 and the creation of metaclasses that enable seamless integration with other popular array formats for time series (e.g. [Pandas](https://pandas.pydata.org/), [Xarray](https://docs.xarray.dev/en/stable/index.html), [Lightkurve](https://docs.lightkurve.org/), [Astropy Timeseries](https://docs.astropy.org/en/stable/timeseries/index.html)) and data formats ([FITS](), [HDF5](https://www.hdfgroup.org/solutions/hdf5/), [extended CSV](https://docs.astropy.org/en/stable/io/ascii/ecsv.html)).
 
 The originally planned implementation of spectral timing techniques — measures that combine Fourier analysis with spectral modeling - is now complete. Newly implemented techniques include the lag spectrum, covariance, rms, and coherence spectra. These methods are now showcased in extensive tutorials exploring NICER and NuSTAR observations.
 
 We introduced a wide range of new techniques particularly designed to analyze unevenly sampled data sets, responding to the growing need for these techniques with the advent of large-scale astronomical time domain surveys, subject to irregular observing constraints. Methods include Gaussian Process modeling of quasi-periodic oscillations [hubner] and Lomb-Scargle cross spectra [scargle]. We have introduced the Fourier-Domain Acceleration Search [ransom] for pulsars; the H-test [dejager] and Phase Dispersion Minimization  [stellingwerf] statistics were also introduced into the pulsar sub package.
-<!-- to evaluate the folded profiles of pulsars. -->
 We expanded the statistical capabilities of Stingray,
-<!-- by introducing a number of statistical evaluation functions to estimate the statistics of periodograms, -->
 with particular attention to the calculation of confidence limits and upper limits on variability measures.
 
 Finally, we have added a number of high-level exploratory and diagnostic functionality specifically as an essential toolbox to characterize accreting compact objects during their outbursts: standard products such as color-color and hardness-intensity diagrams, and their equivalent diagnostics in the frequency domain, "power colors" [@heil].
