@@ -54,10 +54,12 @@ authors:
 affiliations:
 - name: INAF-Osservatorio Astronomico di Cagliari, via della Scienza 5, I-09047 Selargius (CA), Italy
   index: 1
-- name: SRON
+- name: UvA
   index: 2
 - name: MSU Museum, Michigan State University
   index: 3
+- name: ASTRON
+  index: 4
 - name: Dipartimento di Fisica, Universit`a Degli Studi di Milano, Via Celoria, 16, Milano, 20133, Italy
   index: 5
 - name: Anton Pannekoek Institute, University of Amsterdam, Science Park 904, 1098 XH Amsterdam, The Netherlands
