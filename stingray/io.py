@@ -757,7 +757,7 @@ class FITSTimeseriesReader(object):
     def meta_attrs(self):
         return self._meta_attrs
 
-    def add_meta_attr(self, name, value):
+    def _add_meta_attr(self, name, value):
         if name not in self._meta_attrs:
             self._meta_attrs.append(name)
         setattr(self, name, value)
@@ -776,6 +776,7 @@ class FITSTimeseriesReader(object):
         return get_total_gti_length(self.gti)
 
     def __getitem__(self, index):
+        """Return an element or a slice of the object, e.g. ``ts[1]`` or ``ts[1:2]."""
         new_ts = self.output_class()
 
         columns = [self.time_column]
@@ -834,6 +835,7 @@ class FITSTimeseriesReader(object):
         return new_ts
 
     def _initialize_header(self, fname, force_hduname=None):
+        """Read the header of the FITS file and set the relevant attributes."""
         hdulist = fits.open(fname)
         if not force_hduname:
             probe_header = hdulist[0].header
@@ -843,8 +845,8 @@ class FITSTimeseriesReader(object):
         mission_key = "MISSION"
         if mission_key not in probe_header:
             mission_key = "TELESCOP"
-        self.add_meta_attr("mission", probe_header[mission_key].lower())
-        self.add_meta_attr(
+        self._add_meta_attr("mission", probe_header[mission_key].lower())
+        self._add_meta_attr(
             "_mission_specific_processing",
             mission_specific_event_interpretation(self.mission),
         )
@@ -858,14 +860,14 @@ class FITSTimeseriesReader(object):
         modekey = get_key_from_mission_info(db, "dmodekey", None, instr)
         if modekey is not None and modekey in probe_header:
             mode = probe_header[modekey].strip()
-        self.add_meta_attr("instr", instr)
-        self.add_meta_attr("mode", mode)
+        self._add_meta_attr("instr", instr)
+        self._add_meta_attr("mode", mode)
 
         gtistring = self.gtistring
 
         if self.gtistring is None:
             gtistring = get_key_from_mission_info(db, "gti", "GTI,STDGTI", instr, self.mode)
-        self.add_meta_attr("gtistring", gtistring)
+        self._add_meta_attr("gtistring", gtistring)
 
         if force_hduname is None:
             hduname = get_key_from_mission_info(db, "events", "EVENTS", instr, self.mode)
@@ -875,10 +877,10 @@ class FITSTimeseriesReader(object):
         if hduname not in hdulist:
             warnings.warn(f"HDU {hduname} not found. Trying first extension")
             hduname = 1
-        self.add_meta_attr("hduname", hduname)
+        self._add_meta_attr("hduname", hduname)
 
-        self.add_meta_attr("header", dict(hdulist[self.hduname].header))
-        self.add_meta_attr("nphot", self.header["NAXIS2"])
+        self._add_meta_attr("header", dict(hdulist[self.hduname].header))
+        self._add_meta_attr("nphot", self.header["NAXIS2"])
 
         ephem = timeref = timesys = None
         if "PLEPHEM" in self.header:
@@ -889,9 +891,9 @@ class FITSTimeseriesReader(object):
             timeref = self.header["TIMEREF"].strip().lower()
         if "TIMESYS" in self.header:
             timesys = self.header["TIMESYS"].strip().lower()
-        self.add_meta_attr("ephem", ephem)
-        self.add_meta_attr("timeref", timeref)
-        self.add_meta_attr("timesys", timesys)
+        self._add_meta_attr("ephem", ephem)
+        self._add_meta_attr("timeref", timeref)
+        self._add_meta_attr("timesys", timesys)
 
         timezero = np.longdouble(0.0)
         if "TIMEZERO" in self.header:
@@ -901,36 +903,37 @@ class FITSTimeseriesReader(object):
             t_start = np.longdouble(self.header["TSTART"])
         if "TSTOP" in self.header:
             t_stop = np.longdouble(self.header["TSTOP"])
-        self.add_meta_attr("timezero", timezero)
-        self.add_meta_attr("t_start", t_start)
-        self.add_meta_attr("t_stop", t_stop)
+        self._add_meta_attr("timezero", timezero)
+        self._add_meta_attr("t_start", t_start)
+        self._add_meta_attr("t_stop", t_stop)
 
-        self.add_meta_attr(
+        self._add_meta_attr(
             "time_column",
             get_key_from_mission_info(db, "time", "TIME", instr, mode),
         )
 
-        self.add_meta_attr(
+        self._add_meta_attr(
             "detector_key",
             get_key_from_mission_info(db, "ccol", "NONE", instr, mode),
         )
 
-        self.add_meta_attr(
+        self._add_meta_attr(
             "mjdref", np.longdouble(high_precision_keyword_read(self.header, "MJDREF"))
         )
 
         default_pi_column = get_key_from_mission_info(db, "ecol", "PI", instr, self.mode)
         if default_pi_column not in hdulist[self.hduname].data.columns.names:
             default_pi_column = None
-        self.add_meta_attr("pi_column", default_pi_column)
+        self._add_meta_attr("pi_column", default_pi_column)
 
         if "energy" in [val.lower() for val in hdulist[self.hduname].data.columns.names]:
             energy_column = "energy"
         else:
             energy_column = None
-        self.add_meta_attr("energy_column", energy_column)
+        self._add_meta_attr("energy_column", energy_column)
 
     def _read_gtis(self, gti_file=None, det_numbers=None):
+        """Read GTIs from the FITS file."""
         # This is ugly, but if, e.g., we are reading XMM data, we *need* the
         # detector number to access GTIs.
         # So, here I'm reading a bunch of rows hoping that they represent the
@@ -947,7 +950,7 @@ class FITSTimeseriesReader(object):
         gti_list = None
 
         if gti_file is not None:
-            self.add_meta_attr("gti", load_gtis(gti_file, self.gtistring))
+            self._add_meta_attr("gti", load_gtis(gti_file, self.gtistring))
             return
 
         # Select first GTI with accepted name
@@ -965,7 +968,7 @@ class FITSTimeseriesReader(object):
                 ),
             )
 
-        self.add_meta_attr("gti", gti_list)
+        self._add_meta_attr("gti", gti_list)
 
     def get_idx_from_time_range(self, start, stop):
         """Get the index of the times in the event list that fall within the given time range."""
