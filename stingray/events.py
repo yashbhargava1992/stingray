@@ -14,7 +14,8 @@ from stingray.loggingconfig import setup_logger
 from .base import StingrayTimeseries
 from .filters import get_deadtime_mask
 from .gti import generate_indices_of_boundaries
-from .io import load_events_and_gtis, pi_to_energy, get_file_extension
+from .io import pi_to_energy, get_file_extension
+from .io import FITSTimeseriesReader
 from .lightcurve import Lightcurve
 from .utils import simon, njit
 from .utils import histogram
@@ -626,7 +627,6 @@ class EventList(StingrayTimeseries):
                     fmt = "hea"
                     break
         if fmt is not None and fmt.lower() in ("hea", "ogip"):
-            from .io import FITSTimeseriesReader
 
             additional_columns = kwargs.pop("additional_columns", None)
 
