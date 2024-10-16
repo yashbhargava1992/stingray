@@ -197,7 +197,7 @@ class Release(object):
 
     @property
     def zenodo_url(self):
-        return f"https://zenodo.org/record/{self.doi.split('.')[-1]}"
+        return f"https://zenodo.org/records/{self.doi.split('.')[-1]}"
 
     @property
     def github_url(self):
