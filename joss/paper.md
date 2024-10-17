@@ -109,7 +109,7 @@ and created metaclasses that enable seamless integration with other popular arra
 
 We completed the originally planned implementation of spectral timing techniques. Newly implemented techniques include the lag spectrum, covariance, rms, and coherence spectra. These methods are now showcased in extensive tutorials exploring NICER and NuSTAR observations.
 
-We introduced a wide range of new techniques particularly designed to analyze unevenly sampled data sets, responding to the growing need for these techniques with the advent of large-scale astronomical time domain surveys, subject to irregular observing constraints. Methods include Gaussian Process modeling of quasi-periodic oscillations [hubner] and Lomb-Scargle cross spectra [scargle]. We have introduced the Fourier-Domain Acceleration Search [ransom], the H-test [dejager] and Phase Dispersion Minimization  [stellingwerf] statistics into the pulsar sub package.
+We introduced a wide range of new techniques particularly designed to analyze unevenly sampled data sets, responding to the growing need for these techniques with the advent of large-scale astronomical time domain surveys, subject to irregular observing constraints. Methods include Gaussian Process modeling of quasi-periodic oscillations [@hubner] and Lomb-Scargle cross spectra [@scargle]. We have introduced the Fourier-Domain Acceleration Search [@ransom], the H-test [@dejager] and Phase Dispersion Minimization  [@stellingwerf] statistics into the pulsar sub package.
 We expanded the statistical capabilities of Stingray,
 with particular attention to the calculation of confidence limits and upper limits on variability measures.
 
