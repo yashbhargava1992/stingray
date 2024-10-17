@@ -627,7 +627,6 @@ class EventList(StingrayTimeseries):
                     fmt = "hea"
                     break
         if fmt is not None and fmt.lower() in ("hea", "ogip"):
-
             additional_columns = kwargs.pop("additional_columns", None)
 
             evt = FITSTimeseriesReader(
