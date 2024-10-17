@@ -67,7 +67,7 @@ affiliations:
   index: 6
 - name: Carnegie Mellon University, USA
   index: 7
-- name: Indian Institute of Technology Gandhinagar
+- name: Indian Institute of Technology Gandhinagar, India
   index: 8
 - name: LIPN-Université Sorbonne Paris Nord, France
   index: 9
