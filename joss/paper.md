@@ -69,15 +69,15 @@ affiliations:
   index: 7
 - name: Indian Institute of Technology Gandhinagar
   index: 8
-- name: LIPN-Université Sorbonne Paris Nord
+- name: LIPN-Université Sorbonne Paris Nord, France
   index: 9
 - name: Chaitanya Bharathi Institute of Technology, Hyderabad, India
   index: 10
-- name: Indian Institute of Technology, Mandi
+- name: Indian Institute of Technology, Mandi, India
   index: 11
 - name: Academia Sinica Institute of Astronomy & Astrophysics, Taipei, Taiwan, R.O.C.
   index: 12
-- name: Voltron Data, US
+- name: Voltron Data, USA
   index: 13
 
 date: 01 October 2024
@@ -89,14 +89,14 @@ aas-journal:
 # Summary
 
 Stingray is an Astropy-affiliated [@astropy2013; @astropy2022] Python package that brings advanced timing techniques to the wider astronomical community, with a focus on high-energy astrophysics, but built on top of general-purpose classes and methods that are designed to be easily adapted and extended to other use cases.
-Stingray was previously described in [@stingrayjoss; @stingrayapj]. Its core functionality comprises Fourier-based analyses [@bachettihuppenkothen], but the package has expanded significantly over time in both scope and functionality. In this paper we describe the improvements to the software in the last ~5 years.
+Stingray was previously described by @stingrayjoss and @stingrayapj. Its core functionality comprises Fourier-based analyses [@bachettihuppenkothen], but the package has expanded significantly over time in both scope and functionality. In this paper we describe the improvements to the software in the last ~5 years.
 
 # Background
 
 Time series analysis concerns the detection, characterization and modeling quantities that vary with time.
 This variability might be strictly periodic like a metronome, quasi-periodic like our heart beat, or stochastic, like the vibration of the ground during an earthquake.
 Celestial objects are known to be change in brightness over time, driven by a diverse range of physical processes. Time scales range from sub-milliseconds to billions of years.
-For example, the rotation of some pulsars, extremely dense stellar remnants, can be tracked over time and be considered almost like a cosmic clock. Other applications require complex modeling, including the study of the signals produced by the complicated interplay, propagation and partial re-emission of the light emitted by different regions around an accreting black hole. These studies require techniques that blend together traditional time series analysis and modeling of wavelength-dependent spectra [@uttley].
+For example, the rotation of some pulsars, extremely dense stellar remnants, can be tracked over time and be considered almost like a cosmic clock. Other applications require complex modeling, including the study of the signals produced by the complicated interplay, propagation and partial re-emission of the light emitted by different regions around an accreting black hole. These studies require techniques that blend together traditional time series analysis and modeling of wavelength-dependent spectra [@uttley; @bachettihuppenkothen].
 
 # Statement of need
 Until 2015, the techniques described above were used by competing Groups using their own in-house codes. Very few of them were shared publicly, often with poor documentation and/or based on commercial or niche programming languages. Stingray brought them to the general astronomical community, and is now used worldwide, especially by young students.
@@ -109,7 +109,7 @@ and created metaclasses that enable seamless integration with other popular arra
 
 We completed the originally planned implementation of spectral timing techniques. Newly implemented techniques include the lag spectrum, covariance, rms, and coherence spectra. These methods are now showcased in extensive tutorials exploring NICER and NuSTAR observations.
 
-We introduced a wide range of new techniques particularly designed to analyze unevenly sampled data sets, responding to the growing need for these techniques with the advent of large-scale astronomical time domain surveys, subject to irregular observing constraints. Methods include Gaussian Process modeling of quasi-periodic oscillations [@hubner] and Lomb-Scargle cross spectra [@scargle]. We have introduced the Fourier-Domain Acceleration Search [@ransom], the H-test [@dejager] and Phase Dispersion Minimization  [@stellingwerf] statistics into the pulsar sub package.
+We introduced a wide range of new techniques designed to analyze unevenly sampled data sets, responding to the growing need for these techniques from astronomical time domain surveys, subject to irregular observing constraints. Methods include Gaussian Process modeling of quasi-periodic oscillations [@hubner] and Lomb-Scargle cross spectra [@scargle]. We have introduced the Fourier-Domain Acceleration Search [@ransom], the H-test [@dejager] and Phase Dispersion Minimization  [@stellingwerf] statistics into the pulsar sub package.
 We expanded the statistical capabilities of Stingray,
 with particular attention to the calculation of confidence limits and upper limits on variability measures.
 
