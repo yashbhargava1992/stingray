@@ -734,13 +734,20 @@ class FITSTimeseriesReader(object):
         gti_file=None,
         gtistring=None,
         additional_columns=None,
+        data_kind="events",
     ):
         self.fname = fname
         self._meta_attrs = []
         self.gtistring = gtistring
         self.output_class = output_class
         self.additional_columns = additional_columns
-        self._initialize_header(fname, force_hduname=force_hduname)
+        if data_kind.lower() == "events":
+            self._initialize_header_events(fname, force_hduname=force_hduname)
+        else:
+            raise NotImplementedError(
+                "Only events are supported by FITSTimeseriesReader at the moment. "
+                f"{data_kind} is an unknown data kind."
+            )
 
         if additional_columns is None and self.detector_key != "NONE":
             additional_columns = [self.detector_key]
@@ -835,14 +842,32 @@ class FITSTimeseriesReader(object):
 
         return new_ts
 
-    def _initialize_header(self, fname, force_hduname=None):
-        """Read the header of the FITS file and set the relevant attributes."""
+    def _initialize_header_events(self, fname, force_hduname=None):
+        """Read the header of the FITS file and set the relevant attributes.
+
+        When possibile, some mission-specific information is read from the keywords and
+        extension names found in ``xselect.mdb``.
+
+        Parameters
+        ----------
+        fname : str
+            The name of the FITS file to read
+
+        Other parameters
+        ----------------
+        force_hduname : str or int, default None
+            If not None, the name of the HDU to read. If None, an extension called
+            EVENTS or the first extension.
+        """
         hdulist = fits.open(fname)
         if not force_hduname:
             probe_header = hdulist[0].header
         else:
             probe_header = hdulist[force_hduname].header
 
+        # We need the minimal information to read the mission database.
+        # That is, the name of the mission/telescope, the instrument and,
+        # if available, the observing mode.
         mission_key = "MISSION"
         if mission_key not in probe_header:
             mission_key = "TELESCOP"
@@ -852,6 +877,8 @@ class FITSTimeseriesReader(object):
             mission_specific_event_interpretation(self.mission),
         )
 
+        # Now, we read the mission info, and we try to get the relevant
+        # information from the header using the mission-specific keywords.
         db = read_mission_info(self.mission)
         instkey = get_key_from_mission_info(db, "instkey", "INSTRUME")
         instr = mode = None
@@ -875,6 +902,8 @@ class FITSTimeseriesReader(object):
         else:
             hduname = force_hduname
 
+        # If the EVENT/``force_hduname`` extension is not found, try the first extension
+        # which is usually the one containing the data
         if hduname not in hdulist:
             warnings.warn(f"HDU {hduname} not found. Trying first extension")
             hduname = 1
@@ -883,6 +912,7 @@ class FITSTimeseriesReader(object):
         self._add_meta_attr("header", dict(hdulist[self.hduname].header))
         self._add_meta_attr("nphot", self.header["NAXIS2"])
 
+        # These are the important keywords for timing.
         ephem = timeref = timesys = None
         if "PLEPHEM" in self.header:
             # For the rare cases where this is a number, e.g. 200, I add `str`
@@ -922,11 +952,15 @@ class FITSTimeseriesReader(object):
             "mjdref", np.longdouble(high_precision_keyword_read(self.header, "MJDREF"))
         )
 
+        # Try to get the information needed to calculate the event energy. We start from the
+        # PI column
         default_pi_column = get_key_from_mission_info(db, "ecol", "PI", instr, self.mode)
         if default_pi_column not in hdulist[self.hduname].data.columns.names:
             default_pi_column = None
         self._add_meta_attr("pi_column", default_pi_column)
 
+        # If a column named "energy" is found, we read it and assume the energy conversion
+        # is already done.
         if "energy" in [val.lower() for val in hdulist[self.hduname].data.columns.names]:
             energy_column = "energy"
         else:
