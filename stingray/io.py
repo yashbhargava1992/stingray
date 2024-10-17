@@ -758,6 +758,7 @@ class FITSTimeseriesReader(object):
         return self._meta_attrs
 
     def _add_meta_attr(self, name, value):
+        """Add a meta attribute to the object."""
         if name not in self._meta_attrs:
             self._meta_attrs.append(name)
         setattr(self, name, value)
@@ -970,9 +971,31 @@ class FITSTimeseriesReader(object):
 
         self._add_meta_attr("gti", gti_list)
 
-    def get_idx_from_time_range(self, start, stop):
-        """Get the index of the times in the event list that fall within the given time range."""
-        time_edges, idx_edges = self.trace_nphots_in_file(
+    def _get_idx_from_time_range(self, start, stop):
+        """Get the index of the times in the event list that fall within the given time range.
+
+        Instead of reading all the data from the file and doing ``np.searchsorted``, which could
+        easily fill up the memory, this function does a two-step procedure. It first uses
+        ``self._trace_nphots_in_file`` to get a grid of times and their corresponding
+        indices in the file. Then, it reads only the data that strictly include the requested time
+        range, and on those data it performs a searchsorted operation. The final indices will be
+        summed to the lower index of the data that was read.
+
+        Parameters
+        ----------
+        start : float
+            Start time of the interval
+        stop : float
+            Stop time of the interval
+
+        Returns
+        -------
+        lower_edge : int
+            Index of the first photon in the requested time range
+        upper_edge : int
+            Index of the last photon in the requested time range
+        """
+        time_edges, idx_edges = self._trace_nphots_in_file(
             nedges=int(self.exposure // (stop - start)) + 2
         )
 
@@ -1043,7 +1066,7 @@ class FITSTimeseriesReader(object):
             if len(gti) == 0:
                 continue
 
-            lower_edge, upper_edge = self.get_idx_from_time_range(gti[0, 0], gti[-1, 1])
+            lower_edge, upper_edge = self._get_idx_from_time_range(gti[0, 0], gti[-1, 1])
 
             ev = self[lower_edge : upper_edge + 1]
             ev.gti = gti
@@ -1056,8 +1079,26 @@ class FITSTimeseriesReader(object):
             else:
                 yield ev
 
-    def trace_nphots_in_file(self, nedges=1001):
-        """Trace the number of photons as time advances in the file."""
+    def _trace_nphots_in_file(self, nedges=1001):
+        """Trace the number of photons as time advances in the file.
+
+        This function traces the number of photons as time advances in the file.
+        This is a way to quickly map the distribution of photons in time, without
+        reading the entire file. This map can be useful to then access the wanted
+        data without loading all the file in memory.
+
+        Other Parameters
+        ----------------
+        nedges : int
+            The number of time edges to trace. Default is 1001.
+
+        Returns
+        -------
+        time_edges : np.ndarray
+            The time edges
+        idx_edges : np.ndarray
+            The index edges
+        """
 
         if hasattr(self, "_time_edges") and len(self._time_edges) >= nedges:
             return self._time_edges, self._idx_edges
