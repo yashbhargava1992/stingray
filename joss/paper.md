@@ -88,8 +88,8 @@ aas-journal:
 
 # Summary
 
-Stingray is an Astropy-affiliated [@astropy2013,@astropy2022] Python package that brings advanced timing techniques to the wider astronomical community, with a focus on high-energy astrophysics, but built on top of general-purpose classes and methods that are designed to be easily adapted and extended to other use cases.
-Stingray was previously described in [@stingrayjoss,@stingrayapj]. Its core functionality comprises Fourier-based analyses [@bachettihuppenkothen], but the package has expanded significantly over time in both scope and functionality. In this paper we describe the improvements to the software in the last ~5 years.
+Stingray is an Astropy-affiliated [@astropy2013; @astropy2022] Python package that brings advanced timing techniques to the wider astronomical community, with a focus on high-energy astrophysics, but built on top of general-purpose classes and methods that are designed to be easily adapted and extended to other use cases.
+Stingray was previously described in [@stingrayjoss; @stingrayapj]. Its core functionality comprises Fourier-based analyses [@bachettihuppenkothen], but the package has expanded significantly over time in both scope and functionality. In this paper we describe the improvements to the software in the last ~5 years.
 
 # Background
 
