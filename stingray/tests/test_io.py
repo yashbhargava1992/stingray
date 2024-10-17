@@ -224,6 +224,12 @@ class TestFITSTimeseriesReader(object):
         cls.datadir = os.path.join(curdir, "data")
         cls.fname = os.path.join(datadir, "monol_testA.evt")
 
+    def test_read_fits_timeseries_bad_kind(self):
+        with pytest.raises(
+            NotImplementedError, match="Only events are supported by FITSTimeseriesReader"
+        ):
+            FITSTimeseriesReader(self.fname, output_class="bubu", data_kind="BAD_KIND")
+
     def test_read_fits_timeseries(self):
         reader = FITSTimeseriesReader(self.fname, output_class=EventList)
         # Full slice
