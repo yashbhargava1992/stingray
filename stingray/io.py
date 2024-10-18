@@ -51,7 +51,6 @@ except ImportError:
     _H5PY_INSTALLED = False
     DEFAULT_FORMAT = "pickle"
 
-
 HAS_128 = True
 try:
     np.float128
@@ -729,7 +728,7 @@ class FITSTimeseriesReader(object):
     def __init__(
         self,
         fname,
-        output_class,
+        output_class=None,
         force_hduname=None,
         gti_file=None,
         gtistring=None,
@@ -741,14 +740,14 @@ class FITSTimeseriesReader(object):
         self.gtistring = gtistring
         self.output_class = output_class
         self.additional_columns = additional_columns
-        if data_kind.lower() == "events":
+        if "EventList" in str(output_class) or data_kind.lower() in ["events", "times"]:
             self._initialize_header_events(fname, force_hduname=force_hduname)
         else:
             raise NotImplementedError(
                 "Only events are supported by FITSTimeseriesReader at the moment. "
                 f"{data_kind} is an unknown data kind."
             )
-
+        self.data_kind = data_kind
         if additional_columns is None and self.detector_key != "NONE":
             additional_columns = [self.detector_key]
         elif self.detector_key != "NONE":
@@ -785,15 +784,27 @@ class FITSTimeseriesReader(object):
 
     def __getitem__(self, index):
         """Return an element or a slice of the object, e.g. ``ts[1]`` or ``ts[1:2]."""
-        new_ts = self.output_class()
 
+        data = self.data_hdu.data[index]
+
+        return self.transform_slice(data)
+
+    def transform_slice(self, data):
+        # Here there will be some logic to understand whether transfomring to events or something else
+
+        if self.data_kind == "times":
+            return data[self.time_column][:] + self.timezero
+        if self.output_class is None:
+            return data
+        if self.data_kind == "events":
+            return self._transform_slice_into_events(data)
+
+    def _transform_slice_into_events(self, data):
         columns = [self.time_column]
         for col in self.pi_column, self.energy_column:
             if col is not None:
                 columns.append(col)
-
-        data = self.data_hdu.data[index]
-
+        new_ts = self.output_class()
         if self._mission_specific_processing is not None:
             data = self._mission_specific_processing(data, header=self.header, hduname=self.hduname)
 
@@ -1103,7 +1114,8 @@ class FITSTimeseriesReader(object):
             lower_edge, upper_edge = self._get_idx_from_time_range(gti[0, 0], gti[-1, 1])
 
             ev = self[lower_edge : upper_edge + 1]
-            ev.gti = gti
+            if hasattr(ev, "gti"):
+                ev.gti = gti
 
             if root_file_name is not None:
                 new_file = root_file_name + f"_{i:002d}." + fmt.lstrip(".")
@@ -1187,7 +1199,9 @@ class FITSTimeseriesReader(object):
 
         return self.apply_gti_lists(new_gti_lists, root_file_name=root_file_name, fmt=fmt)
 
-    def filter_at_time_intervals(self, time_intervals, root_file_name=None, fmt=DEFAULT_FORMAT):
+    def filter_at_time_intervals(
+        self, time_intervals, root_file_name=None, fmt=DEFAULT_FORMAT, check_gtis=True
+    ):
         """Filter the event list at the given time intervals.
 
         Parameters
@@ -1211,7 +1225,10 @@ class FITSTimeseriesReader(object):
         """
         if len(np.shape(time_intervals)) == 1:
             time_intervals = [time_intervals]
-        new_gti = [cross_two_gtis(self.gti, [t_int]) for t_int in time_intervals]
+        if check_gtis:
+            new_gti = [cross_two_gtis(self.gti, [t_int]) for t_int in time_intervals]
+        else:
+            new_gti = [np.asarray([t_int]) for t_int in time_intervals]
         return self.apply_gti_lists(new_gti, root_file_name=root_file_name, fmt=fmt)
 
 
