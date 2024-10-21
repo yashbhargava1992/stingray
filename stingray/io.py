@@ -800,6 +800,30 @@ class FITSTimeseriesReader(object):
             return self._transform_slice_into_events(data)
 
     def _transform_slice_into_events(self, data):
+        """Take a slice of data from a FITS event file and make it a StingrayTimeseries.
+
+        Data taken from a FITS file will typically be a Numpy record array. This method
+        tries to interpret the information contained in the record array based on what
+        we know of the mission and the instrument. For sure, there will be a TIME column
+        that will become the ``time`` array of the timeseries object. If there is a PI/PHA
+        column, it will become the ``pi`` array, and if we know the conversion law for the mission,
+        this will also be converted to energy. If there is an ENERGY column, it will directly
+        be loaded into the energy column.
+        Additional meta (e.g. GTIs, MJDREF, etc.) information will also be added to the object.
+
+        Parameters
+        ----------
+        data : np.recarray
+            The slice of data to transform
+
+        Returns
+        -------
+        new_ts : any StingrayTimeseries subclass
+            The transformed timeseries object. It will typically be an ``EventList`` object,
+            but the user can change this by specifying the ``output_class`` parameter in the
+            constructor of the reader.
+
+        """
         columns = [self.time_column]
         for col in self.pi_column, self.energy_column:
             if col is not None:
