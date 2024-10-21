@@ -34,8 +34,6 @@ keywords = [
 dependencies = [
     "numpy>=1.17",
     "astropy>=4.0",
-    "setuptools",
-    "setuptools_scm",
     "scipy>=1.1.0",
     "matplotlib>=3.0,!=3.4.00",
 ]
