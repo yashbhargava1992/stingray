@@ -1,1 +1,0 @@
-Introduced FITSReader class for lazy-loading of event lists
