@@ -949,6 +949,11 @@ class FITSTimeseriesReader(object):
         self._add_meta_attr("hduname", hduname)
 
         header = hdulist[hduname].header
+
+        # self.header has to be a string, for backwards compatibility and... for convenience!
+        # No need to cope with dicts working badly with Netcdf, for example. The header
+        # can be saved back and forth to files and be interpreted through
+        # fits.Header.fromstring(self.header) when needed.
         self._add_meta_attr("header", hdulist[self.hduname].header.tostring())
         self._add_meta_attr("nphot", header["NAXIS2"])
 
