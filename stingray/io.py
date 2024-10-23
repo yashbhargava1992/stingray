@@ -895,8 +895,12 @@ class FITSTimeseriesReader(object):
             EVENTS or the first extension.
         """
         hdulist = fits.open(fname)
+
         if not force_hduname:
-            probe_header = hdulist[0].header
+            for hdu in hdulist:
+                if "TELESCOP" in hdu.header or "MISSION" in hdu.header:
+                    probe_header = hdu.header
+                    break
         else:
             probe_header = hdulist[force_hduname].header
 
@@ -944,31 +948,37 @@ class FITSTimeseriesReader(object):
             hduname = 1
         self._add_meta_attr("hduname", hduname)
 
-        self._add_meta_attr("header", dict(hdulist[self.hduname].header))
-        self._add_meta_attr("nphot", self.header["NAXIS2"])
+        header = hdulist[hduname].header
+
+        # self.header has to be a string, for backwards compatibility and... for convenience!
+        # No need to cope with dicts working badly with Netcdf, for example. The header
+        # can be saved back and forth to files and be interpreted through
+        # fits.Header.fromstring(self.header) when needed.
+        self._add_meta_attr("header", hdulist[self.hduname].header.tostring())
+        self._add_meta_attr("nphot", header["NAXIS2"])
 
         # These are the important keywords for timing.
         ephem = timeref = timesys = None
-        if "PLEPHEM" in self.header:
+        if "PLEPHEM" in header:
             # For the rare cases where this is a number, e.g. 200, I add `str`
             # It's supposed to be a string.
-            ephem = str(self.header["PLEPHEM"]).strip().lstrip("JPL-").lower()
-        if "TIMEREF" in self.header:
-            timeref = self.header["TIMEREF"].strip().lower()
-        if "TIMESYS" in self.header:
-            timesys = self.header["TIMESYS"].strip().lower()
+            ephem = str(header["PLEPHEM"]).strip().lstrip("JPL-").lower()
+        if "TIMEREF" in header:
+            timeref = header["TIMEREF"].strip().lower()
+        if "TIMESYS" in header:
+            timesys = header["TIMESYS"].strip().lower()
         self._add_meta_attr("ephem", ephem)
         self._add_meta_attr("timeref", timeref)
         self._add_meta_attr("timesys", timesys)
 
         timezero = np.longdouble(0.0)
-        if "TIMEZERO" in self.header:
-            timezero = np.longdouble(self.header["TIMEZERO"])
+        if "TIMEZERO" in header:
+            timezero = np.longdouble(header["TIMEZERO"])
         t_start = t_stop = None
-        if "TSTART" in self.header:
-            t_start = np.longdouble(self.header["TSTART"])
-        if "TSTOP" in self.header:
-            t_stop = np.longdouble(self.header["TSTOP"])
+        if "TSTART" in header:
+            t_start = np.longdouble(header["TSTART"])
+        if "TSTOP" in header:
+            t_stop = np.longdouble(header["TSTOP"])
         self._add_meta_attr("timezero", timezero)
         self._add_meta_attr("t_start", t_start)
         self._add_meta_attr("t_stop", t_stop)
@@ -983,9 +993,7 @@ class FITSTimeseriesReader(object):
             get_key_from_mission_info(db, "ccol", "NONE", instr, mode),
         )
 
-        self._add_meta_attr(
-            "mjdref", np.longdouble(high_precision_keyword_read(self.header, "MJDREF"))
-        )
+        self._add_meta_attr("mjdref", np.longdouble(high_precision_keyword_read(header, "MJDREF")))
 
         # Try to get the information needed to calculate the event energy. We start from the
         # PI column

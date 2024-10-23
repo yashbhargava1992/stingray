@@ -338,6 +338,9 @@ def rxte_pca_event_file_interpretation(input_data, header=None, hduname=None):
         ignored otherwise.
 
     """
+    if isinstance(header, str):
+        header = fits.Header.fromstring(header)
+
     if isinstance(input_data, str):
         return rxte_pca_event_file_interpretation(
             fits.open(input_data), header=header, hduname=hduname

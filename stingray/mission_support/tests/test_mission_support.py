@@ -40,9 +40,14 @@ class TestXTE(object):
         new_data = rxte_pca_event_file_interpretation(
             fits.open(filename)["XTE_SE"].data, header=fits.open(filename)["XTE_SE"].header
         )
+        new_data_hdr_str = rxte_pca_event_file_interpretation(
+            fits.open(filename)["XTE_SE"].data,
+            header=fits.open(filename)["XTE_SE"].header.tostring(),
+        )
 
         for data in (
             new_data,
+            new_data_hdr_str,
             new_hdu.data,
             first_new_hdulist["XTE_SE"].data,
             second_new_hdulist["XTE_SE"].data,
