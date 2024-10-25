@@ -1,3 +1,12 @@
+v2.2.2.dev30+g60433df3 (2024-10-25)
+-----------------------------------
+
+Bug Fixes
+^^^^^^^^^
+
+- Fix issue with FITS headers, especially for RXTE data (`#853 <https://github.com/StingraySoftware/stingray/pull/853>`__)
+
+
 v2.2 (2024-10-22)
 -----------------
 
