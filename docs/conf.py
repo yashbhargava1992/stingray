@@ -164,6 +164,7 @@ linkcheck_ignore = [
     r"https://arxiv.org/",
     r"https://.*adsabs.harvard.edu/",
     r"https://zenodo.org/",
+    r"https://opensource.org/",
 ]
 
 # -- Options for the edit_on_github extension ---------------------------------
