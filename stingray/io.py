@@ -1143,7 +1143,7 @@ class FITSTimeseriesReader(object):
             for i, gti in enumerate(new_gti_lists):
                 if len(gti) == 0:
                     continue
-
+                gti = np.asarray(gti)
                 lower_edge, upper_edge = self._get_idx_from_time_range(gti[0, 0], gti[-1, 1])
 
                 ev = self[lower_edge : upper_edge + 1]
