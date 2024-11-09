@@ -246,7 +246,7 @@ class TestFITSTimeseriesReader(object):
     def test_read_apply_multiple_gti_lists(self):
         reader = FITSTimeseriesReader(self.fname, output_class=EventList)
 
-        evs = list(reader.apply_gti_lists([[[80000000, 80000512], [80000513, 80001024]]]))
+        evs = list(reader.apply_gti_lists([[[80000000, 80000512]], [[80000513, 80001024]]]))
         assert len(evs) == 2
         assert np.allclose(evs[0].gti, [[80000000, 80000512]])
         assert np.allclose(evs[1].gti, [[80000513, 80001024]])
