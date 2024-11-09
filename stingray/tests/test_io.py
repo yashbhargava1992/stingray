@@ -255,7 +255,7 @@ class TestFITSTimeseriesReader(object):
         # If the root_file_name is not None, read the event lists and delete the file(s)
         if root_file_name is not None:
             ev_str = evs
-            evs = [EventList.read(ev) for ev in ev_str]
+            evs = [EventList.read(ev, fmt=DEFAULT_FORMAT) for ev in ev_str]
             for ev in ev_str:
                 os.unlink(ev)
 
