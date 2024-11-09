@@ -263,6 +263,13 @@ class TestFITSTimeseriesReader(object):
             # Check that the gtis of the output event lists are the same we input
             assert np.allclose(ev.gti, gti_list[i])
 
+    def test_read_apply_gti_lists_ignore_empty(self):
+        reader = FITSTimeseriesReader(self.fname, output_class=EventList)
+        gti_list = [[], [[80000000, 80000512]], [[80000513, 80001024]]]
+        evs = list(reader.apply_gti_lists(gti_list))
+        assert np.allclose(evs[0].gti, gti_list[1])
+        assert np.allclose(evs[1].gti, gti_list[2])
+
     def test_read_fits_timeseries_by_nsamples(self):
         reader = FITSTimeseriesReader(self.fname, output_class=EventList)
         # Full slice
