@@ -949,6 +949,8 @@ class FITSTimeseriesReader(object):
         self._add_meta_attr("hduname", hduname)
 
         header = hdulist[hduname].header
+        if "OBS_ID" in header:
+            self._add_meta_attr("obsid", header["OBS_ID"])
 
         # self.header has to be a string, for backwards compatibility and... for convenience!
         # No need to cope with dicts working badly with Netcdf, for example. The header
