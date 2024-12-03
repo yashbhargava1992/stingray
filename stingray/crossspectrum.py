@@ -1783,9 +1783,15 @@ class Crossspectrum(StingrayObject):
     def _calculate_errors(self):
         """Calculate the errors on cross powers and lags.
 
-        Uses the formulas from Ingram 2019, MNRAS 489, 392. The attribute ``channels_overlap``
-        is used to determine if the reference band contains also the photons of the subject band.
+        Uses different formulas if the reference band contains the photons of the subject band.
+        This might happen, for example, when calculating covariance spectra using a large
+        reference band.
+        See the details in the documentation of
+        :function:`stingray.fourier.error_on_averaged_cross_spectrum`.
 
+        Please note that we have dedicated methods for covariance spectra and other variability
+        versus energy spectra in `stingray.varenergyspectrum`, even though they only work for
+        input event lists at the moment.
         """
         P1noise = poisson_level(norm="none", meanrate=self.countrate1, n_ph=self.nphots1)
         P2noise = poisson_level(norm="none", meanrate=self.countrate2, n_ph=self.nphots2)
