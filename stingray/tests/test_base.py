@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
 from stingray.base import StingrayObject, StingrayTimeseries
+from stingray.io import FITSTimeseriesReader
 
 _HAS_XARRAY = importlib.util.find_spec("xarray") is not None
 _HAS_PANDAS = importlib.util.find_spec("pandas") is not None
@@ -1052,6 +1053,9 @@ class TestStingrayTimeseriesSubclass:
         sting_obj.panesapa = np.asanyarray([[41, 25], [98, 3]])
         sting_obj.gti = np.asanyarray([[-0.5, 2.5]])
         cls.sting_obj = sting_obj
+        curdir = os.path.abspath(os.path.dirname(__file__))
+        datadir = os.path.join(curdir, "data")
+        cls.fname = os.path.join(datadir, "monol_testA.evt")
 
     def test_print(self, capsys):
         print(self.sting_obj)
@@ -1081,6 +1085,35 @@ class TestStingrayTimeseriesSubclass:
         assert new_so.mjdref == 59776.5
         assert np.allclose(new_so.time - 43200, self.sting_obj.time)
         assert np.allclose(new_so.gti - 43200, self.sting_obj.gti)
+
+    def test_read_timeseries_by_time_intv(self):
+        reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)[:]
+
+        # Full slice
+        evs = list(reader.filter_at_time_intervals([80000100, 80001100]))
+        assert len(evs) == 1
+        ev0 = evs[0]
+        assert np.all((ev0.time > 80000100) & (ev0.time < 80001100))
+        assert np.all((ev0.gti >= 80000100) & (ev0.gti < 80001100))
+
+    @pytest.mark.parametrize("gti_kind", ["same", "one", "multiple"])
+    def test_read_apply_gti_lists(self, gti_kind):
+        reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)
+        if gti_kind == "same":
+            gti_list = [reader.gti]
+        elif gti_kind == "one":
+            gti_list = [[[80000000, 80001024]]]
+        elif gti_kind == "multiple":
+            gti_list = [[[80000000, 80000512]], [[80000513, 80001024]]]
+
+        evs = list(reader.apply_gti_lists(gti_list))
+
+        # Check that the number of event lists is the same as the number of GTI lists we input
+        assert len(evs) == len(gti_list)
+
+        for i, ev in enumerate(evs):
+            # Check that the gtis of the output event lists are the same we input
+            assert np.allclose(ev.gti, gti_list[i])
 
 
 class TestJoinEvents:
