@@ -1780,7 +1780,13 @@ class Crossspectrum(StingrayObject):
 
         return new_spec
 
-    def calculate_errors(self):
+    def _calculate_errors(self):
+        """Calculate the errors on cross powers and lags.
+
+        Uses the formulas from Ingram 2019, MNRAS 489, 392. The attribute ``channels_overlap``
+        is used to determine if the reference band contains also the photons of the subject band.
+
+        """
         P1noise = poisson_level(norm="none", meanrate=self.countrate1, n_ph=self.nphots1)
         P2noise = poisson_level(norm="none", meanrate=self.countrate2, n_ph=self.nphots2)
 
@@ -2123,7 +2129,7 @@ class AveragedCrossspectrum(Crossspectrum):
         """Return the fourier phase lag of the cross spectrum."""
         lag = np.angle(self.unnorm_power)
         if not hasattr(self, "lag_err") or self.lag_err.size != lag.size:
-            self.calculate_errors()
+            self._calculate_errors()
         return lag, self.lag_err
 
     def time_lag(self):
@@ -3195,5 +3201,5 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False, channel
     cs.channels_overlap = channels_overlap
 
     cs.nph = nph
-    cs.calculate_errors()
+    cs._calculate_errors()
     return cs
