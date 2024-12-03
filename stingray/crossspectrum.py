@@ -503,6 +503,11 @@ class Crossspectrum(StingrayObject):
         Skip initial checks, for speed or other reasons (you need to trust your
         inputs!)
 
+    channels_overlap: bool, default False
+        If True, the reference band contains all the photons of the subject band.
+        This happens, for example, when calculating covariance spectra (see, e.g.,
+        the docs for ``CovarianceSpectrum``). This will generally be false in a
+        single cross spectrum.
 
     Attributes
     ----------
@@ -553,6 +558,7 @@ class Crossspectrum(StingrayObject):
         fullspec=False,
         skip_checks=False,
         save_all=False,
+        channels_overlap=False,
     ):
         self._type = None
         # for backwards compatibility
@@ -560,7 +566,7 @@ class Crossspectrum(StingrayObject):
             data1 = lc1
         if data2 is None:
             data2 = lc2
-
+        self.channels_overlap = channels_overlap
         empty = data1 is None and data2 is None
         good_input = not empty
 
@@ -1601,6 +1607,7 @@ class Crossspectrum(StingrayObject):
                 use_common_mean=use_common_mean,
                 gti=gti,
                 save_all=save_all,
+                channels_overlap=self.channels_overlap,
             )
         elif isinstance(data1, Lightcurve):
             spec = crossspectrum_from_lightcurve(
@@ -1614,6 +1621,7 @@ class Crossspectrum(StingrayObject):
                 use_common_mean=use_common_mean,
                 gti=gti,
                 save_all=save_all,
+                channels_overlap=self.channels_overlap,
             )
             spec.lc1 = data1
             spec.lc2 = data2
@@ -1632,6 +1640,7 @@ class Crossspectrum(StingrayObject):
                 gti=gti,
                 use_common_mean=use_common_mean,
                 save_all=save_all,
+                channels_overlap=self.channels_overlap,
             )
         else:  # pragma: no cover
             raise TypeError(f"Bad inputs to Crosssspectrum: {type(data1)}")
@@ -1747,7 +1756,7 @@ class Crossspectrum(StingrayObject):
             self.m,
             P1noise,
             P2noise,
-            common_ref=False,
+            common_ref=self.channels_overlap,
         )
         bad = np.isnan(dRe) | np.isnan(dIm)
 
@@ -1870,6 +1879,12 @@ class AveragedCrossspectrum(Crossspectrum):
         don't  use this and only give GTIs to the input objects before
         making the cross spectrum.
 
+    channels_overlap: bool, default False
+        If True, the reference band contains all the photons of the subject band.
+        This happens, for example, when calculating covariance spectra (see, e.g.,
+        the docs for ``CovarianceSpectrum``). This will generally be false in a
+        single cross spectrum.
+
     Attributes
     ----------
     freq: numpy.ndarray
@@ -1921,6 +1936,7 @@ class AveragedCrossspectrum(Crossspectrum):
         save_all=False,
         use_common_mean=True,
         skip_checks=False,
+        channels_overlap=False,
     ):
         self._type = None
         # for backwards compatibility
@@ -1951,6 +1967,7 @@ class AveragedCrossspectrum(Crossspectrum):
         self.save_all = save_all
         self.segment_size = segment_size
         self.show_progress = not silent
+        self.channels_overlap = channels_overlap
 
         if empty or not good_input:
             return self._initialize_empty()
@@ -2621,6 +2638,7 @@ def crossspectrum_from_time_array(
     fullspec=False,
     use_common_mean=True,
     save_all=False,
+    channels_overlap=False,
 ):
     """Calculate AveragedCrossspectrum from two arrays of event times.
 
@@ -2658,6 +2676,11 @@ def crossspectrum_from_time_array(
     power_type : str, default 'all'
         If 'all', give complex powers. If 'abs', the absolute value; if 'real',
         the real part
+    channels_overlap: bool, default False
+        If True, the reference band contains all the photons of the subject band.
+        This happens, for example, when calculating covariance spectra (see, e.g.,
+        the docs for ``CovarianceSpectrum``). This will generally be false in a
+        single cross spectrum.
 
     Returns
     -------
@@ -2682,7 +2705,9 @@ def crossspectrum_from_time_array(
         return_subcs=save_all,
     )
 
-    return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
+    return _create_crossspectrum_from_result_table(
+        results, force_averaged=force_averaged, channels_overlap=channels_overlap
+    )
 
 
 def crossspectrum_from_events(
@@ -2697,6 +2722,7 @@ def crossspectrum_from_events(
     use_common_mean=True,
     gti=None,
     save_all=False,
+    channels_overlap=False,
 ):
     """Calculate AveragedCrossspectrum from two event lists
 
@@ -2734,6 +2760,11 @@ def crossspectrum_from_events(
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. Defaults to the common GTIs from the two input
         objects
+    channels_overlap: bool, default False
+        If True, the reference band contains all the photons of the subject band.
+        This happens, for example, when calculating covariance spectra (see, e.g.,
+        the docs for ``CovarianceSpectrum``). This will generally be false in a
+        single cross spectrum.
 
     Returns
     -------
@@ -2756,6 +2787,7 @@ def crossspectrum_from_events(
         fullspec=fullspec,
         use_common_mean=use_common_mean,
         save_all=save_all,
+        channels_overlap=channels_overlap,
     )
 
 
@@ -2770,6 +2802,7 @@ def crossspectrum_from_lightcurve(
     use_common_mean=True,
     gti=None,
     save_all=False,
+    channels_overlap=False,
 ):
     """Calculate AveragedCrossspectrum from two light curves
 
@@ -2808,6 +2841,11 @@ def crossspectrum_from_lightcurve(
         Save all intermediate spectra used for the final average. Use with care.
         This is likely to fill up your RAM on medium-sized datasets, and to
         slow down the computation when rebinning.
+    channels_overlap: bool, default False
+        If True, the reference band contains all the photons of the subject band.
+        This happens, for example, when calculating covariance spectra (see, e.g.,
+        the docs for ``CovarianceSpectrum``). This will generally be false in a
+        single cross spectrum.
 
     Returns
     -------
@@ -2832,6 +2870,7 @@ def crossspectrum_from_lightcurve(
         use_common_mean=use_common_mean,
         gti=gti,
         save_all=save_all,
+        channels_overlap=channels_overlap,
     )
 
 
@@ -2848,6 +2887,7 @@ def crossspectrum_from_timeseries(
     use_common_mean=True,
     gti=None,
     save_all=False,
+    channels_overlap=False,
 ):
     """Calculate AveragedCrossspectrum from two time series
 
@@ -2890,6 +2930,11 @@ def crossspectrum_from_timeseries(
         Save all intermediate spectra used for the final average. Use with care.
         This is likely to fill up your RAM on medium-sized datasets, and to
         slow down the computation when rebinning.
+    channels_overlap: bool, default False
+        If True, the reference band contains all the photons of the subject band.
+        This happens, for example, when calculating covariance spectra (see, e.g.,
+        the docs for ``CovarianceSpectrum``). This will generally be false in a
+        single cross spectrum.
 
     Returns
     -------
@@ -2926,7 +2971,9 @@ def crossspectrum_from_timeseries(
         return_subcs=save_all,
     )
 
-    return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
+    return _create_crossspectrum_from_result_table(
+        results, force_averaged=force_averaged, channels_overlap=channels_overlap
+    )
 
 
 def crossspectrum_from_lc_iterable(
@@ -2941,6 +2988,7 @@ def crossspectrum_from_lc_iterable(
     use_common_mean=True,
     gti=None,
     save_all=False,
+    channels_overlap=False,
 ):
     """Calculate AveragedCrossspectrum from two light curves
 
@@ -2978,6 +3026,11 @@ def crossspectrum_from_lc_iterable(
     gti: [[gti0_0, gti0_1], [gti1_0, gti1_1], ...]
         Good Time intervals. The GTIs of the input light curves are
         intersected with these.
+    channels_overlap: bool, default False
+        If True, the reference band contains all the photons of the subject band.
+        This happens, for example, when calculating covariance spectra (see, e.g.,
+        the docs for ``CovarianceSpectrum``). This will generally be false in a
+        single cross spectrum.
 
     Returns
     -------
@@ -3024,10 +3077,12 @@ def crossspectrum_from_lc_iterable(
         return_auxil=True,
         return_subcs=save_all,
     )
-    return _create_crossspectrum_from_result_table(results, force_averaged=force_averaged)
+    return _create_crossspectrum_from_result_table(
+        results, force_averaged=force_averaged, channels_overlap=channels_overlap
+    )
 
 
-def _create_crossspectrum_from_result_table(table, force_averaged=False):
+def _create_crossspectrum_from_result_table(table, force_averaged=False, channels_overlap=False):
     """Copy the columns and metadata from the results of
     ``stingray.fourier.avg_cs_from_XX`` functions into
     `AveragedCrossspectrum` or `Crossspectrum` objects.
@@ -3045,6 +3100,12 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
     Other parameters
     ----------------
     force_averaged : bool, default False
+
+    channels_overlap: bool, default False
+        If True, the reference band contains all the photons of the subject band.
+        This happens, for example, when calculating covariance spectra (see, e.g.,
+        the docs for ``CovarianceSpectrum``). This will generally be false in a
+        single cross spectrum.
 
     Returns
     -------
@@ -3096,6 +3157,8 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
     mean = table.meta["mean"]
     nph = table.meta["nphots"]
     cs.mean = mean
+    cs.channels_overlap = channels_overlap
+
     cs.nph = nph
     cs.calculate_errors()
     return cs
