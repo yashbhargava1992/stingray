@@ -1113,7 +1113,7 @@ class TestStingrayTimeseriesSubclass:
 
     @pytest.mark.parametrize("gti_kind", ["same", "one", "multiple"])
     def test_read_apply_gti_lists(self, gti_kind):
-        reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)
+        reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)[:]
         if gti_kind == "same":
             gti_list = [reader.gti]
         elif gti_kind == "one":
@@ -1131,7 +1131,7 @@ class TestStingrayTimeseriesSubclass:
             assert np.allclose(ev.gti, gti_list[i])
 
     def test_read_apply_gti_lists_ignore_empty(self):
-        reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)
+        reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)[:]
         gti_list = [[], [[80000000, 80000512]], [[80000513, 80001024]]]
         evs = list(reader.apply_gti_lists(gti_list))
         assert np.allclose(evs[0].gti, gti_list[1])
