@@ -1,1 +1,1 @@
-Implement filter by time interval in stingraytimeseries objecst
+Implement filter by time interval in stingraytimeseries objects
