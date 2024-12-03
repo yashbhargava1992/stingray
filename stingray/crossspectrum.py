@@ -3060,7 +3060,7 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
         cs.m,
         P1noise,
         P2noise,
-        common_ref="False",
+        common_ref=False,
     )
 
     bad = np.isnan(dRe) | np.isnan(dIm)
