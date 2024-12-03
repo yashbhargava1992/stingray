@@ -1086,15 +1086,30 @@ class TestStingrayTimeseriesSubclass:
         assert np.allclose(new_so.time - 43200, self.sting_obj.time)
         assert np.allclose(new_so.gti - 43200, self.sting_obj.gti)
 
-    def test_read_timeseries_by_time_intv(self):
+    @pytest.mark.parametrize("check_gtis", [True, False])
+    def test_read_timeseries_by_time_intv(self, check_gtis):
         reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)[:]
 
         # Full slice
-        evs = list(reader.filter_at_time_intervals([80000100, 80001100]))
+        evs = list(reader.filter_at_time_intervals([80000100, 80001000], check_gtis=check_gtis))
         assert len(evs) == 1
         ev0 = evs[0]
-        assert np.all((ev0.time > 80000100) & (ev0.time < 80001100))
-        assert np.all((ev0.gti >= 80000100) & (ev0.gti < 80001100))
+        assert np.all((ev0.time > 80000100) & (ev0.time < 80001000))
+        assert np.all((ev0.gti >= 80000100) & (ev0.gti <= 80001000))
+        assert np.isclose(ev0.gti[0, 0], 80000100)
+        assert np.isclose(ev0.gti[-1, 1], 80001000)
+
+    def test_read_timeseries_by_time_intv_check_bad_gtis(self):
+        reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)[:]
+
+        # Full slice
+        evs = list(reader.filter_at_time_intervals([80000100, 80001100], check_gtis=False))
+        assert len(evs) == 1
+        ev0 = evs[0]
+        assert np.all((ev0.time > 80000100) & (ev0.time < 80001025))
+        assert np.isclose(ev0.gti[0, 0], 80000100)
+        # This second gti will be ugly, larger than the original gti boundary
+        assert np.isclose(ev0.gti[-1, 1], 80001100)
 
     @pytest.mark.parametrize("gti_kind", ["same", "one", "multiple"])
     def test_read_apply_gti_lists(self, gti_kind):
@@ -1114,6 +1129,13 @@ class TestStingrayTimeseriesSubclass:
         for i, ev in enumerate(evs):
             # Check that the gtis of the output event lists are the same we input
             assert np.allclose(ev.gti, gti_list[i])
+
+    def test_read_apply_gti_lists_ignore_empty(self):
+        reader = FITSTimeseriesReader(self.fname, output_class=DummyStingrayTs)
+        gti_list = [[], [[80000000, 80000512]], [[80000513, 80001024]]]
+        evs = list(reader.apply_gti_lists(gti_list))
+        assert np.allclose(evs[0].gti, gti_list[1])
+        assert np.allclose(evs[1].gti, gti_list[2])
 
 
 class TestJoinEvents:
