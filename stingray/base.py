@@ -2743,7 +2743,7 @@ class StingrayTimeseries(StingrayObject):
             yield ev
 
         else:
-            for i, gti in enumerate(new_gti_lists):
+            for gti in new_gti_lists:
                 if len(gti) == 0:
                     continue
                 gti = np.asarray(gti)
