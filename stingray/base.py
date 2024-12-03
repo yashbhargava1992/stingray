@@ -2749,8 +2749,12 @@ class StingrayTimeseries(StingrayObject):
                 gti = np.asarray(gti)
                 lower_edge = np.searchsorted(self.time, gti[0, 0])
                 upper_edge = np.searchsorted(self.time, gti[-1, 1])
-
+                if upper_edge == self.time.size:
+                    upper_edge -= 1
+                if self.time[upper_edge] > gti[-1, 1]:
+                    upper_edge -= 1
                 ev = self[lower_edge : upper_edge + 1]
+
                 if hasattr(ev, "gti"):
                     ev.gti = gti
 
