@@ -1736,6 +1736,55 @@ class Crossspectrum(StingrayObject):
 
         return new_spec
 
+    def calculate_errors(self):
+        P1noise = poisson_level(norm="none", meanrate=self.countrate1, n_ph=self.nphots1)
+        P2noise = poisson_level(norm="none", meanrate=self.countrate2, n_ph=self.nphots2)
+
+        dRe, dIm, dphi, _ = error_on_averaged_cross_spectrum(
+            self.unnorm_power,
+            self.pds1.unnorm_power,
+            self.pds2.unnorm_power,
+            self.m,
+            P1noise,
+            P2noise,
+            common_ref=False,
+        )
+        bad = np.isnan(dRe) | np.isnan(dIm)
+
+        if np.any(bad):
+            warnings.warn(
+                "Some error bars in the Averaged Crossspectrum are invalid."
+                "Defaulting to sqrt(2 / M) in Leahy norm, rescaled to the appropriate norm."
+            )
+
+        Nph = np.sqrt(self.nphots1 * self.nphots2)
+
+        assert self.nph == Nph
+
+        default_err = np.sqrt(2 / self.m) * Nph / 2
+        if isinstance(default_err, Iterable):
+            default_err = np.array(default_err)[bad]
+
+        dRe[bad] = default_err
+        dIm[bad] = default_err
+
+        power_err = dRe + 1.0j * dIm
+
+        self.unnorm_power_err = power_err
+
+        self.power_err = normalize_periodograms(
+            power_err, self.dt, self.n, self.mean, n_ph=Nph, variance=self.variance, norm=self.norm
+        )
+
+        self.pds1.power_err = self.pds1.power / np.sqrt(self.pds1.m)
+        self.pds2.power_err = self.pds2.power / np.sqrt(self.pds2.m)
+        self.pds1.unnorm_power_err = self.pds1.unnorm_power / np.sqrt(self.pds1.m)
+        self.pds2.unnorm_power_err = self.pds2.unnorm_power / np.sqrt(self.pds2.m)
+        self.lag_err = dphi
+
+        assert hasattr(self, "df")
+        assert hasattr(self, "dt")
+
 
 class AveragedCrossspectrum(Crossspectrum):
     type = "crossspectrum"
@@ -2021,14 +2070,9 @@ class AveragedCrossspectrum(Crossspectrum):
     def phase_lag(self):
         """Return the fourier phase lag of the cross spectrum."""
         lag = np.angle(self.unnorm_power)
-        coh, uncert = self.coherence()
-
-        dum = (1.0 - coh) / (2.0 * coh)
-
-        dum[coh == 0] = 0.0
-
-        lag_err = np.sqrt(dum / self.m)
-        return lag, lag_err
+        if not hasattr(self, "lag_err") or self.lag_err.size != lag.size:
+            self.calculate_errors()
+        return lag, self.lag_err
 
     def time_lag(self):
         """Calculate time lag and uncertainty.
@@ -3049,49 +3093,9 @@ def _create_crossspectrum_from_result_table(table, force_averaged=False):
         if attr.endswith("2"):
             setattr(cs.pds2, attr[:-1], val)
 
-    # I start from unnormalized, and I normalize after correcting for bad error values
-    P1noise = poisson_level(norm="none", meanrate=cs.countrate1, n_ph=cs.nphots1)
-    P2noise = poisson_level(norm="none", meanrate=cs.countrate2, n_ph=cs.nphots2)
-
-    dRe, dIm, _, _ = error_on_averaged_cross_spectrum(
-        cs.unnorm_power,
-        cs.pds1.unnorm_power,
-        cs.pds2.unnorm_power,
-        cs.m,
-        P1noise,
-        P2noise,
-        common_ref=False,
-    )
-
-    bad = np.isnan(dRe) | np.isnan(dIm)
-
-    if np.any(bad):
-        warnings.warn(
-            "Some error bars in the Averaged Crossspectrum are invalid."
-            "Defaulting to sqrt(2 / M) in Leahy norm, rescaled to the appropriate norm."
-        )
-
-    Nph = np.sqrt(cs.nphots1 * cs.nphots2)
-    default_err = np.sqrt(2 / cs.m) * Nph / 2
-
-    dRe[bad] = default_err
-    dIm[bad] = default_err
-
-    power_err = dRe + 1.0j * dIm
-
-    cs.unnorm_power_err = power_err
-
     mean = table.meta["mean"]
     nph = table.meta["nphots"]
-    cs.power_err = normalize_periodograms(
-        power_err, cs.dt, cs.n, mean, n_ph=nph, variance=cs.variance, norm=cs.norm
-    )
-
-    cs.pds1.power_err = cs.pds1.power / np.sqrt(cs.pds1.m)
-    cs.pds2.power_err = cs.pds2.power / np.sqrt(cs.pds2.m)
-    cs.pds1.unnorm_power_err = cs.pds1.unnorm_power / np.sqrt(cs.pds1.m)
-    cs.pds2.unnorm_power_err = cs.pds2.unnorm_power / np.sqrt(cs.pds2.m)
-
-    assert hasattr(cs, "df")
-    assert hasattr(cs, "dt")
+    cs.mean = mean
+    cs.nph = nph
+    cs.calculate_errors()
     return cs

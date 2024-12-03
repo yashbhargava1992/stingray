@@ -1232,10 +1232,9 @@ class TestAveragedCrossspectrum(object):
                 dt=dt,
             )
 
-        with pytest.warns(UserWarning) as w:
-            cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5, norm="none")
-
-            time_lag, time_lag_err = cs.time_lag()
+        # with pytest.warns(UserWarning) as w:
+        cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=5, norm="none")
+        time_lag, time_lag_err = cs.time_lag()
 
         # The actual measured time lag will be half that for AveragedCrosspectrum
         measured_lag = -dt
@@ -1246,8 +1245,8 @@ class TestAveragedCrossspectrum(object):
         np.random.seed(62)
         test_lc1 = Lightcurve(time, np.random.poisson(200, 10000))
         test_lc2 = Lightcurve(time, np.random.poisson(200, 10000))
-        with pytest.warns(UserWarning) as w:
-            cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10, norm="leahy")
+        # with pytest.warns(UserWarning) as w:
+        cs = AveragedCrossspectrum(test_lc1, test_lc2, segment_size=10, norm="leahy")
         maxpower = np.max(cs.power)
         assert np.all(np.isfinite(cs.classical_significances(threshold=maxpower / 2.0)))
 
