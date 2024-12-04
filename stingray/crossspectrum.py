@@ -1787,7 +1787,7 @@ class Crossspectrum(StingrayObject):
         This might happen, for example, when calculating covariance spectra using a large
         reference band.
         See the details in the documentation of
-        :function:`stingray.fourier.error_on_averaged_cross_spectrum`.
+        :func:`stingray.fourier.error_on_averaged_cross_spectrum`.
 
         Please note that we have dedicated methods for covariance spectra and other variability
         versus energy spectra in `stingray.varenergyspectrum`, even though they only work for
