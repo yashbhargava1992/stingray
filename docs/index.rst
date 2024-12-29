@@ -230,7 +230,9 @@ Please be sure to run the test suite before you use the package, and please repo
 you think might be bugs on our GitHub `Issues page <https://github.com/StingraySoftware/stingray/issues>`_.
 
 Stingray uses `py.test <https://pytest.org>`_ and `tox
-<https://tox.readthedocs.io>`_ for testing. To run the tests, try::
+<https://tox.readthedocs.io>`_ for testing.
+
+If you downloaded the source code, e.g. via `git clone`, run the tests with::
 
    $ tox -e test
 
@@ -261,7 +263,9 @@ Building the Documentation
 The documentation including tutorials is hosted `here <https://docs.stingray.science/>`_.
 The documentation uses `sphinx <https://www.sphinx-doc.org/en/stable/>`_ to build and requires the extensions `sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`_ and `nbsphinx <https://pypi.org/project/nbsphinx/>`_.
 
-One quick way to build the documentation is using our tox environment: ::
+To build the documentation, you will need to clone the development version of Stingray from GitHub.
+Once you have the source code, you can go to the root directory and make the build in one of the following ways.
+The quickest is probably using our tox environment: ::
 
     $ tox -e build_docs
 
