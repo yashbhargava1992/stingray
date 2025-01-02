@@ -120,7 +120,7 @@ For **pulsar searches and timing**, we recommend installing
 + pint-pulsar
 
 Some of the dependencies are available in ``conda``, the others via ``pip``.
-To install all required and recommended dependencies in a recent installation, you should be good running the following command:
+To install all required and recommended dependencies in a recent installation, you should be good running the following command::
 
     $ pip install astropy scipy matplotlib numpy h5py tqdm numba pint-pulsar emcee corner statsmodels pyfftw tbb
 
