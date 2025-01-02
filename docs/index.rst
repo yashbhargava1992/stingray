@@ -120,7 +120,7 @@ For **pulsar searches and timing**, we recommend installing
 + pint-pulsar
 
 Some of the dependencies are available in ``conda``, the others via ``pip``.
-To install all required and recommended dependencies in a recent installation, you should be good running the following command:
+To install all required and recommended dependencies in a recent installation, you should be good running the following command::
 
     $ pip install astropy scipy matplotlib numpy h5py tqdm numba pint-pulsar emcee corner statsmodels pyfftw tbb
 
@@ -167,7 +167,7 @@ Installing via ``conda``
 
 If you manage your Python installation and packages
 via Anaconda or miniconda, you can install ``stingray``
-via the ``conda-forge`` build: ::
+via the ``conda-forge`` build::
 
     $ conda install -c conda-forge stingray
 
@@ -188,12 +188,12 @@ Installing from source (bleeding edge version)
 
 For those of you wanting to install the bleeding-edge development version from
 source (it *will* have bugs; you've been warned!), first clone
-`our repository <https://github.com/StingraySoftware/stingray>`_ on GitHub: ::
+`our repository <https://github.com/StingraySoftware/stingray>`_ on GitHub::
 
     $ git clone --recursive https://github.com/StingraySoftware/stingray.git
 
 Now ``cd`` into the newly created ``stingray`` directory.
-Finally, install ``stingray`` itself: ::
+Finally, install ``stingray`` itself::
 
     $ pip install -e "."
 
@@ -202,13 +202,13 @@ Installing development environment (for new contributors)
 
 For those of you wanting to contribute to the project, install the bleeding-edge development version from
 source. First fork
-`our repository <https://github.com/StingraySoftware/stingray>`_ on GitHub and clone the forked repository using: ::
+`our repository <https://github.com/StingraySoftware/stingray>`_ on GitHub and clone the forked repository using::
 
     $ git clone --recursive https://github.com/<your github username>/stingray.git
 
 Now, navigate to this folder and run
 the following command to add an upstream remote that's linked to Stingray's main repository.
-(This will be necessary when submitting PRs later.): ::
+(This will be necessary when submitting PRs later.)::
 
     $ cd stingray
     $ git remote add upstream https://github.com/StingraySoftware/stingray.git
@@ -230,7 +230,9 @@ Please be sure to run the test suite before you use the package, and please repo
 you think might be bugs on our GitHub `Issues page <https://github.com/StingraySoftware/stingray/issues>`_.
 
 Stingray uses `py.test <https://pytest.org>`_ and `tox
-<https://tox.readthedocs.io>`_ for testing. To run the tests, try::
+<https://tox.readthedocs.io>`_ for testing.
+
+If you downloaded the source code, e.g. via `git clone`, run the tests with::
 
    $ tox -e test
 
@@ -261,17 +263,19 @@ Building the Documentation
 The documentation including tutorials is hosted `here <https://docs.stingray.science/>`_.
 The documentation uses `sphinx <https://www.sphinx-doc.org/en/stable/>`_ to build and requires the extensions `sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`_ and `nbsphinx <https://pypi.org/project/nbsphinx/>`_.
 
-One quick way to build the documentation is using our tox environment: ::
+To build the documentation, you will need to clone the development version of Stingray from GitHub.
+Once you have the source code, you can go to the root directory and make the build in one of the following ways.
+The quickest is probably using our tox environment::
 
     $ tox -e build_docs
 
 You can build the API reference yourself by going into the ``docs`` folder within the ``stingray`` root
-directory and running the ``Makefile``: ::
+directory and running the ``Makefile``::
 
     $ cd stingray/docs
     $ make html
 
-If that doesn't work on your system, you can invoke ``sphinx-build`` itself from the stingray source directory: ::
+If that doesn't work on your system, you can invoke ``sphinx-build`` itself from the stingray source directory::
 
     $ cd stingray
     $ sphinx-build docs docs/_build
