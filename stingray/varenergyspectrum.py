@@ -197,6 +197,7 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
         segment_size=None,
         events2=None,
         return_complex=False,
+        min_phot_per_segment=10,
     ):
         self.events1 = events
         self.events2 = assign_value_if_none(events2, events)
@@ -207,6 +208,7 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
         self.freq_interval = freq_interval
         self.use_pi = use_pi
         self.bin_time = bin_time
+        self.min_phot_per_segment = min_phot_per_segment
 
         if isinstance(energy_spec, tuple):
             energies = _decode_energy_specification(energy_spec)
@@ -423,6 +425,27 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
     def from_pandas(self, *args, **kwargs):
         raise NotImplementedError("from_XXXX methods are not implemented for VarEnergySpectrum")
 
+    def check_phot_per_segment(self, phot_per_segment, eint):
+        """Check if the number of photons per segment is enough.
+
+        Parameters
+        ----------
+        phot_per_segment: float or int
+            Number of photons in the segment
+        eint: iterable
+            Energy interval
+        """
+        if phot_per_segment < self.min_phot_per_segment:
+            streint = [f"{x:g}" for x in eint]
+            warnings.warn(
+                f"Low count rate in the {streint[0]}-{streint[1]} subject band: "
+                f"{phot_per_segment:g} ct/segment (<{self.min_phot_per_segment:g}). Skipping. "
+                "If you know what you're doing, you can set the `min_phot_per_segment` "
+                "parameter to a lower value, but in general, we recommend to use fewer "
+                "subject bands",
+            )
+        return True
+
 
 class RmsSpectrum(VarEnergySpectrum):
     """Calculate the rms-Energy spectrum.
@@ -524,6 +547,8 @@ class RmsSpectrum(VarEnergySpectrum):
             sub_events = self._get_times_from_energy_range(self.events1, eint)
             countrate_sub = get_average_ctrate(sub_events, self.gti, self.segment_size)
             sub_power_noise = poisson_level(norm="abs", meanrate=countrate_sub)
+            if not self.check_phot_per_segment(countrate_sub * self.segment_size, eint):
+                continue
 
             # If we provided the `events2` array, calculate the rms from the
             # cospectrum, otherwise from the PDS
@@ -533,6 +558,8 @@ class RmsSpectrum(VarEnergySpectrum):
                 sub_events2 = self._get_times_from_energy_range(self.events2, eint)
                 countrate_sub2 = get_average_ctrate(sub_events2, self.gti, self.segment_size)
                 sub2_power_noise = poisson_level(norm="abs", meanrate=countrate_sub2)
+                if not self.check_phot_per_segment(countrate_sub2 * self.segment_size, eint):
+                    continue
 
                 # Calculate the cross spectrum
                 results = avg_cs_from_timeseries(
@@ -965,6 +992,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
         events2=None,
         norm="frac",
         return_complex=True,
+        min_phot_per_segment=10,
     ):
         self.norm = norm
         VarEnergySpectrum.__init__(
@@ -978,6 +1006,7 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
             segment_size=segment_size,
             events2=events2,
             return_complex=return_complex,
+            min_phot_per_segment=min_phot_per_segment,
         )
 
     def _spectrum_function(self):
@@ -1007,6 +1036,10 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
             # Extract events from the subject band
             sub_events = self._get_times_from_energy_range(self.events1, eint)
             countrate_sub = get_average_ctrate(sub_events, self.gti, self.segment_size)
+            phot_per_segment = countrate_sub * self.segment_size
+            if not self.check_phot_per_segment(phot_per_segment, eint):
+                continue
+
             sub_power_noise = poisson_level(norm="abs", meanrate=countrate_sub)
 
             results_cross = avg_cs_from_timeseries(
