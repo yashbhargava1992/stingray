@@ -444,6 +444,7 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
                 "parameter to a lower value, but in general, we recommend to use fewer "
                 "subject bands",
             )
+            return False
         return True
 
 
