@@ -215,6 +215,8 @@ class TestRmsAndCovSpectrum(object):
         if cross:
             ev2 = self.test_ev2_small
 
+        # Note: energy_spec is a list, so it's actually the edges
+        # of the energy bins. So, the 12-15 keV band is empty.
         spec = LagSpectrum(
             self.test_ev1_small,
             freq_interval=[0.00001, 0.1],
@@ -238,13 +240,33 @@ class TestRmsAndCovSpectrum(object):
             func = RmsSpectrum
         elif kind == "cov":
             func = ComplexCovarianceSpectrum
-
+        # Note: energy_spec is a list, so it's actually the edges
+        # of the energy bins. So, the 12-15 keV band is empty.
         with pytest.warns(UserWarning, match="Low count rate in the 12-15 subject band"):
             spec = func(
                 self.test_ev1_small,
                 freq_interval=[0.00001, 0.1],
                 energy_spec=[0.3, 12, 15],
                 ref_band=[[0.3, 12]],
+                bin_time=self.bin_time / 2,
+                segment_size=200,
+                events2=ev2,
+            )
+        good = ~np.isnan(spec.spectrum)
+        assert np.count_nonzero(good) == 1
+
+    def test_empty_subband_cov_ev2(self):
+        import copy
+
+        ev2 = copy.deepcopy(self.test_ev2_small)
+        # We empty out only the second event list above 5 keV
+        ev2.filter_energy_range([0.3, 5], inplace=True)
+
+        with pytest.warns(UserWarning, match="Low count rate in the 5-12 subject band"):
+            spec = RmsSpectrum(
+                self.test_ev1_small,
+                freq_interval=[0.00001, 0.1],
+                energy_spec=[0.3, 5, 12],
                 bin_time=self.bin_time / 2,
                 segment_size=200,
                 events2=ev2,
