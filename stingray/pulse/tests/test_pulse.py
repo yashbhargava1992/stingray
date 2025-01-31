@@ -212,14 +212,8 @@ class TestAll(object):
         times = np.arange(0, 2 - dt, dt)
         counts = np.random.normal(3, 0.5, size=len(times))
         gti = np.array([[-0.5 * dt, 2 - dt]])
-        bins, profile, prof_err = fold_events(times, 1, nbin=nbin, weights=counts, mode="pdm")
-        assert np.all(prof_err == 0)
-
-    def test_pdm_bincounting(self):
-        nbin = 10
-        times = np.arange(0, 10, 1)
-        counts = np.random.normal(3, 0.5, size=len(times))
         bins, profile, prof_err = fold_events(times, 0.237, nbin=nbin, weights=counts, mode="pdm")
+        assert np.all(prof_err == 0)
 
     def test_mode_incorrect(self):
         nbin = 16
