@@ -210,20 +210,12 @@ class TestRmsAndCovSpectrum(object):
         assert np.all(np.iscomplex(spec.spectrum))
 
     @pytest.mark.parametrize("cross", [True, False])
-    @pytest.mark.parametrize("kind", ["rms", "cov", "lag"])
-    def test_empty_subband_cov(self, cross, kind):
+    def test_empty_subband_lag(self, cross):
         ev2 = None
         if cross:
             ev2 = self.test_ev2_small
 
-        if kind == "rms":
-            func = RmsSpectrum
-        elif kind == "lag":
-            func = LagSpectrum
-        elif kind == "cov":
-            func = ComplexCovarianceSpectrum
-
-        spec = func(
+        spec = LagSpectrum(
             self.test_ev1_small,
             freq_interval=[0.00001, 0.1],
             energy_spec=[0.3, 12, 15],
@@ -232,6 +224,31 @@ class TestRmsAndCovSpectrum(object):
             segment_size=200,
             events2=ev2,
         )
+        good = ~np.isnan(spec.spectrum)
+        assert np.count_nonzero(good) == 1
+
+    @pytest.mark.parametrize("cross", [True, False])
+    @pytest.mark.parametrize("kind", ["rms", "cov"])
+    def test_empty_subband_cov(self, cross, kind):
+        ev2 = None
+        if cross:
+            ev2 = self.test_ev2_small
+
+        if kind == "rms":
+            func = RmsSpectrum
+        elif kind == "cov":
+            func = ComplexCovarianceSpectrum
+
+        with pytest.warns(UserWarning, match="Low count rate in the 12-15 subject band"):
+            spec = func(
+                self.test_ev1_small,
+                freq_interval=[0.00001, 0.1],
+                energy_spec=[0.3, 12, 15],
+                ref_band=[[0.3, 12]],
+                bin_time=self.bin_time / 2,
+                segment_size=200,
+                events2=ev2,
+            )
         good = ~np.isnan(spec.spectrum)
         assert np.count_nonzero(good) == 1
 
