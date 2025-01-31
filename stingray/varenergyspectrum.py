@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 import numpy as np
 import warnings
 from stingray.base import StingrayObject
@@ -188,9 +189,9 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
 
     def __init__(
         self,
-        events,
-        freq_interval,
-        energy_spec,
+        events=None,
+        freq_interval=None,
+        energy_spec=None,
         ref_band=None,
         bin_time=1,
         use_pi=False,
@@ -199,21 +200,37 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
         return_complex=False,
         min_phot_per_segment=10,
     ):
-        self.events1 = events
-        self.events2 = assign_value_if_none(events2, events)
-        self._analyze_inputs()
+        if isinstance(energy_spec, tuple):
+            energies = _decode_energy_specification(energy_spec)
+        elif isinstance(energy_spec, Iterable):
+            energies = np.asanyarray(energy_spec)
+        elif events is not None:
+            raise ValueError("Energy specification must be a tuple or a list")
+
         # This will be set to True in ComplexCovariance
         self.return_complex = return_complex
-
         self.freq_interval = freq_interval
         self.use_pi = use_pi
         self.bin_time = bin_time
         self.min_phot_per_segment = min_phot_per_segment
-
-        if isinstance(energy_spec, tuple):
-            energies = _decode_energy_specification(energy_spec)
+        if energy_spec is not None:
+            self.energy_intervals = list(zip(energies[0:-1], energies[1:]))
         else:
-            energies = np.asanyarray(energy_spec)
+            self.energy_intervals = None
+        self.ref_band = np.asanyarray(assign_value_if_none(ref_band, [0, np.inf]))
+        if len(self.ref_band.shape) <= 1:
+            self.ref_band = np.asanyarray([self.ref_band])
+
+        self.segment_size = self.delta_nu = None
+
+        if events is None:
+            self.events1 = self.events2 = None
+            # This will be set to True in ComplexCovariance
+            return
+
+        self.events1 = events
+        self.events2 = assign_value_if_none(events2, events)
+        self._analyze_inputs()
 
         self.energy_intervals = list(zip(energies[0:-1], energies[1:]))
 
@@ -237,7 +254,16 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
     @property
     def energy(self):
         """Give the centers of the energy intervals."""
-        return np.sum(self.energy_intervals, axis=1) / 2
+        if not hasattr(self, "_energy") or self._energy is None:
+            if self.energy_intervals is None or len(self.energy_intervals) == 0:
+                self._energy = []
+            else:
+                self._energy = np.sum(self.energy_intervals, axis=1) / 2
+        return self._energy
+
+    @energy.setter
+    def energy(self, value):
+        self._energy = value
 
     def _analyze_inputs(self):
         """Make some checks on the inputs and set some internal variable.
@@ -416,15 +442,6 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
     def _spectrum_function(self):
         pass
 
-    def from_astropy_table(self, *args, **kwargs):
-        raise NotImplementedError("from_XXXX methods are not implemented for VarEnergySpectrum")
-
-    def from_xarray(self, *args, **kwargs):
-        raise NotImplementedError("from_XXXX methods are not implemented for VarEnergySpectrum")
-
-    def from_pandas(self, *args, **kwargs):
-        raise NotImplementedError("from_XXXX methods are not implemented for VarEnergySpectrum")
-
     def check_phot_per_segment(self, phot_per_segment, eint):
         """Check if the number of photons per segment is enough.
 
@@ -511,8 +528,8 @@ class RmsSpectrum(VarEnergySpectrum):
 
     def __init__(
         self,
-        events,
-        energy_spec,
+        events=None,
+        energy_spec=None,
         ref_band=None,
         freq_interval=[0, 1],
         bin_time=1,
@@ -811,9 +828,9 @@ class LagSpectrum(VarEnergySpectrum):
     # events, freq_interval, energy_spec, ref_band = None
     def __init__(
         self,
-        events,
-        freq_interval,
-        energy_spec,
+        events=None,
+        freq_interval=None,
+        energy_spec=None,
         ref_band=None,
         bin_time=1,
         use_pi=False,
@@ -983,8 +1000,8 @@ class ComplexCovarianceSpectrum(VarEnergySpectrum):
 
     def __init__(
         self,
-        events,
-        energy_spec,
+        events=None,
+        energy_spec=None,
         ref_band=None,
         freq_interval=[0, 1],
         bin_time=1,
@@ -1165,8 +1182,8 @@ class CovarianceSpectrum(ComplexCovarianceSpectrum):
 
     def __init__(
         self,
-        events,
-        energy_spec,
+        events=None,
+        energy_spec=None,
         ref_band=None,
         freq_interval=[0, 1],
         bin_time=1,

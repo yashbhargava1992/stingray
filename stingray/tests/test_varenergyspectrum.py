@@ -1,3 +1,4 @@
+import copy
 from multiprocessing import Event
 import os
 import numpy as np
@@ -256,8 +257,6 @@ class TestRmsAndCovSpectrum(object):
         assert np.count_nonzero(good) == 1
 
     def test_empty_subband_cov_ev2(self):
-        import copy
-
         ev2 = copy.deepcopy(self.test_ev2_small)
         # We empty out only the second event list above 5 keV
         ev2.filter_energy_range([0.3, 5], inplace=True)
@@ -392,6 +391,132 @@ class TestRmsAndCovSpectrum(object):
             )
         assert np.all(np.isnan(rms.spectrum))
         assert np.all(np.isnan(rms.spectrum_error))
+
+
+import abc
+
+
+class BaseTestIO(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def variant(self):
+        pass
+
+    @classmethod
+    def setup_class(cls):
+        if cls.variant == "rms":
+            cls.func = RmsSpectrum
+        elif cls.variant == "complcov":
+            cls.func = ComplexCovarianceSpectrum
+        elif cls.variant == "cov":
+            cls.func = CovarianceSpectrum
+        elif cls.variant == "lag":
+            cls.func = LagSpectrum
+        spec = cls.func(energy_spec=[0.3, 12, 15])
+        spec.freq_interval = [0.1, 0.2]
+        spec.ref_band = [0.3, 12]
+        spec.bin_time = 0.01
+        spec.segment_size = 100
+        spec.cross = cls.variant == "complcov"
+        cls.sting_obj = spec
+
+    def test_astropy_roundtrip(self):
+        so = copy.deepcopy(self.sting_obj)
+        ts = so.to_astropy_table()
+        new_so = self.func.from_astropy_table(ts)
+        assert so == new_so
+
+    @pytest.mark.skipif("not _HAS_XARRAY")
+    def test_xarray_roundtrip(self):
+        so = copy.deepcopy(self.sting_obj)
+        ts = so.to_xarray()
+        new_so = self.func.from_xarray(ts)
+        assert so == new_so
+
+    @pytest.mark.skipif("not _HAS_PANDAS")
+    def test_pandas_roundtrip(self):
+        so = copy.deepcopy(self.sting_obj)
+        ts = so.to_pandas()
+        new_so = self.func.from_pandas(ts)
+        assert so == new_so
+
+    def test_astropy_roundtrip_empty(self):
+        # Set an attribute to a DummyStingrayObj. It will *not* be saved
+        so = self.func()
+        ts = so.to_astropy_table()
+        new_so = self.func.from_astropy_table(ts)
+        assert new_so.energy == []
+        assert so == new_so
+
+    @pytest.mark.skipif("not _HAS_XARRAY")
+    def test_xarray_roundtrip_empty(self):
+        so = self.func()
+        ts = so.to_xarray()
+        new_so = self.func.from_xarray(ts)
+        assert new_so.energy == []
+        assert so == new_so
+
+    @pytest.mark.skipif("not _HAS_PANDAS")
+    def test_pandas_roundtrip_empty(self):
+        so = self.func()
+        ts = so.to_pandas()
+        new_so = self.func.from_pandas(ts)
+        assert new_so.energy == []
+        assert so == new_so
+
+    @pytest.mark.skipif("not _HAS_H5PY")
+    def test_hdf_roundtrip(self):
+        so = copy.deepcopy(self.sting_obj)
+        so.write("dummy.hdf5")
+        new_so = so.read("dummy.hdf5")
+        os.unlink("dummy.hdf5")
+
+        assert so == new_so
+
+    def test_file_roundtrip_fits(self):
+        so = copy.deepcopy(self.sting_obj)
+        with pytest.warns(
+            UserWarning, match=".* output does not serialize the metadata at the moment"
+        ):
+            so.write("dummy.fits")
+        new_so = self.func.read("dummy.fits")
+        os.unlink("dummy.fits")
+        assert so == new_so
+
+    @pytest.mark.parametrize("fmt", ["ascii", "ascii.ecsv"])
+    def test_file_roundtrip(self, fmt):
+        so = copy.deepcopy(self.sting_obj)
+        with pytest.warns(UserWarning, match=".* output does not serialize the metadata"):
+            so.write(f"dummy.{fmt}", fmt=fmt)
+        new_so = self.func.read(f"dummy.{fmt}", fmt=fmt)
+        os.unlink(f"dummy.{fmt}")
+
+        assert so == new_so
+
+    def test_file_roundtrip_pickle(self):
+        fmt = "pickle"
+        so = copy.deepcopy(self.sting_obj)
+        so.write(f"dummy.{fmt}", fmt=fmt)
+        new_so = self.func.read(f"dummy.{fmt}", fmt=fmt)
+        os.unlink(f"dummy.{fmt}")
+
+        assert so == new_so
+
+
+class TestCovarianceIO(BaseTestIO):
+    variant = "cov"
+
+
+class TestComplexCovarianceIO(BaseTestIO):
+    variant = "complcov"
+
+
+class TestRmsIO(BaseTestIO):
+    variant = "rms"
+
+
+class TestLagIO(BaseTestIO):
+    variant = "lag"
 
 
 @pytest.mark.slow
