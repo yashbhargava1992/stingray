@@ -90,6 +90,11 @@ class TestVarEnergySpectrum(object):
         with pytest.raises(TypeError):
             ref_int = VarEnergySpectrum(self.events, [0.0, 10000], (0.5, 5, 10, "log"), [0.3, 10])
 
+    @pytest.mark.parametrize("energy_spec", [2, "a"])
+    def test_invalid_energy_spec(self, energy_spec):
+        with pytest.raises(ValueError, match="Energy specification must be a tuple"):
+            DummyVarEnergy(self.events, [0.0, 10000], energy_spec=2)
+
     def test_ref_band_none(self):
         events = EventList(
             [0.09, 0.21, 0.23, 0.32, 0.4, 0.54], energy=[0, 0, 0, 0, 1, 1], gti=[[0, 0.65]]
