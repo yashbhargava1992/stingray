@@ -92,8 +92,11 @@ class TestVarEnergySpectrum(object):
 
     @pytest.mark.parametrize("energy_spec", [2, "a"])
     def test_invalid_energy_spec(self, energy_spec):
-        with pytest.raises(ValueError, match="Energy specification must be a tuple"):
-            DummyVarEnergy(self.events, [0.0, 10000], energy_spec=2)
+        with pytest.raises(
+            ValueError,
+            match=f"Energy specification must be a tuple or a list .input: {energy_spec}.",
+        ):
+            DummyVarEnergy(self.events, [0.0, 10000], energy_spec=energy_spec)
 
     def test_ref_band_none(self):
         events = EventList(

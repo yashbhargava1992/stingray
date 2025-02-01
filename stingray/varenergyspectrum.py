@@ -202,10 +202,12 @@ class VarEnergySpectrum(StingrayObject, metaclass=ABCMeta):
     ):
         if isinstance(energy_spec, tuple):
             energies = _decode_energy_specification(energy_spec)
-        elif isinstance(energy_spec, Iterable):
+        elif isinstance(energy_spec, Iterable) and not isinstance(energy_spec, str):
             energies = np.asanyarray(energy_spec)
         elif events is not None:
-            raise ValueError("Energy specification must be a tuple or a list")
+            raise ValueError(
+                f"Energy specification must be a tuple or a list (input: {energy_spec})"
+            )
 
         # This will be set to True in ComplexCovariance
         self.return_complex = return_complex
