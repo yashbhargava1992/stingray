@@ -365,4 +365,4 @@ Indices and tables
 .. |License| image:: https://img.shields.io/badge/License-MIT-yellow.svg
    :target: https://opensource.org/licenses/MIT
 .. |pyOpenSci Peer-Reviewed| image:: https://pyopensci.org/badges/peer-reviewed.svg
-   :target: https://github.com/pyOpenSci/software-review/issues/201
+   :target: https://github.com/pyOpenSci/software-submission/issues/201
