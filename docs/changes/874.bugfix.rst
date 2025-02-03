@@ -1,0 +1,1 @@
+Set a lower limit to the number of photons in a segment of data used for certain ``VarEnergySpectrum`` subclasses. This avoids, e.g., spurious high covariance measurements in low-count data sets.
