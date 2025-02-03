@@ -225,7 +225,9 @@ class TestRmsAndCovSpectrum(object):
             ev2 = self.test_ev2_small
 
         # Note: energy_spec is a list, so it's actually the edges
-        # of the energy bins. So, the 12-15 keV band is empty.
+        # of the energy bins. So, the covariance spectrum will be
+        # calculated in two bands: 0.3-12 keV and 12-15 keV. But
+        # the 12-15 keV band is empty (see definition of test_ev1_small)
         spec = LagSpectrum(
             self.test_ev1_small,
             freq_interval=[0.00001, 0.1],
@@ -250,7 +252,9 @@ class TestRmsAndCovSpectrum(object):
         elif kind == "cov":
             func = ComplexCovarianceSpectrum
         # Note: energy_spec is a list, so it's actually the edges
-        # of the energy bins. So, the 12-15 keV band is empty.
+        # of the energy bins. So, the covariance spectrum will be
+        # calculated in two bands: 0.3-12 keV and 12-15 keV. But
+        # the 12-15 keV band is empty (see definition of test_ev1_small)
         with pytest.warns(UserWarning, match="Low count rate in the 12-15 subject band"):
             spec = func(
                 self.test_ev1_small,
