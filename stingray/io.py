@@ -218,8 +218,12 @@ def _get_additional_data(lctable, additional_columns, warn_if_missing=True):
             key = _case_insensitive_search_in_list(a, lctable._coldefs.names)
             if key is not None:
                 conversion = 1
-                if key.lower() == "energy" and hasattr(lctable.columns[key], "unit"):
-                    conversion = (1 * u.Unit(lctable.columns[key].unit)).to(u.keV).value
+                if (
+                    key.lower() == "energy"
+                    and hasattr(lctable.columns[key], "unit")
+                    and (unit := lctable.columns[key].unit) is not None
+                ):
+                    conversion = (1 * u.Unit(unit)).to(u.keV).value
                 additional_data[a] = np.array(lctable.field(key)) * conversion
             else:
                 if warn_if_missing:
@@ -852,8 +856,10 @@ class FITSTimeseriesReader(object):
             pi_energy_func = None
         if self.energy_column in data.dtype.names:
             conversion = 1
-            if hasattr(data.columns[self.energy_column], "unit"):
-                unit = data.columns[self.energy_column].unit
+            if (
+                hasattr(data.columns[self.energy_column], "unit")
+                and (unit := data.columns[self.energy_column].unit) is not None
+            ):
                 conversion = (1 * u.Unit(unit)).to(u.keV).value
             new_ts.energy = data[self.energy_column] * conversion
         elif self.pi_column.lower() in [col.lower() for col in data.dtype.names]:
