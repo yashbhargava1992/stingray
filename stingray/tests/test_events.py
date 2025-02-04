@@ -246,6 +246,15 @@ class TestEvents(object):
         ev1.convert_pi_to_energy(rmf_file)
         assert np.array_equal(ev1.energy, ev2.energy)
 
+    @pytest.mark.parametrize(
+        "fname",
+        ["xte_test.evt.gz", "xte_gx_test.evt.gz", "chandra_test.fits", "chandra_noener_test.fits"],
+    )
+    def test_event_file_read(self, fname):
+        """Test event file reading."""
+        fname = os.path.join(datadir, fname)
+        EventList.read(fname, fmt="hea")
+
     def test_fits_with_additional(self):
         """Test that fits works with a standard event list
         file.
