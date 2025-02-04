@@ -145,7 +145,7 @@ For development work, you will need the following extra libraries:
 + pytest
 + pytest-astropy
 + tox
-+ jinja2==3.1.3
++ jinja2==3.1.5
 + docutils
 + sphinx-astropy
 + nbsphinx>=0.8.3,!=0.8.8
@@ -153,12 +153,12 @@ For development work, you will need the following extra libraries:
 + ipython
 + jupyter
 + notebook
-+ towncrier<22.12.0
++ towncrier
 + black
 
 Which can be installed with the following command:
 
-    $ pip install pytest pytest-astropy jinja2<=3.0.0 docutils sphinx-astropy nbsphinx pandoc ipython jupyter notebook towncrier<22.12.0 tox black
+    $ pip install pytest pytest-astropy jinja2 docutils sphinx-astropy nbsphinx pandoc ipython jupyter notebook towncrier tox black
 
 Installation
 ------------
