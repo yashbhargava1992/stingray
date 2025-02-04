@@ -12,6 +12,7 @@ from astropy.table import Table
 from astropy.logger import AstropyUserWarning
 import matplotlib.pyplot as plt
 from astropy.io import fits as pf
+from astropy import units as u
 
 import stingray.utils as utils
 from stingray.loggingconfig import setup_logger
@@ -216,7 +217,10 @@ def _get_additional_data(lctable, additional_columns, warn_if_missing=True):
         for a in additional_columns:
             key = _case_insensitive_search_in_list(a, lctable._coldefs.names)
             if key is not None:
-                additional_data[a] = np.array(lctable.field(key))
+                conversion = 1
+                if key.lower() == "energy" and hasattr(lctable.columns[key], "unit"):
+                    conversion = (1 * u.Unit(lctable.columns[key].unit)).to(u.keV).value
+                additional_data[a] = np.array(lctable.field(key)) * conversion
             else:
                 if warn_if_missing:
                     warnings.warn("Column " + a + " not found")
@@ -286,7 +290,6 @@ def get_key_from_mission_info(info, key, default, inst=None, mode=None):
 
     if key in filt_info:
         return filt_info[key]
-
     return default
 
 
@@ -847,10 +850,13 @@ class FITSTimeseriesReader(object):
             )
         except ValueError:
             pi_energy_func = None
-
         if self.energy_column in data.dtype.names:
-            new_ts.energy = data[self.energy_column]
-        elif self.pi_column in data.dtype.names:
+            conversion = 1
+            if hasattr(data.columns[self.energy_column], "unit"):
+                unit = data.columns[self.energy_column].unit
+                conversion = (1 * u.Unit(unit)).to(u.keV).value
+            new_ts.energy = data[self.energy_column] * conversion
+        elif self.pi_column.lower() in [col.lower() for col in data.dtype.names]:
             new_ts.pi = data[self.pi_column]
             if pi_energy_func is not None:
                 new_ts.energy = pi_energy_func(new_ts.pi)
@@ -1000,8 +1006,12 @@ class FITSTimeseriesReader(object):
         # Try to get the information needed to calculate the event energy. We start from the
         # PI column
         default_pi_column = get_key_from_mission_info(db, "ecol", "PI", instr, self.mode)
-        if default_pi_column not in hdulist[self.hduname].data.columns.names:
-            default_pi_column = None
+        if isinstance(default_pi_column, str):
+            if default_pi_column.lower() not in [
+                val.lower() for val in hdulist[self.hduname].data.columns.names
+            ]:
+                default_pi_column = None
+
         self._add_meta_attr("pi_column", default_pi_column)
 
         # If a column named "energy" is found, we read it and assume the energy conversion
