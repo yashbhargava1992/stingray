@@ -1,5 +1,5 @@
-v2.2.6 (2025-02-04)
--------------------
+v2.3 (under development)
+------------------------
 
 New Features
 ^^^^^^^^^^^^
@@ -8,31 +8,18 @@ New Features
 - Use the formulas from Ingram+2019 consistently when calculating cross spectral errors, including lags (`#865 <https://github.com/StingraySoftware/stingray/pull/865>`__)
 - Implement filter by time interval in stingraytimeseries objects (`#866 <https://github.com/StingraySoftware/stingray/pull/866>`__)
 
-
 Bug Fixes
 ^^^^^^^^^
-
+- Fix issue with FITS headers, especially for RXTE data (`#853 <https://github.com/StingraySoftware/stingray/pull/853>`__)
 - Fix issue when passing a single GTI to FitsTimeseriesReader.apply_gti_lists() (`#858 <https://github.com/StingraySoftware/stingray/pull/858>`__)
 - Fix scipy futurewarning about the inputs to the Toeplitz matrix in bispectrum (`#861 <https://github.com/StingraySoftware/stingray/pull/861>`__)
 - Fix problem with data types fed to scipy special functions (`#870 <https://github.com/StingraySoftware/stingray/pull/870>`__)
 - Set a lower limit to the number of photons in a segment of data used for certain ``VarEnergySpectrum`` subclasses. This avoids, e.g., spurious high covariance measurements in low-count data sets. (`#874 <https://github.com/StingraySoftware/stingray/pull/874>`__)
 
-
-v2.2.2 (2024-10-25)
--------------------
-
 Docs
 ^^^^
 
 - Add newly-accepted JOSS paper to docs, update citation information, and fresh new badges (`#829 <https://github.com/StingraySoftware/stingray/pull/829>`__)
-
-v2.2.1 (2024-10-23)
--------------------
-
-Bug Fixes
-^^^^^^^^^
-
-- Fix issue with FITS headers, especially for RXTE data (`#853 <https://github.com/StingraySoftware/stingray/pull/853>`__)
 
 
 v2.2 (2024-10-22)
