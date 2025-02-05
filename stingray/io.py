@@ -1013,19 +1013,17 @@ class FITSTimeseriesReader(object):
         # PI column
         default_pi_column = get_key_from_mission_info(db, "ecol", "PI", instr, self.mode)
         if isinstance(default_pi_column, str):
-            if default_pi_column.lower() not in [
-                val.lower() for val in hdulist[self.hduname].data.columns.names
-            ]:
-                default_pi_column = None
+            default_pi_column = _case_insensitive_search_in_list(
+                default_pi_column, hdulist[self.hduname].data.columns.names
+            )
 
         self._add_meta_attr("pi_column", default_pi_column)
 
         # If a column named "energy" is found, we read it and assume the energy conversion
         # is already done.
-        if "energy" in [val.lower() for val in hdulist[self.hduname].data.columns.names]:
-            energy_column = "energy"
-        else:
-            energy_column = None
+        energy_column = _case_insensitive_search_in_list(
+            "energy", hdulist[self.hduname].data.columns.names
+        )
         self._add_meta_attr("energy_column", energy_column)
 
     def _read_gtis(self, gti_file=None, det_numbers=None):
