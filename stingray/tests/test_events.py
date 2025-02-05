@@ -86,6 +86,19 @@ class TestEvents(object):
         assert np.allclose(lc.time, [0.5, 1.5, 2.5, 3.5])
         assert (lc.gti == self.gti).all()
 
+    def test_to_lc_intrinsic_dt(self):
+        """Create a light curve from event list."""
+        ev = EventList(self.time, gti=self.gti)
+        ev.dt = np.pi / 3
+        with pytest.warns(UserWarning, match="The input event list has a time resolution"):
+            lc = ev.to_lc(1)
+        assert lc.dt == np.pi / 3
+
+        ev.dt = np.pi / 6
+        with pytest.warns(UserWarning, match="The input event list has a time resolution"):
+            lc = ev.to_lc(1)
+        assert lc.dt == np.pi / 3
+
     def test_to_timeseries(self):
         """Create a time series from event list."""
         ev = EventList(self.time, gti=self.gti)

@@ -285,6 +285,7 @@ class EventList(StingrayTimeseries):
         -------
         lc: :class:`stingray.Lightcurve` object
         """
+        dt = self.suggest_compatible_dt(dt)
         return Lightcurve.make_lightcurve(
             self.time, dt, tstart=tstart, gti=self._gti, tseg=tseg, mjdref=self.mjdref
         )
