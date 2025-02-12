@@ -229,8 +229,8 @@ class TestAll(object):
         assert len(profile) == len(bincounts)
         for i in range(len(profile)):
             if bincounts[i] == 0:
-                assert (
-                    np.isnan(profile[i]) 
+                assert np.isnan(
+                    profile[i]
                 ), f"Expected profile[{i}] to be NaN when bincounts[{i}] is 0"
 
     def test_mode_incorrect(self):
