@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.stats
 from stingray.pulse import fold_events, get_TOA, phase_exposure
 from stingray.pulse import ef_profile_stat, z_n, pulse_phase
 from stingray.pulse import pdm_profile_stat
@@ -206,7 +207,7 @@ class TestAll(object):
         expected_err[-1] = 2  # Because of the change of exposure
         np.testing.assert_array_almost_equal(pe, expected_err)
 
-    def test_pulse_profile_pdm(self):
+    def test_pulse_profile_pdm1(self):
         nbin = 16
         dt = 1 / (2 * nbin)
         times = np.arange(0, 2 - dt, dt)
@@ -215,6 +216,21 @@ class TestAll(object):
         bins, profile, prof_err = fold_events(times, 0.237, nbin=nbin, weights=counts, mode="pdm")
         assert np.all(prof_err == 0)
 
+    def test_pulse_profile_pdm2(self):
+        nbin = 10
+        times = np.arange(0, 10, 1)
+        counts = np.random.normal(3, 0.5, size=len(times)) 
+        phases = [0.0, 0.237, 0.474, 0.711, 0.948, 0.185, 0.422, 0.659, 0.896, 0.133]
+        _ , profile, _ = fold_events(times, 0.237, nbin=nbin, weights=counts, mode="pdm")
+        _ , _ , bin_idx = scipy.stats.binned_statistic(
+            phases, counts, statistic=np.var, bins=np.linspace(0, 1, nbin + 1)
+        )
+        bincounts, _ = np.histogram(bin_idx, bins=np.arange(0.5, nbin + 1.5))
+        assert len(profile) == len(bincounts)
+        for i in range(len(profile)):
+          if bincounts[i] == 0:
+            assert  np.isnan(profile[i]) == True, f"Expected profile[{i}] to be NaN when bincounts[{i}] is 0"
+        
     def test_mode_incorrect(self):
         nbin = 16
         dt = 1 / nbin
