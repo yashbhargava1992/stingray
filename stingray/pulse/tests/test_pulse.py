@@ -207,7 +207,7 @@ class TestAll(object):
         np.testing.assert_array_almost_equal(pe, expected_err)
 
     def test_pulse_profile_pdm(self):
-        period=0.237
+        period = 0.237
         nbin = 10
         phases = np.array([0.05, 1.05])
         times = phases * period
