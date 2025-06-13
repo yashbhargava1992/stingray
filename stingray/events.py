@@ -883,6 +883,29 @@ class EventList(StingrayTimeseries):
             layer_number (int, optional): _description_. Defaults to 1.
         """
         
-        mask = self.get_mask_for_filter_by_column(layer_number)
+        mask = self.get_mask_for_filter_by_layer(layer_number)
+        new_ev = self.apply_mask(mask, inplace=inplace)
+        return new_ev
+    
+    def get_mask_for_filter_by_laxpc_unit(self, value):
+        """ Supplies a mask to filter the data for a particular value for a event file. 
+        For example can be used to filter the data for a single unit of LAXPC
+
+
+        Args:
+            value: The value for which the mask returns 1
+        """
+
+        col = self.laxpc_no
+        return col==value
+    
+    def filter_laxpc_unit(self, unit_number=2, inplace=False,):
+        """Filters the LAXPC data selecting only a selected layer
+
+        Args:
+            unit_number (int, optional): _description_. Defaults to 1.
+        """
+        
+        mask = self.get_mask_for_filter_by_laxpc_unit(unit_number)
         new_ev = self.apply_mask(mask, inplace=inplace)
         return new_ev
