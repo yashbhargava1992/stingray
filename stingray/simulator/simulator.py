@@ -14,13 +14,13 @@ __all__ = ["Simulator"]
 
 class Simulator(object):
     """
-    provides a framework to simulate light curves with given variability distributions.
-    In time series experiments, understanding the certainty is crucial to interpret the derived results in context of physical models.
-    The simulator module provides tools to assess this uncertainty by simulating time series and spectral data.
+    Framework to simulate light curves with given variability distributions.
+    The simulator module provides tools to simulate time series and spectral data. This can be useful, e.g.,
+    to access the uncertainty of a previous analysis or to develop an intuition of the detectability of a given phenomenon
 
-    Stingray simulator supports multiple methods to carry out these simulation.
+    Stingray simulator supports multiple methods to carry out these simulations.
     Light curves can be simulated through power-law spectrum, through a user-defined or pre-defined model, or through impulse responses.
-    The module is designed in a way such that all these methods can be accessed using similar set of commands.
+    The module is designed in a way such that all these methods can be accessed using a common interface.
 
     Parameters
     ----------
@@ -43,10 +43,6 @@ class Simulator(object):
     poisson : bool, default False
         If True, simulates Poisson-distributed counts; otherwise, assumes Gaussian noise.
 
-    Examples
-    --------
-    >>> sim = Simulator(dt=0.1, N=1024, mean=100, rms=0.2, poisson=True)
-    >>> lc = sim.simulate(2)
     """
 
     def __init__(
