@@ -878,7 +878,7 @@ class FITSTimeseriesReader(object):
                 if col == self.detector_key:
                     continue
                 if col in data.dtype.names:
-                    setattr(new_ts, col.lower(), data[col])
+                    setattr(new_ts, col.replace('.', '_').lower(), data[col])
 
         for attr in self.meta_attrs():
             local_value = getattr(self, attr)

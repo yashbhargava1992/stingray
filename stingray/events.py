@@ -864,48 +864,27 @@ class EventList(StingrayTimeseries):
         return starts, stops, rate, rate_err
 
 
-    def get_mask_for_filter_by_layer(self, value):
+
+    
+    def get_mask_for_filter_by_detector_id(self, value):
         """ Supplies a mask to filter the data for a particular value for a event file. 
-        For example can be used to filter the data for a single layer of LAXPC
+        For example can be used to filter the data for a single unit of LAXPC or a selected NICER detector ID
 
 
         Args:
             value: The value for which the mask returns 1
         """
 
-        col = self.layer
+        col = self.detector_id
         return col==value
     
-    def filter_laxpc_layer(self, layer_number=1, inplace=False,):
-        """Filters the LAXPC data selecting only a selected layer
-
-        Args:
-            layer_number (int, optional): _description_. Defaults to 1.
-        """
-        
-        mask = self.get_mask_for_filter_by_layer(layer_number)
-        new_ev = self.apply_mask(mask, inplace=inplace)
-        return new_ev
-    
-    def get_mask_for_filter_by_laxpc_unit(self, value):
-        """ Supplies a mask to filter the data for a particular value for a event file. 
-        For example can be used to filter the data for a single unit of LAXPC
-
-
-        Args:
-            value: The value for which the mask returns 1
-        """
-
-        col = self.laxpc_no
-        return col==value
-    
-    def filter_laxpc_unit(self, unit_number=2, inplace=False,):
+    def filter_detector_id(self, detector_id=1, inplace=False,):
         """Filters the LAXPC data selecting only a selected layer
 
         Args:
             unit_number (int, optional): _description_. Defaults to 1.
         """
         
-        mask = self.get_mask_for_filter_by_laxpc_unit(unit_number)
+        mask = self.get_mask_for_filter_by_detector_id(detector_id)
         new_ev = self.apply_mask(mask, inplace=inplace)
         return new_ev
