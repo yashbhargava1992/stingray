@@ -85,7 +85,7 @@ def _patch_mission_info(info, mission=None):
     if mission.lower() == "xte" and "ecol" in info:
         info["ecol"] = "PHA"
         info["ccol"] = "PCUID"
-    if mission.lower() == "astrosat":  # Check if instrument is part of info dict. 
+    if mission.lower() == "astrosat":  # Check if instrument is part of info dict.
         info["ccol"] = "LAXPC_No."
     return info
 

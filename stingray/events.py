@@ -863,11 +863,8 @@ class EventList(StingrayTimeseries):
 
         return starts, stops, rate, rate_err
 
-
-
-    
     def get_mask_for_filter_by_detector_id(self, value):
-        """ Supplies a mask to filter the data for a particular value for a event file. 
+        """Supplies a mask to filter the data for a particular value for a event file.
         For example can be used to filter the data for a single unit of LAXPC or a selected NICER detector ID
 
 
@@ -876,15 +873,15 @@ class EventList(StingrayTimeseries):
         """
 
         col = self.detector_id
-        return col==value
-    
-    def filter_detector_id(self, detector_id=1, inplace=False,):
-        """Filters the LAXPC data selecting only a selected layer
+        return col == value
+
+    def filter_detector_id(self, detector_id=1, inplace=False):
+        """Filters the data selecting only a selected detector
 
         Args:
-            unit_number (int, optional): _description_. Defaults to 1.
+            detector_id (int, optional): _description_. Defaults to 1.
         """
-        
+
         mask = self.get_mask_for_filter_by_detector_id(detector_id)
         new_ev = self.apply_mask(mask, inplace=inplace)
         return new_ev
