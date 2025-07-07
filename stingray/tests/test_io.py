@@ -139,7 +139,14 @@ class TestIO(object):
         assert data.mission.lower() == "axaf"
         assert hasattr(data, "energy_list")
         assert data.energy_list.max() < 18
-
+    
+    def test_event_file_read_laxpc(self):
+        """Test event file reading."""
+        fname = os.path.join(datadir, "laxpc_file_read.fits")
+        data = load_events_and_gtis(fname, additional_columns=['LAXPC_No.', "Layer",], hduname="event file")
+        assert data.mission.lower() == "astrosat"
+        assert read_header_key(fname, "INSTRUME") == "LAXPC3"
+    
     def test_event_file_read_no_mission(self):
         """Test event file reading."""
         fname = os.path.join(datadir, "nomission.evt")
