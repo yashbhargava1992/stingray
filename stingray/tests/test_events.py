@@ -277,6 +277,7 @@ class TestEvents(object):
         assert ev.instr.lower() == "laxpc3"
         assert ev.mission.lower() == "astrosat"
         assert ((ev.filter_detector_id(detector_id=1)).main_array_length) == 453
+        assert ((ev.filter_detector_id(detector_id=[1])).main_array_length) == 453
 
     def test_fits_with_additional(self):
         """Test that fits works with a standard event list
