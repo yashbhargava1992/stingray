@@ -268,6 +268,15 @@ class TestEvents(object):
         fname = os.path.join(datadir, fname)
         EventList.read(fname, fmt="hea")
 
+    def test_event_file_read_laxpc(self):
+        """Test LAXPC file reading"""
+        fname = os.path.join(datadir, "laxpc_file_read.fits")
+        with pytest.warns(UserWarning, match="HDU EVENTS"):
+            with pytest.warns(UserWarning, match="No valid GTI"):
+                ev = EventList.read(fname, fmt="hea")
+        assert ev.instr.lower() == "laxpc3"
+        assert ev.mission.lower() == "astrosat"
+
     def test_fits_with_additional(self):
         """Test that fits works with a standard event list
         file.

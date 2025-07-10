@@ -146,7 +146,7 @@ class TestIO(object):
         with pytest.warns(UserWarning, match="No valid GTI*"):
             data = load_events_and_gtis(fname, additional_columns=["Layer"], hduname="event file")
         assert data.mission.lower() == "astrosat"
-        assert read_header_key(fname, "INSTRUME") == "LAXPC3"
+        assert read_header_key(fname, "INSTRUME", hdu=0) == "LAXPC3"
 
     def test_event_file_read_no_mission(self):
         """Test event file reading."""
