@@ -862,3 +862,33 @@ class EventList(StingrayTimeseries):
         starts, stops, (rate, rate_err) = self.analyze_segments(intensity, segment_size)
 
         return starts, stops, rate, rate_err
+
+    def get_mask_for_filter_by_detector_id(self, value):
+        """Supplies a mask to filter the data for a particular detector(s) for a event file.
+        For example can be used to filter the data for a single unit of LAXPC or a selected NICER detector ID
+
+
+        Args:
+            value: The value for which the mask returns 1
+        """
+        if isinstance(value, int):
+            col = self.detector_id
+            return col == value
+        elif isinstance(value, list) and all(isinstance(i, int) for i in value):
+            col = self.detector_id
+            full_mask = col == value[0]
+            for i in range(1, len(value)):
+                mask = col == value[i]
+                full_mask = full_mask | mask
+            return full_mask
+
+    def filter_detector_id(self, detector_id, inplace=False):
+        """Filters the data selecting only a selected detector or a list of detectors.
+
+        Args:
+            detector_id (int, optional): The detector id on which the filtering needs to be applied. It can be a list.
+        """
+
+        mask = self.get_mask_for_filter_by_detector_id(detector_id)
+        new_ev = self.apply_mask(mask, inplace=inplace)
+        return new_ev
