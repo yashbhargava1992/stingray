@@ -1,0 +1,1 @@
+GtiCorrPowerspectrum is a new class to calculate long-term power spectra from gappy data
