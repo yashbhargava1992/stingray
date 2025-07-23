@@ -1307,7 +1307,7 @@ class GtiCorrPowerspectrum(Powerspectrum):
         self.lc.counts = self.lc.counts.astype(float)
         self.lc.counts[~mask] = np.mean(self.lc.counts[mask])
 
-    def clean_gti_features(self, plot=False):
+    def clean_gti_features(self, plot=False, figname="gti_features"):
         # print("Cleaning the PDS from data gap features...")
         exposure = np.sum(self.gti[:, 1] - self.gti[:, 0])
         ref_ctrate = self.nphots / exposure
@@ -1328,10 +1328,13 @@ class GtiCorrPowerspectrum(Powerspectrum):
 
         bad = ps_gti.power > thresh
         if plot:
-            plt.figure(str(np.random.uniform(0, 1)))
+            fig = plt.figure(figname)
             plt.loglog(ps_gti.freq, ps_gti.power)
             plt.axhline(thresh)
-            plt.show()
+            plt.xlabel("Frequency (Hz)")
+            plt.ylabel(f"Power {ps_gti.norm}")
+            plt.savefig(figname + ".jpg")
+            plt.close(fig)
         self.mask = self.mask & ~bad
         newpow = self.apply_mask(self.mask)
         return newpow
