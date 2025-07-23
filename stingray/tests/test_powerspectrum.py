@@ -397,11 +397,36 @@ class TestGtiCorrPowerspectrum(object):
         poisson_counts = rng.poisson(mean_counts, size=time.shape[0])
 
         cls.lc = Lightcurve(time, counts=poisson_counts, gti=[[tstart, tend]], dt=dt)
+        cls.events = EventList(
+            np.sort(
+                np.random.uniform(
+                    tstart, tend, np.random.poisson(mean_count_rate * (tend - tstart))
+                )
+            ),
+            gti=[[tstart, tend]],
+        )
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_gti_corr_ps(self, norm):
         gcps = GtiCorrPowerspectrum(self.lc, norm=norm)
         ps = Powerspectrum(self.lc, norm=norm)
+        for attr in [
+            "freq",
+            "power",
+            "power_err",
+            "unnorm_power",
+            "unnorm_power_err",
+            "df",
+            "m",
+            "n",
+            "nphots",
+        ]:
+            assert np.array_equal(getattr(gcps, attr), getattr(ps, attr))
+
+    @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
+    def test_gti_corr_ps_events(self, norm):
+        gcps = GtiCorrPowerspectrum(self.events, dt=0.01, norm=norm)
+        ps = Powerspectrum(self.events, dt=0.01, norm=norm)
         for attr in [
             "freq",
             "power",
@@ -439,6 +464,17 @@ class TestGtiCorrPowerspectrum(object):
         assert np.isclose(mean_gcps, mean_ps, rtol=0.01)
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
+    def test_gti_corr_ps_fill_events(self, norm):
+        lc = copy.deepcopy(self.events)
+        lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
+        gcps = GtiCorrPowerspectrum(lc, dt=0.01, norm=norm, fill_lc=True)
+        gcps = gcps.clean_gti_features()
+        ps = Powerspectrum(self.events, dt=0.01, norm=norm)
+        mean_ps = np.mean(ps.power)
+        mean_gcps = np.mean(gcps.power)
+        assert np.isclose(mean_gcps, mean_ps, rtol=0.01)
+
+    @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_gti_corr_ps_fill_rebin(self, norm):
         lc = copy.deepcopy(self.lc)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
@@ -458,6 +494,14 @@ class TestGtiCorrPowerspectrum(object):
         lc.apply_gtis()
         with pytest.raises(ValueError, match="The time array in the light"):
             GtiCorrPowerspectrum(lc, norm="leahy", fill_lc=True)
+
+    def test_gti_corr_plot(self):
+        lc = copy.deepcopy(self.events)
+        lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
+        gcps = GtiCorrPowerspectrum(lc, dt=0.01, norm="leahy", fill_lc=True)
+        gcps = gcps.clean_gti_features(plot=True, figname="asdfasf")
+        assert os.path.exists("asdfasf.jpg")
+        os.unlink("asdfasf.jpg")
 
 
 class TestPowerspectrum(object):
