@@ -1308,13 +1308,16 @@ class GtiCorrPowerspectrum(Powerspectrum):
         self.lc.counts[~mask] = np.mean(self.lc.counts[mask])
 
     def clean_gti_features(self, plot=False, figname="gti_features"):
-        exposure = np.sum(self.gti[:, 1] - self.gti[:, 0])
+        gti = getattr(self, "gti", None)
+        if gti is None:
+            raise AttributeError("GTI attribute is not set for this object.")
+        exposure = np.sum(gti[:, 1] - gti[:, 0])
         ref_ctrate = self.nphots / exposure
         self.exposure = exposure
 
         lc = copy.deepcopy(self.lc)
-        lc.gti = np.array([[self.gti[0, 0], self.gti[-1, 1]]])
-        mask = create_gti_mask(lc.time, self.gti)
+        lc.gti = np.array([[gti[0, 0], gti[-1, 1]]])
+        mask = create_gti_mask(lc.time, gti)
         lc.counts = lc.counts.astype(float)
         lc.counts[~mask] = 0
         lc.counts[mask] = ref_ctrate * lc.dt
