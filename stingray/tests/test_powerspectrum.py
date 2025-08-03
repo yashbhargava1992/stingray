@@ -508,11 +508,16 @@ class TestGtiCorrPowerspectrum(object):
         lc = copy.deepcopy(self.events)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
         gcps = GtiCorrPowerspectrum(lc, dt=0.01, norm="leahy", fill_lc=True)
-        gcps = gcps.clean_gti_features(plot=True, figname="asdfasf")
-        assert os.path.exists("asdfasf.jpg")
-        os.unlink("asdfasf.jpg")
-
-
+        with tempfile.NamedTemporaryFile(suffix="", delete=False) as tmpfile:
+            figname = tmpfile.name
+        try:
+            gcps = gcps.clean_gti_features(plot=True, figname=figname)
+            jpg_name = figname + ".jpg"
+            assert os.path.exists(jpg_name)
+            os.unlink(jpg_name)
+        finally:
+            if os.path.exists(figname):
+                os.unlink(figname)
 class TestPowerspectrum(object):
     @classmethod
     def setup_class(cls):
