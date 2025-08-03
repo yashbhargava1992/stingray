@@ -1286,8 +1286,8 @@ class GtiCorrPowerspectrum(Powerspectrum):
             self.mask = None
             return
 
-        lc_mask = create_gti_mask(self.lc.time, self.lc.gti)
         if fill_lc:
+            lc_mask = create_gti_mask(self.lc.time, self.lc.gti)
             self.power *= lc_mask.size / np.count_nonzero(lc_mask)
 
         self.mask = np.ones(self.power.size, dtype=bool)
