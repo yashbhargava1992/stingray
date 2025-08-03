@@ -1343,6 +1343,7 @@ class GtiCorrPowerspectrum(Powerspectrum):
         plt.ylabel(f"Power {ps_gti.norm}")
         plt.savefig(figname + ".jpg")
         plt.close(fig)
+
     def rebin_log(self, *args, **kwargs):
         """Rebin the power spectrum logarithmically and filter out NaN values.
 
