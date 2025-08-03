@@ -3,6 +3,7 @@ import numpy as np
 import copy
 import warnings
 import importlib
+import tempfile
 
 import pytest
 import matplotlib.pyplot as plt
@@ -518,6 +519,8 @@ class TestGtiCorrPowerspectrum(object):
         finally:
             if os.path.exists(figname):
                 os.unlink(figname)
+
+
 class TestPowerspectrum(object):
     @classmethod
     def setup_class(cls):
