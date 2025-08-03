@@ -1187,7 +1187,7 @@ class DynamicalPowerspectrum(DynamicalCrossspectrum):
 
 class GtiCorrPowerspectrum(Powerspectrum):
     main_array_attr = "freq"
-    type = "crossspectrum"
+    type = "powerspectrum"
 
     """Calculate the power spectrum of gappy light curves.
 
@@ -1203,7 +1203,7 @@ class GtiCorrPowerspectrum(Powerspectrum):
     ensuring accurate white noise and rms estimation.
 
     The detailed explanation of the method is given in
-    `El Byad et al. 2025<https://arxiv.org/pdf/2505.16921>`__
+    `El Byad et al. 2025 <https://arxiv.org/pdf/2505.16921>`__
 
     Parameters
     ----------
@@ -1229,7 +1229,7 @@ class GtiCorrPowerspectrum(Powerspectrum):
         The array of mid-bin frequencies that the Fourier transform samples
 
     power: numpy.ndarray
-        The array of cross spectra (complex numbers)
+        The array of power values
 
     power_err: numpy.ndarray
         The uncertainties of ``power``.
@@ -1308,7 +1308,6 @@ class GtiCorrPowerspectrum(Powerspectrum):
         self.lc.counts[~mask] = np.mean(self.lc.counts[mask])
 
     def clean_gti_features(self, plot=False, figname="gti_features"):
-        # print("Cleaning the PDS from data gap features...")
         exposure = np.sum(self.gti[:, 1] - self.gti[:, 0])
         ref_ctrate = self.nphots / exposure
         self.exposure = exposure
