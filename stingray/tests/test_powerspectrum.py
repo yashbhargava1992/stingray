@@ -509,7 +509,7 @@ class TestGtiCorrPowerspectrum(object):
         lc = copy.deepcopy(self.events)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
         gcps = GtiCorrPowerspectrum(lc, dt=0.01, norm="leahy", fill_lc=True)
-        with tempfile.NamedTemporaryFile(suffix="", delete=False) as tmpfile:
+        with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
             figname = tmpfile.name
         try:
             gcps = gcps.clean_gti_features(plot=True, figname=figname)
