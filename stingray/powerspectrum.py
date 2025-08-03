@@ -1344,6 +1344,24 @@ class GtiCorrPowerspectrum(Powerspectrum):
         plt.savefig(figname + ".jpg")
         plt.close(fig)
     def rebin_log(self, *args, **kwargs):
+        """Rebin the power spectrum logarithmically and filter out NaN values.
+
+        This method overrides the parent class's `rebin_log` method by applying a mask
+        to remove any bins where the rebinned power is NaN.
+
+        Parameters
+        ----------
+        *args : tuple
+            Positional arguments passed to the parent class's `rebin_log` method.
+        **kwargs : dict
+            Keyword arguments passed to the parent class's `rebin_log` method.
+
+        Returns
+        -------
+        GtiCorrPowerspectrum
+            A new power spectrum object with rebinned frequencies and powers,
+            with NaN values filtered out.
+        """
         new_ps = Powerspectrum.rebin_log(self, *args, **kwargs)
         mask = ~np.isnan(new_ps.power)
         return new_ps.apply_mask(mask)
