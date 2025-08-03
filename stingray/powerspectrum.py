@@ -1336,6 +1336,20 @@ class GtiCorrPowerspectrum(Powerspectrum):
         return newpow
 
     def _plot_gti_features(self, ps_gti, thresh, figname):
+        """Plot the features in the power spectrum of the GTI-corrected light curve.
+
+        This method generates a log-log plot of the power spectrum and saves it as a JPEG file.
+
+        Parameters
+        ----------
+        ps_gti : Powerspectrum
+            The power spectrum of the synthetic light curve having the mean counts inside GTIs
+            and 0 outside.
+        thresh : float
+            The threshold value for the power spectrum, above which features are considered significant.
+        figname : str
+            The name of the figure file to be saved (without extension).
+        """
         fig = plt.figure(figname)
         plt.loglog(ps_gti.freq, ps_gti.power)
         plt.axhline(thresh)
