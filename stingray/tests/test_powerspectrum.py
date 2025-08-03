@@ -385,6 +385,7 @@ class TestAveragedPowerspectrumEvents(object):
 class TestGtiCorrPowerspectrum(object):
     @classmethod
     def setup_class(cls):
+        """Set up a light curve and an event list with GTIs for testing GtiCorrPowerspectrum."""
         tstart = 0.0
         tend = 100.0
         dt = 0.01
@@ -408,6 +409,7 @@ class TestGtiCorrPowerspectrum(object):
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_gti_corr_ps(self, norm):
+        """GtiCorrPowerspectrum results match Powerspectrum when GTIs are unimportant."""
         gcps = GtiCorrPowerspectrum(self.lc, norm=norm)
         ps = Powerspectrum(self.lc, norm=norm)
         for attr in [
@@ -425,6 +427,7 @@ class TestGtiCorrPowerspectrum(object):
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_gti_corr_ps_events(self, norm):
+        """GtiCorrPowerspectrum results match Powerspectrum for event lists."""
         gcps = GtiCorrPowerspectrum(self.events, dt=0.01, norm=norm)
         ps = Powerspectrum(self.events, dt=0.01, norm=norm)
         for attr in [
@@ -442,6 +445,7 @@ class TestGtiCorrPowerspectrum(object):
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_gti_corr_ps_fill_different(self, norm):
+        """Filling BTIs or not changes the power spectrum."""
         lc = copy.deepcopy(self.lc)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
         gcps_fill = GtiCorrPowerspectrum(lc, norm=norm, fill_lc=True)
@@ -454,6 +458,7 @@ class TestGtiCorrPowerspectrum(object):
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_gti_corr_ps_fill(self, norm):
+        """Filling BTIs and correcting the normalization adjusts the power spectrum."""
         lc = copy.deepcopy(self.lc)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
         gcps = GtiCorrPowerspectrum(lc, norm=norm, fill_lc=True)
@@ -465,6 +470,7 @@ class TestGtiCorrPowerspectrum(object):
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_gti_corr_ps_fill_events(self, norm):
+        """Filling BTIs and correcting the normalization adjusts the power spectrum."""
         lc = copy.deepcopy(self.events)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
         gcps = GtiCorrPowerspectrum(lc, dt=0.01, norm=norm, fill_lc=True)
@@ -476,6 +482,7 @@ class TestGtiCorrPowerspectrum(object):
 
     @pytest.mark.parametrize("norm", ["leahy", "frac", "abs", "none"])
     def test_gti_corr_ps_fill_rebin(self, norm):
+        """Rebinning works on GtiCorrPowerspectrum."""
         lc = copy.deepcopy(self.lc)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
         gcps = GtiCorrPowerspectrum(lc, norm=norm, fill_lc=True)
@@ -489,6 +496,7 @@ class TestGtiCorrPowerspectrum(object):
         assert np.isclose(mean_gcps, mean_ps, rtol=0.1)
 
     def test_gti_corr_apply_gti_lc_fails(self):
+        """Applying GTIs to a light curve with gaps in the time array raises an error."""
         lc = copy.deepcopy(self.lc)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
         lc.apply_gtis()
@@ -496,6 +504,7 @@ class TestGtiCorrPowerspectrum(object):
             GtiCorrPowerspectrum(lc, norm="leahy", fill_lc=True)
 
     def test_gti_corr_plot(self):
+        """Plotting GtiCorrPowerspectrum works."""
         lc = copy.deepcopy(self.events)
         lc.gti = [[0, 30], [35, 100]]  # Two GTIs, one gap
         gcps = GtiCorrPowerspectrum(lc, dt=0.01, norm="leahy", fill_lc=True)
