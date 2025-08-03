@@ -1330,17 +1330,19 @@ class GtiCorrPowerspectrum(Powerspectrum):
 
         bad = ps_gti.power > thresh
         if plot:
-            fig = plt.figure(figname)
-            plt.loglog(ps_gti.freq, ps_gti.power)
-            plt.axhline(thresh)
-            plt.xlabel("Frequency (Hz)")
-            plt.ylabel(f"Power {ps_gti.norm}")
-            plt.savefig(figname + ".jpg")
-            plt.close(fig)
+            self._plot_gti_features(ps_gti, thresh, figname)
         self.mask = self.mask & ~bad
         newpow = self.apply_mask(self.mask)
         return newpow
 
+    def _plot_gti_features(self, ps_gti, thresh, figname):
+        fig = plt.figure(figname)
+        plt.loglog(ps_gti.freq, ps_gti.power)
+        plt.axhline(thresh)
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel(f"Power {ps_gti.norm}")
+        plt.savefig(figname + ".jpg")
+        plt.close(fig)
     def rebin_log(self, *args, **kwargs):
         new_ps = Powerspectrum.rebin_log(self, *args, **kwargs)
         mask = ~np.isnan(new_ps.power)
