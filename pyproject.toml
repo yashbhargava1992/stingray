@@ -75,7 +75,7 @@ all = [
     "tinygp",
     "jaxns",
     "etils",
-    "tensorflow_probability",
+    "tfp-nightly",
     "typing_extensions",
 ]
 docs = [
