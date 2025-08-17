@@ -627,9 +627,7 @@ def load_events_and_gtis(
         timezero = np.longdouble(header["TIMEZERO"])
 
     if "TIMEPIXR" in header:
-        timepixr = np.longdouble(header["TIMEPIXR"])
-
-        timezero += (0.5 - timepixr) * timedel
+        timezero += (0.5 - np.longdouble(header["TIMEPIXR"])) * timedel
 
     ev_list += timezero
 
@@ -1004,9 +1002,7 @@ class FITSTimeseriesReader(object):
             timezero = np.longdouble(header["TIMEZERO"])
 
         if "TIMEPIXR" in header:
-            timepixr = np.longdouble(header["TIMEPIXR"])
-
-            timezero += (0.5 - timepixr) * timedel
+            timezero += (0.5 - np.longdouble(header["TIMEPIXR"])) * timedel
 
         t_start = t_stop = None
         if "TSTART" in header:
