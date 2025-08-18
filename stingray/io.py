@@ -868,7 +868,9 @@ class FITSTimeseriesReader(object):
             ):
                 conversion = (1 * u.Unit(unit)).to(u.keV).value
             new_ts.energy = data[self.energy_column] * conversion
-        elif self.pi_column.lower() in [col.lower() for col in data.dtype.names]:
+        elif self.pi_column is not None and self.pi_column.lower() in [
+            col.lower() for col in data.dtype.names
+        ]:
             new_ts.pi = data[self.pi_column]
             if pi_energy_func is not None:
                 new_ts.energy = pi_energy_func(new_ts.pi)
