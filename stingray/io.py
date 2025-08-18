@@ -619,9 +619,15 @@ def load_events_and_gtis(
 
     det_number = None if detector_id is None else list(set(detector_id))
 
+    timedel = np.longdouble(0.0)
+    if "TIMEDEL" in header:
+        timedel = np.longdouble(header["TIMEDEL"])
     timezero = np.longdouble(0.0)
     if "TIMEZERO" in header:
         timezero = np.longdouble(header["TIMEZERO"])
+
+    if "TIMEPIXR" in header:
+        timezero += (0.5 - np.longdouble(header["TIMEPIXR"])) * timedel
 
     ev_list += timezero
 
@@ -862,7 +868,9 @@ class FITSTimeseriesReader(object):
             ):
                 conversion = (1 * u.Unit(unit)).to(u.keV).value
             new_ts.energy = data[self.energy_column] * conversion
-        elif self.pi_column.lower() in [col.lower() for col in data.dtype.names]:
+        elif self.pi_column is not None and self.pi_column.lower() in [
+            col.lower() for col in data.dtype.names
+        ]:
             new_ts.pi = data[self.pi_column]
             if pi_energy_func is not None:
                 new_ts.energy = pi_energy_func(new_ts.pi)
@@ -963,8 +971,12 @@ class FITSTimeseriesReader(object):
         header = hdulist[hduname].header
         if "OBS_ID" in header:
             self._add_meta_attr("obsid", header["OBS_ID"])
+
+        timedel = np.longdouble(0.0)
         if "TIMEDEL" in header:
-            self._add_meta_attr("dt", header["TIMEDEL"])
+            timedel = np.longdouble(header["TIMEDEL"])
+
+        self._add_meta_attr("dt", timedel)
 
         # self.header has to be a string, for backwards compatibility and... for convenience!
         # No need to cope with dicts working badly with Netcdf, for example. The header
@@ -990,12 +1002,17 @@ class FITSTimeseriesReader(object):
         timezero = np.longdouble(0.0)
         if "TIMEZERO" in header:
             timezero = np.longdouble(header["TIMEZERO"])
+
+        if "TIMEPIXR" in header:
+            timezero += (0.5 - np.longdouble(header["TIMEPIXR"])) * timedel
+
         t_start = t_stop = None
         if "TSTART" in header:
             t_start = np.longdouble(header["TSTART"])
         if "TSTOP" in header:
             t_stop = np.longdouble(header["TSTOP"])
         self._add_meta_attr("timezero", timezero)
+
         self._add_meta_attr("t_start", t_start)
         self._add_meta_attr("t_stop", t_stop)
 

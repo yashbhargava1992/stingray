@@ -1,5 +1,45 @@
-v2.3 (under development)
-------------------------
+v2.2.9 (2025-08-18)
+-------------------
+
+Deprecations
+^^^^^^^^^^^^
+
+- The use of ``astropy.tests.runner.TestRunner``  is now deprecated. (`#888 <https://github.com/StingraySoftware/stingray/pull/888>`__)
+
+
+New Features
+^^^^^^^^^^^^
+
+- Better support for Chandra event files (`#877 <https://github.com/StingraySoftware/stingray/pull/877>`__)
+- Added functionality to read LAXPC observations. (`#929 <https://github.com/StingraySoftware/stingray/pull/929>`__)
+- GtiCorrPowerspectrum is a new class to calculate long-term power spectra from gappy data (`#933 <https://github.com/StingraySoftware/stingray/pull/933>`__)
+
+
+Bug Fixes
+^^^^^^^^^
+
+- Fixed issue with counting ``0`` bin occupancy in ``fold_events`` with ``mode='pdm'`` (`#872 <https://github.com/StingraySoftware/stingray/pull/872>`__)
+- Fixed power upper limit in ``stingray.stats`` for n =/= 1 (`#922 <https://github.com/StingraySoftware/stingray/pull/922>`__)
+- Account for the TIMEPIXR and TIMEDEL keywords when calculating times (`#937 <https://github.com/StingraySoftware/stingray/pull/937>`__)
+
+
+Documentation
+^^^^^^^^^^^^^
+
+- Sidebar in documentation now scrolls independently of the main content and wraps long text to next line instead of cropping it. (`#918 <https://github.com/StingraySoftware/stingray/pull/918>`__)
+- Added `stingray.varenergyspectrum.CountSpectrum` to docs. (`#884 <https://github.com/StingraySoftware/stingray/pull/884>`__)
+
+
+Internal Changes
+^^^^^^^^^^^^^^^^
+
+- Bump jinja2 version to 3.1.5 (`#878 <https://github.com/StingraySoftware/stingray/pull/878>`__)
+- Added a test to check ``profile``, when ``fold_events`` method called with ``mode= "pdm"`` after the bug fix #872. (`#880 <https://github.com/StingraySoftware/stingray/pull/880>`__)
+- Suppressed deprecation warnings related to `numpy.core.einsumfunc` as it is causing test failure described in (https://github.com/StingraySoftware/stingray/issues/882) (`#886 <https://github.com/StingraySoftware/stingray/pull/886>`__)
+
+
+v2.2.7 (2025-04-08)
+-------------------
 
 New Features
 ^^^^^^^^^^^^
