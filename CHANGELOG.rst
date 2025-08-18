@@ -35,11 +35,11 @@ Internal Changes
 
 - Bump jinja2 version to 3.1.5 (`#878 <https://github.com/StingraySoftware/stingray/pull/878>`__)
 - Added a test to check ``profile``, when ``fold_events`` method called with ``mode= "pdm"`` after the bug fix #872. (`#880 <https://github.com/StingraySoftware/stingray/pull/880>`__)
-- Suppressed deprecation warnings related to `numpy.core.einsumfunc` as it is causing test failure described in (https://github.com/StingraySoftware/stingray/issues/882#issuecomment-2663641175) (`#886 <https://github.com/StingraySoftware/stingray/pull/886>`__)
+- Suppressed deprecation warnings related to `numpy.core.einsumfunc` as it is causing test failure described in (https://github.com/StingraySoftware/stingray/issues/882) (`#886 <https://github.com/StingraySoftware/stingray/pull/886>`__)
 
 
-v2.3 (under development)
-------------------------
+v2.2.7 (2025-04-08)
+-------------------
 
 New Features
 ^^^^^^^^^^^^
