@@ -61,6 +61,16 @@ except AttributeError:  # pragma: no cover
 logger = setup_logger()
 
 
+def fits_open_including_remote(filename, **kwargs):
+    try:
+        return fits.open(filename, **kwargs)
+    except PermissionError as e:
+        if "://" in filename:
+            print(f"Permission denied for {filename}, trying anonymous access.")
+            return fits.open(filename, fsspec_kwargs={"anon": True}, use_fsspec=True, **kwargs)
+        raise e
+
+
 def read_rmf(rmf_file):
     """Load RMF info.
 
