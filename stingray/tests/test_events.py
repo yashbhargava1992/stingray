@@ -248,6 +248,19 @@ class TestEvents(object):
         ev = ev.read(fname, fmt="hea")
         assert np.isclose(ev.mjdref, 55197.00076601852)
 
+    @pytest.mark.remote_data
+    def test_fits_standard_remote(self):
+        """Test that fits works with a standard event list
+        file.
+        """
+        fname = (
+            "s3://nasa-heasarc/swift/data/obs/2015_12/00037258040/xrt/event/"
+            "sw00037258040xwtw2st_cl.evt.gz"
+        )
+
+        ev = EventList.read(fname, fmt="hea")
+        assert np.isclose(ev.mjdref, 51910.00074287037)
+
     def test_fits_with_standard_file_and_calibrate_directly(self):
         """Test that fits works and calibration works."""
         fname = os.path.join(datadir, "monol_testA.evt")
