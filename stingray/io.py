@@ -7,7 +7,6 @@ import warnings
 from collections.abc import Iterable
 
 import numpy as np
-from astropy.io import fits
 from astropy.table import Table
 from astropy.logger import AstropyUserWarning
 import matplotlib.pyplot as plt
@@ -16,6 +15,7 @@ from astropy import units as u
 
 import stingray.utils as utils
 from stingray.loggingconfig import setup_logger
+from stingray.utils import fits_open_including_remote
 
 
 from .utils import (
@@ -59,16 +59,6 @@ except AttributeError:  # pragma: no cover
     HAS_128 = False
 
 logger = setup_logger()
-
-
-def fits_open_including_remote(filename, **kwargs):
-    try:
-        return fits.open(filename, **kwargs)
-    except PermissionError as e:
-        if "://" in filename:
-            print(f"Permission denied for {filename}, trying anonymous access.")
-            return fits.open(filename, fsspec_kwargs={"anon": True}, use_fsspec=True, **kwargs)
-        raise e
 
 
 def read_rmf(rmf_file):
