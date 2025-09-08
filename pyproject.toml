@@ -77,6 +77,7 @@ all = [
     "etils",
     "tfp-nightly",
     "typing_extensions",
+    "fsspec",
 ]
 docs = [
     "tomli>=1.1.0; python_version < '3.11'",
