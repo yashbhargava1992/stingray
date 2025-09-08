@@ -15,6 +15,7 @@ _HAS_XARRAY = importlib.util.find_spec("xarray") is not None
 _HAS_PANDAS = importlib.util.find_spec("pandas") is not None
 _HAS_H5PY = importlib.util.find_spec("h5py") is not None
 _HAS_YAML = importlib.util.find_spec("yaml") is not None
+_HAS_FSSPEC = importlib.util.find_spec("fsspec") is not None
 
 
 class TestEvents(object):
@@ -248,6 +249,7 @@ class TestEvents(object):
         ev = ev.read(fname, fmt="hea")
         assert np.isclose(ev.mjdref, 55197.00076601852)
 
+    @pytest.mark.skipif("not _HAS_FSSPEC")
     @pytest.mark.remote_data
     def test_fits_standard_remote(self):
         """Test that fits works with a standard event list
