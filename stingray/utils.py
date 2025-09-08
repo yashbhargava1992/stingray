@@ -2443,6 +2443,6 @@ def fits_open_including_remote(filename, **kwargs):
         return fits.open(filename, **kwargs)
     except PermissionError as e:
         if "://" in filename:
-            warnings.warn(f"Permission denied for {filename}, trying anonymous access.")
+            logger.info(f"Permission denied for {filename}, trying anonymous access.")
             return fits.open(filename, fsspec_kwargs={"anon": True}, use_fsspec=True, **kwargs)
         raise e
