@@ -775,7 +775,7 @@ class FITSTimeseriesReader(object):
             additional_columns = [self.detector_key]
         elif self.detector_key != "NONE":
             additional_columns.append(self.detector_key)
-        self.data_hdu = fits.open(self.fname)[self.hduname]
+        self.data_hdu = self.data_hdus[self.hduname]
         self.gti_file = gti_file
         self._read_gtis(self.gti_file)
 
@@ -924,8 +924,8 @@ class FITSTimeseriesReader(object):
             If not None, the name of the HDU to read. If None, an extension called
             EVENTS or the first extension.
         """
-        hdulist = fits.open(fname)
-
+        hdulist = fits_open_including_remote(fname)
+        self.data_hdus = hdulist
         if not force_hduname:
             for hdu in hdulist:
                 if "TELESCOP" in hdu.header or "MISSION" in hdu.header:
@@ -1062,11 +1062,11 @@ class FITSTimeseriesReader(object):
         # So, here I'm reading a bunch of rows hoping that they represent the
         # detector number population
         if self.detector_key is not None:
-            with fits.open(self.fname) as hdul:
-                data = hdul[self.hduname].data
-                if self.detector_key in data.dtype.names:
-                    probe_vals = data[:100][self.detector_key]
-                    det_numbers = list(set(probe_vals))
+            hdul = self.data_hdus
+            data = hdul[self.hduname].data
+            if self.detector_key in data.dtype.names:
+                probe_vals = data[:100][self.detector_key]
+                det_numbers = list(set(probe_vals))
             del hdul
 
         accepted_gtistrings = self.gtistring.split(",")
@@ -1137,7 +1137,7 @@ class FITSTimeseriesReader(object):
             time_edges[raw_max_idx] - stop >= 0
         ), f"Stop: {stop}; {time_edges[raw_max_idx] - stop} < 0"
 
-        with fits.open(self.fname) as hdulist:
+        with fits_open_including_remote(self.fname) as hdulist:
             filtered_times = hdulist[self.hduname].data[self.time_column][
                 raw_lower_edge : raw_upper_edge + 1
             ]
@@ -1229,7 +1229,7 @@ class FITSTimeseriesReader(object):
 
         fname = self.fname
 
-        with fits.open(fname) as hdul:
+        with fits_open_including_remote(fname) as hdul:
             size = hdul[1].header["NAXIS2"]
             nedges = min(nedges, size // 10 + 2)
 
@@ -1345,7 +1345,7 @@ def read_header_key(fits_file, key, hdu=1):
         The value stored under ``key`` in ``fits_file``
     """
 
-    hdulist = fits.open(fits_file, ignore_missing_end=True)
+    hdulist = fits_open_including_remote(fits_file, ignore_missing_end=True)
     try:
         value = hdulist[hdu].header[key]
     except KeyError:  # pragma: no cover
@@ -1377,7 +1377,7 @@ def ref_mjd(fits_file, hdu=1):
         fits_file = fits_file[0]
         logger.info("opening %s" % fits_file)
 
-    hdulist = fits.open(fits_file, ignore_missing_end=True)
+    hdulist = fits_open_including_remote(fits_file, ignore_missing_end=True)
 
     ref_mjd_val = high_precision_keyword_read(hdulist[hdu].header, "MJDREF")
 
