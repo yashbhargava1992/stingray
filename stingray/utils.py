@@ -14,6 +14,7 @@ import scipy
 from numpy import histogram as histogram_np
 from numpy import histogram2d as histogram2d_np
 from numpy import histogramdd as histogramdd_np
+from astropy.io import fits
 from .loggingconfig import setup_logger
 
 logger = setup_logger()
@@ -2413,13 +2414,35 @@ def _int_sum_non_zero(array):
 
 
 def fits_open_including_remote(filename, **kwargs):
-    """Open a FITS file, including remote files with anonymous access if needed."""
-    from astropy.io import fits
+    """Open a FITS file, including remote files with anonymous access if needed.
+
+    This function attempts to open a FITS file using `astropy.io.fits.open`. If a
+    `PermissionError` is raised and the filename appears to be a remote URL,
+    it retries opening the file with anonymous access using fsspec.
+
+    Parameters
+    ----------
+    filename : str
+        The path or URL to the FITS file to open. Can be a local file path or a remote URL.
+    **kwargs
+        Additional keyword arguments passed to `astropy.io.fits.open`.
+
+    Returns
+    -------
+    hdulist : astropy.io.fits.HDUList
+        The opened FITS file as an HDUList object.
+
+    Raises
+    ------
+    PermissionError
+        If the file cannot be opened and anonymous access is not possible or fails.
+
+    """
 
     try:
         return fits.open(filename, **kwargs)
     except PermissionError as e:
         if "://" in filename:
-            print(f"Permission denied for {filename}, trying anonymous access.")
+            warnings.warn(f"Permission denied for {filename}, trying anonymous access.")
             return fits.open(filename, fsspec_kwargs={"anon": True}, use_fsspec=True, **kwargs)
         raise e
