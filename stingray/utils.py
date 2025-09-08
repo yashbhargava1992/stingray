@@ -2410,3 +2410,16 @@ def _int_sum_non_zero(array):
         if a > 0:
             sum += int(a)
     return sum
+
+
+def fits_open_including_remote(filename, **kwargs):
+    """Open a FITS file, including remote files with anonymous access if needed."""
+    from astropy.io import fits
+
+    try:
+        return fits.open(filename, **kwargs)
+    except PermissionError as e:
+        if "://" in filename:
+            print(f"Permission denied for {filename}, trying anonymous access.")
+            return fits.open(filename, fsspec_kwargs={"anon": True}, use_fsspec=True, **kwargs)
+        raise e

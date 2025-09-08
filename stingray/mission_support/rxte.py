@@ -5,7 +5,7 @@ from astropy.time import Time
 from astropy.table import Table
 
 from astropy.io import fits
-from stingray.io import fits_open_including_remote
+from stingray.utils import fits_open_including_remote
 
 c_match = re.compile(r"C\[(.*)\]")
 
