@@ -2441,6 +2441,7 @@ def fits_open_remote(filename, **kwargs):
 
     """
     import botocore
+    import botocore.exceptions
 
     try:
         # This will work for local files and remote files with proper permissions
