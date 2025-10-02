@@ -945,7 +945,7 @@ def power_confidence_limits(preal, n=1, c=0.95):
     return rv.ppf([1 - c, c])
 
 
-def power_upper_limit(pmeas, n=1, c=0.95):
+def power_upper_limit(pmeas, n=1, c=0.95, summed_flag=True):
     """Upper limit on signal power, given a measured power in the PDS/Z search.
 
     Adapted from Vaughan et al. 1994, noting that, after appropriate
@@ -977,6 +977,10 @@ def power_upper_limit(pmeas, n=1, c=0.95):
         power in a QPO, or the n in Z^2_n
     c: float
         The confidence value for the probability (e.g. 0.95 = 95%)
+    summed_flag: bool   
+        If True, pmeas is the sum of n powers. If False, pmeas is the average
+        of n powers. This is relevant when dealing with averaged PDS, where
+        the powers are averaged rather than summed. 
 
     Returns
     -------
@@ -1001,12 +1005,18 @@ def power_upper_limit(pmeas, n=1, c=0.95):
         return np.abs(ppf(x) - xmeas)
 
     from scipy.optimize import minimize
-
-    initial = isf(pmeas * n)
-
-    res = minimize(func_to_minimize, [initial], pmeas * n, bounds=[(0, initial * 2)])
-
-    return res.x[0] / n
+    
+    if summed_flag:
+        pow = pmeas
+    else:
+        pow = pmeas * n
+    
+    initial = isf(pow)
+    res = minimize(func_to_minimize, [initial], pow, bounds=[(initial/2, initial * 2)], method='Nelder-Mead')
+    if summed_flag:    
+        return res.x[0]
+    else:              
+        return res.x[0] / n
 
 
 def amplitude_upper_limit(pmeas, counts, n=1, c=0.95, fft_corr=False, nyq_ratio=0):
