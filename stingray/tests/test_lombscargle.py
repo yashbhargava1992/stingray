@@ -306,7 +306,7 @@ class TestRMS(object):
         cls.rms = 0.5
         meanrate = cls.nphots / cls.segment_size
         cls.poisson_noise_rms = 2 / meanrate
-        pds_shape_rms = cls.pds_shape_raw / np.sum(cls.pds_shape_raw * cls.df) * cls.rms**2
+        pds_shape_rms = cls.pds_shape_raw / np.sum(cls.pds_shape_raw * cls.df) * cls.rms ** 2
         pds_shape_rms += cls.poisson_noise_rms
 
         random_part = rng.chisquare(2 * cls.M, size=cls.pds_shape_raw.size) / 2 / cls.M

@@ -300,7 +300,7 @@ class GaussianLogLikelihood(LogLikelihood):
         loglike = np.sum(
             -0.5 * np.log(2.0 * np.pi)
             - np.log(self.yerr)
-            - (self.y - mean_model) ** 2 / (2.0 * self.yerr**2)
+            - (self.y - mean_model) ** 2 / (2.0 * self.yerr ** 2)
         )
 
         loglike = assign_if_not_finite(loglike, logmin)

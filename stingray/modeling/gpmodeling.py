@@ -169,7 +169,7 @@ def _gaussian(t, params):
     t0 = jnp.atleast_1d(params["t0"])[:, jnp.newaxis]
     sig = jnp.atleast_1d(params["sig"])[:, jnp.newaxis]
 
-    return jnp.sum(A * jnp.exp(-((t - t0) ** 2) / (2 * (sig**2))), axis=0)
+    return jnp.sum(A * jnp.exp(-((t - t0) ** 2) / (2 * (sig ** 2))), axis=0)
 
 
 def _exponential(t, params):
@@ -199,7 +199,7 @@ def _exponential(t, params):
     t0 = jnp.atleast_1d(params["t0"])[:, jnp.newaxis]
     sig = jnp.atleast_1d(params["sig"])[:, jnp.newaxis]
 
-    return jnp.sum(A * jnp.exp(-jnp.abs(t - t0) / (2 * (sig**2))), axis=0)
+    return jnp.sum(A * jnp.exp(-jnp.abs(t - t0) / (2 * (sig ** 2))), axis=0)
 
 
 def _constant(t, params):
@@ -258,8 +258,8 @@ def _skew_gaussian(t, params):
         A
         * jnp.where(
             t > t0,
-            jnp.exp(-((t - t0) ** 2) / (2 * (sig2**2))),
-            jnp.exp(-((t - t0) ** 2) / (2 * (sig1**2))),
+            jnp.exp(-((t - t0) ** 2) / (2 * (sig2 ** 2))),
+            jnp.exp(-((t - t0) ** 2) / (2 * (sig1 ** 2))),
         ),
         axis=0,
     )
@@ -300,8 +300,8 @@ def _skew_exponential(t, params):
         A
         * jnp.where(
             t > t0,
-            jnp.exp(-(t - t0) / (2 * (sig2**2))),
-            jnp.exp((t - t0) / (2 * (sig1**2))),
+            jnp.exp(-(t - t0) / (2 * (sig2 ** 2))),
+            jnp.exp((t - t0) / (2 * (sig1 ** 2))),
         ),
         axis=0,
     )

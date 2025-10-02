@@ -83,7 +83,7 @@ class TestPowerColor(object):
             factor = rng.uniform(0.1, 10)
             x = factor * np.cos(3 / 4 * np.pi - angle) + log_center[0]
             y = factor * np.sin(3 / 4 * np.pi - angle) + log_center[1]
-            hue = hue_from_power_color(10**x, 10**y, center)
+            hue = hue_from_power_color(10 ** x, 10 ** y, center)
             # Compare the angles in a safe way
             c2 = (np.sin(hue) - np.sin(angle)) ** 2 + (np.cos(hue) - np.cos(angle)) ** 2
             angle_diff = np.arccos((2.0 - c2) / 2.0)

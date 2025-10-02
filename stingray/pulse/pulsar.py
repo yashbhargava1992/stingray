@@ -73,15 +73,15 @@ def p_to_f(*period_derivatives):
 
     if nder > 1:
         pd = period_derivatives[1]
-        fder[1] = -1 / p**2 * pd
+        fder[1] = -1 / p ** 2 * pd
 
     if nder > 2:
         pdd = period_derivatives[2]
-        fder[2] = 2 / p**3 * pd**2 - 1 / p**2 * pdd
+        fder[2] = 2 / p ** 3 * pd ** 2 - 1 / p ** 2 * pdd
 
     if nder > 3:
         pddd = period_derivatives[3]
-        fder[3] = -6 / p**4 * pd**3 + 6 / p**3 * pd * pdd - 1 / p**2 * pddd
+        fder[3] = -6 / p ** 4 * pd ** 3 + 6 / p ** 3 * pd * pdd - 1 / p ** 2 * pddd
     if nder > 4:
         warnings.warn("Derivatives above third are not supported")
 
@@ -366,7 +366,7 @@ def ef_profile_stat(profile, err=None):
     mean = np.mean(profile)
     if err is None:
         err = np.sqrt(mean)
-    return np.sum((profile - mean) ** 2 / err**2)
+    return np.sum((profile - mean) ** 2 / err ** 2)
 
 
 def pdm_profile_stat(profile, sample_var, nsample):
@@ -524,7 +524,7 @@ def z_n_gauss_all(profile, err, nmax=20):
 
     all_zs = _z_n_fast_cached_sums_unnorm(profile, ks, cached_sin, cached_cos)
 
-    return ks, all_zs * (2 / profile.size / err**2)
+    return ks, all_zs * (2 / profile.size / err ** 2)
 
 
 @jit(nopython=True)

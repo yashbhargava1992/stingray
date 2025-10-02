@@ -303,7 +303,7 @@ class TestChunks(object):
             start, stop, res = self.lc.analyze_lc_chunks(20, nvar_fun, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         nevar, nevar_err = res
-        assert np.allclose(nevar, fvar**2, rtol=0.01)
+        assert np.allclose(nevar, fvar ** 2, rtol=0.01)
 
     def test_analyze_lc_chunks_nvar_fracstep_mean(self):
         with pytest.warns(DeprecationWarning, match="The analyze_lc_chunks method was superseded"):
@@ -316,8 +316,8 @@ class TestChunks(object):
             start, stop, res = self.lc.analyze_lc_chunks(20, nvar_fun, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         nevar, nevar_err = res
-        assert np.allclose(nevar * mean**2, evar, rtol=0.01)
-        assert np.allclose(nevar_err * mean**2, evar_err, rtol=0.01)
+        assert np.allclose(nevar * mean ** 2, evar, rtol=0.01)
+        assert np.allclose(nevar_err * mean ** 2, evar_err, rtol=0.01)
 
     def test_analyze_segments_fvar_fracstep(self):
         start, stop, res = self.lc.analyze_segments(fvar_fun, 20, fraction_step=0.5)
@@ -336,7 +336,7 @@ class TestChunks(object):
         start, stop, res = self.lc.analyze_segments(nvar_fun, 20, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         nevar, nevar_err = res
-        assert np.allclose(nevar, fvar**2, rtol=0.01)
+        assert np.allclose(nevar, fvar ** 2, rtol=0.01)
 
     def test_analyze_segments_nvar_fracstep_mean(self):
         start, stop, mean = self.lc.analyze_segments(np.mean, 20, fraction_step=0.5)
@@ -346,8 +346,8 @@ class TestChunks(object):
         start, stop, res = self.lc.analyze_segments(nvar_fun, 20, fraction_step=0.5)
         # excess_variance returns fvar and fvar_err
         nevar, nevar_err = res
-        assert np.allclose(nevar * mean**2, evar, rtol=0.01)
-        assert np.allclose(nevar_err * mean**2, evar_err, rtol=0.01)
+        assert np.allclose(nevar * mean ** 2, evar, rtol=0.01)
+        assert np.allclose(nevar_err * mean ** 2, evar_err, rtol=0.01)
 
 
 class TestLightcurve(object):

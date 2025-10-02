@@ -646,7 +646,7 @@ class TestPowerspectrum(object):
         In Leahy normalization, the poisson noise level (so, in the absence of
         a signal, the average power) should be equal to 2.
         """
-        time = np.linspace(0, 10.0, 10**5)
+        time = np.linspace(0, 10.0, 10 ** 5)
         counts = rng.poisson(1000, size=time.shape[0])
 
         lc = Lightcurve(time, counts)
@@ -661,7 +661,7 @@ class TestPowerspectrum(object):
         square of the number of data points in the light curve
         """
         ps = Powerspectrum(self.lc, norm="Leahy")
-        ps_var = (np.sum(self.lc.counts) / ps.n**2) * (np.sum(ps.power[:-1]) + ps.power[-1] / 2.0)
+        ps_var = (np.sum(self.lc.counts) / ps.n ** 2) * (np.sum(ps.power[:-1]) + ps.power[-1] / 2.0)
 
         assert np.isclose(ps_var, np.var(self.lc.counts), atol=0.01)
 
@@ -672,7 +672,7 @@ class TestPowerspectrum(object):
         light curve.
         """
 
-        time = np.linspace(0, 1.0, 10**4)
+        time = np.linspace(0, 1.0, 10 ** 4)
         counts = rng.poisson(0.01, size=time.shape[0])
 
         lc = Lightcurve(time, counts)
@@ -1300,7 +1300,7 @@ class TestRMS(object):
         cls.rms = 0.5
         meanrate = cls.nphots / cls.segment_size
         cls.poisson_noise_rms = 2 / meanrate
-        pds_shape_rms = cls.pds_shape_raw / np.sum(cls.pds_shape_raw * cls.df) * cls.rms**2
+        pds_shape_rms = cls.pds_shape_raw / np.sum(cls.pds_shape_raw * cls.df) * cls.rms ** 2
         pds_shape_rms += cls.poisson_noise_rms
 
         random_part = rng.chisquare(2 * cls.M, size=cls.pds_shape_raw.size) / 2 / cls.M

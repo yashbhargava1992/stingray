@@ -178,7 +178,7 @@ def FAD(
             ax.scatter(freq, fourier_diff.real, s=1)
 
         if smoothing_alg == "gauss":
-            smooth_real = gaussian_filter1d(fourier_diff.real**2, smoothing_length)
+            smooth_real = gaussian_filter1d(fourier_diff.real ** 2, smoothing_length)
         else:
             raise ValueError("Unknown smoothing algorithm: {}".format(smoothing_alg))
 
@@ -215,7 +215,7 @@ def FAD(
         pds2 += power2
         cs += cs_power
 
-        average_diff += fourier_diff / smooth_real**0.5 * np.sqrt(2)
+        average_diff += fourier_diff / smooth_real ** 0.5 * np.sqrt(2)
         average_diff_uncorr += fourier_diff
         nph1_tot += nph1
         nph2_tot += nph2

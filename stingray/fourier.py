@@ -352,7 +352,7 @@ def normalize_frac(unnorm_power, dt, n_bin, mean_flux, background_flux=0):
         power = unnorm_power * 2.0 * dt / ((mean_flux - background_flux) ** 2 * n_bin)
     else:
         # Note: this corresponds to eq. 3 in Uttley+14
-        power = unnorm_power * 2.0 * dt / (mean_flux**2 * n_bin)
+        power = unnorm_power * 2.0 * dt / (mean_flux ** 2 * n_bin)
     return power
 
 
@@ -649,7 +649,7 @@ def unnormalize_periodograms(
         if background_flux > 0:
             unnorm_power = norm_power * ((n_ph / n_bin - background_flux) ** 2 * n_bin) / (2.0 * dt)
         else:
-            unnorm_power = norm_power * (n_ph**2 / n_bin) / (2.0 * dt)
+            unnorm_power = norm_power * (n_ph ** 2 / n_bin) / (2.0 * dt)
     elif norm == "abs":
         unnorm_power = norm_power * dt * n_bin / 2.0
     elif norm == "none":
@@ -909,10 +909,10 @@ def get_rms_from_rms_norm_periodogram(power_sqrms, poisson_noise_sqrms, df, M, l
         )
         local_df = df * local_M
         total_local_powers = local_M * local_power_sqrms.size
-        total_power_err = np.sqrt(np.sum(local_power_sqrms**2 * local_df**2 / local_M))
+        total_power_err = np.sqrt(np.sum(local_power_sqrms ** 2 * local_df ** 2 / local_M))
         total_power_err *= power_sqrms.size / total_local_powers
     else:
-        total_power_err = np.sqrt(np.sum(power_sqrms**2 * df**2 / M))
+        total_power_err = np.sqrt(np.sum(power_sqrms ** 2 * df ** 2 / M))
 
     powers_sub = power_sqrms - poisson_noise_sqrms
 
@@ -1069,8 +1069,8 @@ def rms_calculation(
         "The rms_calculation function is deprecated. Use get_rms_from_unnorm_periodogram instead.",
         DeprecationWarning,
     )
-    rms_norm_powers = unnorm_powers * 2 * T / nphots**2
-    rms_poisson_noise = poisson_noise_unnorm * 2 * T / nphots**2
+    rms_norm_powers = unnorm_powers * 2 * T / nphots ** 2
+    rms_poisson_noise = poisson_noise_unnorm * 2 * T / nphots ** 2
 
     df = 1 / T * K_freqs
 
@@ -1153,8 +1153,8 @@ def error_on_averaged_cross_spectrum(
 
     else:
         PrPs = ref_power * seg_power
-        dRe = np.sqrt((PrPs + cross_power.real**2 - cross_power.imag**2) / two_n_ave)
-        dIm = np.sqrt((PrPs - cross_power.real**2 + cross_power.imag**2) / two_n_ave)
+        dRe = np.sqrt((PrPs + cross_power.real ** 2 - cross_power.imag ** 2) / two_n_ave)
+        dIm = np.sqrt((PrPs - cross_power.real ** 2 + cross_power.imag ** 2) / two_n_ave)
         gsq = raw_coherence(
             cross_power, seg_power, ref_power, seg_power_noise, ref_power_noise, n_ave
         )

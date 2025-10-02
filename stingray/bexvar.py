@@ -117,7 +117,7 @@ def _estimate_source_cr_marginalised(
     bkg_cr = scipy.special.gammaincinv(float(bkg_counts) + 1, u) / bkg_area
 
     def prob(log_src_cr):
-        src_cr = 10**log_src_cr * rate_conversion
+        src_cr = 10 ** log_src_cr * rate_conversion
         like = scipy.stats.poisson.pmf(src_counts, src_cr + bkg_cr).mean()
         return like
 

@@ -168,9 +168,9 @@ def fftfit(prof, template):
         S[good] ** 2
     )
 
-    eshift = sigma**2 / (2 * b * big_sum)
+    eshift = sigma ** 2 / (2 * b * big_sum)
 
-    eb = sigma**2 / (2 * np.sum(S[good] ** 2))
+    eb = sigma ** 2 / (2 * np.sum(S[good] ** 2))
 
     return b, np.sqrt(eb), shift, np.sqrt(eshift)
 
