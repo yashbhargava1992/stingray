@@ -977,10 +977,10 @@ def power_upper_limit(pmeas, n=1, c=0.95, summed_flag=True):
         power in a QPO, or the n in Z^2_n
     c: float
         The confidence value for the probability (e.g. 0.95 = 95%)
-    summed_flag: bool
+    summed_flag: bool   
         If True, pmeas is the sum of n powers. If False, pmeas is the average
         of n powers. This is relevant when dealing with averaged PDS, where
-        the powers are averaged rather than summed.
+        the powers are averaged rather than summed. 
 
     Returns
     -------
@@ -1005,19 +1005,17 @@ def power_upper_limit(pmeas, n=1, c=0.95, summed_flag=True):
         return np.abs(ppf(x) - xmeas)
 
     from scipy.optimize import minimize
-
+    
     if summed_flag:
         pow = pmeas
     else:
         pow = pmeas * n
-
+    
     initial = isf(pow)
-    res = minimize(
-        func_to_minimize, [initial], pow, bounds=[(initial / 2, initial * 2)], method="Nelder-Mead"
-    )
-    if summed_flag:
+    res = minimize(func_to_minimize, [initial], pow, bounds=[(initial/2, initial * 2)], method='Nelder-Mead')
+    if summed_flag:    
         return res.x[0]
-    else:
+    else:              
         return res.x[0] / n
 
 
@@ -1197,7 +1195,7 @@ def ssig_from_a(a, ncounts):
     >>> round(ssig_from_a(0.1, 30000), 1)
     150.0
     """
-    return ncounts / 2 * a ** 2
+    return ncounts / 2 * a**2
 
 
 def a_from_ssig(ssig, ncounts):
@@ -1228,7 +1226,7 @@ def ssig_from_pf(pf, ncounts):
     >>> assert round(ssig_from_pf(pf_from_a(0.1), 30000), 1) == 150.0
     """
     a = a_from_pf(pf)
-    return ncounts / 2 * a ** 2
+    return ncounts / 2 * a**2
 
 
 def pf_from_ssig(ssig, ncounts):

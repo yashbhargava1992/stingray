@@ -466,7 +466,7 @@ def _is_sorted_numba(array):
 
 def _root_squared_mean(array):
     array = np.asanyarray(array)
-    return np.sqrt(np.sum(array ** 2)) / array.size
+    return np.sqrt(np.sum(array**2)) / array.size
 
 
 def simon(message, **kwargs):
@@ -1199,19 +1199,19 @@ def excess_variance(lc, normalization="fvar"):
     var_xs : float
     var_xs_err : float
     """
-    lc_mean_var = np.mean(lc.counts_err ** 2)
+    lc_mean_var = np.mean(lc.counts_err**2)
     lc_actual_var = np.var(lc.counts)
     var_xs = lc_actual_var - lc_mean_var
     mean_lc = np.mean(lc.counts)
-    mean_ctvar = mean_lc ** 2
-    var_nxs = var_xs / mean_lc ** 2
+    mean_ctvar = mean_lc**2
+    var_nxs = var_xs / mean_lc**2
 
     fvar = np.sqrt(var_xs / mean_ctvar)
 
     N = len(lc.counts)
-    var_nxs_err_A = np.sqrt(2 / N) * lc_mean_var / mean_lc ** 2
+    var_nxs_err_A = np.sqrt(2 / N) * lc_mean_var / mean_lc**2
     var_nxs_err_B = np.sqrt(lc_mean_var / N) * 2 * fvar / mean_lc
-    var_nxs_err = np.sqrt(var_nxs_err_A ** 2 + var_nxs_err_B ** 2)
+    var_nxs_err = np.sqrt(var_nxs_err_A**2 + var_nxs_err_B**2)
 
     fvar_err = var_nxs_err / (2 * fvar)
 
@@ -1220,7 +1220,7 @@ def excess_variance(lc, normalization="fvar"):
     elif normalization == "norm_xs":
         return var_nxs, var_nxs_err
     elif normalization == "none" or normalization is None:
-        return var_xs, var_nxs_err * mean_lc ** 2
+        return var_xs, var_nxs_err * mean_lc**2
 
 
 def create_window(N, window_type="uniform"):
@@ -1614,7 +1614,7 @@ def _allocate_array_or_memmap(shape, dtype, use_memmap=False, tmp=None):
     H : array
         The output array
     """
-    if use_memmap and np.prod(shape) > 10 ** 7:
+    if use_memmap and np.prod(shape) > 10**7:
         if tmp is None:
             tmp = tempfile.NamedTemporaryFile("w+", suffix=".npy").name
         H = np.lib.format.open_memmap(tmp, mode="w+", dtype=dtype, shape=shape)
@@ -1868,7 +1868,7 @@ def hist1d_numba_seq_weight(a, weights, bins, range, use_memmap=False, tmp=None)
     ...                              use_memmap=True)
     >>> assert np.all(H == Hn)
     """
-    if bins > 10 ** 7 and use_memmap:
+    if bins > 10**7 and use_memmap:
         if tmp is None:
             tmp = tempfile.NamedTemporaryFile("w+").name
         hist_arr = np.lib.format.open_memmap(tmp, mode="w+", dtype=a.dtype, shape=(bins,))

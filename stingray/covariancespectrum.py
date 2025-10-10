@@ -328,7 +328,7 @@ class Covariancespectrum(object):
             xs_var[i] = xs
 
         self.unnorm_covar = covar
-        energy_covar = covar / xs_var ** 0.5
+        energy_covar = covar / xs_var**0.5
 
         self.covar = energy_covar
 
@@ -404,7 +404,7 @@ class Covariancespectrum(object):
     def _calculate_excess_variance(self, lc):
         """Calculate excess variance in a band with the standard deviation."""
         std = self._calculate_std(lc)
-        return np.var(lc) - std ** 2
+        return np.var(lc) - std**2
 
     def _calculate_std(self, lc):
         """Return std calculated for the possible types of `std`"""
@@ -578,7 +578,7 @@ class AveragedCovariancespectrum(Covariancespectrum):
             xs_var[i] = xs / self.nbins
 
         self.unnorm_covar = covar
-        energy_covar = covar / xs_var ** 0.5
+        energy_covar = covar / xs_var**0.5
 
         self.covar = energy_covar
 

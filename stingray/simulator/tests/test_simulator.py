@@ -184,7 +184,7 @@ class TestSimulator(object):
 
         pds_all = [Powerspectrum(lc_all[i]) for i in range(nsim)]
         pds = pds_all[0]
-        model_compare = (mc := astropy_model(pds.freq)) / (np.sum(mc) * pds.df) * rms ** 2
+        model_compare = (mc := astropy_model(pds.freq)) / (np.sum(mc) * pds.df) * rms**2
 
         ratios = [pds.power / model_compare for pds in pds_all]
         assert np.all([np.mean(rat) / (np.std(rat) * 3) < 1 for rat in ratios])

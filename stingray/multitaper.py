@@ -378,7 +378,7 @@ class Multitaper(Powerspectrum):
             self.jk_var_deg_freedom = self.jackknifed_sdf_variance(freq_response, eigvals, adaptive)
         else:
             if adaptive:
-                self.jk_var_deg_freedom = 2 * (weights_multitaper ** 2).sum(axis=-2)
+                self.jk_var_deg_freedom = 2 * (weights_multitaper**2).sum(axis=-2)
             else:
                 self.jk_var_deg_freedom = np.full((len(freq_multitaper)), 2 * len(eigvals))
 
@@ -508,7 +508,7 @@ class Multitaper(Powerspectrum):
             # less than 1e-10, then we're converged
 
             err -= d_k
-            if np.max(np.mean(err ** 2, axis=0)) < 1e-10:
+            if np.max(np.mean(err**2, axis=0)) < 1e-10:
                 break
 
             # update the iterative estimate with this d_k
@@ -761,7 +761,7 @@ class Multitaper(Powerspectrum):
             )
             # Interpolating DPSS tapers to IRREGULAR times
             dpss_interpolated = cubic_spline_interp(lc.time)
-            dpss_interpolated /= np.sum(dpss_interpolated ** 2)  # Re normalizing
+            dpss_interpolated /= np.sum(dpss_interpolated**2)  # Re normalizing
             # From Springford R implementation
             dpss_interpolated *= np.sqrt(lc.n)
             dpss_interpolated *= data_irregular

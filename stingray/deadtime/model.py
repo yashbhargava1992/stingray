@@ -78,7 +78,7 @@ def e_m_x_x_over_factorial(x: float, m: int):
 
     # For decently small numbers, use the direct formula
     if m < 50 or (x > 1 and m * max(np.log10(x), 1) < 50):
-        return np.exp(-x) * x ** m * __INVERSE_FACTORIALS[m]
+        return np.exp(-x) * x**m * __INVERSE_FACTORIALS[m]
 
     # Use Stirling's approximation
     return 1.0 / np.sqrt(TWOPI * m) * np.power(x * np.exp(1 - x / m) / m, m) / _stirling_factor(m)
@@ -232,7 +232,7 @@ def limit_A(rate, td, tb):
         Bin time of the light curve
     """
     r0 = r_det(td, rate)
-    return r0 ** 2 * tb ** 2
+    return r0**2 * tb**2
 
 
 def check_A(rate, td, tb, max_k=100, save_to=None, linthresh=0.000001, rate_is_incident=True):
@@ -293,9 +293,9 @@ def check_A(rate, td, tb, max_k=100, save_to=None, linthresh=0.000001, rate_is_i
 def _B_raw(k, r0, td, tb, tau):
     """Term in Eq. 45 in Zhang+95."""
     if k == 0:
-        return 2 * (A_single_k(0, r0, td, tb, tau) - r0 ** 2 * tb ** 2) / (r0 * tb)
+        return 2 * (A_single_k(0, r0, td, tb, tau) - r0**2 * tb**2) / (r0 * tb)
 
-    new_val = A_single_k(k, r0, td, tb, tau) - r0 ** 2 * tb ** 2
+    new_val = A_single_k(k, r0, td, tb, tau) - r0**2 * tb**2
 
     return 4 * new_val / (r0 * tb)
 

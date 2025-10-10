@@ -501,7 +501,7 @@ class LombScargleCrossspectrum(Crossspectrum):
 
         drms_dp = 1 / (2 * pow)
 
-        sq_sum_err = np.sqrt(np.sum(p_err ** 2))
+        sq_sum_err = np.sqrt(np.sum(p_err**2))
         delta_rms = sq_sum_err * drms_dp
         return delta_rms
 

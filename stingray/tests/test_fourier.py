@@ -185,7 +185,7 @@ class TestCoherence(object):
         C, P1, P2 = self.cross[:nbins], self.pds1[:nbins], self.pds2[:nbins]
         bsq = bias_term(P1, P2, self.p1noise, self.p2noise, self.N)
         # must be lower than bsq!
-        low_coh_cross = rng.normal(bsq ** 0.5 / 10, bsq ** 0.5 / 100) + 0.0j
+        low_coh_cross = rng.normal(bsq**0.5 / 10, bsq**0.5 / 100) + 0.0j
         coh = raw_coherence(low_coh_cross, P1, P2, self.p1noise, self.p2noise, self.N)
         assert np.allclose(coh, 0)
         # Do it with a single number
@@ -527,7 +527,7 @@ class TestNorms(object):
         ratio = (
             normalize_frac(self.pds, self.dt, self.N, self.mean)
             / normalize_abs(self.pds, self.dt, self.N)
-            * self.meanrate ** 2
+            * self.meanrate**2
         )
         assert np.isclose(ratio.mean(), 1, rtol=0.01)
 
@@ -787,7 +787,7 @@ class TestRMS(object):
         poisson_noise_rms = 2 / meanrate
         pds_shape = self.pds_shape_raw if not with_qpo else self.pds_shape_qpo_raw
 
-        pds_shape_rms = pds_shape / np.sum(pds_shape * self.df) * rms ** 2
+        pds_shape_rms = pds_shape / np.sum(pds_shape * self.df) * rms**2
         pds_shape_rms += poisson_noise_rms * distort_poisson_by
 
         random_part = rng.chisquare(2 * M, size=pds_shape.size) / 2 / M

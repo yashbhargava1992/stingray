@@ -619,8 +619,8 @@ class RmsSpectrum(VarEnergySpectrum):
             rms = np.sqrt(np.abs(mean_power - power_noise) * delta_nu_after_mean)
 
             # Assume coherence 0, use Ingram+2019
-            num = rms ** 4 + rmsnoise ** 4 + 2 * rms * rmsnoise
-            den = 4 * m_ave * n_ave_bin * rms ** 2
+            num = rms**4 + rmsnoise**4 + 2 * rms * rmsnoise
+            den = 4 * m_ave * n_ave_bin * rms**2
 
             rms_err = np.sqrt(num / den)
             if self.norm == "frac":

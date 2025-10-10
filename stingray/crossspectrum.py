@@ -2125,7 +2125,7 @@ class AveragedCrossspectrum(Crossspectrum):
         coh = raw_coherence(c, p1, p2, P1noise, P2noise, self.n)
 
         # Calculate uncertainty
-        uncertainty = (2 ** 0.5 * coh * (1 - coh)) / (np.sqrt(coh) * self.m ** 0.5)
+        uncertainty = (2**0.5 * coh * (1 - coh)) / (np.sqrt(coh) * self.m**0.5)
 
         uncertainty[coh == 0] = 0.0
 

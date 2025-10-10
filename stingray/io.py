@@ -1448,15 +1448,15 @@ def split_numbers(number, shift=0):
     """
     if isinstance(number, Iterable):
         number = np.asanyarray(number)
-        number *= 10 ** shift
+        number *= 10**shift
         mods = [math.modf(n) for n in number]
         number_F = [f for f, _ in mods]
         number_I = [i for _, i in mods]
     else:
-        number *= 10 ** shift
+        number *= 10**shift
         number_F, number_I = math.modf(number)
 
-    return np.double(number_I) / 10 ** shift, np.double(number_F) / 10 ** shift
+    return np.double(number_I) / 10**shift, np.double(number_F) / 10**shift
 
 
 def savefig(filename, **kwargs):

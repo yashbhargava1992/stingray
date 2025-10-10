@@ -44,7 +44,7 @@ def test_sinc_obs():
 
 def test_gaussian_function():
     x = np.linspace(-5.0, 5.0, 200)
-    y = 2 * np.exp(-0.5 * (x - 1.3) ** 2 / 0.7 ** 2)
+    y = 2 * np.exp(-0.5 * (x - 1.3) ** 2 / 0.7**2)
     y += np.random.normal(0.0, 0.1, x.shape)
 
     gs = fit_gaussian(x, y)
@@ -56,7 +56,7 @@ def test_gaussian_function():
 
 def test_gaussian_bounds():
     x = np.linspace(-5.0, 5.0, 200)
-    y = 2 * np.exp(-0.5 * (x - 1.3) ** 2 / 0.7 ** 2)
+    y = 2 * np.exp(-0.5 * (x - 1.3) ** 2 / 0.7**2)
     y += np.random.normal(0.0, 0.1, x.shape)
 
     gs = fit_gaussian(x, y, bounds={"mean": [1.0, 1.6], "amplitude": [1.7, 2.3]})
@@ -64,7 +64,7 @@ def test_gaussian_bounds():
 
 def test_gaussian_fixed():
     x = np.linspace(-5.0, 5.0, 200)
-    y = 2 * np.exp(-0.5 * (x - 1.3) ** 2 / 0.7 ** 2)
+    y = 2 * np.exp(-0.5 * (x - 1.3) ** 2 / 0.7**2)
     y += np.random.normal(0.0, 0.1, x.shape)
 
     gs = fit_gaussian(x, y, mean=1.3, fixed={"mean": True, "amplitude": False})
@@ -74,7 +74,7 @@ def test_gaussian_fixed():
 
 def test_gaussian_tied():
     x = np.linspace(-5.0, 5.0, 200)
-    y = 2 * np.exp(-0.5 * (x - 1.3) ** 2 / 0.7 ** 2)
+    y = 2 * np.exp(-0.5 * (x - 1.3) ** 2 / 0.7**2)
     y += np.random.normal(0.0, 0.1, x.shape)
 
     def tiedgaussian(model):

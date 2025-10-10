@@ -115,13 +115,13 @@ class TestAll(object):
         """Test pulse phase calculation, fdot only."""
         times = np.arange(0, 4, 0.5)
         ph = pulse_phase(times, 0, 1, ph0=0, to_1=False)
-        np.testing.assert_array_almost_equal(ph, 0.5 * times ** 2)
+        np.testing.assert_array_almost_equal(ph, 0.5 * times**2)
 
     def test_pulse_phase3(self):
         """Test pulse phase calculation, fddot only."""
         times = np.arange(0, 4, 0.5)
         ph = pulse_phase(times, 0, 0, 1, ph0=0, to_1=False)
-        np.testing.assert_array_almost_equal(ph, 1 / 6 * times ** 3)
+        np.testing.assert_array_almost_equal(ph, 1 / 6 * times**3)
 
     def test_phase_exposure1(self):
         start_time = 0
@@ -188,7 +188,7 @@ class TestAll(object):
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin) / nbin + 0.5 / nbin)
         np.testing.assert_array_almost_equal(p, 2 * np.ones(nbin))
-        np.testing.assert_array_almost_equal(pe, 2 ** 0.5 * np.ones(nbin))
+        np.testing.assert_array_almost_equal(pe, 2**0.5 * np.ones(nbin))
 
     def test_pulse_profile3(self):
         nbin = 16
@@ -202,7 +202,7 @@ class TestAll(object):
 
         np.testing.assert_array_almost_equal(ph, np.arange(nbin) / nbin + 0.5 / nbin)
         np.testing.assert_array_almost_equal(p, 2 * np.ones(nbin))
-        expected_err = 2 ** 0.5 * np.ones(nbin)
+        expected_err = 2**0.5 * np.ones(nbin)
         expected_err[-1] = 2  # Because of the change of exposure
         np.testing.assert_array_almost_equal(pe, expected_err)
 
@@ -411,7 +411,7 @@ class TestZandH(object):
         dph = 1 / nbin
         err = 0.1
         ph = np.arange(-0.5 + dph / 2, 0.5, dph)
-        prof = np.random.normal(np.exp(-(ph ** 2) / 2 / 0.1 ** 2), err)
+        prof = np.random.normal(np.exp(-(ph**2) / 2 / 0.1**2), err)
 
         prof_poiss = poissonize_gaussian_profile(prof, err)
 

@@ -78,7 +78,7 @@ def nextpow(a: float, x: float) -> float:
 
     n = np.ceil(math.log(x, a))
     p = a ** (n - 1)
-    return p if p >= x else a ** n
+    return p if p >= x else a**n
 
 
 def nextprod(a: List[int], x: int) -> int:

@@ -114,14 +114,14 @@ class Testget_mean(object):
         }
 
     def test_get_mean_gaussian(self):
-        result_gaussian = 3 * jnp.exp(-((self.t - 0.2) ** 2) / (2 * (0.2 ** 2))) + 4 * jnp.exp(
-            -((self.t - 0.7) ** 2) / (2 * (0.1 ** 2))
+        result_gaussian = 3 * jnp.exp(-((self.t - 0.2) ** 2) / (2 * (0.2**2))) + 4 * jnp.exp(
+            -((self.t - 0.7) ** 2) / (2 * (0.1**2))
         )
         assert (get_mean("gaussian", self.mean_params)(self.t) == result_gaussian).all()
 
     def test_get_mean_exponential(self):
-        result_exponential = 3 * jnp.exp(-jnp.abs(self.t - 0.2) / (2 * (0.2 ** 2))) + 4 * jnp.exp(
-            -jnp.abs(self.t - 0.7) / (2 * (0.1 ** 2))
+        result_exponential = 3 * jnp.exp(-jnp.abs(self.t - 0.2) / (2 * (0.2**2))) + 4 * jnp.exp(
+            -jnp.abs(self.t - 0.7) / (2 * (0.1**2))
         )
         assert (get_mean("exponential", self.mean_params)(self.t) == result_exponential).all()
 
@@ -133,12 +133,12 @@ class Testget_mean(object):
     def test_get_mean_skew_gaussian(self):
         result_skew_gaussian = 3.0 * jnp.where(
             self.t > 0.2,
-            jnp.exp(-((self.t - 0.2) ** 2) / (2 * (0.3 ** 2))),
-            jnp.exp(-((self.t - 0.2) ** 2) / (2 * (0.2 ** 2))),
+            jnp.exp(-((self.t - 0.2) ** 2) / (2 * (0.3**2))),
+            jnp.exp(-((self.t - 0.2) ** 2) / (2 * (0.2**2))),
         ) + 4.0 * jnp.where(
             self.t > 0.7,
-            jnp.exp(-((self.t - 0.7) ** 2) / (2 * (0.4 ** 2))),
-            jnp.exp(-((self.t - 0.7) ** 2) / (2 * (0.1 ** 2))),
+            jnp.exp(-((self.t - 0.7) ** 2) / (2 * (0.4**2))),
+            jnp.exp(-((self.t - 0.7) ** 2) / (2 * (0.1**2))),
         )
         assert (
             get_mean("skew_gaussian", self.skew_mean_params)(self.t) == result_skew_gaussian
@@ -147,12 +147,12 @@ class Testget_mean(object):
     def test_get_mean_skew_exponential(self):
         result_skew_exponential = 3.0 * jnp.where(
             self.t > 0.2,
-            jnp.exp(-jnp.abs(self.t - 0.2) / (2 * (0.3 ** 2))),
-            jnp.exp(-jnp.abs(self.t - 0.2) / (2 * (0.2 ** 2))),
+            jnp.exp(-jnp.abs(self.t - 0.2) / (2 * (0.3**2))),
+            jnp.exp(-jnp.abs(self.t - 0.2) / (2 * (0.2**2))),
         ) + 4.0 * jnp.where(
             self.t > 0.7,
-            jnp.exp(-jnp.abs(self.t - 0.7) / (2 * (0.4 ** 2))),
-            jnp.exp(-jnp.abs(self.t - 0.7) / (2 * (0.1 ** 2))),
+            jnp.exp(-jnp.abs(self.t - 0.7) / (2 * (0.4**2))),
+            jnp.exp(-jnp.abs(self.t - 0.7) / (2 * (0.1**2))),
         )
         assert (
             get_mean("skew_exponential", self.skew_mean_params)(self.t) == result_skew_exponential

@@ -10,7 +10,7 @@ np.random.seed(235425899)
 
 
 def phase(time, freq, fdot=0.0):
-    return time * freq + 0.5 * time ** 2 * fdot
+    return time * freq + 0.5 * time**2 * fdot
 
 
 def pulsar(phase, amplitude=1, pf=1):
@@ -30,7 +30,7 @@ class TestAccelsearch(object):
         cls.tstop = 10000
         cls.dt = 1 / cls.freq / 5.11
         cls.df = 1 / cls.tstop
-        cls.dfdot = 1 / cls.tstop ** 2
+        cls.dfdot = 1 / cls.tstop**2
 
         cls.times = np.arange(cls.tstart, cls.tstop, cls.dt)
         cls.phases = phase(cls.times, cls.freq, cls.fdot)

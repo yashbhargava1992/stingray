@@ -110,7 +110,7 @@ def _create_responses(range_z):
 
         q_ks = np.arange(-m / 2, m / 2 + 1)
 
-        exponentials = np.exp(1j * np.pi * q_ks ** 2 / z)
+        exponentials = np.exp(1j * np.pi * q_ks**2 / z)
 
         Yks = sign * np.sqrt(2 / absz) * q_ks
         Zks = sign * np.sqrt(2 / absz) * (q_ks + z)
@@ -404,7 +404,7 @@ def accelsearch(
     start_z = -zmax
     end_z = zmax
     range_z = np.arange(start_z, end_z, delta_z)
-    logger.info("min and max r_dot: {}--{}".format(delta_z / T ** 2, np.max(range_z) / T ** 2))
+    logger.info("min and max r_dot: {}--{}".format(delta_z / T**2, np.max(range_z) / T**2))
     freqs_to_search = freq[freq_intv_to_search]
 
     candidate_table = Table(
@@ -433,7 +433,7 @@ def accelsearch(
     for r, j, cand_power in zip(candidate_rs, candidate_js, candidate_powers):
         z = range_z[j]
         cand_freq = r / T
-        fdot = z / T ** 2
+        fdot = z / T**2
         prob = pds_probability(cand_power, freqs_to_search.size)
         candidate_table.add_row(
             [
