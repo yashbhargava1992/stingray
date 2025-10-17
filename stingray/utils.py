@@ -433,7 +433,7 @@ def is_sorted(array):
     # Test if value is compatible with Numba's type system
     try:
         _is_sorted_numba(array[:2])
-    except NumbaValueError:
+    except (NumbaValueError, TypingError):
         array = array.astype(float)
 
     return _is_sorted_numba(array)
@@ -2441,6 +2441,7 @@ def fits_open_remote(filename, **kwargs):
 
     """
     import botocore
+    import botocore.exceptions
 
     try:
         # This will work for local files and remote files with proper permissions
