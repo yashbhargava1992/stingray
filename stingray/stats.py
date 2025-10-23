@@ -980,7 +980,9 @@ def power_upper_limit(pmeas, n=1, c=0.95, summed_flag=True):
     summed_flag: bool   
         If True, pmeas is the sum of n powers. If False, pmeas is the average
         of n powers. This is relevant when dealing with averaged PDS, where
-        the powers are averaged rather than summed. 
+        the powers are averaged rather than summed. For example, Z^2_n searches 
+        deal with summed powers (i.e. summed_flag=True), while if power spectrum 
+        is averaged to improve the statistics the summed_flag should be set to False.   
 
     Returns
     -------
@@ -1064,6 +1066,12 @@ def amplitude_upper_limit(pmeas, counts, n=1, c=0.95, fft_corr=False, nyq_ratio=
         frequency. Important to know when dealing with FFTs, because the FFT
         response decays between 0 and f_Nyq similarly to the response inside
         a frequency bin: from 1 at 0 Hz to ~2/pi at f_Nyq
+    summed_flag: bool   
+        If True, pmeas is the sum of n powers. If False, pmeas is the average
+        of n powers. This is relevant when dealing with averaged PDS, where
+        the powers are averaged rather than summed. For example, Z^2_n searches 
+        deal with summed powers (i.e. summed_flag=True), while if power spectrum 
+        is averaged to improve the statistics the summed_flag should be set to False.   
 
     Returns
     -------
