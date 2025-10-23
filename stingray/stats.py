@@ -974,7 +974,7 @@ def power_upper_limit(pmeas, n=1, c=0.95, summed_flag=True):
     n: int
         The number of summed powers to obtain pmeas. It can be multiple
         harmonics of the PDS, adjacent bins in a PDS summed to collect all the
-        power in a QPO, or the n in Z^2_n
+        power in a QPO, the n in Z^2_n or the number of averaged PDS
     c: float
         The confidence value for the probability (e.g. 0.95 = 95%)
     summed_flag: bool   
@@ -1019,7 +1019,7 @@ def power_upper_limit(pmeas, n=1, c=0.95, summed_flag=True):
         return res.x[0] / n
 
 
-def amplitude_upper_limit(pmeas, counts, n=1, c=0.95, fft_corr=False, nyq_ratio=0):
+def amplitude_upper_limit(pmeas, counts, n=1, c=0.95, fft_corr=False, nyq_ratio=0, summed_flag=True):
     r"""Upper limit on a sinusoidal modulation, given a measured power in the PDS/Z search.
 
     Eq. 10 in Vaughan+94 and `a_from_ssig`: they are equivalent but Vaughan+94
@@ -1052,7 +1052,7 @@ def amplitude_upper_limit(pmeas, counts, n=1, c=0.95, fft_corr=False, nyq_ratio=
     n: int
         The number of summed powers to obtain pmeas. It can be multiple
         harmonics of the PDS, adjacent bins in a PDS summed to collect all the
-        power in a QPO, or the n in Z^2_n
+        power in a QPO, the n in Z^2_n or the number of averaged PDS
     c: float
         The confidence value for the probability (e.g. 0.95 = 95%)
     fft_corr: bool
@@ -1079,7 +1079,7 @@ def amplitude_upper_limit(pmeas, counts, n=1, c=0.95, fft_corr=False, nyq_ratio=
     >>> assert np.isclose(aup_corr, aup / np.sqrt(0.773))
     """
 
-    uplim = power_upper_limit(pmeas, n, c)
+    uplim = power_upper_limit(pmeas, n, c, summed_flag=summed_flag)
     a = a_from_ssig(uplim, counts)
     if fft_corr:
         factor = 1 / np.sqrt(0.773)
