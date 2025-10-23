@@ -246,3 +246,6 @@ class TestClassicalSignificances(object):
     def test_power_upper_limit(self):
         # Use example from Vaughan+94
         assert np.isclose(power_upper_limit(40, 1, 0.99), 75, rtol=0.1)
+    
+    def test_power_upper_limit_averaging(self):
+        assert np.isclose(power_upper_limit(100, 10, 0.997, summed_flag=False), 115, rtol=0.1)
