@@ -1,5 +1,0 @@
-Fixed a bug in the `stingray.stats.power_upper_limit` function where the current minimizing method did not lead to convergence in some cases. 
-The method has been changed to 'Nelder-Mead', which should be more robust.
-
-Also added a flag to switch between summed and averaged power to determine the upper limit. The default is still summed power to keep backward compatibility
-
