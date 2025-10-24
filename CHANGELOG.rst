@@ -1,4 +1,20 @@
-v2.2.9 (2025-08-18)
+v2.2.7.dev72+g53c8f96c (2025-10-24)
+-----------------------------------
+
+New Features
+^^^^^^^^^^^^
+
+- Update database of missions from NASA (`#939 <https://github.com/StingraySoftware/stingray/pull/939>`__)
+- use the power of fits.open to load remote datasets (`#940 <https://github.com/StingraySoftware/stingray/pull/940>`__)
+
+
+Bug Fixes
+^^^^^^^^^
+
+- Fix issue with float128 in recent Numba versions (`#947 <https://github.com/StingraySoftware/stingray/pull/947>`__)
+
+
+v2.2.10 (2025-08-18)
 -------------------
 
 Deprecations
